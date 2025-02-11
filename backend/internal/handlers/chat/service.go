@@ -1,11 +1,10 @@
-
 package Chat
 
 import (
 	"context"
 	"log/slog"
 
-	"github.com/abhikaboy/GERM-template/xutils"
+	"github.com/abhikaboy/SocialToDo/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -97,4 +96,3 @@ func (s *Service) DeleteChat(id primitive.ObjectID) error {
 	_, err := s.Chats.DeleteOne(ctx, filter)
 	return err
 }
-

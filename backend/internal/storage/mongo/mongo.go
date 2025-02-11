@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/abhikaboy/GERM-template/internal/config"
+	"github.com/abhikaboy/SocialToDo/internal/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/abhikaboy/GERM-template/internal/config"
+	"github.com/abhikaboy/SocialToDo/internal/config"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

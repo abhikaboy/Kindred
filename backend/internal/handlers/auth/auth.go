@@ -3,8 +3,8 @@ package auth
 import (
 	"strings"
 
-	"github.com/abhikaboy/GERM-template/internal/xerr"
-	"github.com/abhikaboy/GERM-template/internal/xvalidator"
+	"github.com/abhikaboy/SocialToDo/internal/xerr"
+	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

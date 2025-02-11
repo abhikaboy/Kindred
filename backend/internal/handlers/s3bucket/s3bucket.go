@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/abhikaboy/GERM-template/internal/config"
+	"github.com/abhikaboy/SocialToDo/internal/config"
 	"github.com/gofiber/fiber/v2"
 )
 

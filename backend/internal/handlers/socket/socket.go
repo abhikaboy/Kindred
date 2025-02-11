@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/abhikaboy/GERM-template/internal/xslog"
+	"github.com/abhikaboy/SocialToDo/internal/xslog"
 	"github.com/gofiber/contrib/socketio"
 	"github.com/gofiber/fiber/v2"
 )

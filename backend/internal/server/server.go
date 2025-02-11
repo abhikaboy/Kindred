@@ -2,14 +2,14 @@ package server
 
 import (
 	"github.com/abhikaboy/GERM-template/internal/sockets"
-	"github.com/abhikaboy/social-todo/internal/handlers/Chat"
-	"github.com/abhikaboy/social-todo/internal/handlers/Profile"
-	"github.com/abhikaboy/social-todo/internal/handlers/Task"
-	"github.com/abhikaboy/social-todo/internal/handlers/auth"
-	"github.com/abhikaboy/social-todo/internal/handlers/health"
-	"github.com/abhikaboy/social-todo/internal/handlers/socket"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/Chat"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/Profile"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/Task"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/auth"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/health"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/socket"
 
-	"github.com/abhikaboy/social-todo/internal/xerr"
+	"github.com/abhikaboy/SocialToDo/internal/xerr"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"

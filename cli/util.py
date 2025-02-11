@@ -10,7 +10,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/abhikaboy/social-todo/xutils"
+	"github.com/abhikaboy/SocialToDo/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -310,7 +310,7 @@ import (
     "context"
     "log/slog"
 
-    "github.com/abhikaboy/social-todo/xutils"
+    "github.com/abhikaboy/SocialToDo/xutils"
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
@@ -482,8 +482,8 @@ import (
     "log/slog"
     "time"
 
-    "github.com/abhikaboy/social-todo/internal/xerr"
-    "github.com/abhikaboy/social-todo/internal/xvalidator"
+    "github.com/abhikaboy/SocialToDo/internal/xerr"
+    "github.com/abhikaboy/SocialToDo/internal/xvalidator"
     go_json "github.com/goccy/go-json"
     "github.com/gofiber/fiber/v2"
     "go.mongodb.org/mongo-driver/bson/primitive"

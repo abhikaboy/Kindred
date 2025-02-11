@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/abhikaboy/GERM-template/internal/config"
-	"github.com/abhikaboy/GERM-template/internal/storage/xmongo"
-	"github.com/abhikaboy/GERM-template/internal/xslog"
+	"github.com/abhikaboy/SocialToDo/internal/config"
+	"github.com/abhikaboy/SocialToDo/internal/storage/xmongo"
+	"github.com/abhikaboy/SocialToDo/internal/xslog"
 	"github.com/joho/godotenv"
 )
 

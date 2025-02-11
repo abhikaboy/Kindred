@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abhikaboy/GERM-template/internal/config"
-	"github.com/abhikaboy/GERM-template/internal/server"
-	"github.com/abhikaboy/GERM-template/internal/storage/xmongo"
+	"github.com/abhikaboy/SocialToDo/internal/config"
+	"github.com/abhikaboy/SocialToDo/internal/server"
+	"github.com/abhikaboy/SocialToDo/internal/storage/xmongo"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"

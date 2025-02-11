@@ -1,5 +1,5 @@
 {
-  description = "GERM: Go, Expo, React Native, MongoDB";
+  description = "Social Todo App";
 
   inputs = {
     devenv = {

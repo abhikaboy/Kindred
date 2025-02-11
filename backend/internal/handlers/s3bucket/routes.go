@@ -3,7 +3,7 @@ package s3bucket
 import (
 	"log"
 
-	"github.com/abhikaboy/GERM-template/internal/config"
+	"github.com/abhikaboy/SocialToDo/internal/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v2"
 )

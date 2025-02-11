@@ -10,7 +10,7 @@ import (
 	go_json "github.com/goccy/go-json"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/abhikaboy/GERM-template/internal/xslog"
+	"github.com/abhikaboy/SocialToDo/internal/xslog"
 	"github.com/gofiber/fiber/v2"
 )
 
