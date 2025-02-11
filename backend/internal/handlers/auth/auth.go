@@ -80,6 +80,30 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	return err
 }
 
+func (h *Handler) LoginWithApple(c *fiber.Ctx) error {
+	var req LoginRequestApple
+	err := c.BodyParser(&req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
+	}
+
+	errs := xvalidator.Validator.Validate(req)
+	if len(errs) > 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(errs)
+	}
+
+	// database call to find the user and verify credentials and get count
+	id, count, err := h.service.LoginFromApple(req.AppleID)
+	if err != nil {
+		return err
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id, count)
+	c.Response().Header.Add("access_token", access)
+	c.Response().Header.Add("refresh_token", refresh)
+	return err
+}
+
 func (h *Handler) Test(c *fiber.Ctx) error {
 	return c.SendString("Authorized!")
 }

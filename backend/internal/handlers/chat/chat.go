@@ -1,8 +1,6 @@
 package chat
 
 import (
-	"time"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,11 +26,9 @@ func (h *Handler) CreateChat(c *fiber.Ctx) error {
 	}
 
 	doc := ChatDocument{
-		ID:        primitive.NewObjectID(),
-		Field1:    params.Field1,
-		Field2:    params.Field2,
-		Picture:   params.Picture,
-		Timestamp: time.Now(),
+		Sender:  params.Sender,
+		Room:    params.Room,
+		Content: params.Content,
 	}
 
 	_, err := h.service.CreateChat(&doc)

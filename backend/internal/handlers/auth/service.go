@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"errors"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
@@ -83,6 +84,19 @@ func (s *Service) LoginFromCredentials(email string, password string) (string, f
 	}
 	if user.Password != password {
 		return "", 0, fiber.NewError(400, "Not Authorized, Invalid Credentials")
+	}
+	return user.ID, user.Count, nil
+}
+
+func (s *Service) LoginFromApple(apple_id string) (string, float64, error) {
+
+	var user User
+	err := s.users.FindOne(context.Background(), bson.M{"apple_id": apple_id}).Decode(&user)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return "", 0, fiber.NewError(404, "Account does not exist")
+	}
+	if err != nil {
+		return "", 0, err
 	}
 	return user.ID, user.Count, nil
 }
