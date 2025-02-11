@@ -90,7 +90,7 @@ func run(stderr io.Writer, args []string) {
 		fatal(ctx, "Failed to convert port to int", err)
 	}
 	if err := killProcessOnPort(port); err != nil {
-		slog.LogAttrs(ctx, slog.LevelError, "Failed to kill process on port", slog.Int("port", port), slog.String("error", err.Error()))
+		// slog.LogAttrs(ctx, slog.LevelError, "Failed to kill process on port", slog.Int("port", port), slog.String("error", err.Error()))
 	} else {
 		slog.LogAttrs(ctx, slog.LevelInfo, "Process on port killed successfully", slog.Int("port", port))
 	}

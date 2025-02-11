@@ -1,12 +1,15 @@
 package server
 
 import (
-	"github.com/abhikaboy/GERM-template/internal/handlers/auth"
-	"github.com/abhikaboy/GERM-template/internal/handlers/health"
-	"github.com/abhikaboy/GERM-template/internal/handlers/sample"
-	"github.com/abhikaboy/GERM-template/internal/handlers/socket"
 	"github.com/abhikaboy/GERM-template/internal/sockets"
-	"github.com/abhikaboy/GERM-template/internal/xerr"
+	"github.com/abhikaboy/social-todo/internal/handlers/Chat"
+	"github.com/abhikaboy/social-todo/internal/handlers/Profile"
+	"github.com/abhikaboy/social-todo/internal/handlers/Task"
+	"github.com/abhikaboy/social-todo/internal/handlers/auth"
+	"github.com/abhikaboy/social-todo/internal/handlers/health"
+	"github.com/abhikaboy/social-todo/internal/handlers/socket"
+
+	"github.com/abhikaboy/social-todo/internal/xerr"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -25,7 +28,10 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 
 	health.Routes(app, collections)
 	auth.Routes(app, collections)
-	sample.Routes(app, collections)
+	Profile.Routes(app, collections)
+	Task.Routes(app, collections)
+	Chat.Routes(app, collections)
+
 	socket.Routes(app, collections, stream)
 
 	return app

@@ -9,7 +9,7 @@ type Atlas struct {
 	Environment string `env:"ENVIRONMENT"`
 }
 
-const placeholderURI string = "mongodb+srv://%s:%s@%s.2rzq0.mongodb.net/"
+const placeholderURI string = "mongodb+srv://%s:%s@%s.q2lnn.mongodb.net/"
 
 func (a *Atlas) URI() string {
 	return fmt.Sprintf(placeholderURI, a.User, a.Pass, a.Cluster)
