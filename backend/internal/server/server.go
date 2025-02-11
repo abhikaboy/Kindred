@@ -1,13 +1,13 @@
 package server
 
 import (
-	"github.com/abhikaboy/GERM-template/internal/sockets"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/Chat"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/Profile"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/Task"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/auth"
+	chat "github.com/abhikaboy/SocialToDo/internal/handlers/chat"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/health"
+	profile "github.com/abhikaboy/SocialToDo/internal/handlers/profile"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/socket"
+	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
+	"github.com/abhikaboy/SocialToDo/internal/sockets"
 
 	"github.com/abhikaboy/SocialToDo/internal/xerr"
 	gojson "github.com/goccy/go-json"
@@ -28,9 +28,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 
 	health.Routes(app, collections)
 	auth.Routes(app, collections)
-	Profile.Routes(app, collections)
-	Task.Routes(app, collections)
-	Chat.Routes(app, collections)
+	profile.Routes(app, collections)
+	task.Routes(app, collections)
+	chat.Routes(app, collections)
 
 	socket.Routes(app, collections, stream)
 

@@ -1,3 +1,3 @@
-module social-todo
+module SocialToDo
 
 go 1.23.4

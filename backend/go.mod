@@ -1,4 +1,4 @@
-module github.com/abhikaboy/GERM-template
+module github.com/abhikaboy/SocialToDo
 
 go 1.23.4
 
