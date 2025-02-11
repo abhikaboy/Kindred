@@ -1,0 +1,10 @@
+# jetbrains files
+.idea/
+
+# visual studio code files
+.vscode/
+
+# macos files
+.DS_Store
+.devenv
+node_modules
