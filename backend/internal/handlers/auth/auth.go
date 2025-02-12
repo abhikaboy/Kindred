@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/abhikaboy/SocialToDo/internal/xerr"
@@ -45,11 +46,14 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 func (h *Handler) Register(c *fiber.Ctx) error {
 	var req RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
 	}
 
-	if err := req.Validate(); err != nil {
-		return err
+	slog.Info("Register Request", "request", req)
+
+	errs := xvalidator.Validator.Validate(&req)
+	if len(errs) > 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(errs)
 	}
 
 	id := primitive.NewObjectID().Hex()
@@ -77,7 +81,12 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	err = h.service.CreateUser(user)
-	return err
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
+	}
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "User Created Successfully",
+	})
 }
 
 func (h *Handler) LoginWithApple(c *fiber.Ctx) error {

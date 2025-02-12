@@ -32,15 +32,7 @@ func New(ctx context.Context, cfg config.Atlas) (*DB, error) {
 		return nil, err
 	}
 
-	// Listening to insertions on the requests collection
-	// matchPipeline := bson.D{{
-	// 	Key: "$match",
-	// 	Value: bson.D{
-	// 		{Key: "operationType", Value: "insert"},
-	// 	},
-	// }}
-
-	requestsStream, err := db.Collection("jobs").Watch(ctx, bson.D{},
+	requestsStream, err := db.Collection("users").Watch(ctx, bson.D{},
 		options.ChangeStream().SetFullDocument(options.UpdateLookup))
 
 	if err != nil {

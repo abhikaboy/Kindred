@@ -37,29 +37,29 @@ type User struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8"`
+	Email    string `validate:"required,email" json:"email"`
+	Password string `validate:"required,min=8" json:"password"`
 }
 
 type LoginRequestApple struct {
-	AppleID string `json:"apple_id" validate:"required"`
+	AppleID string `validate:"required" json:"apple_id"`
 }
 
 type LoginRequestGoogle struct {
-	GoogleID string `json:"google_id" validate:"required"`
+	GoogleID string `validate:"required" json:"google_id"`
 }
 
 type RegisterRequestApple struct {
-	AppleID string `json:"apple_id" validate:"required"`
-	Email   string `json:"email" validate:"required,email"`
+	AppleID string `validate:"required" json:"apple_id"`
+	Email   string `validate:"required,email" json:"email"`
 }
 
 type RegisterRequestGoogle struct {
-	GoogleID string `json:"google_id" validate:"required"`
-	Email    string `json:"email" validate:"required,email"`
+	GoogleID string `validate:"required" json:"google_id"`
+	Email    string `validate:"required,email" json:"email"`
 }
 
 type RegisterRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8"`
+	Email    string `validate:"required,email" json:"email"`
+	Password string `validate:"required,min=8" json:"password"`
 }
