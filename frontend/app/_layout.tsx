@@ -42,13 +42,9 @@ export default function RootLayout() {
                             headerShown: false,
                         }}
                     />
+                    <Stack.Screen name="Dev1" />
                     <Stack.Screen name="+not-found" />
-                    <Stack.Screen
-                        name="(onboarding)"
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
+
                 </Stack>
                 <StatusBar style="auto" />
             </AuthProvider>
