@@ -13,6 +13,9 @@ import TrafficLight from "@/components/inputs/TrafficLight";
 import ThemedSlider from "@/components/inputs/ThemedSlider";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import Dropdown from "@/components/inputs/Dropdown";
+import UserInfoRow from "@/components/UserInfo/UserInfoRow";
+import { Icons } from "@/constants/Icons";
+import ReactPills from "@/components/inputs/ReactPills";
 
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -73,6 +76,8 @@ export default function Dev1() {
                 <ThemedSwitch />
                 <TrafficLight />
                 <ThemedSlider />
+                <ReactPills reacted={false} emoji={"🔥"} count={4}></ReactPills>
+                <UserInfoRow name={"Abhik Ray"} username={"beak"} time={2} icon={Icons.luffy}></UserInfoRow>
             </ScrollView>
         </View>
     );

@@ -16,7 +16,7 @@ type Props = {
 const ContactCard = ({ name, icon, handle, following }: Props) => {
     return (
         <TouchableOpacity style={styles.container}>
-            <PreviewIcon icon={icon} />
+            <PreviewIcon size="large" icon={icon} />
             <View style={{ flexDirection: "column", gap: 8, alignItems: "center" }}>
                 <View>
                     <ThemedText style={{ textAlign: "center" }} type="lightBody">
