@@ -13,7 +13,7 @@ import TrafficLight from "@/components/inputs/TrafficLight";
 import ThemedSlider from "@/components/inputs/ThemedSlider";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import Dropdown from "@/components/inputs/Dropdown";
-import UserInfoRow from "@/components/UserInfo/UserInfoRow";
+import UserInfoRow from "@/components/UserInfo/UserInfoRowBase";
 import { Icons } from "@/constants/Icons";
 import ReactPills from "@/components/inputs/ReactPills";
 

@@ -36,7 +36,7 @@ const Home = (props: Props) => {
     }, []);
     return (
         <ThemedView style={{ flex: 1, paddingTop: Dimensions.get("screen").height * 0.12, paddingHorizontal: 24 }}>
-            <View>
+            <View style={{ paddingBottom: 24 }}>
                 <ThemedText type="title" style={{ fontWeight: 700 }}>
                     {timeOfDay}
                 </ThemedText>
@@ -46,7 +46,7 @@ const Home = (props: Props) => {
                 </ThemedText>
             </View>
             <ScrollView>
-                <View style={{ gap: 16, marginTop: 24 }}>
+                <View style={{ gap: 16, marginTop: 0 }}>
                     <ThemedText type="subtitle">Household</ThemedText>
                     <TaskCard content={"do my hw lol"} points={9} priority="high" />
                     <TaskCard content={"do my hw lol"} points={9} priority="low" />

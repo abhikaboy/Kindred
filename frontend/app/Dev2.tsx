@@ -7,6 +7,11 @@ import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { Icons } from "@/constants/Icons";
 import TaskCard from "@/components/cards/TaskCard";
 import PostCard from "@/components/cards/PostCard";
+import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
+import FollowButton from "@/components/inputs/FollowButton";
+import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
+import Entypo from "@expo/vector-icons/Entypo";
+import UserInfoRowTimed from "@/components/UserInfo/UserInfoRowTimed";
 
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -39,6 +44,15 @@ export default function Dev2() {
                     points={9}
                     priority="high"
                 />
+                <UserInfoRowBase
+                    name={"Abhik Ray"}
+                    username={"beak"}
+                    icon={Icons.luffy}
+                    right={<Entypo name="heart" size={24} color="red" />}
+                />
+                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                <UserInfoRowTimed name={"Abhik Ray"} username={"beak"} time={4} icon={Icons.luffy} />
+
                 <PostCard
                     icon={Icons.luffy}
                     name={"Abhik Ray"}

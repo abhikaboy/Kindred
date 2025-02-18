@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { Colors } from "@/constants/Colors";
-import UserInfoRow from "../UserInfo/UserInfoRow";
+import UserInfoRow from "../UserInfo/UserInfoRowBase";
 import ReactPills from "../inputs/ReactPills";
+import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 
 type SlackReaction = {
     emoji: string;
@@ -23,7 +24,7 @@ type Props = {
     id?: string;
 };
 
-const TaskCard = ({ icon, name, username, caption, time, priority, points, timeTaken, reactions, image }: Props) => {
+const PostCard = ({ icon, name, username, caption, time, priority, points, timeTaken, reactions, image }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
 
     return (
@@ -32,9 +33,8 @@ const TaskCard = ({ icon, name, username, caption, time, priority, points, timeT
                 style={{
                     flexDirection: "column",
                     marginVertical: 15,
-                    width: Dimensions.get("window").width * 0.6,
                 }}>
-                <UserInfoRow name={name} username={username} time={time} icon={icon}></UserInfoRow>
+                <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
                 <View style={styles.col}>
                     <ThemedText type="defaultSemiBold">{caption}</ThemedText>
                     <View style={styles.row}>
@@ -50,7 +50,7 @@ const TaskCard = ({ icon, name, username, caption, time, priority, points, timeT
                     {reactions.map((react, index) => (
                         <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={false}></ReactPills>
                     ))}
-                    "<ReactPills emoji="+" count={0} reacted={false}></ReactPills>
+                    <ReactPills emoji="+" count={0} reacted={false}></ReactPills>
                 </View>
                 <TouchableOpacity>
                     <ThemedText style={{ paddingTop: 15 }} type="lightBody">
@@ -76,7 +76,7 @@ const TaskCard = ({ icon, name, username, caption, time, priority, points, timeT
     );
 };
 
-export default TaskCard;
+export default PostCard;
 
 const styles = StyleSheet.create({
     image: {

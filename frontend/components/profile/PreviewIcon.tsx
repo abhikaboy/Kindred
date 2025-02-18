@@ -9,7 +9,7 @@ type Props = {
 
 const sizeOfIcon = {
     small: 35,
-    medium: 52,
+    medium: 48,
     large: 64,
 };
 const PreviewIcon = ({ icon, size }: Props) => {

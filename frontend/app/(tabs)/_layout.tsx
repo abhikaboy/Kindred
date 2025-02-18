@@ -21,7 +21,7 @@ export default function TabLayout() {
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+                tabBarActiveTintColor: Colors.dark.text,
                 headerShown: false,
                 headerTitleStyle: {
                     fontFamily: "Outfit",
@@ -36,6 +36,14 @@ export default function TabLayout() {
                 }),
             }}>
             <Tabs.Screen
+                name="home"
+                options={{
+                    title: "Home",
+                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color="gray" />,
+                    href: "home",
+                }}
+            />
+            <Tabs.Screen
                 name="playground"
                 options={{
                     title: "Playground",
@@ -49,14 +57,6 @@ export default function TabLayout() {
                     title: "Profile",
                     tabBarIcon: ({ color }) => <Octicons name="person" size={24} color="gray" />,
                     href: "profile",
-                }}
-            />
-            <Tabs.Screen
-                name="home"
-                options={{
-                    title: "Home",
-                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color="gray" />,
-                    href: "home",
                 }}
             />
         </Tabs>

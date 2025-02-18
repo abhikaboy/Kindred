@@ -25,6 +25,7 @@ const Activity = (props: Props) => {
                     type="title"
                     style={{
                         textAlign: "center",
+                        fontWeight: "bold",
                     }}>
                     Coffee's Activity
                 </ThemedText>
