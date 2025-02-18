@@ -13,6 +13,7 @@ export const Colors = {
         success: "#5CFF95",
         error: "#FF5C5F",
         warning: "#FFFF5C",
+        caption: "#9D9D9D",
 
         tint: tintColorDark,
         icon: "#9BA1A6",

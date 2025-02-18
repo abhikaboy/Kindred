@@ -37,7 +37,9 @@ const index = (props: Props) => {
                     flexDirection: "column",
                 }}>
                 <View style={{ display: "flex", alignSelf: "flex-start" }}>
-                    <ThemedText type="hero">PRODUCTIVE MEETS SOCIAL</ThemedText>
+                    <ThemedText type="hero" numberOfLines={2} adjustsFontSizeToFit={true}>
+                        PRODUCTIVE MEETS SOCIAL
+                    </ThemedText>
                     <ThemedText type="lightBody">
                         Become more productive and organized than ever before while staying connected with all your
                         friends

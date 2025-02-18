@@ -16,7 +16,7 @@ export default function FollowButton({ following }: Props) {
             style={{
                 backgroundColor: follow ? Colors.dark.primaryPressed : Colors.dark.primary,
                 borderRadius: 100,
-                paddingVertical: 16,
+                paddingVertical: 12,
                 paddingHorizontal: 20,
                 width: Dimensions.get("screen").width * 0.3,
                 minWidth: Dimensions.get("screen").width * 0.3,

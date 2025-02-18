@@ -19,18 +19,36 @@ export default function Playground() {
                 />
             }>
             <ThemedText style={{ fontFamily: "Outfit" }}>This is the content of the playground page.</ThemedText>
-            <Link href={"/Dev1"} style={{
-                color: "#fff",
-                fontSize: 16,
-            }}>Development Environment 1</Link>
-            <Link href={"/Dev2"} style={{
-                color: "#fff",
-                fontSize: 16,
-            }}>Development Environment 2</Link>
-            <Link href={"/Dev3"} style={{
-                color: "#fff",
-                fontSize: 16,
-            }}>Development Environment 3</Link>
+            <Link
+                href={"/Dev1"}
+                style={{
+                    color: "#fff",
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    fontFamily: "Outfit",
+                }}>
+                Development Environment 1 - Inputs
+            </Link>
+            <Link
+                href={"/Dev2"}
+                style={{
+                    color: "#fff",
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    fontFamily: "Outfit",
+                }}>
+                Development Environment 2
+            </Link>
+            <Link
+                href={"/Dev3"}
+                style={{
+                    color: "#fff",
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    fontFamily: "Outfit",
+                }}>
+                Development Environment 3
+            </Link>
         </ParallaxScrollView>
     );
 }

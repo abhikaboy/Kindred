@@ -8,7 +8,7 @@ import { Colors } from "@/constants/Colors";
 export type ThemedTextProps = TextProps & {
     lightColor?: string;
     darkColor?: string;
-    type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link" | "hero" | "lightBody";
+    type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link" | "hero" | "lightBody" | "caption";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
@@ -25,6 +25,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "link" ? styles.link : undefined,
                 type === "hero" ? { fontSize: 48, fontWeight: "bold", color: Colors.dark.header } : undefined,
                 type === "lightBody" ? styles.lightBody : undefined,
+                type === "caption" ? styles.caption : undefined,
                 style,
             ]}
             {...rest}
@@ -37,6 +38,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 24,
         fontFamily: "Outfit",
+    },
+    caption: {
+        fontSize: 14,
+        fontFamily: "Outfit",
+        color: Colors.dark.caption,
     },
     lightBody: {
         fontSize: 16,
