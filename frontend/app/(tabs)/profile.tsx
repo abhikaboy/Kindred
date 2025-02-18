@@ -11,21 +11,47 @@ import FollowButton from "@/components/inputs/FollowButton";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import TaskCard from "@/components/cards/TaskCard";
 import { useRouter } from "expo-router";
+import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 
 export default function Profile() {
     const router = useRouter();
+    const scrollRef = useAnimatedRef<Animated.ScrollView>();
+    const scrollOffset = useScrollViewOffset(scrollRef);
+
+    const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
+    const headerAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                {
+                    translateY: interpolate(
+                        scrollOffset.value,
+                        [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
+                        [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.45]
+                    ),
+                },
+                {
+                    scale: interpolate(scrollOffset.value, [-HEADER_HEIGHT, 0, HEADER_HEIGHT], [1.5, 1, 1]),
+                },
+            ],
+        };
+    });
+
     return (
-        <ScrollView
+        <Animated.ScrollView
+            ref={scrollRef}
+            scrollEventThrottle={16}
             style={{
                 backgroundColor: Colors.dark.background,
                 padding: 0,
             }}>
-            <LinearGradient
-                // Background Linear Gradient
-                colors={["transparent", Colors.dark.background]}
-                style={[styles.headerImage, { position: "absolute", top: 0, left: 0, zIndex: 2 }]}
-            />
-            <Image src={Icons.luffy} style={styles.headerImage} />
+            <Animated.View style={[headerAnimatedStyle]}>
+                <LinearGradient
+                    // Background Linear Gradient
+                    colors={["transparent", Colors.dark.background]}
+                    style={[styles.headerImage, { position: "absolute", top: 0, left: 0, zIndex: 2 }]}
+                />
+                <Animated.Image src={Icons.luffy} style={[styles.headerImage]} />
+            </Animated.View>
             <View
                 style={{
                     top: Dimensions.get("window").height * 0.4 - 50,
@@ -120,7 +146,7 @@ export default function Profile() {
                     <TaskCard content={"do my hw lol"} points={9} priority="high" />
                 </View>
             </View>
-        </ScrollView>
+        </Animated.ScrollView>
     );
 }
 

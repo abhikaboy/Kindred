@@ -36,7 +36,7 @@ const TaskCard = ({ icon, name, username, caption, time, priority, points, timeT
                 }}>
                 <UserInfoRow name={name} username={username} time={time} icon={icon}></UserInfoRow>
                 <View style={styles.col}>
-                    <ThemedText type="default">{caption}</ThemedText>
+                    <ThemedText type="defaultSemiBold">{caption}</ThemedText>
                     <View style={styles.row}>
                         <ThemedText type="lightBody">❗ {priority}</ThemedText>
                         <ThemedText type="lightBody">💪 {points} pts</ThemedText>
