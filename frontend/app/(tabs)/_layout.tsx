@@ -52,6 +52,14 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
+                name="search"
+                options={{
+                    title: "Search",
+                    tabBarIcon: ({ color }) => <Octicons name="search" size={24} color="gray" />,
+                    href: "search",
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     title: "Profile",
