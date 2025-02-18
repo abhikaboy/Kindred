@@ -18,7 +18,17 @@ interface SearchBoxProps extends TextInputProps {
     setFocused?: (focused: boolean) => void;
 }
 
-export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, setFocused, ...rest }: SearchBoxProps) {
+export function SearchBox({
+    value,
+    placeholder,
+    onChangeText,
+    onSubmit,
+    icon,
+    recent,
+    name,
+    setFocused,
+    ...rest
+}: SearchBoxProps) {
     const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
     const [inputHeight, setInputHeight] = useState(0);
     const textColor = useThemeColor({ light: "#000", dark: "#fff" }, "text");
@@ -65,6 +75,7 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, s
             <View style={styles.container}>
                 <TextInput
                     id={"search-input"}
+                    placeholder={placeholder}
                     ref={inputRef}
                     onSubmitEditing={onSubmitEditing}
                     onFocus={() => fetchRecents()}

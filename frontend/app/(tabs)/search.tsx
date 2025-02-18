@@ -8,7 +8,14 @@ import ContactCard from "@/components/cards/ContactCard";
 import { Icons } from "@/constants/Icons";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import * as SMS from "expo-sms";
-import Animated, { FadeOut, FadeOutDown, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+    FadeIn,
+    FadeOut,
+    FadeOutDown,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
+} from "react-native-reanimated";
 import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 
 type Props = {};
@@ -40,7 +47,7 @@ const Search = (props: Props) => {
 
     useEffect(() => {
         opacity.value = withTiming(focused ? 0.05 : 1);
-    }, [focused, opacity]);
+    }, [focused]);
 
     return (
         <ThemedView
@@ -51,15 +58,15 @@ const Search = (props: Props) => {
             <View style={{ gap: 16 }}>
                 <SearchBox
                     value={searchTerm}
-                    placeholder={"Search"}
+                    placeholder={"Search for your friends!"}
                     onChangeText={setSearchTerm}
                     onSubmit={onSubmit}
                     recent={true}
                     name={"search-page"}
                     setFocused={setFocused}
                 />
-                {searched && (
-                    <Animated.View style={focusStyle} exiting={FadeOut}>
+                {!searched && (
+                    <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
                         <ThemedText type="subtitle">Contacts</ThemedText>
                         <ScrollView horizontal={true} style={{ gap: 16 }}>
                             <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
@@ -79,7 +86,7 @@ const Search = (props: Props) => {
                         </View>
                     </Animated.View>
                 )}
-                {!searched && (
+                {searched && (
                     <Animated.View style={[focusStyle]} exiting={FadeOut}>
                         <ThemedText type="subtitle">Results</ThemedText>
                         <ScrollView style={{ marginTop: 20, minHeight: "100%" }} contentContainerStyle={{ gap: 20 }}>
