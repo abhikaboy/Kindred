@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity } from "react-native";
+import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Touchable } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRecentSearch } from "@/hooks/useRecentSearch";
+import { Colors } from "@/constants/Colors";
+import { IconSymbol } from "./ui/IconSymbol";
+import Octicons from "@expo/vector-icons/Octicons";
+import Entypo from "@expo/vector-icons/Entypo";
 
 interface SearchBoxProps extends TextInputProps {
     value: string;
@@ -14,7 +18,7 @@ interface SearchBoxProps extends TextInputProps {
 }
 
 export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, ...rest }: SearchBoxProps) {
-    const { getRecents, appendSearch } = useRecentSearch(name);
+    const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
     const [inputHeight, setInputHeight] = useState(0);
     const textColor = useThemeColor({ light: "#000", dark: "#fff" }, "text");
     const inputRef = useRef<TextInput>(null);
@@ -27,11 +31,14 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
     async function clearRecents() {
         setRecentItems([]);
     }
+    async function deleteRecentItem(term: string) {
+        deleteRecent(term).then(() => fetchRecents());
+    }
 
     useEffect(() => {
         if (inputRef.current) {
             inputRef.current?.measureInWindow((height) => {
-                setInputHeight(height + Dimensions.get("window").height * 0.01);
+                setInputHeight(height + Dimensions.get("window").height * 0.02);
             });
         }
     }, [inputRef]);
@@ -57,12 +64,13 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
                     onSubmitEditing={onSubmitEditing}
                     onFocus={() => fetchRecents()}
                     onBlur={() => clearRecents()}
+                    onEndEditing={() => clearRecents()}
                     value={value}
                     onChangeText={onChangeText}
                     {...rest}
                     style={{ ...styles.input, color: textColor }}
                 />
-                {icon && icon}
+                <Octicons name="search" size={24} color="white" />
             </View>
             {recent && (
                 <View style={{ ...styles.recentsContainer, top: inputHeight }}>
@@ -77,7 +85,13 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
                                     onSubmit();
                                     appendSearch(term);
                                 }}>
-                                <ThemedText>{term}</ThemedText>
+                                <View style={{ flexDirection: "row", gap: 10 }}>
+                                    <Octicons name="search" size={24} color="white" />
+                                    <ThemedText>{term}</ThemedText>
+                                </View>
+                                <TouchableOpacity onPress={() => deleteRecentItem(term)}>
+                                    <Entypo name="cross" size={24} color="white" />
+                                </TouchableOpacity>
                             </TouchableOpacity>
                         );
                     })}
@@ -93,25 +107,34 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         position: "absolute",
         width: "100%",
+        backgroundColor: Colors["dark"].background,
+        zIndex: 10,
     },
     recent: {
         width: "100%",
-        padding: 16,
-        paddingVertical: 4,
-        backgroundColor: "#ffffff50",
+        padding: 20,
+        paddingVertical: 16,
+        backgroundColor: Colors.dark.background,
+        flexDirection: "row",
         flex: 1,
+        gap: 12,
+        justifyContent: "space-between",
     },
     container: {
         flexDirection: "row",
         alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#DDD",
+        width: "100%",
         borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        backgroundColor: "#ffffff05",
     },
     input: {
         flex: 1,
+        fontFamily: "Outfit",
+        fontSize: 16,
+        alignItems: "flex-start",
+        zIndex: 5,
     },
     icon: {
         marginLeft: 8,

@@ -3,15 +3,16 @@ import { Text, type TextProps, StyleSheet } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React from "react";
+import { Colors } from "@/constants/Colors";
 
 export type ThemedTextProps = TextProps & {
     lightColor?: string;
     darkColor?: string;
-    type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link";
+    type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link" | "hero" | "lightBody";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
-    const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
+    const color = Colors.dark.text;
 
     return (
         <Text
@@ -22,6 +23,8 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
                 type === "subtitle" ? styles.subtitle : undefined,
                 type === "link" ? styles.link : undefined,
+                type === "hero" ? { fontSize: 48, fontWeight: "bold", color: Colors.dark.header } : undefined,
+                type === "lightBody" ? styles.lightBody : undefined,
                 style,
             ]}
             {...rest}
@@ -34,6 +37,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 24,
         fontFamily: "Outfit",
+    },
+    lightBody: {
+        fontSize: 16,
+        lineHeight: 24,
+        fontFamily: "Outfit",
+        fontWeight: 300,
     },
     defaultSemiBold: {
         fontSize: 20,
