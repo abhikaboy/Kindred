@@ -73,4 +73,9 @@ const styles = StyleSheet.create({
         color: "#444444",
         fontFamily: "Outfit",
     },
+    tiny: {
+        fontSize: 12,
+        color: "#FFFFFF",
+        fontFamily: "Outfit",
+    },
 });
