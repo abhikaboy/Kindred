@@ -5,6 +5,7 @@ import { Colors } from "@/constants/Colors";
 import ContactCard from "@/components/cards/ContactCard";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { Icons } from "@/constants/Icons";
+import TaskCard from "@/components/cards/TaskCard";
 
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -32,6 +33,11 @@ export default function Dev2() {
                     <ContactCard name="Latte" icon={Icons.latte} handle="latte" following={false} />
                 </ScrollView>
                 <ThemedCalendar />
+                <TaskCard
+                    content="Finish your homework bitch. Finish your homework bitch.Finish your homework bitch. "
+                    points={9}
+                    priority="high"
+                />
             </ScrollView>
         </View>
     );
