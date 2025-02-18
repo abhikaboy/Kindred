@@ -38,13 +38,14 @@ export default function RootLayout() {
                     screenOptions={{
                         headerShown: false,
                     }}>
-                    <Stack.Screen name="(tabs)" options={{
+                    <Stack.Screen
+                        name="(tabs)"
+                        options={{
                             headerShown: false,
                         }}
                     />
                     <Stack.Screen name="Dev1" />
                     <Stack.Screen name="+not-found" />
-
                 </Stack>
                 <StatusBar style="auto" />
             </AuthProvider>

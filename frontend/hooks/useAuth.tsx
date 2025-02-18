@@ -5,7 +5,6 @@ async function getUserByAppleAccountID(appleAccountID: string) {
     const url = process.env.EXPO_PUBLIC_API_URL + "/users/aaid/" + appleAccountID;
     const response = await fetch(url, {
         method: "GET",
-
     });
     const user = await response.json();
     return user;
@@ -14,12 +13,7 @@ async function getUserByAppleAccountID(appleAccountID: string) {
 interface AuthContextType {
     user: any | null;
     login: (appleAccountID: string) => void;
-    register: (
-        firstName: string,
-        lastName: string,
-        email: string,
-        appleAccountID: string,
-    ) => any;
+    register: (firstName: string, lastName: string, email: string, appleAccountID: string) => any;
     logout: () => void;
     refresh: () => void;
 }
@@ -29,13 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<any | null>(null);
 
-
-    async function register(
-        firstName: string,
-        lastName: string,
-        email: string,
-        appleAccountID: string,
-    ) {
+    async function register(firstName: string, lastName: string, email: string, appleAccountID: string) {
         const url = process.env.EXPO_PUBLIC_API_URL;
         console.log(url);
         try {
@@ -63,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function login(appleAccountID: string) {
         const userRes = await getUserByAppleAccountID(appleAccountID);
 
-
         if (userRes) {
             setUser({ ...userRes });
             return { ...userRes };
@@ -81,11 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             login(user.appleAccountID);
         }
     }
-    return (
-        <AuthContext.Provider value={{ user, register, login, logout, refresh}}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={{ user, register, login, logout, refresh }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

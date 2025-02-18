@@ -48,8 +48,8 @@ export default function SignUpButton({ isMechanic }: { isMechanic: boolean }) {
                     if (e.code === "ERR_REQUEST_CANCELED") {
                         console.log("they cancelled");
                     } else {
-                        console.log(e.code)
-                        console.log(e)
+                        console.log(e.code);
+                        console.log(e);
                         alert("An unexpected error occurred");
                     }
                 }
