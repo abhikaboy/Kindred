@@ -15,7 +15,7 @@ export default function Dev2() {
                 backgroundColor: Colors.dark.background,
                 height: Dimensions.get("screen").height,
                 flex: 1,
-                paddingTop: Dimensions.get("screen").height * 0.1,
+                paddingTop: Dimensions.get("screen").height * 0.12,
                 paddingHorizontal: 24,
                 gap: 16,
             }}>

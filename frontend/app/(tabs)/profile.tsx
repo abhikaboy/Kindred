@@ -99,7 +99,7 @@ export default function Profile() {
                         ))}
                     </View>
                     <TouchableOpacity
-                        onPress={() => router.push("/activity")}
+                        onPress={() => router.push("/Activity")}
                         style={{
                             alignSelf: "flex-end",
                         }}>
