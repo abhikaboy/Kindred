@@ -3,6 +3,7 @@ import React from "react";
 import PreviewIcon from "../profile/PreviewIcon";
 import { ThemedText } from "../ThemedText";
 import FollowButton from "../inputs/FollowButton";
+import { Colors } from "@/constants/Colors";
 
 type Props = {
     name: string;
@@ -36,7 +37,7 @@ export default ContactCard;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#d9d9d915",
+        backgroundColor: Colors.dark.lightened,
         borderRadius: 10,
         padding: 16,
         margin: 8,

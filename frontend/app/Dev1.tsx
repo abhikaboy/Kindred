@@ -11,6 +11,8 @@ import NextButton from "@/components/inputs/NextButton";
 import ThemedSwitch from "@/components/inputs/ThemedSwitch";
 import TrafficLight from "@/components/inputs/TrafficLight";
 import ThemedSlider from "@/components/inputs/ThemedSlider";
+import ThemedInput from "@/components/inputs/ThemedInput";
+import Dropdown from "@/components/inputs/Dropdown";
 
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -32,6 +34,8 @@ export default function Dev1() {
                     gap: 16,
                 }}>
                 <PrimaryButton title="Button" onPress={() => {}} />
+                <Dropdown />
+                <ThemedInput />
                 <SearchBox
                     value={searchTerm}
                     placeholder="Search"
