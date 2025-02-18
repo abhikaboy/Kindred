@@ -6,6 +6,7 @@ import ContactCard from "@/components/cards/ContactCard";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { Icons } from "@/constants/Icons";
 import TaskCard from "@/components/cards/TaskCard";
+import PostCard from "@/components/cards/PostCard";
 
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -38,6 +39,21 @@ export default function Dev2() {
                     points={9}
                     priority="high"
                 />
+                <PostCard
+                    icon={Icons.luffy}
+                    name={"Abhik Ray"}
+                    username={"beak"}
+                    caption={"this is my first post ever wow"}
+                    time={3}
+                    priority={"high"}
+                    points={10}
+                    timeTaken={2}
+                    reactions={[
+                        { emoji: "🔥", count: 3 },
+                        { emoji: "😨", count: 3 },
+                        { emoji: "🤡", count: 3 },
+                    ]}
+                    image={Icons.latte}></PostCard>
             </ScrollView>
         </View>
     );
