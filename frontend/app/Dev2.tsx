@@ -3,6 +3,7 @@ import React from "react";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import ContactCard from "@/components/cards/ContactCard";
+import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { Icons } from "@/constants/Icons";
 
 export default function Dev2() {
@@ -30,6 +31,7 @@ export default function Dev2() {
                     <ContactCard name="Coffee" icon={Icons.coffee} handle="coffee" following={true} />
                     <ContactCard name="Latte" icon={Icons.latte} handle="latte" following={false} />
                 </ScrollView>
+                <ThemedCalendar />
             </ScrollView>
         </View>
     );
