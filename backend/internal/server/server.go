@@ -1,10 +1,12 @@
 package server
 
 import (
+	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/auth"
+	category "github.com/abhikaboy/SocialToDo/internal/handlers/category"
 	chat "github.com/abhikaboy/SocialToDo/internal/handlers/chat"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/health"
-	profile "github.com/abhikaboy/SocialToDo/internal/handlers/profile"
+	post "github.com/abhikaboy/SocialToDo/internal/handlers/post"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/socket"
 	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
 	"github.com/abhikaboy/SocialToDo/internal/sockets"
@@ -28,9 +30,13 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 
 	health.Routes(app, collections)
 	auth.Routes(app, collections)
-	profile.Routes(app, collections)
+	
 	task.Routes(app, collections)
 	chat.Routes(app, collections)
+	category.Routes(app, collections)
+	post.Routes(app, collections)
+	activity.Routes(app, collections)
+
 
 	socket.Routes(app, collections, stream)
 

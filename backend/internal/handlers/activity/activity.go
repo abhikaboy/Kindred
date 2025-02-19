@@ -1,10 +1,11 @@
-package profile
+
+package Activity
 
 import (
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -12,8 +13,8 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) CreateProfile(c *fiber.Ctx) error {
-	var params CreateProfileParams
+func (h *Handler) CreateActivity(c *fiber.Ctx) error {
+	var params CreateActivityParams
 	if err := c.BodyParser(&params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -27,7 +28,7 @@ func (h *Handler) CreateProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	doc := ProfileDocument{
+	doc := ActivityDocument{
 		ID:        primitive.NewObjectID(),
 		Field1:    params.Field1,
 		Field2:    params.Field2,
@@ -35,28 +36,28 @@ func (h *Handler) CreateProfile(c *fiber.Ctx) error {
 		Timestamp: time.Now(),
 	}
 
-	_, err := h.service.CreateProfile(&doc)
-	if err != nil {
+	_, err := h.service.CreateActivity(&doc); 
+    if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create Profile",
+			"error": "Failed to create Activity",
 		})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(doc)
 }
 
-func (h *Handler) GetProfiles(c *fiber.Ctx) error {
-	Profiles, err := h.service.GetAllProfiles()
+func (h *Handler) GetActivitys(c *fiber.Ctx) error {
+	Activitys, err := h.service.GetAllActivitys()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch Profiles",
+			"error": "Failed to fetch Activitys",
 		})
 	}
 
-	return c.JSON(Profiles)
+	return c.JSON(Activitys)
 }
 
-func (h *Handler) GetProfile(c *fiber.Ctx) error {
+func (h *Handler) GetActivity(c *fiber.Ctx) error {
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -64,17 +65,17 @@ func (h *Handler) GetProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	Profile, err := h.service.GetProfileByID(id)
+	Activity, err := h.service.GetActivityByID(id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Profile not found",
+			"error": "Activity not found",
 		})
 	}
 
-	return c.JSON(Profile)
+	return c.JSON(Activity)
 }
 
-func (h *Handler) UpdatePartialProfile(c *fiber.Ctx) error {
+func (h *Handler) UpdatePartialActivity(c *fiber.Ctx) error {
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -82,23 +83,23 @@ func (h *Handler) UpdatePartialProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	var update UpdateProfileDocument
+	var update UpdateActivityDocument
 	if err := c.BodyParser(&update); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	if err := h.service.UpdatePartialProfile(id, update); err != nil {
+	if err := h.service.UpdatePartialActivity(id, update); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update Profile",
+			"error": "Failed to update Activity",
 		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
 }
 
-func (h *Handler) DeleteProfile(c *fiber.Ctx) error {
+func (h *Handler) DeleteActivity(c *fiber.Ctx) error {
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -106,9 +107,9 @@ func (h *Handler) DeleteProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.service.DeleteProfile(id); err != nil {
+	if err := h.service.DeleteActivity(id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete Profile",
+			"error": "Failed to delete Activity",
 		})
 	}
 

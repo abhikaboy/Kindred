@@ -1,4 +1,4 @@
-package task
+package Activity
 
 import (
 	"context"
@@ -13,20 +13,20 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Tasks: collections["categories"],
+		Activitys: collections["activity"],
 	}
 }
 
-// GetAllTasks fetches all Task documents from MongoDB
-func (s *Service) GetAllTasks() ([]TaskDocument, error) {
+// GetAllActivitys fetches all Activity documents from MongoDB
+func (s *Service) GetAllActivitys() ([]ActivityDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Tasks.Find(ctx, bson.M{})
+	cursor, err := s.Activitys.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	var results []TaskDocument
+	var results []ActivityDocument
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -34,31 +34,31 @@ func (s *Service) GetAllTasks() ([]TaskDocument, error) {
 	return results, nil
 }
 
-// GetTaskByID returns a single Task document by its ObjectID
-func (s *Service) GetTaskByID(id primitive.ObjectID) (*TaskDocument, error) {
+// GetActivityByID returns a single Activity document by its ObjectID
+func (s *Service) GetActivityByID(id primitive.ObjectID) (*ActivityDocument, error) {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
-	var Task TaskDocument
-	err := s.Tasks.FindOne(ctx, filter).Decode(&Task)
+	var Activity ActivityDocument
+	err := s.Activitys.FindOne(ctx, filter).Decode(&Activity)
 
 	if err == mongo.ErrNoDocuments {
-		// No matching Task found
+		// No matching Activity found
 		return nil, mongo.ErrNoDocuments
 	} else if err != nil {
 		// Different error occurred
 		return nil, err
 	}
 
-	return &Task, nil
+	return &Activity, nil
 }
 
-// InsertTask adds a new Task document
-func (s *Service) CreateTask(r *TaskDocument) (*TaskDocument, error) {
+// InsertActivity adds a new Activity document
+func (s *Service) CreateActivity(r *ActivityDocument) (*ActivityDocument, error) {
 	ctx := context.Background()
 	// Insert the document into the collection
 
-	result, err := s.Tasks.InsertOne(ctx, r)
+	result, err := s.Activitys.InsertOne(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -66,13 +66,13 @@ func (s *Service) CreateTask(r *TaskDocument) (*TaskDocument, error) {
 	// Cast the inserted ID to ObjectID
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
-	slog.LogAttrs(ctx, slog.LevelInfo, "Task inserted", slog.String("id", id.Hex()))
+	slog.LogAttrs(ctx, slog.LevelInfo, "Activity inserted", slog.String("id", id.Hex()))
 
 	return r, nil
 }
 
-// UpdatePartialTask updates only specified fields of a Task document by ObjectID.
-func (s *Service) UpdatePartialTask(id primitive.ObjectID, updated UpdateTaskDocument) error {
+// UpdatePartialActivity updates only specified fields of a Activity document by ObjectID.
+func (s *Service) UpdatePartialActivity(id primitive.ObjectID, updated UpdateActivityDocument) error {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
@@ -83,16 +83,17 @@ func (s *Service) UpdatePartialTask(id primitive.ObjectID, updated UpdateTaskDoc
 
 	update := bson.M{"$set": updateFields}
 
-	_, err = s.Tasks.UpdateOne(ctx, filter, update)
+	_, err = s.Activitys.UpdateOne(ctx, filter, update)
 	return err
 }
 
-// DeleteTask removes a Task document by ObjectID.
-func (s *Service) DeleteTask(id primitive.ObjectID) error {
+// DeleteActivity removes a Activity document by ObjectID.
+func (s *Service) DeleteActivity(id primitive.ObjectID) error {
 	ctx := context.Background()
 
 	filter := bson.M{"_id": id}
 
-	_, err := s.Tasks.DeleteOne(ctx, filter)
+	_, err := s.Activitys.DeleteOne(ctx, filter)
 	return err
 }
+
