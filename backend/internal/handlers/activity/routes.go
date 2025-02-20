@@ -9,20 +9,19 @@ import (
 Router maps endpoints to handlers
 */
 func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
-    service := newService(collections)
-    handler := Handler{service}
+	service := newService(collections)
+	handler := Handler{service}
 
-    // Add a group for API versioning
-    apiV1 := app.Group("/api/v1")
+	// Add a group for API versioning
+	apiV1 := app.Group("/api/v1")
 
-    // Add Sample group under API Version 1
-    Activitys := apiV1.Group("/Activity")
+	// Add Sample group under API Version 1
+	Activitys := apiV1.Group("/Activity")
 
-    Activitys.Post("/", handler.CreateActivity)
-    Activitys.Get("/", handler.GetActivitys)
-    Activitys.Get("/:id", handler.GetActivity)
-    Activitys.Patch("/:id", handler.UpdatePartialActivity)
-    Activitys.Delete("/:id", handler.DeleteActivity)
-
+	Activitys.Post("/", handler.CreateActivity)
+	Activitys.Get("/", handler.GetActivitys)
+	Activitys.Get("/:id", handler.GetActivity)
+	Activitys.Patch("/:id", handler.UpdatePartialActivity)
+	Activitys.Delete("/:id", handler.DeleteActivity)
 
 }

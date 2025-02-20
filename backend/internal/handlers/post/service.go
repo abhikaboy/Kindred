@@ -1,4 +1,3 @@
-
 package Post
 
 import (
@@ -97,4 +96,3 @@ func (s *Service) DeletePost(id primitive.ObjectID) error {
 	_, err := s.Posts.DeleteOne(ctx, filter)
 	return err
 }
-

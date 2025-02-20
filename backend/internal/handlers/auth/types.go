@@ -2,7 +2,11 @@ package auth
 
 import (
 	"github.com/abhikaboy/SocialToDo/internal/config"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
+	categories "github.com/abhikaboy/SocialToDo/internal/handlers/category"
 )
 
 type Service struct {
@@ -26,14 +30,22 @@ type TokenResponse struct {
 }
 
 type User struct {
+	ID           primitive.ObjectID  `bson:"_id"`
 	Email        string  `bson:"email"`
+	Phone        string  `bson:"phone"`
 	Password     string  `bson:"password"`
-	ID           string  `bson:"_id"`
 	AppleID      string  `bson:"apple_id,omitempty"`
 	GoogleID     string  `bson:"google_id,omitempty"`
 	RefreshToken string  `bson:"refresh_token"`
 	TokenUsed    bool    `bson:"token_used"`
 	Count        float64 `bson:"count"`
+
+	Categories []categories.CategoryDocument `bson:"categories"`
+	Friends    []primitive.ObjectID `bson:"friends"`
+	TasksComplete float64            `bson:"tasks_complete"`
+	RecentActivity []activity.ActivityDocument `bson:"recent_activity"`
+
+
 }
 
 type LoginRequest struct {

@@ -30,13 +30,12 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 
 	health.Routes(app, collections)
 	auth.Routes(app, collections)
-	
+
 	task.Routes(app, collections)
 	chat.Routes(app, collections)
 	category.Routes(app, collections)
 	post.Routes(app, collections)
 	activity.Routes(app, collections)
-
 
 	socket.Routes(app, collections, stream)
 

@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"strings"
 
+	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
+	categories "github.com/abhikaboy/SocialToDo/internal/handlers/category"
 	"github.com/abhikaboy/SocialToDo/internal/xerr"
 	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
 	"github.com/gofiber/fiber/v2"
@@ -37,7 +39,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return err
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id, count)
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
 	return err
@@ -56,9 +58,9 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(errs)
 	}
 
-	id := primitive.NewObjectID().Hex()
+	id := primitive.NewObjectID()
 
-	access, refresh, err := h.service.GenerateTokens(id, 0) // new users use count = 0
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), 0) // new users use count = 0
 
 	if err != nil {
 		return err
@@ -74,6 +76,12 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		RefreshToken: refresh,
 		TokenUsed:    false,
 		Count:        0,
+
+		Categories: make([]categories.CategoryDocument, 0),
+		Friends:    make([]primitive.ObjectID, 0),
+		TasksComplete: 0,
+		RecentActivity: make([]activity.ActivityDocument, 0),
+
 	}
 
 	if err = user.Validate(); err != nil {
@@ -107,7 +115,7 @@ func (h *Handler) LoginWithApple(c *fiber.Ctx) error {
 		return err
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id, count)
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
 	return err

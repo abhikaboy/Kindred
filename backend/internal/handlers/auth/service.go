@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -72,31 +73,31 @@ func (s *Service) ValidateToken(token string) (string, float64, error) {
 	return claims["user_id"].(string), claims["count"].(float64), nil
 }
 
-func (s *Service) LoginFromCredentials(email string, password string) (string, float64, error) {
+func (s *Service) LoginFromCredentials(email string, password string) (primitive.ObjectID, float64, error) {
 
 	var user User
 	err := s.users.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return "", 0, fiber.NewError(404, "Account does not exist")
+		return primitive.NewObjectID(), 0, fiber.NewError(404, "Account does not exist")
 	}
 	if err != nil {
-		return "", 0, err
+		return primitive.NewObjectID(), 0, err
 	}
 	if user.Password != password {
-		return "", 0, fiber.NewError(400, "Not Authorized, Invalid Credentials")
+		return primitive.NewObjectID(), 0, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
 	return user.ID, user.Count, nil
 }
 
-func (s *Service) LoginFromApple(apple_id string) (string, float64, error) {
+func (s *Service) LoginFromApple(apple_id string) (primitive.ObjectID, float64, error) {
 
 	var user User
 	err := s.users.FindOne(context.Background(), bson.M{"apple_id": apple_id}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return "", 0, fiber.NewError(404, "Account does not exist")
+		return primitive.NewObjectID(), 0, fiber.NewError(404, "Account does not exist")
 	}
 	if err != nil {
-		return "", 0, err
+		return primitive.NewObjectID(), 0, err
 	}
 	return user.ID, user.Count, nil
 }

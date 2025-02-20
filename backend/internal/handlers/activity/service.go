@@ -96,4 +96,3 @@ func (s *Service) DeleteActivity(id primitive.ObjectID) error {
 	_, err := s.Activitys.DeleteOne(ctx, filter)
 	return err
 }
-

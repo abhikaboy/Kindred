@@ -1,11 +1,10 @@
-
 package Post
 
 import (
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -36,8 +35,8 @@ func (h *Handler) CreatePost(c *fiber.Ctx) error {
 		Timestamp: time.Now(),
 	}
 
-	_, err := h.service.CreatePost(&doc); 
-    if err != nil {
+	_, err := h.service.CreatePost(&doc)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create Post",
 		})

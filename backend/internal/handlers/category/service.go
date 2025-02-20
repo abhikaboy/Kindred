@@ -34,6 +34,25 @@ func (s *Service) GetAllCategories() ([]CategoryDocument, error) {
 	return results, nil
 }
 
+// GetAllCategories fetches all Category documents from MongoDB
+func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]CategoryDocument, error) {
+	ctx := context.Background()
+
+	filter := bson.M{"user": id}
+	cursor, err := s.Categories.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []CategoryDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 // GetCategoryByID returns a single Category document by its ObjectID
 func (s *Service) GetCategoryByID(id primitive.ObjectID) (*CategoryDocument, error) {
 	ctx := context.Background()
@@ -96,4 +115,3 @@ func (s *Service) DeleteCategory(id primitive.ObjectID) error {
 	_, err := s.Categories.DeleteOne(ctx, filter)
 	return err
 }
-

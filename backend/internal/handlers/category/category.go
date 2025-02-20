@@ -3,6 +3,7 @@ package Category
 import (
 	"time"
 
+	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -27,16 +28,24 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	doc := CategoryDocument{
-		ID:        primitive.NewObjectID(),
-		Field1:    params.Field1,
-		Field2:    params.Field2,
-		Picture:   params.Picture,
-		Timestamp: time.Now(),
+	// convert the hex string to ObjectID
+	userId, err := primitive.ObjectIDFromHex(params.User)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user ID format",
+		})
 	}
 
-	_, err := h.service.CreateCategory(&doc); 
-    if err != nil {
+	doc := CategoryDocument{
+		ID:         primitive.NewObjectID(),
+		Name:       params.Name,
+		User:       userId,
+		Tasks:      make([]task.TaskDocument, 0),
+		LastEdited: time.Now(),
+	}
+
+	_, err = h.service.CreateCategory(&doc)
+	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create Category",
 		})
@@ -72,6 +81,24 @@ func (h *Handler) GetCategory(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(Category)
+}
+
+func (h *Handler) GetCategoriesByUser(c *fiber.Ctx) error {
+	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format",
+		})
+	}
+
+	categories, err := h.service.GetCategoriesByUser(id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Category not found",
+		})
+	}
+
+	return c.JSON(categories)
 }
 
 func (h *Handler) UpdatePartialCategory(c *fiber.Ctx) error {
