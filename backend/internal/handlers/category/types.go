@@ -31,5 +31,5 @@ Database layer of the application
 */
 
 type Service struct {
-	Categories *mongo.Collection
+	Users *mongo.Collection
 }

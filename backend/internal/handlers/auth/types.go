@@ -45,7 +45,10 @@ type User struct {
 	TasksComplete float64            `bson:"tasks_complete"`
 	RecentActivity []activity.ActivityDocument `bson:"recent_activity"`
 
-
+	DisplayName string `bson:"display_name"`
+	Handle      string `bson:"handle"`
+	ProfilePicture string `bson:"profile_picture"`
+	
 }
 
 type LoginRequest struct {

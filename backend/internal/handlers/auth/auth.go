@@ -82,6 +82,10 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		TasksComplete: 0,
 		RecentActivity: make([]activity.ActivityDocument, 0),
 
+		DisplayName: "Default Username",
+		Handle:      "@default",
+		ProfilePicture: "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
+
 	}
 
 	if err = user.Validate(); err != nil {

@@ -2,7 +2,9 @@ package Category
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/abhikaboy/SocialToDo/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,14 +15,14 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Categories: collections["categories"],
+		Users: collections["users"],
 	}
 }
 
 // GetAllCategories fetches all Category documents from MongoDB
 func (s *Service) GetAllCategories() ([]CategoryDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Categories.Find(ctx, bson.M{})
+	cursor, err := s.Users.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +40,21 @@ func (s *Service) GetAllCategories() ([]CategoryDocument, error) {
 func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]CategoryDocument, error) {
 	ctx := context.Background()
 
-	filter := bson.M{"user": id}
-	cursor, err := s.Categories.Find(ctx, filter)
+	filter := bson.M{"_id": id}
+	cursor, err := s.Users.Aggregate(ctx, mongo.Pipeline{
+		{
+			{Key: "$match", Value: filter},
+		},
+		{
+			{Key: "$unwind", Value: "$categories"},
+		},
+		{
+			{Key: "$replaceRoot", Value: bson.M{
+				"newRoot": "$categories",
+			}},
+		},
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +74,7 @@ func (s *Service) GetCategoryByID(id primitive.ObjectID) (*CategoryDocument, err
 	filter := bson.M{"_id": id}
 
 	var Category CategoryDocument
-	err := s.Categories.FindOne(ctx, filter).Decode(&Category)
+	err := s.Users.FindOne(ctx, filter).Decode(&Category)
 
 	if err == mongo.ErrNoDocuments {
 		// No matching Category found
@@ -77,41 +92,56 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 	ctx := context.Background()
 	// Insert the document into the collection
 
-	result, err := s.Categories.InsertOne(ctx, r)
+	_, err := s.Users.UpdateOne(ctx, bson.M{"_id": r.User}, bson.M{"$push": bson.M{"categories": r}})
 	if err != nil {
 		return nil, err
 	}
 
-	// Cast the inserted ID to ObjectID
-	id := result.InsertedID.(primitive.ObjectID)
-	r.ID = id
-	slog.LogAttrs(ctx, slog.LevelInfo, "Category inserted", slog.String("id", id.Hex()))
+	slog.LogAttrs(ctx, slog.LevelInfo, "Category inserted", slog.String("id", r.ID.Hex()))
 
 	return r, nil
 }
 
 // UpdatePartialCategory updates only specified fields of a Category document by ObjectID.
-func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCategoryDocument) error {
+func (s *Service) UpdatePartialCategory(userId primitive.ObjectID,id primitive.ObjectID, updated UpdateCategoryDocument) (*CategoryDocument, error) {
 	ctx := context.Background()
-	filter := bson.M{"_id": id}
+	// filter := bson.M{"_id": id}
 
 	updateFields, err := xutils.ToDoc(updated)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	update := bson.M{"$set": updateFields}
+	fmt.Println(updateFields)
 
-	_, err = s.Categories.UpdateOne(ctx, filter, update)
-	return err
+	res, err := s.Users.UpdateOne(ctx, 
+		bson.M{
+			"_id": userId, 
+			"categories": bson.M{"$elemMatch": bson.M{"_id": id}},
+		},
+			bson.D{{Key: "$set", Value: bson.D{
+				{Key: "categories.$.name", Value: updated.Name},
+				{Key: "categories.$.lastEdited", Value: time.Now()},
+			}}},
+	)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", slog.String("error", err.Error()))
+		return nil, err
+	}
+
+	fmt.Print(res)
+	fmt.Print(res.MatchedCount)
+	fmt.Print(res.ModifiedCount)
+	slog.LogAttrs(ctx, slog.LevelInfo, "Categories Matched:", slog.String("id", string(res.MatchedCount)))
+	slog.LogAttrs(ctx, slog.LevelInfo, "Updated Count:", slog.String("id", string(res.UpsertedCount)))
+
+	
+	return nil, err
 }
 
 // DeleteCategory removes a Category document by ObjectID.
-func (s *Service) DeleteCategory(id primitive.ObjectID) error {
+func (s *Service) DeleteCategory(userId primitive.ObjectID,id primitive.ObjectID) error {
 	ctx := context.Background()
-
-	filter := bson.M{"_id": id}
-
-	_, err := s.Categories.DeleteOne(ctx, filter)
+	_, err := s.Users.UpdateOne(ctx, bson.M{"_id": userId}, bson.M{"$pull": bson.M{"categories": bson.M{"_id": id}}})
 	return err
 }

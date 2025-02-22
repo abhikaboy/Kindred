@@ -18,7 +18,9 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	// Add Sample group under API Version 1
 	Tasks := apiV1.Group("/Tasks")
 
-	Tasks.Post("/", handler.CreateTask)
+	Tasks.Get("/user/:id", handler.GetTasksByUser)
+	Tasks.Post("/:user/:category", handler.CreateTask)
+
 	Tasks.Get("/", handler.GetTasks)
 	Tasks.Get("/:id", handler.GetTask)
 	Tasks.Patch("/:id", handler.UpdatePartialTask)

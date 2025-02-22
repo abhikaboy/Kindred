@@ -20,10 +20,9 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 
 	Categories.Post("/", handler.CreateCategory)
 	Categories.Get("/", handler.GetCategories)
-	Categories.Get("/:id", handler.GetCategory)
-	Categories.Patch("/:id", handler.UpdatePartialCategory)
-	Categories.Delete("/:id", handler.DeleteCategory)
-
+	
+	Categories.Delete("/user/:user/:id", handler.DeleteCategory)
+	Categories.Patch("/user/:user/:id", handler.UpdatePartialCategory)
 	Categories.Get("/user/:id", handler.GetCategoriesByUser)
 
 }
