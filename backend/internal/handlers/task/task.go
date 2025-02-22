@@ -1,10 +1,12 @@
 package task
 
 import (
+	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
+	"github.com/abhikaboy/SocialToDo/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,39 +18,27 @@ type Handler struct {
 }
 
 func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
-	userId, err := primitive.ObjectIDFromHex(c.Params("id"))
+	user_id := c.UserContext().Value("user_id").(string)
+	slog.LogAttrs(c.Context(), slog.LevelInfo, "User ID", slog.String("user_id", user_id))
+
+	id := c.Query("id", user_id) // uses the logged in user if not specified
+	userId, err := primitive.ObjectIDFromHex(id)
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
+			"error": "Invalid ID format " + err.Error() + " ID: " + id,
 		})
 	}
 
 	var sort SortParams
 
-	if c.Query("sortBy") == "" {
-		sort.SortBy = "timestamp"
-	} else{
-		sort.SortBy = c.Query("sortBy")
-	}
-	
-	if c.Query("sortDir") == "" {
-		sort.SortDir = -1
-	} else {
-		sort.SortDir, err = strconv.Atoi(c.Query("sortDir"))
-	}
-
+	sort.SortBy = c.Query("sortBy", "timestamp")
+	sort.SortDir, err = strconv.Atoi(c.Query("sortDir", "-1"))
 
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid sortDir format",
 		})
-	}
-
-	if sort.SortBy == "none" {
-		sort.SortBy = "timestamp"
-	}
-	if sort.SortDir == 0 {
-		sort.SortDir = -1
 	}
 
   sortAggregation := bson.D{
@@ -68,19 +58,14 @@ func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
 func (h *Handler) CreateTask(c *fiber.Ctx) error {
 	var params CreateTaskParams
 
-	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
-	}
+	user_id := c.UserContext().Value("user_id").(string)
 
-	userId, err := primitive.ObjectIDFromHex(c.Params("user"))
+	err, ids := xutils.ParseIDs(c, c.Params("category"), user_id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs", slog.String("error", err.Error()))
+		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
+	userId, categoryId := ids[1], ids[0]
 
 	if err := c.BodyParser(&params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -142,8 +127,10 @@ func (h *Handler) GetTask(c *fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateTask(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
+
+	user_id, err := primitive.ObjectIDFromHex(context_id)
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
-	userId, err := primitive.ObjectIDFromHex(c.Params("user"))
 	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
 	
 	if err != nil {
@@ -159,7 +146,7 @@ func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 		})
 	}
 
-	if _, err := h.service.UpdatePartialTask(userId, id, categoryId, update); err != nil {
+	if _, err := h.service.UpdatePartialTask(user_id, id, categoryId, update); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 

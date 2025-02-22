@@ -1,11 +1,11 @@
 import { ThemedView } from "@/components/ThemedView";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Dimensions } from "react-native";
 import React, { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "expo-router";
 
-export default function SignUpButton({ isMechanic }: { isMechanic: boolean }) {
+export default function SignUpButton() {
     const { login, register } = useAuth();
     const router = useRouter();
 
@@ -29,19 +29,18 @@ export default function SignUpButton({ isMechanic }: { isMechanic: boolean }) {
                     const firstName = credential.fullName?.givenName;
                     const lastName = credential.fullName?.familyName;
                     if (!email || !firstName || !lastName) {
-                        alert("Either you already have a user or didn't give us permissions");
-                        return;
+                        alert("Either you already have a user or didn't give us permissions " + appleAccountID);
                     }
-                    await register(firstName, lastName, email, appleAccountID, isMechanic ? "mechanic" : "driver");
-                    const user1 = await login(appleAccountID, isMechanic ? "mechanic" : "driver");
-                    console.log(user1);
+                    // await register(firstName, lastName, email, appleAccountID);
+                    // const user1 = await login(appleAccountID);
+                    // console.log(user1);
 
                     router.replace({
                         pathname: "/(onboarding)",
                         params: {
-                            initialFirstName: user1.firstName || "",
-                            initialLastName: user1.lastName || "",
-                            initialPhoneNumber: user1.phoneNumber || "",
+                            initialFirstName: "",
+                            initialLastName: "",
+                            initialPhoneNumber: "",
                         },
                     });
                 } catch (e: any) {
@@ -59,14 +58,8 @@ export default function SignUpButton({ isMechanic }: { isMechanic: boolean }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-    },
     button: {
         width: "100%",
-        height: 44,
-        backgroundColor: "red",
+        height: Dimensions.get("screen").height * 0.05,
     },
 });

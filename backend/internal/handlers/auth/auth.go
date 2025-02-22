@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -148,13 +150,20 @@ func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
 		return fiber.NewError(400, "Not Authorized, Invalid Token Type")
 	}
 
-	access, refresh, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
+	
+	access, refresh, user_id, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
 	if err != nil {
 		return err
 	}
 
-	c.Response().Header.Add("access_token", access)
-	c.Response().Header.Add("refresh_token", refresh)
+	fmt.Println("saving user in this request: " + *user_id)
+
+	context := context.WithValue(c.Context(), "user_id", *user_id)
+	c.Request().Header.Set("id", accessToken)
+	c.SetUserContext(context)
+
+	c.Response().Header.Add("access_token", *access)
+	c.Response().Header.Add("refresh_token", *refresh)
 
 	return c.Next()
 }
@@ -166,7 +175,12 @@ func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float
 		return 0, fiber.NewError(400, "Not Authorized: Access and Refresh Tokens are Expired "+err.Error())
 	}
 	// Check if the refresh token is unused
-	used, err := h.service.CheckIfTokenUsed(user_id)
+	id,err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage Invalid ID "+err.Error())
+	}
+
+	used, err := h.service.CheckIfTokenUsed(id)
 	if err != nil {
 		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage "+err.Error())
 	} else if used {
@@ -180,7 +194,7 @@ func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float
 	and return a new pair of tokens if refresh token is valid.
 */
 
-func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (string, string, error) {
+func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (*string, *string, *string,error) {
 	/*
 		Check our tokens are valid by first checking if the access token is valid
 		and then checking if the refresh token is valid if the access token is invalid
@@ -189,21 +203,21 @@ func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, re
 	if err != nil {
 		count, err = h.ValidateRefreshToken(c, refreshToken)
 		if err != nil {
-			return "", "", err
+			return nil, nil, nil, err
 		}
 	}
 	// use the same count as the existing token
 	// Our refresh token is valid and unused, so we can use it to generate a new set of tokens
 	access, refresh, err := h.service.GenerateTokens(user_id, count)
 	if err != nil {
-		return "", "", fiber.NewError(400, "Not Authorized, Error Generating Tokens")
+		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Generating Tokens")
 	}
 
 	if err := h.service.UseToken(user_id); err != nil {
-		return "", "", fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
+		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
 	}
 
-	return access, refresh, nil
+	return &access, &refresh, &user_id, nil
 }
 
 /*

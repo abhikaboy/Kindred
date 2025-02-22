@@ -17,15 +17,15 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 	service := newService(collections, cfg)
-	handler := Handler{service, cfg}
+	AuthHandler := Handler{service, cfg}
 
 	route := app.Group("/api/v1/auth")
 
-	route.Post("/login", handler.Login)
-	route.Post("/register", handler.Register)
-	route.Post("/logout", handler.Logout)
+	route.Post("/login", AuthHandler.Login)
+	route.Post("/register", AuthHandler.Register)
+	route.Post("/logout", AuthHandler.Logout)
 
-	api := app.Group("/protected")
-	api.Use(handler.AuthenticateMiddleware)
-	api.Get("/", handler.Test)
+	api := app.Group("/api/v1/user")
+	api.Use(AuthHandler.AuthenticateMiddleware)
+	api.Get("/", AuthHandler.Test)
 }

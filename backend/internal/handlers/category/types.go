@@ -10,7 +10,6 @@ import (
 
 type CreateCategoryParams struct {
 	Name string `bson:"name,omitempty" json:"name,omitempty"`
-	User string `bson:"user,omitempty" json:"user,omitempty"`
 }
 
 type CategoryDocument struct {

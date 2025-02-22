@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
+	"github.com/abhikaboy/SocialToDo/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,13 +29,14 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// convert the hex string to ObjectID
-	userId, err := primitive.ObjectIDFromHex(params.User)
+	user_id := c.UserContext().Value("user_id").(string)
+
+	err, ids := xutils.ParseIDs(c, user_id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID format",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
+	userId := ids[0]
+
 
 	doc := CategoryDocument{
 		ID:         primitive.NewObjectID(),

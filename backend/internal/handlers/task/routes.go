@@ -17,13 +17,14 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 
 	// Add Sample group under API Version 1
 	Tasks := apiV1.Group("/Tasks")
-
-	Tasks.Get("/user/:id", handler.GetTasksByUser)
-	Tasks.Post("/:user/:category", handler.CreateTask)
-	Tasks.Patch("/:user/:category/:id", handler.UpdateTask)
-
+	
+	
 	Tasks.Get("/", handler.GetTasks)
 	Tasks.Get("/:id", handler.GetTask)
 	Tasks.Delete("/:id", handler.DeleteTask)
-
+	
+	AuthorizedTasks := app.Group("/api/v1/user/tasks")
+	AuthorizedTasks.Get("/", handler.GetTasksByUser)
+	AuthorizedTasks.Post("/:category", handler.CreateTask)
+	AuthorizedTasks.Patch("/:category/:id", handler.UpdateTask)
 }
