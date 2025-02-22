@@ -32,6 +32,7 @@ type TaskDocument struct {
 	Public    bool               `bson:"public" json:"public"`
 	Active    bool               `bson:"active" json:"active"`
 	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+	LastEdited time.Time          `bson:"lastEdited" json:"lastEdited"`
 }
 
 type UpdateTaskDocument struct {

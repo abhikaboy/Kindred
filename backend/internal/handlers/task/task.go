@@ -141,8 +141,11 @@ func (h *Handler) GetTask(c *fiber.Ctx) error {
 	return c.JSON(Task)
 }
 
-func (h *Handler) UpdatePartialTask(c *fiber.Ctx) error {
+func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+	userId, err := primitive.ObjectIDFromHex(c.Params("user"))
+	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
+	
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid ID format",
@@ -156,10 +159,8 @@ func (h *Handler) UpdatePartialTask(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.service.UpdatePartialTask(id, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update Task",
-		})
+	if _, err := h.service.UpdatePartialTask(userId, id, categoryId, update); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)

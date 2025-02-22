@@ -114,7 +114,7 @@ func (s *Service) UpdatePartialCategory(userId primitive.ObjectID,id primitive.O
 
 	fmt.Println(updateFields)
 
-	res, err := s.Users.UpdateOne(ctx, 
+	_, err = s.Users.UpdateOne(ctx, 
 		bson.M{
 			"_id": userId, 
 			"categories": bson.M{"$elemMatch": bson.M{"_id": id}},
@@ -129,13 +129,6 @@ func (s *Service) UpdatePartialCategory(userId primitive.ObjectID,id primitive.O
 		return nil, err
 	}
 
-	fmt.Print(res)
-	fmt.Print(res.MatchedCount)
-	fmt.Print(res.ModifiedCount)
-	slog.LogAttrs(ctx, slog.LevelInfo, "Categories Matched:", slog.String("id", string(res.MatchedCount)))
-	slog.LogAttrs(ctx, slog.LevelInfo, "Updated Count:", slog.String("id", string(res.UpsertedCount)))
-
-	
 	return nil, err
 }
 

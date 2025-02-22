@@ -20,10 +20,10 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 
 	Tasks.Get("/user/:id", handler.GetTasksByUser)
 	Tasks.Post("/:user/:category", handler.CreateTask)
+	Tasks.Patch("/:user/:category/:id", handler.UpdateTask)
 
 	Tasks.Get("/", handler.GetTasks)
 	Tasks.Get("/:id", handler.GetTask)
-	Tasks.Patch("/:id", handler.UpdatePartialTask)
 	Tasks.Delete("/:id", handler.DeleteTask)
 
 }

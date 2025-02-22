@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
-	"github.com/abhikaboy/SocialToDo/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // newService receives the map of collections and picks out Jobs
@@ -121,19 +122,44 @@ func (s *Service) CreateTask(userId primitive.ObjectID, categoryId primitive.Obj
 }
 
 // UpdatePartialTask updates only specified fields of a Task document by ObjectID.
-func (s *Service) UpdatePartialTask(id primitive.ObjectID, updated UpdateTaskDocument) error {
+func (s *Service) UpdatePartialTask(userId primitive.ObjectID,id primitive.ObjectID, categoryId primitive.ObjectID, updated UpdateTaskDocument) (*TaskDocument, error) {
 	ctx := context.Background()
-	filter := bson.M{"_id": id}
 
-	updateFields, err := xutils.ToDoc(updated)
-	if err != nil {
-		return err
+	options := options.UpdateOptions{
+		ArrayFilters: &options.ArrayFilters{
+				Filters: bson.A{
+					bson.M{
+						"t._id": id,
+					},
+				},
+		},
 	}
 
-	update := bson.M{"$set": updateFields}
+	_, err := s.Tasks.UpdateOne(ctx, 
+		bson.M{
+			"_id": userId, 
+			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
+		},
+		bson.D{{
+			 Key: "$set", Value: bson.D{
+				{Key: "categories.$.tasks.$[t].priority", Value: updated.Priority},
+				{Key: "categories.$.tasks.$[t].lastEdited", Value: time.Now()},
+				{Key: "categories.$.tasks.$[t].content", Value: updated.Content},
+				{Key: "categories.$.tasks.$[t].value", Value: updated.Value},
+				{Key: "categories.$.tasks.$[t].recurring", Value: updated.Recurring},
+				{Key: "categories.$.tasks.$[t].recurDetails", Value: updated.RecurDetails},
+				{Key: "categories.$.tasks.$[t].public", Value: updated.Public},
+				{Key: "categories.$.tasks.$[t].active", Value: updated.Active},},
+		}},
+		&options,
+		)
 
-	_, err = s.Tasks.UpdateOne(ctx, filter, update)
-	return err
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", slog.String("error", err.Error()))
+		return nil, err
+	}
+
+	return nil, err
 }
 
 // DeleteTask removes a Task document by ObjectID.
