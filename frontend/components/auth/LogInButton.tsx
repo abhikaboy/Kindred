@@ -24,8 +24,6 @@ export default function LogInButton() {
                         ],
                     });
 
-                    console.log(credential);
-
                     const appleAccountID = credential.user;
 
                     await login(appleAccountID);

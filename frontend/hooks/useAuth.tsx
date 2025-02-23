@@ -1,12 +1,22 @@
 import { createContext, useContext, useState } from "react";
 import React from "react";
+import axios from "axios";
 
 async function getUserByAppleAccountID(appleAccountID: string) {
-    const url = process.env.EXPO_PUBLIC_API_URL + "/users/aaid/" + appleAccountID;
-    const response = await fetch(url, {
-        method: "GET",
+    const url = process.env.EXPO_PUBLIC_API_URL + "/auth/login/apple";
+    const response = await axios.post(url, {
+        apple_id: appleAccountID,
     });
-    const user = await response.json();
+    const access_token = response.headers["access_token"];
+    const refresh_token = response.headers["refresh_token"];
+
+    console.log(access_token);
+    console.log(refresh_token);
+
+    axios.defaults.headers.common["Authorization"] = "Bearer " + access_token;
+    axios.defaults.headers.common["refresh_token"] = refresh_token;
+
+    const user = response.data;
     return user;
 }
 
@@ -49,12 +59,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function login(appleAccountID: string) {
+        console.log(appleAccountID);
+        console.log("Logging in...");
         const userRes = await getUserByAppleAccountID(appleAccountID);
 
         if (userRes) {
-            setUser({ ...userRes });
-            return { ...userRes };
+            setUser(userRes);
+            return userRes;
         } else {
+            alert("Could not login");
             throw new Error("Could not login");
         }
     }

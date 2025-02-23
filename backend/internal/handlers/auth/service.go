@@ -83,33 +83,33 @@ func (s *Service) ValidateToken(token string) (string, float64, error) {
 	return claims["user_id"].(string), claims["count"].(float64), nil
 }
 
-func (s *Service) LoginFromCredentials(email string, password string) (primitive.ObjectID, float64, error) {
+func (s *Service) LoginFromCredentials(email string, password string) (*primitive.ObjectID, *float64, *User, error) {
 
 	var user User
 	err := s.users.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return primitive.NewObjectID(), 0, fiber.NewError(404, "Account does not exist")
+		return nil, nil, nil, fiber.NewError(404, "Account does not exist")
 	}
 	if err != nil {
-		return primitive.NewObjectID(), 0, err
+		return nil, nil, nil, err
 	}
 	if user.Password != password {
-		return primitive.NewObjectID(), 0, fiber.NewError(400, "Not Authorized, Invalid Credentials")
+		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
-	return user.ID, user.Count, nil
+	return nil, nil, &user, nil
 }
 
-func (s *Service) LoginFromApple(apple_id string) (primitive.ObjectID, float64, error) {
+func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64, *User, error) {
 
 	var user User
 	err := s.users.FindOne(context.Background(), bson.M{"apple_id": apple_id}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return primitive.NewObjectID(), 0, fiber.NewError(404, "Account does not exist")
+		return nil, nil, nil, fiber.NewError(404, "Account does not exist")
 	}
 	if err != nil {
-		return primitive.NewObjectID(), 0, err
+		return nil, nil, nil, err
 	}
-	return user.ID, user.Count, nil
+	return &user.ID, &user.Count, &user, nil
 }
 
 func (s *Service) InvalidateTokens(user_id string) error {

@@ -3,7 +3,7 @@ import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { Colors } from "@/constants/Colors";
 
-type Priority = "low" | "medium" | "high";
+type Priority = "1" | "2" | "3";
 
 type Props = {
     content: string;
@@ -18,6 +18,12 @@ const priorityColors = {
     high: Colors.dark.error,
 };
 
+const priorityToString = {
+    0: "low",
+    1: "medium",
+    2: "high",
+};
+
 const TaskCard = ({ content, points, priority }: Props) => {
     return (
         <TouchableOpacity style={styles.container}>
@@ -25,7 +31,9 @@ const TaskCard = ({ content, points, priority }: Props) => {
                 <View>
                     <View style={styles.row}>
                         <ThemedText type="tiny">{points}</ThemedText>
-                        <View style={[styles.circle, { backgroundColor: priorityColors[priority] }]} />
+                        <View
+                            style={[styles.circle, { backgroundColor: priorityColors[priorityToString[priority]] }]}
+                        />
                     </View>
                     <ThemedText
                         numberOfLines={1}

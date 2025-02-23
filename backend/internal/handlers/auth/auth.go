@@ -36,15 +36,27 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	// database call to find the user and verify credentials and get count
-	id, count, err := h.service.LoginFromCredentials(req.Email, req.Password)
+	id, count, user, err := h.service.LoginFromCredentials(req.Email, req.Password)
 	if err != nil {
 		return err
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), count)
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
-	return err
+
+	return c.Status(fiber.StatusOK).JSON(user)
+}
+
+func (h *Handler) RegisterWithApple(c *fiber.Ctx) error {
+	var req RegisterRequestApple
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
+	}
+	slog.Info("Register Request With Apple", "request", req.AppleID)
+	c.SetUserContext(context.WithValue(c.Context(), "apple_id", req.AppleID))
+
+	return h.Register(c)
 }
 
 func (h *Handler) Register(c *fiber.Ctx) error {
@@ -53,7 +65,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
 	}
 
-	slog.Info("Register Request", "request", req)
+	slog.Info("Register Request", "request", req, "apple_id", c.UserContext().Value("apple_id"))
 
 	errs := xvalidator.Validator.Validate(&req)
 	if len(errs) > 0 {
@@ -71,6 +83,20 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
 
+	aaid := c.UserContext().Value("apple_id")
+	googleid := c.UserContext().Value("google_id")
+
+	fmt.Println(aaid)
+	fmt.Println(googleid)
+
+	if aaid == nil {
+		aaid = ""
+	}
+
+	if googleid == nil {
+		googleid = ""
+	}
+
 	user := User{
 		Email:        req.Email,
 		Password:     req.Password,
@@ -87,6 +113,9 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		DisplayName: "Default Username",
 		Handle:      "@default",
 		ProfilePicture: "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
+
+		AppleID: aaid.(string),
+		GoogleID: googleid.(string),
 
 	}
 
@@ -116,15 +145,15 @@ func (h *Handler) LoginWithApple(c *fiber.Ctx) error {
 	}
 
 	// database call to find the user and verify credentials and get count
-	id, count, err := h.service.LoginFromApple(req.AppleID)
+	id, count, user, err := h.service.LoginFromApple(req.AppleID)
 	if err != nil {
 		return err
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), count)
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
-	return err
+	return c.Status(fiber.StatusOK).JSON(user)
 }
 
 func (h *Handler) Test(c *fiber.Ctx) error {
