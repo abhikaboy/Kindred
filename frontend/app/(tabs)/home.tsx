@@ -3,12 +3,31 @@ import React, { useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import TaskCard from "@/components/cards/TaskCard";
+import { useAuth } from "@/hooks/useAuth";
+import { useRequest } from "@/hooks/useRequest";
 
 type Props = {};
 
 const Home = (props: Props) => {
+    // get tasks via api call
+    const { user } = useAuth();
+    const { request } = useRequest();
+
+    const [categories, setCategories] = React.useState<any[]>([]);
+
     const [time, setTime] = React.useState(new Date().toLocaleTimeString());
     const [timeOfDay, setTimeOfDay] = React.useState("Good Morning! ☀");
+
+    const getTasks = async () => {
+        let data = await request("GET", "/user/Categories/" + user._id);
+        setCategories(data);
+        console.log(data);
+    };
+
+    useEffect(() => {
+        getTasks();
+    }, []);
+
     useEffect(() => {
         setInterval(() => {
             setTime(new Date().toLocaleTimeString());
@@ -47,14 +66,19 @@ const Home = (props: Props) => {
             </View>
             <ScrollView>
                 <View style={{ gap: 16, marginTop: 0 }}>
-                    <ThemedText type="subtitle">Household</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="low" />
-                    <ThemedText type="subtitle">Personal</ThemedText>
-                    <TaskCard content={"cook lunch"} points={9} priority="high" />
-                    <ThemedText type="subtitle">Human Computer Interaction</ThemedText>
-                    <TaskCard content={"Weekly Reading Assignment"} points={9} priority="high" />
-                    <TaskCard content={"HW3 - Contextual Inquiry"} points={9} priority="medium" />
+                    {categories.map((category) => (
+                        <View style={{ gap: 16 }} key={category._id}>
+                            <ThemedText type="subtitle">{category.name}</ThemedText>
+                            {category.tasks.map((task) => (
+                                <TaskCard
+                                    key={task._id}
+                                    content={task.content}
+                                    points={task.value}
+                                    priority={task.priority}
+                                />
+                            ))}
+                        </View>
+                    ))}
                 </View>
             </ScrollView>
         </ThemedView>

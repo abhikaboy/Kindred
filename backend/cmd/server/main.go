@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -41,22 +39,22 @@ func IterateChangeStream(routineCtx context.Context, waitGroup sync.WaitGroup, s
 		if err := stream.Decode(&data); err != nil {
 			panic(err)
 		}
-		fmt.Printf("%v\n", data["fullDocument"])
-		body, err := json.Marshal(data["fullDocument"])
+		// fmt.Printf("%v\n", data["fullDocument"])
+		_, err := json.Marshal(data["fullDocument"])
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("DATA \n")
-		fmt.Printf("%v\n", body)
-		url := "http://localhost:8080/api/v1/mechanics/alert"
-		_, err = http.Post(
-			url,
-			"application/json",
-			bytes.NewBuffer(body),
-		)
-		if err != nil {
-			fmt.Println(err)
-		}
+		// fmt.Printf("DATA \n")
+		// fmt.Printf("%v\n", body)
+		// url := "http://localhost:8080/api/v1/mechanics/alert"
+		// _, err = http.Post(
+		// 	url,
+		// 	"application/json",
+		// 	bytes.NewBuffer(body),
+		// )
+		// if err != nil {
+		// 	fmt.Println(err)
+		// }
 
 	}
 	fmt.Print("Stream closed\n")

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -34,15 +36,27 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	// database call to find the user and verify credentials and get count
-	id, count, err := h.service.LoginFromCredentials(req.Email, req.Password)
+	id, count, user, err := h.service.LoginFromCredentials(req.Email, req.Password)
 	if err != nil {
 		return err
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), count)
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
-	return err
+
+	return c.Status(fiber.StatusOK).JSON(user)
+}
+
+func (h *Handler) RegisterWithApple(c *fiber.Ctx) error {
+	var req RegisterRequestApple
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
+	}
+	slog.Info("Register Request With Apple", "request", req.AppleID)
+	c.SetUserContext(context.WithValue(c.Context(), "apple_id", req.AppleID))
+
+	return h.Register(c)
 }
 
 func (h *Handler) Register(c *fiber.Ctx) error {
@@ -51,7 +65,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
 	}
 
-	slog.Info("Register Request", "request", req)
+	slog.Info("Register Request", "request", req, "apple_id", c.UserContext().Value("apple_id"))
 
 	errs := xvalidator.Validator.Validate(&req)
 	if len(errs) > 0 {
@@ -69,6 +83,20 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
 
+	aaid := c.UserContext().Value("apple_id")
+	googleid := c.UserContext().Value("google_id")
+
+	fmt.Println(aaid)
+	fmt.Println(googleid)
+
+	if aaid == nil {
+		aaid = ""
+	}
+
+	if googleid == nil {
+		googleid = ""
+	}
+
 	user := User{
 		Email:        req.Email,
 		Password:     req.Password,
@@ -81,6 +109,13 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		Friends:    make([]primitive.ObjectID, 0),
 		TasksComplete: 0,
 		RecentActivity: make([]activity.ActivityDocument, 0),
+
+		DisplayName: "Default Username",
+		Handle:      "@default",
+		ProfilePicture: "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
+
+		AppleID: aaid.(string),
+		GoogleID: googleid.(string),
 
 	}
 
@@ -110,15 +145,15 @@ func (h *Handler) LoginWithApple(c *fiber.Ctx) error {
 	}
 
 	// database call to find the user and verify credentials and get count
-	id, count, err := h.service.LoginFromApple(req.AppleID)
+	id, count, user, err := h.service.LoginFromApple(req.AppleID)
 	if err != nil {
 		return err
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), count)
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
-	return err
+	return c.Status(fiber.StatusOK).JSON(user)
 }
 
 func (h *Handler) Test(c *fiber.Ctx) error {
@@ -144,13 +179,20 @@ func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
 		return fiber.NewError(400, "Not Authorized, Invalid Token Type")
 	}
 
-	access, refresh, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
+	
+	access, refresh, user_id, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
 	if err != nil {
 		return err
 	}
 
-	c.Response().Header.Add("access_token", access)
-	c.Response().Header.Add("refresh_token", refresh)
+	fmt.Println("saving user in this request: " + *user_id)
+
+	context := context.WithValue(c.Context(), "user_id", *user_id)
+	c.Request().Header.Set("id", accessToken)
+	c.SetUserContext(context)
+
+	c.Response().Header.Add("access_token", *access)
+	c.Response().Header.Add("refresh_token", *refresh)
 
 	return c.Next()
 }
@@ -162,7 +204,12 @@ func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float
 		return 0, fiber.NewError(400, "Not Authorized: Access and Refresh Tokens are Expired "+err.Error())
 	}
 	// Check if the refresh token is unused
-	used, err := h.service.CheckIfTokenUsed(user_id)
+	id,err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage Invalid ID "+err.Error())
+	}
+
+	used, err := h.service.CheckIfTokenUsed(id)
 	if err != nil {
 		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage "+err.Error())
 	} else if used {
@@ -176,7 +223,7 @@ func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float
 	and return a new pair of tokens if refresh token is valid.
 */
 
-func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (string, string, error) {
+func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (*string, *string, *string,error) {
 	/*
 		Check our tokens are valid by first checking if the access token is valid
 		and then checking if the refresh token is valid if the access token is invalid
@@ -185,21 +232,21 @@ func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, re
 	if err != nil {
 		count, err = h.ValidateRefreshToken(c, refreshToken)
 		if err != nil {
-			return "", "", err
+			return nil, nil, nil, err
 		}
 	}
 	// use the same count as the existing token
 	// Our refresh token is valid and unused, so we can use it to generate a new set of tokens
 	access, refresh, err := h.service.GenerateTokens(user_id, count)
 	if err != nil {
-		return "", "", fiber.NewError(400, "Not Authorized, Error Generating Tokens")
+		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Generating Tokens")
 	}
 
 	if err := h.service.UseToken(user_id); err != nil {
-		return "", "", fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
+		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
 	}
 
-	return access, refresh, nil
+	return &access, &refresh, &user_id, nil
 }
 
 /*

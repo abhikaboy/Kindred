@@ -19,11 +19,12 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	Categories := apiV1.Group("/Categories")
 
 	Categories.Post("/", handler.CreateCategory)
-	Categories.Get("/", handler.GetCategories)
-	Categories.Get("/:id", handler.GetCategory)
-	Categories.Patch("/:id", handler.UpdatePartialCategory)
-	Categories.Delete("/:id", handler.DeleteCategory)
-
-	Categories.Get("/user/:id", handler.GetCategoriesByUser)
+	
+	ProtectedCategories := app.Group("/api/v1/user/categories")
+	
+	ProtectedCategories.Post("/", handler.CreateCategory)
+	ProtectedCategories.Delete("/:id", handler.DeleteCategory)
+	ProtectedCategories.Patch("/:id", handler.UpdatePartialCategory)
+	ProtectedCategories.Get("/:id", handler.GetCategoriesByUser)
 
 }

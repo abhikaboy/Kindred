@@ -10,7 +10,6 @@ import (
 
 type CreateCategoryParams struct {
 	Name string `bson:"name,omitempty" json:"name,omitempty"`
-	User string `bson:"user,omitempty" json:"user,omitempty"`
 }
 
 type CategoryDocument struct {
@@ -31,5 +30,5 @@ Database layer of the application
 */
 
 type Service struct {
-	Categories *mongo.Collection
+	Users *mongo.Collection
 }

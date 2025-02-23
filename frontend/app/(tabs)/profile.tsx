@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity } fro
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Colors } from "@/constants/Colors";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,11 +12,26 @@ import ActivityPoint from "@/components/profile/ActivityPoint";
 import TaskCard from "@/components/cards/TaskCard";
 import { useRouter } from "expo-router";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Profile() {
+    const { user } = useAuth();
+
     const router = useRouter();
+
+    const nameRef = useRef<View>(null);
+    const [nameHeight, setNameHeight] = useState(0);
+
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
     const scrollOffset = useScrollViewOffset(scrollRef);
+
+    useEffect(() => {
+        if (nameRef.current) {
+            nameRef.current.measure((x, y, width, height, pageX, pageY) => {
+                setNameHeight(height);
+            });
+        }
+    }, [nameRef]);
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
     const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -50,15 +65,15 @@ export default function Profile() {
                     colors={["transparent", Colors.dark.background]}
                     style={[styles.headerImage, { position: "absolute", top: 0, left: 0, zIndex: 2 }]}
                 />
-                <Animated.Image src={Icons.luffy} style={[styles.headerImage]} />
+                <Animated.Image src={user.profile_picture} style={[styles.headerImage]} />
             </Animated.View>
             <View
+                ref={nameRef}
                 style={{
-                    top: Dimensions.get("window").height * 0.4 - 50,
-                    height: Dimensions.get("window").height * 0.4,
+                    top: Dimensions.get("window").height * 0.4 - nameHeight,
                     flexDirection: "row",
                     flex: 1,
-                    alignItems: "baseline",
+                    alignItems: "flex-end",
                     paddingHorizontal: 24,
                     gap: 8,
                 }}>
@@ -67,18 +82,26 @@ export default function Profile() {
                     style={{
                         fontWeight: "700",
                         zIndex: 3,
+                        verticalAlign: "top",
                     }}>
-                    Coffee
+                    {user.display_name}
                 </ThemedText>
                 <ThemedText
                     style={{
                         zIndex: 3,
                         color: Colors.dark.caption,
+                        bottom: 8, // 16 px font / 2 = 8 px
                     }}>
-                    @Coffee
+                    {user.handle}
                 </ThemedText>
             </View>
-            <View style={{ flex: 1, paddingHorizontal: 24, gap: 16, marginTop: 24 }}>
+            <View
+                style={{
+                    flex: 1,
+                    paddingHorizontal: 24,
+                    gap: 16,
+                    marginTop: 24 + Dimensions.get("window").height * 0.4 - nameHeight,
+                }}>
                 <View
                     style={{
                         display: "flex",
@@ -90,8 +113,8 @@ export default function Profile() {
                         width: "100%",
                     }}>
                     <FollowButton following={false} />
-                    <ThemedText type="lightBody">17 Friends</ThemedText>
-                    <ThemedText type="lightBody">302 Tasks</ThemedText>
+                    <ThemedText type="lightBody">{user.friends.length} Friends</ThemedText>
+                    <ThemedText type="lightBody">{user.tasks_complete} Tasks Done</ThemedText>
                 </View>
                 <View style={{ gap: 16 }}>
                     <ThemedText type="subtitle">Today</ThemedText>

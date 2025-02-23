@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
+	"github.com/abhikaboy/SocialToDo/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,13 +29,14 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	// convert the hex string to ObjectID
-	userId, err := primitive.ObjectIDFromHex(params.User)
+	user_id := c.UserContext().Value("user_id").(string)
+
+	err, ids := xutils.ParseIDs(c, user_id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID format",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
+	userId := ids[0]
+
 
 	doc := CategoryDocument{
 		ID:         primitive.NewObjectID(),
@@ -57,9 +59,7 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 func (h *Handler) GetCategories(c *fiber.Ctx) error {
 	Categories, err := h.service.GetAllCategories()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch Categories",
-		})
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	return c.JSON(Categories)
@@ -75,9 +75,7 @@ func (h *Handler) GetCategory(c *fiber.Ctx) error {
 
 	Category, err := h.service.GetCategoryByID(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Category not found",
-		})
+		return c.Status(fiber.StatusNotFound).JSON(err)
 	}
 
 	return c.JSON(Category)
@@ -93,9 +91,7 @@ func (h *Handler) GetCategoriesByUser(c *fiber.Ctx) error {
 
 	categories, err := h.service.GetCategoriesByUser(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Category not found",
-		})
+		return c.Status(fiber.StatusNotFound).JSON(err)
 	}
 
 	return c.JSON(categories)
@@ -105,7 +101,13 @@ func (h *Handler) UpdatePartialCategory(c *fiber.Ctx) error {
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
+			"error": "Invalid ID format for CategoryId",
+		})
+	}
+	user_id, err := primitive.ObjectIDFromHex(c.Params("user"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format for UserId",
 		})
 	}
 
@@ -116,13 +118,12 @@ func (h *Handler) UpdatePartialCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.service.UpdatePartialCategory(id, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update Category",
-		})
-	}
+	results, err := h.service.UpdatePartialCategory(user_id,id, update); 
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	} 
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.JSON(results)
 }
 
 func (h *Handler) DeleteCategory(c *fiber.Ctx) error {
@@ -132,11 +133,16 @@ func (h *Handler) DeleteCategory(c *fiber.Ctx) error {
 			"error": "Invalid ID format",
 		})
 	}
-
-	if err := h.service.DeleteCategory(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete Category",
+	
+	user_id, err := primitive.ObjectIDFromHex(c.Params("user"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format for UserId",
 		})
+	}
+
+	if err := h.service.DeleteCategory(user_id,id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)
