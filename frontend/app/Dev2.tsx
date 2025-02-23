@@ -1,4 +1,4 @@
-import { View, Dimensions, ScrollView } from "react-native";
+import { View, Dimensions, ScrollView, FlatList } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
@@ -28,47 +28,55 @@ export default function Dev2() {
             <ThemedText type="title" style={{ fontWeight: "700" }}>
                 Development Components 2 - Cards
             </ThemedText>
-            <ScrollView
-                contentContainerStyle={{
-                    gap: 16,
-                }}>
-                <ScrollView horizontal style={{ display: "flex", flexDirection: "row", gap: 16 }}>
-                    <ContactCard name="Abhik Ray" icon={Icons.luffy} handle="beak" following={true} />
-                    <ContactCard name="Lok Ye" icon={Icons.lokye} handle="lokye" following={false} />
-                    <ContactCard name="Coffee" icon={Icons.coffee} handle="coffee" following={true} />
-                    <ContactCard name="Latte" icon={Icons.latte} handle="latte" following={false} />
-                </ScrollView>
-                <ThemedCalendar />
-                <TaskCard
-                    content="Finish your homework bitch. Finish your homework bitch.Finish your homework bitch. "
-                    points={9}
-                    priority="high"
-                />
-                <UserInfoRowBase
-                    name={"Abhik Ray"}
-                    username={"beak"}
-                    icon={Icons.luffy}
-                    right={<Entypo name="heart" size={24} color="red" />}
-                />
-                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                <UserInfoRowTimed name={"Abhik Ray"} username={"beak"} time={4} icon={Icons.luffy} />
+            <FlatList
+                data={[{ key: "content" }]} // Dummy data to allow rendering
+                keyExtractor={(item) => item.key}
+                renderItem={() => (
+                    <>
+                        <ScrollView
+                            contentContainerStyle={{
+                                gap: 16,
+                            }}>
+                            <ScrollView horizontal style={{ display: "flex", flexDirection: "row", gap: 16 }}>
+                                <ContactCard name="Abhik Ray" icon={Icons.luffy} handle="beak" following={true} />
+                                <ContactCard name="Lok Ye" icon={Icons.lokye} handle="lokye" following={false} />
+                                <ContactCard name="Coffee" icon={Icons.coffee} handle="coffee" following={true} />
+                                <ContactCard name="Latte" icon={Icons.latte} handle="latte" following={false} />
+                            </ScrollView>
+                            <ThemedCalendar />
+                            <TaskCard
+                                content="Finish your homework bitch. Finish your homework bitch.Finish your homework bitch. "
+                                points={9}
+                                priority="high"
+                            />
+                            <UserInfoRowBase
+                                name={"Abhik Ray"}
+                                username={"beak"}
+                                icon={Icons.luffy}
+                                right={<Entypo name="heart" size={24} color="red" />}
+                            />
+                            <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                            <UserInfoRowTimed name={"Abhik Ray"} username={"beak"} time={4} icon={Icons.luffy} />
 
-                <PostCard
-                    icon={Icons.luffy}
-                    name={"Abhik Ray"}
-                    username={"beak"}
-                    caption={"this is my first post ever wow"}
-                    time={3}
-                    priority={"high"}
-                    points={10}
-                    timeTaken={2}
-                    reactions={[
-                        { emoji: "🔥", count: 3 },
-                        { emoji: "😨", count: 3 },
-                        { emoji: "🤡", count: 3 },
-                    ]}
-                    image={Icons.latte}></PostCard>
-            </ScrollView>
+                            <PostCard
+                                icon={Icons.luffy}
+                                name={"Abhik Ray"}
+                                username={"beak"}
+                                caption={"this is my first post ever wow"}
+                                time={3}
+                                priority={"high"}
+                                points={10}
+                                timeTaken={2}
+                                reactions={[
+                                    { emoji: "🔥", count: 3 },
+                                    { emoji: "😨", count: 3 },
+                                    { emoji: "🤡", count: 3 },
+                                ]}
+                                image={Icons.latte}></PostCard>
+                        </ScrollView>
+                    </>
+                )}
+            />
         </View>
     );
 }

@@ -4,6 +4,7 @@ import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
 import { ThemedText } from "../ThemedText";
 
 type Props = {
+    postId: number;
     reacted: boolean;
     emoji: string;
     count: number;
@@ -11,7 +12,9 @@ type Props = {
 
 const ReactPills = ({ reacted, emoji, count }: Props) => {
     const [hasReacted, setHasReacted] = useState(reacted);
-
+    if (count === 0 && !hasReacted) {
+        return null;
+    }
     return (
         <TouchableOpacity
             onPress={() => {

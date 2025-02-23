@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { Colors } from "@/constants/Colors";
-import UserInfoRow from "../UserInfo/UserInfoRowBase";
-import ReactPills from "../inputs/ReactPills";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
+import ReactPills from "../inputs/ReactPills";
+import ReactionAction from "../inputs/ReactionAction";
 
 type SlackReaction = {
     emoji: string;
     count: number;
 };
+
 type Props = {
     icon: string;
     name: string;
@@ -24,16 +25,36 @@ type Props = {
     id?: string;
 };
 
-const PostCard = ({ icon, name, username, caption, time, priority, points, timeTaken, reactions, image }: Props) => {
+const PostCard = ({
+    icon,
+    name,
+    username,
+    caption,
+    time,
+    priority,
+    points,
+    timeTaken,
+    reactions: initialReactions,
+    image,
+}: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
+    const [reactions, setReactions] = useState<SlackReaction[]>(initialReactions);
+    const [newReactions, setNewReactions] = useState<SlackReaction[]>();
+
+    const handleAddReaction = (emoji: string) => {
+        setNewReactions((prevReactions = []) => {
+            const existingReaction = prevReactions.find((r) => r.emoji === emoji);
+            if (existingReaction) {
+                return prevReactions.map((r) => (r.emoji === emoji ? { ...r } : r));
+            } else {
+                return [...prevReactions, { emoji, count: 0 }];
+            }
+        });
+    };
 
     return (
         <TouchableOpacity style={styles.container}>
-            <View
-                style={{
-                    flexDirection: "column",
-                    marginVertical: 15,
-                }}>
+            <View style={{ flexDirection: "column", marginVertical: 15 }}>
                 <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
                 <View style={styles.col}>
                     <ThemedText type="defaultSemiBold">{caption}</ThemedText>
@@ -43,21 +64,27 @@ const PostCard = ({ icon, name, username, caption, time, priority, points, timeT
                         <ThemedText type="lightBody">⏰ {timeTaken} hrs</ThemedText>
                     </View>
                     <TouchableOpacity onPress={() => setModalVisible(true)}>
-                        <Image src={image} style={styles.image}></Image>
+                        <Image src={image} style={styles.image} />
                     </TouchableOpacity>
                 </View>
-                <View style={{ marginTop: 18, gap: 8, flexDirection: "row", justifyContent: "flex-start" }}>
-                    {reactions.map((react, index) => (
-                        <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={false}></ReactPills>
+
+                <View style={styles.reactionsRow}>
+                    {reactions?.map((react, index) => (
+                        <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={false} postId={0} />
                     ))}
-                    <ReactPills emoji="+" count={0} reacted={false}></ReactPills>
+                    {newReactions?.map((react, index) => (
+                        <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={true} postId={0} />
+                    ))}
+                    <ReactionAction onAddReaction={(emoji) => handleAddReaction(emoji)} postId={0} />
                 </View>
+
                 <TouchableOpacity>
                     <ThemedText style={{ paddingTop: 15 }} type="lightBody">
                         💬 Leave a comment
                     </ThemedText>
                 </TouchableOpacity>
             </View>
+
             <Modal
                 visible={modalVisible}
                 transparent={true}
@@ -66,9 +93,7 @@ const PostCard = ({ icon, name, username, caption, time, priority, points, timeT
                 <TouchableOpacity style={styles.modalContainer} onPress={() => setModalVisible(false)}>
                     <View style={styles.modalContent}>
                         <Image src={image} style={styles.popupImage} />
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                            <ThemedText type="default">Close</ThemedText>
-                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setModalVisible(false)}></TouchableOpacity>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -100,6 +125,14 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         gap: 10,
     },
+    reactionsRow: {
+        marginTop: 18,
+        gap: 8,
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        width: Dimensions.get("window").width * 0.87,
+        flexWrap: "wrap",
+    },
     modalContainer: {
         flex: 1,
         justifyContent: "center",
@@ -114,14 +147,5 @@ const styles = StyleSheet.create({
         width: Dimensions.get("window").width * 0.9,
         height: Dimensions.get("window").width * 0.9,
         resizeMode: "contain",
-    },
-    closeButton: {
-        marginTop: 10,
-        padding: 10,
-        backgroundColor: Colors.dark.background,
-        borderRadius: 5,
-    },
-    closeButtonText: {
-        fontSize: 16,
     },
 });
