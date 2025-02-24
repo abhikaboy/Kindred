@@ -14,8 +14,8 @@ type CreateActivityParams struct {
 }
 
 type ActivityPoint struct {
-	date    time.Time
-	value   float64
+	date  time.Time
+	value float64
 }
 
 type ActivityDocument struct {

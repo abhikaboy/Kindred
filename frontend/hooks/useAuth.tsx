@@ -23,7 +23,7 @@ async function getUserByAppleAccountID(appleAccountID: string) {
 interface AuthContextType {
     user: any | null;
     login: (appleAccountID: string) => void;
-    register: (firstName: string, lastName: string, email: string, appleAccountID: string) => any;
+    register: (email: string, appleAccountID: string) => any;
     logout: () => void;
     refresh: () => void;
 }
@@ -33,17 +33,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<any | null>(null);
 
-    async function register(firstName: string, lastName: string, email: string, appleAccountID: string) {
+    async function register(email: string, appleAccountID: string) {
         const url = process.env.EXPO_PUBLIC_API_URL;
         console.log(url);
         try {
-            const response = await fetch(url, {
+            const response = await fetch(`${url}/auth/register/apple`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    appleAccountID,
+                    apple_id: appleAccountID,
+                    email: email,
+                    password: appleAccountID,
                 }),
             });
 
@@ -52,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             console.log(response);
-            return response;
+            return await response.json();
         } catch (e: any) {
             console.log(e);
         }

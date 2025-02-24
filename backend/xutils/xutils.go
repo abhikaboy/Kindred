@@ -48,7 +48,7 @@ func ParseIDs(c *fiber.Ctx, ids ...string) (error, []primitive.ObjectID) {
 	for index, id := range ids {
 		id_, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
-			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at " + string(index), slog.String("error", err.Error()), slog.String("id", id))
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at "+string(index), slog.String("error", err.Error()), slog.String("id", id))
 			return err, nil
 		}
 		ids_ = append(ids_, id_)

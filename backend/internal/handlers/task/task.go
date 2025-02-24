@@ -13,6 +13,7 @@ import (
 )
 
 var validator = xvalidator.Validator
+
 type Handler struct {
 	service *Service
 }
@@ -41,7 +42,7 @@ func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
 		})
 	}
 
-  sortAggregation := bson.D{
+	sortAggregation := bson.D{
 		{Key: "$sort", Value: bson.M{
 			sort.SortBy: sort.SortDir,
 		}},
@@ -78,15 +79,15 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 	}
 
 	doc := TaskDocument{
-		ID:        primitive.NewObjectID(),
-		Priority:  params.Priority,
-		Content:   params.Content,
-		Value:     params.Value,
-		Recurring: params.Recurring,
+		ID:           primitive.NewObjectID(),
+		Priority:     params.Priority,
+		Content:      params.Content,
+		Value:        params.Value,
+		Recurring:    params.Recurring,
 		RecurDetails: params.RecurDetails,
-		Public:    params.Public,
-		Active:    params.Active,
-		Timestamp: time.Now(),
+		Public:       params.Public,
+		Active:       params.Active,
+		Timestamp:    time.Now(),
 	}
 
 	_, err = h.service.CreateTask(userId, categoryId, &doc)
@@ -132,7 +133,7 @@ func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 	user_id, err := primitive.ObjectIDFromHex(context_id)
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
-	
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid ID format",
@@ -152,19 +153,40 @@ func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusOK)
 }
+func (h *Handler) CompleteTask(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
 
-func (h *Handler) DeleteTask(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
-	if err != nil {
+	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+	if err != nil { return c.Status(fiber.StatusBadRequest).JSON(err) }
+	user_id, categoryId, id := ids[0], ids[1], ids[2]
+
+	var data CompleteTaskDocument	
+	if err := c.BodyParser(&data); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
+			"error": "Invalid request body",
 		})
 	}
 
-	if err := h.service.DeleteTask(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete Task",
-		})
+	if err := h.service.CompleteTask(user_id, id, categoryId, data); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+	
+	if err = h.service.IncrementTaskCompletedAndDelete(user_id, categoryId,	id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *Handler) DeleteTask(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
+
+	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+	if err != nil { return c.Status(fiber.StatusBadRequest).JSON(err) }
+	user_id, categoryId, id := ids[0], ids[1], ids[2]
+
+	if err := h.service.DeleteTask(user_id, categoryId, id); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)

@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "expo-router";
 
 export default function SignUpButton() {
-    const { login, register } = useAuth();
+    const { register } = useAuth();
     const router = useRouter();
 
     return (
@@ -31,10 +31,8 @@ export default function SignUpButton() {
                     if (!email || !firstName || !lastName) {
                         alert("Either you already have a user or didn't give us permissions " + appleAccountID);
                     }
-                    // await register(firstName, lastName, email, appleAccountID);
-                    // const user1 = await login(appleAccountID);
-                    // console.log(user1);
-
+                    let data = await register(email, appleAccountID);
+                    console.log(data);
                     router.replace({
                         pathname: "/(onboarding)",
                         params: {

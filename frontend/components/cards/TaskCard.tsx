@@ -19,9 +19,9 @@ const priorityColors = {
 };
 
 const priorityToString = {
-    0: "low",
-    1: "medium",
-    2: "high",
+    1: "low",
+    2: "medium",
+    3: "high",
 };
 
 const TaskCard = ({ content, points, priority }: Props) => {

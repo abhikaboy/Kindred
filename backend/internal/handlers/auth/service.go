@@ -63,7 +63,7 @@ func (s *Service) ValidateToken(token string) (string, float64, error) {
 
 	fmt.Println(claims)
 	idString := claims["user_id"].(string)
-	
+
 	id, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return "", 0, err

@@ -103,7 +103,7 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 }
 
 // UpdatePartialCategory updates only specified fields of a Category document by ObjectID.
-func (s *Service) UpdatePartialCategory(userId primitive.ObjectID,id primitive.ObjectID, updated UpdateCategoryDocument) (*CategoryDocument, error) {
+func (s *Service) UpdatePartialCategory(userId primitive.ObjectID, id primitive.ObjectID, updated UpdateCategoryDocument) (*CategoryDocument, error) {
 	ctx := context.Background()
 	// filter := bson.M{"_id": id}
 
@@ -114,15 +114,15 @@ func (s *Service) UpdatePartialCategory(userId primitive.ObjectID,id primitive.O
 
 	fmt.Println(updateFields)
 
-	_, err = s.Users.UpdateOne(ctx, 
+	_, err = s.Users.UpdateOne(ctx,
 		bson.M{
-			"_id": userId, 
+			"_id":        userId,
 			"categories": bson.M{"$elemMatch": bson.M{"_id": id}},
 		},
-			bson.D{{Key: "$set", Value: bson.D{
-				{Key: "categories.$.name", Value: updated.Name},
-				{Key: "categories.$.lastEdited", Value: time.Now()},
-			}}},
+		bson.D{{Key: "$set", Value: bson.D{
+			{Key: "categories.$.name", Value: updated.Name},
+			{Key: "categories.$.lastEdited", Value: time.Now()},
+		}}},
 	)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", slog.String("error", err.Error()))
@@ -133,7 +133,7 @@ func (s *Service) UpdatePartialCategory(userId primitive.ObjectID,id primitive.O
 }
 
 // DeleteCategory removes a Category document by ObjectID.
-func (s *Service) DeleteCategory(userId primitive.ObjectID,id primitive.ObjectID) error {
+func (s *Service) DeleteCategory(userId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()
 	_, err := s.Users.UpdateOne(ctx, bson.M{"_id": userId}, bson.M{"$pull": bson.M{"categories": bson.M{"_id": id}}})
 	return err
