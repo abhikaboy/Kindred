@@ -42,7 +42,7 @@ func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Tasks: collections["users"],
+		Tasks:          collections["users"],
 		CompletedTasks: collections["completed-tasks"],
 	}
 }
@@ -130,8 +130,8 @@ func (s *Service) CreateTask(userId primitive.ObjectID, categoryId primitive.Obj
 
 // UpdatePartialTask updates only specified fields of a Task document by ObjectID.
 func (s *Service) UpdatePartialTask(
-	userId primitive.ObjectID, 
-	id primitive.ObjectID, 
+	userId primitive.ObjectID,
+	id primitive.ObjectID,
 	categoryId primitive.ObjectID,
 	updated UpdateTaskDocument) (*TaskDocument, error) {
 
@@ -175,22 +175,22 @@ func (s *Service) UpdatePartialTask(
 }
 
 func (s *Service) CompleteTask(
-	userId primitive.ObjectID, 
-	id primitive.ObjectID, 
-	categoryId primitive.ObjectID, 
+	userId primitive.ObjectID,
+	id primitive.ObjectID,
+	categoryId primitive.ObjectID,
 	completed CompleteTaskDocument) error {
-	
+
 	ctx := context.Background()
 	pipeline := getTasksByUserPipeline(userId)
 	pipeline = append(pipeline, bson.D{
-				{Key: "$set", Value: bson.M{
-					"active": false,
-					"timeTaken": completed.TimeTaken,
-					"timeCompleted": completed.TimeCompleted,
-					"category": categoryId,
-					"user": userId,
-				}},
-		},
+		{Key: "$set", Value: bson.M{
+			"active":        false,
+			"timeTaken":     completed.TimeTaken,
+			"timeCompleted": completed.TimeCompleted,
+			"category":      categoryId,
+			"user":          userId,
+		}},
+	},
 		bson.D{
 			{Key: "$unset", Value: bson.A{
 				"recurDetails",
@@ -199,9 +199,9 @@ func (s *Service) CompleteTask(
 		},
 		bson.D{
 			{Key: "$merge", Value: bson.M{
-				"into": "completed-tasks",
-				"on": "_id",
-				"whenMatched": "replace",
+				"into":           "completed-tasks",
+				"on":             "_id",
+				"whenMatched":    "replace",
 				"whenNotMatched": "insert",
 			}},
 		},
@@ -244,25 +244,23 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 		return fiber.ErrNotFound // 404
 	}
 
-	result, err := s.Tasks.UpdateOne(ctx, 
+	result, err := s.Tasks.UpdateOne(ctx,
 		bson.M{
-			"_id": userId,
+			"_id":        userId,
 			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
 		},
 		bson.M{
-			"$inc": bson.M{"tasks_complete": 1},			
+			"$inc":  bson.M{"tasks_complete": 1},
 			"$pull": bson.M{"categories.$.tasks": bson.M{"_id": id}},
 		},
-	)	
-	if (err != nil) {
+	)
+	if err != nil {
 		return err
 	}
 
-
-	
 	resultDecoded := *result
 	fmt.Println(resultDecoded.ModifiedCount)
-	if (resultDecoded.ModifiedCount == 0) {
+	if resultDecoded.ModifiedCount == 0 {
 		return errors.New("No tasks found")
 	}
 	return err
@@ -273,9 +271,9 @@ func (s *Service) DeleteTask(userId primitive.ObjectID, categoryId primitive.Obj
 	ctx := context.Background()
 	result, err := s.Tasks.UpdateOne(
 		ctx, bson.M{
-			"_id": userId,
+			"_id":        userId,
 			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
-			}, 
+		},
 		bson.M{"$pull": bson.M{"categories.$.tasks": bson.M{"_id": id}}},
 	)
 	if err != nil {
@@ -285,7 +283,7 @@ func (s *Service) DeleteTask(userId primitive.ObjectID, categoryId primitive.Obj
 	resultDecoded := *result
 	fmt.Println(resultDecoded)
 	return err
-	
+
 }
 
 // DeleteCategory removes a Category document by ObjectID.
@@ -314,7 +312,6 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 		&options,
 	)
 
-	
 	if err != nil {
 		return err
 	}
@@ -322,7 +319,7 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 	resultDecoded := *result
 	fmt.Println(resultDecoded)
 	return err
-	
+
 }
 
 func (s *Service) GetActiveTasks(userId primitive.ObjectID) ([]TaskDocument, error) {
@@ -346,5 +343,5 @@ func (s *Service) GetActiveTasks(userId primitive.ObjectID) ([]TaskDocument, err
 		return nil, err
 	}
 
-	return results, nil	
+	return results, nil
 }

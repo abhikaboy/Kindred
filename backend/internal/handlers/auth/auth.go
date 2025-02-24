@@ -179,20 +179,20 @@ func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
 	}
 
 	access, refresh, user_id, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
-	
+
 	fmt.Println("saving user in this request: " + *user_id)
-	
+
 	context := context.WithValue(c.Context(), "user_id", *user_id)
 	c.Request().Header.Set("id", accessToken)
 	c.SetUserContext(context)
-	
+
 	c.Response().Header.Add("access_token", *access)
 	c.Response().Header.Add("refresh_token", *refresh)
-	
+
 	if err != nil {
 		return err
 	}
-	
+
 	return c.Next()
 }
 
@@ -249,8 +249,6 @@ func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, re
 	if err := h.service.UseToken(user_id); err != nil {
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
 	}
-
-
 
 	return &access, &refresh, &user_id, access_error
 }
