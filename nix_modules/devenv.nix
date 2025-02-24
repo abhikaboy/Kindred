@@ -9,7 +9,7 @@
       ];
       shells.default = {
         enterShell = ''
-          printf "\033[0;1;36mGERM DEVELOPMENT ENVIRONMENT\033[0m\n"
+          printf "\033[0;1;36mKINDRED DEVELOPMENT ENVIRONMENT\033[0m\n"
           env-help
         '';
 

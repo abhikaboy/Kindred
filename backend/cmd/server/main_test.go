@@ -31,7 +31,7 @@ func TestIndexRoute(t *testing.T) {
 			route:         "/",
 			expectedError: false,
 			expectedCode:  200,
-			expectedBody:  "Welcome to GERM!",
+			expectedBody:  "Welcome to Kindred!",
 		},
 	}
 
@@ -80,7 +80,7 @@ func setup(t *testing.T) *fiber.App {
 	}
 	cfg := config.Atlas{
 		User:        "test",
-		Pass:        "germ-test-pw",
+		Pass:        "Kindred-test-pw",
 		Cluster:     "Development",
 		Environment: "Test",
 	}
