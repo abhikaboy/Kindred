@@ -1,7 +1,8 @@
-import { View, type ViewProps } from "react-native";
+import { Dimensions, View, type ViewProps, ScrollView } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React from "react";
+import { Colors } from "@/constants/Colors";
 
 export type ThemedViewProps = ViewProps & {
     lightColor?: string;
@@ -9,7 +10,18 @@ export type ThemedViewProps = ViewProps & {
 };
 
 export function ThemedView({ style, lightColor, darkColor, ...otherProps }: ThemedViewProps) {
-    const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, "background");
-
-    return <View style={[{ backgroundColor }, style]} {...otherProps} />;
+    return (
+        <View
+            style={[
+                {
+                    backgroundColor: Colors.dark.background,
+                    flex: 1,
+                    flexDirection: "column",
+                    minHeight: Dimensions.get("screen").height,
+                },
+                style,
+            ]}
+            {...otherProps}
+        />
+    );
 }

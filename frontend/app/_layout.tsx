@@ -10,6 +10,7 @@ import View from "react-native";
 
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/hooks/useAuth";
+import { Colors } from "@/constants/Colors";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -36,7 +37,17 @@ export default function RootLayout() {
             <AuthProvider>
                 <Stack
                     screenOptions={{
-                        headerShown: false,
+                        headerShown: true,
+                        headerTransparent: true,
+                        headerBackTitle: "Back",
+                        headerTintColor: Colors.dark.text,
+                        headerBackButtonDisplayMode: "minimal",
+                        headerTitleStyle: {
+                            fontFamily: "Outfit",
+                            fontWeight: 100,
+                            fontSize: 1,
+                            color: Colors.dark.background,
+                        },
                     }}>
                     <Stack.Screen
                         name="(tabs)"
@@ -45,9 +56,11 @@ export default function RootLayout() {
                         }}
                     />
                     <Stack.Screen name="Dev1" />
+                    <Stack.Screen options={{}} name="Dev2" />
+                    <Stack.Screen options={{}} name="Activity" />
                     <Stack.Screen name="+not-found" />
                 </Stack>
-                <StatusBar style="auto" />
+                <StatusBar style="light" />
             </AuthProvider>
         </ThemeProvider>
     );

@@ -1,13 +1,21 @@
 import { StyleSheet, Image, View } from "react-native";
 import React from "react";
+type Size = "small" | "medium" | "large";
 
 type Props = {
     icon: string;
+    size: Size;
 };
-const PreviewIcon = ({ icon }: Props) => {
+
+const sizeOfIcon = {
+    small: 35,
+    medium: 48,
+    large: 64,
+};
+const PreviewIcon = ({ icon, size }: Props) => {
     return (
         <View>
-            <Image src={icon} style={{ width: 64, height: 64, borderRadius: 100 }} />
+            <Image src={icon} style={{ width: sizeOfIcon[size], height: sizeOfIcon[size], borderRadius: 100 }} />
         </View>
     );
 };

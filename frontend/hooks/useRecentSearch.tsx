@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useColorScheme } from "react-native";
 import asyncStorage from "@react-native-async-storage/async-storage";
 
 export function useRecentSearch(searchSet: string = "") {

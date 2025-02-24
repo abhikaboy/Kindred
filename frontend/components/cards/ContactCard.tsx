@@ -3,6 +3,7 @@ import React from "react";
 import PreviewIcon from "../profile/PreviewIcon";
 import { ThemedText } from "../ThemedText";
 import FollowButton from "../inputs/FollowButton";
+import { Colors } from "@/constants/Colors";
 
 type Props = {
     name: string;
@@ -15,7 +16,7 @@ type Props = {
 const ContactCard = ({ name, icon, handle, following }: Props) => {
     return (
         <TouchableOpacity style={styles.container}>
-            <PreviewIcon icon={icon} />
+            <PreviewIcon size="large" icon={icon} />
             <View style={{ flexDirection: "column", gap: 8, alignItems: "center" }}>
                 <View>
                     <ThemedText style={{ textAlign: "center" }} type="lightBody">
@@ -36,7 +37,7 @@ export default ContactCard;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#d9d9d915",
+        backgroundColor: Colors.dark.lightened,
         borderRadius: 10,
         padding: 16,
         margin: 8,

@@ -14,6 +14,7 @@ export const Colors = {
         error: "#FF5C5F",
         warning: "#FFFF5C",
         caption: "#9D9D9D",
+        lightened: "#171626",
 
         tint: tintColorDark,
         icon: "#9BA1A6",

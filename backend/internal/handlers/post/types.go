@@ -1,4 +1,4 @@
-package profile
+package Post
 
 import (
 	"time"
@@ -7,13 +7,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type CreateProfileParams struct {
+type CreatePostParams struct {
 	Field1  string      `validate:"required" json:"field1"`
 	Field2  Enumeration `validate:"required" json:"field2"`
 	Picture *string     `validate:"required" json:"picture"`
 }
 
-type ProfileDocument struct {
+type PostDocument struct {
 	ID        primitive.ObjectID `bson:"_id" json:"id"`
 	Field1    string             `bson:"field1" json:"field1"`
 	Field2    Enumeration        `bson:"field2" json:"field2"`
@@ -21,7 +21,7 @@ type ProfileDocument struct {
 	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
 }
 
-type UpdateProfileDocument struct {
+type UpdatePostDocument struct {
 	Field1  string      `bson:"field1,omitempty" json:"field1,omitempty"`
 	Field2  Enumeration `bson:"field2,omitempty" json:"field2,omitempty"`
 	Picture *string     `bson:"picture,omitempty" json:"picture,omitempty"`
@@ -36,10 +36,10 @@ const (
 )
 
 /*
-Profile Service to be used by Profile Handler to interact with the
+Post Service to be used by Post Handler to interact with the
 Database layer of the application
 */
 
 type Service struct {
-	Profiles *mongo.Collection
+	Posts *mongo.Collection
 }

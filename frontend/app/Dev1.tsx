@@ -11,6 +11,11 @@ import NextButton from "@/components/inputs/NextButton";
 import ThemedSwitch from "@/components/inputs/ThemedSwitch";
 import TrafficLight from "@/components/inputs/TrafficLight";
 import ThemedSlider from "@/components/inputs/ThemedSlider";
+import ThemedInput from "@/components/inputs/ThemedInput";
+import Dropdown from "@/components/inputs/Dropdown";
+import UserInfoRow from "@/components/UserInfo/UserInfoRowBase";
+import { Icons } from "@/constants/Icons";
+import ReactPills from "@/components/inputs/ReactPills";
 
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -20,7 +25,7 @@ export default function Dev1() {
                 backgroundColor: Colors.dark.background,
                 height: Dimensions.get("screen").height,
                 flex: 1,
-                paddingTop: Dimensions.get("screen").height * 0.1,
+                paddingTop: Dimensions.get("screen").height * 0.12,
                 paddingHorizontal: 24,
                 gap: 16,
             }}>
@@ -32,6 +37,8 @@ export default function Dev1() {
                     gap: 16,
                 }}>
                 <PrimaryButton title="Button" onPress={() => {}} />
+                <Dropdown />
+                <ThemedInput />
                 <SearchBox
                     value={searchTerm}
                     placeholder="Search"
@@ -69,6 +76,8 @@ export default function Dev1() {
                 <ThemedSwitch />
                 <TrafficLight />
                 <ThemedSlider />
+                <ReactPills reacted={false} emoji={"🔥"} count={4}></ReactPills>
+                <UserInfoRow name={"Abhik Ray"} username={"beak"} time={2} icon={Icons.luffy}></UserInfoRow>
             </ScrollView>
         </View>
     );

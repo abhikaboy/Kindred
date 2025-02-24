@@ -15,9 +15,20 @@ interface SearchBoxProps extends TextInputProps {
     onSubmit: () => void;
     onChangeText: (text: string) => void;
     icon?: React.ReactNode;
+    setFocused?: (focused: boolean) => void;
 }
 
-export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, ...rest }: SearchBoxProps) {
+export function SearchBox({
+    value,
+    placeholder,
+    onChangeText,
+    onSubmit,
+    icon,
+    recent,
+    name,
+    setFocused,
+    ...rest
+}: SearchBoxProps) {
     const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
     const [inputHeight, setInputHeight] = useState(0);
     const textColor = useThemeColor({ light: "#000", dark: "#fff" }, "text");
@@ -25,11 +36,14 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
     const [recentItems, setRecentItems] = useState<string[]>([]);
 
     async function fetchRecents() {
-        if (recent) setRecentItems(await getRecents());
-        else setRecentItems([]);
+        if (recent) {
+            setRecentItems(await getRecents());
+            setFocused(true);
+        } else await clearRecents();
     }
     async function clearRecents() {
         setRecentItems([]);
+        if (setFocused) setFocused(false);
     }
     async function deleteRecentItem(term: string) {
         deleteRecent(term).then(() => fetchRecents());
@@ -38,7 +52,7 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
     useEffect(() => {
         if (inputRef.current) {
             inputRef.current?.measureInWindow((height) => {
-                setInputHeight(height + Dimensions.get("window").height * 0.02);
+                setInputHeight(height + Dimensions.get("window").height * 0.01);
             });
         }
     }, [inputRef]);
@@ -53,6 +67,7 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
                 fetchRecents();
             });
         onSubmit();
+        inputRef.current?.blur();
     };
 
     return (
@@ -60,6 +75,7 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
             <View style={styles.container}>
                 <TextInput
                     id={"search-input"}
+                    placeholder={placeholder}
                     ref={inputRef}
                     onSubmitEditing={onSubmitEditing}
                     onFocus={() => fetchRecents()}
@@ -81,9 +97,10 @@ export function SearchBox({ value, onChangeText, onSubmit, icon, recent, name, .
                                 style={styles.recent}
                                 onPress={() => {
                                     inputRef.current?.blur();
-                                    onChangeText(term);
                                     onSubmit();
                                     appendSearch(term);
+                                    clearRecents();
+                                    onChangeText(term);
                                 }}>
                                 <View style={{ flexDirection: "row", gap: 10 }}>
                                     <Octicons name="search" size={24} color="white" />

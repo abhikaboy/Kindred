@@ -1,19 +1,29 @@
 import { createContext, useContext, useState } from "react";
 import React from "react";
+import axios from "axios";
 
 async function getUserByAppleAccountID(appleAccountID: string) {
-    const url = process.env.EXPO_PUBLIC_API_URL + "/users/aaid/" + appleAccountID;
-    const response = await fetch(url, {
-        method: "GET",
+    const url = process.env.EXPO_PUBLIC_API_URL + "/auth/login/apple";
+    const response = await axios.post(url, {
+        apple_id: appleAccountID,
     });
-    const user = await response.json();
+    const access_token = response.headers["access_token"];
+    const refresh_token = response.headers["refresh_token"];
+
+    console.log(access_token);
+    console.log(refresh_token);
+
+    axios.defaults.headers.common["Authorization"] = "Bearer " + access_token;
+    axios.defaults.headers.common["refresh_token"] = refresh_token;
+
+    const user = response.data;
     return user;
 }
 
 interface AuthContextType {
     user: any | null;
     login: (appleAccountID: string) => void;
-    register: (firstName: string, lastName: string, email: string, appleAccountID: string) => any;
+    register: (email: string, appleAccountID: string) => any;
     logout: () => void;
     refresh: () => void;
 }
@@ -23,17 +33,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<any | null>(null);
 
-    async function register(firstName: string, lastName: string, email: string, appleAccountID: string) {
+    async function register(email: string, appleAccountID: string) {
         const url = process.env.EXPO_PUBLIC_API_URL;
         console.log(url);
         try {
-            const response = await fetch(url, {
+            const response = await fetch(`${url}/auth/register/apple`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    appleAccountID,
+                    apple_id: appleAccountID,
+                    email: email,
+                    password: appleAccountID,
                 }),
             });
 
@@ -42,19 +54,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             console.log(response);
-            return response;
+            return await response.json();
         } catch (e: any) {
             console.log(e);
         }
     }
 
     async function login(appleAccountID: string) {
+        console.log(appleAccountID);
+        console.log("Logging in...");
         const userRes = await getUserByAppleAccountID(appleAccountID);
 
         if (userRes) {
-            setUser({ ...userRes });
-            return { ...userRes };
+            setUser(userRes);
+            return userRes;
         } else {
+            alert("Could not login");
             throw new Error("Could not login");
         }
     }

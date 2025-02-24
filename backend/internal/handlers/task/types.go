@@ -8,32 +8,60 @@ import (
 )
 
 type CreateTaskParams struct {
-	Field1  string      `validate:"required" json:"field1"`
-	Field2  Enumeration `validate:"required" json:"field2"`
-	Picture *string     `validate:"required" json:"picture"`
+	Priority     int                    `validate:"required,min=1,max=3" bson:"priority" json:"priority"`
+	Content      string                 `validate:"required" bson:"content" json:"content"`
+	Value        float64                `validate:"required,min=0,max=10" bson:"value" json:"value"`
+	Recurring    bool                   `bson:"recurring" json:"recurring"`
+	RecurDetails map[string]interface{} `bson:"recurDetails,omitempty" bsonjson:"recurDetails,omitempty"`
+	Public       bool                   `bson:"public" json:"public"`
+	Active       bool                   `bson:"active" json:"active"`
+}
+
+type SortParams struct {
+	SortBy  string `validate:"oneof=priority timestamp difficulty none" bson:"sortBy" json:"sortBy"`
+	SortDir int    `validate:"oneof=1 -1" bson:"sortDir" json:"sortDir"`
 }
 
 type TaskDocument struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Field1    string             `bson:"field1" json:"field1"`
-	Field2    Enumeration        `bson:"field2" json:"field2"`
-	Picture   *string            `bson:"picture" json:"picture"`
-	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+	ID           primitive.ObjectID     `bson:"_id" json:"id"`
+	Priority     int                    `bson:"priority" json:"priority"`
+	Content      string                 `bson:"content" json:"content"`
+	Value        float64                `bson:"value" json:"value"`
+	Recurring    bool                   `bson:"recurring" json:"recurring"`
+	RecurDetails map[string]interface{} `bson:"recurDetails" json:"recurDetails"`
+	Public       bool                   `bson:"public" json:"public"`
+	Active       bool                   `bson:"active" json:"active"`
+	Timestamp    time.Time              `bson:"timestamp" json:"timestamp"`
+	LastEdited   time.Time              `bson:"lastEdited" json:"lastEdited"`
 }
 
 type UpdateTaskDocument struct {
-	Field1  string      `bson:"field1,omitempty" json:"field1,omitempty"`
-	Field2  Enumeration `bson:"field2,omitempty" json:"field2,omitempty"`
-	Picture *string     `bson:"picture,omitempty" json:"picture,omitempty"`
+	Priority     int                    `bson:"priority" json:"priority"`
+	Content      string                 `bson:"content" json:"content"`
+	Value        float64                `bson:"value" json:"value"`
+	Recurring    bool                   `bson:"recurring" json:"recurring"`
+	RecurDetails map[string]interface{} `bson:"recurDetails" json:"recurDetails"`
+	Public       bool                   `bson:"public" json:"public"`
+	Active       bool                   `bson:"active" json:"active"`
 }
 
-type Enumeration string
+type SortTypes string
+type SortDirection int
 
 const (
-	Option1 Enumeration = "Option1"
-	Option2 Enumeration = "Option2"
-	Option3 Enumeration = "Option3"
+	Priority   SortTypes = "priority"
+	Time       SortTypes = "timestamp"
+	Difficulty SortTypes = "value"
+
+	Ascending  SortDirection = 1
+	Descending SortDirection = -1
 )
+
+
+type CompleteTaskDocument struct {
+	TimeCompleted string 			`bson:"timeCompleted" json:"timeCompleted"`
+	TimeTaken     string      `bson:"timeTaken" json:"timeTaken"`	
+}
 
 /*
 Task Service to be used by Task Handler to interact with the
@@ -42,4 +70,5 @@ Database layer of the application
 
 type Service struct {
 	Tasks *mongo.Collection
+	CompletedTasks *mongo.Collection
 }

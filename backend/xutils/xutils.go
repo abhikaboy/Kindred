@@ -2,8 +2,12 @@ package xutils
 
 import (
 	"crypto/rand"
+	"fmt"
+	"log/slog"
 
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GenerateOTP(length int) (string, error) {
@@ -33,4 +37,21 @@ func ToDoc(v interface{}) (doc *bson.D, err error) {
 	}
 	err = bson.Unmarshal(data, &doc)
 	return
+}
+
+func ParseIDs(c *fiber.Ctx, ids ...string) (error, []primitive.ObjectID) {
+	var err error
+	var ids_ []primitive.ObjectID
+
+	fmt.Println(ids)
+
+	for index, id := range ids {
+		id_, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at "+string(index), slog.String("error", err.Error()), slog.String("id", id))
+			return err, nil
+		}
+		ids_ = append(ids_, id_)
+	}
+	return err, ids_
 }

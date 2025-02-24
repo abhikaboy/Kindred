@@ -1,4 +1,4 @@
-package profile
+package Post
 
 import (
 	"github.com/gofiber/fiber/v2"
@@ -16,12 +16,12 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	apiV1 := app.Group("/api/v1")
 
 	// Add Sample group under API Version 1
-	Profiles := apiV1.Group("/Profiles")
+	Posts := apiV1.Group("/Posts")
 
-	Profiles.Post("/", handler.CreateProfile)
-	Profiles.Get("/", handler.GetProfiles)
-	Profiles.Get("/:id", handler.GetProfile)
-	Profiles.Patch("/:id", handler.UpdatePartialProfile)
-	Profiles.Delete("/:id", handler.DeleteProfile)
+	Posts.Post("/", handler.CreatePost)
+	Posts.Get("/", handler.GetPosts)
+	Posts.Get("/:id", handler.GetPost)
+	Posts.Patch("/:id", handler.UpdatePartialPost)
+	Posts.Delete("/:id", handler.DeletePost)
 
 }
