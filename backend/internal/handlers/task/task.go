@@ -191,3 +191,35 @@ func (h *Handler) DeleteTask(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusOK)
 }
+
+func (h *Handler) ActivateTask(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
+
+	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+	if err != nil { return c.Status(fiber.StatusBadRequest).JSON(err) }
+	user_id, categoryId, id := ids[0], ids[1], ids[2]
+
+	newStatus := c.QueryBool("active", false)
+
+	if err := h.service.ActivateTask(user_id, categoryId, id, newStatus); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *Handler) GetActiveTasks(c *fiber.Ctx) error {
+
+	err, ids := xutils.ParseIDs(c, c.Params("id"))
+	if err != nil { return c.Status(fiber.StatusBadRequest).JSON(err) }
+	id := ids[0]
+
+	tasks, err := h.service.GetActiveTasks(id); 
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.JSON(tasks)
+}
+
+
