@@ -157,16 +157,16 @@ export default function Profile() {
                 </View>
                 <View gap={12}>
                     <ThemedText type="subtitle">Active Tasks</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
+                    <TaskCard content={"do my hw lol"} points={9} priority={1} />
                 </View>
                 <View gap={12}>
                     <ThemedText type="subtitle">Accomplished</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
+                    <TaskCard content={"do my hw lol"} points={3} priority={1} />
+                    <TaskCard content={"do my hw lol"} points={2} priority={2} />
+                    <TaskCard content={"do my hw lol"} points={9} priority={0} />
+                    <TaskCard content={"do my hw lol"} points={9} priority={2} />
+                    <TaskCard content={"do my hw lol"} points={15} priority={0} />
+                    <TaskCard content={"do my hw lol"} points={3} priority={1} />
                 </View>
             </View>
         </Animated.ScrollView>

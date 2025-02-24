@@ -76,7 +76,7 @@ export default function Dev1() {
                 <ThemedSwitch />
                 <TrafficLight />
                 <ThemedSlider />
-                <ReactPills reacted={false} emoji={"🔥"} count={4}></ReactPills>
+                <ReactPills reacted={false} emoji={"🔥"} count={4} postId={0}></ReactPills>
                 <UserInfoRow name={"Abhik Ray"} username={"beak"} time={2} icon={Icons.luffy}></UserInfoRow>
             </ScrollView>
         </View>

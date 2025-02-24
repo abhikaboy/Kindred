@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { Colors } from "@/constants/Colors";
-import UserInfoRow from "../UserInfo/UserInfoRowBase";
-import ReactPills from "../inputs/ReactPills";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
+import ReactPills from "../inputs/ReactPills";
+import ReactionAction from "../inputs/ReactionAction";
+import Carousel from "react-native-reanimated-carousel";
 
-type SlackReaction = {
+export type SlackReaction = {
     emoji: string;
     count: number;
+    ids: string[];
 };
+
 type Props = {
     icon: string;
     name: string;
@@ -20,20 +23,72 @@ type Props = {
     points: number;
     timeTaken: number;
     reactions: SlackReaction[];
-    image: string;
+    images: string[];
     id?: string;
 };
 
-const PostCard = ({ icon, name, username, caption, time, priority, points, timeTaken, reactions, image }: Props) => {
+const PostCard = ({
+    icon,
+    name,
+    username,
+    caption,
+    time,
+    priority,
+    points,
+    timeTaken,
+    reactions: initialReactions,
+    images,
+}: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
+    const [reactions, setReactions] = useState<SlackReaction[]>(initialReactions);
+    const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
+    const allReactions = [...reactions, ...newReactions];
+    const [modalIndex, setModalIndex] = useState(0);
+
+    const userId = "67ba5abb616b5e6544e0137b";
+
+    const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
+        setReactions((prevReactions) => {
+            const existingReaction = prevReactions?.find((r) => r.emoji === emoji);
+            const idsSet = new Set(existingReaction?.ids);
+
+            // checks list of userIds that reacted to see if should add a reaction
+            if (idsSet.has(userId) && add) {
+                return prevReactions;
+            }
+
+            if (existingReaction) {
+                return prevReactions
+                    .map((r) =>
+                        r.emoji === emoji
+                            ? {
+                                  ...r,
+                                  // if add, increase count
+                                  // otherwise, subtract 1 if > 1 or make it 0, which filters out
+                                  count: add ? r.count + 1 : Math.max(0, r.count - 1),
+                                  // add previous ids plus new ids if should add
+                                  // otherwise, remove the id that removes reaction
+                                  ids: add ? [...r.ids, ...ids] : r.ids.filter((id) => !ids.includes(id)),
+                              }
+                            : r
+                    )
+                    .filter((r) => r.count > 0);
+            } else if (add) {
+                return [...prevReactions, { emoji, count, ids }];
+            }
+
+            return prevReactions;
+        });
+    };
+
+    const openModal = (imageIndex) => {
+        setModalVisible(true);
+        setModalIndex(imageIndex);
+    };
 
     return (
-        <TouchableOpacity style={styles.container}>
-            <View
-                style={{
-                    flexDirection: "column",
-                    marginVertical: 15,
-                }}>
+        <View style={styles.container}>
+            <View style={{ flexDirection: "column", marginVertical: 15 }}>
                 <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
                 <View style={styles.col}>
                     <ThemedText type="defaultSemiBold">{caption}</ThemedText>
@@ -42,37 +97,60 @@ const PostCard = ({ icon, name, username, caption, time, priority, points, timeT
                         <ThemedText type="lightBody">💪 {points} pts</ThemedText>
                         <ThemedText type="lightBody">⏰ {timeTaken} hrs</ThemedText>
                     </View>
-                    <TouchableOpacity onPress={() => setModalVisible(true)}>
-                        <Image src={image} style={styles.image}></Image>
-                    </TouchableOpacity>
+                    <Carousel
+                        loop
+                        width={Dimensions.get("window").width}
+                        style={styles.image}
+                        snapEnabled={true}
+                        pagingEnabled={true}
+                        autoPlayInterval={2000}
+                        data={images}
+                        renderItem={({ item, index }) => (
+                            <TouchableOpacity onPress={() => openModal(index)}>
+                                <Image source={{ uri: item }} style={styles.image} />
+                            </TouchableOpacity>
+                        )}
+                    />
                 </View>
-                <View style={{ marginTop: 18, gap: 8, flexDirection: "row", justifyContent: "flex-start" }}>
-                    {reactions.map((react, index) => (
-                        <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={false}></ReactPills>
+
+                <View style={styles.reactionsRow}>
+                    {allReactions.map((react, index) => (
+                        <ReactPills
+                            key={index}
+                            reaction={react}
+                            postId={0}
+                            onAddReaction={() => handleReaction(react, true)}
+                            onRemoveReaction={() => handleReaction(react, false)}
+                        />
                     ))}
-                    <ReactPills emoji="+" count={0} reacted={false}></ReactPills>
+                    <ReactionAction
+                        onAddReaction={(emoji) => handleReaction({ emoji: emoji, count: 1, ids: [userId] }, true)}
+                        postId={0}
+                    />
                 </View>
+
                 <TouchableOpacity>
                     <ThemedText style={{ paddingTop: 15 }} type="lightBody">
                         💬 Leave a comment
                     </ThemedText>
                 </TouchableOpacity>
             </View>
-            <Modal
-                visible={modalVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setModalVisible(false)}>
-                <TouchableOpacity style={styles.modalContainer} onPress={() => setModalVisible(false)}>
-                    <View style={styles.modalContent}>
-                        <Image src={image} style={styles.popupImage} />
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                            <ThemedText type="default">Close</ThemedText>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-        </TouchableOpacity>
+
+            {modalVisible && (
+                <Modal
+                    visible={modalVisible}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setModalVisible(false)}>
+                    <TouchableOpacity style={styles.modalContainer} onPress={() => setModalVisible(false)}>
+                        <View style={styles.modalContent}>
+                            <Image source={{ uri: images[modalIndex] }} style={styles.popupImage} />
+                            <TouchableOpacity onPress={() => setModalVisible(false)}></TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            )}
+        </View>
     );
 };
 
@@ -100,11 +178,19 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         gap: 10,
     },
+    reactionsRow: {
+        marginTop: 18,
+        gap: 8,
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        width: Dimensions.get("window").width * 0.87,
+        flexWrap: "wrap",
+    },
     modalContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backgroundColor: Colors.dark.background,
     },
     modalContent: {
         borderRadius: 10,
@@ -114,14 +200,5 @@ const styles = StyleSheet.create({
         width: Dimensions.get("window").width * 0.9,
         height: Dimensions.get("window").width * 0.9,
         resizeMode: "contain",
-    },
-    closeButton: {
-        marginTop: 10,
-        padding: 10,
-        backgroundColor: Colors.dark.background,
-        borderRadius: 5,
-    },
-    closeButtonText: {
-        fontSize: 16,
     },
 });
