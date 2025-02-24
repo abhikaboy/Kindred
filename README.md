@@ -1,4 +1,5 @@
 ![kindred-cover](https://github.com/user-attachments/assets/c3f3bb9b-ecce-41c2-8bdd-e638df07995b)
+![Foreward](https://github.com/user-attachments/assets/e4443882-f54a-4b7f-907f-032247fb60d4)
 
 
 # Tech Stack
