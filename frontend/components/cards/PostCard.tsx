@@ -106,7 +106,7 @@ const PostCard = ({
                         autoPlayInterval={2000}
                         data={images}
                         renderItem={({ item, index }) => (
-                            <TouchableOpacity onPress={() => openModal(index)}>
+                            <TouchableOpacity onLongPress={() => openModal(index)}>
                                 <Image source={{ uri: item }} style={styles.image} />
                             </TouchableOpacity>
                         )}
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: Colors.dark.background,
+        backgroundColor: "rgba(0,0,0,0.5)",
     },
     modalContent: {
         borderRadius: 10,
