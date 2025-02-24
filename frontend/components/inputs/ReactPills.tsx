@@ -2,23 +2,39 @@ import * as React from "react";
 import { useState } from "react";
 import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
 import { ThemedText } from "../ThemedText";
+import { SlackReaction } from "../cards/PostCard";
 
 type Props = {
     postId: number;
-    reacted: boolean;
-    emoji: string;
-    count: number;
+    reaction: SlackReaction;
+    onAddReaction: (emoji: string, count: number, ids: string[]) => void;
+    onRemoveReaction: (emoji: string, count: number, ids: string[]) => void;
 };
 
-const ReactPills = ({ reacted, emoji, count }: Props) => {
-    const [hasReacted, setHasReacted] = useState(reacted);
-    if (count === 0 && !hasReacted) {
+const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
+    const userId = "67ba5abb616b5e6544e0137b";
+
+    const getHasReacted = ({ ids }: SlackReaction, userId: string) => {
+        const idsSet = new Set(ids);
+        return idsSet.has(userId);
+    };
+
+    const [hasReacted, setHasReacted] = useState(getHasReacted(reaction, userId));
+
+    if (reaction.count === 0 && !hasReacted) {
         return null;
     }
+
     return (
         <TouchableOpacity
             onPress={() => {
                 setHasReacted(!hasReacted);
+                if (!hasReacted) {
+                    onAddReaction(reaction.emoji, reaction.count, [...reaction.ids, userId]);
+                }
+                if (hasReacted) {
+                    onRemoveReaction(reaction.emoji, reaction.count, [...reaction.ids, userId]);
+                }
             }}
             style={{
                 flexDirection: "row",
@@ -34,10 +50,10 @@ const ReactPills = ({ reacted, emoji, count }: Props) => {
             }}>
             <View style={{ flexDirection: "row", gap: 6 }}>
                 <ThemedText style={[styles.text, styles.textFlexBox]} type="default">
-                    {emoji}
+                    {reaction.emoji}
                 </ThemedText>
                 <ThemedText style={[styles.text, styles.textFlexBox]} type="default">
-                    {hasReacted ? count + 1 : count}
+                    {reaction.count}
                 </ThemedText>
             </View>
         </TouchableOpacity>

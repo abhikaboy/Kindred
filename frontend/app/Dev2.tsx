@@ -29,7 +29,7 @@ export default function Dev2() {
                 Development Components 2 - Cards
             </ThemedText>
             <FlatList
-                data={[{ key: "content" }]} // Dummy data to allow rendering
+                data={[{ key: "content" }]}
                 keyExtractor={(item) => item.key}
                 renderItem={() => (
                     <>
@@ -47,7 +47,7 @@ export default function Dev2() {
                             <TaskCard
                                 content="Finish your homework bitch. Finish your homework bitch.Finish your homework bitch. "
                                 points={9}
-                                priority="high"
+                                priority="3"
                             />
                             <UserInfoRowBase
                                 name={"Abhik Ray"}
@@ -68,11 +68,23 @@ export default function Dev2() {
                                 points={10}
                                 timeTaken={2}
                                 reactions={[
-                                    { emoji: "🔥", count: 3 },
-                                    { emoji: "😨", count: 3 },
-                                    { emoji: "🤡", count: 3 },
+                                    {
+                                        emoji: "🔥",
+                                        count: 3,
+                                        ids: ["67ba5abb616b5e6544e0137b"],
+                                    },
+                                    {
+                                        emoji: "😨",
+                                        count: 3,
+                                        ids: ["67ba5abb616b5e6544e0137b"],
+                                    },
+                                    {
+                                        emoji: "🤡",
+                                        count: 3,
+                                        ids: ["67ba5abb616b5e6544e0137b"],
+                                    },
                                 ]}
-                                image={Icons.latte}></PostCard>
+                                images={[Icons.latte, Icons.coffee, Icons.lokye, Icons.luffy]}></PostCard>
                         </ScrollView>
                     </>
                 )}

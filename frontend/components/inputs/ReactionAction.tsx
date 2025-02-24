@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, Text } from "react-native";
-import EmojiSelector from "react-native-emoji-selector";
+import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import EmojiSelectorClass from "./EmojiSelectorClass";
 
 type ReactionActionProps = {
     postId: number;
-    onAddReaction: (emoji: string) => void;
+    onAddReaction: (emoji: string, count: number, ids: string[]) => void;
 };
 
 const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
@@ -14,31 +14,37 @@ const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
         <View>
             <TouchableOpacity
                 onPress={() => setShowEmojiSelector(true)}
-                style={{
-                    flexDirection: "row",
-                    backgroundColor: "#321E5D",
-                    borderStyle: "solid",
-                    borderColor: "#321E5D",
-                    borderWidth: 1.4,
-                    borderRadius: 23,
-                    paddingHorizontal: 18,
-                    paddingVertical: 6,
-                    gap: 6,
-                    alignSelf: "flex-start",
-                }}>
-                <Text style={{ color: "white", fontSize: 18 }}>+</Text>
+                style={styles.reactionButton}>
+                <Text style={styles.reactionButtonText}>+</Text>
             </TouchableOpacity>
-
             {showEmojiSelector && (
-                <EmojiSelector
-                    onEmojiSelected={(emoji) => {
-                        onAddReaction(emoji);
-                        setShowEmojiSelector(false);
-                    }}
+                <EmojiSelectorClass
+                    showSelector={showEmojiSelector}
+                    onAddReaction={onAddReaction}
+                    onClose={() => setShowEmojiSelector(false)} 
                 />
             )}
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    reactionButton: {
+        flexDirection: "row",
+        backgroundColor: "#321E5D",
+        borderStyle: "solid",
+        borderColor: "#321E5D",
+        borderWidth: 1.4,
+        borderRadius: 23,
+        paddingHorizontal: 18,
+        paddingVertical: 6,
+        gap: 6,
+        alignSelf: "flex-start",
+    },
+    reactionButtonText: {
+        color: "white",
+        fontSize: 18,
+    },
+});
 
 export default ReactionAction;

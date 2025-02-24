@@ -5,10 +5,12 @@ import { Colors } from "@/constants/Colors";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
+import Carousel from "react-native-reanimated-carousel";
 
-type SlackReaction = {
+export type SlackReaction = {
     emoji: string;
     count: number;
+    ids: string[];
 };
 
 type Props = {
@@ -21,7 +23,7 @@ type Props = {
     points: number;
     timeTaken: number;
     reactions: SlackReaction[];
-    image: string;
+    images: string[];
     id?: string;
 };
 
@@ -35,25 +37,57 @@ const PostCard = ({
     points,
     timeTaken,
     reactions: initialReactions,
-    image,
+    images,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [reactions, setReactions] = useState<SlackReaction[]>(initialReactions);
-    const [newReactions, setNewReactions] = useState<SlackReaction[]>();
+    const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
+    const allReactions = [...reactions, ...newReactions];
+    const [modalIndex, setModalIndex] = useState(0);
 
-    const handleAddReaction = (emoji: string) => {
-        setNewReactions((prevReactions = []) => {
-            const existingReaction = prevReactions.find((r) => r.emoji === emoji);
-            if (existingReaction) {
-                return prevReactions.map((r) => (r.emoji === emoji ? { ...r } : r));
-            } else {
-                return [...prevReactions, { emoji, count: 0 }];
+    const userId = "67ba5abb616b5e6544e0137b";
+
+    const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
+        setReactions((prevReactions) => {
+            const existingReaction = prevReactions?.find((r) => r.emoji === emoji);
+            const idsSet = new Set(existingReaction?.ids);
+
+            // checks list of userIds that reacted to see if should add a reaction
+            if (idsSet.has(userId) && add) {
+                return prevReactions;
             }
+
+            if (existingReaction) {
+                return prevReactions
+                    .map((r) =>
+                        r.emoji === emoji
+                            ? {
+                                  ...r,
+                                  // if add, increase count
+                                  // otherwise, subtract 1 if > 1 or make it 0, which filters out
+                                  count: add ? r.count + 1 : Math.max(0, r.count - 1),
+                                  // add previous ids plus new ids if should add
+                                  // otherwise, remove the id that removes reaction
+                                  ids: add ? [...r.ids, ...ids] : r.ids.filter((id) => !ids.includes(id)),
+                              }
+                            : r
+                    )
+                    .filter((r) => r.count > 0);
+            } else if (add) {
+                return [...prevReactions, { emoji, count, ids }];
+            }
+
+            return prevReactions;
         });
     };
 
+    const openModal = (imageIndex) => {
+        setModalVisible(true);
+        setModalIndex(imageIndex);
+    };
+
     return (
-        <TouchableOpacity style={styles.container}>
+        <View style={styles.container}>
             <View style={{ flexDirection: "column", marginVertical: 15 }}>
                 <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
                 <View style={styles.col}>
@@ -63,19 +97,36 @@ const PostCard = ({
                         <ThemedText type="lightBody">💪 {points} pts</ThemedText>
                         <ThemedText type="lightBody">⏰ {timeTaken} hrs</ThemedText>
                     </View>
-                    <TouchableOpacity onPress={() => setModalVisible(true)}>
-                        <Image src={image} style={styles.image} />
-                    </TouchableOpacity>
+                    <Carousel
+                        loop
+                        width={Dimensions.get("window").width}
+                        style={styles.image}
+                        snapEnabled={true}
+                        pagingEnabled={true}
+                        autoPlayInterval={2000}
+                        data={images}
+                        renderItem={({ item, index }) => (
+                            <TouchableOpacity onPress={() => openModal(index)}>
+                                <Image source={{ uri: item }} style={styles.image} />
+                            </TouchableOpacity>
+                        )}
+                    />
                 </View>
 
                 <View style={styles.reactionsRow}>
-                    {reactions?.map((react, index) => (
-                        <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={false} postId={0} />
+                    {allReactions.map((react, index) => (
+                        <ReactPills
+                            key={index}
+                            reaction={react}
+                            postId={0}
+                            onAddReaction={() => handleReaction(react, true)}
+                            onRemoveReaction={() => handleReaction(react, false)}
+                        />
                     ))}
-                    {newReactions?.map((react, index) => (
-                        <ReactPills key={index} emoji={react.emoji} count={react.count} reacted={true} postId={0} />
-                    ))}
-                    <ReactionAction onAddReaction={(emoji) => handleAddReaction(emoji)} postId={0} />
+                    <ReactionAction
+                        onAddReaction={(emoji) => handleReaction({ emoji: emoji, count: 1, ids: [userId] }, true)}
+                        postId={0}
+                    />
                 </View>
 
                 <TouchableOpacity>
@@ -85,19 +136,21 @@ const PostCard = ({
                 </TouchableOpacity>
             </View>
 
-            <Modal
-                visible={modalVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setModalVisible(false)}>
-                <TouchableOpacity style={styles.modalContainer} onPress={() => setModalVisible(false)}>
-                    <View style={styles.modalContent}>
-                        <Image src={image} style={styles.popupImage} />
-                        <TouchableOpacity onPress={() => setModalVisible(false)}></TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-        </TouchableOpacity>
+            {modalVisible && (
+                <Modal
+                    visible={modalVisible}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setModalVisible(false)}>
+                    <TouchableOpacity style={styles.modalContainer} onPress={() => setModalVisible(false)}>
+                        <View style={styles.modalContent}>
+                            <Image source={{ uri: images[modalIndex] }} style={styles.popupImage} />
+                            <TouchableOpacity onPress={() => setModalVisible(false)}></TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            )}
+        </View>
     );
 };
 
@@ -137,7 +190,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backgroundColor: Colors.dark.background,
     },
     modalContent: {
         borderRadius: 10,

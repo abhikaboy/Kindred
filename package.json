@@ -9,6 +9,8 @@
     "expo-splash-screen": "^0.29.21",
     "expo-status-bar": "^2.0.1",
     "react-native-aws3": "^0.0.9",
+    "react-native-reanimated": "^3.16.7",
+    "react-native-reanimated-carousel": "^4.0.2",
     "react-native-unimodules": "^0.14.10",
     "yarn": "^1.22.22"
   },

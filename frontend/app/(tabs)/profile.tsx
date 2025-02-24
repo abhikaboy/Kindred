@@ -65,7 +65,7 @@ export default function Profile() {
                     colors={["transparent", Colors.dark.background]}
                     style={[styles.headerImage, { position: "absolute", top: 0, left: 0, zIndex: 2 }]}
                 />
-                <Animated.Image src={user.profile_picture} style={[styles.headerImage]} />
+                <Animated.Image src={user?.profile_picture || Icons.luffy} style={[styles.headerImage]} />
             </Animated.View>
             <View
                 ref={nameRef}
@@ -84,7 +84,7 @@ export default function Profile() {
                         zIndex: 3,
                         verticalAlign: "top",
                     }}>
-                    {user.display_name}
+                    {user?.display_name}
                 </ThemedText>
                 <ThemedText
                     style={{
@@ -92,7 +92,7 @@ export default function Profile() {
                         color: Colors.dark.caption,
                         bottom: 8, // 16 px font / 2 = 8 px
                     }}>
-                    {user.handle}
+                    {user?.handle}
                 </ThemedText>
             </View>
             <View
@@ -113,8 +113,8 @@ export default function Profile() {
                         width: "100%",
                     }}>
                     <FollowButton following={false} />
-                    <ThemedText type="lightBody">{user.friends.length} Friends</ThemedText>
-                    <ThemedText type="lightBody">{user.tasks_complete} Tasks Done</ThemedText>
+                    <ThemedText type="lightBody">{user?.friends.length} Friends</ThemedText>
+                    <ThemedText type="lightBody">{user?.tasks_complete} Tasks Done</ThemedText>
                 </View>
                 <View style={{ gap: 16 }}>
                     <ThemedText type="subtitle">Today</ThemedText>
@@ -157,16 +157,16 @@ export default function Profile() {
                 </View>
                 <View gap={12}>
                     <ThemedText type="subtitle">Active Tasks</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
+                    <TaskCard content={"do my hw lol"} points={9} priority={1} />
                 </View>
                 <View gap={12}>
                     <ThemedText type="subtitle">Accomplished</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
-                    <TaskCard content={"do my hw lol"} points={9} priority="high" />
+                    <TaskCard content={"do my hw lol"} points={3} priority={1} />
+                    <TaskCard content={"do my hw lol"} points={2} priority={2} />
+                    <TaskCard content={"do my hw lol"} points={9} priority={0} />
+                    <TaskCard content={"do my hw lol"} points={9} priority={2} />
+                    <TaskCard content={"do my hw lol"} points={15} priority={0} />
+                    <TaskCard content={"do my hw lol"} points={3} priority={1} />
                 </View>
             </View>
         </Animated.ScrollView>

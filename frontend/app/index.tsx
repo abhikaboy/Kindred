@@ -55,7 +55,7 @@ const index = (props: Props) => {
                         justifyContent: "flex-end",
                         bottom: 64,
                     }}>
-                    <PrimaryButton title="Get Started" onPress={() => router.push("/login")} />
+                    <PrimaryButton title="Get Started" onPress={() => router.push("/playground")} />
                     <ThemedText style={{ textAlign: "center" }}>
                         Already have an account?{" "}
                         <TouchableOpacity>
