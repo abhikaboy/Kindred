@@ -24,7 +24,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	route.Post("/login", AuthHandler.Login)
 	route.Post("/register", AuthHandler.Register)
 	route.Post("/logout", AuthHandler.Logout)
-	
+
 	route.Post("/login/apple", AuthHandler.LoginWithApple)
 	route.Post("/register/apple", AuthHandler.RegisterWithApple)
 

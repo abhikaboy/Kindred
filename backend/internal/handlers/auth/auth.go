@@ -105,18 +105,17 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		TokenUsed:    false,
 		Count:        0,
 
-		Categories: make([]categories.CategoryDocument, 0),
-		Friends:    make([]primitive.ObjectID, 0),
-		TasksComplete: 0,
+		Categories:     make([]categories.CategoryDocument, 0),
+		Friends:        make([]primitive.ObjectID, 0),
+		TasksComplete:  0,
 		RecentActivity: make([]activity.ActivityDocument, 0),
 
-		DisplayName: "Default Username",
-		Handle:      "@default",
+		DisplayName:    "Default Username",
+		Handle:         "@default",
 		ProfilePicture: "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
 
-		AppleID: aaid.(string),
+		AppleID:  aaid.(string),
 		GoogleID: googleid.(string),
-
 	}
 
 	if err = user.Validate(); err != nil {
@@ -179,7 +178,6 @@ func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
 		return fiber.NewError(400, "Not Authorized, Invalid Token Type")
 	}
 
-	
 	access, refresh, user_id, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
 	if err != nil {
 		return err
@@ -204,7 +202,7 @@ func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float
 		return 0, fiber.NewError(400, "Not Authorized: Access and Refresh Tokens are Expired "+err.Error())
 	}
 	// Check if the refresh token is unused
-	id,err := primitive.ObjectIDFromHex(user_id)
+	id, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
 		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage Invalid ID "+err.Error())
 	}
@@ -223,7 +221,7 @@ func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float
 	and return a new pair of tokens if refresh token is valid.
 */
 
-func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (*string, *string, *string,error) {
+func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (*string, *string, *string, error) {
 	/*
 		Check our tokens are valid by first checking if the access token is valid
 		and then checking if the refresh token is valid if the access token is invalid

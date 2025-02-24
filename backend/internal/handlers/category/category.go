@@ -37,7 +37,6 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 	}
 	userId := ids[0]
 
-
 	doc := CategoryDocument{
 		ID:         primitive.NewObjectID(),
 		Name:       params.Name,
@@ -118,10 +117,10 @@ func (h *Handler) UpdatePartialCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	results, err := h.service.UpdatePartialCategory(user_id,id, update); 
+	results, err := h.service.UpdatePartialCategory(user_id, id, update)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
-	} 
+	}
 
 	return c.JSON(results)
 }
@@ -133,7 +132,7 @@ func (h *Handler) DeleteCategory(c *fiber.Ctx) error {
 			"error": "Invalid ID format",
 		})
 	}
-	
+
 	user_id, err := primitive.ObjectIDFromHex(c.Params("user"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -141,7 +140,7 @@ func (h *Handler) DeleteCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.service.DeleteCategory(user_id,id); err != nil {
+	if err := h.service.DeleteCategory(user_id, id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
