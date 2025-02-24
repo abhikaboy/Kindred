@@ -25,6 +25,12 @@ func (h *Handler) CreateConnection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
 
+	// convert reciever to a ObjectID
+	// err, ids := xutils.ParseIDs(c, params.Reciever, params.Requester.ID.Hex())
+	// if err != nil {
+		// return c.Status(fiber.StatusBadRequest).JSON(err)
+	// }
+
 	doc := ConnectionDocument{
 		ID:        primitive.NewObjectID(),
 		Requester: params.Requester,
@@ -65,11 +71,18 @@ func (h *Handler) GetConnection(c *fiber.Ctx) error {
 	return c.JSON(Connection)
 }
 func (h *Handler) GetByReciever(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+	// check if theres anything in user context
+	var id primitive.ObjectID
+	if c.Context().Value("user") != nil {
+		id = c.Context().Value("user").(primitive.ObjectID)
+	} else {
+		var err error
+		id, err = primitive.ObjectIDFromHex(c.Params("id"))
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid ID format",
+			})
+		}
 	}
 
 	connections, err := h.service.GetByReciever(id)

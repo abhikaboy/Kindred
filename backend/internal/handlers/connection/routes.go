@@ -28,6 +28,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	// Get all Friend Requests by Reciever
 	Connections.Get("/requester/:id", handler.GetByRequester)
 	// Get all Friend Requests by Requester
+	Connections.Get("/reciever/", handler.GetByReciever)
 	Connections.Get("/reciever/:id", handler.GetByReciever)
 	// Friend Request
 	Connections.Post("/", handler.CreateConnection)

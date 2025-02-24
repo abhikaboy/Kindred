@@ -5,6 +5,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	chat "github.com/abhikaboy/Kindred/internal/handlers/chat"
+	connections "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	"github.com/abhikaboy/Kindred/internal/handlers/socket"
@@ -36,6 +37,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 	category.Routes(app, collections)
 	post.Routes(app, collections)
 	activity.Routes(app, collections)
+	connections.Routes(app, collections)
 
 	socket.Routes(app, collections, stream)
 

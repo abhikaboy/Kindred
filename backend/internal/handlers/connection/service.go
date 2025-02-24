@@ -26,7 +26,7 @@ func (s *Service) GetAllConnections() ([]ConnectionDocument, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var results []ConnectionDocument
+	var results = make([]ConnectionDocument,0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *Service) GetByReciever(id primitive.ObjectID) ([]ConnectionDocument, er
 	}
 	defer cursor.Close(ctx)
 
-	var results []ConnectionDocument
+	var results = make([]ConnectionDocument,0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (s *Service) GetByRequester(id primitive.ObjectID) ([]ConnectionDocument, e
 	}
 	defer cursor.Close(ctx)
 
-	var results []ConnectionDocument
+	var results = make([]ConnectionDocument, 0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
