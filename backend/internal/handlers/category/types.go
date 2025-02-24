@@ -3,7 +3,7 @@ package Category
 import (
 	"time"
 
-	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
+	"github.com/abhikaboy/Kindred/internal/handlers/task"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )

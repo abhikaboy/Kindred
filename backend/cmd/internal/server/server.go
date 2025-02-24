@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/abhikaboy/SocialToDo/internal/handlers/auth"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/health"
-	"github.com/abhikaboy/SocialToDo/internal/xerr"
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/health"
+	"github.com/abhikaboy/Kindred/internal/xerr"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"

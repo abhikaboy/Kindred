@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strings"
 
-	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
-	categories "github.com/abhikaboy/SocialToDo/internal/handlers/category"
-	"github.com/abhikaboy/SocialToDo/internal/xerr"
-	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
+	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
+	categories "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/internal/xerr"
+	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

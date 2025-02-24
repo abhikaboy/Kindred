@@ -37,7 +37,7 @@ const Search = (props: Props) => {
         if (!isAvailable) {
             alert("SMS is not available on this device");
         } else {
-            await SMS.sendSMSAsync(" ", "Join me on Social Todo!");
+            await SMS.sendSMSAsync(" ", "Join me on Kindred!");
         }
     };
 

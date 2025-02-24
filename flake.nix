@@ -1,5 +1,5 @@
 {
-  description = "Social Todo App";
+  description = "Kindred App";
 
   inputs = {
     devenv = {
