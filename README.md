@@ -1,7 +1,5 @@
-This a template for projects that use my personal current favorite stack: GERM
+![kindred-cover](https://github.com/user-attachments/assets/c3f3bb9b-ecce-41c2-8bdd-e638df07995b)
 
-GERM is an acronym for Go, Expo, React Native, MongoDB.
-![germ](https://github.com/user-attachments/assets/16db4ee4-c39e-4fc2-9926-04823f72464e)
 
 # Tech Stack
 
