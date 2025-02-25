@@ -10,7 +10,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/abhikaboy/SocialToDo/xutils"
+	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -179,9 +179,7 @@ func (h *Handler) Create{name}(c *fiber.Ctx) error {{
 
 	validate := validator.New()
 	if err := validate.Struct(params); err != nil {{
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{{
-			"error": "Validation failed",
-		}})
+		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}}
 
 	doc := {name}Document{{
@@ -194,9 +192,7 @@ func (h *Handler) Create{name}(c *fiber.Ctx) error {{
 
 	_, err := h.service.Create{name}(&doc); 
     if err != nil {{
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{{
-			"error": "Failed to create {name}",
-		}})
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}}
 
 	return c.Status(fiber.StatusCreated).JSON(doc)
@@ -205,9 +201,7 @@ func (h *Handler) Create{name}(c *fiber.Ctx) error {{
 func (h *Handler) Get{name}s(c *fiber.Ctx) error {{
 	{name}s, err := h.service.GetAll{name}s()
 	if err != nil {{
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{{
-			"error": "Failed to fetch {name}s",
-		}})
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}}
 
 	return c.JSON({name}s)
@@ -223,9 +217,7 @@ func (h *Handler) Get{name}(c *fiber.Ctx) error {{
 
 	{name}, err := h.service.Get{name}ByID(id)
 	if err != nil {{
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{{
-			"error": "{name} not found",
-		}})
+		return c.Status(fiber.StatusNotFound).JSON(err)
 	}}
 
 	return c.JSON({name})
@@ -247,9 +239,7 @@ func (h *Handler) UpdatePartial{name}(c *fiber.Ctx) error {{
 	}}
 
 	if err := h.service.UpdatePartial{name}(id, update); err != nil {{
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{{
-			"error": "Failed to update {name}",
-		}})
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -264,9 +254,7 @@ func (h *Handler) Delete{name}(c *fiber.Ctx) error {{
 	}}
 
 	if err := h.service.Delete{name}(id); err != nil {{
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{{
-			"error": "Failed to delete {name}",
-		}})
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -310,7 +298,7 @@ import (
     "context"
     "log/slog"
 
-    "github.com/abhikaboy/SocialToDo/xutils"
+    "github.com/abhikaboy/Kindred/xutils"
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
@@ -482,8 +470,8 @@ import (
     "log/slog"
     "time"
 
-    "github.com/abhikaboy/SocialToDo/internal/xerr"
-    "github.com/abhikaboy/SocialToDo/internal/xvalidator"
+    "github.com/abhikaboy/Kindred/internal/xerr"
+    "github.com/abhikaboy/Kindred/internal/xvalidator"
     go_json "github.com/goccy/go-json"
     "github.com/gofiber/fiber/v2"
     "go.mongodb.org/mongo-driver/bson/primitive"

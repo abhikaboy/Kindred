@@ -1,4 +1,4 @@
-module github.com/abhikaboy/SocialToDo
+module github.com/abhikaboy/Kindred
 
 go 1.23.4
 

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abhikaboy/SocialToDo/internal/config"
-	"github.com/abhikaboy/SocialToDo/internal/server"
-	"github.com/abhikaboy/SocialToDo/internal/storage/xmongo"
+	"github.com/abhikaboy/Kindred/internal/config"
+	"github.com/abhikaboy/Kindred/internal/server"
+	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ func TestIndexRoute(t *testing.T) {
 			route:         "/",
 			expectedError: false,
 			expectedCode:  200,
-			expectedBody:  "Welcome to GERM!",
+			expectedBody:  "Welcome to Kindred!",
 		},
 	}
 
@@ -80,7 +80,7 @@ func setup(t *testing.T) *fiber.App {
 	}
 	cfg := config.Atlas{
 		User:        "test",
-		Pass:        "germ-test-pw",
+		Pass:        "Kindred-test-pw",
 		Cluster:     "Development",
 		Environment: "Test",
 	}

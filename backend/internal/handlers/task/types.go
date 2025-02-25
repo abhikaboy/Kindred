@@ -57,10 +57,9 @@ const (
 	Descending SortDirection = -1
 )
 
-
 type CompleteTaskDocument struct {
-	TimeCompleted string 			`bson:"timeCompleted" json:"timeCompleted"`
-	TimeTaken     string      `bson:"timeTaken" json:"timeTaken"`	
+	TimeCompleted string `bson:"timeCompleted" json:"timeCompleted"`
+	TimeTaken     string `bson:"timeTaken" json:"timeTaken"`
 }
 
 /*
@@ -69,6 +68,6 @@ Database layer of the application
 */
 
 type Service struct {
-	Tasks *mongo.Collection
+	Tasks          *mongo.Collection
 	CompletedTasks *mongo.Collection
 }

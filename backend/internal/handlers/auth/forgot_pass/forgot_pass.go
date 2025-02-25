@@ -3,8 +3,8 @@ package forgot_pass
 import (
 	"errors"
 
-	"github.com/abhikaboy/SocialToDo/internal/xerr"
-	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
+	"github.com/abhikaboy/Kindred/internal/xerr"
+	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/gofiber/fiber/v2"
 )
 

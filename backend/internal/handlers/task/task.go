@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
-	"github.com/abhikaboy/SocialToDo/xutils"
+	"github.com/abhikaboy/Kindred/internal/xvalidator"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -157,10 +157,12 @@ func (h *Handler) CompleteTask(c *fiber.Ctx) error {
 	context_id := c.UserContext().Value("user_id").(string)
 
 	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
-	if err != nil { return c.Status(fiber.StatusBadRequest).JSON(err) }
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
 	user_id, categoryId, id := ids[0], ids[1], ids[2]
 
-	var data CompleteTaskDocument	
+	var data CompleteTaskDocument
 	if err := c.BodyParser(&data); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -170,8 +172,8 @@ func (h *Handler) CompleteTask(c *fiber.Ctx) error {
 	if err := h.service.CompleteTask(user_id, id, categoryId, data); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
-	
-	if err = h.service.IncrementTaskCompletedAndDelete(user_id, categoryId,	id); err != nil {
+
+	if err = h.service.IncrementTaskCompletedAndDelete(user_id, categoryId, id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
@@ -182,7 +184,9 @@ func (h *Handler) DeleteTask(c *fiber.Ctx) error {
 	context_id := c.UserContext().Value("user_id").(string)
 
 	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
-	if err != nil { return c.Status(fiber.StatusBadRequest).JSON(err) }
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
 	user_id, categoryId, id := ids[0], ids[1], ids[2]
 
 	if err := h.service.DeleteTask(user_id, categoryId, id); err != nil {
@@ -190,4 +194,38 @@ func (h *Handler) DeleteTask(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *Handler) ActivateTask(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
+
+	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
+	user_id, categoryId, id := ids[0], ids[1], ids[2]
+
+	newStatus := c.QueryBool("active", false)
+
+	if err := h.service.ActivateTask(user_id, categoryId, id, newStatus); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *Handler) GetActiveTasks(c *fiber.Ctx) error {
+
+	err, ids := xutils.ParseIDs(c, c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
+	id := ids[0]
+
+	tasks, err := h.service.GetActiveTasks(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.JSON(tasks)
 }

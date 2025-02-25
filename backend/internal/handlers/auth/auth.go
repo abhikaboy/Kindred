@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strings"
 
-	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
-	categories "github.com/abhikaboy/SocialToDo/internal/handlers/category"
-	"github.com/abhikaboy/SocialToDo/internal/xerr"
-	"github.com/abhikaboy/SocialToDo/internal/xvalidator"
+	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
+	categories "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/internal/xerr"
+	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -179,9 +179,6 @@ func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
 	}
 
 	access, refresh, user_id, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
-	if err != nil {
-		return err
-	}
 
 	fmt.Println("saving user in this request: " + *user_id)
 
@@ -191,6 +188,10 @@ func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
 
 	c.Response().Header.Add("access_token", *access)
 	c.Response().Header.Add("refresh_token", *refresh)
+
+	if err != nil {
+		return err
+	}
 
 	return c.Next()
 }
@@ -227,11 +228,16 @@ func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, re
 		and then checking if the refresh token is valid if the access token is invalid
 	*/
 	user_id, count, err := h.service.ValidateToken(accessToken)
+	var access_error error
 	if err != nil {
+		fmt.Println("access token is invalid or expired")
+		access_error = fiber.NewError(400, "Not Authorized, Access Token is Invalid "+err.Error())
 		count, err = h.ValidateRefreshToken(c, refreshToken)
 		if err != nil {
+			fmt.Println("refresh token is invalid or expired")
 			return nil, nil, nil, err
 		}
+		fmt.Println("refresh token is valid")
 	}
 	// use the same count as the existing token
 	// Our refresh token is valid and unused, so we can use it to generate a new set of tokens
@@ -244,7 +250,7 @@ func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, re
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
 	}
 
-	return &access, &refresh, &user_id, nil
+	return &access, &refresh, &user_id, access_error
 }
 
 /*

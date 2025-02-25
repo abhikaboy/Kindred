@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/abhikaboy/SocialToDo/xutils"
+	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

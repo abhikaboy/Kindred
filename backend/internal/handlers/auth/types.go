@@ -1,12 +1,12 @@
 package auth
 
 import (
-	"github.com/abhikaboy/SocialToDo/internal/config"
+	"github.com/abhikaboy/Kindred/internal/config"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
-	categories "github.com/abhikaboy/SocialToDo/internal/handlers/category"
+	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
+	categories "github.com/abhikaboy/Kindred/internal/handlers/category"
 )
 
 type Service struct {

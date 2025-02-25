@@ -3,8 +3,8 @@ package Category
 import (
 	"time"
 
-	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
-	"github.com/abhikaboy/SocialToDo/xutils"
+	"github.com/abhikaboy/Kindred/internal/handlers/task"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"

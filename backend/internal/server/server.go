@@ -1,17 +1,18 @@
 package server
 
 import (
-	activity "github.com/abhikaboy/SocialToDo/internal/handlers/activity"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/auth"
-	category "github.com/abhikaboy/SocialToDo/internal/handlers/category"
-	chat "github.com/abhikaboy/SocialToDo/internal/handlers/chat"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/health"
-	post "github.com/abhikaboy/SocialToDo/internal/handlers/post"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/socket"
-	"github.com/abhikaboy/SocialToDo/internal/handlers/task"
-	"github.com/abhikaboy/SocialToDo/internal/sockets"
+	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	category "github.com/abhikaboy/Kindred/internal/handlers/category"
+	chat "github.com/abhikaboy/Kindred/internal/handlers/chat"
+	connections "github.com/abhikaboy/Kindred/internal/handlers/connection"
+	"github.com/abhikaboy/Kindred/internal/handlers/health"
+	post "github.com/abhikaboy/Kindred/internal/handlers/post"
+	"github.com/abhikaboy/Kindred/internal/handlers/socket"
+	"github.com/abhikaboy/Kindred/internal/handlers/task"
+	"github.com/abhikaboy/Kindred/internal/sockets"
 
-	"github.com/abhikaboy/SocialToDo/internal/xerr"
+	"github.com/abhikaboy/Kindred/internal/xerr"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -36,6 +37,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 	category.Routes(app, collections)
 	post.Routes(app, collections)
 	activity.Routes(app, collections)
+	connections.Routes(app, collections)
 
 	socket.Routes(app, collections, stream)
 
