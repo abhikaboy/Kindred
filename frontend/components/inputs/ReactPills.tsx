@@ -14,14 +14,15 @@ type Props = {
 const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
     const userId = "67ba5abb616b5e6544e0137b";
 
-    const getHasReacted = ({ ids }: SlackReaction, userId: string) => {
-        const idsSet = new Set(ids);
+    const getHasReacted = (reaction : SlackReaction, userId: string) => {
+		if (!reaction || !reaction.ids) return false; 
+        const idsSet = new Set(reaction.ids ?? []);
         return idsSet.has(userId);
     };
 
     const [hasReacted, setHasReacted] = useState(getHasReacted(reaction, userId));
 
-    if (reaction.count === 0 && !hasReacted) {
+    if (reaction?.count === 0 && !hasReacted) {
         return null;
     }
 
@@ -30,10 +31,10 @@ const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
             onPress={() => {
                 setHasReacted(!hasReacted);
                 if (!hasReacted) {
-                    onAddReaction(reaction.emoji, reaction.count, [...reaction.ids, userId]);
+                    onAddReaction(reaction?.emoji, reaction?.count, [...reaction?.ids, userId]);
                 }
                 if (hasReacted) {
-                    onRemoveReaction(reaction.emoji, reaction.count, [...reaction.ids, userId]);
+                    onRemoveReaction(reaction?.emoji, reaction?.count, [...reaction?.ids, userId]);
                 }
             }}
             style={{
@@ -50,10 +51,10 @@ const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
             }}>
             <View style={{ flexDirection: "row", gap: 6 }}>
                 <ThemedText style={[styles.text, styles.textFlexBox]} type="default">
-                    {reaction.emoji}
+                    {reaction?.emoji}
                 </ThemedText>
                 <ThemedText style={[styles.text, styles.textFlexBox]} type="default">
-                    {reaction.count}
+                    {reaction?.count}
                 </ThemedText>
             </View>
         </TouchableOpacity>

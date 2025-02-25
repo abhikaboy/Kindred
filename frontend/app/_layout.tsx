@@ -11,6 +11,7 @@ import View from "react-native";
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Colors } from "@/constants/Colors";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -34,34 +35,36 @@ export default function RootLayout() {
 
     return (
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-            <AuthProvider>
-                <Stack
-                    screenOptions={{
-                        headerShown: true,
-                        headerTransparent: true,
-                        headerBackTitle: "Back",
-                        headerTintColor: Colors.dark.text,
-                        headerBackButtonDisplayMode: "minimal",
-                        headerTitleStyle: {
-                            fontFamily: "Outfit",
-                            fontWeight: 100,
-                            fontSize: 1,
-                            color: Colors.dark.background,
-                        },
-                    }}>
-                    <Stack.Screen
-                        name="(tabs)"
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen name="Dev1" />
-                    <Stack.Screen options={{}} name="Dev2" />
-                    <Stack.Screen options={{}} name="Activity" />
-                    <Stack.Screen name="+not-found" />
-                </Stack>
-                <StatusBar style="light" />
-            </AuthProvider>
+            <GestureHandlerRootView>
+                <AuthProvider>
+                    <Stack
+                        screenOptions={{
+                            headerShown: true,
+                            headerTransparent: true,
+                            headerBackTitle: "Back",
+                            headerTintColor: Colors.dark.text,
+                            headerBackButtonDisplayMode: "minimal",
+                            headerTitleStyle: {
+                                fontFamily: "Outfit",
+                                fontWeight: 100,
+                                fontSize: 1,
+                                color: Colors.dark.background,
+                            },
+                        }}>
+                        <Stack.Screen
+                            name="(tabs)"
+                            options={{
+                                headerShown: false,
+                            }}
+                        />
+                        <Stack.Screen name="Dev1" />
+                        <Stack.Screen options={{}} name="Dev2" />
+                        <Stack.Screen options={{}} name="Activity" />
+                        <Stack.Screen name="+not-found" />
+                    </Stack>
+                    <StatusBar style="light" />
+                </AuthProvider>
+            </GestureHandlerRootView>
         </ThemeProvider>
     );
 }

@@ -74,7 +74,9 @@ const PostCard = ({
                     )
                     .filter((r) => r.count > 0);
             } else if (add) {
-                return [...prevReactions, { emoji, count, ids }];
+                if (!existingReaction) {
+                    return [...prevReactions, { emoji, count, ids }];
+                }
             }
 
             return prevReactions;

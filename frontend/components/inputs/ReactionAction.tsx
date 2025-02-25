@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { View, TouchableOpacity, Text, StyleSheet, Dimensions } from "react-native";
 import EmojiSelectorClass from "./EmojiSelectorClass";
 
 type ReactionActionProps = {
@@ -12,16 +12,14 @@ const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
 
     return (
         <View>
-            <TouchableOpacity
-                onPress={() => setShowEmojiSelector(true)}
-                style={styles.reactionButton}>
+            <TouchableOpacity onPress={() => setShowEmojiSelector(true)} style={styles.reactionButton}>
                 <Text style={styles.reactionButtonText}>+</Text>
             </TouchableOpacity>
             {showEmojiSelector && (
                 <EmojiSelectorClass
                     showSelector={showEmojiSelector}
                     onAddReaction={onAddReaction}
-                    onClose={() => setShowEmojiSelector(false)} 
+                    onClose={() => setShowEmojiSelector(false)}
                 />
             )}
         </View>
