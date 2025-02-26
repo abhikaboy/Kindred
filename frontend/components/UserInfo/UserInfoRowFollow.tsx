@@ -10,9 +10,10 @@ type Props = {
     id?: string;
 };
 
-const UserInfoRowFollow = ({ name, username, icon }: Props) => {
+const UserInfoRowFollow = ({ name, username, icon}: Props) => {
     return (
-        <UserInfoRowBase name={name} username={username} right={<FollowButton following={false} />} icon={icon} large />
+        <UserInfoRowBase name={name} username={username} right={<FollowButton following={false} />} icon={icon} large
+/>
     );
 };
 

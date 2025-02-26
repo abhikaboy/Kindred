@@ -19,10 +19,12 @@ const UserInfoRowBase = ({ name, username, right, icon, large }: Props) => (
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
                 <PreviewIcon size={large ? "medium" : "small"} icon={icon}></PreviewIcon>
                 <View style={{ gap: 0 }}>
-                    <ThemedText numberOfLines={1} ellipsizeMode="tail" type="default">
-                        {name}
-                    </ThemedText>
-                    <ThemedText numberOfLines={1} ellipsizeMode="tail" type="caption">
+                    <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
+                        <ThemedText numberOfLines={1} ellipsizeMode="tail" type="default">
+                            {name}
+                        </ThemedText>
+                    </View>
+                    <ThemedText numberOfLines={1} ellipsizeMode="tail" type={"caption"}>
                         @{username}
                     </ThemedText>
                 </View>
