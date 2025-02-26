@@ -12,6 +12,7 @@ import FollowButton from "@/components/inputs/FollowButton";
 import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import Entypo from "@expo/vector-icons/Entypo";
 import UserInfoRowTimed from "@/components/UserInfo/UserInfoRowTimed";
+import UserInfoRowComment from "@/components/UserInfo/UsereInfoRowComment";
 
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -57,7 +58,12 @@ export default function Dev2() {
                             />
                             <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
                             <UserInfoRowTimed name={"Abhik Ray"} username={"beak"} time={4} icon={Icons.luffy} />
-
+                            <UserInfoRowComment
+                                name={"Abhik Ray"}
+                                content={"I love this so. I’m commenting."}
+                                time={2}
+                                icon={Icons.luffy}
+                            />
                             <PostCard
                                 icon={Icons.luffy}
                                 name={"Abhik Ray"}
@@ -82,6 +88,81 @@ export default function Dev2() {
                                         emoji: "🤡",
                                         count: 3,
                                         ids: ["67ba5abb616b5e6544e0137b"],
+                                    },
+                                ]}
+                                comments={[
+                                    {
+                                        userId: 1,
+                                        icon: Icons.luffy,
+                                        name: "luffy",
+                                        username: "theLuffiestOfThemAll",
+                                        time: 1708800000,
+                                        content: "This is such a great post! Thanks for sharing.",
+                                    },
+                                    {
+                                        userId: 2,
+                                        icon: Icons.coffee,
+                                        name: "Coffeeeeee",
+                                        username: "coffee",
+                                        time: 3,
+                                        content: "blah blah latte i hate lattes",
+                                    },
+                                    {
+                                        userId: 3,
+                                        icon: Icons.lokye,
+                                        name: "Lok Ye",
+                                        username: "baby",
+                                        time: 2,
+                                        content: "meowwwwwwwww",
+                                    },
+                                    {
+                                        userId: 1,
+                                        icon: Icons.luffy,
+                                        name: "luffy",
+                                        username: "theLuffiestOfThemAll",
+                                        time: 1708800000,
+                                        content: "This is such a great post! Thanks for sharing.",
+                                    },
+                                    {
+                                        userId: 2,
+                                        icon: Icons.coffee,
+                                        name: "Coffeeeeee",
+                                        username: "coffee",
+                                        time: 3,
+                                        content: "blah blah latte i hate lattes",
+                                    },
+                                    {
+                                        userId: 3,
+                                        icon: Icons.lokye,
+                                        name: "Lok Ye",
+                                        username: "baby",
+                                        time: 2,
+                                        content: "meowwwwwwwww",
+                                    },
+                                    {
+                                        userId: 1,
+                                        icon: Icons.luffy,
+                                        name: "luffy",
+                                        username: "theLuffiestOfThemAll",
+                                        time: 1708800000,
+                                        content: "This is such a great post! Thanks for sharing.",
+                                    },
+                                    {
+                                        userId: 2,
+                                        icon: Icons.coffee,
+                                        name: "Coffeeeeee",
+                                        username: "coffee",
+                                        time: 3,
+                                        content:
+                                            "blah blah latte i hate lattes g g g  g g g  g g g  g  g  g  g g g g g g g ",
+                                    },
+                                    {
+                                        userId: 3,
+                                        icon: Icons.lokye,
+                                        name: "Lok Ye",
+                                        username: "baby",
+                                        time: 2,
+                                        content: "meowwwwwwwww",
                                     },
                                 ]}
                                 images={[Icons.latte, Icons.coffee, Icons.lokye, Icons.luffy]}></PostCard>

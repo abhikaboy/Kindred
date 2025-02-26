@@ -6,6 +6,8 @@ import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import Carousel from "react-native-reanimated-carousel";
+import Comment, { CommentProps } from "../inputs/Comment";
+import { PopupProp } from "../inputs/Comment";
 
 export type SlackReaction = {
     emoji: string;
@@ -25,6 +27,7 @@ type Props = {
     reactions: SlackReaction[];
     images: string[];
     id?: string;
+    comments: CommentProps[];
 };
 
 const PostCard = ({
@@ -38,14 +41,20 @@ const PostCard = ({
     timeTaken,
     reactions: initialReactions,
     images,
+    comments,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [reactions, setReactions] = useState<SlackReaction[]>(initialReactions);
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
     const allReactions = [...reactions, ...newReactions];
     const [modalIndex, setModalIndex] = useState(0);
+    const [commentsVisible, setCommentsVisible] = useState(false);
 
     const userId = "67ba5abb616b5e6544e0137b";
+
+    const handleClose = () => {
+        setCommentsVisible(false);
+    };
 
     const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
         setReactions((prevReactions) => {
@@ -74,7 +83,9 @@ const PostCard = ({
                     )
                     .filter((r) => r.count > 0);
             } else if (add) {
-                return [...prevReactions, { emoji, count, ids }];
+                if (!existingReaction) {
+                    return [...prevReactions, { emoji, count, ids }];
+                }
             }
 
             return prevReactions;
@@ -84,6 +95,10 @@ const PostCard = ({
     const openModal = (imageIndex) => {
         setModalVisible(true);
         setModalIndex(imageIndex);
+    };
+
+    const openComments = () => {
+        setCommentsVisible(true);
     };
 
     return (
@@ -130,7 +145,7 @@ const PostCard = ({
                 </View>
 
                 <TouchableOpacity>
-                    <ThemedText style={{ paddingTop: 15 }} type="lightBody">
+                    <ThemedText onPress={() => setCommentsVisible(true)} style={{ paddingTop: 15 }} type="lightBody">
                         💬 Leave a comment
                     </ThemedText>
                 </TouchableOpacity>
@@ -149,6 +164,15 @@ const PostCard = ({
                         </View>
                     </TouchableOpacity>
                 </Modal>
+            )}
+
+            {commentsVisible && (
+                <View style={styles.modalContainer}>
+                    <Comment
+                        comments={comments}
+                        show={commentsVisible}
+                        onClose={handleClose}></Comment>
+                </View>
             )}
         </View>
     );

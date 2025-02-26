@@ -14,9 +14,9 @@ export default function SendButton({ onSend }: Props) {
                 onPress={onSend}
                 style={{
                     backgroundColor: Colors.dark.primary,
-                    borderRadius: 20,
-                    paddingVertical: 8,
-                    paddingHorizontal: 20,
+                    borderRadius: 40,
+                    paddingVertical: 15,
+                    paddingHorizontal: 25,
                 }}>
                 <AntDesign name="arrowup" size={16} color="white" />
             </TouchableOpacity>
