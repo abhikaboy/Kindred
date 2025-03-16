@@ -15,14 +15,14 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Users: collections["users"],
+		Categories: collections["categories"],
 	}
 }
 
 // GetAllCategories fetches all Category documents from MongoDB
 func (s *Service) GetAllCategories() ([]CategoryDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Users.Find(ctx, bson.M{})
+	cursor, err := s.Categories.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -37,20 +37,20 @@ func (s *Service) GetAllCategories() ([]CategoryDocument, error) {
 }
 
 // GetAllCategories fetches all Category documents from MongoDB
-func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]CategoryDocument, error) {
+func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]WorkspaceResult, error) {
 	ctx := context.Background()
 
-	filter := bson.M{"_id": id}
-	cursor, err := s.Users.Aggregate(ctx, mongo.Pipeline{
+	filter := bson.M{"user": id}
+	cursor, err := s.Categories.Aggregate(ctx, mongo.Pipeline{
 		{
 			{Key: "$match", Value: filter},
 		},
 		{
-			{Key: "$unwind", Value: "$categories"},
-		},
-		{
-			{Key: "$replaceRoot", Value: bson.M{
-				"newRoot": "$categories",
+			{Key: "$group", Value: bson.M{
+				"_id": "$$ROOT.workspaceName",
+				"categories": bson.M{
+					"$push": "$$ROOT",
+				},
 			}},
 		},
 	})
@@ -60,11 +60,10 @@ func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]CategoryDocument
 	}
 	defer cursor.Close(ctx)
 
-	var results []CategoryDocument
+	var results []WorkspaceResult
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
-
 	return results, nil
 }
 
@@ -74,7 +73,7 @@ func (s *Service) GetCategoryByID(id primitive.ObjectID) (*CategoryDocument, err
 	filter := bson.M{"_id": id}
 
 	var Category CategoryDocument
-	err := s.Users.FindOne(ctx, filter).Decode(&Category)
+	err := s.Categories.FindOne(ctx, filter).Decode(&Category)
 
 	if err == mongo.ErrNoDocuments {
 		// No matching Category found
@@ -92,7 +91,7 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 	ctx := context.Background()
 	// Insert the document into the collection
 
-	_, err := s.Users.UpdateOne(ctx, bson.M{"_id": r.User}, bson.M{"$push": bson.M{"categories": r}})
+	_, err := s.Categories.InsertOne(ctx , r)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +102,7 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 }
 
 // UpdatePartialCategory updates only specified fields of a Category document by ObjectID.
-func (s *Service) UpdatePartialCategory(userId primitive.ObjectID, id primitive.ObjectID, updated UpdateCategoryDocument) (*CategoryDocument, error) {
+func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCategoryDocument) (*CategoryDocument, error) {
 	ctx := context.Background()
 	// filter := bson.M{"_id": id}
 
@@ -114,14 +113,13 @@ func (s *Service) UpdatePartialCategory(userId primitive.ObjectID, id primitive.
 
 	fmt.Println(updateFields)
 
-	_, err = s.Users.UpdateOne(ctx,
+	_, err = s.Categories.UpdateOne(ctx,
 		bson.M{
-			"_id":        userId,
-			"categories": bson.M{"$elemMatch": bson.M{"_id": id}},
+			"_id":        id,
 		},
 		bson.D{{Key: "$set", Value: bson.D{
-			{Key: "categories.$.name", Value: updated.Name},
-			{Key: "categories.$.lastEdited", Value: time.Now()},
+			{Key: "name", Value: updated.Name},
+			{Key: "lastEdited", Value: time.Now()},
 		}}},
 	)
 	if err != nil {
@@ -135,6 +133,6 @@ func (s *Service) UpdatePartialCategory(userId primitive.ObjectID, id primitive.
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) DeleteCategory(userId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()
-	_, err := s.Users.UpdateOne(ctx, bson.M{"_id": userId}, bson.M{"$pull": bson.M{"categories": bson.M{"_id": id}}})
+	_, err := s.Categories.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }

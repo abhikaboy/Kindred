@@ -40,6 +40,7 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 	doc := CategoryDocument{
 		ID:         primitive.NewObjectID(),
 		Name:       params.Name,
+		WorkspaceName: params.WorkspaceName,
 		User:       userId,
 		Tasks:      make([]task.TaskDocument, 0),
 		LastEdited: time.Now(),
@@ -103,7 +104,6 @@ func (h *Handler) UpdatePartialCategory(c *fiber.Ctx) error {
 			"error": "Invalid ID format for CategoryId",
 		})
 	}
-	user_id, err := primitive.ObjectIDFromHex(c.Params("user"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid ID format for UserId",
@@ -117,7 +117,7 @@ func (h *Handler) UpdatePartialCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	results, err := h.service.UpdatePartialCategory(user_id, id, update)
+	results, err := h.service.UpdatePartialCategory(id, update)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
