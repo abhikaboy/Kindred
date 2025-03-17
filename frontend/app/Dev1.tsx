@@ -16,6 +16,7 @@ import Dropdown from "@/components/inputs/Dropdown";
 import UserInfoRow from "@/components/UserInfo/UserInfoRowBase";
 import { Icons } from "@/constants/Icons";
 import ReactPills from "@/components/inputs/ReactPills";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -35,10 +36,17 @@ export default function Dev1() {
             <ScrollView
                 contentContainerStyle={{
                     gap: 16,
+                    paddingBottom: Dimensions.get("screen").height * 0.12,
                 }}>
                 <PrimaryButton title="Button" onPress={() => {}} />
-                <Dropdown />
-                <ThemedInput />
+                <Dropdown options={[]} selected={{ label: "", id: "" }} setSelected={() => {}} onSpecial={() => {}} />
+                <ThemedInput
+                    value={""}
+                    setValue={() => {}}
+                    placeHolder={""}
+                    onSubmit={() => {}}
+                    onChangeText={() => {}}
+                />
                 <SearchBox
                     value={searchTerm}
                     placeholder="Search"
@@ -78,6 +86,27 @@ export default function Dev1() {
                 <ThemedSlider />
                 <ReactPills reacted={false} emoji={"🔥"} count={4} postId={0}></ReactPills>
                 <UserInfoRow name={"Abhik Ray"} username={"beak"} time={2} icon={Icons.luffy}></UserInfoRow>
+                <DateTimePicker
+                    style={{ width: "100%", height: 100 }}
+                    value={new Date()}
+                    testID="bruh"
+                    mode="time"
+                    is24Hour={true}
+                    display="default"
+                    onChange={(date) => {
+                        console.log(date);
+                    }}
+                />
+                <DateTimePicker
+                    style={{ width: "100%", height: Dimensions.get("screen").height * 0.4 }}
+                    value={new Date()}
+                    testID="bruh2"
+                    mode="time"
+                    display="spinner"
+                    onChange={(date) => {
+                        console.log(date);
+                    }}
+                />
             </ScrollView>
         </View>
     );

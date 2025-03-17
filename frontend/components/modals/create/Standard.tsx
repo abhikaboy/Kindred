@@ -21,8 +21,7 @@ const Standard = ({ hide, goTo }: Props) => {
 
     const createPost = async () => {
         if (categories.length === 0) return;
-        const selected = categories[0].id;
-        const response = await request("POST", `/user/tasks/${selected}`, {
+        const response = await request("POST", `/user/tasks/${selected.id}`, {
             priority: 1,
             content: content,
             value: 3,
@@ -30,7 +29,7 @@ const Standard = ({ hide, goTo }: Props) => {
             public: true,
             active: false,
         });
-        addToCategory(selected, response);
+        addToCategory(selected.id, response);
     };
     return (
         <View>

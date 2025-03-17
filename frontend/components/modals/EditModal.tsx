@@ -9,10 +9,17 @@ import Dropdown from "../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import { ThemedText } from "../ThemedText";
+import { Task } from "react-native";
 
 import Feather from "@expo/vector-icons/Feather";
 import ModalHead from "./ModalHead";
+
+type ID = {
+    id: string;
+    category: string;
+};
 type Props = {
+    id: ID;
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
@@ -20,10 +27,17 @@ type Props = {
 
 const EditModal = (props: Props) => {
     const { request } = useRequest();
-    const { categories, addToCategory } = useTasks();
+    const { categories, removeFromCategory } = useTasks();
 
     const editPost = async () => {
         if (categories.length === 0) return;
+    };
+    const deletePost = async () => {
+        if (categories.length === 0) return;
+        const { id, category } = props.id;
+        const response = await request("DELETE", `/user/tasks/${category}/${id}`);
+        removeFromCategory(category, id);
+        console.log(response);
     };
 
     return (
@@ -40,7 +54,7 @@ const EditModal = (props: Props) => {
                     <Feather name="edit" size={24} color="white" />
                     <ThemedText type="default">Edit Post</ThemedText>
                 </TouchableOpacity>
-                <TouchableOpacity style={{ flexDirection: "row", gap: 16 }}>
+                <TouchableOpacity style={{ flexDirection: "row", gap: 16 }} onPress={deletePost}>
                     <Feather name="x" size={24} color="white" />
                     <ThemedText type="default">Delete Post</ThemedText>
                 </TouchableOpacity>

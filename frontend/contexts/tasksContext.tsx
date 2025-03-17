@@ -16,6 +16,8 @@ type TaskContextType = {
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
+    removeFromCategory: (categoryId: string, taskId: string) => void;
+    removeFromWorkspace: (name: string, categoryId: string) => void;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -45,6 +47,22 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setWorkSpaces(workspacesCopy);
     };
 
+    const removeFromCategory = async (categoryId: string, taskId: string) => {
+        let categoriesCopy = categories.slice();
+        categoriesCopy.find((category) => category.id === categoryId).tasks = categoriesCopy
+            .find((category) => category.id === categoryId)
+            .tasks.filter((task) => task.id !== taskId);
+        setCategories(categoriesCopy);
+    };
+
+    const removeFromWorkspace = async (name: string, categoryId: string) => {
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy.find((workspace) => workspace.name === name).categories = workspacesCopy
+            .find((workspace) => workspace.name === name)
+            .categories.filter((category) => category.id !== categoryId);
+        setWorkSpaces(workspacesCopy);
+    };
+
     useEffect(() => {
         if (workspaces.length === 0) return;
         const selectedWorkspace = getWorkspace(selected);
@@ -64,6 +82,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 categories,
                 addToCategory,
                 addToWorkspace,
+                removeFromCategory,
+                removeFromWorkspace,
             }}>
             {children}
         </TaskContext.Provider>

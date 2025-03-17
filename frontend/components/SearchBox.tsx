@@ -98,11 +98,11 @@ export function SearchBox({
                                     onChangeText(term);
                                 }}>
                                 <View style={{ flexDirection: "row", gap: 10 }}>
-                                    <Octicons name="search" size={24} color="white" />
+                                    <Octicons name="search" size={20} color="white" />
                                     <ThemedText>{term}</ThemedText>
                                 </View>
-                                <TouchableOpacity onPress={() => deleteRecentItem(term)}>
-                                    <Entypo name="cross" size={24} color="white" />
+                                <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => deleteRecentItem(term)}>
+                                    <Entypo name="cross" size={20} color="white" />
                                 </TouchableOpacity>
                             </TouchableOpacity>
                         );
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     },
     recent: {
         width: "100%",
-        padding: 20,
-        paddingVertical: 16,
+        padding: 8,
+        paddingVertical: 8,
         backgroundColor: ThemedColor.background,
         flexDirection: "row",
         flex: 1,

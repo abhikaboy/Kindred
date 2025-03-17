@@ -92,7 +92,7 @@ const Home = (props: Props) => {
                 <ScrollView>
                     <View style={{ gap: 16, marginTop: 0 }}>
                         {categories.map((category) => (
-                            <View style={{ gap: 16 }} key={category._id + category.name}>
+                            <View style={{ gap: 16 }} key={category.id + category.name}>
                                 <ThemedText type="subtitle">{category.name}</ThemedText>
                                 {category.tasks.map((task) => (
                                     <TaskCard
@@ -102,6 +102,7 @@ const Home = (props: Props) => {
                                         priority={task.priority}
                                         redirect={true}
                                         id={task.id}
+                                        categoryId={category.id}
                                     />
                                 ))}
                             </View>

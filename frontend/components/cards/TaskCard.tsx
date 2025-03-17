@@ -13,6 +13,7 @@ type Props = {
     priority: Priority;
     id?: string;
     redirect?: boolean;
+    categoryId?: string;
 };
 
 const priorityColors = {
@@ -27,7 +28,7 @@ const priorityToString = {
     3: "high",
 };
 
-const TaskCard = ({ content, points, priority, redirect = false, id }: Props) => {
+const TaskCard = ({ content, points, priority, redirect = false, id, categoryId }: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
 
@@ -46,7 +47,7 @@ const TaskCard = ({ content, points, priority, redirect = false, id }: Props) =>
                 })
             }
             onLongPress={() => redirect && setEditing(true)}>
-            <EditModal visible={editing} setVisible={setEditing} />
+            <EditModal visible={editing} setVisible={setEditing} id={{ id: id, category: categoryId }} />
             <View style={{ flexDirection: "column" }}>
                 <View>
                     <View style={styles.row}>
