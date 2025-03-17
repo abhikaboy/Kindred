@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Touchable } from "react-native";
 import { ThemedText } from "./ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRecentSearch } from "@/hooks/useRecentSearch";
 import ThemedColor from "@/constants/Colors";
 import { IconSymbol } from "./ui/IconSymbol";

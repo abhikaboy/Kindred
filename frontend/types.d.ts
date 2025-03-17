@@ -10,3 +10,19 @@ type Categories = {
     id: string;
     tasks: any[];
 };
+
+type Priority = "1" | "2" | "3";
+
+type Props = {
+    content: string;
+    points: number;
+    priority: Priority;
+    id?: string;
+    redirect?: boolean;
+    categoryId?: string;
+};
+type Option = {
+    label: string;
+    id: string;
+    special?: boolean;
+};

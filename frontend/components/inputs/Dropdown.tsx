@@ -17,12 +17,6 @@ import Animated, {
     useSharedValue,
 } from "react-native-reanimated";
 
-type Option = {
-    label: string;
-    id: string;
-    special?: boolean;
-};
-
 type Props = {
     options?: Option[];
     selected: Option;

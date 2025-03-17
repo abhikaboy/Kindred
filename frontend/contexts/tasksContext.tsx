@@ -9,13 +9,14 @@ const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 type TaskContextType = {
     workspaces: Workspace[];
     setWorkSpaces: (workspaces: Workspace[]) => void;
-    getWorkspace: (name: string) => Workspace[];
+    getWorkspace: (name: string) => Workspace;
     fetchWorkspaces: () => void;
     selected: string;
     setSelected: (selected: string) => void;
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
+    addWorkspace: (name: string) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
 };
@@ -33,6 +34,12 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const fetchWorkspaces = async () => {
         let data = await request("GET", "/user/Categories/" + user._id);
         setWorkSpaces(data);
+    };
+
+    const addWorkspace = async (name: string) => {
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy.push({ name: name, categories: [] });
+        setWorkSpaces(workspacesCopy);
     };
 
     const addToCategory = async (categoryId: string, task: Task) => {
@@ -82,6 +89,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 categories,
                 addToCategory,
                 addToWorkspace,
+                addWorkspace,
                 removeFromCategory,
                 removeFromWorkspace,
             }}>
