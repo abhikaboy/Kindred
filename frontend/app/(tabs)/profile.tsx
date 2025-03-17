@@ -4,7 +4,7 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import React, { useEffect, useRef, useState } from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import FollowButton from "@/components/inputs/FollowButton";
@@ -56,13 +56,13 @@ export default function Profile() {
             ref={scrollRef}
             scrollEventThrottle={16}
             style={{
-                backgroundColor: Colors.dark.background,
+                backgroundColor: ThemedColor.background,
                 padding: 0,
             }}>
             <Animated.View style={[headerAnimatedStyle]}>
                 <LinearGradient
                     // Background Linear Gradient
-                    colors={["transparent", Colors.dark.background]}
+                    colors={["transparent", ThemedColor.background]}
                     style={[styles.headerImage, { position: "absolute", top: 0, left: 0, zIndex: 2 }]}
                 />
                 <Animated.Image src={user?.profile_picture || Icons.luffy} style={[styles.headerImage]} />
@@ -89,7 +89,7 @@ export default function Profile() {
                 <ThemedText
                     style={{
                         zIndex: 3,
-                        color: Colors.dark.caption,
+                        color: ThemedColor.caption,
                         bottom: 8, // 16 px font / 2 = 8 px
                     }}>
                     {user?.handle}
@@ -117,7 +117,7 @@ export default function Profile() {
                     <ThemedText type="lightBody">{user?.tasks_complete} Tasks Done</ThemedText>
                 </View>
                 <View style={{ gap: 16 }}>
-                    <ThemedText type="subtitle">Today</ThemedText>
+                    {/* <ThemedText type="subtitle">Today</ThemedText>
                     <View
                         style={{
                             display: "flex",
@@ -131,7 +131,7 @@ export default function Profile() {
                         <ThemedText type="lightBody">✅ 4 Tasks</ThemedText>
                         <ThemedText type="lightBody">🔥 3 Streak</ThemedText>
                         <ThemedText type="lightBody">💰 14 Points</ThemedText>
-                    </View>
+                    </View> */}
                 </View>
                 <View gap={16}>
                     <ThemedText type="subtitle">Past 7 Day</ThemedText>

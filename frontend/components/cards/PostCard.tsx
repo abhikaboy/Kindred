@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
@@ -168,10 +168,7 @@ const PostCard = ({
 
             {commentsVisible && (
                 <View style={styles.modalContainer}>
-                    <Comment
-                        comments={comments}
-                        show={commentsVisible}
-                        onClose={handleClose}></Comment>
+                    <Comment comments={comments} show={commentsVisible} onClose={handleClose}></Comment>
                 </View>
             )}
         </View>

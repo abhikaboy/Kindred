@@ -1,29 +1,34 @@
 import { StyleSheet, Text, View, TextInput } from "react-native";
-import React from "react";
-import { Colors } from "@/constants/Colors";
+import React, { forwardRef } from "react";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
     onSubmit?: () => void;
     onChangeText?: (text: string) => void;
     placeHolder?: string;
-    width?: number; 
+    width?: number;
+    ref?: React.RefObject<TextInput>;
+    autofocus?: boolean;
+    value: string;
+    setValue: (text: string) => void;
 };
 
-const ThemedInput = (props : Props) => {
-    const [value, setValue] = React.useState("");
+const ThemedInput = forwardRef(function ThemedInput(props: Props, ref: React.Ref<TextInput>) {
     return (
         <View>
             <TextInput
+                ref={ref}
+                autoFocus={props?.autofocus}
                 placeholder={props?.placeHolder}
                 onSubmitEditing={props?.onSubmit}
                 onChangeText={(text) => {
-                    setValue(text);
+                    props.setValue(text);
                     props.onChangeText?.(text);
                 }}
-                value={value}
+                value={props.value}
                 style={{
-                    backgroundColor: Colors.dark.lightened,
-                    color: Colors.dark.text,
+                    backgroundColor: ThemedColor.lightened,
+                    color: ThemedColor.text,
                     borderRadius: 20,
                     padding: 16,
                     fontSize: 16,
@@ -34,7 +39,7 @@ const ThemedInput = (props : Props) => {
             />
         </View>
     );
-};
+});
 
 export default ThemedInput;
 

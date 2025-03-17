@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, Switch, Dimensions, TouchableOpacity } from "react-native";
 import React from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {};
 
@@ -13,7 +13,7 @@ const TrafficLight = (props: Props) => {
                 flexDirection: "row",
                 gap: 16,
             }}>
-            {[Colors.dark.error, Colors.dark.warning, Colors.dark.success].map((color, index) => {
+            {[ThemedColor.error, ThemedColor.warning, ThemedColor.success].map((color, index) => {
                 return (
                     <TouchableOpacity
                         key={index}

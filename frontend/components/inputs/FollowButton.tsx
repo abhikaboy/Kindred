@@ -1,6 +1,6 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
     following: boolean;
@@ -14,7 +14,7 @@ export default function FollowButton({ following }: Props) {
                 setFollowing(!follow);
             }}
             style={{
-                backgroundColor: follow ? Colors.dark.primaryPressed : Colors.dark.primary,
+                backgroundColor: follow ? ThemedColor.primaryPressed : ThemedColor.primary,
                 borderRadius: 100,
                 paddingVertical: 12,
                 paddingHorizontal: 20,
@@ -23,7 +23,7 @@ export default function FollowButton({ following }: Props) {
             }}>
             <Text
                 style={{
-                    color: Colors.dark.text,
+                    color: ThemedColor.buttonText,
                     fontFamily: "Outfit",
                     textAlign: "center",
                     fontWeight: 400,

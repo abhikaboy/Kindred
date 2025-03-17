@@ -3,7 +3,7 @@ import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpaci
 import { ThemedText } from "./ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRecentSearch } from "@/hooks/useRecentSearch";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import { IconSymbol } from "./ui/IconSymbol";
 import Octicons from "@expo/vector-icons/Octicons";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -31,7 +31,6 @@ export function SearchBox({
 }: SearchBoxProps) {
     const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
     const [inputHeight, setInputHeight] = useState(0);
-    const textColor = useThemeColor({ light: "#000", dark: "#fff" }, "text");
     const inputRef = useRef<TextInput>(null);
     const [recentItems, setRecentItems] = useState<string[]>([]);
 
@@ -57,10 +56,6 @@ export function SearchBox({
         }
     }, [inputRef]);
 
-    useEffect(() => {
-        fetchRecents();
-    }, []);
-
     const onSubmitEditing = () => {
         if (recent)
             appendSearch(value).then(() => {
@@ -84,7 +79,7 @@ export function SearchBox({
                     value={value}
                     onChangeText={onChangeText}
                     {...rest}
-                    style={{ ...styles.input, color: textColor }}
+                    style={{ ...styles.input, color: ThemedColor.text }}
                 />
                 <Octicons name="search" size={24} color="white" />
             </View>
@@ -124,14 +119,14 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         position: "absolute",
         width: "100%",
-        backgroundColor: Colors["dark"].background,
+        backgroundColor: ThemedColor.background,
         zIndex: 10,
     },
     recent: {
         width: "100%",
         padding: 20,
         paddingVertical: 16,
-        backgroundColor: Colors.dark.background,
+        backgroundColor: ThemedColor.background,
         flexDirection: "row",
         flex: 1,
         gap: 12,
@@ -144,7 +139,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 24,
         paddingVertical: 16,
-        backgroundColor: "#ffffff05",
+        backgroundColor: ThemedColor.lightened,
     },
     input: {
         flex: 1,

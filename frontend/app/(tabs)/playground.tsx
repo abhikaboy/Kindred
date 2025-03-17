@@ -5,6 +5,7 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Link } from "expo-router";
+import ThemedColor from "@/constants/Colors";
 
 export default function Playground() {
     return (
@@ -22,7 +23,7 @@ export default function Playground() {
             <Link
                 href={"/Dev1"}
                 style={{
-                    color: "#fff",
+                    color: ThemedColor.text,
                     fontSize: 24,
                     fontWeight: "bold",
                     fontFamily: "Outfit",
@@ -32,7 +33,7 @@ export default function Playground() {
             <Link
                 href={"/Dev2"}
                 style={{
-                    color: "#fff",
+                    color: ThemedColor.text,
                     fontSize: 24,
                     fontWeight: "bold",
                     fontFamily: "Outfit",
@@ -42,7 +43,7 @@ export default function Playground() {
             <Link
                 href={"/Dev3"}
                 style={{
-                    color: "#fff",
+                    color: ThemedColor.text,
                     fontSize: 24,
                     fontWeight: "bold",
                     fontFamily: "Outfit",

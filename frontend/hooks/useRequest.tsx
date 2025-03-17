@@ -10,9 +10,6 @@ async function request(method: string, url: string, body?: any) {
         },
         data: body,
     });
-
-    console.log(response);
-
     if (response.status > 299) {
         throw Error("Unable to complete operation" + " status codey: " + response.statusText);
     } else {

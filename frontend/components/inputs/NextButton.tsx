@@ -1,6 +1,6 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
     onPress?: () => void;
@@ -11,7 +11,7 @@ export default function NextButton({ onPress }: Props) {
         <TouchableOpacity
             onPress={onPress}
             style={{
-                backgroundColor: Colors.dark.primary,
+                backgroundColor: ThemedColor.primary,
                 borderRadius: 100,
                 paddingVertical: 16,
                 paddingHorizontal: 20,
@@ -20,7 +20,7 @@ export default function NextButton({ onPress }: Props) {
             }}>
             <Text
                 style={{
-                    color: Colors.dark.text,
+                    color: ThemedColor.text,
                     fontFamily: "Outfit",
                     textAlign: "center",
                     fontWeight: 400,

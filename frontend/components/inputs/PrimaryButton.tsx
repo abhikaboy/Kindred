@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
 import React from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
     title: string;
@@ -15,15 +15,15 @@ export default function PrimaryButton({ title, onPress, style }: Props) {
             style={[
                 {
                     width: "100%",
-                    backgroundColor: Colors.dark.primary,
+                    backgroundColor: ThemedColor.primary,
                     borderRadius: 20,
-                    paddingVertical: 20,
+                    paddingVertical: 16,
                 },
                 style,
             ]}>
             <Text
                 style={{
-                    color: Colors.dark.text,
+                    color: ThemedColor.buttonText,
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 600,

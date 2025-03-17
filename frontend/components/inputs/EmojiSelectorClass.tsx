@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Modal, TouchableOpacity, View, StyleSheet } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import { Dimensions } from "react-native";
 
 type EmojiSelectorProps = {
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalContent: {
-        backgroundColor: Colors.dark.background,
+        backgroundColor: ThemedColor.background,
         padding: 20,
         paddingBottom: 60,
         borderRadius: 20,

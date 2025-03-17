@@ -1,7 +1,7 @@
 import { View, Dimensions, ScrollView } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { SearchBox } from "@/components/SearchBox";
@@ -22,7 +22,7 @@ export default function Dev1() {
     return (
         <View
             style={{
-                backgroundColor: Colors.dark.background,
+                backgroundColor: ThemedColor.background,
                 height: Dimensions.get("screen").height,
                 flex: 1,
                 paddingTop: Dimensions.get("screen").height * 0.12,

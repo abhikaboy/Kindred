@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import React, { useEffect, useState } from "react";
 
 import { Calendar } from "react-native-calendars";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {};
 
@@ -34,20 +34,20 @@ const ThemedCalendar = (props: Props) => {
             <Calendar
                 horizontal={true}
                 theme={{
-                    backgroundColor: Colors.dark.lightened,
-                    calendarBackground: Colors.dark.lightened,
-                    textSectionTitleColor: Colors.dark.text,
-                    selectedDayBackgroundColor: Colors.dark.primary,
-                    selectedDayTextColor: Colors.dark.text,
-                    todayTextColor: Colors.dark.primary,
-                    dayTextColor: "#fff",
-                    textDisabledColor: Colors.dark.disabled,
-                    dotColor: Colors.dark.primary,
-                    monthTextColor: Colors.dark.text,
+                    backgroundColor: ThemedColor.lightened,
+                    calendarBackground: ThemedColor.lightened,
+                    textSectionTitleColor: ThemedColor.text,
+                    selectedDayBackgroundColor: ThemedColor.primary,
+                    selectedDayTextColor: ThemedColor.text,
+                    todayTextColor: ThemedColor.primary,
+                    dayTextColor: ThemedColor.text,
+                    textDisabledColor: ThemedColor.disabled,
+                    dotColor: ThemedColor.primary,
+                    monthTextColor: ThemedColor.text,
                     textDayFontSize: 16,
-                    agendaDayTextColor: Colors.dark.text,
-                    agendaTodayColor: Colors.dark.primary,
-                    arrowColor: Colors.dark.text,
+                    agendaDayTextColor: ThemedColor.text,
+                    agendaTodayColor: ThemedColor.primary,
+                    arrowColor: ThemedColor.text,
                     textDayFontFamily: "Outfit",
                     textMonthFontFamily: "Outfit",
                     textMonthFontSize: 20,

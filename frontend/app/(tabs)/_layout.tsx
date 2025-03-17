@@ -5,7 +5,7 @@ import { Dimensions, Platform, TouchableOpacity } from "react-native";
 import { HapticTab } from "@/components/HapticTab";
 import Octicons from "@expo/vector-icons/Octicons";
 import TabBarBackground from "@/components/ui/TabBarBackground";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import { useColorScheme } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,7 +21,7 @@ export default function TabLayout() {
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: Colors.dark.text,
+                tabBarActiveTintColor: ThemedColor.text,
                 headerShown: false,
                 headerTitleStyle: {
                     fontFamily: "Outfit",

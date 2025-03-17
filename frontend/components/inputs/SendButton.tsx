@@ -1,6 +1,6 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
 type Props = {
@@ -13,7 +13,7 @@ export default function SendButton({ onSend }: Props) {
             <TouchableOpacity
                 onPress={onSend}
                 style={{
-                    backgroundColor: Colors.dark.primary,
+                    backgroundColor: ThemedColor.primary,
                     borderRadius: 40,
                     paddingVertical: 15,
                     paddingHorizontal: 25,

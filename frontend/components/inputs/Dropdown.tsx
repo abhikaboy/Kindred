@@ -1,7 +1,7 @@
 import { StyleSheet, Text, Touchable, View } from "react-native";
-import React, { useEffect } from "react";
+import React, { Dispatch, SetStateAction, useEffect } from "react";
 import { MultipleSelectList, SelectList } from "react-native-dropdown-select-list";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import Entypo from "@expo/vector-icons/Entypo";
 import Octicons from "@expo/vector-icons/Octicons";
 import { ThemedText } from "../ThemedText";
@@ -16,34 +16,40 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
 } from "react-native-reanimated";
-const data = [
-    { label: "+ New Category" },
-    { label: "Option 1" },
-    { label: "Option 2" },
-    { label: "Option 3" },
-    { label: "Option 4" },
-];
 
-type Props = {};
+type Option = {
+    label: string;
+    id: string;
+    special?: boolean;
+};
 
-const Dropdown = (props: Props) => {
-    const [selected, setSelected] = React.useState(data[0]);
+type Props = {
+    options?: Option[];
+    selected: Option;
+    setSelected: Dispatch<SetStateAction<Option>>;
+    onSpecial: () => void;
+};
+
+const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
-    const router = useRouter();
     const reducedMotion = useReducedMotion();
-    console.log(reducedMotion);
 
     useEffect(() => {
         expanded.value = expandedState;
     }, [expandedState]);
+
+    useEffect(() => {
+        if (options.length === 0) return;
+        setSelected(options[0]);
+    }, []);
 
     let mainBar = useAnimatedStyle(() => {
         return {
             borderBottomLeftRadius: expanded.value ? 0 : 20,
             borderBottomRightRadius: expanded.value ? 0 : 20,
             borderBottomWidth: expanded.value ? 1 : 0,
-            borderBottomColor: expanded.value ? Colors.dark.disabled : Colors.dark.lightened,
+            borderBottomColor: expanded.value ? ThemedColor.disabled : ThemedColor.lightened,
         };
     });
 
@@ -61,7 +67,7 @@ const Dropdown = (props: Props) => {
                     {
                         borderRadius: 20,
                         padding: 16,
-                        backgroundColor: Colors.dark.lightened,
+                        backgroundColor: ThemedColor.lightened,
                         paddingHorizontal: 24,
                         flexDirection: "row",
                         justifyContent: "space-between",
@@ -76,17 +82,18 @@ const Dropdown = (props: Props) => {
             </AnimatedTouchableOpacity>
             {expandedState && (
                 <Animated.View entering={reducedMotion ? null : FadeInUp} exiting={reducedMotion ? null : FadeOutDown}>
-                    {data.map((item, index) => {
+                    {options.map((item, index) => {
                         return (
                             <AnimatedTouchableOpacity
                                 key={index}
                                 onPress={() => {
                                     setSelected(item);
+                                    if (item.special) onSpecial();
                                     expanded.value = false;
                                     setExpandedState(false);
                                 }}
                                 style={{
-                                    backgroundColor: Colors.dark.lightened,
+                                    backgroundColor: ThemedColor.lightened,
                                     padding: 8,
                                     paddingHorizontal: 24,
                                     flexDirection: "row",

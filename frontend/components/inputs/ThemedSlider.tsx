@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { TextInput } from "react-native-gesture-handler";
@@ -97,28 +97,28 @@ const styles = StyleSheet.create({
         gap: 32,
     },
     filled: {
-        backgroundColor: Colors.dark.primary,
+        backgroundColor: ThemedColor.primary,
     },
     sliderTrack: {
         width: SLIDER_WIDTH,
         height: 25,
-        backgroundColor: Colors.dark.text,
-        // backgroundColor: Colors.dark.primary,
+        backgroundColor: ThemedColor.text,
+        // backgroundColor: ThemedColor.primary,
         borderRadius: 25,
         justifyContent: "center",
     },
     sliderTrackFilled: {
         width: SLIDER_WIDTH,
         height: 25,
-        backgroundColor: Colors.dark.primary,
-        // backgroundColor: Colors.dark.primary,
+        backgroundColor: ThemedColor.primary,
+        // backgroundColor: ThemedColor.primary,
         borderRadius: 25,
         justifyContent: "center",
     },
     sliderHandle: {
         width: 40,
         height: 40,
-        backgroundColor: Colors.dark.primary,
+        backgroundColor: ThemedColor.primary,
         // background: "linear-gradient(to right, #00ff00, #ff0000)",
         borderRadius: 20,
         position: "absolute",

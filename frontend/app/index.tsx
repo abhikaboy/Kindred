@@ -1,6 +1,6 @@
 import { View, Text, Dimensions, Image, TouchableOpacity } from "react-native";
 import React from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { Link, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
@@ -18,7 +18,7 @@ const index = (props: Props) => {
     return (
         <View
             style={{
-                backgroundColor: Colors["dark"].background,
+                backgroundColor: ThemedColor.background,
                 height: Dimensions.get("screen").height,
                 flex: 1,
                 flexDirection: "column",
@@ -55,7 +55,7 @@ const index = (props: Props) => {
                         justifyContent: "flex-end",
                         bottom: 64,
                     }}>
-                    <PrimaryButton title="Get Started" onPress={() => router.push("/playground")} />
+                    <PrimaryButton title="Get Started" onPress={() => router.push("/login")} />
                     <ThemedText style={{ textAlign: "center" }}>
                         Already have an account?{" "}
                         <TouchableOpacity>
