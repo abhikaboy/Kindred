@@ -26,7 +26,7 @@ export default function PrimaryButton({ title, onPress, style }: Props) {
                     color: ThemedColor.buttonText,
                     textAlign: "center",
                     fontFamily: "Outfit",
-                    fontWeight: 600,
+                    fontWeight: 500,
                 }}>
                 {title}
             </Text>

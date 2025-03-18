@@ -16,6 +16,8 @@ import ReanimatedDrawerLayout, {
     DrawerLayoutMethods,
 } from "react-native-gesture-handler/ReanimatedDrawerLayout";
 import CreateModal from "@/components/modals/CreateModal";
+import BottomMenuModal from "@/components/modals/BottomMenuModal";
+import EditCategory from "@/components/modals/edit/EditCategory";
 
 type Props = {};
 
@@ -24,11 +26,14 @@ const Home = (props: Props) => {
     const { user } = useAuth();
     const { request } = useRequest();
 
-    const { categories, fetchWorkspaces } = useTasks();
+    const { categories, fetchWorkspaces, selected } = useTasks();
 
     const [time, setTime] = React.useState(new Date().toLocaleTimeString());
     const [timeOfDay, setTimeOfDay] = React.useState("Good Morning! ☀");
     const [creating, setCreating] = React.useState(false);
+    const [editing, setEditing] = React.useState(false);
+
+    const [focusedCategory, setFocusedCategory] = React.useState<string>("");
 
     useEffect(() => {
         fetchWorkspaces();
@@ -70,6 +75,7 @@ const Home = (props: Props) => {
             drawerPosition={DrawerPosition.LEFT}
             drawerType={DrawerType.FRONT}>
             <CreateModal visible={creating} setVisible={setCreating} />
+            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <ThemedView
                 style={{
                     flex: 1,
@@ -78,13 +84,13 @@ const Home = (props: Props) => {
                     paddingBottom: Dimensions.get("screen").height * 0.12,
                 }}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
-                    <Feather name="menu" size={32} color="white" />
+                    <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
                 <View style={{ paddingBottom: 24, paddingTop: 20 }}>
-                    <ThemedText type="title" style={{ fontWeight: 700 }}>
-                        {timeOfDay}
+                    <ThemedText type="title" style={{ fontWeight: 600 }}>
+                        {selected || timeOfDay}
                     </ThemedText>
-                    <ThemedText type="lightBody">{time} </ThemedText>
+                    {/* <ThemedText type="lightBody">{time} </ThemedText> */}
                     <ThemedText type="lightBody">
                         Treat yourself to a cup of coffee and a good book. You deserve it.
                     </ThemedText>
@@ -93,7 +99,17 @@ const Home = (props: Props) => {
                     <View style={{ gap: 16, marginTop: 0 }}>
                         {categories.map((category) => (
                             <View style={{ gap: 16 }} key={category.id + category.name}>
-                                <ThemedText type="subtitle">{category.name}</ThemedText>
+                                <TouchableOpacity
+                                    onLongPress={() => {
+                                        setEditing(true);
+                                        setFocusedCategory(category.id);
+                                    }}
+                                    onPress={() => {
+                                        setCreating(true);
+                                        setFocusedCategory(category.id);
+                                    }}>
+                                    <ThemedText type="subtitle">{category.name}</ThemedText>
+                                </TouchableOpacity>
                                 {category.tasks.map((task) => (
                                     <TaskCard
                                         key={task.id + task.content}

@@ -7,6 +7,7 @@ import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { useTasks } from "@/contexts/tasksContext";
 import { useRequest } from "@/hooks/useRequest";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
     goToStandard: () => void;
@@ -30,7 +31,7 @@ const NewCategory = ({ goToStandard }: Props) => {
         <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                 <TouchableOpacity onPress={goToStandard}>
-                    <Feather name="arrow-left" size={24} color="white" />
+                    <Feather name="arrow-left" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={{ textAlign: "center" }}>
                     New Category

@@ -17,6 +17,8 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
+    focused?: string;
+    setFocused?: (focused: string) => void;
 };
 
 export enum Screen {

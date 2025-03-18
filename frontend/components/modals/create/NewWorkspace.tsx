@@ -7,40 +7,41 @@ import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { useTasks } from "@/contexts/tasksContext";
 import { useRequest } from "@/hooks/useRequest";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
-    goToStandard: () => void;
+    hide: () => void;
 };
 
-const NewWorkSpace = ({ goToStandard }: Props) => {
+const NewWorkspace = ({ hide }: Props) => {
     const [name, setName] = useState("");
-    const { selected, addToWorkspace } = useTasks();
+    const { selected, addWorkspace } = useTasks();
     const { request } = useRequest();
 
-    const createCategory = async () => {
+    const createWorkspace = async () => {
         const response = await request("POST", `/user/categories`, {
-            name: name,
-            workspaceName: selected,
+            name: "Miscellaneous",
+            workspaceName: name,
         });
-        addToWorkspace(selected, response);
+        addWorkspace(name, response);
         console.log(response);
     };
 
     return (
-        <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
+        <View style={{ gap: 24, display: "flex", flexDirection: "column", backgroundColor: ThemedColor.background }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
-                <TouchableOpacity onPress={goToStandard}>
-                    <Feather name="arrow-left" size={24} color="white" />
+                <TouchableOpacity onPress={hide}>
+                    <Feather name="arrow-left" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={{ textAlign: "center" }}>
-                    New Category
+                    New Workspace
                 </ThemedText>
             </View>
             <ThemedInput
                 autofocus
-                placeHolder="Enter the Category Name"
+                placeHolder="Enter the Workspace Name"
                 onSubmit={() => {
-                    goToStandard();
+                    hide();
                 }}
                 onChangeText={(text) => {
                     setName(text);
@@ -55,11 +56,11 @@ const NewWorkSpace = ({ goToStandard }: Props) => {
                     alignItems: "center",
                 }}>
                 <PrimaryButton
-                    title="Create Category"
+                    title="Create Workspace"
                     onPress={() => {
-                        createCategory()
+                        createWorkspace()
                             .then(() => {
-                                goToStandard();
+                                hide();
                             })
                             .catch((err) => {
                                 console.log(err);
@@ -71,6 +72,6 @@ const NewWorkSpace = ({ goToStandard }: Props) => {
     );
 };
 
-export default NewCategory;
+export default NewWorkspace;
 
 const styles = StyleSheet.create({});

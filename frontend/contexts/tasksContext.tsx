@@ -16,7 +16,7 @@ type TaskContextType = {
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
-    addWorkspace: (name: string) => void;
+    addWorkspace: (name: string, category: Categories) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
 };
@@ -36,9 +36,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setWorkSpaces(data);
     };
 
-    const addWorkspace = async (name: string) => {
+    const addWorkspace = async (name: string, category: Categories) => {
         let workspacesCopy = workspaces.slice();
-        workspacesCopy.push({ name: name, categories: [] });
+        workspacesCopy.push({ name: name, categories: [category] });
         setWorkSpaces(workspacesCopy);
     };
 

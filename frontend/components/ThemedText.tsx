@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
         fontFamily: "Outfit",
     },
     heading: {
-        fontSize: 36,
-        fontWeight: 700,
+        fontSize: 32,
+        fontWeight: 600,
         lineHeight: 36,
         fontFamily: "Outfit",
     },
@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
         fontFamily: "Outfit",
     },
     subtitle: {
-        fontSize: 24,
-        fontWeight: "bold",
+        fontSize: 20,
+        fontWeight: 500,
         fontFamily: "Outfit",
     },
     link: {

@@ -80,7 +80,7 @@ export function SearchBox({
                     {...rest}
                     style={{ ...styles.input, color: ThemedColor.text }}
                 />
-                <Octicons name="search" size={24} color="white" />
+                <Octicons name="search" size={24} color={ThemedColor.text} />
             </View>
             {recent && (
                 <View style={{ ...styles.recentsContainer, top: inputHeight }}>
@@ -97,11 +97,11 @@ export function SearchBox({
                                     onChangeText(term);
                                 }}>
                                 <View style={{ flexDirection: "row", gap: 10 }}>
-                                    <Octicons name="search" size={20} color="white" />
+                                    <Octicons name="search" size={20} color={ThemedColor.text} />
                                     <ThemedText>{term}</ThemedText>
                                 </View>
                                 <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => deleteRecentItem(term)}>
-                                    <Entypo name="cross" size={20} color="white" />
+                                    <Entypo name="cross" size={20} color={ThemedColor.text} />
                                 </TouchableOpacity>
                             </TouchableOpacity>
                         );

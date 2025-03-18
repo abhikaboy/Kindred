@@ -11,6 +11,12 @@ type Categories = {
     tasks: any[];
 };
 
+type BottomMenuOption = {
+    label: string;
+    icon: string;
+    callback: () => void;
+};
+
 type Priority = "1" | "2" | "3";
 
 type Props = {

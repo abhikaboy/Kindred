@@ -3,7 +3,6 @@ import React, { Dispatch, SetStateAction, useEffect } from "react";
 import { MultipleSelectList, SelectList } from "react-native-dropdown-select-list";
 import ThemedColor from "@/constants/Colors";
 import Entypo from "@expo/vector-icons/Entypo";
-import Octicons from "@expo/vector-icons/Octicons";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { TouchableOpacity } from "react-native";
@@ -69,9 +68,21 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                 ]}>
                 <ThemedText type="lightBody">{selected.label}</ThemedText>
                 {expandedState ? (
-                    <AnimatedArrow name="chevron-down" size={16} color="white" entering={FadeIn} exiting={FadeOut} />
+                    <AnimatedArrow
+                        name="chevron-down"
+                        size={16}
+                        color={ThemedColor.text}
+                        entering={FadeIn}
+                        exiting={FadeOut}
+                    />
                 ) : (
-                    <AnimatedArrow name="chevron-up" size={16} color="white" entering={FadeIn} exiting={FadeOut} />
+                    <AnimatedArrow
+                        name="chevron-up"
+                        size={16}
+                        color={ThemedColor.text}
+                        entering={FadeIn}
+                        exiting={FadeOut}
+                    />
                 )}
             </AnimatedTouchableOpacity>
             {expandedState && (

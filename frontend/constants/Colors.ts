@@ -16,6 +16,7 @@ const Colors = {
         error: "#FF5C5F",
         warning: "#FFFF5C",
         caption: "#9D9D9D",
+        tertiary: "#E5E5E5",
 
         tint: tintColorDark,
         icon: "#9BA1A6",
@@ -38,16 +39,17 @@ const Colors = {
         warning: "#FFFF5C",
         caption: "#9D9D9D",
         lightened: "#171626",
-
+        tertiary: "#1C1B2A",
         tint: tintColorDark,
         icon: "#9BA1A6",
         tabIconDefault: "#9BA1A6",
         tabIconSelected: tintColorDark,
     },
 };
-let ThemedColor = Colors.dark;
+let ThemedColor = Colors.light;
 
 export const initTheme = (mode: string) => {
+    console.warn("initTheme", mode);
     ThemedColor = Colors[mode];
 };
 

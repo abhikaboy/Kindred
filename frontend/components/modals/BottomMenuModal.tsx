@@ -4,12 +4,7 @@ import React, { useEffect } from "react";
 import Modal from "react-native-modal";
 
 import ThemedColor from "@/constants/Colors";
-import ThemedInput from "../inputs/ThemedInput";
-import Dropdown from "../inputs/Dropdown";
-import { useRequest } from "@/hooks/useRequest";
-import { useTasks } from "@/contexts/tasksContext";
 import { ThemedText } from "../ThemedText";
-import { Task } from "react-native";
 
 import Feather from "@expo/vector-icons/Feather";
 import ModalHead from "./ModalHead";
@@ -23,23 +18,16 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
+    options: BottomMenuOption[];
 };
 
-const EditModal = (props: Props) => {
-    const { request } = useRequest();
-    const { categories, removeFromCategory } = useTasks();
+//
+const options: BottomMenuOption[] = [
+    { label: "Edit", icon: "edit", callback: () => {} },
+    { label: "Delete", icon: "delete", callback: () => {} },
+];
 
-    const editPost = async () => {
-        if (categories.length === 0) return;
-    };
-    const deletePost = async () => {
-        if (categories.length === 0) return;
-        const { id, category } = props.id;
-        const response = await request("DELETE", `/user/tasks/${category}/${id}`);
-        removeFromCategory(category, id);
-        console.log(response);
-    };
-
+const BottomMenuModal = (props: Props) => {
     return (
         <Modal
             onBackdropPress={() => props.setVisible(false)}
@@ -50,20 +38,23 @@ const EditModal = (props: Props) => {
             avoidKeyboard>
             <View style={styles.container}>
                 <ModalHead />
-                <TouchableOpacity style={{ flexDirection: "row", gap: 16 }}>
-                    <Feather name="edit" size={24} color={ThemedColor.text} />
-                    <ThemedText type="default">Edit Post</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity style={{ flexDirection: "row", gap: 16 }} onPress={deletePost}>
-                    <Feather name="x" size={24} color={ThemedColor.text} />
-                    <ThemedText type="default">Delete Post</ThemedText>
-                </TouchableOpacity>
+                {props.options.map((option, index) => {
+                    return (
+                        <TouchableOpacity
+                            key={index}
+                            style={{ flexDirection: "row", gap: 16 }}
+                            onPress={option.callback}>
+                            <Feather name={option.icon} size={24} color={ThemedColor.text} />
+                            <ThemedText type="default">{option.label}</ThemedText>
+                        </TouchableOpacity>
+                    );
+                })}
             </View>
         </Modal>
     );
 };
 
-export default EditModal;
+export default BottomMenuModal;
 
 const styles = StyleSheet.create({
     container: {

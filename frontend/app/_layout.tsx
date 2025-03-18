@@ -28,7 +28,7 @@ export default function RootLayout() {
         SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
 
-    useEffect(() => initTheme("dark"), [colorScheme]);
+    useEffect(() => initTheme("light"), []);
     useEffect(() => {
         if (loaded) {
             SplashScreen.hideAsync();
