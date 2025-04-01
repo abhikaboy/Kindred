@@ -1,45 +1,57 @@
 {
-    "expo": {
-        "name": "Kindred",
-        "slug": "Kindred",
-        "version": "0.0.1",
-        "orientation": "portrait",
-        "icon": "./assets/images/icon.png",
-        "scheme": "kindred",
-        "userInterfaceStyle": "automatic",
-        "newArchEnabled": true,
-        "platforms": ["ios", "android"],
-        "ios": {
-            "supportsTablet": true,
-            "usesAppleSignIn": true
-        },
-        "android": {
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/images/icon.png",
-                "backgroundColor": "#ffffff"
-            }
-        },
-        "web": {
-            "bundler": "metro",
-            "output": "static",
-            "favicon": "./assets/images/favicon.png"
-        },
-        "plugins": [
-            "expo-apple-authentication",
-            "expo-router",
-            [
-                "expo-splash-screen",
-                {
-                    "image": "./assets/images/splash-icon.png",
-                    "imageWidth": 200,
-                    "resizeMode": "contain",
-                    "backgroundColor": "#ffffff"
-                }
-            ],
-            "expo-secure-store"
-        ],
-        "experiments": {
-            "typedRoutes": true
+  "expo": {
+    "name": "Kindred",
+    "slug": "Kindred",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "kindred",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.kindred.kindredtsl"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-apple-authentication",
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
         }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "f64f0563-7cb2-45c4-b928-800e53bc5e10"
+      }
     }
+  }
 }

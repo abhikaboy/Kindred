@@ -1,6 +1,6 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import AntDesign from "@expo/vector-icons/AntDesign";
 type Props = {
     onPress: () => void;
@@ -17,7 +17,7 @@ const OnboardButton = ({ onPress, disabled }: Props) => {
                 bottom: Dimensions.get("screen").width * 0.2,
                 right: Dimensions.get("screen").width * 0.1,
                 padding: 24,
-                backgroundColor: disabled ? Colors.dark.disabled : Colors.dark.primary,
+                backgroundColor: disabled ? ThemedColor.disabled : ThemedColor.primary,
                 borderRadius: 400,
             }}>
             <AntDesign name="arrowright" size={24} color="white" />

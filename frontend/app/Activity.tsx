@@ -31,15 +31,11 @@ const Activity = (props: Props) => {
                 </ThemedText>
                 <View style={{ flexDirection: "column", gap: 12 }}>
                     <View style={{ flex: 1, flexDirection: "row", gap: 16, alignSelf: "center" }}>
-                        <ThemedText type="lightBody" style={{ color: "white" }}>
-                            This month's average:
-                        </ThemedText>
+                        <ThemedText type="lightBody">This month's average:</ThemedText>
                         <ActivityPoint level={4} />
                     </View>
                     <View style={{ flex: 1, flexDirection: "row", gap: 16, alignSelf: "center" }}>
-                        <ThemedText type="lightBody" style={{ color: "white" }}>
-                            Last month's average:
-                        </ThemedText>
+                        <ThemedText type="lightBody">Last month's average:</ThemedText>
                         <ActivityPoint level={3} />
                     </View>
                 </View>

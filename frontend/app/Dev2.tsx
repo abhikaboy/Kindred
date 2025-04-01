@@ -1,7 +1,7 @@
 import { View, Dimensions, ScrollView, FlatList } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import ContactCard from "@/components/cards/ContactCard";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { Icons } from "@/constants/Icons";
@@ -19,7 +19,7 @@ export default function Dev2() {
     return (
         <View
             style={{
-                backgroundColor: Colors.dark.background,
+                backgroundColor: ThemedColor.background,
                 height: Dimensions.get("screen").height,
                 flex: 1,
                 paddingTop: Dimensions.get("screen").height * 0.12,

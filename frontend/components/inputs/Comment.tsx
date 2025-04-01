@@ -2,7 +2,7 @@ import React from "react";
 import { Modal, View, StyleSheet, TouchableOpacity, Text, ScrollView, Dimensions } from "react-native";
 import UserInfoRowComment from "../UserInfo/UsereInfoRowComment";
 import { ThemedText } from "../ThemedText";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import ThemedInput from "./ThemedInput";
 import SendButton from "./SendButton";
 import CommentInput from "./CommentInput";
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         width: "100%",
-        backgroundColor: Colors.dark.background,
+        backgroundColor: ThemedColor.background,
         borderTopLeftRadius: 26,
         borderTopRightRadius: 26,
         paddingBottom: 30,

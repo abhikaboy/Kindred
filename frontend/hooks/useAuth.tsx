@@ -7,8 +7,8 @@ async function getUserByAppleAccountID(appleAccountID: string) {
     const response = await axios.post(url, {
         apple_id: appleAccountID,
     });
-    const access_token = response.headers["access_token"];
-    const refresh_token = response.headers["refresh_token"];
+    const access_token: string = response.headers["access_token"];
+    const refresh_token: string = response.headers["refresh_token"];
 
     console.log(access_token);
     console.log(refresh_token);
@@ -74,13 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function logout() {
+    function logout() {
         setUser(null);
     }
 
     async function refresh() {
         if (user) {
-            login(user.appleAccountID);
+            await login(user.appleAccountID);
         }
     }
     return <AuthContext.Provider value={{ user, register, login, logout, refresh }}>{children}</AuthContext.Provider>;

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { CountryPicker } from "react-native-country-codes-picker";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import OnboardButton from "@/components/inputs/OnboardButton";
 import { useRouter } from "expo-router";
 
@@ -35,34 +35,34 @@ const Index = (props: Props) => {
                         top: Dimensions.get("screen").height * 0.25,
                         height: Dimensions.get("screen").height * 1,
                         paddingHorizontal: 24,
-                        backgroundColor: Colors.dark.background,
+                        backgroundColor: ThemedColor.background,
                     },
                     itemsList: {
-                        backgroundColor: Colors.dark.background,
+                        backgroundColor: ThemedColor.background,
                     },
                     countryButtonStyles: {
-                        backgroundColor: Colors.dark.lightened,
+                        backgroundColor: ThemedColor.lightened,
                     },
                     countryName: {
-                        color: Colors.dark.text,
+                        color: ThemedColor.text,
                         fontFamily: "Outfit",
                     },
                     dialCode: {
-                        color: Colors.dark.text,
+                        color: ThemedColor.text,
                         fontFamily: "Outfit",
                     },
                     countryMessageContainer: {
-                        backgroundColor: Colors.dark.lightened,
+                        backgroundColor: ThemedColor.lightened,
                     },
                     textInput: {
                         borderRadius: 16,
                         padding: 16,
-                        backgroundColor: Colors.dark.lightened,
+                        backgroundColor: ThemedColor.lightened,
                         paddingVertical: 24,
-                        color: Colors.dark.text,
+                        color: ThemedColor.text,
                     },
                     searchMessageText: {
-                        color: Colors.dark.text,
+                        color: ThemedColor.text,
                         fontFamily: "Outfit",
                     },
                 }}
@@ -79,7 +79,7 @@ const Index = (props: Props) => {
                 <TouchableOpacity
                     style={{
                         padding: 20,
-                        backgroundColor: Colors.dark.lightened,
+                        backgroundColor: ThemedColor.lightened,
                         borderRadius: 24,
                     }}
                     onPress={() => {
@@ -90,8 +90,8 @@ const Index = (props: Props) => {
                 <TextInput
                     style={{
                         padding: 24,
-                        backgroundColor: Colors.dark.lightened,
-                        color: Colors.dark.text,
+                        backgroundColor: ThemedColor.lightened,
+                        color: ThemedColor.text,
                         borderRadius: 24,
                         width: "100%",
                     }}

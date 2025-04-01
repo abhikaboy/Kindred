@@ -17,15 +17,7 @@ import (
 func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 	var pipeline []bson.D = []bson.D{
 		{
-			{Key: "$match", Value: bson.M{"_id": userId}},
-		},
-		{
-			{Key: "$unwind", Value: "$categories"},
-		},
-		{
-			{Key: "$replaceRoot", Value: bson.M{
-				"newRoot": "$categories",
-			}},
+			{Key: "$match", Value: bson.M{"user": userId}},
 		},
 		{
 			{Key: "$unwind", Value: "$tasks"},
@@ -42,7 +34,8 @@ func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Tasks:          collections["users"],
+		Tasks:          collections["categories"],
+		Users:          collections["users"],
 		CompletedTasks: collections["completed-tasks"],
 	}
 }
@@ -87,36 +80,39 @@ func (s *Service) GetTasksByUser(id primitive.ObjectID, sort bson.D) ([]TaskDocu
 }
 
 // GetTaskByID returns a single Task document by its ObjectID
-func (s *Service) GetTaskByID(id primitive.ObjectID) (*TaskDocument, error) {
+func (s *Service) GetTaskByID(id primitive.ObjectID, user primitive.ObjectID) (*TaskDocument, error) {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
-	var Task TaskDocument
-	err := s.Tasks.FindOne(ctx, filter).Decode(&Task)
-
-	if err == mongo.ErrNoDocuments {
-		// No matching Task found
-		return nil, mongo.ErrNoDocuments
-	} else if err != nil {
-		// Different error occurred
+	var Task = make([]TaskDocument, 0)
+	var pipeline  = getTasksByUserPipeline(user)
+	pipeline = append(pipeline, bson.D{
+		{Key: "$match", Value: filter},
+	})
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
+	err = cursor.All(ctx, &Task)
+	if len(Task) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
 
-	return &Task, nil
+	return &Task[0], nil
 }
 
 // InsertTask adds a new Task document
-func (s *Service) CreateTask(userId primitive.ObjectID, categoryId primitive.ObjectID, r *TaskDocument) (*TaskDocument, error) {
+func (s *Service) CreateTask(categoryId primitive.ObjectID, r *TaskDocument) (*TaskDocument, error) {
 	ctx := context.Background()
 	// Insert the document into the collection
 
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{
-			"_id":        userId,
-			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
+			"_id":        categoryId,
 		},
-		bson.M{"$push": bson.M{"categories.$.tasks": r}},
+		bson.M{"$push": bson.M{"tasks": r}},
 	)
 	if err != nil {
 		return nil, err
@@ -130,7 +126,6 @@ func (s *Service) CreateTask(userId primitive.ObjectID, categoryId primitive.Obj
 
 // UpdatePartialTask updates only specified fields of a Task document by ObjectID.
 func (s *Service) UpdatePartialTask(
-	userId primitive.ObjectID,
 	id primitive.ObjectID,
 	categoryId primitive.ObjectID,
 	updated UpdateTaskDocument) (*TaskDocument, error) {
@@ -149,19 +144,18 @@ func (s *Service) UpdatePartialTask(
 
 	_, err := s.Tasks.UpdateOne(ctx,
 		bson.M{
-			"_id":        userId,
-			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
+			"_id":        categoryId,
 		},
 		bson.D{{
 			Key: "$set", Value: bson.D{
-				{Key: "categories.$.tasks.$[t].priority", Value: updated.Priority},
-				{Key: "categories.$.tasks.$[t].lastEdited", Value: time.Now()},
-				{Key: "categories.$.tasks.$[t].content", Value: updated.Content},
-				{Key: "categories.$.tasks.$[t].value", Value: updated.Value},
-				{Key: "categories.$.tasks.$[t].recurring", Value: updated.Recurring},
-				{Key: "categories.$.tasks.$[t].recurDetails", Value: updated.RecurDetails},
-				{Key: "categories.$.tasks.$[t].public", Value: updated.Public},
-				{Key: "categories.$.tasks.$[t].active", Value: updated.Active}},
+				{Key: "tasks.$[t].priority", Value: updated.Priority},
+				{Key: "tasks.$[t].lastEdited", Value: time.Now()},
+				{Key: "tasks.$[t].content", Value: updated.Content},
+				{Key: "tasks.$[t].value", Value: updated.Value},
+				{Key: "tasks.$[t].recurring", Value: updated.Recurring},
+				{Key: "tasks.$[t].recurDetails", Value: updated.RecurDetails},
+				{Key: "tasks.$[t].public", Value: updated.Public},
+				{Key: "tasks.$[t].active", Value: updated.Active}},
 		}},
 		&options,
 	)
@@ -217,15 +211,7 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 	// TODO: find a way better way to do this
 	cursor, err := s.Tasks.Aggregate(ctx, mongo.Pipeline{
 		{
-			{Key: "$match", Value: bson.M{"_id": userId}},
-		},
-		{
-			{Key: "$unwind", Value: "$categories"},
-		},
-		{
-			{Key: "$replaceRoot", Value: bson.M{
-				"newRoot": "$categories",
-			}},
+			{Key: "$match", Value: bson.M{"_id": categoryId}},
 		},
 		{
 			{Key: "$unwind", Value: "$tasks"},
@@ -244,14 +230,12 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 		return fiber.ErrNotFound // 404
 	}
 
-	result, err := s.Tasks.UpdateOne(ctx,
+	result, err := s.Users.UpdateOne(ctx,
 		bson.M{
 			"_id":        userId,
-			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
 		},
 		bson.M{
 			"$inc":  bson.M{"tasks_complete": 1},
-			"$pull": bson.M{"categories.$.tasks": bson.M{"_id": id}},
 		},
 	)
 	if err != nil {
@@ -267,14 +251,13 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 }
 
 // DeleteCategory removes a Category document by ObjectID.
-func (s *Service) DeleteTask(userId primitive.ObjectID, categoryId primitive.ObjectID, id primitive.ObjectID) error {
+func (s *Service) DeleteTask(categoryId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()
 	result, err := s.Tasks.UpdateOne(
 		ctx, bson.M{
-			"_id":        userId,
-			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
+			"_id":        categoryId,
 		},
-		bson.M{"$pull": bson.M{"categories.$.tasks": bson.M{"_id": id}}},
+		bson.M{"$pull": bson.M{"tasks": bson.M{"_id": id}}},
 	)
 	if err != nil {
 		return err

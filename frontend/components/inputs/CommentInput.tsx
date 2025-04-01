@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, TextInput, Dimensions } from "react-native";
 import React from "react";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 
 type Props = {
     onSubmit?: () => void;
@@ -22,11 +22,11 @@ const CommentInput = (props: Props) => {
                 }}
                 value={value}
                 style={{
-                    backgroundColor: Colors.dark.background,
-                    color: Colors.dark.text,
+                    backgroundColor: ThemedColor.background,
+                    color: ThemedColor.text,
                     borderRadius: 100,
                     borderWidth: 1.3,
-                    borderColor: Colors.dark.input,
+                    borderColor: ThemedColor.input,
                     paddingVertical: 12,
                     fontSize: 16,
                     fontFamily: "Outfit",

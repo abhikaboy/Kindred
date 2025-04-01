@@ -1,21 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { ThemedText } from "../ThemedText";
-import { Colors } from "@/constants/Colors";
-
-type Priority = "1" | "2" | "3";
-
-type Props = {
-    content: string;
-    points: number;
-    priority: Priority;
-    id?: string;
-};
+import ThemedColor from "@/constants/Colors";
+import { useRouter } from "expo-router";
+import EditModal from "../modals/EditModal";
 
 const priorityColors = {
-    low: Colors.dark.success,
-    medium: Colors.dark.warning,
-    high: Colors.dark.error,
+    low: ThemedColor.success,
+    medium: ThemedColor.warning,
+    high: ThemedColor.error,
 };
 
 const priorityToString = {
@@ -24,13 +17,30 @@ const priorityToString = {
     3: "high",
 };
 
-const TaskCard = ({ content, points, priority }: Props) => {
+const TaskCard = ({ content, points, priority, redirect = false, id, categoryId }: Props) => {
+    const router = useRouter();
+    const [editing, setEditing] = useState(false);
+
     return (
-        <TouchableOpacity style={styles.container}>
+        <TouchableOpacity
+            style={styles.container}
+            disabled={!redirect}
+            onPress={() =>
+                redirect &&
+                router.push({
+                    pathname: "/task/[id]",
+                    params: {
+                        name: content,
+                        id: id,
+                    },
+                })
+            }
+            onLongPress={() => redirect && setEditing(true)}>
+            <EditModal visible={editing} setVisible={setEditing} id={{ id: id, category: categoryId }} />
             <View style={{ flexDirection: "column" }}>
                 <View>
                     <View style={styles.row}>
-                        <ThemedText type="tiny">{points}</ThemedText>
+                        {/* <ThemedText type="tiny">{points}</ThemedText> */}
                         <View
                             style={[styles.circle, { backgroundColor: priorityColors[priorityToString[priority]] }]}
                         />
@@ -54,10 +64,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 20,
-        backgroundColor: "#171626",
+        backgroundColor: ThemedColor.lightened,
         borderRadius: 16,
         paddingBottom: 16,
-        paddingTop: 9,
+        paddingTop: 16,
     },
     row: {
         flexDirection: "row",

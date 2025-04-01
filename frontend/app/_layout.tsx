@@ -6,12 +6,17 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import React from "react";
-import View from "react-native";
+import View, { Text } from "react-native";
 
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/hooks/useAuth";
-import { Colors } from "@/constants/Colors";
+import ThemedColor from "@/constants/Colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { TasksProvider } from "@/contexts/tasksContext";
+
+import Back from "@/assets/images/back.svg";
+import BackButton from "@/components/BackButton";
+import { initTheme } from "@/constants/Colors";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -20,9 +25,11 @@ export default function RootLayout() {
     const colorScheme = useColorScheme();
     const [loaded] = useFonts({
         Outfit: require("../assets/fonts/Outfit-Variable.ttf"),
+        Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),
         SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
 
+    useEffect(() => initTheme("light"), []);
     useEffect(() => {
         if (loaded) {
             SplashScreen.hideAsync();
@@ -37,32 +44,37 @@ export default function RootLayout() {
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
             <GestureHandlerRootView>
                 <AuthProvider>
-                    <Stack
-                        screenOptions={{
-                            headerShown: true,
-                            headerTransparent: true,
-                            headerBackTitle: "Back",
-                            headerTintColor: Colors.dark.text,
-                            headerBackButtonDisplayMode: "minimal",
-                            headerTitleStyle: {
-                                fontFamily: "Outfit",
-                                fontWeight: 100,
-                                fontSize: 1,
-                                color: Colors.dark.background,
-                            },
-                        }}>
-                        <Stack.Screen
-                            name="(tabs)"
-                            options={{
-                                headerShown: false,
-                            }}
-                        />
-                        <Stack.Screen name="Dev1" />
-                        <Stack.Screen options={{}} name="Dev2" />
-                        <Stack.Screen options={{}} name="Activity" />
-                        <Stack.Screen name="+not-found" />
-                    </Stack>
-                    <StatusBar style="light" />
+                    <TasksProvider>
+                        <Stack
+                            screenOptions={{
+                                headerShown: true,
+                                headerTransparent: true,
+                                headerBackTitle: "bbb",
+                                headerLeft: () => <BackButton />,
+                                headerTintColor: ThemedColor.text,
+                                headerBackButtonDisplayMode: "minimal",
+                                headerTitleStyle: {
+                                    fontFamily: "Outfit",
+                                    fontWeight: 100,
+                                    fontSize: 1,
+                                    color: ThemedColor.primary,
+                                },
+                            }}>
+                            <Stack.Screen
+                                name="(tabs)"
+                                options={{
+                                    headerShown: false,
+                                }}
+                            />
+                            <Stack.Screen name="Dev1" />
+                            <Stack.Screen options={{}} name="Dev2" />
+                            <Stack.Screen options={{}} name="Activity" />
+                            <Stack.Screen options={{}} name="task" />
+                            <Stack.Screen options={{}} name="task/:id" />
+                            <Stack.Screen name="+not-found" />
+                        </Stack>
+                        <StatusBar style="light" />
+                    </TasksProvider>
                 </AuthProvider>
             </GestureHandlerRootView>
         </ThemeProvider>

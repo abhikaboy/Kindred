@@ -66,7 +66,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs", slog.String("error", err.Error()))
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
-	userId, categoryId := ids[1], ids[0]
+	_, categoryId := ids[1], ids[0]
 
 	if err := c.BodyParser(&params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -90,7 +90,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		Timestamp:    time.Now(),
 	}
 
-	_, err = h.service.CreateTask(userId, categoryId, &doc)
+	_, err = h.service.CreateTask(categoryId, &doc)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
@@ -110,6 +110,9 @@ func (h *Handler) GetTasks(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetTask(c *fiber.Ctx) error {
+	user_id := c.UserContext().Value("user_id").(string)
+	userId, err := primitive.ObjectIDFromHex(user_id)
+
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -117,7 +120,7 @@ func (h *Handler) GetTask(c *fiber.Ctx) error {
 		})
 	}
 
-	Task, err := h.service.GetTaskByID(id)
+	Task, err := h.service.GetTaskByID(id, userId)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Task not found",
@@ -126,11 +129,13 @@ func (h *Handler) GetTask(c *fiber.Ctx) error {
 
 	return c.JSON(Task)
 }
-
+/**
+	@TODO - Add a verification to check if the user is the owner of the task
+*/
 func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 	context_id := c.UserContext().Value("user_id").(string)
 
-	user_id, err := primitive.ObjectIDFromHex(context_id)
+	_, err := primitive.ObjectIDFromHex(context_id)
 	id, err := primitive.ObjectIDFromHex(c.Params("id"))
 	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
 
@@ -147,12 +152,16 @@ func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 		})
 	}
 
-	if _, err := h.service.UpdatePartialTask(user_id, id, categoryId, update); err != nil {
+	if _, err := h.service.UpdatePartialTask(id, categoryId, update); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)
 }
+
+/**
+	@TODO - Add a verification to check if the user is the owner of the task
+*/
 func (h *Handler) CompleteTask(c *fiber.Ctx) error {
 	context_id := c.UserContext().Value("user_id").(string)
 
@@ -180,6 +189,10 @@ func (h *Handler) CompleteTask(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
+/**
+	@TODO - Add a verification to check if the user is the owner of the task
+*/
+
 func (h *Handler) DeleteTask(c *fiber.Ctx) error {
 	context_id := c.UserContext().Value("user_id").(string)
 
@@ -187,9 +200,9 @@ func (h *Handler) DeleteTask(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
-	user_id, categoryId, id := ids[0], ids[1], ids[2]
+	_, categoryId, id := ids[0], ids[1], ids[2]
 
-	if err := h.service.DeleteTask(user_id, categoryId, id); err != nil {
+	if err := h.service.DeleteTask(categoryId, id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 

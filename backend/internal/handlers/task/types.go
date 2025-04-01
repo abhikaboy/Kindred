@@ -68,6 +68,7 @@ Database layer of the application
 */
 
 type Service struct {
+	Users          *mongo.Collection
 	Tasks          *mongo.Collection
 	CompletedTasks *mongo.Collection
 }
