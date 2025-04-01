@@ -46,7 +46,7 @@ const Colors = {
         tabIconSelected: tintColorDark,
     },
 };
-let ThemedColor = Colors.light;
+let ThemedColor = Colors.dark;
 
 export const initTheme = (mode: string) => {
     console.warn("initTheme", mode);

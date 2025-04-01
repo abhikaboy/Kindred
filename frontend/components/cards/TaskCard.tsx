@@ -5,17 +5,6 @@ import ThemedColor from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import EditModal from "../modals/EditModal";
 
-type Priority = "1" | "2" | "3";
-
-type Props = {
-    content: string;
-    points: number;
-    priority: Priority;
-    id?: string;
-    redirect?: boolean;
-    categoryId?: string;
-};
-
 const priorityColors = {
     low: ThemedColor.success,
     medium: ThemedColor.warning,

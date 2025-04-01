@@ -27,6 +27,7 @@ export default function PrimaryButton({ title, onPress, style }: Props) {
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,
+                    // fontSize: 20,
                 }}>
                 {title}
             </Text>

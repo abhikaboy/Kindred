@@ -25,6 +25,7 @@ export default function RootLayout() {
     const colorScheme = useColorScheme();
     const [loaded] = useFonts({
         Outfit: require("../assets/fonts/Outfit-Variable.ttf"),
+        Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),
         SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
 

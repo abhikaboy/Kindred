@@ -32,7 +32,7 @@ const Standard = ({ hide, goTo }: Props) => {
         addToCategory(selected.id, response);
     };
     return (
-        <View>
+        <View style={{ gap: 16, flexDirection: "column", display: "flex" }}>
             <ThemedInput
                 autofocus
                 ref={nameRef}
