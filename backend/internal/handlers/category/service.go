@@ -28,7 +28,7 @@ func (s *Service) GetAllCategories() ([]CategoryDocument, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var results []CategoryDocument
+	results := make([]CategoryDocument, 0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]WorkspaceResult,
 	}
 	defer cursor.Close(ctx)
 
-	var results []WorkspaceResult
+	results := make([]WorkspaceResult, 0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
