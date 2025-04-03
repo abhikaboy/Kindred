@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 
 import Modal from "react-native-modal";
 
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
 
 import Feather from "@expo/vector-icons/Feather";
@@ -28,6 +28,8 @@ const options: BottomMenuOption[] = [
 ];
 
 const BottomMenuModal = (props: Props) => {
+    let ThemedColor = useThemeColor();
+
     return (
         <Modal
             onBackdropPress={() => props.setVisible(false)}
@@ -55,6 +57,7 @@ const BottomMenuModal = (props: Props) => {
 };
 
 export default BottomMenuModal;
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     container: {

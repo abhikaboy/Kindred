@@ -1,10 +1,11 @@
-import { View, Text, Dimensions, Image, TouchableOpacity } from "react-native";
+import { View, Text, Dimensions, Image, TouchableOpacity, useColorScheme } from "react-native";
 import React, { useState } from "react";
-import ThemedColor from "@/constants/Colors";
+import { getThemedColor } from "@/constants/Colors";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { Link, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {};
 
@@ -13,6 +14,8 @@ type Props = {};
 */
 
 const index = (props: Props) => {
+    const colorScheme = useColorScheme();
+    let ThemedColor = useThemeColor();
     const router = useRouter();
     const [visible, setVisible] = useState(false);
     const [mode, setMode] = useState<"register" | "login">("register");
@@ -78,14 +81,25 @@ const index = (props: Props) => {
                     }}>
                     <OnboardModal visible={visible} setVisible={setVisible} mode={mode} />
                     <PrimaryButton title="Get Started" onPress={() => setVisible(true)} />
-                    <ThemedText style={{ textAlign: "center" }}>
+                    <ThemedText style={{ textAlign: "center", alignItems: "flex-end" }}>
                         Already have an account?{" "}
                         <TouchableOpacity
+                            style={{
+                                alignSelf: "flex-end",
+                                alignItems: "flex-end",
+                            }}
                             onPress={() => {
                                 setMode("login");
                                 setVisible(true);
                             }}>
-                            <Text style={{ fontWeight: 800, color: "white" }}>Log in</Text>
+                            <Text
+                                style={{
+                                    fontWeight: 800,
+                                    color: ThemedColor.primary,
+                                    marginBottom: -3,
+                                }}>
+                                Log in
+                            </Text>
                         </TouchableOpacity>
                     </ThemedText>
                 </View>

@@ -1,12 +1,13 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     onPress?: () => void;
 };
 
 export default function NextButton({ onPress }: Props) {
+    let ThemedColor = useThemeColor();
+
     return (
         <TouchableOpacity
             onPress={onPress}

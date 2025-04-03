@@ -1,6 +1,6 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
 type Props = {
@@ -8,6 +8,8 @@ type Props = {
 };
 
 export default function SendButton({ onSend }: Props) {
+    let ThemedColor = useThemeColor();
+
     return (
         <View style={{ display: "inline-flex", alignSelf: "flex-end" }}>
             <TouchableOpacity

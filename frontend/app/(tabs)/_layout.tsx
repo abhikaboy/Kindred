@@ -5,18 +5,19 @@ import { Dimensions, Platform, TouchableOpacity } from "react-native";
 import { HapticTab } from "@/components/HapticTab";
 import Octicons from "@expo/vector-icons/Octicons";
 import TabBarBackground from "@/components/ui/TabBarBackground";
-import ThemedColor from "@/constants/Colors";
 import { useColorScheme } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "@/hooks/useAuth";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function TabLayout() {
     const { user } = useAuth();
+    let ThemedColor = useThemeColor();
+
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
     };
-    const colorScheme = useColorScheme();
 
     return (
         <Tabs

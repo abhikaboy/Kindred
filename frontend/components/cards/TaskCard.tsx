@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import EditModal from "../modals/EditModal";
+import { useThemeColor } from "@/hooks/useThemeColor";
+let ThemedColor = useThemeColor();
 
 const priorityColors = {
     low: ThemedColor.success,
@@ -20,6 +21,7 @@ const priorityToString = {
 const TaskCard = ({ content, points, priority, redirect = false, id, categoryId }: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
+    let ThemedColor = useThemeColor();
 
     return (
         <TouchableOpacity

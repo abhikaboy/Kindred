@@ -8,7 +8,6 @@ import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
-import ThemedColor from "@/constants/Colors";
 
 import ReanimatedDrawerLayout, {
     DrawerType,
@@ -18,12 +17,15 @@ import ReanimatedDrawerLayout, {
 import CreateModal from "@/components/modals/CreateModal";
 import BottomMenuModal from "@/components/modals/BottomMenuModal";
 import EditCategory from "@/components/modals/edit/EditCategory";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {};
 
 const Home = (props: Props) => {
     // get tasks via api call
     const { user } = useAuth();
+    let ThemedColor = useThemeColor();
+
     const { request } = useRequest();
 
     const { categories, fetchWorkspaces, selected } = useTasks();

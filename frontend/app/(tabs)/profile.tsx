@@ -4,7 +4,6 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import React, { useEffect, useRef, useState } from "react";
-import ThemedColor from "@/constants/Colors";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import FollowButton from "@/components/inputs/FollowButton";
@@ -13,9 +12,11 @@ import TaskCard from "@/components/cards/TaskCard";
 import { useRouter } from "expo-router";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 import { useAuth } from "@/hooks/useAuth";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function Profile() {
     const { user } = useAuth();
+    let ThemedColor = useThemeColor();
 
     const router = useRouter();
 

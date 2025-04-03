@@ -1,11 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     level: number;
 };
-
+let ThemedColor = useThemeColor();
 const LEVELS = { 1: ThemedColor.text, 2: "#aff0c6", 3: "#5CFF95", 4: "#069A3A" };
 const ActivityPoint = ({ level }: Props) => {
     return (

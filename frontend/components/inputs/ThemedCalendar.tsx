@@ -2,12 +2,12 @@ import { StyleSheet, Text, View } from "react-native";
 import React, { useEffect, useState } from "react";
 
 import { Calendar } from "react-native-calendars";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {};
 
 const ThemedCalendar = (props: Props) => {
     const [selectedDates, setSelectedDates] = useState<any>([]);
+    let ThemedColor = useThemeColor();
 
     const onDayPress = (day) => {
         console.log("selected day", day.dateString);

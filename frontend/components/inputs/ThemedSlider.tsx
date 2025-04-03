@@ -1,4 +1,4 @@
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { TextInput } from "react-native-gesture-handler";
@@ -15,6 +15,7 @@ Animated.addWhitelistedNativeProps({ text: true });
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
+let ThemedColor = useThemeColor();
 const ThemedSlider = () => {
     const offset = useSharedValue(0);
     const MAX_VALUE = SLIDER_WIDTH - INITIAL_BOX_SIZE;

@@ -5,9 +5,11 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Link } from "expo-router";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function Playground() {
+    let ThemedColor = useThemeColor();
+
     return (
         <ParallaxScrollView
             headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}

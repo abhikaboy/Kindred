@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 
 import Modal from "react-native-modal";
 
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedInput from "../inputs/ThemedInput";
 import Dropdown from "../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
@@ -27,6 +27,8 @@ type Props = {
 
 const EditModal = (props: Props) => {
     const { request } = useRequest();
+    let ThemedColor = useThemeColor();
+
     const { categories, removeFromCategory } = useTasks();
 
     const editPost = async () => {
@@ -64,6 +66,7 @@ const EditModal = (props: Props) => {
 };
 
 export default EditModal;
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     container: {

@@ -17,7 +17,7 @@
                 "NSAppTransportSecurity": {
                     "NSAllowsArbitraryLoads": true,
                     "NSExceptionDomains": {
-                        "137.184.211.229": {
+                        "157.230.81.185": {
                             "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
                         }
                     }
@@ -47,7 +47,7 @@
                 "expo-splash-screen",
                 {
                     "image": "./assets/splash-icon.png",
-                    "imageWidth": 200,
+                    "imageWidth": 100,
                     "dark": {
                         "image": "./assets/splash-icon.png",
                         "backgroundColor": "#13121F"

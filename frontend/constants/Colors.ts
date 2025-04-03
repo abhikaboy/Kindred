@@ -53,5 +53,4 @@ export const initTheme = (mode: string) => {
     ThemedColor = Colors[mode];
 };
 
-export const getThemedColor = () => ThemedColor;
-export default getThemedColor();
+export const getThemedColor = (color) => Colors[color] ?? Colors["light"];

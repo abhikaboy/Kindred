@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Touchable } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch } from "@/hooks/useRecentSearch";
-import ThemedColor from "@/constants/Colors";
 import { IconSymbol } from "./ui/IconSymbol";
 import Octicons from "@expo/vector-icons/Octicons";
 import Entypo from "@expo/vector-icons/Entypo";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 interface SearchBoxProps extends TextInputProps {
     value: string;
@@ -31,6 +31,7 @@ export function SearchBox({
     const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
     const [inputHeight, setInputHeight] = useState(0);
     const inputRef = useRef<TextInput>(null);
+    let ThemedColor = useThemeColor();
     const [recentItems, setRecentItems] = useState<string[]>([]);
 
     async function fetchRecents() {
@@ -118,14 +119,14 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         position: "absolute",
         width: "100%",
-        backgroundColor: ThemedColor.background,
+        backgroundColor: useThemeColor().background,
         zIndex: 10,
     },
     recent: {
         width: "100%",
         padding: 8,
         paddingVertical: 8,
-        backgroundColor: ThemedColor.background,
+        backgroundColor: useThemeColor().background,
         flexDirection: "row",
         flex: 1,
         gap: 12,
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 24,
         paddingVertical: 16,
-        backgroundColor: ThemedColor.lightened,
+        backgroundColor: useThemeColor().lightened,
     },
     input: {
         flex: 1,

@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View, TextInput, Dimensions } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     onSubmit?: () => void;
     onChangeText?: (text: string) => void;
@@ -11,6 +10,8 @@ type Props = {
 
 const CommentInput = (props: Props) => {
     const [value, setValue] = React.useState("");
+    let ThemedColor = useThemeColor();
+
     return (
         <View>
             <TextInput

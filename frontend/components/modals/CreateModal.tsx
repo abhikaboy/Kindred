@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 
 import Modal from "react-native-modal";
 
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedInput from "../inputs/ThemedInput";
 import Dropdown from "../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
@@ -33,6 +33,8 @@ export enum Screen {
 
 const CreateModal = (props: Props) => {
     const [screen, setScreen] = React.useState(Screen.STANDARD);
+    let ThemedColor = useThemeColor();
+
     return (
         <Modal
             onBackdropPress={() => props.setVisible(false)}
@@ -55,6 +57,8 @@ const CreateModal = (props: Props) => {
 };
 
 export default CreateModal;
+
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     container: {

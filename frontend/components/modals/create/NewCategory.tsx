@@ -7,8 +7,7 @@ import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { useTasks } from "@/contexts/tasksContext";
 import { useRequest } from "@/hooks/useRequest";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     goToStandard: () => void;
 };
@@ -17,6 +16,7 @@ const NewCategory = ({ goToStandard }: Props) => {
     const [name, setName] = useState("");
     const { selected, addToWorkspace } = useTasks();
     const { request } = useRequest();
+    let ThemedColor = useThemeColor();
 
     const createCategory = async () => {
         const response = await request("POST", `/user/categories`, {

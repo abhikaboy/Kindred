@@ -10,19 +10,22 @@ import View, { Text } from "react-native";
 
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/hooks/useAuth";
-import ThemedColor from "@/constants/Colors";
+import { getThemedColor } from "@/constants/Colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { TasksProvider } from "@/contexts/tasksContext";
 
 import Back from "@/assets/images/back.svg";
 import BackButton from "@/components/BackButton";
 import { initTheme } from "@/constants/Colors";
+import { color } from "bun";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-    const colorScheme = useColorScheme();
+    let colorScheme = useColorScheme();
+    let ThemedColor = useThemeColor();
     const [loaded] = useFonts({
         Outfit: require("../assets/fonts/Outfit-Variable.ttf"),
         Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),

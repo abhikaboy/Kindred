@@ -3,15 +3,16 @@ import React from "react";
 import { View, TouchableOpacity } from "react-native";
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
 import { Dimensions, StyleSheet } from "react-native";
 import NewWorkspace from "../modals/create/NewWorkspace";
 import ConditionalView from "../ui/ConditionalView";
 import Modal from "react-native-modal";
 import ModalHead from "../modals/ModalHead";
 import EditWorkspace from "../modals/edit/EditWorkspace";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export const Drawer = ({ close }) => {
+    let ThemedColor = useThemeColor();
     const { workspaces, selected, setSelected } = useTasks();
     const [creating, setCreating] = React.useState(false);
     const [editing, setEditing] = React.useState(false);
@@ -71,6 +72,8 @@ export const Drawer = ({ close }) => {
         </View>
     );
 };
+let ThemedColor = useThemeColor();
+
 const styles = StyleSheet.create({
     drawerContainer: {
         flex: 1,

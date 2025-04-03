@@ -1,15 +1,17 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from "react-native";
 import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { CountryPicker } from "react-native-country-codes-picker";
-import ThemedColor from "@/constants/Colors";
+import { getThemedColor } from "@/constants/Colors";
 import OnboardButton from "@/components/inputs/OnboardButton";
 import { useRouter } from "expo-router";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {};
 
 const Index = (props: Props) => {
+    let ThemedColor = useThemeColor();
     const [show, setShow] = useState(false);
     const [countryCode, setCountryCode] = useState("+1");
     const [flag, setFlag] = useState("");
