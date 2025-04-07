@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import React from "react";
 import View, { Text } from "react-native";
@@ -19,6 +19,7 @@ import BackButton from "@/components/BackButton";
 import { initTheme } from "@/constants/Colors";
 import { color } from "bun";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Accelerometer } from "expo-sensors";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -31,7 +32,30 @@ export default function RootLayout() {
         Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),
         SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
+    const [shakeDetected, setShakeDetected] = useState(false);
+    const [subscription, setSubscription] = useState(null);
 
+    Accelerometer.setUpdateInterval(500); // Adjust update interval as needed
+    useEffect(() => {
+        const subscription = Accelerometer.addListener((data) => {
+            const totalForce = Math.abs(data.x) + Math.abs(data.y) + Math.abs(data.z);
+
+            if (totalForce > 3) {
+                // Adjust the threshold as needed
+                setShakeDetected(true);
+                router.push("/AuditLog");
+                setTimeout(() => {
+                    setShakeDetected(false);
+                }, 500); // Reset after a short period
+            }
+        });
+
+        setSubscription(subscription);
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
     useEffect(() => initTheme("light"), []);
     useEffect(() => {
         if (loaded) {
@@ -72,8 +96,8 @@ export default function RootLayout() {
                             <Stack.Screen name="Dev1" />
                             <Stack.Screen options={{}} name="Dev2" />
                             <Stack.Screen options={{}} name="Activity" />
-                            <Stack.Screen options={{}} name="task" />
-                            <Stack.Screen options={{}} name="task/:id" />
+                            <Stack.Screen options={{}} name="AuditLog" />
+                            <Stack.Screen options={{}} name="task/[id]" />
                             <Stack.Screen name="+not-found" />
                         </Stack>
                         <StatusBar style="light" />

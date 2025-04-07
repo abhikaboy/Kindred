@@ -37,19 +37,22 @@ export const OnboardModal = (props: Props) => {
             const firstName = credential.fullName?.givenName;
             const lastName = credential.fullName?.familyName;
             if (!email || !firstName || !lastName) {
-                alert("Either you already have a user or didn't give us permissions " + appleAccountID);
-            }
-            let data = await register(email, appleAccountID);
-            console.log(data);
+                console.log("We think you already have an accout: trying to log in instead");
+                await login(appleAccountID);
+                router.navigate("/home");
+            } else {
+                let data = await register(email, appleAccountID);
+                console.log(data);
 
-            router.replace({
-                pathname: "/(onboarding)",
-                params: {
-                    initialFirstName: "",
-                    initialLastName: "",
-                    initialPhoneNumber: "",
-                },
-            });
+                router.navigate({
+                    pathname: "/(onboarding)",
+                    params: {
+                        initialFirstName: "",
+                        initialLastName: "",
+                        initialPhoneNumber: "",
+                    },
+                });
+            }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("they cancelled");
@@ -111,7 +114,7 @@ export const OnboardModal = (props: Props) => {
                         Kindred
                     </ThemedText>
                     <ThemedText type="default" style={{ color: "#B8b8b8" }}>
-                        This is going to be some copy text related to actual product but for right now idk
+                        Connected Api: {process.env.EXPO_PUBLIC_API_URL}
                     </ThemedText>
                     <PrimaryButton title="Continue with Phone" onPress={() => props.setVisible(false)} />
                     <PrimaryButton

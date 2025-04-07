@@ -99,32 +99,48 @@ const Home = (props: Props) => {
                 </View>
                 <ScrollView>
                     <View style={{ gap: 16, marginTop: 0 }}>
-                        {categories.map((category) => (
-                            <View style={{ gap: 16 }} key={category.id + category.name}>
-                                <TouchableOpacity
-                                    onLongPress={() => {
-                                        setEditing(true);
-                                        setFocusedCategory(category.id);
-                                    }}
-                                    onPress={() => {
-                                        setCreating(true);
-                                        setFocusedCategory(category.id);
-                                    }}>
-                                    <ThemedText type="subtitle">{category.name}</ThemedText>
-                                </TouchableOpacity>
-                                {category.tasks.map((task) => (
-                                    <TaskCard
-                                        key={task.id + task.content}
-                                        content={task.content}
-                                        points={task.value}
-                                        priority={task.priority}
-                                        redirect={true}
-                                        id={task.id}
-                                        categoryId={category.id}
-                                    />
-                                ))}
-                            </View>
-                        ))}
+                        {categories
+                            .sort((a, b) => b.tasks.length - a.tasks.length)
+                            .map((category) => {
+                                if (category.name === "!-proxy-!") {
+                                    if (categories.length === 1) {
+                                        return (
+                                            <View key={category.id + category.name}>
+                                                <ThemedText>You have no workspaces!</ThemedText>
+                                            </View>
+                                        );
+                                    }
+                                } else
+                                    return (
+                                        <View style={{ gap: 16 }} key={category.id + category.name}>
+                                            <TouchableOpacity
+                                                onLongPress={() => {
+                                                    setEditing(true);
+                                                    setFocusedCategory(category.id);
+                                                }}
+                                                onPress={() => {
+                                                    setCreating(true);
+                                                    setFocusedCategory(category.id);
+                                                }}>
+                                                <ThemedText
+                                                    type={category.tasks.length > 0 ? "subtitle" : "disabledTitle"}>
+                                                    {category.name}
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                            {category.tasks.map((task) => (
+                                                <TaskCard
+                                                    key={task.id + task.content}
+                                                    content={task.content}
+                                                    points={task.value}
+                                                    priority={task.priority}
+                                                    redirect={true}
+                                                    id={task.id}
+                                                    categoryId={category.id}
+                                                />
+                                            ))}
+                                        </View>
+                                    );
+                            })}
                         <TouchableOpacity
                             onPress={() => setCreating(true)}
                             style={{

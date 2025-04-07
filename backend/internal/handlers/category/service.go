@@ -95,7 +95,7 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 	if err != nil {
 		return nil, err
 	}
-
+	
 	slog.LogAttrs(ctx, slog.LevelInfo, "Category inserted", slog.String("id", r.ID.Hex()))
 
 	return r, nil

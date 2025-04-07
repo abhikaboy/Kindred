@@ -20,7 +20,7 @@ const NewWorkspace = ({ hide }: Props) => {
 
     const createWorkspace = async () => {
         const response = await request("POST", `/user/categories`, {
-            name: "Miscellaneous",
+            name: "!-proxy-!",
             workspaceName: name,
         });
         addWorkspace(name, response);

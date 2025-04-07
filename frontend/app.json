@@ -27,7 +27,8 @@
                 "aps-environment": "development"
             },
             "usesAppleSignIn": true,
-            "bundleIdentifier": "com.kindred.kindredtsl"
+            "bundleIdentifier": "com.kindred.kindredtsl",
+            "buildNumber": "4"
         },
         "android": {
             "adaptiveIcon": {

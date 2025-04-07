@@ -1,6 +1,6 @@
 import { useTasks } from "@/contexts/tasksContext";
 import React from "react";
-import { View, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity, ScrollView } from "react-native";
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
 import { Dimensions, StyleSheet } from "react-native";
@@ -35,7 +35,7 @@ export const Drawer = ({ close }) => {
             <View style={{ paddingTop: 16, paddingBottom: 16 }}>
                 <ThemedText type="title">Workspaces</ThemedText>
             </View>
-            <View style={{ width: " 100%" }}>
+            <ScrollView style={{ width: " 100%" }}>
                 {workspaces.map((workspace) => (
                     <TouchableOpacity
                         style={[
@@ -66,9 +66,9 @@ export const Drawer = ({ close }) => {
                     </TouchableOpacity>
                 ))}
                 <TouchableOpacity style={{ paddingTop: 16, paddingBottom: 16 }} onPress={() => setCreating(true)}>
-                    <ThemedText type="defaultx">+ New Workspace</ThemedText>
+                    <ThemedText type="default">+ New Workspace</ThemedText>
                 </TouchableOpacity>
-            </View>
+            </ScrollView>
         </View>
     );
 };

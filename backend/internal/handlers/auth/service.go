@@ -104,7 +104,7 @@ func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64
 	var user User
 	err := s.users.FindOne(context.Background(), bson.M{"apple_id": apple_id}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		return nil, nil, nil, fiber.NewError(404, "Account does not exist, Try to register")
 	}
 	if err != nil {
 		return nil, nil, nil, err

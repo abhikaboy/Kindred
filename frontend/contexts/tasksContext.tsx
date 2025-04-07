@@ -19,14 +19,22 @@ type TaskContextType = {
     addWorkspace: (name: string, category: Categories) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
+
+    setCreateCategory: (Option: Option) => void;
+    selectedCategory: Option;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const { request } = useRequest();
     const [workspaces, setWorkSpaces] = useState<Workspace[]>([]);
-    const [selected, setSelected] = useState<string>("None"); // Workspace
+    const [selected, setSelected] = useState<string>("Good Morning ☀️"); // Workspace
     const [categories, setCategories] = useState<Categories[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
+
+    const setCreateCategory = (option: Option) => {
+        setSelectedCategory(option);
+    };
 
     const getWorkspace = (name: string) => {
         return workspaces.find((workspace) => workspace.name === name);
@@ -92,6 +100,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 addWorkspace,
                 removeFromCategory,
                 removeFromWorkspace,
+                setCreateCategory,
+                selectedCategory,
             }}>
             {children}
         </TaskContext.Provider>

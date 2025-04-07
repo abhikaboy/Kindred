@@ -23,6 +23,7 @@ const NewCategory = ({ goToStandard }: Props) => {
             name: name,
             workspaceName: selected,
         });
+
         addToWorkspace(selected, response);
         console.log(response);
     };
