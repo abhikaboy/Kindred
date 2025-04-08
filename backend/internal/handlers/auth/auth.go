@@ -123,6 +123,14 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	err = h.service.CreateUser(user)
+
+	/*
+		Create user could fail for the following reasons:
+		1. User already exists
+		   - Do a Login instead
+		2. User started account creation but didn't finish
+	*/
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
 	}
@@ -146,7 +154,7 @@ func (h *Handler) LoginWithApple(c *fiber.Ctx) error {
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromApple(req.AppleID)
 	if err != nil {
-		return err
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)

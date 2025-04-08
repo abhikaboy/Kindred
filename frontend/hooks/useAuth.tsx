@@ -7,6 +7,20 @@ async function getUserByAppleAccountID(appleAccountID: string) {
     const response = await axios.post(url, {
         apple_id: appleAccountID,
     });
+
+    // validate the response is okay
+    if (response.status > 300) {
+        // What was the error?
+        console.log(response);
+        // let res = response.data;
+        alert(
+            "Unable to complete operation" + " status code: " + response.statusText + " response: " + response.status
+        );
+        throw Error(
+            "Unable to complete operation" + " status code: " + response.statusText + " response: " + response.status
+        );
+    }
+
     const access_token: string = response.headers["access_token"];
     const refresh_token: string = response.headers["refresh_token"];
 
@@ -49,11 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }),
             });
 
+            let res = await response.json();
             if (!response.ok) {
-                throw Error("Unable to complete operation" + " status code: " + response.statusText);
+                alert("Unable to complete operation" + " status code: " + res.body);
+                throw Error("Unable to complete operation" + " status code: " + res.body);
             }
-
-            console.log(response);
             return await response.json();
         } catch (e: any) {
             console.log(e);
@@ -64,12 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log(appleAccountID);
         console.log("Logging in...");
         const userRes = await getUserByAppleAccountID(appleAccountID);
+        console.log(userRes);
 
         if (userRes) {
             setUser(userRes);
             return userRes;
         } else {
-            alert("Could not login");
+            alert("Looks like we couldn't find your account, try to register instead!");
+            // Need more helpful error handling
             throw new Error("Could not login");
         }
     }

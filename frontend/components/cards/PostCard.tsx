@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import Carousel from "react-native-reanimated-carousel";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { PopupProp } from "../inputs/Comment";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export type SlackReaction = {
     emoji: string;
@@ -51,6 +51,7 @@ const PostCard = ({
     const [commentsVisible, setCommentsVisible] = useState(false);
 
     const userId = "67ba5abb616b5e6544e0137b";
+    let ThemedColor = useThemeColor();
 
     const handleClose = () => {
         setCommentsVisible(false);

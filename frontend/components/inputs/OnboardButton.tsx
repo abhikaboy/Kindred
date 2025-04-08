@@ -1,6 +1,6 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import AntDesign from "@expo/vector-icons/AntDesign";
 type Props = {
     onPress: () => void;
@@ -8,6 +8,8 @@ type Props = {
 };
 
 const OnboardButton = ({ onPress, disabled }: Props) => {
+    let ThemedColor = useThemeColor();
+
     return (
         <TouchableOpacity
             onPress={onPress}

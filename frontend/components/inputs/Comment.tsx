@@ -2,10 +2,10 @@ import React from "react";
 import { Modal, View, StyleSheet, TouchableOpacity, Text, ScrollView, Dimensions } from "react-native";
 import UserInfoRowComment from "../UserInfo/UsereInfoRowComment";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
 import ThemedInput from "./ThemedInput";
 import SendButton from "./SendButton";
 import CommentInput from "./CommentInput";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export type CommentProps = {
     userId: number;
@@ -64,6 +64,7 @@ const Comment = ({ comments, show, onClose }: PopupProp) => {
         </Modal>
     );
 };
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     modalContainer: {

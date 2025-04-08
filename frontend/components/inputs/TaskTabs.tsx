@@ -3,8 +3,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     tabs: string[];
     activeTab: number;
@@ -27,6 +26,7 @@ export default function TaskTabs({ tabs, activeTab, setActiveTab }: Props) {
         </View>
     );
 }
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     container: {

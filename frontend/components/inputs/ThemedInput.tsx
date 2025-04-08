@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View, TextInput } from "react-native";
 import React, { forwardRef } from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     onSubmit?: () => void;
     onChangeText?: (text: string) => void;
@@ -14,6 +13,8 @@ type Props = {
 };
 
 const ThemedInput = forwardRef(function ThemedInput(props: Props, ref: React.Ref<TextInput>) {
+    let ThemedColor = useThemeColor();
+
     return (
         <View>
             <TextInput

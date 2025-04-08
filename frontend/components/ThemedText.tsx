@@ -3,16 +3,25 @@ import { Text, type TextProps, StyleSheet } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
 
 export type ThemedTextProps = TextProps & {
     lightColor?: string;
     darkColor?: string;
-    type?: "default" | "heading" | "title" | "defaultSemiBold" | "subtitle" | "link" | "hero" | "lightBody" | "caption";
+    type?:
+        | "default"
+        | "heading"
+        | "title"
+        | "defaultSemiBold"
+        | "subtitle"
+        | "link"
+        | "hero"
+        | "lightBody"
+        | "caption"
+        | "disabledTitle";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
-    // use color from theme
+    let ThemedColor = useThemeColor();
     const color = ThemedColor.text;
 
     return (
@@ -28,18 +37,26 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "hero" ? { fontSize: 48, fontWeight: "bold", color: ThemedColor.header } : undefined,
                 type === "lightBody" ? styles.lightBody : undefined,
                 type === "caption" ? styles.caption : undefined,
+                type === "disabledTitle" ? styles.disabledTitle : undefined,
                 style,
             ]}
             {...rest}
         />
     );
 }
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     default: {
         fontSize: 16,
-        lineHeight: 24,
         fontFamily: "Outfit",
+    },
+    disabledTitle: {
+        fontSize: 20,
+        fontWeight: "medium",
+        color: ThemedColor.caption,
+        fontFamily: "Outfit",
+        opacity: 0.5,
     },
     caption: {
         fontSize: 14,
@@ -48,26 +65,22 @@ const styles = StyleSheet.create({
     },
     lightBody: {
         fontSize: 16,
-        lineHeight: 24,
         fontFamily: "Outfit",
-        fontWeight: 300,
+        fontWeight: 400,
     },
     defaultSemiBold: {
         fontSize: 20,
-        lineHeight: 24,
         fontWeight: "regular",
         fontFamily: "Outfit",
     },
     heading: {
         fontSize: 32,
         fontWeight: 600,
-        lineHeight: 36,
         fontFamily: "Outfit",
     },
     title: {
         fontSize: 32,
         fontWeight: "medium",
-        lineHeight: 32,
         fontFamily: "Outfit",
     },
     subtitle: {

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Modal, TouchableOpacity, View, StyleSheet } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { Dimensions } from "react-native";
+let ThemedColor = useThemeColor();
 
 type EmojiSelectorProps = {
     showSelector: boolean;
@@ -12,6 +13,7 @@ type EmojiSelectorProps = {
 
 const EmojiSelectorClass = ({ showSelector, onAddReaction, onClose }: EmojiSelectorProps) => {
     const userId = "67ba5abb616b5e6544e0137b";
+    let ThemedColor = useThemeColor();
 
     return (
         <View style={styles.viewContainer}>

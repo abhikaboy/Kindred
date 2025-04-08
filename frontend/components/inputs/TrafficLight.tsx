@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View, Switch, Dimensions, TouchableOpacity } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {};
 
 const TrafficLight = (props: Props) => {
     const [value, setValue] = React.useState(0);
+    let ThemedColor = useThemeColor();
+
     return (
         <View
             style={{

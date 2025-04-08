@@ -2,7 +2,6 @@ import { Dimensions, View, type ViewProps, ScrollView } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
 
 export type ThemedViewProps = ViewProps & {
     lightColor?: string;
@@ -10,6 +9,7 @@ export type ThemedViewProps = ViewProps & {
 };
 
 export function ThemedView({ style, lightColor, darkColor, ...otherProps }: ThemedViewProps) {
+    let ThemedColor = useThemeColor();
     return (
         <View
             style={[

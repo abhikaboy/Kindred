@@ -3,7 +3,8 @@ import React from "react";
 import PreviewIcon from "../profile/PreviewIcon";
 import { ThemedText } from "../ThemedText";
 import FollowButton from "../inputs/FollowButton";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
+let ThemedColor = useThemeColor();
 
 type Props = {
     name: string;
@@ -14,6 +15,7 @@ type Props = {
 };
 
 const ContactCard = ({ name, icon, handle, following }: Props) => {
+    let ThemedColor = useThemeColor();
     return (
         <TouchableOpacity style={styles.container}>
             <PreviewIcon size="large" icon={icon} />

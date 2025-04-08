@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View, Switch } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {};
 
 const ThemedSwitch = (props: Props) => {
     const [value, setValue] = React.useState(false);
+    let ThemedColor = useThemeColor();
+
     return (
         <View>
             <Switch

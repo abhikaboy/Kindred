@@ -1,10 +1,11 @@
 import { StyleProp, StyleSheet, Text, View } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {};
 
 const ModalHead = (props: StyleProp<any>) => {
+    let ThemedColor = useThemeColor();
+
     return (
         <View
             style={{

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, Touchable, View } from "react-native";
 import React, { Dispatch, SetStateAction, useEffect } from "react";
 import { MultipleSelectList, SelectList } from "react-native-dropdown-select-list";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import Entypo from "@expo/vector-icons/Entypo";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
@@ -27,6 +27,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
     const reducedMotion = useReducedMotion();
+    let ThemedColor = useThemeColor();
 
     useEffect(() => {
         expanded.value = expandedState;

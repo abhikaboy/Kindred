@@ -1,7 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
 import React from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     title: string;
     onPress: () => void;
@@ -9,6 +8,8 @@ type Props = {
 };
 
 export default function PrimaryButton({ title, onPress, style }: Props) {
+    let ThemedColor = useThemeColor();
+
     return (
         <TouchableOpacity
             onPress={onPress}

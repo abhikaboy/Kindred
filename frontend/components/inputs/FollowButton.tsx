@@ -1,13 +1,14 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     following: boolean;
 };
 
 export default function FollowButton({ following }: Props) {
     const [follow, setFollowing] = useState(following);
+    let ThemedColor = useThemeColor();
+
     return (
         <TouchableOpacity
             onPress={() => {

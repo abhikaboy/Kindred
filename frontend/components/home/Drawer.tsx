@@ -1,17 +1,18 @@
 import { useTasks } from "@/contexts/tasksContext";
 import React from "react";
-import { View, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity, ScrollView } from "react-native";
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
 import { Dimensions, StyleSheet } from "react-native";
 import NewWorkspace from "../modals/create/NewWorkspace";
 import ConditionalView from "../ui/ConditionalView";
 import Modal from "react-native-modal";
 import ModalHead from "../modals/ModalHead";
 import EditWorkspace from "../modals/edit/EditWorkspace";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export const Drawer = ({ close }) => {
+    let ThemedColor = useThemeColor();
     const { workspaces, selected, setSelected } = useTasks();
     const [creating, setCreating] = React.useState(false);
     const [editing, setEditing] = React.useState(false);
@@ -34,7 +35,7 @@ export const Drawer = ({ close }) => {
             <View style={{ paddingTop: 16, paddingBottom: 16 }}>
                 <ThemedText type="title">Workspaces</ThemedText>
             </View>
-            <View style={{ width: " 100%" }}>
+            <ScrollView style={{ width: " 100%" }}>
                 {workspaces.map((workspace) => (
                     <TouchableOpacity
                         style={[
@@ -65,12 +66,14 @@ export const Drawer = ({ close }) => {
                     </TouchableOpacity>
                 ))}
                 <TouchableOpacity style={{ paddingTop: 16, paddingBottom: 16 }} onPress={() => setCreating(true)}>
-                    <ThemedText type="defaultx">+ New Workspace</ThemedText>
+                    <ThemedText type="default">+ New Workspace</ThemedText>
                 </TouchableOpacity>
-            </View>
+            </ScrollView>
         </View>
     );
 };
+let ThemedColor = useThemeColor();
+
 const styles = StyleSheet.create({
     drawerContainer: {
         flex: 1,

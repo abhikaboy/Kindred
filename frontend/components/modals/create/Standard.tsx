@@ -14,10 +14,11 @@ type Props = {
 const Standard = ({ hide, goTo }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
-    const { categories, addToCategory } = useTasks();
+    const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
 
     const [content, setContent] = React.useState("");
-    const [selected, setSelected] = React.useState({ label: "", id: "", special: false });
+
+    let selected = selectedCategory;
 
     const createPost = async () => {
         if (categories.length === 0) return;
@@ -31,6 +32,9 @@ const Standard = ({ hide, goTo }: Props) => {
         });
         addToCategory(selected.id, response);
     };
+    if (categories.length == 1) {
+        goTo(Screen.NEW_CATEGORY);
+    }
     return (
         <View style={{ gap: 16, flexDirection: "column", display: "flex" }}>
             <ThemedInput
@@ -49,13 +53,15 @@ const Standard = ({ hide, goTo }: Props) => {
             />
             <Dropdown
                 options={[
-                    ...categories.map((c) => {
-                        return { label: c.name, id: c.id, special: false };
-                    }),
+                    ...categories
+                        .filter((c) => c.name !== "!-proxy-!")
+                        .map((c) => {
+                            return { label: c.name, id: c.id, special: false };
+                        }),
                     { label: "+ New Category", id: "", special: true },
                 ]}
                 selected={selected}
-                setSelected={setSelected}
+                setSelected={setCreateCategory}
                 onSpecial={() => {
                     goTo(Screen.NEW_CATEGORY);
                 }}

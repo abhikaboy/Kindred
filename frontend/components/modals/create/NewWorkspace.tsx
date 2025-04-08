@@ -7,20 +7,20 @@ import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { useTasks } from "@/contexts/tasksContext";
 import { useRequest } from "@/hooks/useRequest";
-import ThemedColor from "@/constants/Colors";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     hide: () => void;
 };
 
 const NewWorkspace = ({ hide }: Props) => {
+    let ThemedColor = useThemeColor();
     const [name, setName] = useState("");
     const { selected, addWorkspace } = useTasks();
     const { request } = useRequest();
 
     const createWorkspace = async () => {
         const response = await request("POST", `/user/categories`, {
-            name: "Miscellaneous",
+            name: "!-proxy-!",
             workspaceName: name,
         });
         addWorkspace(name, response);

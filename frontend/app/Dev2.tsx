@@ -1,7 +1,7 @@
-import { View, Dimensions, ScrollView, FlatList } from "react-native";
+import { View, Dimensions, ScrollView, FlatList, useColorScheme } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
-import ThemedColor from "@/constants/Colors";
+import { getThemedColor } from "@/constants/Colors";
 import ContactCard from "@/components/cards/ContactCard";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { Icons } from "@/constants/Icons";
@@ -16,6 +16,8 @@ import UserInfoRowComment from "@/components/UserInfo/UsereInfoRowComment";
 
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
+    const colorScheme = useColorScheme();
+    let ThemedColor = getThemedColor(colorScheme);
     return (
         <View
             style={{

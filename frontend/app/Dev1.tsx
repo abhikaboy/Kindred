@@ -1,7 +1,7 @@
-import { View, Dimensions, ScrollView } from "react-native";
+import { View, Dimensions, ScrollView, useColorScheme } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
-import ThemedColor from "@/constants/Colors";
+import ThemedColor, { getThemedColor } from "@/constants/Colors";
 
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { SearchBox } from "@/components/SearchBox";
@@ -17,9 +17,12 @@ import UserInfoRow from "@/components/UserInfo/UserInfoRowBase";
 import { Icons } from "@/constants/Icons";
 import ReactPills from "@/components/inputs/ReactPills";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
+    let ThemedColor = useThemeColor();
+
     return (
         <View
             style={{

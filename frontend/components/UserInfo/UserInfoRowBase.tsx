@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import PreviewIcon from "../profile/PreviewIcon";
 
 type Props = {

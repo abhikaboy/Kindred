@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { TouchableOpacity, View, StyleSheet } from "react-native";
 import { ThemedText } from "../ThemedText";
-import ThemedColor from "@/constants/Colors";
 import { useRouter } from "expo-router";
-import EditModal from "../modals/EditModal";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import EditPost from "../modals/edit/EditPost";
+let ThemedColor = useThemeColor();
 
 const priorityColors = {
     low: ThemedColor.success,
@@ -20,6 +21,7 @@ const priorityToString = {
 const TaskCard = ({ content, points, priority, redirect = false, id, categoryId }: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
+    let ThemedColor = useThemeColor();
 
     return (
         <TouchableOpacity
@@ -36,7 +38,7 @@ const TaskCard = ({ content, points, priority, redirect = false, id, categoryId 
                 })
             }
             onLongPress={() => redirect && setEditing(true)}>
-            <EditModal visible={editing} setVisible={setEditing} id={{ id: id, category: categoryId }} />
+            <EditPost visible={editing} setVisible={setEditing} id={{ id: id, category: categoryId }} />
             <View style={{ flexDirection: "column" }}>
                 <View>
                     <View style={styles.row}>

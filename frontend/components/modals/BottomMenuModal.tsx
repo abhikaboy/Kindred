@@ -1,18 +1,24 @@
 import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useEffect } from "react";
-
+import React, { useEffect, useRef, memo } from "react";
 import Modal from "react-native-modal";
-
-import ThemedColor from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
-
 import Feather from "@expo/vector-icons/Feather";
 import ModalHead from "./ModalHead";
+import Animated, { useSharedValue, withTiming, useAnimatedStyle, runOnJS } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 type ID = {
     id: string;
     category: string;
 };
+
+type BottomMenuOption = {
+    label: string;
+    icon: any;
+    callback: () => void;
+};
+
 type Props = {
     id: ID;
     visible: boolean;
@@ -21,43 +27,49 @@ type Props = {
     options: BottomMenuOption[];
 };
 
-//
-const options: BottomMenuOption[] = [
-    { label: "Edit", icon: "edit", callback: () => {} },
-    { label: "Delete", icon: "delete", callback: () => {} },
-];
+// Using memo to prevent unnecessary re-renders
+const BottomMenuModal = memo((props: Props) => {
+    const ThemedColor = useThemeColor();
+    const position = useSharedValue(0);
 
-const BottomMenuModal = (props: Props) => {
-    return (
-        <Modal
-            onBackdropPress={() => props.setVisible(false)}
-            onBackButtonPress={() => props.setVisible(false)}
-            isVisible={props.visible}
-            animationIn="slideInUp"
-            animationOut="slideOutDown"
-            avoidKeyboard>
-            <View style={styles.container}>
-                <ModalHead />
-                {props.options.map((option, index) => {
-                    return (
-                        <TouchableOpacity
-                            key={index}
-                            style={{ flexDirection: "row", gap: 16 }}
-                            onPress={option.callback}>
-                            <Feather name={option.icon} size={24} color={ThemedColor.text} />
-                            <ThemedText type="default">{option.label}</ThemedText>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-        </Modal>
-    );
-};
+    // Reset position when visibility changes
+    useEffect(() => {
+        if (props.visible && position.value > 0) {
+            position.value = withTiming(0, { duration: 100 });
+        }
+    }, [props.visible]);
 
-export default BottomMenuModal;
+    // Safe way to update parent state
+    const closeModal = () => {
+        if (props.visible) {
+            props.setVisible(false);
+        }
+    };
 
-const styles = StyleSheet.create({
-    container: {
+    const pan = Gesture.Pan()
+        .onBegin(() => {
+            position.value = withTiming(0, { duration: 100 });
+        })
+        .onUpdate((e) => {
+            position.value = Math.max(0, e.translationY);
+        })
+        .onEnd((e) => {
+            if (e.translationY > 10) {
+                position.value = withTiming(500, { duration: 100 });
+
+                // Use runOnJS to safely call JavaScript functions from the UI thread
+                runOnJS(closeModal)();
+            } else {
+                position.value = withTiming(0, { duration: 100 });
+            }
+        });
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: position.value }],
+    }));
+
+    // Get styles dynamically using the current theme
+    const containerStyle = {
         flex: 1,
         width: Dimensions.get("screen").width,
         backgroundColor: ThemedColor.background,
@@ -70,5 +82,38 @@ const styles = StyleSheet.create({
         left: -24,
         gap: 24,
         position: "absolute",
-    },
+    };
+
+    return (
+        <Modal
+            onBackdropPress={closeModal}
+            onBackButtonPress={closeModal}
+            isVisible={props.visible}
+            animationIn="slideInUp"
+            animationOut="slideOutDown"
+            avoidKeyboard>
+            <GestureDetector gesture={pan}>
+                <Animated.View style={[containerStyle, animatedStyle]}>
+                    <ModalHead />
+                    {props.options.map((option, index) => {
+                        return (
+                            <TouchableOpacity
+                                key={index}
+                                style={{ flexDirection: "row", gap: 16 }}
+                                onPress={() => {
+                                    closeModal();
+                                    // Only call the callback if it exists
+                                    option.callback && option.callback();
+                                }}>
+                                <Feather name={option.icon} size={24} color={ThemedColor.text} />
+                                <ThemedText type="default">{option.label}</ThemedText>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </Animated.View>
+            </GestureDetector>
+        </Modal>
+    );
 });
+
+export default BottomMenuModal;

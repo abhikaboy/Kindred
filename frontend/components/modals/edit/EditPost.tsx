@@ -3,16 +3,10 @@ import React, { useEffect } from "react";
 
 import Modal from "react-native-modal";
 
-import ThemedColor from "@/constants/Colors";
-import ThemedInput from "../inputs/ThemedInput";
-import Dropdown from "../inputs/Dropdown";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
-import { ThemedText } from "../ThemedText";
-import { Task } from "react-native";
-
-import Feather from "@expo/vector-icons/Feather";
-import ModalHead from "./ModalHead";
+import BottomMenuModal from "../BottomMenuModal";
 
 type ID = {
     id: string;
@@ -25,8 +19,10 @@ type Props = {
     edit?: boolean;
 };
 
-const EditModal = (props: Props) => {
+const EditPost = (props: Props) => {
     const { request } = useRequest();
+    let ThemedColor = useThemeColor();
+
     const { categories, removeFromCategory } = useTasks();
 
     const editPost = async () => {
@@ -40,30 +36,15 @@ const EditModal = (props: Props) => {
         console.log(response);
     };
 
-    return (
-        <Modal
-            onBackdropPress={() => props.setVisible(false)}
-            onBackButtonPress={() => props.setVisible(false)}
-            isVisible={props.visible}
-            animationIn="slideInUp"
-            animationOut="slideOutDown"
-            avoidKeyboard>
-            <View style={styles.container}>
-                <ModalHead />
-                <TouchableOpacity style={{ flexDirection: "row", gap: 16 }}>
-                    <Feather name="edit" size={24} color={ThemedColor.text} />
-                    <ThemedText type="default">Edit Post</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity style={{ flexDirection: "row", gap: 16 }} onPress={deletePost}>
-                    <Feather name="x" size={24} color={ThemedColor.text} />
-                    <ThemedText type="default">Delete Post</ThemedText>
-                </TouchableOpacity>
-            </View>
-        </Modal>
-    );
+    const options = [
+        { label: "Edit", icon: "edit", callback: editPost },
+        { label: "Delete", icon: "delete", callback: deletePost },
+    ];
+    return <BottomMenuModal id={props.id} visible={props.visible} setVisible={props.setVisible} options={options} />;
 };
 
-export default EditModal;
+export default EditPost;
+let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     container: {
