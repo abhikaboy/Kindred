@@ -90,6 +90,7 @@ const BottomMenuModal = memo((props: Props) => {
             onBackButtonPress={closeModal}
             isVisible={props.visible}
             animationIn="slideInUp"
+            backdropOpacity={0.4}
             animationOut="slideOutDown"
             avoidKeyboard>
             <GestureDetector gesture={pan}>

@@ -2,7 +2,13 @@ import { createContext, useContext, useState } from "react";
 import React from "react";
 import axios from "axios";
 
-async function getUserByAppleAccountID(appleAccountID: string) {
+interface User {
+    id: string;
+    email: string;
+    appleAccountID: string;
+}
+
+async function getUserByAppleAccountID(appleAccountID: string): Promise<Error | User> {
     const url = process.env.EXPO_PUBLIC_API_URL + "/auth/login/apple";
     const response = await axios.post(url, {
         apple_id: appleAccountID,

@@ -77,7 +77,7 @@ export const OnboardModal = (props: Props) => {
 
             await login(appleAccountID);
 
-            router.replace("/home");
+            router.navigate("/home");
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("they cancelled");

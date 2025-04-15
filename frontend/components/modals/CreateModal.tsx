@@ -79,9 +79,11 @@ const CreateModal = (props: Props) => {
         <Modal
             onBackdropPress={() => props.setVisible(false)}
             onBackButtonPress={() => props.setVisible(false)}
+            onSwipeComplete={() => props.setVisible(false)}
             isVisible={props.visible}
             animationIn="slideInUp"
             animationOut="slideOutDown"
+            backdropOpacity={0.5}
             avoidKeyboard>
             <GestureDetector gesture={pan}>
                 <View style={[animatedStyle, styles.container]}>

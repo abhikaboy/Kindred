@@ -6,18 +6,13 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import React from "react";
-import View, { Text } from "react-native";
 
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/hooks/useAuth";
-import { getThemedColor } from "@/constants/Colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { TasksProvider } from "@/contexts/tasksContext";
 
-import Back from "@/assets/images/back.svg";
 import BackButton from "@/components/BackButton";
-import { initTheme } from "@/constants/Colors";
-import { color } from "bun";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Accelerometer } from "expo-sensors";
 
@@ -56,7 +51,6 @@ export default function RootLayout() {
             subscription.remove();
         };
     }, []);
-    useEffect(() => initTheme("light"), []);
     useEffect(() => {
         if (loaded) {
             SplashScreen.hideAsync();

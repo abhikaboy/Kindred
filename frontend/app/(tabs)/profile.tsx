@@ -134,7 +134,7 @@ export default function Profile() {
                         <ThemedText type="lightBody">💰 14 Points</ThemedText>
                     </View> */}
                 </View>
-                <View gap={16}>
+                <View style={{ gap: 16 }}>
                     <ThemedText type="subtitle">Past 7 Day</ThemedText>
                     <View
                         style={{
@@ -156,18 +156,18 @@ export default function Profile() {
                         <ThemedText type="lightBody">see more</ThemedText>
                     </TouchableOpacity>
                 </View>
-                <View gap={12}>
+                <View style={{ gap: 12 }}>
                     <ThemedText type="subtitle">Active Tasks</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={9} priority={1} />
+                    <TaskCard content={"do my hw lol"} value={9} priority={1} id="active-1" categoryId="profile" />
                 </View>
-                <View gap={12}>
+                <View style={{ gap: 12 }}>
                     <ThemedText type="subtitle">Accomplished</ThemedText>
-                    <TaskCard content={"do my hw lol"} points={3} priority={1} />
-                    <TaskCard content={"do my hw lol"} points={2} priority={2} />
-                    <TaskCard content={"do my hw lol"} points={9} priority={0} />
-                    <TaskCard content={"do my hw lol"} points={9} priority={2} />
-                    <TaskCard content={"do my hw lol"} points={15} priority={0} />
-                    <TaskCard content={"do my hw lol"} points={3} priority={1} />
+                    <TaskCard content={"do my hw lol"} value={3} priority={1} id="done-1" categoryId="profile" />
+                    <TaskCard content={"do my hw lol"} value={2} priority={2} id="done-2" categoryId="profile" />
+                    <TaskCard content={"do my hw lol"} value={9} priority={3} id="done-3" categoryId="profile" />
+                    <TaskCard content={"do my hw lol"} value={9} priority={2} id="done-4" categoryId="profile" />
+                    <TaskCard content={"do my hw lol"} value={15} priority={3} id="done-5" categoryId="profile" />
+                    <TaskCard content={"do my hw lol"} value={3} priority={1} id="done-6" categoryId="profile" />
                 </View>
             </View>
         </Animated.ScrollView>

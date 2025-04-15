@@ -29,6 +29,7 @@ const Search = (props: Props) => {
     const focusStyle = useAnimatedStyle(() => {
         return {
             opacity: opacity.value,
+            backgroundColor: "#000",
         };
     });
 
@@ -42,7 +43,7 @@ const Search = (props: Props) => {
     };
 
     const onSubmit = () => {
-        setSearched(searchTerm.trim() === "");
+        setSearched(searchTerm.trim() != "");
     };
 
     useEffect(() => {
