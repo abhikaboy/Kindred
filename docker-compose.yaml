@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+    api-service:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: golang-api
+        restart: always
+        ports:
+            - '80:8080'
+        volumes:
+            - ./backend:/app
+        env_file:
+            - ./backend/.env
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
