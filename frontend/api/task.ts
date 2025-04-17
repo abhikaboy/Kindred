@@ -1,4 +1,4 @@
-import { Task, Categories, Workspace } from "./types";
+import { Task, Categories, Workspace, CompleteTaskBody } from "./types";
 import { useRequest } from "@/hooks/useRequest";
 
 /**
@@ -10,7 +10,7 @@ import { useRequest } from "@/hooks/useRequest";
  */
 export const addToCategory = async (categoryId: string, task: Task): Promise<void> => {
     const { request } = useRequest();
-    await request("POST", `/user/categories/${categoryId}/tasks`, task);
+    return await request("POST", `/user/categories/${categoryId}/tasks`, task);
 };
 
 /**
@@ -22,5 +22,29 @@ export const addToCategory = async (categoryId: string, task: Task): Promise<voi
  */
 export const removeFromCategoryAPI = async (categoryId: string, taskId: string): Promise<void> => {
     const { request } = useRequest();
-    await request("DELETE", `/user/categories/${categoryId}/tasks/${taskId}`);
+    return await request("DELETE", `/user/tasks/${categoryId}/${taskId}`);
+};
+
+/**
+ * Marks a task as completed
+ * API: Makes PUT request to mark a task as completed
+ * Frontend: Updates task state in TaskContext by marking the task as completed
+ * @param categoryId - The ID of the category to mark the task in
+ * @param taskId - The ID of the task to mark as completed
+ */
+export const markAsCompletedAPI = async (categoryId: string, taskId: string, body: CompleteTaskBody): Promise<void> => {
+    const { request } = useRequest();
+    return request("POST", `/user/tasks/complete/${categoryId}/${taskId}`, body);
+};
+
+/**
+ * Activates a task
+ * API: Makes PUT request to activate a task
+ * Frontend: Updates task state in TaskContext by activating the task
+ * @param taskId - The ID of the task to activate
+ * @param categoryId - The ID of the category to activate the task in
+ */
+export const activateTaskAPI = async (categoryId: string, taskId: string): Promise<void> => {
+    const { request } = useRequest();
+    return request("POST", `/user/tasks/active/${categoryId}/${taskId}`);
 };

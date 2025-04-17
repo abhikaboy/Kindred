@@ -39,12 +39,12 @@ export const OnboardModal = (props: Props) => {
             if (!email || !firstName || !lastName) {
                 console.log("We think you already have an accout: trying to log in instead");
                 await login(appleAccountID);
-                router.navigate("/home");
+                router.replace("/home");
             } else {
                 let data = await register(email, appleAccountID);
                 console.log(data);
 
-                router.navigate({
+                router.replace({
                     pathname: "/(onboarding)",
                     params: {
                         initialFirstName: "",
@@ -77,7 +77,7 @@ export const OnboardModal = (props: Props) => {
 
             await login(appleAccountID);
 
-            router.navigate("/home");
+            router.replace("/home");
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("they cancelled");

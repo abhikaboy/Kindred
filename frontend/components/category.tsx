@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { ThemedText } from "./ThemedText";
 import TaskCard from "./cards/TaskCard";
 import { Task } from "../api/types";
-
+import SwipableTaskCard from "./cards/SwipableTaskCard";
 interface CategoryProps {
     id: string;
     name: string;
@@ -19,7 +19,7 @@ export const Category: React.FC<CategoryProps> = ({ id, name, tasks, onLongPress
                 <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
             </TouchableOpacity>
             {tasks.map((task) => (
-                <TaskCard
+                <SwipableTaskCard
                     key={task.id + task.content}
                     content={task.content}
                     value={0 || task.value}

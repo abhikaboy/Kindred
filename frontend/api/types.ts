@@ -47,3 +47,8 @@ export interface UserResponse {
     accessToken: string;
     refreshToken: string;
 }
+
+export interface CompleteTaskBody {
+    timeCompleted: string;
+    timeTaken: string;
+}

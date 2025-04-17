@@ -4,10 +4,9 @@ import React, { useEffect } from "react";
 import Modal from "react-native-modal";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import BottomMenuModal from "../BottomMenuModal";
-
+import { removeFromCategoryAPI } from "@/api/task";
 type ID = {
     id: string;
     category: string;
@@ -20,7 +19,6 @@ type Props = {
 };
 
 const EditPost = (props: Props) => {
-    const { request } = useRequest();
     let ThemedColor = useThemeColor();
 
     const { categories, removeFromCategory } = useTasks();
@@ -31,7 +29,7 @@ const EditPost = (props: Props) => {
     const deletePost = async () => {
         if (categories.length === 0) return;
         const { id, category } = props.id;
-        const response = await request("DELETE", `/user/tasks/${category}/${id}`);
+        const response = await removeFromCategoryAPI(category, id);
         removeFromCategory(category, id);
         console.log(response);
     };

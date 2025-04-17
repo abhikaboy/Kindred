@@ -19,6 +19,8 @@ import BottomMenuModal from "@/components/modals/BottomMenuModal";
 import EditCategory from "@/components/modals/edit/EditCategory";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Category } from "../../components/category";
+import Confetti from "react-native-simple-confetti";
+import ConfettiCannon from "react-native-confetti-cannon";
 
 type Props = {};
 
@@ -27,7 +29,7 @@ const Home = (props: Props) => {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
-    const { categories, fetchWorkspaces, selected } = useTasks();
+    const { categories, fetchWorkspaces, selected, showConfetti } = useTasks();
 
     const [time, setTime] = useState(new Date().toLocaleTimeString());
     const [timeOfDay, setTimeOfDay] = useState("Good Morning! ☀");
@@ -89,6 +91,29 @@ const Home = (props: Props) => {
                         Treat yourself to a cup of coffee and a good book. You deserve it.
                     </ThemedText>
                 </View>
+                {showConfetti && (
+                    <View
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            zIndex: 1000,
+                            height: Dimensions.get("screen").height,
+                        }}>
+                        <ConfettiCannon
+                            count={50}
+                            origin={{
+                                x: Dimensions.get("screen").width / 2,
+                                y: (Dimensions.get("screen").height / 4) * 3.7,
+                            }}
+                            fallSpeed={1200}
+                            explosionSpeed={300}
+                            fadeOut={true}
+                        />
+                    </View>
+                )}
                 <ScrollView>
                     <View style={styles.categoriesContainer}>
                         {categories

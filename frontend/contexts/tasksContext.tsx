@@ -23,6 +23,8 @@ type TaskContextType = {
 
     setCreateCategory: (Option: Option) => void;
     selectedCategory: Option;
+    showConfetti: boolean;
+    setShowConfetti: (showConfetti: boolean) => void;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -32,6 +34,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [categories, setCategories] = useState<Categories[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
 
+    const [showConfetti, setShowConfetti] = useState(false);
     /**
      * Sets the selected category within the creation menu
      * @param option
@@ -92,7 +95,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setWorkSpaces(workspacesCopy);
     };
     /**
-     * Removes a task from a category locally
+     * Visually will remove a task from a category locally
      * @param categoryId
      * @param taskId
      */
@@ -141,6 +144,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 removeFromWorkspace,
                 setCreateCategory,
                 selectedCategory,
+                showConfetti,
+                setShowConfetti,
             }}>
             {children}
         </TaskContext.Provider>
