@@ -35,6 +35,13 @@ func main() {
 		}
 	}
 
+	for _, index := range xmongo.SearchIndexes {
+		if err := db.ApplySearchIndex(ctx, index.Collection, index.Model); err != nil {
+			fatal(ctx, "Failed to apply search index to collection "+index.Collection, err)
+		} else {
+			slog.LogAttrs(ctx, slog.LevelInfo, "Search index applied to", slog.String("collection", index.Collection), slog.String("Environment", db.DB.Name()))
+		}
+	}
 }
 
 func fatal(ctx context.Context, msg string, err error) {

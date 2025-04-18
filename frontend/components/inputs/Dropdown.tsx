@@ -87,7 +87,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                 )}
             </AnimatedTouchableOpacity>
             {expandedState && (
-                <Animated.View entering={reducedMotion ? null : FadeInUp} exiting={reducedMotion ? null : FadeOutDown}>
+                <Animated.View entering={reducedMotion ? null : FadeInUp} exiting={reducedMotion ? null : FadeOut}>
                     {options.map((item, index) => {
                         return (
                             <AnimatedTouchableOpacity

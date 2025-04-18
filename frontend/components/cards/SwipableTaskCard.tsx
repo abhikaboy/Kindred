@@ -60,8 +60,11 @@ export default function SwipableTaskCard({ content, value, priority, redirect = 
                 enableTrackpadTwoFingerGesture
                 leftThreshold={Dimensions.get("window").width / 3}
                 overshootLeft={true}
-                overshootFriction={2}
-                renderLeftActions={LeftAction}
+                overshootFriction={2.7}
+                renderLeftActions={(prog, drag) => LeftAction(prog, drag, categoryId, id, markAsCompleted)}
+                onBegan={(event) => {
+                    console.log(event);
+                }}
                 onSwipeableOpen={(direction) => {
                     if (direction === "right") {
                         console.log(direction);
@@ -84,11 +87,25 @@ export default function SwipableTaskCard({ content, value, priority, redirect = 
     );
 }
 
-function LeftAction(prog: SharedValue<number>, drag: SharedValue<number>) {
+function LeftAction(
+    prog: SharedValue<number>,
+    drag: SharedValue<number>,
+    categoryId: string,
+    id: string,
+    markAsCompleted: (categoryId: string, id: string) => void
+) {
     let width = Dimensions.get("window").width;
     const styleAnimation = useAnimatedStyle(() => {
+        let threshold = width / 4; // if its past the threshold, begin fading out
+        let percent = (drag.value - threshold * 3) / threshold;
+        let opacity = 1 - percent;
+        if (opacity <= 0) {
+            // markAsCompleted(categoryId, id);
+        }
         return {
             transform: [{ translateX: drag.value - width }],
+            opacity: opacity,
+            display: opacity > 0 ? "flex" : "none",
         };
     });
 
@@ -113,10 +130,12 @@ function LeftAction(prog: SharedValue<number>, drag: SharedValue<number>) {
     );
 }
 
+const RIGHT_ACTION_WIDTH = 75;
+
 function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, callback: () => void) {
     const styleAnimation = useAnimatedStyle(() => {
         return {
-            transform: [{ translateX: drag.value + 80 }],
+            transform: [{ translateX: drag.value + RIGHT_ACTION_WIDTH }],
         };
     });
 
@@ -124,7 +143,7 @@ function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, callb
         <Reanimated.View
             style={[
                 styleAnimation,
-                { backgroundColor: ThemedColor.background, justifyContent: "center", alignItems: "center" },
+                { backgroundColor: ThemedColor.error, justifyContent: "center", alignItems: "center" },
             ]}>
             <TouchableOpacity onPress={() => callback()}>
                 <Entypo name="cross" size={24} color="white" style={styles.rightAction} />
@@ -138,7 +157,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     rightAction: {
-        width: 100,
+        width: RIGHT_ACTION_WIDTH,
         alignSelf: "center",
         textAlign: "center",
         borderTopRightRadius: 16,

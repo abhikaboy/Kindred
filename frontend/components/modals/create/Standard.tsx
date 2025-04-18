@@ -30,13 +30,14 @@ const Standard = ({ hide, goTo }: Props) => {
             public: true,
             active: false,
         });
+
         addToCategory(selected.id, response);
     };
     if (categories.length == 1) {
         goTo(Screen.NEW_CATEGORY);
     }
     return (
-        <View style={{ gap: 16, flexDirection: "column", display: "flex" }}>
+        <View style={{ gap: 8, flexDirection: "column", display: "flex" }}>
             <ThemedInput
                 autofocus
                 ref={nameRef}

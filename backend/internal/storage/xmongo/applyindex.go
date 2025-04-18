@@ -28,3 +28,13 @@ func (db *DB) ApplyIndex(ctx context.Context, name string, model mongo.IndexMode
 
 	return nil
 }
+
+func (db *DB) ApplySearchIndex(ctx context.Context, name string, model mongo.SearchIndexModel) error {
+	_, err := db.DB.Collection(name).SearchIndexes().CreateOne(context.Background(), model)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return nil
+}

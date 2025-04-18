@@ -15,6 +15,7 @@ const ModalHead = (props: StyleProp<any>) => {
                 borderRadius: 1,
                 justifyContent: "center",
                 alignSelf: "center",
+                marginBottom: 12,
             }}
         />
     );

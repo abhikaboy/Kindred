@@ -87,7 +87,7 @@ const CreateModal = (props: Props) => {
             avoidKeyboard>
             <GestureDetector gesture={pan}>
                 <View style={[animatedStyle, styles.container]}>
-                    <ModalHead style={{ marginBottom: 16 }} />
+                    <ModalHead />
                     <ConditionalView condition={screen === Screen.STANDARD}>
                         <Standard hide={() => props.setVisible(false)} goTo={setScreen} />
                     </ConditionalView>
@@ -110,10 +110,11 @@ const styles = StyleSheet.create({
         width: Dimensions.get("screen").width,
         backgroundColor: ThemedColor.background,
         padding: 24,
+        paddingTop: 32,
         gap: 8,
         borderTopRightRadius: 24,
         borderTopLeftRadius: 24,
-        bottom: -16,
+        bottom: -24,
         left: -24,
         position: "absolute",
     },
