@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
@@ -8,6 +8,7 @@ import Carousel from "react-native-reanimated-carousel";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { PopupProp } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 export type SlackReaction = {
     emoji: string;
@@ -48,14 +49,33 @@ const PostCard = ({
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
     const allReactions = [...reactions, ...newReactions];
     const [modalIndex, setModalIndex] = useState(0);
-    const [commentsVisible, setCommentsVisible] = useState(false);
 
     const userId = "67ba5abb616b5e6544e0137b";
     let ThemedColor = useThemeColor();
 
     const handleClose = () => {
-        setCommentsVisible(false);
+        bottomSheetModalRef.current?.dismiss();
+        console.log("handleClose");
     };
+
+    // Then in your component:
+    const renderBackdrop = useCallback(
+        (props) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+        []
+    );
+
+    // ref
+    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+    // callbacks
+    const handleOpenComments = useCallback(() => {
+        bottomSheetModalRef.current?.present();
+        console.log("handleOpenComments");
+    }, []);
+
+    const handleSheetChanges = useCallback((index: number) => {
+        console.log("handleSheetChanges", index);
+    }, []);
 
     const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
         setReactions((prevReactions) => {
@@ -99,7 +119,7 @@ const PostCard = ({
     };
 
     const openComments = () => {
-        setCommentsVisible(true);
+        bottomSheetModalRef.current?.present();
     };
 
     return (
@@ -145,13 +165,12 @@ const PostCard = ({
                     />
                 </View>
 
-                <TouchableOpacity>
-                    <ThemedText onPress={() => setCommentsVisible(true)} style={{ paddingTop: 15 }} type="lightBody">
+                <TouchableOpacity onPress={handleOpenComments}>
+                    <ThemedText style={{ paddingTop: 15 }} type="lightBody">
                         💬 Leave a comment
                     </ThemedText>
                 </TouchableOpacity>
             </View>
-
             {modalVisible && (
                 <Modal
                     visible={modalVisible}
@@ -167,11 +186,37 @@ const PostCard = ({
                 </Modal>
             )}
 
-            {commentsVisible && (
-                <View style={styles.modalContainer}>
-                    <Comment comments={comments} show={commentsVisible} onClose={handleClose}></Comment>
-                </View>
-            )}
+            <BottomSheetModal
+                ref={bottomSheetModalRef}
+                onChange={handleSheetChanges}
+                enableDynamicSizing={true}
+                handleStyle={{
+                    backgroundColor: ThemedColor.background,
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
+                }}
+                handleIndicatorStyle={{
+                    backgroundColor: ThemedColor.text,
+                    width: 48,
+                    height: 3,
+                    borderRadius: 10,
+                    marginVertical: 12,
+                }}
+                backgroundStyle={{
+                    borderTopLeftRadius: 32,
+                    borderTopRightRadius: 32,
+                }}
+                backdropComponent={renderBackdrop}
+                enablePanDownToClose={true}
+                enableDismissOnClose={true}
+                enableHandlePanningGesture={true}
+                style={{
+                    backgroundColor: ThemedColor.background,
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
+                }}>
+                <Comment comments={comments} ref={bottomSheetModalRef} onClose={handleClose} />
+            </BottomSheetModal>
         </View>
     );
 };

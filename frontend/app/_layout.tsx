@@ -15,6 +15,7 @@ import { TasksProvider } from "@/contexts/tasksContext";
 import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Accelerometer } from "expo-sensors";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -64,39 +65,41 @@ export default function RootLayout() {
     return (
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
             <GestureHandlerRootView>
-                <AuthProvider>
-                    <TasksProvider>
-                        <Stack
-                            screenOptions={{
-                                headerShown: true,
-                                headerTransparent: true,
-                                headerBackTitle: "bbb",
-                                headerLeft: () => <BackButton />,
-                                headerTintColor: ThemedColor.text,
-                                headerBackButtonDisplayMode: "minimal",
-                                headerTitleStyle: {
-                                    fontFamily: "Outfit",
-                                    fontWeight: 100,
-                                    fontSize: 1,
-                                    color: ThemedColor.primary,
-                                },
-                            }}>
-                            <Stack.Screen
-                                name="(tabs)"
-                                options={{
-                                    headerShown: false,
-                                }}
-                            />
-                            <Stack.Screen name="Dev1" />
-                            <Stack.Screen options={{}} name="Dev2" />
-                            <Stack.Screen options={{}} name="Activity" />
-                            <Stack.Screen options={{}} name="AuditLog" />
-                            <Stack.Screen options={{}} name="task/[id]" />
-                            <Stack.Screen name="+not-found" />
-                        </Stack>
-                        <StatusBar style="light" />
-                    </TasksProvider>
-                </AuthProvider>
+                <BottomSheetModalProvider>
+                    <AuthProvider>
+                        <TasksProvider>
+                            <Stack
+                                screenOptions={{
+                                    headerShown: true,
+                                    headerTransparent: true,
+                                    headerBackTitle: "bbb",
+                                    headerLeft: () => <BackButton />,
+                                    headerTintColor: ThemedColor.text,
+                                    headerBackButtonDisplayMode: "minimal",
+                                    headerTitleStyle: {
+                                        fontFamily: "Outfit",
+                                        fontWeight: 100,
+                                        fontSize: 1,
+                                        color: ThemedColor.primary,
+                                    },
+                                }}>
+                                <Stack.Screen
+                                    name="(tabs)"
+                                    options={{
+                                        headerShown: false,
+                                    }}
+                                />
+                                <Stack.Screen name="Dev1" />
+                                <Stack.Screen options={{}} name="Dev2" />
+                                <Stack.Screen options={{}} name="Activity" />
+                                <Stack.Screen options={{}} name="AuditLog" />
+                                <Stack.Screen options={{}} name="task/[id]" />
+                                <Stack.Screen name="+not-found" />
+                            </Stack>
+                            <StatusBar style="light" />
+                        </TasksProvider>
+                    </AuthProvider>
+                </BottomSheetModalProvider>
             </GestureHandlerRootView>
         </ThemeProvider>
     );

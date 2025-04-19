@@ -1,11 +1,25 @@
 import React from "react";
-import { Modal, View, StyleSheet, TouchableOpacity, Text, ScrollView, Dimensions } from "react-native";
+import {
+    View,
+    StyleSheet,
+    TouchableOpacity,
+    Text,
+    ScrollView,
+    Dimensions,
+    Animated,
+    TouchableWithoutFeedback,
+} from "react-native";
+import Modal from "react-native-modal";
 import UserInfoRowComment from "../UserInfo/UsereInfoRowComment";
 import { ThemedText } from "../ThemedText";
 import ThemedInput from "./ThemedInput";
 import SendButton from "./SendButton";
 import CommentInput from "./CommentInput";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAnimatedGestureHandler, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import { useSharedValue } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import BottomSheet, { BottomSheetView, BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export type CommentProps = {
     userId: number;
@@ -18,50 +32,51 @@ export type CommentProps = {
 
 export type PopupProp = {
     comments: CommentProps[];
-    show: boolean;
+    ref: React.RefObject<BottomSheetModal>;
     onClose: () => void;
 };
 
-const Comment = ({ comments, show, onClose }: PopupProp) => {
+const Comment = ({ comments, ref, onClose }: PopupProp) => {
     return (
-        <Modal visible={show} transparent={true} animationType="slide" onRequestClose={onClose}>
-            <View style={[styles.modalContainer, show && styles.modalVisible]}>
-                <View style={styles.modalContent}>
-                    <View style={styles.header}>
-                        <View style={styles.line} />
-                        <ThemedText style={styles.commentsTitle} type="default">
-                            Comments
-                        </ThemedText>
-                    </View>
-                    <ScrollView
-                        style={styles.commentsContainer}
-                        contentContainerStyle={styles.contentContainer}
-                        showsVerticalScrollIndicator={true}
-                        indicatorStyle="black">
-                        {comments?.map((comment, index) => (
-                            <View key={index} style={styles.comments}>
-                                <UserInfoRowComment
-                                    key={index}
-                                    name={comment.name}
-                                    content={comment.content}
-                                    icon={comment.icon}
-                                />
-                            </View>
-                        ))}
-                    </ScrollView>
+        <BottomSheetView style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+                <View style={styles.header}>
+                    <ThemedText style={styles.commentsTitle} type="default">
+                        Comments
+                    </ThemedText>
+                </View>
+                <ScrollView
+                    style={styles.commentsContainer}
+                    contentContainerStyle={styles.contentContainer}
+                    showsVerticalScrollIndicator={true}
+                    indicatorStyle="black">
+                    {comments?.map((comment, index) => (
+                        <View key={index} style={styles.comments}>
+                            <UserInfoRowComment
+                                key={index}
+                                name={comment.name}
+                                content={comment.content}
+                                icon={comment.icon}
+                            />
+                        </View>
+                    ))}
+                </ScrollView>
 
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            justifyContent: "center",
-                            gap: 10,
-                        }}>
-                        <CommentInput placeHolder="Leave a comment" />
-                        <SendButton onSend={() => {}} />
-                    </View>
+                <View
+                    style={{
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        gap: 10,
+                    }}>
+                    <CommentInput placeHolder="Leave a comment" />
+                    <SendButton
+                        onSend={() => {
+                            onClose();
+                        }}
+                    />
                 </View>
             </View>
-        </Modal>
+        </BottomSheetView>
     );
 };
 let ThemedColor = useThemeColor();
@@ -69,22 +84,14 @@ let ThemedColor = useThemeColor();
 const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
-        justifyContent: "flex-end",
-        alignItems: "center",
-        backgroundColor: "rgba(0,0,0,0.5)",
-        opacity: 0,
-        transform: [{ translateY: 100 }],
-    },
-    modalVisible: {
-        opacity: 1,
-        transform: [{ translateY: 0 }],
+        backgroundColor: ThemedColor.background,
     },
     modalContent: {
         width: "100%",
         backgroundColor: ThemedColor.background,
-        borderTopLeftRadius: 26,
-        borderTopRightRadius: 26,
-        paddingBottom: 30,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingBottom: 32,
         elevation: 5,
     },
     header: {

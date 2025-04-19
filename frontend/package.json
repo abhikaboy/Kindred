@@ -16,6 +16,7 @@
     "dependencies": {
         "@expo/server": "^0.5.1",
         "@expo/vector-icons": "^14.0.4",
+        "@gorhom/bottom-sheet": "^5.1.2",
         "@react-native-async-storage/async-storage": "1.23.1",
         "@react-native-community/datetimepicker": "8.2.0",
         "@react-native-community/slider": "4.5.5",
