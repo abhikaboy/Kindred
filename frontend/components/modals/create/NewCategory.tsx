@@ -25,7 +25,6 @@ const NewCategory = ({ goToStandard }: Props) => {
         });
 
         addToWorkspace(selected, response);
-        console.log(response);
     };
 
     return (

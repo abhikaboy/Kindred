@@ -2,7 +2,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
 import React, { useEffect } from "react";
 import { createContext, useState, useContext } from "react";
-import { Task } from "react-native";
+import { Task, Workspace, Categories } from "../api/types";
+import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 
@@ -22,46 +23,82 @@ type TaskContextType = {
 
     setCreateCategory: (Option: Option) => void;
     selectedCategory: Option;
+    showConfetti: boolean;
+    setShowConfetti: (showConfetti: boolean) => void;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const { request } = useRequest();
     const [workspaces, setWorkSpaces] = useState<Workspace[]>([]);
     const [selected, setSelected] = useState<string>("Good Morning ☀️"); // Workspace
     const [categories, setCategories] = useState<Categories[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
 
+    const [showConfetti, setShowConfetti] = useState(false);
+    /**
+     * Sets the selected category within the creation menu
+     * @param option
+     */
     const setCreateCategory = (option: Option) => {
         setSelectedCategory(option);
     };
 
+    /**
+     * Gets a workspace by name from the list of workspaces
+     * @param name
+     * @returns Workspace
+     */
     const getWorkspace = (name: string) => {
         return workspaces.find((workspace) => workspace.name === name);
     };
+
     const fetchWorkspaces = async () => {
-        let data = await request("GET", "/user/Categories/" + user._id);
+        const data = await fetchUserWorkspaces(user._id);
         setWorkSpaces(data);
     };
 
+    /**
+     * Adds a workspace to the list of workspaces on the server and locally
+     * @param name
+     * @param category
+     */
     const addWorkspace = async (name: string, category: Categories) => {
+        const newWorkspace = { name: name, categories: [category] };
+        await createWorkspace(name);
         let workspacesCopy = workspaces.slice();
-        workspacesCopy.push({ name: name, categories: [category] });
+        workspacesCopy.push(newWorkspace);
         setWorkSpaces(workspacesCopy);
     };
 
+    /**
+     * Adds a task to the list of categories
+     * @param categoryId
+     * @param task
+     */
     const addToCategory = async (categoryId: string, task: Task) => {
         let categoriesCopy = categories.slice();
         categoriesCopy.find((category) => category.id === categoryId).tasks.push(task);
         setCategories(categoriesCopy);
     };
 
-    const addToWorkspace = async (name: string, category: Categories) => {
+    /**
+     * Adds a category to the workspace list
+     * @param name
+     * @param category
+     */
+
+    const addToWorkspace = (name: string, category: Categories) => {
+        const workspace = getWorkspace(name);
+        if (!workspace) return;
         let workspacesCopy = workspaces.slice();
         workspacesCopy.find((workspace) => workspace.name === name).categories.push(category);
         setWorkSpaces(workspacesCopy);
     };
-
+    /**
+     * Visually will remove a task from a category locally
+     * @param categoryId
+     * @param taskId
+     */
     const removeFromCategory = async (categoryId: string, taskId: string) => {
         let categoriesCopy = categories.slice();
         categoriesCopy.find((category) => category.id === categoryId).tasks = categoriesCopy
@@ -70,6 +107,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setCategories(categoriesCopy);
     };
 
+    /**
+     * Removes a category from a workspace locally
+     * @param name
+     * @param categoryId
+     */
     const removeFromWorkspace = async (name: string, categoryId: string) => {
         let workspacesCopy = workspaces.slice();
         workspacesCopy.find((workspace) => workspace.name === name).categories = workspacesCopy
@@ -102,6 +144,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 removeFromWorkspace,
                 setCreateCategory,
                 selectedCategory,
+                showConfetti,
+                setShowConfetti,
             }}>
             {children}
         </TaskContext.Provider>

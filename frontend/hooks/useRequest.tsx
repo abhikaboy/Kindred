@@ -22,8 +22,8 @@ function getErrorHistory() {
 }
 
 async function request(method: string, url: string, body?: any) {
-    console.log(" Method: " + method + " URL: " + url + " Body: " + JSON.stringify(body));
-    const response = await axios({
+    console.log("Method: " + method + " URL: " + url + " Body: " + JSON.stringify(body));
+    let response = await axios({
         url: process.env.EXPO_PUBLIC_API_URL + url,
         method: method,
         headers: {
@@ -31,6 +31,7 @@ async function request(method: string, url: string, body?: any) {
         },
         data: body,
     });
+    console.log("After");
     setRequestHistory([
         ...history,
         {
@@ -42,7 +43,12 @@ async function request(method: string, url: string, body?: any) {
             headers: response.headers,
         },
     ]);
+    console.log("Response: " + JSON.stringify(response.data));
     if (response.status > 299) {
+        console.log("Error: " + response.statusText);
+        console.log("Error Data: " + JSON.stringify(response.data));
+        setErrorHistory([...errorHistory, response]);
+        // Theres an error
         throw Error("Unable to complete operation" + " status codey: " + response.statusText);
     } else {
         const access_response = response.headers["access_token"];
@@ -57,10 +63,6 @@ async function request(method: string, url: string, body?: any) {
         } else {
             axios.defaults.headers.common["refresh_token"] = refresh_response;
         }
-    }
-    if (response.status >= 400) {
-        setErrorHistory([...errorHistory, response]);
-        // Theres an error
     }
     return response.data;
 }

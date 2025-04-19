@@ -6,20 +6,16 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import React from "react";
-import View, { Text } from "react-native";
 
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/hooks/useAuth";
-import { getThemedColor } from "@/constants/Colors";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { TasksProvider } from "@/contexts/tasksContext";
 
-import Back from "@/assets/images/back.svg";
 import BackButton from "@/components/BackButton";
-import { initTheme } from "@/constants/Colors";
-import { color } from "bun";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Accelerometer } from "expo-sensors";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -56,7 +52,6 @@ export default function RootLayout() {
             subscription.remove();
         };
     }, []);
-    useEffect(() => initTheme("light"), []);
     useEffect(() => {
         if (loaded) {
             SplashScreen.hideAsync();
@@ -70,39 +65,41 @@ export default function RootLayout() {
     return (
         <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
             <GestureHandlerRootView>
-                <AuthProvider>
-                    <TasksProvider>
-                        <Stack
-                            screenOptions={{
-                                headerShown: true,
-                                headerTransparent: true,
-                                headerBackTitle: "bbb",
-                                headerLeft: () => <BackButton />,
-                                headerTintColor: ThemedColor.text,
-                                headerBackButtonDisplayMode: "minimal",
-                                headerTitleStyle: {
-                                    fontFamily: "Outfit",
-                                    fontWeight: 100,
-                                    fontSize: 1,
-                                    color: ThemedColor.primary,
-                                },
-                            }}>
-                            <Stack.Screen
-                                name="(tabs)"
-                                options={{
-                                    headerShown: false,
-                                }}
-                            />
-                            <Stack.Screen name="Dev1" />
-                            <Stack.Screen options={{}} name="Dev2" />
-                            <Stack.Screen options={{}} name="Activity" />
-                            <Stack.Screen options={{}} name="AuditLog" />
-                            <Stack.Screen options={{}} name="task/[id]" />
-                            <Stack.Screen name="+not-found" />
-                        </Stack>
-                        <StatusBar style="light" />
-                    </TasksProvider>
-                </AuthProvider>
+                <BottomSheetModalProvider>
+                    <AuthProvider>
+                        <TasksProvider>
+                            <Stack
+                                screenOptions={{
+                                    headerShown: true,
+                                    headerTransparent: true,
+                                    headerBackTitle: "bbb",
+                                    headerLeft: () => <BackButton />,
+                                    headerTintColor: ThemedColor.text,
+                                    headerBackButtonDisplayMode: "minimal",
+                                    headerTitleStyle: {
+                                        fontFamily: "Outfit",
+                                        fontWeight: 100,
+                                        fontSize: 1,
+                                        color: ThemedColor.primary,
+                                    },
+                                }}>
+                                <Stack.Screen
+                                    name="(tabs)"
+                                    options={{
+                                        headerShown: false,
+                                    }}
+                                />
+                                <Stack.Screen name="Dev1" />
+                                <Stack.Screen options={{}} name="Dev2" />
+                                <Stack.Screen options={{}} name="Activity" />
+                                <Stack.Screen options={{}} name="AuditLog" />
+                                <Stack.Screen options={{}} name="task/[id]" />
+                                <Stack.Screen name="+not-found" />
+                            </Stack>
+                            <StatusBar style="light" />
+                        </TasksProvider>
+                    </AuthProvider>
+                </BottomSheetModalProvider>
             </GestureHandlerRootView>
         </ThemeProvider>
     );

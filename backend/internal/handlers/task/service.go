@@ -238,6 +238,7 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 			"$inc":  bson.M{"tasks_complete": 1},
 		},
 	)
+
 	if err != nil {
 		return err
 	}
@@ -247,6 +248,9 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 	if resultDecoded.ModifiedCount == 0 {
 		return errors.New("No tasks found")
 	}
+
+	err = s.DeleteTask(categoryId, id)
+
 	return err
 }
 

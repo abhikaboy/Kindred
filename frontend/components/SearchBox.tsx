@@ -6,7 +6,7 @@ import { IconSymbol } from "./ui/IconSymbol";
 import Octicons from "@expo/vector-icons/Octicons";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
-
+import { Keyboard } from "react-native";
 interface SearchBoxProps extends TextInputProps {
     value: string;
     recent?: boolean;
@@ -48,6 +48,15 @@ export function SearchBox({
         deleteRecent(term).then(() => fetchRecents());
     }
 
+    const clear = () => {
+        setRecentItems([]);
+        if (setFocused) setFocused(false);
+        onChangeText("");
+        onSubmit();
+        setFocused(false);
+        Keyboard.dismiss();
+    };
+
     useEffect(() => {
         if (inputRef.current) {
             inputRef.current?.measureInWindow((height) => {
@@ -81,7 +90,13 @@ export function SearchBox({
                     {...rest}
                     style={{ ...styles.input, color: ThemedColor.text }}
                 />
-                <Octicons name="search" size={24} color={ThemedColor.text} />
+                {recentItems.length > 0 ? (
+                    <TouchableOpacity onPress={clear}>
+                        <Octicons name="x" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                ) : (
+                    <Octicons name="search" size={24} color={ThemedColor.text} />
+                )}
             </View>
             {recent && (
                 <View style={{ ...styles.recentsContainer, top: inputHeight }}>
@@ -119,14 +134,18 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         position: "absolute",
         width: "100%",
-        backgroundColor: useThemeColor().background,
+        paddingVertical: 8,
+        paddingLeft: 16,
+        backgroundColor: useThemeColor().lightened,
         zIndex: 10,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
     },
     recent: {
         width: "100%",
         padding: 8,
-        paddingVertical: 8,
-        backgroundColor: useThemeColor().background,
+        paddingVertical: 12,
+        backgroundColor: useThemeColor().lightened,
         flexDirection: "row",
         flex: 1,
         gap: 12,

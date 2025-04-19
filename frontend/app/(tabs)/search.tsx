@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, ScrollView, View, Text } from "react-native";
+import { Dimensions, StyleSheet, ScrollView, View, Text, Pressable, Keyboard } from "react-native";
 import React, { useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,27 +8,23 @@ import ContactCard from "@/components/cards/ContactCard";
 import { Icons } from "@/constants/Icons";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import * as SMS from "expo-sms";
-import Animated, {
-    FadeIn,
-    FadeOut,
-    FadeOutDown,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
-
+import { useThemeColor } from "@/hooks/useThemeColor";
+import * as Contacts from "expo-contacts";
 type Props = {};
 
 const Search = (props: Props) => {
     const [searchTerm, setSearchTerm] = React.useState("");
     const [searched, setSearched] = React.useState(false);
     const [focused, setFocused] = React.useState(false);
+    const ThemedColor = useThemeColor();
 
     const opacity = useSharedValue(1);
     const focusStyle = useAnimatedStyle(() => {
         return {
             opacity: opacity.value,
+            backgroundColor: ThemedColor.background,
         };
     });
 
@@ -42,7 +38,7 @@ const Search = (props: Props) => {
     };
 
     const onSubmit = () => {
-        setSearched(searchTerm.trim() === "");
+        setSearched(searchTerm.trim() != "");
     };
 
     useEffect(() => {
@@ -53,9 +49,9 @@ const Search = (props: Props) => {
         <ThemedView
             style={{
                 paddingTop: Dimensions.get("screen").height * 0.12,
-                paddingHorizontal: 24,
+                paddingHorizontal: 16,
             }}>
-            <View style={{ gap: 16 }}>
+            <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
                 <SearchBox
                     value={searchTerm}
                     placeholder={"Search for your friends!"}
@@ -98,7 +94,7 @@ const Search = (props: Props) => {
                         </ScrollView>
                     </Animated.View>
                 )}
-            </View>
+            </Pressable>
         </ThemedView>
     );
 };
