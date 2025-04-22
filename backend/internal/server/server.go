@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
@@ -11,6 +13,7 @@ import (
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	"github.com/abhikaboy/Kindred/internal/handlers/socket"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
+	waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
 	"github.com/abhikaboy/Kindred/internal/sockets"
 
 	"github.com/abhikaboy/Kindred/internal/xerr"
@@ -19,6 +22,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
@@ -40,7 +44,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 	activity.Routes(app, collections)
 	connections.Routes(app, collections)
 	profile.Routes(app, collections)
-
+	waitlist.Routes(app, collections)
 	socket.Routes(app, collections, stream)
 
 	return app
@@ -68,6 +72,15 @@ func setupApp() *fiber.App {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).SendString("Welcome to [NAME]!")
 	})
+
+	app.Use(limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 1 * time.Second,
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).SendString("Too many requests")
+		},
+		LimiterMiddleware: limiter.SlidingWindow{},
+	}))
 
 	return app
 }

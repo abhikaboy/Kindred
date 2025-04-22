@@ -35,9 +35,11 @@ require (
 	github.com/gofiber/contrib/websocket v1.3.3 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
+	github.com/tinylib/msgp v1.2.5 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )

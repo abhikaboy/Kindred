@@ -12,6 +12,7 @@ import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withTiming
 import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import * as Contacts from "expo-contacts";
+
 type Props = {};
 
 const Search = (props: Props) => {

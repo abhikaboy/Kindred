@@ -33,6 +33,14 @@ var Indexes = []Index{
 			Options: options.Index().SetUnique(true),
 		},
 	},
+	{
+		Collection: "waitlist",
+		Model: mongo.IndexModel{Keys: bson.D{
+			{Key: "email", Value: 1},
+		},
+			Options: options.Index().SetUnique(true),
+		},
+	},
 	// {
 	// 	Collection: "users",
 	// 	Model: mongo.IndexModel{Keys: bson.D{
