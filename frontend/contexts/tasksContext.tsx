@@ -121,6 +121,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
+        console.log("Change to selected Workspace has occured");
+        console.log(selected);
         if (workspaces.length === 0) return;
         const selectedWorkspace = getWorkspace(selected);
         if (selectedWorkspace == null) return;

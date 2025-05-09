@@ -134,8 +134,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     step: {
-        marginTop: 10,
-        alignItems: "flex-start",
+        alignItems: "flex-end",
     },
     stepText: {
         fontSize: 15,

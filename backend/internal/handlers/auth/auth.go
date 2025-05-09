@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -44,6 +45,21 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
 	c.Response().Header.Add("access_token", access)
 	c.Response().Header.Add("refresh_token", refresh)
+
+	return c.Status(fiber.StatusOK).JSON(user)
+}
+
+func (h *Handler) LoginWithToken(c *fiber.Ctx) error {
+	// use the user_id from the context
+	user_id := c.UserContext().Value("user_id")
+	if user_id == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(xerr.BadRequest(errors.New("User ID is not found")))
+	}
+
+	user, err := h.service.GetUser(user_id.(string))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(xerr.BadRequest(err))
+	}
 
 	return c.Status(fiber.StatusOK).JSON(user)
 }

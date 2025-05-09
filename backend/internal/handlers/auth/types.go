@@ -49,6 +49,17 @@ type User struct {
 	ProfilePicture string `bson:"profile_picture" json:"profile_picture"`
 }
 
+type SafeUser struct {
+	ID             primitive.ObjectID            `bson:"_id" json:"_id"`
+	DisplayName    string `bson:"display_name" json:"display_name"`
+	Handle         string `bson:"handle" json:"handle"`
+	ProfilePicture string `bson:"profile_picture" json:"profile_picture"`
+	Categories     []categories.CategoryDocument `bson:"categories" json:"categories"`
+	Friends        []primitive.ObjectID          `bson:"friends" json:"friends"`
+	TasksComplete  float64                       `bson:"tasks_complete" json:"tasks_complete"`
+	RecentActivity []activity.ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+}
+
 type LoginRequest struct {
 	Email    string `validate:"required,email" json:"email"`
 	Password string `validate:"required,min=8" json:"password"`

@@ -150,6 +150,20 @@ func (s *Service) GenerateTokens(id string, count float64) (string, string, erro
 	return access, refresh, err
 }
 
+func (s *Service) GetUser(user_id string) (*SafeUser, error) {
+	var user SafeUser
+	// convert the user_id to a primitive.ObjectID
+	user_id_object, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, err
+	}
+	err = s.users.FindOne(context.Background(), bson.M{"_id": user_id_object}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 /*
 	Create a new user in the database
 */

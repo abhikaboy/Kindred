@@ -1,12 +1,9 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useRef, memo } from "react";
-import Modal from "react-native-modal";
+import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useRef, memo, useMemo } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
 import Feather from "@expo/vector-icons/Feather";
-import ModalHead from "./ModalHead";
-import Animated, { useSharedValue, withTiming, useAnimatedStyle, runOnJS } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 
 type ID = {
     id: string;
@@ -30,90 +27,89 @@ type Props = {
 // Using memo to prevent unnecessary re-renders
 const BottomMenuModal = memo((props: Props) => {
     const ThemedColor = useThemeColor();
-    const position = useSharedValue(0);
 
-    // Reset position when visibility changes
+    // Reference to the bottom sheet modal
+    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+    // Calculate snap points dynamically based on number of options
+    // with a minimum height to ensure good UX
+    const snapPoints = useMemo(() => {
+        const baseHeight = 83 + 32; // Base height for padding
+        const optionHeight = 48; // Height per option
+        const totalHeight = baseHeight + props.options.length * optionHeight;
+        const percentage = Math.max(30, Math.min(50, Math.ceil((totalHeight / Dimensions.get("window").height) * 100)));
+        return [`${percentage}%`];
+    }, [props.options.length]);
+
+    // Handle opening and closing the bottom sheet
     useEffect(() => {
-        if (props.visible && position.value > 0) {
-            position.value = withTiming(0, { duration: 100 });
+        if (props.visible) {
+            bottomSheetModalRef.current?.present();
+        } else {
+            bottomSheetModalRef.current?.dismiss();
         }
     }, [props.visible]);
 
-    // Safe way to update parent state
-    const closeModal = () => {
-        if (props.visible) {
-            props.setVisible(false);
-        }
-    };
-
-    const pan = Gesture.Pan()
-        .onBegin(() => {
-            position.value = withTiming(0, { duration: 100 });
-        })
-        .onUpdate((e) => {
-            position.value = Math.max(0, e.translationY);
-        })
-        .onEnd((e) => {
-            if (e.translationY > 10) {
-                position.value = withTiming(500, { duration: 100 });
-
-                // Use runOnJS to safely call JavaScript functions from the UI thread
-                runOnJS(closeModal)();
-            } else {
-                position.value = withTiming(0, { duration: 100 });
+    // Safe way to update parent state when sheet is dismissed
+    const handleSheetChanges = useCallback(
+        (index: number) => {
+            if (index === -1 && props.visible) {
+                props.setVisible(false);
             }
-        });
+        },
+        [props.visible, props.setVisible]
+    );
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: position.value }],
-    }));
+    // Custom backdrop component
+    const renderBackdrop = useCallback(
+        (backdropProps) => (
+            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.7} />
+        ),
+        []
+    );
 
-    // Get styles dynamically using the current theme
-    const containerStyle = {
-        flex: 1,
-        width: Dimensions.get("screen").width,
-        backgroundColor: ThemedColor.background,
-        borderTopRightRadius: 24,
-        borderTopLeftRadius: 24,
-        bottom: -16,
-        paddingBottom: Dimensions.get("screen").height * 0.1,
-        paddingTop: 32,
-        paddingLeft: 24,
-        left: -24,
-        gap: 24,
-        position: "absolute",
-    };
+    // Content container styles
+    const styles = StyleSheet.create({
+        contentContainer: {
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 32,
+            gap: 12,
+        },
+        optionContainer: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            paddingVertical: 4,
+        },
+    });
 
     return (
-        <Modal
-            onBackdropPress={closeModal}
-            onBackButtonPress={closeModal}
-            isVisible={props.visible}
-            animationIn="slideInUp"
-            backdropOpacity={0.4}
-            animationOut="slideOutDown"
-            avoidKeyboard>
-            <GestureDetector gesture={pan}>
-                <Animated.View style={[containerStyle, animatedStyle]}>
-                    <ModalHead />
-                    {props.options.map((option, index) => {
-                        return (
-                            <TouchableOpacity
-                                key={index}
-                                style={{ flexDirection: "row", gap: 16 }}
-                                onPress={() => {
-                                    closeModal();
-                                    // Only call the callback if it exists
-                                    option.callback && option.callback();
-                                }}>
-                                <Feather name={option.icon} size={24} color={ThemedColor.text} />
-                                <ThemedText type="default">{option.label}</ThemedText>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </Animated.View>
-            </GestureDetector>
-        </Modal>
+        <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={snapPoints}
+            onChange={handleSheetChanges}
+            backdropComponent={renderBackdrop}
+            handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
+            backgroundStyle={{ backgroundColor: ThemedColor.background }}
+            enablePanDownToClose={true}>
+            <BottomSheetView style={styles.contentContainer}>
+                {props.options.map((option, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        style={styles.optionContainer}
+                        onPress={() => {
+                            bottomSheetModalRef.current?.dismiss();
+                            // Only call the callback if it exists
+                            option.callback && option.callback();
+                        }}>
+                        <Feather name={option.icon} size={24} color={ThemedColor.text} />
+                        <ThemedText type="default">{option.label}</ThemedText>
+                    </TouchableOpacity>
+                ))}
+            </BottomSheetView>
+        </BottomSheetModal>
     );
 });
 

@@ -9,11 +9,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
 
-import ReanimatedDrawerLayout, {
-    DrawerType,
-    DrawerPosition,
-    DrawerLayoutMethods,
-} from "react-native-gesture-handler/ReanimatedDrawerLayout";
+import { DrawerLayout } from "react-native-gesture-handler";
 import CreateModal from "@/components/modals/CreateModal";
 import BottomMenuModal from "@/components/modals/BottomMenuModal";
 import EditCategory from "@/components/modals/edit/EditCategory";
@@ -67,16 +63,16 @@ const Home = (props: Props) => {
             }
         }
     }, []);
-    const drawerRef = useRef<DrawerLayoutMethods>(null);
+    const drawerRef = useRef<DrawerLayout>(null);
     return (
-        <ReanimatedDrawerLayout
+        <DrawerLayout
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
             drawerWidth={Dimensions.get("screen").width * 0.75}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
-            drawerPosition={DrawerPosition.LEFT}
-            drawerType={DrawerType.FRONT}>
+            drawerPosition="left"
+            drawerType="front">
             <CreateModal visible={creating} setVisible={setCreating} />
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <ThemedView style={styles.container}>
@@ -153,7 +149,7 @@ const Home = (props: Props) => {
                     </View>
                 </ScrollView>
             </ThemedView>
-        </ReanimatedDrawerLayout>
+        </DrawerLayout>
     );
 };
 
@@ -169,6 +165,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
+        gap: 8,
     },
     title: {
         fontWeight: "600",

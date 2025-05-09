@@ -1,11 +1,32 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import React from "react";
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 
 interface User {
     id: string;
     email: string;
     appleAccountID: string;
+}
+
+async function saveAuthData(authData) {
+    try {
+        await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
+        return true;
+    } catch (error) {
+        console.error("Error saving auth data:", error);
+        return false;
+    }
+}
+
+async function getAuthData() {
+    try {
+        const authDataString = await SecureStore.getItemAsync("auth_data");
+        return authDataString ? JSON.parse(authDataString) : null;
+    } catch (error) {
+        console.error("Error retrieving auth data:", error);
+        return null;
+    }
 }
 
 async function getUserByAppleAccountID(appleAccountID: string): Promise<Error | User> {
@@ -30,8 +51,7 @@ async function getUserByAppleAccountID(appleAccountID: string): Promise<Error | 
     const access_token: string = response.headers["access_token"];
     const refresh_token: string = response.headers["refresh_token"];
 
-    console.log(access_token);
-    console.log(refresh_token);
+    await saveAuthData({ access_token, refresh_token });
 
     axios.defaults.headers.common["Authorization"] = "Bearer " + access_token;
     axios.defaults.headers.common["refresh_token"] = refresh_token;
@@ -88,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (userRes) {
             setUser(userRes);
+            // get the token and refresh token from the response
             return userRes;
         } else {
             alert("Looks like we couldn't find your account, try to register instead!");
@@ -105,6 +126,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await login(user.appleAccountID);
         }
     }
+
+    useEffect(() => {
+        const fetchAuthData = async () => {
+            const authData = await getAuthData();
+            if (authData) {
+                setUser(authData);
+            }
+        };
+        fetchAuthData();
+    }, []);
+
     return <AuthContext.Provider value={{ user, register, login, logout, refresh }}>{children}</AuthContext.Provider>;
 }
 
