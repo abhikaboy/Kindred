@@ -19,6 +19,7 @@ const Standard = ({ hide, goTo }: Props) => {
     const [content, setContent] = React.useState("");
 
     let selected = selectedCategory;
+    console.log("Selected Category:" + selectedCategory);
 
     const createPost = async () => {
         if (categories.length === 0) return;
@@ -33,8 +34,12 @@ const Standard = ({ hide, goTo }: Props) => {
 
         addToCategory(selected.id, response);
     };
-    if (categories.length == 1) {
-        goTo(Screen.NEW_CATEGORY);
+    if (categories) {
+        if (categories.length == 1) {
+            goTo(Screen.NEW_CATEGORY);
+        }
+    } else {
+        console.warn("Categories is null " + categories);
     }
     return (
         <View style={{ gap: 8, flexDirection: "column", display: "flex" }}>

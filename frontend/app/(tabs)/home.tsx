@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
+        gap: 8,
     },
     title: {
         fontWeight: "600",

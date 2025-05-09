@@ -1,6 +1,5 @@
-import { StyleSheet, Text, Touchable, TouchableOpacity, View } from "react-native";
-import React from "react";
-import Modal from "react-native-modal";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { Dimensions } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
@@ -10,6 +9,7 @@ import { BlurView } from "expo-blur";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 
 type Props = {
     visible: boolean;
@@ -19,9 +19,43 @@ type Props = {
 
 export const OnboardModal = (props: Props) => {
     const { register, login } = useAuth();
-    const { mode } = props;
+    const { mode, visible, setVisible } = props;
     const router = useRouter();
-    let ThemedColor = useThemeColor();
+    const ThemedColor = useThemeColor();
+
+    // Reference to the bottom sheet modal
+    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+    // Define snap points
+    const snapPoints = useMemo(() => ["60%"], []);
+
+    // Handle visibility changes
+    useEffect(() => {
+        console.log(visible);
+        if (visible) {
+            bottomSheetModalRef.current?.present();
+        } else {
+            bottomSheetModalRef.current?.dismiss();
+        }
+    }, [visible]);
+
+    // Handle sheet changes
+    const handleSheetChanges = useCallback(
+        (index: number) => {
+            if (index === -1 && visible) {
+                setVisible(false);
+            }
+        },
+        [visible, setVisible]
+    );
+
+    // Custom backdrop component
+    const renderBackdrop = useCallback(
+        (backdropProps) => (
+            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+        ),
+        []
+    );
 
     const apple_regiser = async () => {
         try {
@@ -87,118 +121,146 @@ export const OnboardModal = (props: Props) => {
             }
         }
     };
+
     return (
-        <Modal
-            onBackdropPress={() => props.setVisible(false)}
-            onBackButtonPress={() => props.setVisible(false)}
-            isVisible={props.visible}
-            animationIn="slideInUp"
-            animationOut="slideOutDown"
-            avoidKeyboard>
-            <View
+        <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={snapPoints}
+            onChange={handleSheetChanges}
+            backdropComponent={renderBackdrop}
+            handleStyle={{
+                backgroundColor: ThemedColor.background,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+            }}
+            handleIndicatorStyle={{
+                backgroundColor: ThemedColor.text,
+                width: 48,
+                height: 3,
+                borderRadius: 10,
+                marginVertical: 12,
+            }}
+            backgroundStyle={{ backgroundColor: "rgba(0,0,0,0.2)" }}
+            enablePanDownToClose={true}>
+            <BottomSheetView
                 style={[
                     {
-                        borderRadius: 24,
                         overflow: "hidden",
+                        backgroundColor: ThemedColor.background,
+                        height: "100%",
                     },
-                    styles.container,
                 ]}>
-                <BlurView style={styles.blurContainer} intensity={25} tint={ThemedColor.background}>
-                    <ThemedText
-                        type="default"
-                        style={{
-                            fontFamily: "Fraunces",
-                            fontSize: 24,
-                            color: ThemedColor.buttonText,
-                        }}>
-                        Kindred
-                    </ThemedText>
-                    <ThemedText type="default" style={{ color: "#B8b8b8" }}>
-                        Connected Api: {process.env.EXPO_PUBLIC_API_URL}
-                    </ThemedText>
-                    <PrimaryButton title="Continue with Phone" onPress={() => props.setVisible(false)} />
-                    <PrimaryButton
-                        title="Continue with Email"
-                        onPress={() => props.setVisible(false)}
-                        style={{
-                            backgroundColor: "#854DFF00",
-                        }}
-                    />
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            display: "flex",
-                            alignItems: "center",
-                            alignSelf: "stretch",
-                            width: Dimensions.get("screen").width - 24,
-                            marginTop: -12,
-                            paddingRight: 24,
-                            justifyContent: "space-evenly",
-                        }}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                if (mode === "register") {
-                                    apple_regiser();
-                                } else {
-                                    apple_login();
-                                }
-                                props.setVisible(false);
-                            }}
+                <BlurView style={styles.blurContainer} intensity={0}>
+                    <View>
+                        <ThemedText
+                            type="default"
                             style={{
-                                width: "46%",
-                                backgroundColor: ThemedColor.lightened + "00",
-                                paddingVertical: 16,
-                                alignItems: "center",
-                                borderRadius: 24,
+                                fontFamily: "Outfit",
+                                fontSize: 24,
+                                textAlign: "center",
+                                fontWeight: "600",
+                                color: ThemedColor.buttonText,
                             }}>
-                            <View style={{ borderRadius: 12, width: "100%", overflow: "hidden" }}>
-                                <BlurView
-                                    style={{ width: "100%", alignItems: "center", padding: 12 }}
-                                    intensity={25}
-                                    tint={ThemedColor.background}>
-                                    <AntDesign name="apple-o" size={48} color={ThemedColor.buttonText} />
-                                </BlurView>
-                            </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => props.setVisible(false)}
+                            Welcome to Kindred 👋
+                        </ThemedText>
+                        <ThemedText type="caption" style={{ color: "#B8b8b8" }}>
+                            Connected Api: {process.env.EXPO_PUBLIC_API_URL}
+                        </ThemedText>
+                    </View>
+                    <View style={{ width: "100%", gap: 20, alignItems: "center" }}>
+                        <View
                             style={{
-                                backgroundColor: ThemedColor.lightened + "00",
-                                paddingVertical: 16,
-                                alignItems: "center",
-                                width: "46%",
-                                borderRadius: 24,
+                                width: "90%",
+                                gap: 12,
                             }}>
-                            <View style={{ borderRadius: 12, width: "100%", overflow: "hidden" }}>
-                                <BlurView
-                                    style={{ width: "100%", alignItems: "center", padding: 12 }}
-                                    intensity={25}
-                                    tint={ThemedColor.background}>
-                                    <AntDesign name="google" size={48} color={ThemedColor.buttonText} />
-                                </BlurView>
-                            </View>
-                        </TouchableOpacity>
+                            <PrimaryButton title="Continue with Phone" onPress={() => setVisible(false)} />
+                            <PrimaryButton
+                                title="Continue with Email"
+                                onPress={() => setVisible(false)}
+                                style={{
+                                    backgroundColor: "#854DFF00",
+                                }}
+                            />
+                        </View>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                maxWidth: "100%",
+                                justifyContent: "space-evenly",
+                                alignItems: "center",
+                                gap: 12,
+                            }}>
+                            <View style={styles.divider} />
+                            <ThemedText> or </ThemedText>
+                            <View style={styles.divider} />
+                        </View>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                gap: 12,
+                                width: "90%",
+                                justifyContent: "center",
+                            }}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (mode === "register") {
+                                        apple_regiser();
+                                    } else {
+                                        apple_login();
+                                    }
+                                    setVisible(false);
+                                }}
+                                style={styles.outlineButton}>
+                                <View style={{ borderRadius: 12, width: "100%", overflow: "hidden" }}>
+                                    <BlurView
+                                        style={{ width: "100%", alignItems: "center", padding: 4 }}
+                                        intensity={25}
+                                        tint={ThemedColor.background}>
+                                        <AntDesign name="apple-o" size={32} color={ThemedColor.buttonText} />
+                                    </BlurView>
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setVisible(false)} style={styles.outlineButton}>
+                                <View style={{ borderRadius: 12, width: "100%", overflow: "hidden" }}>
+                                    <BlurView
+                                        style={{ width: "100%", alignItems: "center", padding: 4 }}
+                                        intensity={25}
+                                        tint={ThemedColor.background}>
+                                        <AntDesign name="google" size={32} color={ThemedColor.buttonText} />
+                                    </BlurView>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </BlurView>
-            </View>
-        </Modal>
+            </BottomSheetView>
+        </BottomSheetModal>
     );
 };
 
 const styles = StyleSheet.create({
     blurContainer: {
         paddingBottom: Dimensions.get("screen").height * 0.1,
-        paddingTop: 32,
-        paddingLeft: 24,
-        gap: 12,
-    },
-    container: {
+        height: "100%",
+        gap: 32,
+        alignItems: "center",
         flex: 1,
-        width: Dimensions.get("screen").width,
-        borderTopRightRadius: 24,
-        borderTopLeftRadius: 24,
-        bottom: -16,
-        left: -24,
-        position: "absolute",
+    },
+    divider: {
+        width: "38%",
+        borderStyle: "solid",
+        borderColor: "white",
+        borderWidth: 1,
+        height: 2,
+    },
+    outlineButton: {
+        width: "50%",
+        backgroundColor: "rgba(255,255,255,0.1)",
+        borderColor: "white",
+        borderWidth: 1,
+        paddingVertical: 8,
+        alignItems: "center",
+        borderRadius: 24,
     },
 });

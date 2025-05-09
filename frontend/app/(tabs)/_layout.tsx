@@ -24,31 +24,41 @@ export default function TabLayout() {
             screenOptions={{
                 tabBarActiveTintColor: ThemedColor.text,
                 headerShown: false,
+                tabBarHideOnKeyboard: true,
                 headerTitleStyle: {
                     fontFamily: "Outfit",
                 },
+                tabBarActiveBackgroundColor: ThemedColor.lightened,
                 tabBarButton: HapticTab,
+                tabBarItemStyle: {},
                 tabBarBackground: TabBarBackground,
                 tabBarStyle: Platform.select({
                     ios: {
                         position: "absolute",
+                        height: 83,
+                        borderTopWidth: 1,
+                        borderColor: ThemedColor.background,
                     },
-                    default: {},
+                    default: {
+                        height: 83,
+                        borderTopWidth: 1,
+                    },
                 }),
             }}>
             <Tabs.Screen
                 name="home"
                 options={{
                     title: "Home",
-                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color="gray" />,
+                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
                     href: "home",
+                    tabBarBadge: 4,
                 }}
             />
             <Tabs.Screen
                 name="playground"
                 options={{
                     title: "Playground",
-                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color="gray" />,
+                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
                     href: "playground",
                 }}
             />
@@ -56,7 +66,7 @@ export default function TabLayout() {
                 name="search"
                 options={{
                     title: "Search",
-                    tabBarIcon: ({ color }) => <Octicons name="search" size={24} color="gray" />,
+                    tabBarIcon: ({ color }) => <Octicons name="search" size={24} color={color} />,
                     href: "search",
                 }}
             />
@@ -64,7 +74,7 @@ export default function TabLayout() {
                 name="profile"
                 options={{
                     title: "Profile",
-                    tabBarIcon: ({ color }) => <Octicons name="person" size={24} color="gray" />,
+                    tabBarIcon: ({ color }) => <Octicons name="person" size={24} color={color} />,
                     href: "profile",
                 }}
             />

@@ -1,19 +1,11 @@
-import { Dimensions, StyleSheet, Text, TextInput, View } from "react-native";
-import React, { useEffect, useState } from "react";
-
-import Modal from "react-native-modal";
-
+import { Dimensions, StyleSheet, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import ThemedInput from "../inputs/ThemedInput";
-import Dropdown from "../inputs/Dropdown";
-import { useRequest } from "@/hooks/useRequest";
-import { useTasks } from "@/contexts/tasksContext";
 import ModalHead from "./ModalHead";
 import Standard from "./create/Standard";
 import ConditionalView from "../ui/ConditionalView";
 import NewCategory from "./create/NewCategory";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useSharedValue, withTiming, runOnJS, useAnimatedStyle } from "react-native-reanimated";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 
 type Props = {
     visible: boolean;
@@ -34,88 +26,90 @@ export enum Screen {
 }
 
 const CreateModal = (props: Props) => {
-    const [screen, setScreen] = React.useState(Screen.STANDARD);
-    let ThemedColor = useThemeColor();
+    const [screen, setScreen] = useState(Screen.STANDARD);
+    const ThemedColor = useThemeColor();
 
-    const position = useSharedValue(0);
+    // Reference to the bottom sheet modal
+    const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
-    // Reset position when visibility changes
+    // Define snap points - we'll use percentages for flexibility
+    const snapPoints = useMemo(() => ["60%", "75%"], []);
+
+    // Handle visibility changes
     useEffect(() => {
-        if (props.visible && position.value > 0) {
-            position.value = withTiming(0, { duration: 100 });
+        if (props.visible) {
+            try {
+                bottomSheetModalRef.current?.present();
+            } catch (error) {
+                console.log("Error presenting bottom sheet:", error);
+            }
+        } else {
+            try {
+                bottomSheetModalRef.current?.dismiss();
+            } catch (error) {
+                console.log("Error dismissing bottom sheet:", error);
+            }
         }
     }, [props.visible]);
 
-    // Safe way to update parent state
-    const closeModal = () => {
-        if (props.visible) {
-            props.setVisible(false);
-        }
-    };
-
-    const pan = Gesture.Pan()
-        .onBegin(() => {
-            position.value = withTiming(0, { duration: 100 });
-        })
-        .onUpdate((e) => {
-            position.value = Math.max(0, e.translationY);
-        })
-        .onEnd((e) => {
-            if (e.translationY > 10) {
-                position.value = withTiming(500, { duration: 100 });
-
-                // Use runOnJS to safely call JavaScript functions from the UI thread
-                runOnJS(closeModal)();
-            } else {
-                position.value = withTiming(0, { duration: 100 });
+    // Handle sheet changes
+    const handleSheetChanges = useCallback(
+        (index: number) => {
+            if (index === -1 && props.visible) {
+                props.setVisible(false);
             }
-        });
+        },
+        [props.visible, props.setVisible]
+    );
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: position.value }],
-    }));
+    // Reset screen when modal is dismissed
+    useEffect(() => {
+        if (!props.visible) {
+            // Reset to standard screen when modal is closed
+            // Using a small delay to ensure the animation completes first
+            const timer = setTimeout(() => setScreen(Screen.STANDARD), 300);
+            return () => clearTimeout(timer);
+        }
+    }, [props.visible]);
+
+    // Custom backdrop component
+    const renderBackdrop = useCallback(
+        (backdropProps) => (
+            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+        ),
+        []
+    );
 
     return (
-        <Modal
-            onBackdropPress={() => props.setVisible(false)}
-            onBackButtonPress={() => props.setVisible(false)}
-            onSwipeComplete={() => props.setVisible(false)}
-            isVisible={props.visible}
-            animationIn="slideInUp"
-            animationOut="slideOutDown"
-            backdropOpacity={0.5}
-            avoidKeyboard>
-            <GestureDetector gesture={pan}>
-                <View style={[animatedStyle, styles.container]}>
-                    <ModalHead />
-                    <ConditionalView condition={screen === Screen.STANDARD}>
-                        <Standard hide={() => props.setVisible(false)} goTo={setScreen} />
-                    </ConditionalView>
-                    <ConditionalView condition={screen === Screen.NEW_CATEGORY}>
-                        <NewCategory goToStandard={() => setScreen(Screen.STANDARD)} />
-                    </ConditionalView>
-                </View>
-            </GestureDetector>
-        </Modal>
+        <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={0}
+            snapPoints={snapPoints}
+            onChange={handleSheetChanges}
+            keyboardBehavior="interactive"
+            backdropComponent={renderBackdrop}
+            handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
+            backgroundStyle={{ backgroundColor: ThemedColor.background }}
+            enablePanDownToClose={true}>
+            <BottomSheetView style={[styles.container, { backgroundColor: ThemedColor.background }]}>
+                <ConditionalView condition={screen === Screen.STANDARD}>
+                    <Standard hide={() => props.setVisible(false)} goTo={setScreen} />
+                </ConditionalView>
+                <ConditionalView condition={screen === Screen.NEW_CATEGORY}>
+                    <NewCategory goToStandard={() => setScreen(Screen.STANDARD)} />
+                </ConditionalView>
+            </BottomSheetView>
+        </BottomSheetModal>
     );
 };
-
-export default CreateModal;
-
-let ThemedColor = useThemeColor();
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        width: Dimensions.get("screen").width,
-        backgroundColor: ThemedColor.background,
         padding: 24,
-        paddingTop: 32,
         gap: 8,
-        borderTopRightRadius: 24,
-        borderTopLeftRadius: 24,
-        bottom: -24,
-        left: -24,
-        position: "absolute",
+        width: "100%",
     },
 });
+
+export default CreateModal;
