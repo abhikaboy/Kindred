@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useColorScheme, View } from "react-native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Slot } from "expo-router";
+import { Slot, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -41,7 +41,7 @@ export default function RootLayout() {
             if (totalForce > 3) {
                 // Adjust the threshold as needed
                 setShakeDetected(true);
-                router.push("/AuditLog");
+                // router.push("/AuditLog");
                 setTimeout(() => {
                     setShakeDetected(false);
                 }, 500); // Reset after a short period
@@ -71,11 +71,10 @@ export default function RootLayout() {
                 <GestureHandlerRootView style={{ flex: 1 }}>
                     <BottomSheetModalProvider>
                         {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
-                        <Slot
+                        <Stack
                             screenOptions={{
                                 headerShown: true,
                                 headerTransparent: true,
-                                headerBackTitle: "bbb",
                                 headerLeft: () => <BackButton />,
                                 headerTintColor: ThemedColor.text,
                                 headerBackButtonDisplayMode: "minimal",

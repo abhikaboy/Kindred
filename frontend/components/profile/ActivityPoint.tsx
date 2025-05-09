@@ -10,11 +10,12 @@ const ActivityPoint = ({ level }: Props) => {
     return (
         <View
             style={{
-                width: 32,
-                height: 32,
-                borderRadius: 100,
+                width: 40,
+                height: 40,
+                borderRadius: 5,
                 backgroundColor: LEVELS[level],
-            }}></View>
+            }}
+        />
     );
 };
 

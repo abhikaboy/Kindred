@@ -13,6 +13,8 @@ import { useRouter } from "expo-router";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import TaskTabs from "@/components/inputs/TaskTabs";
+import ConditionalView from "@/components/ui/ConditionalView";
 
 export default function Profile() {
     const { user } = useAuth();
@@ -22,6 +24,7 @@ export default function Profile() {
 
     const nameRef = useRef<View>(null);
     const [nameHeight, setNameHeight] = useState(0);
+    const [activeTab, setActiveTab] = useState(0);
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
     const scrollOffset = useScrollViewOffset(scrollRef);
@@ -140,7 +143,7 @@ export default function Profile() {
                         style={{
                             display: "flex",
                             flexDirection: "row",
-                            gap: 16,
+                            gap: "auto",
                             width: "100%",
                             justifyContent: "space-between",
                         }}>
@@ -156,19 +159,59 @@ export default function Profile() {
                         <ThemedText type="lightBody">see more</ThemedText>
                     </TouchableOpacity>
                 </View>
-                <View style={{ gap: 12 }}>
-                    <ThemedText type="subtitle">Active Tasks</ThemedText>
-                    <TaskCard content={"do my hw lol"} value={9} priority={1} id="active-1" categoryId="profile" />
-                </View>
-                <View style={{ gap: 12 }}>
-                    <ThemedText type="subtitle">Accomplished</ThemedText>
-                    <TaskCard content={"do my hw lol"} value={3} priority={1} id="done-1" categoryId="profile" />
-                    <TaskCard content={"do my hw lol"} value={2} priority={2} id="done-2" categoryId="profile" />
-                    <TaskCard content={"do my hw lol"} value={9} priority={3} id="done-3" categoryId="profile" />
-                    <TaskCard content={"do my hw lol"} value={9} priority={2} id="done-4" categoryId="profile" />
-                    <TaskCard content={"do my hw lol"} value={15} priority={3} id="done-5" categoryId="profile" />
-                    <TaskCard content={"do my hw lol"} value={3} priority={1} id="done-6" categoryId="profile" />
-                </View>
+                <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+                <ConditionalView condition={activeTab == 0}>
+                    <View style={{ gap: 12 }}>
+                        <ThemedText type="subtitle">Active Tasks</ThemedText>
+                        <TaskCard content={"do my hw lol"} value={9} priority={1} id="active-1" categoryId="profile" />
+                    </View>
+                    <View style={{ gap: 12 }}>
+                        <ThemedText type="subtitle">Today's Tasks</ThemedText>
+                        <TaskCard
+                            content={"do my hw lol"}
+                            value={9}
+                            priority={1}
+                            id="active-1"
+                            categoryId="profile"
+                            encourage
+                        />
+                    </View>
+                    <View style={{ gap: 12 }}>
+                        <ThemedText type="subtitle">Accomplished Recently</ThemedText>
+                        <TaskCard content={"do my hw lol"} value={3} priority={1} id="done-1" categoryId="profile" />
+                        <TaskCard content={"do my hw lol"} value={2} priority={2} id="done-2" categoryId="profile" />
+                    </View>
+                </ConditionalView>
+                <ConditionalView condition={activeTab == 1}>
+                    <View
+                        style={{
+                            gap: 8,
+                            flexDirection: "row",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            width: "100%",
+                            justifyContent: "space-between",
+                        }}>
+                        {new Array(28).fill(0).map((e) => (
+                            <View
+                                style={{
+                                    backgroundColor: ThemedColor.lightened,
+                                    width: "31%",
+                                }}>
+                                <Image
+                                    style={{
+                                        aspectRatio: 1,
+                                        width: "100%",
+                                    }}
+                                    source={{
+                                        uri: "https://picsum.photos/200",
+                                        cache: "reload",
+                                    }}
+                                />
+                            </View>
+                        ))}
+                    </View>
+                </ConditionalView>
             </View>
         </Animated.ScrollView>
     );
