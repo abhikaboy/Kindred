@@ -10,6 +10,7 @@ type Props = {
     autofocus?: boolean;
     value: string;
     setValue: (text: string) => void;
+    onBlur?: () => void;
 };
 
 const ThemedInput = forwardRef(function ThemedInput(props: Props, ref: React.Ref<TextInput>) {
@@ -26,6 +27,7 @@ const ThemedInput = forwardRef(function ThemedInput(props: Props, ref: React.Ref
                     props.setValue(text);
                     props.onChangeText?.(text);
                 }}
+                onBlur={props?.onBlur}
                 value={props.value}
                 style={{
                     backgroundColor: ThemedColor.lightened,

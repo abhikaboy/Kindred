@@ -13,6 +13,7 @@ import { Accelerometer } from "expo-sensors";
 // Import components and contexts after the core modules
 import { AuthProvider } from "@/hooks/useAuth";
 import { TasksProvider } from "@/contexts/tasksContext";
+import { TaskCreationProvider } from "@/contexts/taskCreationContext";
 import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
@@ -68,27 +69,29 @@ export default function RootLayout() {
     return (
         <AuthProvider>
             <TasksProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                    <BottomSheetModalProvider>
-                        {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
-                        <Stack
-                            screenOptions={{
-                                headerShown: true,
-                                headerTransparent: true,
-                                headerLeft: () => <BackButton />,
-                                headerTintColor: ThemedColor.text,
-                                headerBackButtonDisplayMode: "minimal",
-                                headerTitleStyle: {
-                                    fontFamily: "Outfit",
-                                    fontWeight: 100,
-                                    fontSize: 1,
-                                    color: ThemedColor.primary,
-                                },
-                            }}
-                        />
-                        <StatusBar style="light" />
-                    </BottomSheetModalProvider>
-                </GestureHandlerRootView>
+                <TaskCreationProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                        <BottomSheetModalProvider>
+                            {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
+                            <Stack
+                                screenOptions={{
+                                    headerShown: true,
+                                    headerTransparent: true,
+                                    headerLeft: (tab) => <BackButton />,
+                                    headerTintColor: ThemedColor.text,
+                                    headerBackButtonDisplayMode: "minimal",
+                                    headerTitleStyle: {
+                                        fontFamily: "Outfit",
+                                        fontWeight: 100,
+                                        fontSize: 1,
+                                        color: ThemedColor.primary,
+                                    },
+                                }}
+                            />
+                            <StatusBar style="light" />
+                        </BottomSheetModalProvider>
+                    </GestureHandlerRootView>
+                </TaskCreationProvider>
             </TasksProvider>
         </AuthProvider>
     );

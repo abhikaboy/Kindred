@@ -5,7 +5,21 @@ import ModalHead from "./ModalHead";
 import Standard from "./create/Standard";
 import ConditionalView from "../ui/ConditionalView";
 import NewCategory from "./create/NewCategory";
+import Deadline from "./create/Deadline";
+import Recurring from "./create/Recurring";
+import StartDate from "./create/StartDate";
+import StartTime from "./create/StartTime";
+import Reminder from "./create/Reminder";
+import Collaborators from "./create/Collaborators";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    runOnJS,
+    useAnimatedGestureHandler,
+} from "react-native-reanimated";
+import { PanGestureHandler } from "react-native-gesture-handler";
 
 type Props = {
     visible: boolean;
@@ -23,17 +37,54 @@ export enum Screen {
     RECURRING,
     STARTDATE,
     STARTTIME,
+    REMINDER,
+    COLLABORATORS,
 }
 
 const CreateModal = (props: Props) => {
     const [screen, setScreen] = useState(Screen.STANDARD);
     const ThemedColor = useThemeColor();
+    const translateX = useSharedValue(0);
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
     // Define snap points - we'll use percentages for flexibility
-    const snapPoints = useMemo(() => ["60%", "75%"], []);
+    const snapPoints = useMemo(() => ["60%", "95"], []);
+
+    const gestureHandler = useAnimatedGestureHandler({
+        onStart: (_, ctx: any) => {
+            ctx.startX = translateX.value;
+        },
+        onActive: (event, ctx) => {
+            if (screen !== Screen.STANDARD) {
+                // Only allow right swipe (back) when not on standard screen
+                if (event.translationX > 0) {
+                    translateX.value = ctx.startX + event.translationX;
+                }
+            }
+        },
+        onEnd: (event) => {
+            if (event.translationX > 100 && screen !== Screen.STANDARD) {
+                // If swiped right more than 100 units, go back
+                runOnJS(setScreen)(Screen.STANDARD);
+                translateX.value = 0;
+            } else {
+                // Reset position
+                translateX.value = withSpring(0);
+            }
+        },
+    });
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateX: translateX.value }],
+        };
+    });
+
+    const goToScreen = (newScreen: Screen) => {
+        setScreen(newScreen);
+    };
 
     // Handle visibility changes
     useEffect(() => {
@@ -65,9 +116,10 @@ const CreateModal = (props: Props) => {
     // Reset screen when modal is dismissed
     useEffect(() => {
         if (!props.visible) {
-            // Reset to standard screen when modal is closed
-            // Using a small delay to ensure the animation completes first
-            const timer = setTimeout(() => setScreen(Screen.STANDARD), 300);
+            const timer = setTimeout(() => {
+                setScreen(Screen.STANDARD);
+                translateX.value = 0;
+            }, 300);
             return () => clearTimeout(timer);
         }
     }, [props.visible]);
@@ -80,24 +132,79 @@ const CreateModal = (props: Props) => {
         []
     );
 
+    const goToStandard = () => setScreen(Screen.STANDARD);
+
+    const renderScreen = () => {
+        const screenProps = { goToStandard };
+
+        switch (screen) {
+            case Screen.STANDARD:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <Standard hide={() => props.setVisible(false)} goTo={goToScreen} />
+                    </Animated.View>
+                );
+            case Screen.NEW_CATEGORY:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <NewCategory {...screenProps} />
+                    </Animated.View>
+                );
+            case Screen.DEADLINE:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <Deadline {...screenProps} />
+                    </Animated.View>
+                );
+            case Screen.RECURRING:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <Recurring {...screenProps} />
+                    </Animated.View>
+                );
+            case Screen.STARTDATE:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <StartDate {...screenProps} />
+                    </Animated.View>
+                );
+            case Screen.STARTTIME:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <StartTime {...screenProps} />
+                    </Animated.View>
+                );
+            case Screen.REMINDER:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <Reminder {...screenProps} />
+                    </Animated.View>
+                );
+            case Screen.COLLABORATORS:
+                return (
+                    <Animated.View style={animatedStyle}>
+                        <Collaborators {...screenProps} />
+                    </Animated.View>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
             index={0}
             snapPoints={snapPoints}
             onChange={handleSheetChanges}
-            keyboardBehavior="interactive"
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
             enablePanDownToClose={true}>
             <BottomSheetView style={[styles.container, { backgroundColor: ThemedColor.background }]}>
-                <ConditionalView condition={screen === Screen.STANDARD}>
-                    <Standard hide={() => props.setVisible(false)} goTo={setScreen} />
-                </ConditionalView>
-                <ConditionalView condition={screen === Screen.NEW_CATEGORY}>
-                    <NewCategory goToStandard={() => setScreen(Screen.STANDARD)} />
-                </ConditionalView>
+                <PanGestureHandler onGestureEvent={gestureHandler}>
+                    <Animated.View style={{ flex: 1 }}>{renderScreen()}</Animated.View>
+                </PanGestureHandler>
             </BottomSheetView>
         </BottomSheetModal>
     );

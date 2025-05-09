@@ -8,7 +8,6 @@ import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
-import SwipeBackWrapper from "@/components/SwipeBackWrapper";
 
 import { DrawerLayout } from "react-native-gesture-handler";
 import CreateModal from "@/components/modals/CreateModal";
@@ -66,93 +65,91 @@ const Home = (props: Props) => {
     }, []);
     const drawerRef = useRef<DrawerLayout>(null);
     return (
-        <SwipeBackWrapper>
-            <DrawerLayout
-                ref={drawerRef}
-                hideStatusBar
-                edgeWidth={50}
-                drawerWidth={Dimensions.get("screen").width * 0.75}
-                renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
-                drawerPosition="left"
-                drawerType="front">
-                <CreateModal visible={creating} setVisible={setCreating} />
-                <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-                <ThemedView style={styles.container}>
-                    <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
-                        <Feather name="menu" size={24} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                    <View style={styles.headerContainer}>
-                        <ThemedText type="title" style={styles.title}>
-                            {selected || timeOfDay}
-                        </ThemedText>
-                        <ThemedText type="lightBody">
-                            Treat yourself to a cup of coffee and a good book. You deserve it.
-                        </ThemedText>
+        <DrawerLayout
+            ref={drawerRef}
+            hideStatusBar
+            edgeWidth={50}
+            drawerWidth={Dimensions.get("screen").width * 0.75}
+            renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
+            drawerPosition="left"
+            drawerType="front">
+            <CreateModal visible={creating} setVisible={setCreating} />
+            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
+            <ThemedView style={styles.container}>
+                <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
+                    <Feather name="menu" size={24} color={ThemedColor.caption} />
+                </TouchableOpacity>
+                <View style={styles.headerContainer}>
+                    <ThemedText type="title" style={styles.title}>
+                        {selected || timeOfDay}
+                    </ThemedText>
+                    <ThemedText type="lightBody">
+                        Treat yourself to a cup of coffee and a good book. You deserve it.
+                    </ThemedText>
+                </View>
+                {showConfetti && (
+                    <View
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            zIndex: 1000,
+                            height: Dimensions.get("screen").height,
+                        }}>
+                        <ConfettiCannon
+                            count={50}
+                            origin={{
+                                x: Dimensions.get("screen").width / 2,
+                                y: (Dimensions.get("screen").height / 4) * 3.7,
+                            }}
+                            fallSpeed={1200}
+                            explosionSpeed={300}
+                            fadeOut={true}
+                        />
                     </View>
-                    {showConfetti && (
-                        <View
-                            style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                zIndex: 1000,
-                                height: Dimensions.get("screen").height,
-                            }}>
-                            <ConfettiCannon
-                                count={50}
-                                origin={{
-                                    x: Dimensions.get("screen").width / 2,
-                                    y: (Dimensions.get("screen").height / 4) * 3.7,
-                                }}
-                                fallSpeed={1200}
-                                explosionSpeed={300}
-                                fadeOut={true}
-                            />
-                        </View>
-                    )}
-                    <ScrollView>
-                        <View style={styles.categoriesContainer}>
-                            {categories
-                                .sort((a, b) => b.tasks.length - a.tasks.length)
-                                .map((category) => {
-                                    if (category.name === "!-proxy-!") {
-                                        if (categories.length === 1) {
-                                            return (
-                                                <View key={category.id + category.name}>
-                                                    <ThemedText>You have no workspaces!</ThemedText>
-                                                </View>
-                                            );
-                                        }
-                                    } else
+                )}
+                <ScrollView>
+                    <View style={styles.categoriesContainer}>
+                        {categories
+                            .sort((a, b) => b.tasks.length - a.tasks.length)
+                            .map((category) => {
+                                if (category.name === "!-proxy-!") {
+                                    if (categories.length === 1) {
                                         return (
-                                            <Category
-                                                key={category.id + category.name}
-                                                id={category.id}
-                                                name={category.name}
-                                                tasks={category.tasks}
-                                                onLongPress={(categoryId) => {
-                                                    setEditing(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                                onPress={(categoryId) => {
-                                                    setCreating(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                            />
+                                            <View key={category.id + category.name}>
+                                                <ThemedText>You have no workspaces!</ThemedText>
+                                            </View>
                                         );
-                                })}
-                            <TouchableOpacity
-                                onPress={() => setCreating(true)}
-                                style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
-                                <ThemedText type="defaultSemiBold">+</ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                    </ScrollView>
-                </ThemedView>
-            </DrawerLayout>
-        </SwipeBackWrapper>
+                                    }
+                                } else
+                                    return (
+                                        <Category
+                                            key={category.id + category.name}
+                                            id={category.id}
+                                            name={category.name}
+                                            tasks={category.tasks}
+                                            onLongPress={(categoryId) => {
+                                                setEditing(true);
+                                                setFocusedCategory(categoryId);
+                                            }}
+                                            onPress={(categoryId) => {
+                                                setCreating(true);
+                                                setFocusedCategory(categoryId);
+                                            }}
+                                        />
+                                    );
+                            })}
+                        <TouchableOpacity
+                            onPress={() => setCreating(true)}
+                            style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
+                            <ThemedText type="defaultSemiBold">+</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </ThemedView>
+        </DrawerLayout>
     );
 };
 

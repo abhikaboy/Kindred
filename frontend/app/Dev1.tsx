@@ -18,7 +18,6 @@ import { Icons } from "@/constants/Icons";
 import ReactPills from "@/components/inputs/ReactPills";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import SwipeBackWrapper from "@/components/SwipeBackWrapper";
 
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
