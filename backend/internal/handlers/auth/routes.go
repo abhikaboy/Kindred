@@ -31,4 +31,5 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	api := app.Group("/api/v1/user")
 	api.Use(AuthHandler.AuthenticateMiddleware)
 	api.Get("/", AuthHandler.Test)
+	api.Post("/login", AuthHandler.LoginWithToken)
 }

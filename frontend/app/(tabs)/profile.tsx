@@ -1,12 +1,9 @@
 import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity } from "react-native";
 
-import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import React, { useEffect, useRef, useState } from "react";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
-import FollowButton from "@/components/inputs/FollowButton";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import TaskCard from "@/components/cards/TaskCard";
 import { useRouter } from "expo-router";
@@ -15,11 +12,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import TaskTabs from "@/components/inputs/TaskTabs";
 import ConditionalView from "@/components/ui/ConditionalView";
+import ProfileStats from "@/components/profile/ProfileStats";
+import TodayStats from "@/components/profile/TodayStats";
+import ProfileGallery from "@/components/profile/ProfileGallery";
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import WeeklyActivity from "@/components/profile/WeeklyActivity";
+import TaskList from "@/components/profile/TaskList";
 
 export default function Profile() {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
-
     const router = useRouter();
 
     const nameRef = useRef<View>(null);
@@ -55,162 +57,52 @@ export default function Profile() {
         };
     });
 
+    const mockTasks = {
+        activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
+        todayTasks: [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }],
+        completedTasks: [
+            { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
+            { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
+        ],
+    };
+
     return (
         <Animated.ScrollView
             ref={scrollRef}
             scrollEventThrottle={16}
-            style={{
-                backgroundColor: ThemedColor.background,
-                padding: 0,
-            }}>
+            style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
             <Animated.View style={[headerAnimatedStyle]}>
                 <LinearGradient
-                    // Background Linear Gradient
                     colors={["transparent", ThemedColor.background]}
-                    style={[styles.headerImage, { position: "absolute", top: 0, left: 0, zIndex: 2 }]}
+                    style={[styles.headerImage, styles.gradientOverlay]}
                 />
                 <Animated.Image src={user?.profile_picture || Icons.luffy} style={[styles.headerImage]} />
             </Animated.View>
+
+            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} nameHeight={nameHeight} />
+
             <View
-                ref={nameRef}
-                style={{
-                    top: Dimensions.get("window").height * 0.4 - nameHeight,
-                    flexDirection: "row",
-                    flex: 1,
-                    alignItems: "flex-end",
-                    paddingHorizontal: 24,
-                    gap: 8,
-                }}>
-                <ThemedText
-                    type="hero"
-                    style={{
-                        fontWeight: "700",
-                        zIndex: 3,
-                        verticalAlign: "top",
-                    }}>
-                    {user?.display_name}
-                </ThemedText>
-                <ThemedText
-                    style={{
-                        zIndex: 3,
-                        color: ThemedColor.caption,
-                        bottom: 8, // 16 px font / 2 = 8 px
-                    }}>
-                    {user?.handle}
-                </ThemedText>
-            </View>
-            <View
-                style={{
-                    flex: 1,
-                    paddingHorizontal: 24,
-                    gap: 16,
-                    marginTop: 24 + Dimensions.get("window").height * 0.4 - nameHeight,
-                }}>
-                <View
-                    style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        padding: 0,
-                        paddingRight: 16,
-                        alignItems: "center",
-                        width: "100%",
-                    }}>
-                    <FollowButton following={false} />
-                    <ThemedText type="lightBody">{user?.friends.length} Friends</ThemedText>
-                    <ThemedText type="lightBody">{user?.tasks_complete} Tasks Done</ThemedText>
+                style={[
+                    styles.contentContainer,
+                    { marginTop: 24 + Dimensions.get("window").height * 0.4 - nameHeight },
+                ]}>
+                <ProfileStats friendsCount={user?.friends.length || 0} tasksComplete={user?.tasks_complete || 0} />
+
+                <View style={styles.section}>
+                    <ThemedText type="subtitle">Today</ThemedText>
+                    <TodayStats tasks={2} points={12} streak={242} />
                 </View>
-                <View style={{ gap: 16 }}>
-                    {/* <ThemedText type="subtitle">Today</ThemedText>
-                    <View
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 16,
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            paddingHorizontal: 12,
-                        }}>
-                        <ThemedText type="lightBody">✅ 4 Tasks</ThemedText>
-                        <ThemedText type="lightBody">🔥 3 Streak</ThemedText>
-                        <ThemedText type="lightBody">💰 14 Points</ThemedText>
-                    </View> */}
-                </View>
-                <View style={{ gap: 16 }}>
-                    <ThemedText type="subtitle">Past 7 Day</ThemedText>
-                    <View
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: "auto",
-                            width: "100%",
-                            justifyContent: "space-between",
-                        }}>
-                        {[1, 2, 1, 3, 3, 4, 2].map((item, index) => (
-                            <ActivityPoint key={index} level={item} />
-                        ))}
-                    </View>
-                    <TouchableOpacity
-                        onPress={() => router.push("/Activity")}
-                        style={{
-                            alignSelf: "flex-end",
-                        }}>
-                        <ThemedText type="lightBody">see more</ThemedText>
-                    </TouchableOpacity>
-                </View>
+
+                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4]} />
+
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+
                 <ConditionalView condition={activeTab == 0}>
-                    <View style={{ gap: 12 }}>
-                        <ThemedText type="subtitle">Active Tasks</ThemedText>
-                        <TaskCard content={"do my hw lol"} value={9} priority={1} id="active-1" categoryId="profile" />
-                    </View>
-                    <View style={{ gap: 12 }}>
-                        <ThemedText type="subtitle">Today's Tasks</ThemedText>
-                        <TaskCard
-                            content={"do my hw lol"}
-                            value={9}
-                            priority={1}
-                            id="active-1"
-                            categoryId="profile"
-                            encourage
-                        />
-                    </View>
-                    <View style={{ gap: 12 }}>
-                        <ThemedText type="subtitle">Accomplished Recently</ThemedText>
-                        <TaskCard content={"do my hw lol"} value={3} priority={1} id="done-1" categoryId="profile" />
-                        <TaskCard content={"do my hw lol"} value={2} priority={2} id="done-2" categoryId="profile" />
-                    </View>
+                    <TaskList {...mockTasks} />
                 </ConditionalView>
+
                 <ConditionalView condition={activeTab == 1}>
-                    <View
-                        style={{
-                            gap: 8,
-                            flexDirection: "row",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            width: "100%",
-                            justifyContent: "space-between",
-                        }}>
-                        {new Array(28).fill(0).map((e) => (
-                            <View
-                                style={{
-                                    backgroundColor: ThemedColor.lightened,
-                                    width: "31%",
-                                }}>
-                                <Image
-                                    style={{
-                                        aspectRatio: 1,
-                                        width: "100%",
-                                    }}
-                                    source={{
-                                        uri: "https://picsum.photos/200",
-                                        cache: "reload",
-                                    }}
-                                />
-                            </View>
-                        ))}
-                    </View>
+                    <ProfileGallery images={new Array(28).fill("https://picsum.photos/200")} />
                 </ConditionalView>
             </View>
         </Animated.ScrollView>
@@ -218,13 +110,27 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
+    scrollView: {
+        padding: 0,
+    },
     headerImage: {
         width: Dimensions.get("window").width,
         height: Dimensions.get("window").height * 0.4,
         position: "absolute",
     },
-    titleContainer: {
-        flexDirection: "row",
-        gap: 8,
+    gradientOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        zIndex: 2,
+    },
+    contentContainer: {
+        flex: 1,
+        paddingHorizontal: 20,
+        gap: 16,
+        paddingBottom: 128,
+    },
+    section: {
+        gap: 16,
     },
 });

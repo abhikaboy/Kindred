@@ -48,10 +48,18 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="home"
                 options={{
-                    title: "Home",
-                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
+                    title: "Tasks",
+                    tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
                     href: "home",
                     tabBarBadge: 4,
+                }}
+            />
+            <Tabs.Screen
+                name="feed"
+                options={{
+                    title: "Feed",
+                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
+                    href: "feed",
                 }}
             />
             <Tabs.Screen

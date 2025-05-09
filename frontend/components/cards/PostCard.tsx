@@ -124,15 +124,16 @@ const PostCard = ({
 
     return (
         <View style={styles.container}>
-            <View style={{ flexDirection: "column", marginVertical: 15 }}>
-                <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
+            <View style={{ flexDirection: "column", marginVertical: 16 }}>
+                <View style={{ paddingHorizontal: 24 }}>
+                    <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
+                </View>
                 <View style={styles.col}>
-                    <ThemedText type="defaultSemiBold">{caption}</ThemedText>
-                    <View style={styles.row}>
+                    {/* <View style={styles.row}>
                         <ThemedText type="lightBody">❗ {priority}</ThemedText>
                         <ThemedText type="lightBody">💪 {points} pts</ThemedText>
                         <ThemedText type="lightBody">⏰ {timeTaken} hrs</ThemedText>
-                    </View>
+                    </View> */}
                     <Carousel
                         loop
                         width={Dimensions.get("window").width}
@@ -148,28 +149,33 @@ const PostCard = ({
                         )}
                     />
                 </View>
+                <View style={{ flexDirection: "column", paddingHorizontal: 24 }}>
+                    <View style={{ marginTop: 12 }}>
+                        <ThemedText type="default">{caption}</ThemedText>
+                    </View>
 
-                <View style={styles.reactionsRow}>
-                    {allReactions.map((react, index) => (
-                        <ReactPills
-                            key={index}
-                            reaction={react}
+                    <View style={styles.reactionsRow}>
+                        {allReactions.map((react, index) => (
+                            <ReactPills
+                                key={index}
+                                reaction={react}
+                                postId={0}
+                                onAddReaction={() => handleReaction(react, true)}
+                                onRemoveReaction={() => handleReaction(react, false)}
+                            />
+                        ))}
+                        <ReactionAction
+                            onAddReaction={(emoji) => handleReaction({ emoji: emoji, count: 1, ids: [userId] }, true)}
                             postId={0}
-                            onAddReaction={() => handleReaction(react, true)}
-                            onRemoveReaction={() => handleReaction(react, false)}
                         />
-                    ))}
-                    <ReactionAction
-                        onAddReaction={(emoji) => handleReaction({ emoji: emoji, count: 1, ids: [userId] }, true)}
-                        postId={0}
-                    />
-                </View>
+                    </View>
 
-                <TouchableOpacity onPress={handleOpenComments}>
-                    <ThemedText style={{ paddingTop: 15 }} type="lightBody">
-                        💬 Leave a comment
-                    </ThemedText>
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={handleOpenComments}>
+                        <ThemedText style={{ paddingTop: 15 }} type="lightBody">
+                            💬 Leave a comment
+                        </ThemedText>
+                    </TouchableOpacity>
+                </View>
             </View>
             {modalVisible && (
                 <Modal
@@ -225,14 +231,16 @@ export default PostCard;
 
 const styles = StyleSheet.create({
     image: {
-        width: Dimensions.get("window").width * 0.87,
-        height: Dimensions.get("window").width * 0.87,
-        borderRadius: 20,
+        width: Dimensions.get("window").width * 1,
+        height: Dimensions.get("window").width * 1,
     },
     container: {
         flex: 1,
         flexDirection: "column",
-        paddingVertical: 30,
+        paddingVertical: 4,
+        borderBottomWidth: 2,
+        borderBottomColor: "rgba(0,0,0,0.2)",
+        borderStyle: "solid",
     },
     row: {
         flexDirection: "row",

@@ -14,7 +14,6 @@ type Props = {};
 */
 
 const index = (props: Props) => {
-    const colorScheme = useColorScheme();
     let ThemedColor = useThemeColor();
     const router = useRouter();
     const [visible, setVisible] = useState(false);

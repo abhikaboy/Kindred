@@ -24,9 +24,7 @@ const Standard = ({ hide, goTo }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
-    const { taskName, setTaskName } = useTaskCreation();
-
-    const [showAdvanced, setShowAdvanced] = React.useState(false);
+    const { taskName, setTaskName, showAdvanced, setShowAdvanced } = useTaskCreation();
 
     let selected = selectedCategory;
     console.log("Selected Category:" + selectedCategory);
@@ -56,7 +54,7 @@ const Standard = ({ hide, goTo }: Props) => {
     return (
         <View style={{ gap: 16, flexDirection: "column", display: "flex" }} onTouchStart={() => Keyboard.dismiss()}>
             <ThemedInput
-                autofocus
+                autofocus={taskName.length === 0}
                 ref={nameRef}
                 placeHolder="Enter the Task Name"
                 onSubmit={() => {

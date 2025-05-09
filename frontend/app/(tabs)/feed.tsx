@@ -1,0 +1,142 @@
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import React from "react";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import PostCard from "@/components/cards/PostCard";
+import { Icons } from "@/constants/Icons";
+
+export default function Feed() {
+    const ThemedColor = useThemeColor();
+    const styles = stylesheet(ThemedColor);
+
+    return (
+        <ThemedView style={styles.container}>
+            <View style={styles.headerContainer}>
+                <ThemedText type="subtitle">Kindred</ThemedText>
+                <TouchableOpacity>
+                    <Ionicons name="heart-outline" size={28} color={ThemedColor.text} />
+                </TouchableOpacity>
+            </View>
+            <ScrollView style={{ flex: 1 }}>
+                <PostCard
+                    icon={Icons.luffy}
+                    name={"Abhik Ray"}
+                    username={"beak"}
+                    caption={"this is my first post ever wow"}
+                    time={3}
+                    priority={"high"}
+                    points={10}
+                    timeTaken={2}
+                    reactions={[
+                        {
+                            emoji: "🔥",
+                            count: 3,
+                            ids: ["67ba5abb616b5e6544e0137b"],
+                        },
+                        {
+                            emoji: "😨",
+                            count: 3,
+                            ids: ["67ba5abb616b5e6544e0137b"],
+                        },
+                        {
+                            emoji: "🤡",
+                            count: 3,
+                            ids: ["67ba5abb616b5e6544e0137b"],
+                        },
+                    ]}
+                    comments={[
+                        {
+                            userId: 1,
+                            icon: Icons.luffy,
+                            name: "luffy",
+                            username: "theLuffiestOfThemAll",
+                            time: 1708800000,
+                            content: "This is such a great post! Thanks for sharing.",
+                        },
+                        {
+                            userId: 2,
+                            icon: Icons.coffee,
+                            name: "Coffeeeeee",
+                            username: "coffee",
+                            time: 3,
+                            content: "blah blah latte i hate lattes",
+                        },
+                        {
+                            userId: 3,
+                            icon: Icons.lokye,
+                            name: "Lok Ye",
+                            username: "baby",
+                            time: 2,
+                            content: "meowwwwwwwww",
+                        },
+                        {
+                            userId: 1,
+                            icon: Icons.luffy,
+                            name: "luffy",
+                            username: "theLuffiestOfThemAll",
+                            time: 1708800000,
+                            content: "This is such a great post! Thanks for sharing.",
+                        },
+                        {
+                            userId: 2,
+                            icon: Icons.coffee,
+                            name: "Coffeeeeee",
+                            username: "coffee",
+                            time: 3,
+                            content: "blah blah latte i hate lattes",
+                        },
+                        {
+                            userId: 3,
+                            icon: Icons.lokye,
+                            name: "Lok Ye",
+                            username: "baby",
+                            time: 2,
+                            content: "meowwwwwwwww",
+                        },
+                        {
+                            userId: 1,
+                            icon: Icons.luffy,
+                            name: "luffy",
+                            username: "theLuffiestOfThemAll",
+                            time: 1708800000,
+                            content: "This is such a great post! Thanks for sharing.",
+                        },
+                        {
+                            userId: 2,
+                            icon: Icons.coffee,
+                            name: "Coffeeeeee",
+                            username: "coffee",
+                            time: 3,
+                            content: "blah blah latte i hate lattes g g g  g g g  g g g  g  g  g  g g g g g g g ",
+                        },
+                        {
+                            userId: 3,
+                            icon: Icons.lokye,
+                            name: "Lok Ye",
+                            username: "baby",
+                            time: 2,
+                            content: "meowwwwwwwww",
+                        },
+                    ]}
+                    images={[Icons.latte, Icons.coffee, Icons.lokye, Icons.luffy]}
+                />
+            </ScrollView>
+        </ThemedView>
+    );
+}
+
+const stylesheet = (ThemedColor: any) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            paddingTop: Dimensions.get("window").height * 0.1,
+        },
+        headerContainer: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 24,
+        },
+    });
