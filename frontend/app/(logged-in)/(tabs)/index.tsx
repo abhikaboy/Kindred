@@ -229,7 +229,7 @@ export default Home;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: Dimensions.get("screen").height * 0.1,
+        paddingTop: Dimensions.get("screen").height * 0.09,
         paddingHorizontal: 24,
         paddingBottom: Dimensions.get("screen").height * 0.12,
     },
