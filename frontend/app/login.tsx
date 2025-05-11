@@ -1,11 +1,12 @@
 import { View, Text, Dimensions, Image, TouchableOpacity, useColorScheme } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getThemedColor } from "@/constants/Colors";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { Link, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAuth } from "@/hooks/useAuth";
 
 type Props = {};
 
@@ -18,6 +19,12 @@ const login = (props: Props) => {
     const router = useRouter();
     const [visible, setVisible] = useState(false);
     const [mode, setMode] = useState<"register" | "login">("register");
+    const { user } = useAuth();
+    useEffect(() => {
+        if (user) {
+            router.push("/(logged-in)/(tabs)");
+        }
+    }, [user]);
 
     return (
         <View

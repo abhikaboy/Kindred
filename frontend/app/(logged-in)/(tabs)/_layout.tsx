@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dimensions, Platform, TouchableOpacity } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -11,7 +11,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 export default function TabLayout() {
-    const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
     const [modalVisible, setModalVisible] = useState(true);
@@ -46,11 +45,11 @@ export default function TabLayout() {
                 }),
             }}>
             <Tabs.Screen
-                name="home"
+                name="index"
                 options={{
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
-                    href: "home",
+                    href: "",
                     tabBarBadge: 4,
                 }}
             />

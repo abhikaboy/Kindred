@@ -123,10 +123,7 @@ function LeftAction(
                     justifyContent: "center",
                     alignItems: "center",
                 },
-            ]}
-            onLayout={() => {
-                console.log("layout");
-            }}></Reanimated.View>
+            ]}></Reanimated.View>
     );
 }
 

@@ -35,6 +35,41 @@ type TaskDocument struct {
 	LastEdited   time.Time              `bson:"lastEdited" json:"lastEdited"`
 }
 
+type TemplateTaskDocument struct {
+	ID           primitive.ObjectID     `bson:"_id" json:"id"`
+	Priority     int                    `bson:"priority" json:"priority"`
+	Content      string                 `bson:"content" json:"content"`
+	Value        float64                `bson:"value" json:"value"`
+	Public       bool                   `bson:"public" json:"public"`
+	LastEdited   time.Time              `bson:"lastEdited" json:"lastEdited"`
+	RecurType    string                 `bson:"recurType" json:"recurType"`
+	WeeklyRecur  *WeeklyRecurDetails     `bson:"weeklyRecur,omitempty" json:"weeklyRecur,omitempty"`
+	MonthlyRecur *MonthlyRecurDetails    `bson:"monthlyRecur,omitempty" json:"monthlyRecur,omitempty"`
+	YearlyRecur  *YearlyRecurDetails     `bson:"yearlyRecur,omitempty" json:"yearlyRecur,omitempty"`
+	DailyRecur   *DailyRecurDetails      `bson:"dailyRecur,omitempty" json:"dailyRecur,omitempty"`
+	LastGenerated time.Time              `bson:"lastGenerated" json:"lastGenerated"`
+	NextGenerated time.Time              `bson:"nextGenerated" json:"nextGenerated"`
+}
+
+type WeeklyRecurDetails struct {
+	DaysOfWeek []int `bson:"days" json:"days"`
+	Every      int   `bson:"every" json:"every"`
+}
+
+type MonthlyRecurDetails struct {
+	DaysOfMonth []int `bson:"days" json:"days"`
+	Every      int   `bson:"every" json:"every"`
+}
+
+type YearlyRecurDetails struct {
+	Months []int `bson:"months" json:"months"`
+	Every  int   `bson:"every" json:"every"`
+}
+
+type DailyRecurDetails struct {
+	Every int `bson:"every" json:"every"`
+}
+
 type UpdateTaskDocument struct {
 	Priority     int                    `bson:"priority" json:"priority"`
 	Content      string                 `bson:"content" json:"content"`

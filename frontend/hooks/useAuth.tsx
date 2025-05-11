@@ -7,6 +7,7 @@ import { router } from "expo-router";
 
 interface User {
     id: string;
+    name: string;
     email: string;
     appleAccountID: string;
 }
@@ -68,6 +69,7 @@ interface AuthContextType {
     register: (email: string, appleAccountID: string) => any;
     logout: () => void;
     refresh: () => void;
+    fetchAuthData: () => any | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -132,36 +134,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await login(user.appleAccountID);
         }
     }
-
-    useEffect(() => {
-        const fetchAuthData = async () => {
-            console.log("fetching auth data pt 1");
-            const authData = await getAuthData();
-            console.log("authData: ", authData);
-            if (authData) {
-                // set the axios headers to use the auth data
-                axios.defaults.headers.common["Authorization"] = "Bearer " + authData.access_token;
-                axios.defaults.headers.common["refresh_token"] = authData.refresh_token;
-                // make an api request
-                console.log("fetching auth data pt 2");
-                try {
-                    const user = await loginWithToken();
-                    setUser(user);
-                } catch (error) {
-                    console.log("Error: " + error);
-                    logout();
-                }
-                console.warn("TING TING TIN");
-                console.log("user auth provider: \n", user);
-            } else {
-                console.log("No auth data found");
+    async function fetchAuthData() {
+        console.log("fetching auth data pt 1");
+        const authData = await getAuthData();
+        console.log("authData: ", authData);
+        if (authData) {
+            // set the axios headers to use the auth data
+            axios.defaults.headers.common["Authorization"] = "Bearer " + authData.access_token;
+            axios.defaults.headers.common["refresh_token"] = authData.refresh_token;
+            // make an api request
+            console.log("fetching auth data pt 2");
+            try {
+                const user = await loginWithToken();
+                console.log("user successfully logged in!: ", user);
+                setUser(user);
+                return user;
+            } catch (error) {
+                console.log("Error: " + error);
                 logout();
+                return null;
             }
-        };
-        fetchAuthData();
-    }, []);
+        } else {
+            console.log("No auth data found, returning null");
+            logout();
+            return null;
+        }
+    }
 
-    return <AuthContext.Provider value={{ user, register, login, logout, refresh }}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={{ user, register, login, logout, refresh, fetchAuthData }}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export const useAuth = () => {

@@ -1,24 +1,56 @@
 // redirect to login if not logged in
+import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { Redirect, Stack, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 
 const layout = ({ children }: { children: React.ReactNode }) => {
-    const { user } = useAuth();
+    const { fetchAuthData } = useAuth();
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
+
     const router = useRouter();
-
     useEffect(() => {
-        console.log("user from layout", user);
-        if (!user) {
-            console.log("user is not logged in");
-            setTimeout(() => {
-                router.navigate("/login");
-                console.log("user is not logged in pt 2");
-            }, 100);
+        if (isLoading) {
+            fetchAuthData()
+                .then((user) => {
+                    setUser(user);
+                    setIsLoading(false);
+                })
+                .catch((error) => {
+                    setIsLoading(false);
+                    router.replace("/login");
+                });
         }
-    }, [user]);
+    }, []);
 
-    return <>{children}</>;
+    if (isLoading) {
+        return <Stack screenOptions={{ headerShown: false }} />;
+    }
+
+    if (!user) {
+        console.log("redirecting to login");
+        return <Redirect href="/login" />;
+    }
+
+    return (
+        <Stack
+            screenOptions={{
+                headerShown: false,
+                headerTransparent: true,
+                headerLeft: (tab) => <BackButton />,
+                headerBackButtonDisplayMode: "minimal",
+                headerTitleStyle: {
+                    fontFamily: "Outfit",
+                    fontWeight: 100,
+                    fontSize: 1,
+                },
+            }}
+        />
+    );
 };
 
 export default layout;
