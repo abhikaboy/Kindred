@@ -1,4 +1,4 @@
-import { LoginRequest, LoginResponse, RegisterRequest } from "./types";
+import { LoginRequest, LoginResponse, RegisterRequest, User } from "./types";
 import { useRequest } from "@/hooks/useRequest";
 
 /**
@@ -7,10 +7,18 @@ import { useRequest } from "@/hooks/useRequest";
  * Frontend: The response contains user data that is stored in AuthContext
  * Note: Access and refresh tokens are handled by the request function
  * @param credentials - The user's login credentials
+ * @throws {Error} When the request fails or credentials are invalid
  */
 export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const { request } = useRequest();
-    return await request("POST", "/auth/login", credentials);
+    try {
+        const { request } = useRequest();
+        return await request("POST", "/auth/login", credentials);
+    } catch (error) {
+        // Log the error for debugging
+        console.error("Login failed:", error);
+        // Re-throw with a more user-friendly message
+        throw new Error("Failed to login. Please check your credentials and try again.");
+    }
 };
 
 /**
@@ -18,8 +26,31 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
  * API: Makes POST request to create a new user account
  * Frontend: No direct state updates, typically redirects to login
  * @param credentials - The new user's registration data
+ * @throws {Error} When the request fails or registration data is invalid
  */
 export const register = async (credentials: RegisterRequest): Promise<void> => {
-    const { request } = useRequest();
-    await request("POST", "/auth/register", credentials);
+    try {
+        const { request } = useRequest();
+        return await request("POST", "/auth/register", credentials);
+    } catch (error) {
+        console.error("Registration failed:", error);
+        throw new Error("Failed to register. Please try again later.");
+    }
+};
+
+/**
+ * Login with token
+ * API: Makes POST request to authenticate user credentials
+ * Note: Access and refresh tokens are handled by the request function
+ * @throws {Error} When the token is invalid or request fails
+ */
+export const loginWithToken = async (): Promise<User> => {
+    try {
+        const { request } = useRequest();
+        console.log("logging in with token");
+        return await request("POST", "/user/login");
+    } catch (error) {
+        console.error("Token login failed:", error);
+        throw new Error("Session expired. Please login again.");
+    }
 };
