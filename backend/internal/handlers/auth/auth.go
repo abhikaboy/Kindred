@@ -262,6 +262,9 @@ func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, re
 			return nil, nil, nil, err
 		}
 		fmt.Println("refresh token is valid")
+		// now that we know the refresh is token, we can reset the error and get the user_id again.
+		user_id, _, _ = h.service.ValidateToken(refreshToken)
+		access_error = nil // reset the error since the refresh token is valid
 	}
 	// use the same count as the existing token
 	// Our refresh token is valid and unused, so we can use it to generate a new set of tokens

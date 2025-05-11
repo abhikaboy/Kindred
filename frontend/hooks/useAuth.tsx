@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import React from "react";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { loginWithToken } from "@/api/auth";
+import { router } from "expo-router";
 
 interface User {
     id: string;
@@ -119,6 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     function logout() {
         setUser(null);
+        SecureStore.deleteItemAsync("auth_data");
+        axios.defaults.headers.common["Authorization"] = "";
+        axios.defaults.headers.common["refresh_token"] = "";
+        console.log("logging out");
     }
 
     async function refresh() {
@@ -129,9 +135,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const fetchAuthData = async () => {
+            console.log("fetching auth data pt 1");
             const authData = await getAuthData();
+            console.log("authData: ", authData);
             if (authData) {
-                setUser(authData);
+                // set the axios headers to use the auth data
+                axios.defaults.headers.common["Authorization"] = "Bearer " + authData.access_token;
+                axios.defaults.headers.common["refresh_token"] = authData.refresh_token;
+                // make an api request
+                console.log("fetching auth data pt 2");
+                try {
+                    const user = await loginWithToken();
+                    setUser(user);
+                } catch (error) {
+                    console.log("Error: " + error);
+                    logout();
+                }
+                console.warn("TING TING TIN");
+                console.log("user auth provider: \n", user);
+            } else {
+                console.log("No auth data found");
+                logout();
             }
         };
         fetchAuthData();
