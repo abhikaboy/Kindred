@@ -30,7 +30,7 @@ type TaskContextType = {
 export function TasksProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [workspaces, setWorkSpaces] = useState<Workspace[]>([]);
-    const [selected, setSelected] = useState<string>("Good Morning ☀️"); // Workspace
+    const [selected, setSelected] = useState<string>(""); // Workspace
     const [categories, setCategories] = useState<Categories[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
 
@@ -53,6 +53,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     };
 
     const fetchWorkspaces = async () => {
+        console.log("fetching workspaces via API");
         const data = await fetchUserWorkspaces(user._id);
         setWorkSpaces(data);
     };
