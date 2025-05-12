@@ -37,6 +37,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Tasks:          collections["categories"],
 		Users:          collections["users"],
 		CompletedTasks: collections["completed-tasks"],
+		TemplateTasks:  collections["template-tasks"],
 	}
 }
 
@@ -120,6 +121,17 @@ func (s *Service) CreateTask(categoryId primitive.ObjectID, r *TaskDocument) (*T
 
 	// Cast the inserted ID to ObjectID
 	slog.LogAttrs(ctx, slog.LevelInfo, "Task inserted")
+
+	return r, nil
+}
+
+func (s *Service) CreateTemplateTask(categoryId primitive.ObjectID, r *TemplateTaskDocument) (*TemplateTaskDocument, error) {
+	ctx := context.Background()
+
+	_, err := s.TemplateTasks.InsertOne(ctx, r)
+	if err != nil {
+		return nil, err
+	}
 
 	return r, nil
 }
@@ -332,3 +344,6 @@ func (s *Service) GetActiveTasks(userId primitive.ObjectID) ([]TaskDocument, err
 
 	return results, nil
 }
+
+
+

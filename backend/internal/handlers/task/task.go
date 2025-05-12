@@ -20,7 +20,6 @@ type Handler struct {
 
 func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
 	user_id := c.UserContext().Value("user_id").(string)
-	slog.LogAttrs(c.Context(), slog.LevelInfo, "User ID", slog.String("user_id", user_id))
 
 	id := c.Query("id", user_id) // uses the logged in user if not specified
 	userId, err := primitive.ObjectIDFromHex(id)
@@ -63,7 +62,6 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 
 	err, ids := xutils.ParseIDs(c, c.Params("category"), user_id)
 	if err != nil {
-		slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs", slog.String("error", err.Error()))
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
 	_, categoryId := ids[1], ids[0]
@@ -74,8 +72,17 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		})
 	}
 
+
 	if err := validator.Validate(params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
+
+	if params.RecurDetails != nil {
+		if params.RecurDetails.Every == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Every is required",
+			})
+		}
 	}
 
 	doc := TaskDocument{
@@ -84,12 +91,103 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		Content:      params.Content,
 		Value:        params.Value,
 		Recurring:    params.Recurring,
-		RecurDetails: params.RecurDetails,
+		RecurFrequency:    params.RecurFrequency,
 		Public:       params.Public,
 		Active:       params.Active,
 		Timestamp:    time.Now(),
+
+		Deadline: params.Deadline,
+		StartTime: params.StartTime,
+		StartDate: params.StartDate,
 	}
 
+
+	var template_id primitive.ObjectID = primitive.NewObjectID()
+	if doc.Recurring {
+    if(params.RecurFrequency == ""){
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid recurring frequency",
+			})
+		} else {
+		}
+		if (params.RecurDetails == nil) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Recurring details are required",
+			})
+		} else {
+		}
+
+		recurType := "OCCURRENCE"
+
+		// if we have a deadline with no start information
+		if params.Deadline != nil {
+			recurType = "DEADLINE"
+			if params.StartTime != nil || params.StartDate != nil {
+				recurType = "WINDOW"
+			}
+		}
+
+		baseTime := time.Now()
+		if params.Deadline != nil {
+			baseTime = *params.Deadline
+		} else if params.StartTime != nil {
+			baseTime = *params.StartTime
+		}
+		// Create a template for the recurring task
+		template_doc := TemplateTaskDocument{
+			CategoryID: categoryId,
+			ID:           template_id,
+			Content:      params.Content,
+			Priority:     params.Priority,
+			Value:        params.Value,
+			Public:       params.Public,
+			RecurType:    recurType,
+			RecurFrequency:    params.RecurFrequency,
+			RecurDetails: params.RecurDetails,
+
+			Deadline: params.Deadline,
+			StartTime: params.StartTime,
+			StartDate: params.StartDate,
+			LastGenerated: baseTime,
+		}
+
+		var next_occurence time.Time
+		if recurType == "OCCURRENCE" {
+			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating OCCURENCE template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		} else if recurType == "DEADLINE" {
+			next_occurence, err = h.service.ComputeNextDeadline(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating DEADLINE template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		} else if recurType == "WINDOW" {
+			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating WINDOW template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		}
+
+
+		template_doc.NextGenerated = next_occurence
+
+		h.service.PrintNextRecurrences(&template_doc)
+
+		_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
+		if err != nil {
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error creating template task", slog.String("error", err.Error()))
+			return c.Status(fiber.StatusInternalServerError).JSON(err)
+		}
+
+		doc.TemplateID = template_id
+	}
+
+
+	
 	_, err = h.service.CreateTask(categoryId, &doc)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)

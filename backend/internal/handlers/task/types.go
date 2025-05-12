@@ -12,9 +12,15 @@ type CreateTaskParams struct {
 	Content      string                 `validate:"required" bson:"content" json:"content"`
 	Value        float64                `validate:"required,min=0,max=10" bson:"value" json:"value"`
 	Recurring    bool                   `bson:"recurring" json:"recurring"`
-	RecurDetails map[string]interface{} `bson:"recurDetails,omitempty" bsonjson:"recurDetails,omitempty"`
+	
+	RecurFrequency    string                 `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"`
+	RecurDetails *RecurDetails `bson:"recurDetails,omitempty" json:"recurDetails,omitempty"`
 	Public       bool                   `bson:"public" json:"public"`
 	Active       bool                   `bson:"active" json:"active"`
+
+	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"` // Defaults to today
 }
 
 type SortParams struct {
@@ -28,54 +34,55 @@ type TaskDocument struct {
 	Content      string                 `bson:"content" json:"content"`
 	Value        float64                `bson:"value" json:"value"`
 	Recurring    bool                   `bson:"recurring" json:"recurring"`
-	RecurDetails map[string]interface{} `bson:"recurDetails" json:"recurDetails"`
+	RecurFrequency    string                 `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"`
+	RecurType    string                 `bson:"recurType,omitempty" json:"recurType,omitempty"`
+	RecurDetails *RecurDetails           `bson:"recurDetails,omitempty" json:"recurDetails,omitempty"`
 	Public       bool                   `bson:"public" json:"public"`
 	Active       bool                   `bson:"active" json:"active"`
 	Timestamp    time.Time              `bson:"timestamp" json:"timestamp"`
 	LastEdited   time.Time              `bson:"lastEdited" json:"lastEdited"`
+	TemplateID    primitive.ObjectID     `bson:"templateID,omitempty" json:"templateID,omitempty"`
+
+	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate *time.Time `bson:"startDate" json:"startDate"` // Defaults to today
 }
 
 type TemplateTaskDocument struct {
 	ID           primitive.ObjectID     `bson:"_id" json:"id"`
+
+	CategoryID primitive.ObjectID `bson:"categoryID" json:"categoryID"`
 	Priority     int                    `bson:"priority" json:"priority"`
 	Content      string                 `bson:"content" json:"content"`
 	Value        float64                `bson:"value" json:"value"`
 	Public       bool                   `bson:"public" json:"public"`
 	LastEdited   time.Time              `bson:"lastEdited" json:"lastEdited"`
-	RecurType    string                 `bson:"recurType" json:"recurType"`
-	WeeklyRecur  *WeeklyRecurDetails     `bson:"weeklyRecur,omitempty" json:"weeklyRecur,omitempty"`
-	MonthlyRecur *MonthlyRecurDetails    `bson:"monthlyRecur,omitempty" json:"monthlyRecur,omitempty"`
-	YearlyRecur  *YearlyRecurDetails     `bson:"yearlyRecur,omitempty" json:"yearlyRecur,omitempty"`
-	DailyRecur   *DailyRecurDetails      `bson:"dailyRecur,omitempty" json:"dailyRecur,omitempty"`
+	RecurDetails *RecurDetails           `bson:"recurDetails" json:"recurDetails"`
 	LastGenerated time.Time              `bson:"lastGenerated" json:"lastGenerated"`
 	NextGenerated time.Time              `bson:"nextGenerated" json:"nextGenerated"`
+	
+	RecurFrequency    string                 `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"` // daily, weekly, monthly, yearly
+	RecurType    string                 `bson:"recurType" json:"recurType"` // Occurence, Deadline, Window
+	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"` // Defaults to today
 }
 
-type WeeklyRecurDetails struct {
-	DaysOfWeek []int `bson:"days" json:"days"`
-	Every      int   `bson:"every" json:"every"`
+type RecurDetails struct {
+	Every int `bson:"every,omitempty" json:"every,omitempty"`
+	DaysOfWeek []int `bson:"daysOfWeek,omitempty" json:"daysOfWeek,omitempty"`
+	DaysOfMonth []int `bson:"daysOfMonth,omitempty" json:"daysOfMonth,omitempty"`
+	Months []int `bson:"months,omitempty" json:"months,omitempty"`
 }
 
-type MonthlyRecurDetails struct {
-	DaysOfMonth []int `bson:"days" json:"days"`
-	Every      int   `bson:"every" json:"every"`
-}
 
-type YearlyRecurDetails struct {
-	Months []int `bson:"months" json:"months"`
-	Every  int   `bson:"every" json:"every"`
-}
-
-type DailyRecurDetails struct {
-	Every int `bson:"every" json:"every"`
-}
 
 type UpdateTaskDocument struct {
 	Priority     int                    `bson:"priority" json:"priority"`
 	Content      string                 `bson:"content" json:"content"`
 	Value        float64                `bson:"value" json:"value"`
 	Recurring    bool                   `bson:"recurring" json:"recurring"`
-	RecurDetails map[string]interface{} `bson:"recurDetails" json:"recurDetails"`
+	RecurDetails *RecurDetails           `bson:"recurDetails" json:"recurDetails"`
 	Public       bool                   `bson:"public" json:"public"`
 	Active       bool                   `bson:"active" json:"active"`
 }
@@ -106,4 +113,5 @@ type Service struct {
 	Users          *mongo.Collection
 	Tasks          *mongo.Collection
 	CompletedTasks *mongo.Collection
+	TemplateTasks  *mongo.Collection
 }
