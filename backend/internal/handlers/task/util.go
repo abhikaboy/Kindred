@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // getBaseTime returns the appropriate base time for recurrence calculations
@@ -183,3 +185,22 @@ func (s *Service) PrintNextRecurrences(template *TemplateTaskDocument) {
 }
 
 
+
+func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
+return TaskDocument{
+		ID: primitive.NewObjectID(),
+		Content: templateDoc.Content,
+		Value: templateDoc.Value,
+		Recurring: true,
+		RecurFrequency: templateDoc.RecurFrequency,
+		Deadline: templateDoc.Deadline,
+		StartTime: templateDoc.StartTime,
+		StartDate: templateDoc.StartDate,
+		Priority: templateDoc.Priority,
+		Public: templateDoc.Public,
+		Active: true,
+		Timestamp: time.Now(),
+		LastEdited: time.Now(),
+		TemplateID: templateDoc.ID,	
+	}
+}

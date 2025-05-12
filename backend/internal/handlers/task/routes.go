@@ -32,4 +32,8 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	AuthorizedTasks.Post("/complete/:category/:id", handler.CompleteTask)
 
 	AuthorizedTasks.Post("/active/:category/:id", handler.ActivateTask)
+
+	AuthorizedTasks.Post("/template/:id", handler.CreateTaskFromTemplate)
+	AuthorizedTasks.Get("/template/old", handler.GetTasksWithStartTimesOlderThanOneDay)
+	AuthorizedTasks.Get("/template/pastDeadline", handler.GetRecurringTasksWithPastDeadlines)
 }

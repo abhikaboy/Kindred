@@ -347,3 +347,155 @@ func (s *Service) GetActiveTasks(userId primitive.ObjectID) ([]TaskDocument, err
 
 
 
+func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDocument, error) {
+	ctx := context.Background()
+
+	template := s.TemplateTasks.FindOne(ctx, bson.M{"_id": templateId})
+	
+	// make sure the template exists
+	if template == nil {
+		return nil, errors.New("template not found")
+	}
+
+	var templateDoc TemplateTaskDocument
+	err := template.Decode(&templateDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	// construct a task document from the template
+	task := constructTaskFromTemplate(&templateDoc)
+
+	//
+	templateDoc.LastGenerated = templateDoc.NextGenerated
+	thisGeneration := templateDoc.LastGenerated
+
+	var nextGeneration time.Time
+	if templateDoc.RecurType == "OCCURRENCE" {
+
+		err = s.DeleteTaskFromTemplateID(templateDoc)
+		if err != nil {
+			return nil, err
+		}
+
+		nextGeneration, err := s.ComputeNextOccurrence(&templateDoc)
+		if err != nil {
+			return nil, err
+		}
+		task.StartDate = &nextGeneration
+	
+	} else if templateDoc.RecurType == "DEADLINE" {
+
+		// if the recur behavior is buildup, then we dont need to delete the last task
+		// otherwise, if its rolling we need to delete the last task
+		if templateDoc.RecurDetails.Behavior == "BUILDUP" {
+			err = s.DeleteTaskFromTemplateID(templateDoc)
+			if err != nil {
+				return nil, err
+			}
+		}
+		nextGeneration, err := s.ComputeNextDeadline(&templateDoc)
+		if err != nil {
+			return nil, err
+		}
+		task.Deadline = &nextGeneration
+	} else if templateDoc.RecurType == "WINDOW" {
+		// TODO: implement window
+		nextGeneration = templateDoc.NextGenerated
+		task.Deadline = &nextGeneration
+	}
+	
+	s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateId}, bson.M{"$set": bson.M{"lastGenerated": thisGeneration, "nextGenerated": nextGeneration}})
+
+
+	// insert the task into the database
+	_, err = s.Tasks.UpdateOne(ctx, bson.M{"_id": templateDoc.CategoryID}, bson.M{"$push": bson.M{"tasks": task}})
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+
+func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) error {
+	ctx := context.Background()
+
+		cursor, err := s.Tasks.Aggregate(ctx, mongo.Pipeline{
+		   {
+				{Key: "$match", Value: bson.M{"_id": templateDoc.CategoryID}},
+			 },
+			 {
+				{Key: "$unwind", Value: "$tasks"},
+			 },
+			 {
+				{Key: "$match", Value: bson.M{"tasks.templateID": templateDoc.ID}},
+			 },
+		})
+	if err != nil {
+		return err
+	}
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return err
+	}
+		if len(results) > 0 {
+			// lets just delete the task for now 
+		s.DeleteTask(templateDoc.CategoryID, results[0].ID)
+	}
+
+	return nil
+}
+
+func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TaskDocument, error) {
+	ctx := context.Background()
+
+	inOneDay := time.Now().AddDate(0, 0, 1)
+
+	baseTime := inOneDay // Simulating which tasks to update in one day
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Getting tasks with start times older than one day using: " + baseTime.String())
+	pipeline := 
+		bson.A{
+			bson.D{{"$unwind", "$tasks"}},
+			bson.D{{"$replaceRoot", bson.D{{"newRoot", "$tasks"}}}},
+			bson.D{{"$match", bson.D{{"templateID", bson.D{{"$exists", true}}}}}},
+			bson.D{{"$match", bson.D{{"startDate", bson.D{{"$lt", baseTime.AddDate(0, 0, -1)}}}}}},
+		}
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (s *Service) GetRecurringTasksWithPastDeadlines() ([]TaskDocument, error) {
+	ctx := context.Background()
+
+	pipeline := 
+		bson.A{
+			bson.D{{"$unwind", "$tasks"}},
+			bson.D{{"$replaceRoot", bson.D{{"newRoot", "$tasks"}}}},
+			bson.D{{"$match", bson.D{{"templateID", bson.D{{"$exists", true}}}}}},
+		  bson.D{{"$match", bson.D{{"deadline", bson.D{{"$lt", time.Now()}}}}}},
+		}
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}

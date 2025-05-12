@@ -196,6 +196,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(doc)
 }
 
+
 func (h *Handler) GetTasks(c *fiber.Ctx) error {
 	Tasks, err := h.service.GetAllTasks()
 	if err != nil {
@@ -284,6 +285,7 @@ func (h *Handler) CompleteTask(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
+
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -334,6 +336,46 @@ func (h *Handler) GetActiveTasks(c *fiber.Ctx) error {
 	id := ids[0]
 
 	tasks, err := h.service.GetActiveTasks(id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.JSON(tasks)
+}
+
+func (h *Handler) CreateTaskFromTemplate(c *fiber.Ctx) error {
+	templateId := c.Params("id")
+
+	templateOID, err := primitive.ObjectIDFromHex(templateId)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format",
+		})
+	}
+
+	template, err := h.service.CreateTaskFromTemplate(templateOID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.JSON(template)
+}
+
+
+/*
+ Get all the tasks with start times that are at least a day older than the current time
+*/
+func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(c *fiber.Ctx) error {
+	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.JSON(tasks)
+}
+
+func (h *Handler) GetRecurringTasksWithPastDeadlines(c *fiber.Ctx) error {
+	tasks, err := h.service.GetRecurringTasksWithPastDeadlines()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
