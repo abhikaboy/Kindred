@@ -99,4 +99,5 @@ const styles = StyleSheet.create({
         color: ThemedColor.text,
         fontFamily: "Outfit",
     },
+    
 });

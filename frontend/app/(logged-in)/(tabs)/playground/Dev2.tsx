@@ -13,6 +13,9 @@ import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import Entypo from "@expo/vector-icons/Entypo";
 import UserInfoRowTimed from "@/components/UserInfo/UserInfoRowTimed";
 import UserInfoRowComment from "@/components/UserInfo/UsereInfoRowComment";
+import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
+import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
+import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
 
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -40,6 +43,22 @@ export default function Dev2() {
                             contentContainerStyle={{
                                 gap: 16,
                             }}>
+                            <UserInfoEncouragementNotification
+                                name={"Abhik Ray"}
+                                userId={""}
+                                taskName={"drinking water"}
+                                icon={Icons.luffy}
+                                time={3}></UserInfoEncouragementNotification>
+                            <UserInfoCommentNotification
+                                name={"Abhik Ray"}
+                                userId={""}
+                                comment={"drinking water"}
+                                icon={Icons.luffy}
+                                time={3} image={Icons.luffy}></UserInfoCommentNotification>
+
+                            <UserInfoFollowRequest name={"Beak"} username={"abhikaboyray"} icon={Icons.lokye}>
+                                
+                            </UserInfoFollowRequest>
                             <ScrollView horizontal style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                                 <ContactCard name="Abhik Ray" icon={Icons.luffy} handle="beak" following={true} />
                                 <ContactCard name="Lok Ye" icon={Icons.lokye} handle="lokye" following={false} />

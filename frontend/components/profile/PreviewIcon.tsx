@@ -1,6 +1,6 @@
 import { StyleSheet, Image, View } from "react-native";
 import React from "react";
-type Size = "small" | "medium" | "large";
+type Size = "small" | "smallMedium" | "medium" | "large" ;
 
 type Props = {
     icon: string;
@@ -9,6 +9,7 @@ type Props = {
 
 const sizeOfIcon = {
     small: 35,
+    smallMedium: 42,
     medium: 48,
     large: 64,
 };

@@ -6,16 +6,20 @@ import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView } from "reac
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PostCard from "@/components/cards/PostCard";
 import { Icons } from "@/constants/Icons";
+import { router, useRouter } from "expo-router";
 
 export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-
+    const router = useRouter(); 
     return (
         <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
                 <ThemedText type="subtitle">Kindred</ThemedText>
-                <TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => {
+                        router.push("/(logged-in)/(tabs)/feed/Notifications")
+                    }}>
                     <Ionicons name="heart-outline" size={28} color={ThemedColor.text} />
                 </TouchableOpacity>
             </View>
