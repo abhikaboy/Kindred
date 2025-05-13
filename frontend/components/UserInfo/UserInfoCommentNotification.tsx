@@ -73,11 +73,11 @@ const UserInfoEncouragementNotification = ({ name, userId, comment, icon, time, 
             </TouchableOpacity>
 
             <View style={styles.textContainer}>
-                <ThemedText numberOfLines={0} ellipsizeMode="tail" type="default" style={styles.text}>
-                    <ThemedText style={{ fontWeight: "600" }}>{name}</ThemedText>
-                    <ThemedText> just commented "{comment}" on your recent post</ThemedText>
+                <ThemedText numberOfLines={0} ellipsizeMode="tail" type="smallerDefault" style={styles.text}>
+                    <ThemedText type="smallerDefault" style={{ fontWeight: "500" }}>{name}</ThemedText>
+                    <ThemedText type="smallerDefault" > just commented "{comment}" on your recent post</ThemedText>
                 </ThemedText>
-                <ThemedText type="caption" style={styles.timeText}>
+                <ThemedText type="caption">
                 {timeLabel}
                 </ThemedText>
             </View>
@@ -105,10 +105,6 @@ const styles = StyleSheet.create({
     },
     text: {
         flexWrap: "wrap",
-    },
-    timeText: {
-        marginTop: 4,
-        color: "#888",
     },
     iconContainer: {
         width: 50,

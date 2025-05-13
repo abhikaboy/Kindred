@@ -70,13 +70,13 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time 
             </TouchableOpacity>
 
             <View style={styles.textContainer}>
-                <ThemedText numberOfLines={0} ellipsizeMode="tail" type="default" style={styles.text}>
+                <ThemedText numberOfLines={0} ellipsizeMode="tail" type="smallerDefault" style={styles.text}>
                     <View>
                         <ThemedText>
-                            <ThemedText style={{ fontWeight: "600" }}>{name}</ThemedText>
-                            <ThemedText> sent you an encouragement for {taskName}</ThemedText>
+                            <ThemedText type="smallerDefault" style={{ fontWeight: "500" }}>{name}</ThemedText>
+                            <ThemedText type="smallerDefault"> sent you an encouragement for {taskName}</ThemedText>
                         </ThemedText>
-                        <ThemedText type="caption" style={styles.timeText}>
+                        <ThemedText type="caption">
                             {timeLabel}
                         </ThemedText>
                     </View>
@@ -111,10 +111,6 @@ const styles = StyleSheet.create({
     text: {
         flexDirection: "row",
         flexWrap: "wrap",
-    },
-    timeText: {
-        marginTop: 4,
-        color: "#888",
     },
     iconContainer: {
         width: 36,

@@ -17,7 +17,8 @@ export type ThemedTextProps = TextProps & {
         | "hero"
         | "lightBody"
         | "caption"
-        | "disabledTitle";
+        | "disabledTitle"
+        | "smallerDefault";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
@@ -38,6 +39,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "lightBody" ? styles.lightBody : undefined,
                 type === "caption" ? styles.caption : undefined,
                 type === "disabledTitle" ? styles.disabledTitle : undefined,
+                type === "smallerDefault" ? styles.smallerDefault : undefined,
                 style,
             ]}
             {...rest}
@@ -99,5 +101,9 @@ const styles = StyleSheet.create({
         color: ThemedColor.text,
         fontFamily: "Outfit",
     },
-    
+    smallerDefault: {
+        fontSize: 14,
+        fontWeight: "400",
+        fontFamily: "Outfit",
+    },
 });
