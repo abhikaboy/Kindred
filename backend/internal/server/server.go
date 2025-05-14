@@ -35,7 +35,6 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 
 	health.Routes(app, collections)
 	auth.Routes(app, collections)
-
 	task.Routes(app, collections)
 	category.Routes(app, collections)
 	post.Routes(app, collections)
@@ -44,6 +43,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 	profile.Routes(app, collections)
 	waitlist.Routes(app, collections)
 	socket.Routes(app, collections, stream)
+
+	task.Cron(collections)
+
 
 	return app
 }

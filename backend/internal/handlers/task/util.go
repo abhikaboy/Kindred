@@ -11,7 +11,8 @@ import (
 
 // getBaseTime returns the appropriate base time for recurrence calculations
 func getBaseTime(template *TemplateTaskDocument) time.Time {
-	baseTime := template.LastGenerated
+	// baseTime := template.LastGenerated
+	baseTime := time.Now()
 	if baseTime.IsZero() {
 		if template.StartDate != nil {
 			baseTime = *template.StartDate
