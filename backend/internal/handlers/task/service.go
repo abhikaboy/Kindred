@@ -256,7 +256,6 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 	}
 
 	resultDecoded := *result
-	fmt.Println(resultDecoded.ModifiedCount)
 	if resultDecoded.ModifiedCount == 0 {
 		return errors.New("No tasks found")
 	}
@@ -280,7 +279,9 @@ func (s *Service) DeleteTask(categoryId primitive.ObjectID, id primitive.ObjectI
 	}
 
 	resultDecoded := *result
-	fmt.Println(resultDecoded)
+	if resultDecoded.ModifiedCount != resultDecoded.MatchedCount {
+		fmt.Println("found, not didn't modify task must not exist " + id.Hex() + " " + categoryId.Hex())
+	}
 	return err
 
 }
@@ -353,9 +354,11 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	template := s.TemplateTasks.FindOne(ctx, bson.M{"_id": templateId})
 	
 	// make sure the template exists
-	if template == nil {
-		return nil, errors.New("template not found")
+	if template.Err() != nil {
+		slog.Error("Couldn't find template", "error", template.Err())
+		return nil, template.Err()
 	}
+
 
 	var templateDoc TemplateTaskDocument
 	err := template.Decode(&templateDoc)
@@ -369,7 +372,6 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	//
 	templateDoc.LastGenerated = templateDoc.NextGenerated
 	thisGeneration := templateDoc.LastGenerated
-
 	var nextGeneration time.Time
 	if templateDoc.RecurType == "OCCURRENCE" {
 
@@ -388,7 +390,9 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 
 		// if the recur behavior is buildup, then we dont need to delete the last task
 		// otherwise, if its rolling we need to delete the last task
-		if templateDoc.RecurDetails.Behavior == "BUILDUP" {
+		fmt.Println(templateDoc.RecurDetails)
+		if templateDoc.RecurDetails.Behavior == "" || templateDoc.RecurDetails.Behavior != "BUILDUP" {
+			fmt.Println("Deleting task from template because this is a rolling deadline")
 			err = s.DeleteTaskFromTemplateID(templateDoc)
 			if err != nil {
 				return nil, err
@@ -404,16 +408,13 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		nextGeneration = templateDoc.NextGenerated
 		task.Deadline = &nextGeneration
 	}
-	
 	s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateId}, bson.M{"$set": bson.M{"lastGenerated": thisGeneration, "nextGenerated": nextGeneration}})
-
 
 	// insert the task into the database
 	_, err = s.Tasks.UpdateOne(ctx, bson.M{"_id": templateDoc.CategoryID}, bson.M{"$push": bson.M{"tasks": task}})
 	if err != nil {
 		return nil, err
 	}
-
 	return &task, nil
 }
 
@@ -429,7 +430,10 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) err
 				{Key: "$unwind", Value: "$tasks"},
 			 },
 			 {
-				{Key: "$match", Value: bson.M{"tasks.templateID": templateDoc.ID}},
+				{Key: "$replaceRoot", Value: bson.M{"newRoot": "$tasks"}},
+			 },
+			 {
+				{Key: "$match", Value: bson.M{"templateID": templateDoc.ID}},
 			 },
 		})
 	if err != nil {
@@ -439,9 +443,15 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) err
 	if err := cursor.All(ctx, &results); err != nil {
 		return err
 	}
+	for _, result := range results {
 		if len(results) > 0 {
 			// lets just delete the task for now 
-		s.DeleteTask(templateDoc.CategoryID, results[0].ID)
+			err = s.DeleteTask(templateDoc.CategoryID, result.ID)
+			if err != nil {
+				slog.Error("Error deleting task in DeleteTaskFromTemplateID", "error", err)
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -450,7 +460,7 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) err
 func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TaskDocument, error) {
 	ctx := context.Background()
 
-	inOneDay := time.Now().AddDate(0, 0, 1)
+	inOneDay := time.Now()
 
 	baseTime := inOneDay // Simulating which tasks to update in one day
 
@@ -460,7 +470,7 @@ func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TaskDocument, error
 			bson.D{{"$unwind", "$tasks"}},
 			bson.D{{"$replaceRoot", bson.D{{"newRoot", "$tasks"}}}},
 			bson.D{{"$match", bson.D{{"templateID", bson.D{{"$exists", true}}}}}},
-			bson.D{{"$match", bson.D{{"startDate", bson.D{{"$lt", baseTime.AddDate(0, 0, -1)}}}}}},
+			bson.D{{"$match", bson.D{{"startDate", bson.D{{"$lte", baseTime.AddDate(0, 0, -1)}}}}}},
 		}
 
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
@@ -498,4 +508,36 @@ func (s *Service) GetRecurringTasksWithPastDeadlines() ([]TaskDocument, error) {
 		return nil, err
 	}
 	return results, nil
+}
+
+func (s *Service) DeleteTaskByID(id primitive.ObjectID) error {
+	ctx := context.Background()
+
+	// go through all the categories and delete the task
+	cursor, err := s.Tasks.Aggregate(ctx, mongo.Pipeline{
+		{
+			{Key: "$match", Value: bson.M{}},
+		},
+		{
+			{Key: "$unwind", Value: "$tasks"},
+		},
+		{
+			{Key: "$match", Value: bson.M{"tasks._id": id}},
+		},
+	})
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return err
+	}
+
+	for _, result := range results {
+		err = s.DeleteTask(result.ID, id)
+		if err != nil {
+			return err
+		}
+	}
+	defer cursor.Close(ctx)
+	
+	return err
 }

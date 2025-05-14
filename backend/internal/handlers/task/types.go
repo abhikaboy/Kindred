@@ -70,9 +70,9 @@ type TemplateTaskDocument struct {
 
 type RecurDetails struct {
 	Every int `validate:"required,min=1" bson:"every,omitempty" json:"every,omitempty"`
-	DaysOfWeek []int `validate:"required,min=7,max=7" bson:"daysOfWeek,omitempty" json:"daysOfWeek,omitempty"`
-	DaysOfMonth []int `validate:"required,min=1,max=31,unique" bson:"daysOfMonth,omitempty" json:"daysOfMonth,omitempty"`
-	Months []int `validate:"required,min=1,max=12,unique" bson:"months,omitempty" json:"months,omitempty"`
+	DaysOfWeek []int `validate:"omitempty,min=7,max=7" bson:"daysOfWeek,omitempty" json:"daysOfWeek,omitempty"`
+	DaysOfMonth []int `validate:"omitempty,min=1,max=31,unique" bson:"daysOfMonth,omitempty" json:"daysOfMonth,omitempty"`
+	Months []int `validate:"omitempty,min=1,max=12,unique" bson:"months,omitempty" json:"months,omitempty"`
 	Behavior string `validate:"required,oneof=BUILDUP ROLLING" bson:"behavior,omitempty" json:"behavior,omitempty"` // Buildup, Rolling
 }
 
