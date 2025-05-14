@@ -7,7 +7,7 @@ import Octicons from "@expo/vector-icons/Octicons";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Keyboard } from "react-native";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 interface SearchBoxProps extends TextInputProps {
     value: string;
     recent?: boolean;

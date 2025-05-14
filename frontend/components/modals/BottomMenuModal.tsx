@@ -4,7 +4,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type ID = {
     id: string;

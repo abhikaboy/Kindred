@@ -15,7 +15,7 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
 } from "react-native-reanimated";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 type Props = {
     options?: Option[];
     selected: Option;

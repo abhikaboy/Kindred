@@ -7,7 +7,7 @@ import { getThemedColor } from "@/constants/Colors";
 import OnboardButton from "@/components/inputs/OnboardButton";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {};
 

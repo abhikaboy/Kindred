@@ -7,7 +7,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {};
 

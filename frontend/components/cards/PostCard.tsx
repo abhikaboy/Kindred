@@ -8,7 +8,7 @@ import Carousel from "react-native-reanimated-carousel";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 export type SlackReaction = {
     emoji: string;
     count: number;

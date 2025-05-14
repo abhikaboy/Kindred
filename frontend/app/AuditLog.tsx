@@ -6,7 +6,7 @@ import { useRequest } from "@/hooks/useRequest";
 import { ScrollView } from "react-native";
 import { getThemedColor } from "@/constants/Colors";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { HORIZONTAL_PADDING } from "@/constants/layout";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {};
 
