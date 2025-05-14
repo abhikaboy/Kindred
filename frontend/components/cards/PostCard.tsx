@@ -6,10 +6,9 @@ import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import Carousel from "react-native-reanimated-carousel";
 import Comment, { CommentProps } from "../inputs/Comment";
-import { PopupProp } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-
+import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 export type SlackReaction = {
     emoji: string;
     count: number;
@@ -125,7 +124,7 @@ const PostCard = ({
     return (
         <View style={styles.container}>
             <View style={{ flexDirection: "column", marginVertical: 16 }}>
-                <View style={{ paddingHorizontal: 24 }}>
+                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
                     <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
                 </View>
                 <View style={styles.col}>
@@ -149,7 +148,7 @@ const PostCard = ({
                         )}
                     />
                 </View>
-                <View style={{ flexDirection: "column", paddingHorizontal: 24 }}>
+                <View style={{ flexDirection: "column", paddingHorizontal: HORIZONTAL_PADDING }}>
                     <View style={{ marginTop: 12 }}>
                         <ThemedText type="default">{caption}</ThemedText>
                     </View>

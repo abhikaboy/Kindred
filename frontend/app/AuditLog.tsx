@@ -6,6 +6,7 @@ import { useRequest } from "@/hooks/useRequest";
 import { ScrollView } from "react-native";
 import { getThemedColor } from "@/constants/Colors";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 
 type Props = {};
 
@@ -17,7 +18,8 @@ const AuditLog = (props: Props) => {
     console.log(errorHistory());
 
     return (
-        <ThemedView style={{ paddingTop: Dimensions.get("screen").height * 0.12, paddingHorizontal: 24 }}>
+        <ThemedView
+            style={{ paddingTop: Dimensions.get("screen").height * 0.12, paddingHorizontal: HORIZONTAL_PADDING }}>
             <ScrollView
                 style={{
                     height: "100%",

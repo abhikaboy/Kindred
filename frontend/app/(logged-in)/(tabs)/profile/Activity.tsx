@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
-
+import { HORIZONTAL_PADDING } from "@/constants/Layout";
 type Props = {};
 
 const month_to_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -77,7 +77,7 @@ const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         scrollViewContent: {
             gap: 16,
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
         },
         scrollView: {
             top: Dimensions.get("window").height * 0.1,
@@ -109,14 +109,18 @@ const stylesheet = (ThemedColor: any) =>
         monthContainer: {
             marginTop: 24,
             gap: 16,
+            alignSelf: "center",
         },
         activityPointsContainer: {
             flexWrap: "wrap",
             gap: 8,
             flexDirection: "row",
+            width: "100%",
         },
         dataContainer: {
             flexDirection: "column-reverse",
             gap: 16,
+            width: "100%",
+            alignItems: "center",
         },
     });

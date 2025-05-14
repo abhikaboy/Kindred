@@ -24,7 +24,7 @@ const DataCard = (props: Props) => {
                 height: "auto",
             }}>
             <ThemedText type="subtitle">{props.title}</ThemedText>
-            {props.content && <ThemedText type="lightBody">{props.content}</ThemedText>}
+            {props.content && <ThemedText type="default">{props.content}</ThemedText>}
             {props.children}
         </View>
     );

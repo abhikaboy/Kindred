@@ -7,6 +7,7 @@ import Octicons from "@expo/vector-icons/Octicons";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Keyboard } from "react-native";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 interface SearchBoxProps extends TextInputProps {
     value: string;
     recent?: boolean;
@@ -74,6 +75,8 @@ export function SearchBox({
         inputRef.current?.blur();
     };
 
+    const styles = useStyles(ThemedColor);
+
     return (
         <View>
             <View style={styles.container}>
@@ -128,47 +131,48 @@ export function SearchBox({
     );
 }
 
-const styles = StyleSheet.create({
-    recentsContainer: {
-        flexDirection: "column",
-        alignItems: "flex-start",
-        position: "absolute",
-        width: "100%",
-        paddingVertical: 8,
-        paddingLeft: 16,
-        backgroundColor: useThemeColor().lightened,
-        zIndex: 10,
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-    },
-    recent: {
-        width: "100%",
-        padding: 8,
-        paddingVertical: 12,
-        backgroundColor: useThemeColor().lightened,
-        flexDirection: "row",
-        flex: 1,
-        gap: 12,
-        justifyContent: "space-between",
-    },
-    container: {
-        flexDirection: "row",
-        alignItems: "center",
-        width: "100%",
-        borderRadius: 12,
-        paddingHorizontal: 24,
-        paddingVertical: 16,
-        backgroundColor: useThemeColor().lightened,
-    },
-    input: {
-        flex: 1,
-        fontFamily: "Outfit",
-        fontSize: 16,
-        alignItems: "flex-start",
-        zIndex: 5,
-    },
-    icon: {
-        marginLeft: 8,
-        resizeMode: "contain",
-    },
-});
+const useStyles = (ThemedColor: any) =>
+    StyleSheet.create({
+        recentsContainer: {
+            flexDirection: "column",
+            alignItems: "flex-start",
+            position: "absolute",
+            width: "100%",
+            paddingVertical: 8,
+            paddingLeft: 16,
+            backgroundColor: ThemedColor.lightened,
+            zIndex: 10,
+            borderBottomLeftRadius: 24,
+            borderBottomRightRadius: 24,
+        },
+        recent: {
+            width: "100%",
+            padding: 8,
+            paddingVertical: 12,
+            backgroundColor: ThemedColor.lightened,
+            flexDirection: "row",
+            flex: 1,
+            gap: 12,
+            justifyContent: "space-between",
+        },
+        container: {
+            flexDirection: "row",
+            alignItems: "center",
+            width: "100%",
+            borderRadius: 12,
+            paddingHorizontal: HORIZONTAL_PADDING,
+            paddingVertical: 16,
+            backgroundColor: ThemedColor.lightened,
+        },
+        input: {
+            flex: 1,
+            fontFamily: "Outfit",
+            fontSize: 16,
+            alignItems: "flex-start",
+            zIndex: 5,
+        },
+        icon: {
+            marginLeft: 8,
+            resizeMode: "contain",
+        },
+    });

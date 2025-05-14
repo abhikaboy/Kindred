@@ -15,7 +15,7 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
 } from "react-native-reanimated";
-
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 type Props = {
     options?: Option[];
     selected: Option;
@@ -62,7 +62,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                         borderRadius: 20,
                         padding: 16,
                         backgroundColor: ThemedColor.lightened,
-                        paddingHorizontal: 24,
+                        paddingHorizontal: HORIZONTAL_PADDING,
                         flexDirection: "row",
                         justifyContent: "space-between",
                     },
@@ -101,7 +101,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                                 style={{
                                     backgroundColor: ThemedColor.lightened,
                                     padding: 8,
-                                    paddingHorizontal: 24,
+                                    paddingHorizontal: HORIZONTAL_PADDING,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
                                 }}>

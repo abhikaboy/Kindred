@@ -4,6 +4,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 
 type ID = {
     id: string;
@@ -71,7 +72,7 @@ const BottomMenuModal = memo((props: Props) => {
     // Content container styles
     const styles = StyleSheet.create({
         contentContainer: {
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
             paddingTop: 16,
             paddingBottom: 32,
             gap: 12,

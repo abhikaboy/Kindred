@@ -7,18 +7,18 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import PostCard from "@/components/cards/PostCard";
 import { Icons } from "@/constants/Icons";
 import { router, useRouter } from "expo-router";
-
+import { HORIZONTAL_PADDING } from "@/constants/Layout";
 export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-    const router = useRouter(); 
+    const router = useRouter();
     return (
         <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
                 <ThemedText type="subtitle">Kindred</ThemedText>
                 <TouchableOpacity
                     onPress={() => {
-                        router.push("/(logged-in)/(tabs)/feed/Notifications")
+                        router.push("/(logged-in)/(tabs)/feed/Notifications");
                     }}>
                     <Ionicons name="heart-outline" size={28} color={ThemedColor.text} />
                 </TouchableOpacity>
@@ -141,6 +141,6 @@ const stylesheet = (ThemedColor: any) =>
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
         },
     });

@@ -10,6 +10,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import BottomSheetKeyboardView from "@gorhom/bottom-sheet";
 import EditWorkspace from "../modals/edit/EditWorkspace";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -151,7 +152,10 @@ export const Drawer = ({ close }) => {
                         }}
                         key={workspace.name}>
                         <SelectedIndicator selected={selected === workspace.name} />
-                        <ThemedText type="default" key={workspace.name}>
+                        <ThemedText
+                            type="default"
+                            style={{ fontFamily: "Outfit", fontWeight: "medium" }}
+                            key={workspace.name}>
                             {workspace.name}
                         </ThemedText>
                     </TouchableOpacity>
@@ -174,7 +178,7 @@ const styles = (ThemedColor) =>
             flexDirection: "column",
             justifyContent: "flex-start",
             alignItems: "flex-start",
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
             paddingTop: 64,
             backgroundColor: ThemedColor.lightened,
             width: Dimensions.get("screen").width * 0.75,

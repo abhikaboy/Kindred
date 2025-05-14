@@ -9,6 +9,7 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { HORIZONTAL_PADDING } from "@/constants/Layout";
 
 type FollowRequestProps = {
     name: string;
@@ -61,7 +62,7 @@ const FollowRequests = () => {
     const ThemedColor = useThemeColor();
 
     return (
-        <View style={styles.container}>
+        <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
@@ -84,7 +85,7 @@ const FollowRequests = () => {
                     </View>
                 )}
             </ScrollView>
-        </View>
+        </ThemedView>
     );
 };
 
@@ -97,11 +98,11 @@ const stylesheet = (ThemedColor: any) =>
         headerContainer: {
             flexDirection: "row",
             alignItems: "center",
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
             paddingVertical: 10,
         },
         scrollViewContent: {
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
         },
         section: {
             marginBottom: 16,

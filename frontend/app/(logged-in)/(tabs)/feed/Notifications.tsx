@@ -256,20 +256,21 @@ const Notifications = () => {
     );
 };
 
-const stylesheet = (ThemedColor: any) =>
-    StyleSheet.create({
+const stylesheet = (ThemedColor: any) => {
+    const PADDING_HORIZTONAL = Dimensions.get("window").width * 0.05;
+    return StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: Dimensions.get("window").height * 0.1,
+            paddingTop: Dimensions.get("window").height * 0.05,
         },
         headerContainer: {
             flexDirection: "row",
             alignItems: "center",
-            paddingHorizontal: 24,
-            paddingVertical: 10
+            paddingHorizontal: PADDING_HORIZTONAL,
+            paddingVertical: 32,
         },
         scrollViewContent: {
-            paddingHorizontal: 24,
+            paddingHorizontal: PADDING_HORIZTONAL,
         },
         section: {
             marginBottom: 16,
@@ -278,5 +279,6 @@ const stylesheet = (ThemedColor: any) =>
             marginVertical: 10,
         },
     });
+};
 
 export default Notifications;
