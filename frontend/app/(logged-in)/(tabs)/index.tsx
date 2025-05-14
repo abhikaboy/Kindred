@@ -22,7 +22,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Timeline from "@/components/home/Timeline";
 import { Image } from "react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { HORIZONTAL_PADDING } from "@/constants/Layout";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 type Props = {};
 
 const Home = (props: Props) => {

@@ -7,7 +7,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import PostCard from "@/components/cards/PostCard";
 import { Icons } from "@/constants/Icons";
 import { router, useRouter } from "expo-router";
-import { HORIZONTAL_PADDING } from "@/constants/Layout";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);

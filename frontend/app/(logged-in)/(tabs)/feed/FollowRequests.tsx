@@ -9,7 +9,7 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { HORIZONTAL_PADDING } from "@/constants/Layout";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 
 type FollowRequestProps = {
     name: string;

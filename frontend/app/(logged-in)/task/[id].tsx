@@ -6,7 +6,7 @@ import TaskTabs from "@/components/inputs/TaskTabs";
 import { useLocalSearchParams } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";
-import { HORIZONTAL_PADDING } from "@/constants/Layout";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 
 export default function Task() {
     const [activeTab, setActiveTab] = useState(0);

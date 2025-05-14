@@ -16,7 +16,7 @@ import UserInfoRowComment from "@/components/UserInfo/UsereInfoRowComment";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
-import { HORIZONTAL_PADDING } from "@/constants/Layout";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const colorScheme = useColorScheme();

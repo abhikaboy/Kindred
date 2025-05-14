@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { HORIZONTAL_PADDING } from "@/constants/Layout";
+import { HORIZONTAL_PADDING } from "@/constants/layout";
 type Props = {};
 
 const month_to_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
