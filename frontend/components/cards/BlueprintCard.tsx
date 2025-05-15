@@ -96,7 +96,7 @@ const BlueprintCard = ({
 const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
-            width: 400,
+            width: 300,
             flexDirection: "column",
         },
         informationContainer: {

@@ -101,17 +101,17 @@ const Search = (props: Props) => {
                 paddingTop: Dimensions.get("screen").height * 0.12,
                 paddingHorizontal: 16,
             }}>
-            <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
-                <SearchBox
-                    value={searchTerm}
-                    placeholder={"Search for your friends!"}
-                    onChangeText={setSearchTerm}
-                    onSubmit={onSubmit}
-                    recent={true}
-                    name={"search-page"}
-                    setFocused={setFocused}
-                />
-                <ScrollView>
+            <ScrollView>
+                <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
+                    <SearchBox
+                        value={searchTerm}
+                        placeholder={"Search for your friends!"}
+                        onChangeText={setSearchTerm}
+                        onSubmit={onSubmit}
+                        recent={true}
+                        name={"search-page"}
+                        setFocused={setFocused}
+                    />
                     <View style={styles.workspaceGrid}>
                         {workspaces.map((workspace, index) => (
                             <BlueprintCard
@@ -128,41 +128,43 @@ const Search = (props: Props) => {
                             />
                         ))}
                     </View>
-                </ScrollView>
-                {!searched && (
-                    <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
-                        <ThemedText type="subtitle">Contacts</ThemedText>
-                        <ScrollView horizontal={true} style={{ gap: 16 }}>
-                            <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
-                            <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
-                            <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
-                            <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
-                        </ScrollView>
-                        <ThemedText type="subtitle">Invite</ThemedText>
-                        <View style={{ gap: 0, flexDirection: "column", alignItems: "center" }}>
-                            <Text style={{ fontSize: 128, lineHeight: 128 }}>✉️</Text>
-                            <ThemedText type="lightBody">Invite your friends to unlock rewards!</ThemedText>
-                            <PrimaryButton
-                                style={{ width: "35%", paddingVertical: 12, marginTop: 12 }}
-                                title={"Add"}
-                                onPress={onPress}
-                            />
-                        </View>
-                    </Animated.View>
-                )}
-                {searched && (
-                    <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                        <ThemedText type="subtitle">Results</ThemedText>
-                        <ScrollView style={{ marginTop: 20, minHeight: "100%" }} contentContainerStyle={{ gap: 20 }}>
-                            <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                            <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                            <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                            <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                            <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                        </ScrollView>
-                    </Animated.View>
-                )}
-            </Pressable>
+                    {!searched && (
+                        <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
+                            <ThemedText type="subtitle">Contacts</ThemedText>
+                            <ScrollView horizontal={true} style={{ gap: 16 }}>
+                                <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
+                                <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
+                                <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
+                                <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
+                            </ScrollView>
+                            <ThemedText type="subtitle">Invite</ThemedText>
+                            <View style={{ gap: 0, flexDirection: "column", alignItems: "center" }}>
+                                <Text style={{ fontSize: 128, lineHeight: 128 }}>✉️</Text>
+                                <ThemedText type="lightBody">Invite your friends to unlock rewards!</ThemedText>
+                                <PrimaryButton
+                                    style={{ width: "35%", paddingVertical: 12, marginTop: 12 }}
+                                    title={"Add"}
+                                    onPress={onPress}
+                                />
+                            </View>
+                        </Animated.View>
+                    )}
+                    {searched && (
+                        <Animated.View style={[focusStyle]} exiting={FadeOut}>
+                            <ThemedText type="subtitle">Results</ThemedText>
+                            <ScrollView
+                                style={{ marginTop: 20, minHeight: "100%" }}
+                                contentContainerStyle={{ gap: 20 }}>
+                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                            </ScrollView>
+                        </Animated.View>
+                    )}
+                </Pressable>
+            </ScrollView>
         </ThemedView>
     );
 };
