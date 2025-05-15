@@ -72,7 +72,7 @@ const BlueprintCard = ({
 
                         <ThemedText type="caption">{subscriberCount} subscribers</ThemedText>
                     </View>
-                    <View style={{ alignItems: "center", flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+                    <View style={{ alignItems: "center", flexDirection: "row", gap: 10}}>
                         {tags.map((tag, index) => (
                             <ThemedText
                                 key={index}
@@ -96,7 +96,7 @@ const BlueprintCard = ({
 const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
-            width: 300,
+            width: 280,
             flexDirection: "column",
         },
         informationContainer: {

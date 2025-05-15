@@ -61,6 +61,51 @@ const Search = (props: Props) => {
                     categoryId: "cat-003",
                 },
             ],
+            tags: ["AI", "Design", "Marketing"],
+        },
+        {
+            previewImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+            workspaceName: "Tech Innovators",
+            username: "techinnovate",
+            name: "Tech Innovators Group",
+            time: "2 hours ago",
+            subscriberCount: 1248,
+            description: "A community of tech enthusiasts sharing the latest innovations and projects.",
+            tasks: [
+                {
+                    content: "Complete AI chatbot integration",
+                    value: 5,
+                    priority: 3,
+                    id: "task-001",
+                    categoryId: "cat-001",
+                },
+                {
+                    content: "Design new landing page",
+                    value: 3,
+                    priority: 2,
+                    id: "task-002",
+                    categoryId: "cat-002",
+                },
+            ],
+            tags: ["Creative", "Programming", "Design"],
+        },
+        {
+            previewImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
+            workspaceName: "Creative Minds",
+            username: "creativeminds",
+            name: "Creative Minds Collective",
+            time: "1 day ago",
+            subscriberCount: 956,
+            description: "A workspace for creative professionals to share ideas and collaborate on projects.",
+            tasks: [
+                {
+                    content: "Brainstorm new campaign concepts",
+                    value: 4,
+                    priority: 1,
+                    id: "task-003",
+                    categoryId: "cat-003",
+                },
+            ],
             tags: ["Creative", "Design", "Marketing"],
         },
     ];
@@ -78,15 +123,6 @@ const Search = (props: Props) => {
         };
     });
 
-    const onPress = async () => {
-        const isAvailable = await SMS.isAvailableAsync();
-        if (!isAvailable) {
-            alert("SMS is not available on this device");
-        } else {
-            await SMS.sendSMSAsync(" ", "Join me on Kindred!");
-        }
-    };
-
     const onSubmit = () => {
         setSearched(searchTerm.trim() != "");
     };
@@ -98,68 +134,89 @@ const Search = (props: Props) => {
     return (
         <ThemedView
             style={{
-                paddingTop: Dimensions.get("screen").height * 0.12,
+                paddingVertical: Dimensions.get("screen").height * 0.1,
                 paddingHorizontal: 16,
             }}>
-            <ScrollView>
+            <SearchBox
+                value={searchTerm}
+                placeholder={"Search for your friends!"}
+                onChangeText={setSearchTerm}
+                onSubmit={onSubmit}
+                recent={true}
+                name={"search-page"}
+                setFocused={setFocused}
+            />
+            <ScrollView style={{ paddingVertical: Dimensions.get("screen").height * 0.03 }}>
                 <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
-                    <SearchBox
-                        value={searchTerm}
-                        placeholder={"Search for your friends!"}
-                        onChangeText={setSearchTerm}
-                        onSubmit={onSubmit}
-                        recent={true}
-                        name={"search-page"}
-                        setFocused={setFocused}
-                    />
-                    <View style={styles.workspaceGrid}>
-                        {workspaces.map((workspace, index) => (
-                            <BlueprintCard
-                                key={index}
-                                previewImage={workspace.previewImage}
-                                workspaceName={workspace.workspaceName}
-                                username={workspace.username}
-                                name={workspace.name}
-                                time={workspace.time}
-                                subscriberCount={workspace.subscriberCount}
-                                description={workspace.description}
-                                tasks={workspace.tasks}
-                                tags={workspace.tags}
-                            />
-                        ))}
-                    </View>
+                    <ThemedText type="subtitle">Fitness</ThemedText>
+
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                        <View style={styles.workspaceGrid}>
+                            {workspaces.map((workspace, index) => (
+                                <BlueprintCard
+                                    key={index}
+                                    previewImage={workspace.previewImage}
+                                    workspaceName={workspace.workspaceName}
+                                    username={workspace.username}
+                                    name={workspace.name}
+                                    time={workspace.time}
+                                    subscriberCount={workspace.subscriberCount}
+                                    description={workspace.description}
+                                    tasks={workspace.tasks}
+                                    tags={workspace.tags}
+                                />
+                            ))}
+                        </View>
+                    </ScrollView>
+
                     {!searched && (
                         <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
-                            <ThemedText type="subtitle">Contacts</ThemedText>
-                            <ScrollView horizontal={true} style={{ gap: 16 }}>
+                            <ThemedText type="subtitle" style={{ marginTop: 30 }}>
+                                Suggested For You
+                            </ThemedText>
+                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
                             </ScrollView>
-                            <ThemedText type="subtitle">Invite</ThemedText>
-                            <View style={{ gap: 0, flexDirection: "column", alignItems: "center" }}>
-                                <Text style={{ fontSize: 128, lineHeight: 128 }}>✉️</Text>
-                                <ThemedText type="lightBody">Invite your friends to unlock rewards!</ThemedText>
-                                <PrimaryButton
-                                    style={{ width: "35%", paddingVertical: 12, marginTop: 12 }}
-                                    title={"Add"}
-                                    onPress={onPress}
-                                />
-                            </View>
                         </Animated.View>
                     )}
+                    <ThemedText type="subtitle" style={{ marginTop: 30 }}>
+                        Creativity
+                    </ThemedText>
+
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                        <View style={styles.workspaceGrid}>
+                            {workspaces.map((workspace, index) => (
+                                <BlueprintCard
+                                    key={index}
+                                    previewImage={workspace.previewImage}
+                                    workspaceName={workspace.workspaceName}
+                                    username={workspace.username}
+                                    name={workspace.name}
+                                    time={workspace.time}
+                                    subscriberCount={workspace.subscriberCount}
+                                    description={workspace.description}
+                                    tasks={workspace.tasks}
+                                    tags={workspace.tags}
+                                />
+                            ))}
+                        </View>
+                    </ScrollView>
                     {searched && (
                         <Animated.View style={[focusStyle]} exiting={FadeOut}>
                             <ThemedText type="subtitle">Results</ThemedText>
                             <ScrollView
-                                style={{ marginTop: 20, minHeight: "100%" }}
-                                contentContainerStyle={{ gap: 20 }}>
-                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                style={{ marginTop: 20, minHeight: "100%"}}
+                                >
+                                <View>
+                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                                </View>
                             </ScrollView>
                         </Animated.View>
                     )}
@@ -174,9 +231,9 @@ export default Search;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
     },
     workspaceGrid: {
+        flexDirection: "row",
         gap: 20,
     },
 });
