@@ -18,7 +18,7 @@ import { Icons } from "@/constants/Icons";
 import ReactPills from "@/components/inputs/ReactPills";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useThemeColor } from "@/hooks/useThemeColor";
-
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 export default function Dev1() {
     const [searchTerm, setSearchTerm] = React.useState("");
     let ThemedColor = useThemeColor();
@@ -30,7 +30,7 @@ export default function Dev1() {
                 height: Dimensions.get("screen").height,
                 flex: 1,
                 paddingTop: Dimensions.get("screen").height * 0.12,
-                paddingHorizontal: 24,
+                paddingHorizontal: HORIZONTAL_PADDING,
                 gap: 16,
             }}>
             <ThemedText type="title" style={{ fontWeight: "700" }}>

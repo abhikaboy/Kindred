@@ -1,5 +1,5 @@
 /* eslint-disable import/no-unresolved */
-import { Text, type TextProps, StyleSheet } from "react-native";
+import { Text, type TextProps, StyleSheet, Dimensions } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React from "react";
@@ -24,7 +24,9 @@ export type ThemedTextProps = TextProps & {
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
     let ThemedColor = useThemeColor();
     const color = ThemedColor.text;
-
+    const base = 393;
+    const scale = Dimensions.get("screen").width / base;
+    const styles = useStyles(ThemedColor, scale);
     return (
         <Text
             style={[
@@ -48,62 +50,62 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
 }
 let ThemedColor = useThemeColor();
 
-const styles = StyleSheet.create({
-    default: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-    },
-    disabledTitle: {
-        fontSize: 20,
-        fontWeight: "medium",
-        color: ThemedColor.caption,
-        fontFamily: "Outfit",
-        opacity: 0.5,
-    },
-    caption: {
-        fontSize: 14,
-        fontFamily: "Outfit",
-        color: ThemedColor.caption,
-    },
-    lightBody: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: 400,
-    },
-    defaultSemiBold: {
-        fontSize: 20,
-        fontWeight: "regular",
-        fontFamily: "Outfit",
-    },
-    heading: {
-        fontSize: 32,
-        fontWeight: 600,
-        fontFamily: "Outfit",
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: "medium",
-        fontFamily: "Outfit",
-    },
-    subtitle: {
-        fontSize: 20,
-        fontWeight: 500,
-        fontFamily: "Outfit",
-    },
-    link: {
-        lineHeight: 30,
-        fontSize: 16,
-        color: "#444444",
-        fontFamily: "Outfit",
-    },
-    tiny: {
-        fontSize: 12,
-        color: ThemedColor.text,
-        fontFamily: "Outfit",
-    },
-    smallerDefault: {
-        fontSize: 14,
-        fontWeight: "400",
-        fontFamily: "Outfit",
-    },
-});
+const useStyles = (ThemedColor: any, scale: number) =>
+    StyleSheet.create({
+        default: {
+            fontSize: 16 * scale,
+            fontFamily: "OutfitLight",
+        },
+        disabledTitle: {
+            fontSize: 20 * scale,
+            fontWeight: "medium",
+            color: ThemedColor.caption,
+            fontFamily: "Outfit",
+            opacity: 0.5,
+        },
+        caption: {
+            fontSize: 14 * scale,
+            fontFamily: "Outfit",
+            color: ThemedColor.caption,
+        },
+        lightBody: {
+            fontSize: 16 * scale,
+            fontFamily: "OutfitLight",
+        },
+        defaultSemiBold: {
+            fontSize: 16 * scale,
+            fontWeight: "regular",
+            fontFamily: "Outfit",
+        },
+        heading: {
+            fontSize: 32 * scale,
+            fontWeight: 600,
+            fontFamily: "Outfit",
+        },
+        title: {
+            fontSize: 32 * scale,
+            fontWeight: "medium",
+            fontFamily: "Outfit",
+        },
+        subtitle: {
+            fontSize: 20 * scale,
+            fontWeight: 500,
+            fontFamily: "Outfit",
+        },
+        link: {
+            lineHeight: 30 * scale,
+            fontSize: 16 * scale,
+            color: "#444444",
+            fontFamily: "Outfit",
+        },
+        tiny: {
+            fontSize: 12 * scale,
+            color: ThemedColor.text,
+            fontFamily: "OutfitLight",
+        },
+        smallerDefault: {
+            fontSize: 14 * scale,
+            fontWeight: "400",
+            fontFamily: "OutfitLight",
+        },
+    });

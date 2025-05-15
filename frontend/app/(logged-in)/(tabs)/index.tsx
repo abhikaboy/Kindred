@@ -22,6 +22,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Timeline from "@/components/home/Timeline";
 import { Image } from "react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 type Props = {};
 
 const Home = (props: Props) => {
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: Dimensions.get("screen").height * 0.09,
-        paddingHorizontal: 24,
+        paddingHorizontal: HORIZONTAL_PADDING,
         paddingBottom: Dimensions.get("screen").height * 0.12,
     },
     headerContainer: {

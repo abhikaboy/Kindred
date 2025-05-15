@@ -76,6 +76,15 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 	if err := validator.Validate(params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
+	/**
+		Truncating the start date to the start of the day to 
+		make sure its detected as 1 day old as soon as the new day starts
+	*/
+	if params.StartDate != nil {
+		// remove the time and only keep the date
+		truncated := params.StartDate.Truncate(24 * time.Hour)
+		params.StartDate = &truncated
+	}
 
 	if params.RecurDetails != nil {
 		if params.RecurDetails.Every == 0 {
@@ -174,8 +183,6 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 
 
 		template_doc.NextGenerated = next_occurence
-
-		h.service.PrintNextRecurrences(&template_doc)
 
 		_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
 		if err != nil {
@@ -352,6 +359,7 @@ func (h *Handler) CreateTaskFromTemplate(c *fiber.Ctx) error {
 			"error": "Invalid ID format",
 		})
 	}
+
 
 	template, err := h.service.CreateTaskFromTemplate(templateOID)
 	if err != nil {

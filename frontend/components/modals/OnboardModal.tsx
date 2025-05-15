@@ -73,13 +73,13 @@ export const OnboardModal = (props: Props) => {
             if (!email || !firstName || !lastName) {
                 console.log("We think you already have an accout: trying to log in instead");
                 await login(appleAccountID);
-                router.replace("/home");
+                router.push("/(logged-in)/(tabs)");
             } else {
                 let data = await register(email, appleAccountID);
                 console.log(data);
 
                 router.replace({
-                    pathname: "/(onboarding)",
+                    pathname: "/(onboarding)/phone",
                     params: {
                         initialFirstName: "",
                         initialLastName: "",
@@ -111,7 +111,7 @@ export const OnboardModal = (props: Props) => {
 
             await login(appleAccountID);
 
-            router.replace("/home");
+            router.push("/(logged-in)/(tabs)");
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("they cancelled");
@@ -121,7 +121,7 @@ export const OnboardModal = (props: Props) => {
             }
         }
     };
-
+    const styles = useStyles(ThemedColor);
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
@@ -160,7 +160,7 @@ export const OnboardModal = (props: Props) => {
                                 fontSize: 24,
                                 textAlign: "center",
                                 fontWeight: "600",
-                                color: ThemedColor.buttonText,
+                                color: ThemedColor.text,
                             }}>
                             Welcome to Kindred 👋
                         </ThemedText>
@@ -178,6 +178,7 @@ export const OnboardModal = (props: Props) => {
                             <PrimaryButton
                                 title="Continue with Email"
                                 onPress={() => setVisible(false)}
+                                ghost
                                 style={{
                                     backgroundColor: "#854DFF00",
                                 }}
@@ -217,7 +218,7 @@ export const OnboardModal = (props: Props) => {
                                         style={{ width: "100%", alignItems: "center", padding: 4 }}
                                         intensity={25}
                                         tint={ThemedColor.background}>
-                                        <AntDesign name="apple-o" size={32} color={ThemedColor.buttonText} />
+                                        <AntDesign name="apple-o" size={32} color={ThemedColor.text} />
                                     </BlurView>
                                 </View>
                             </TouchableOpacity>
@@ -227,7 +228,7 @@ export const OnboardModal = (props: Props) => {
                                         style={{ width: "100%", alignItems: "center", padding: 4 }}
                                         intensity={25}
                                         tint={ThemedColor.background}>
-                                        <AntDesign name="google" size={32} color={ThemedColor.buttonText} />
+                                        <AntDesign name="google" size={32} color={ThemedColor.text} />
                                     </BlurView>
                                 </View>
                             </TouchableOpacity>
@@ -239,28 +240,29 @@ export const OnboardModal = (props: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
-    blurContainer: {
-        paddingBottom: Dimensions.get("screen").height * 0.1,
-        height: "100%",
-        gap: 32,
-        alignItems: "center",
-        flex: 1,
-    },
-    divider: {
-        width: "38%",
-        borderStyle: "solid",
-        borderColor: "white",
-        borderWidth: 1,
-        height: 2,
-    },
-    outlineButton: {
-        width: "50%",
-        backgroundColor: "rgba(255,255,255,0.1)",
-        borderColor: "white",
-        borderWidth: 1,
-        paddingVertical: 8,
-        alignItems: "center",
-        borderRadius: 24,
-    },
-});
+const useStyles = (ThemedColor: any) =>
+    StyleSheet.create({
+        blurContainer: {
+            paddingBottom: Dimensions.get("screen").height * 0.1,
+            height: "100%",
+            gap: 32,
+            alignItems: "center",
+            flex: 1,
+        },
+        divider: {
+            width: "38%",
+            borderStyle: "solid",
+            borderColor: ThemedColor.text,
+            borderWidth: 1,
+            height: 2,
+        },
+        outlineButton: {
+            width: "50%",
+            backgroundColor: ThemedColor.text + "20",
+            borderColor: ThemedColor.text,
+            borderWidth: 1,
+            paddingVertical: 8,
+            alignItems: "center",
+            borderRadius: 24,
+        },
+    });

@@ -7,6 +7,7 @@ import { getThemedColor } from "@/constants/Colors";
 import OnboardButton from "@/components/inputs/OnboardButton";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {};
 
@@ -21,7 +22,12 @@ const Index = (props: Props) => {
     const router = useRouter();
 
     return (
-        <ThemedView style={{ paddingTop: Dimensions.get("screen").height * 0.2, paddingHorizontal: 24, gap: 24 }}>
+        <ThemedView
+            style={{
+                paddingTop: Dimensions.get("screen").height * 0.2,
+                paddingHorizontal: HORIZONTAL_PADDING,
+                gap: 24,
+            }}>
             <CountryPicker
                 lang="en"
                 show={show}
@@ -36,7 +42,7 @@ const Index = (props: Props) => {
                     modal: {
                         top: Dimensions.get("screen").height * 0.25,
                         height: Dimensions.get("screen").height * 1,
-                        paddingHorizontal: 24,
+                        paddingHorizontal: HORIZONTAL_PADDING,
                         backgroundColor: ThemedColor.background,
                     },
                     itemsList: {
@@ -76,7 +82,7 @@ const Index = (props: Props) => {
                     gap: 4,
                     width: "100%",
                     justifyContent: "center",
-                    paddingHorizontal: 24,
+                    paddingHorizontal: HORIZONTAL_PADDING,
                 }}>
                 <TouchableOpacity
                     style={{

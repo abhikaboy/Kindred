@@ -5,9 +5,11 @@ type Props = {
     title: string;
     onPress: () => void;
     style?: ViewStyle;
+    ghost?: boolean;
+    outline?: boolean;
 };
 
-export default function PrimaryButton({ title, onPress, style }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline }: Props) {
     let ThemedColor = useThemeColor();
 
     return (
@@ -24,7 +26,7 @@ export default function PrimaryButton({ title, onPress, style }: Props) {
             ]}>
             <Text
                 style={{
-                    color: ThemedColor.buttonText,
+                    color: ghost ? ThemedColor.text : ThemedColor.buttonText,
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,

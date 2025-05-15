@@ -12,9 +12,9 @@ const Colors = {
         lightened: "#F5f5f5",
         primary: "#854DFF",
         primaryPressed: "#2D1E52",
-        success: "#5CFF95",
+        success: "#1CF954",
         error: "#FF5C5F",
-        warning: "#FFFF5C",
+        warning: "#FFD700",
         caption: "#9D9D9D",
         tertiary: "#E5E5E5",
 

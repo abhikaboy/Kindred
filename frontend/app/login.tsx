@@ -7,6 +7,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {};
 
@@ -36,7 +37,7 @@ const login = (props: Props) => {
             }}>
             <View
                 style={{
-                    paddingHorizontal: 24,
+                    paddingHorizontal: HORIZONTAL_PADDING,
                     width: "100%",
                     height: "50%",
                     flex: 1,

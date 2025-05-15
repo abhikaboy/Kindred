@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import * as SMS from "expo-sms";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type FollowRequestProps = {
     name: string;
@@ -70,7 +71,7 @@ const FollowRequests = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
@@ -104,7 +105,7 @@ const FollowRequests = () => {
                     </View>
                 </View>
             </ScrollView>
-        </View>
+        </ThemedView>
     );
 };
 
@@ -118,12 +119,12 @@ const stylesheet = (ThemedColor) =>
         headerContainer: {
             flexDirection: "row",
             alignItems: "center",
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
             paddingVertical: 10,
             gap: 16,
         },
         scrollViewContent: {
-            paddingHorizontal: 24,
+            paddingHorizontal: HORIZONTAL_PADDING,
             paddingBottom: Dimensions.get("window").height * 0.1,
         },
         section: {

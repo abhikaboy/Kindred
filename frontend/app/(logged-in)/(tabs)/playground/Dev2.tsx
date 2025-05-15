@@ -16,7 +16,7 @@ import UserInfoRowComment from "@/components/UserInfo/UsereInfoRowComment";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
-
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 export default function Dev2() {
     const [searchTerm, setSearchTerm] = React.useState("");
     const colorScheme = useColorScheme();
@@ -28,7 +28,7 @@ export default function Dev2() {
                 height: Dimensions.get("screen").height,
                 flex: 1,
                 paddingTop: Dimensions.get("screen").height * 0.12,
-                paddingHorizontal: 24,
+                paddingHorizontal: HORIZONTAL_PADDING,
                 gap: 16,
             }}>
             <ThemedText type="title" style={{ fontWeight: "700" }}>
@@ -54,11 +54,13 @@ export default function Dev2() {
                                 userId={""}
                                 comment={"drinking water"}
                                 icon={Icons.luffy}
-                                time={3} image={Icons.luffy}></UserInfoCommentNotification>
+                                time={3}
+                                image={Icons.luffy}></UserInfoCommentNotification>
 
-                            <UserInfoFollowRequest name={"Beak"} username={"abhikaboyray"} icon={Icons.lokye}>
-                                
-                            </UserInfoFollowRequest>
+                            <UserInfoFollowRequest
+                                name={"Beak"}
+                                username={"abhikaboyray"}
+                                icon={Icons.lokye}></UserInfoFollowRequest>
                             <ScrollView horizontal style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                                 <ContactCard name="Abhik Ray" icon={Icons.luffy} handle="beak" following={true} />
                                 <ContactCard name="Lok Ye" icon={Icons.lokye} handle="lokye" following={false} />
