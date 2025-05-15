@@ -18,6 +18,7 @@ import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
+import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -71,27 +72,29 @@ export default function RootLayout() {
         <AuthProvider>
             <TasksProvider>
                 <TaskCreationProvider>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                        <BottomSheetModalProvider>
-                            {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
-                            <Stack
-                                screenOptions={{
-                                    headerShown: true,
-                                    headerTransparent: true,
-                                    headerLeft: (tab) => <BackButton />,
-                                    headerTintColor: ThemedColor.text,
-                                    headerBackButtonDisplayMode: "minimal",
-                                    headerTitleStyle: {
-                                        fontFamily: "Outfit",
-                                        fontWeight: 100,
-                                        fontSize: 1,
-                                        color: ThemedColor.primary,
-                                    },
-                                }}
-                            />
-                            <StatusBar style="light" />
-                        </BottomSheetModalProvider>
-                    </GestureHandlerRootView>
+                    <BlueprintCreationProvider>
+                        <GestureHandlerRootView style={{ flex: 1 }}>
+                            <BottomSheetModalProvider>
+                                {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
+                                <Stack
+                                    screenOptions={{
+                                        headerShown: true,
+                                        headerTransparent: true,
+                                        headerLeft: (tab) => <BackButton />,
+                                        headerTintColor: ThemedColor.text,
+                                        headerBackButtonDisplayMode: "minimal",
+                                        headerTitleStyle: {
+                                            fontFamily: "Outfit",
+                                            fontWeight: 100,
+                                            fontSize: 1,
+                                            color: ThemedColor.primary,
+                                        },
+                                    }}
+                                />
+                                <StatusBar style="light" />
+                            </BottomSheetModalProvider>
+                        </GestureHandlerRootView>
+                    </BlueprintCreationProvider>
                 </TaskCreationProvider>
             </TasksProvider>
         </AuthProvider>

@@ -13,16 +13,19 @@ import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import * as Contacts from "expo-contacts";
 import BlueprintCard from "@/components/cards/BlueprintCard";
+import { useBlueprints } from "@/contexts/blueprintContext";
 
 type Props = {};
 
 const Search = (props: Props) => {
     const workspaces = [
         {
+            id: "12345678",
             previewImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
             workspaceName: "Tech Innovators",
             username: "techinnovate",
-            name: "Tech Innovators Group",
+            name: "lok ye",
             time: "2 hours ago",
             subscriberCount: 1248,
             description: "A community of tech enthusiasts sharing the latest innovations and projects.",
@@ -45,10 +48,12 @@ const Search = (props: Props) => {
             tags: ["AI", "Programming", "Design"],
         },
         {
+            id: "123456789",
             previewImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
+            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
             workspaceName: "Creative Minds",
             username: "creativeminds",
-            name: "Creative Minds Collective",
+            name: "lok ye",
             time: "1 day ago",
             subscriberCount: 956,
             description: "A workspace for creative professionals to share ideas and collaborate on projects.",
@@ -64,10 +69,12 @@ const Search = (props: Props) => {
             tags: ["AI", "Design", "Marketing"],
         },
         {
+            id: "1234567891",
             previewImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
             workspaceName: "Tech Innovators",
             username: "techinnovate",
-            name: "Tech Innovators Group",
+            name: "lok ye",
             time: "2 hours ago",
             subscriberCount: 1248,
             description: "A community of tech enthusiasts sharing the latest innovations and projects.",
@@ -90,10 +97,12 @@ const Search = (props: Props) => {
             tags: ["Creative", "Programming", "Design"],
         },
         {
+            id: "1234567892",
             previewImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
+            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
             workspaceName: "Creative Minds",
             username: "creativeminds",
-            name: "Creative Minds Collective",
+            name: "lok ye",
             time: "1 day ago",
             subscriberCount: 956,
             description: "A workspace for creative professionals to share ideas and collaborate on projects.",
@@ -131,6 +140,11 @@ const Search = (props: Props) => {
         opacity.value = withTiming(focused ? 0.05 : 1);
     }, [focused]);
 
+    const { setBlueprints } = useBlueprints();
+    useEffect(() => {
+        setBlueprints(workspaces);
+    }, []);
+
     return (
         <ThemedView
             style={{
@@ -162,8 +176,8 @@ const Search = (props: Props) => {
                                     time={workspace.time}
                                     subscriberCount={workspace.subscriberCount}
                                     description={workspace.description}
-                                    tasks={workspace.tasks}
                                     tags={workspace.tags}
+                                    id={workspace.id}
                                 />
                             ))}
                         </View>
