@@ -19,15 +19,7 @@ export const Category: React.FC<CategoryProps> = ({ id, name, tasks, onLongPress
                 <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
             </TouchableOpacity>
             {tasks.map((task) => (
-                <SwipableTaskCard
-                    key={task.id + task.content}
-                    content={task.content}
-                    value={0 || task.value}
-                    priority={task.priority as unknown as 1 | 2 | 3}
-                    redirect={true}
-                    id={task.id}
-                    categoryId={id}
-                />
+                <SwipableTaskCard key={task.id + task.content} redirect={true} categoryId={id} task={task} />
             ))}
         </View>
     );

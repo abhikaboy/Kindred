@@ -38,6 +38,9 @@ const Standard = ({ hide, goTo }: Props) => {
             recurring: false,
             public: true,
             active: false,
+            checklist: [],
+            notes: "",
+            startDate: new Date(),
         });
 
         addToCategory(selected.id, response);

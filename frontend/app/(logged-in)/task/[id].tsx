@@ -1,5 +1,5 @@
-import { Dimensions, StyleSheet, Text, View } from "react-native";
-import React, { useState } from "react";
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import TaskTabs from "@/components/inputs/TaskTabs";
@@ -7,11 +7,99 @@ import { useLocalSearchParams } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useTasks } from "@/contexts/tasksContext";
+import ConditionalView from "@/components/ui/ConditionalView";
+import ChecklistToggle from "@/components/inputs/ChecklistToggle";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Task() {
     const [activeTab, setActiveTab] = useState(0);
     const { name, id } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
+    const { task } = useTasks();
+    const [isRunning, setIsRunning] = useState(false);
+    const [time, setTime] = useState(new Date());
+    const [baseTime, setBaseTime] = useState(new Date());
+    const [checklistItem, setChecklistItem] = useState([]);
+
+    const formatElapsedTime = (milliseconds: number) => {
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    };
+
+    const addEmptyChecklistItem = () => {
+        setChecklistItem([
+            ...checklistItem,
+            {
+                order: task?.checklist?.length,
+                content: "",
+                completed: false,
+            },
+        ]);
+    };
+
+    const modifyChecklistItem = (index: number, content: string) => {
+        setChecklistItem([
+            ...checklistItem.slice(0, index),
+            { ...checklistItem[index], content },
+            ...checklistItem.slice(index + 1),
+        ]);
+    };
+
+    const loadBaseTime = async () => {
+        try {
+            const storedTime = await AsyncStorage.getItem(`task_${id}_baseTime`);
+            if (storedTime) {
+                setBaseTime(new Date(parseInt(storedTime)));
+            }
+        } catch (error) {
+            console.error("Error loading base time:", error);
+        }
+    };
+
+    const saveBaseTime = async (time: Date) => {
+        try {
+            await AsyncStorage.setItem(`task_${id}_baseTime`, time.getTime().toString());
+        } catch (error) {
+            console.error("Error saving base time:", error);
+        }
+    };
+
+    useEffect(() => {
+        loadBaseTime();
+    }, [id]);
+
+    useEffect(() => {
+        console.log(task);
+    }, [task]);
+
+    useEffect(() => {
+        task.checklist = checklistItem;
+    }, [checklistItem]);
+
+    useEffect(() => {
+        if (isRunning) {
+            const interval = setInterval(() => {
+                setTime(new Date());
+            }, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [isRunning]);
+
+    const toggleTimer = () => {
+        const newIsRunning = !isRunning;
+        setIsRunning(newIsRunning);
+        if (newIsRunning) {
+            const newBaseTime = new Date();
+            setBaseTime(newBaseTime);
+            saveBaseTime(newBaseTime);
+        }
+    };
+
     return (
         <ThemedView
             style={{
@@ -22,28 +110,131 @@ export default function Task() {
             }}>
             <ThemedText type="heading">{name}</ThemedText>
             <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={setActiveTab} />
-            <DataCard title="Notes" content="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus." />
-            <DataCard title="Checklist" content="" />
-            <DataCard title="Start Time">
-                <View
+            <ConditionalView condition={activeTab === 0}>
+                <DataCard title="Notes">
+                    <TextInput
+                        value={task?.notes}
+                        onChangeText={(text) => {
+                            // setTask({ ...task, notes: text });
+                        }}
+                        placeholder="Tap to add notes"
+                        style={{
+                            backgroundColor: ThemedColor.lightened,
+                            paddingVertical: 8,
+                            fontSize: 16,
+                            color: ThemedColor.body,
+                            fontFamily: "OutfitLight",
+                        }}
+                    />
+                </DataCard>
+                <DataCard title="Checklist">
+                    <ConditionalView condition={task?.checklist?.length > 0}>
+                        {checklistItem.map((item, index) => (
+                            <View key={item.id} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <ChecklistToggle />
+                                <TextInput
+                                    value={item.content}
+                                    onChangeText={(text) => {
+                                        modifyChecklistItem(index, text);
+                                    }}
+                                    style={{
+                                        paddingVertical: 8,
+                                        fontSize: 16,
+                                        color: ThemedColor.body,
+                                        fontFamily: "OutfitLight",
+                                    }}
+                                />
+                            </View>
+                        ))}
+                    </ConditionalView>
+                    <ConditionalView condition={task?.checklist?.length === 0 || task?.checklist == null}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <ChecklistToggle />
+                            <TextInput
+                                placeholder="Add a checklist item"
+                                style={{
+                                    paddingVertical: 8,
+                                    fontSize: 16,
+                                    color: ThemedColor.body,
+                                    fontFamily: "OutfitLight",
+                                    width: "100%",
+                                }}
+                                onSubmitEditing={() => {
+                                    console.log("checklistItem");
+                                    addEmptyChecklistItem();
+                                }}
+                            />
+                        </View>
+                    </ConditionalView>
+                </DataCard>
+                <ConditionalView condition={task?.startDate != null}>
+                    <DataCard title="Start Date">
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                            }}>
+                            <ThemedText type="lightBody">{new Date(task?.startDate).toLocaleDateString()}</ThemedText>
+                            <ThemedText type="lightBody">{new Date(task?.startDate).toLocaleTimeString()}</ThemedText>
+                        </View>
+                    </DataCard>
+                </ConditionalView>
+                <ConditionalView condition={task?.deadline != null}>
+                    <DataCard title="Deadline">
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                            }}>
+                            <ThemedText type="lightBody">{new Date(task?.deadline).toLocaleTimeString()}</ThemedText>
+                            <ThemedText type="lightBody">{new Date(task?.deadline).toLocaleDateString()}</ThemedText>
+                        </View>
+                    </DataCard>
+                </ConditionalView>
+            </ConditionalView>
+            <ConditionalView condition={activeTab === 1}>
+                <TouchableOpacity
                     style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                    }}>
-                    <ThemedText type="lightBody">{new Date().toLocaleTimeString()}</ThemedText>
-                    <ThemedText type="lightBody">{new Date().toLocaleTimeString()}</ThemedText>
-                </View>
-            </DataCard>
-            <DataCard title="Deadline">
-                <View
-                    style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                    }}>
-                    <ThemedText type="lightBody">{new Date().toLocaleTimeString()}</ThemedText>
-                    <ThemedText type="lightBody">{new Date().toLocaleTimeString()}</ThemedText>
-                </View>
-            </DataCard>
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 16,
+                        marginTop: Dimensions.get("screen").height * 0.05,
+                    }}
+                    onPress={toggleTimer}>
+                    <View
+                        style={{
+                            borderWidth: 16,
+                            borderColor: isRunning ? "#CBFFDD" : "#FFB8B8",
+                            borderRadius: 2000,
+                            width: Dimensions.get("screen").width * 0.8,
+                            height: Dimensions.get("screen").width * 0.8,
+                            justifyContent: "center",
+                            alignItems: "center",
+                        }}>
+                        <View
+                            style={{
+                                display: "flex",
+                                width: Dimensions.get("screen").width * 0.8,
+                                height: Dimensions.get("screen").width * 0.8,
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderColor: isRunning ? "#00C49F" : "#FF5C5F",
+                                borderWidth: 6,
+                                borderRadius: 2000,
+                            }}>
+                            <ThemedText type="heading">
+                                {formatElapsedTime(new Date().getTime() - baseTime.getTime())}
+                            </ThemedText>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+                <ConditionalView condition={!isRunning}>
+                    <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", marginTop: 24 }}>
+                        <ThemedText type="lightBody">Tap the stopwatch to begin</ThemedText>
+                    </View>
+                </ConditionalView>
+            </ConditionalView>
         </ThemedView>
     );
 }

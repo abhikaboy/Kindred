@@ -15,12 +15,9 @@ import { markAsCompletedAPI, activateTaskAPI } from "@/api/task";
 import Confetti from "react-native-simple-confetti";
 import { useTasks } from "@/contexts/tasksContext";
 type Props = {
-    content: string;
-    value: number;
-    priority: number;
     redirect?: boolean;
-    id: string;
     categoryId: string;
+    task: Task;
 };
 
 const ThemedColor = useThemeColor();
@@ -29,7 +26,7 @@ const ThemedColor = useThemeColor();
   Mark as completed function
 */
 
-export default function SwipableTaskCard({ content, value, priority, redirect = false, id, categoryId }: Props) {
+export default function SwipableTaskCard({ redirect = false, categoryId, task }: Props) {
     const { removeFromCategory, setShowConfetti } = useTasks();
     const deleteTask = async (categoryId: string, taskId: string) => {
         // const res = await deleteTask(categoryId, taskId);
@@ -61,26 +58,27 @@ export default function SwipableTaskCard({ content, value, priority, redirect = 
                 leftThreshold={Dimensions.get("window").width / 3}
                 overshootLeft={true}
                 overshootFriction={2.7}
-                renderLeftActions={(prog, drag) => LeftAction(prog, drag, categoryId, id, markAsCompleted)}
+                renderLeftActions={(prog, drag) => LeftAction(prog, drag, categoryId, task.id, markAsCompleted)}
                 onBegan={(event) => {
                     console.log(event);
                 }}
                 onSwipeableOpen={(direction) => {
                     if (direction === "right") {
                         console.log(direction);
-                        markAsCompleted(categoryId, id);
+                        markAsCompleted(categoryId, task.id);
                     }
                 }}
                 rightThreshold={100}
                 overshootRight={true}
-                renderRightActions={(prog, drag) => RightAction(prog, drag, () => deleteTask(categoryId, id))}>
+                renderRightActions={(prog, drag) => RightAction(prog, drag, () => deleteTask(categoryId, task.id))}>
                 <TaskCard
-                    content={content}
-                    value={value}
-                    priority={priority as 1 | 2 | 3}
+                    content={task.content}
+                    value={task.value}
+                    priority={task.priority as 1 | 2 | 3}
                     redirect={redirect}
-                    id={id}
+                    id={task.id}
                     categoryId={categoryId}
+                    task={task}
                 />
             </ReanimatedSwipeable>
         </>

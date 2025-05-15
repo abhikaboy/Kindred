@@ -21,6 +21,9 @@ type CreateTaskParams struct {
 	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"` // Defaults to today
+
+	Notes        string                 `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist    []ChecklistItem        `bson:"checklist,omitempty" json:"checklist,omitempty"`
 }
 
 type SortParams struct {
@@ -42,10 +45,14 @@ type TaskDocument struct {
 	Timestamp    time.Time              `bson:"timestamp" json:"timestamp"`
 	LastEdited   time.Time              `bson:"lastEdited" json:"lastEdited"`
 	TemplateID    primitive.ObjectID     `bson:"templateID,omitempty" json:"templateID,omitempty"`
+	
 
 	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate *time.Time `bson:"startDate" json:"startDate"` // Defaults to today
+
+	Notes        string                 `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist    []ChecklistItem        `bson:"checklist,omitempty" json:"checklist,omitempty"`
 }
 
 type TemplateTaskDocument struct {
@@ -66,6 +73,9 @@ type TemplateTaskDocument struct {
 	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"` // Defaults to today
+
+	Notes        string                 `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist    []ChecklistItem        `bson:"checklist,omitempty" json:"checklist,omitempty"`
 }
 
 type RecurDetails struct {
@@ -86,6 +96,9 @@ type UpdateTaskDocument struct {
 	RecurDetails *RecurDetails           `bson:"recurDetails" json:"recurDetails"`
 	Public       bool                   `bson:"public" json:"public"`
 	Active       bool                   `bson:"active" json:"active"`
+
+	Notes        string                 `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist    []ChecklistItem        `bson:"checklist,omitempty" json:"checklist,omitempty"`
 }
 
 type SortTypes string
@@ -103,6 +116,12 @@ const (
 type CompleteTaskDocument struct {
 	TimeCompleted string `bson:"timeCompleted" json:"timeCompleted"`
 	TimeTaken     string `bson:"timeTaken" json:"timeTaken"`
+}
+
+type ChecklistItem struct {
+	Content   string `bson:"content" json:"content"`
+	Completed bool   `bson:"completed" json:"completed"`
+	Order     int    `bson:"order" json:"order"`
 }
 
 /*

@@ -104,10 +104,11 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		Public:       params.Public,
 		Active:       params.Active,
 		Timestamp:    time.Now(),
-
-		Deadline: params.Deadline,
-		StartTime: params.StartTime,
-		StartDate: params.StartDate,
+		Notes:        params.Notes,
+		Checklist:    params.Checklist,
+		Deadline:     params.Deadline,
+		StartTime:    params.StartTime,
+		StartDate:    params.StartDate,
 	}
 
 
