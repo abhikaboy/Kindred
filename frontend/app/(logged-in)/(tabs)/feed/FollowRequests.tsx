@@ -1,14 +1,14 @@
-import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
-import React, { ReactNode } from "react";
+import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, Text } from "react-native";
+import React, { useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
-import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
-import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import * as SMS from "expo-sms";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type FollowRequestProps = {
@@ -58,8 +58,17 @@ const follow_requests: FollowRequestProps[] = [
 ];
 
 const FollowRequests = () => {
-    const styles = stylesheet(useThemeColor);
     const ThemedColor = useThemeColor();
+    const styles = stylesheet(ThemedColor);
+
+    const onPress = async () => {
+        const isAvailable = await SMS.isAvailableAsync();
+        if (!isAvailable) {
+            alert("SMS is not available on this device");
+        } else {
+            await SMS.sendSMSAsync(" ", "Join me on Kindred!");
+        }
+    };
 
     return (
         <ThemedView style={styles.container}>
@@ -67,7 +76,7 @@ const FollowRequests = () => {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                <ThemedText type="subtitle">Friend Reqeusts</ThemedText>
+                <ThemedText type="subtitle">Friend Requests</ThemedText>
             </View>
             <ScrollView style={styles.scrollViewContent}>
                 {follow_requests.length > 0 && (
@@ -84,31 +93,69 @@ const FollowRequests = () => {
                         ))}
                     </View>
                 )}
+
+                <View style={styles.inviteSection}>
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>
+                        Invite Friends
+                    </ThemedText>
+                    <View style={styles.inviteContent}>
+                        <Text style={styles.emojiIcon}>✉️</Text>
+                        <ThemedText type="lightBody">Invite your friends to unlock rewards!</ThemedText>
+                        <PrimaryButton style={styles.inviteButton} title={"Invite"} onPress={onPress} />
+                    </View>
+                </View>
             </ScrollView>
         </ThemedView>
     );
 };
 
-const stylesheet = (ThemedColor: any) =>
+const stylesheet = (ThemedColor) =>
     StyleSheet.create({
         container: {
             flex: 1,
             paddingTop: Dimensions.get("window").height * 0.1,
+            backgroundColor: ThemedColor.background,
         },
         headerContainer: {
             flexDirection: "row",
             alignItems: "center",
             paddingHorizontal: HORIZONTAL_PADDING,
             paddingVertical: 10,
+            gap: 16,
         },
         scrollViewContent: {
             paddingHorizontal: HORIZONTAL_PADDING,
+            paddingBottom: Dimensions.get("window").height * 0.1,
         },
         section: {
-            marginBottom: 16,
+            marginBottom: 24,
         },
         listItem: {
             marginVertical: 10,
+        },
+        sectionTitle: {
+            marginBottom: 16,
+        },
+        inviteSection: {
+            marginTop: 16,
+            marginBottom: 32,
+        },
+        inviteContent: {
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+            backgroundColor: ThemedColor.lightened,
+            borderRadius: 16,
+            padding: 24,
+        },
+        emojiIcon: {
+            fontSize: 128,
+            lineHeight: 128,
+        },
+        inviteButton: {
+            width: "35%",
+            paddingVertical: 12,
+            marginTop: 12,
         },
     });
 

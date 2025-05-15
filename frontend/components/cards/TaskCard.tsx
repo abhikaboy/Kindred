@@ -8,7 +8,7 @@ import { Task } from "@/api/types";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
 
-const PRIORITY_MAP = {
+export const PRIORITY_MAP = {
     1: "low",
     2: "medium",
     3: "high",

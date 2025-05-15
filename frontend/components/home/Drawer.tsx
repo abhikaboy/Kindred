@@ -124,7 +124,13 @@ export const Drawer = ({ close }) => {
             <EditWorkspace editing={editing} setEditing={setEditing} id={focusedWorkspace} />
 
             <View style={{ paddingTop: 16, paddingBottom: 16 }}>
-                <ThemedText type="title">Workspaces</ThemedText>
+                <TouchableOpacity
+                    onPress={() => {
+                        setSelected(""); 
+                        close(); 
+                    }}>
+                    <ThemedText type="title">Workspaces</ThemedText>
+                </TouchableOpacity>
             </View>
 
             <ScrollView style={{ width: "100%" }}>
