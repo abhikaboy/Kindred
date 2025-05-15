@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
+import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, Animated } from "react-native";
 import React, { ReactNode } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,6 +9,8 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import ContactCard from "@/components/cards/ContactCard";
 
 type FollowRequestProps = {
     name: string;
@@ -83,6 +85,7 @@ const FollowRequests = () => {
                         ))}
                     </View>
                 )}
+                
             </ScrollView>
         </View>
     );

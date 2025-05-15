@@ -2,7 +2,7 @@ import { Dimensions, StyleSheet, ScrollView, View, Text, Pressable, Keyboard } f
 import React, { useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import TaskCard from "@/components/cards/TaskCard";
+import TaskCard, { PRIORITY_MAP } from "@/components/cards/TaskCard";
 import { SearchBox } from "@/components/SearchBox";
 import ContactCard from "@/components/cards/ContactCard";
 import { Icons } from "@/constants/Icons";
@@ -12,10 +12,59 @@ import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withTiming
 import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import * as Contacts from "expo-contacts";
+import BlueprintCard from "@/components/cards/BlueprintCard";
 
 type Props = {};
 
 const Search = (props: Props) => {
+    const workspaces = [
+        {
+            previewImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
+            workspaceName: "Tech Innovators",
+            username: "techinnovate",
+            name: "Tech Innovators Group",
+            time: "2 hours ago",
+            subscriberCount: 1248,
+            description: "A community of tech enthusiasts sharing the latest innovations and projects.",
+            tasks: [
+                {
+                    content: "Complete AI chatbot integration",
+                    value: 5,
+                    priority: 3,
+                    id: "task-001",
+                    categoryId: "cat-001",
+                },
+                {
+                    content: "Design new landing page",
+                    value: 3,
+                    priority: 2,
+                    id: "task-002",
+                    categoryId: "cat-002",
+                },
+            ],
+            tags: ["AI", "Programming", "Design"],
+        },
+        {
+            previewImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
+            workspaceName: "Creative Minds",
+            username: "creativeminds",
+            name: "Creative Minds Collective",
+            time: "1 day ago",
+            subscriberCount: 956,
+            description: "A workspace for creative professionals to share ideas and collaborate on projects.",
+            tasks: [
+                {
+                    content: "Brainstorm new campaign concepts",
+                    value: 4,
+                    priority: 1,
+                    id: "task-003",
+                    categoryId: "cat-003",
+                },
+            ],
+            tags: ["Creative", "Design", "Marketing"],
+        },
+    ];
+
     const [searchTerm, setSearchTerm] = React.useState("");
     const [searched, setSearched] = React.useState(false);
     const [focused, setFocused] = React.useState(false);
@@ -62,6 +111,24 @@ const Search = (props: Props) => {
                     name={"search-page"}
                     setFocused={setFocused}
                 />
+                <ScrollView>
+                    <View style={styles.workspaceGrid}>
+                        {workspaces.map((workspace, index) => (
+                            <BlueprintCard
+                                key={index}
+                                previewImage={workspace.previewImage}
+                                workspaceName={workspace.workspaceName}
+                                username={workspace.username}
+                                name={workspace.name}
+                                time={workspace.time}
+                                subscriberCount={workspace.subscriberCount}
+                                description={workspace.description}
+                                tasks={workspace.tasks}
+                                tags={workspace.tags}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
                 {!searched && (
                     <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
                         <ThemedText type="subtitle">Contacts</ThemedText>
@@ -102,4 +169,12 @@ const Search = (props: Props) => {
 
 export default Search;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        padding: 16,
+    },
+    workspaceGrid: {
+        gap: 20,
+    },
+});
