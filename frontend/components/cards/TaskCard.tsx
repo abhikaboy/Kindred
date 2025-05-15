@@ -7,6 +7,7 @@ import EditPost from "../modals/edit/EditPost";
 import { Task } from "@/api/types";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
+import { useTasks } from "@/contexts/tasksContext";
 
 export const PRIORITY_MAP = {
     1: "low",
@@ -25,12 +26,14 @@ interface Props {
     encourage?: boolean;
     id: string;
     categoryId: string;
+    task?: Task;
 }
 
-const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, encourage = false }: Props) => {
+const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, encourage = false, task }: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
     const ThemedColor = useThemeColor();
+    const { setTask } = useTasks();
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
@@ -52,6 +55,11 @@ const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, 
             pathname: "/task/[id]",
             params: { name: content, id },
         });
+        if (task) {
+            setTask(task);
+        } else {
+            // theres some error
+        }
     };
 
     const handleLongPress = () => {

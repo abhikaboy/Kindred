@@ -22,7 +22,31 @@ export interface Task {
     id: string;
     content: string;
     value: number;
-    priority: "1" | "2" | "3";
+    priority: number;
+    recurring: boolean;
+    recurFrequency?: string;
+    recurType?: string;
+    recurDetails?: {
+        every: number;
+        daysOfWeek?: number[];
+        daysOfMonth?: number[];
+        months?: number[];
+        behavior: "BUILDUP" | "ROLLING";
+    };
+    public: boolean;
+    active: boolean;
+    timestamp: string;
+    lastEdited: string;
+    templateID?: string;
+    deadline?: string;
+    startTime?: string;
+    startDate?: string;
+    notes?: string;
+    checklist?: {
+        id: string;
+        content: string;
+        completed: boolean;
+    }[];
 }
 
 export interface Categories {

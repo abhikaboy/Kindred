@@ -25,6 +25,9 @@ type TaskContextType = {
     selectedCategory: Option;
     showConfetti: boolean;
     setShowConfetti: (showConfetti: boolean) => void;
+
+    task: Task | null;
+    setTask: (task: Task | null) => void;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -33,6 +36,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [selected, setSelected] = useState<string>(""); // Workspace
     const [categories, setCategories] = useState<Categories[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
+
+    const [task, setTask] = useState<Task | null>(null);
 
     const [showConfetti, setShowConfetti] = useState(false);
     /**
@@ -149,6 +154,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 selectedCategory,
                 showConfetti,
                 setShowConfetti,
+                task,
+                setTask,
             }}>
             {children}
         </TaskContext.Provider>

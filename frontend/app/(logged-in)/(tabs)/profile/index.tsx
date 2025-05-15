@@ -5,7 +5,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
-import TaskCard from "@/components/cards/TaskCard";
 import { useRouter } from "expo-router";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 import { useAuth } from "@/hooks/useAuth";

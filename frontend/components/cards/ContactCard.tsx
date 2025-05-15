@@ -43,7 +43,6 @@ const useStyles = (ThemedColor: any) =>
             backgroundColor: ThemedColor.lightened,
             borderRadius: 10,
             padding: 16,
-            margin: 8,
             gap: 12,
             maxWidth: Dimensions.get("screen").width * 0.4,
             alignItems: "center",

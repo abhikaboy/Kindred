@@ -171,10 +171,13 @@ const Search = (props: Props) => {
 
                     {!searched && (
                         <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
-                            <ThemedText type="subtitle" style={{ marginTop: 30 }}>
+                            <ThemedText type="subtitle" style={{ marginTop: 32 }}>
                                 Suggested For You
                             </ThemedText>
-                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                            <ScrollView
+                                horizontal={true}
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ gap: 16, marginTop: 16 }}>
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={false} />
                                 <ContactCard name={"Abhik Ray"} icon={Icons.luffy} handle={"beak"} following={true} />
@@ -207,9 +210,7 @@ const Search = (props: Props) => {
                     {searched && (
                         <Animated.View style={[focusStyle]} exiting={FadeOut}>
                             <ThemedText type="subtitle">Results</ThemedText>
-                            <ScrollView
-                                style={{ marginTop: 20, minHeight: "100%"}}
-                                >
+                            <ScrollView style={{ marginTop: 20, minHeight: "100%" }}>
                                 <View>
                                     <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
                                     <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
