@@ -6,20 +6,21 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // getBaseTime returns the appropriate base time for recurrence calculations
 func getBaseTime(template *TemplateTaskDocument) time.Time {
 	// baseTime := template.LastGenerated
-	baseTime := time.Now()
+	baseTime := xutils.NowUTC()
 	if baseTime.IsZero() {
 		if template.StartDate != nil {
-			baseTime = *template.StartDate
+			baseTime = xutils.ToUTC(*template.StartDate)
 		} else if template.Deadline != nil {
-			baseTime = *template.Deadline
+			baseTime = xutils.ToUTC(*template.Deadline)
 		} else {
-			baseTime = time.Now()
+			baseTime = xutils.NowUTC()
 		}
 	}
 	return baseTime
@@ -200,8 +201,8 @@ return TaskDocument{
 		Priority: templateDoc.Priority,
 		Public: templateDoc.Public,
 		Active: true,
-		Timestamp: time.Now(),
-		LastEdited: time.Now(),
+		Timestamp: xutils.NowUTC(),
+		LastEdited: xutils.NowUTC(),
 		TemplateID: templateDoc.ID,	
 	}
 }

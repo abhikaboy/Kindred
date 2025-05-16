@@ -1,8 +1,6 @@
 package Category
 
 import (
-	"time"
-
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
@@ -41,9 +39,9 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 		ID:         primitive.NewObjectID(),
 		Name:       params.Name,
 		WorkspaceName: params.WorkspaceName,
-		User:       userId,
-		Tasks:      make([]task.TaskDocument, 0),
-		LastEdited: time.Now(),
+		User:          userId,
+		Tasks:         make([]task.TaskDocument, 0),
+		LastEdited:    xutils.NowUTC(),
 	}
 
 	_, err = h.service.CreateCategory(&doc)

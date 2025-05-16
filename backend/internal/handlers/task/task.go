@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -55,6 +56,26 @@ func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
 	return c.JSON(Tasks)
 }
 
+// parseTimesToUTC parses deadline, startTime, and startDate to UTC format
+func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Time, error) {
+	deadline, err := xutils.ParseTimeToUTC(*params.Deadline)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("invalid deadline format: %w", err)
+	}
+	
+	startTime, err := xutils.ParseTimeToUTC(*params.StartTime)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("invalid start time format: %w", err)
+	}
+	
+	startDate, err := xutils.ParseTimeToUTC(*params.StartDate)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("invalid start date format: %w", err)
+	}
+	
+	return &deadline, &startTime, &startDate, nil
+}
+
 func (h *Handler) CreateTask(c *fiber.Ctx) error {
 	var params CreateTaskParams
 
@@ -93,7 +114,16 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 			})
 		}
 	}
-
+	// parse times to UTC
+	deadline, startTime, startDate, err := parseTimesToUTC(&params)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	
+	
+	
 	doc := TaskDocument{
 		ID:           primitive.NewObjectID(),
 		Priority:     params.Priority,
@@ -103,12 +133,12 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		RecurFrequency:    params.RecurFrequency,
 		Public:       params.Public,
 		Active:       params.Active,
-		Timestamp:    time.Now(),
+		Timestamp:    xutils.NowUTC(),
 		Notes:        params.Notes,
 		Checklist:    params.Checklist,
-		Deadline:     params.Deadline,
-		StartTime:    params.StartTime,
-		StartDate:    params.StartDate,
+		Deadline:     deadline,
+		StartTime:    startTime,
+		StartDate:    startDate,
 	}
 
 
@@ -137,7 +167,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 			}
 		}
 
-		baseTime := time.Now()
+		baseTime := xutils.NowUTC()
 		if params.Deadline != nil {
 			baseTime = *params.Deadline
 		} else if params.StartTime != nil {
@@ -155,9 +185,9 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 			RecurFrequency:    params.RecurFrequency,
 			RecurDetails: params.RecurDetails,
 
-			Deadline: params.Deadline,
-			StartTime: params.StartTime,
-			StartDate: params.StartDate,
+			Deadline: deadline,
+			StartTime: startTime,
+			StartDate: startDate,
 			LastGenerated: baseTime,
 		}
 
@@ -390,4 +420,60 @@ func (h *Handler) GetRecurringTasksWithPastDeadlines(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(tasks)
+}
+
+// UpdateTaskNotes updates the notes field of a task
+func (h *Handler) UpdateTaskNotes(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
+	userId, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user ID format",
+		})
+	}
+
+	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format",
+		})
+	}
+
+	var update UpdateTaskNotesDocument
+	if err := c.BodyParser(&update); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if err := h.service.UpdateTaskNotes(id, categoryId, userId, update); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// UpdateTaskChecklist updates the checklist field of a task
+func (h *Handler) UpdateTaskChecklist(c *fiber.Ctx) error {
+	context_id := c.UserContext().Value("user_id").(string)
+
+	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
+	userId, categoryId, id := ids[0], ids[1], ids[2]
+
+	var update UpdateTaskChecklistDocument
+	if err := c.BodyParser(&update); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if err := h.service.UpdateTaskChecklist(id, categoryId, userId, update); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
 }

@@ -3,9 +3,9 @@ package Waitlist
 import (
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -29,7 +29,7 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 	doc := WaitlistDocument{
 		Email:     params.Email,
 		Name:      params.Name,
-		Timestamp: time.Now(),
+		Timestamp: xutils.NowUTC(),
 		ID:        primitive.NewObjectID(),
 	}
 

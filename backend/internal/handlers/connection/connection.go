@@ -1,8 +1,7 @@
 package Connection
 
 import (
-	"time"
-
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -34,8 +33,8 @@ func (h *Handler) CreateConnection(c *fiber.Ctx) error {
 	doc := ConnectionDocument{
 		ID:        primitive.NewObjectID(),
 		Requester: params.Requester,
-		Reciever: params.Reciever,
-		Timestamp: time.Now(),
+		Reciever:  params.Reciever,
+		Timestamp: xutils.NowUTC(),
 	}
 
 	_, err := h.service.CreateConnection(&doc)

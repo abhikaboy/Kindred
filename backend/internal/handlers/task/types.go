@@ -124,6 +124,14 @@ type ChecklistItem struct {
 	Order     int    `bson:"order" json:"order"`
 }
 
+type UpdateTaskNotesDocument struct {
+	Notes string `bson:"notes" json:"notes"`
+}
+
+type UpdateTaskChecklistDocument struct {
+	Checklist []ChecklistItem `bson:"checklist" json:"checklist"`
+}
+
 /*
 Task Service to be used by Task Handler to interact with the
 Database layer of the application

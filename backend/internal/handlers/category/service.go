@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -119,7 +118,7 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 		},
 		bson.D{{Key: "$set", Value: bson.D{
 			{Key: "name", Value: updated.Name},
-			{Key: "lastEdited", Value: time.Now()},
+			{Key: "lastEdited", Value: xutils.NowUTC()},
 		}}},
 	)
 	if err != nil {

@@ -1,5 +1,8 @@
 package task
 
+//nolint:unkeyed
+//nolint:composites
+
 import (
 	"context"
 	"errors"
@@ -7,6 +10,8 @@ import (
 	"log/slog"
 	"time"
 
+	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -29,6 +34,29 @@ func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 		},
 	}
 	return pipeline
+}
+
+func getBaseTaskPipeline() []bson.D {
+	return []bson.D{
+		{{Key: "$unwind", Value: "$tasks"}},
+		{{Key: "$replaceRoot", Value: bson.M{"newRoot": "$tasks"}}},
+	}
+}
+
+func getTaskByIdPipeline(id primitive.ObjectID) []bson.D {
+	return append(getBaseTaskPipeline(), bson.D{
+		{Key: "$match", Value: bson.M{"_id": id}},
+	})
+}
+
+func getTaskArrayFilterOptions(taskId primitive.ObjectID) *options.UpdateOptions {
+	return &options.UpdateOptions{
+		ArrayFilters: &options.ArrayFilters{
+			Filters: bson.A{
+				bson.M{"t._id": taskId},
+			},
+		},
+	}
 }
 
 // newService receives the map of collections and picks out Jobs
@@ -161,7 +189,7 @@ func (s *Service) UpdatePartialTask(
 		bson.D{{
 			Key: "$set", Value: bson.D{
 				{Key: "tasks.$[t].priority", Value: updated.Priority},
-				{Key: "tasks.$[t].lastEdited", Value: time.Now()},
+				{Key: "tasks.$[t].lastEdited", Value: xutils.NowUTC()},
 				{Key: "tasks.$[t].content", Value: updated.Content},
 				{Key: "tasks.$[t].value", Value: updated.Value},
 				{Key: "tasks.$[t].recurring", Value: updated.Recurring},
@@ -192,7 +220,7 @@ func (s *Service) CompleteTask(
 		{Key: "$set", Value: bson.M{
 			"active":        false,
 			"timeTaken":     completed.TimeTaken,
-			"timeCompleted": completed.TimeCompleted,
+			"timeCompleted": xutils.NowUTC(),
 			"category":      categoryId,
 			"user":          userId,
 		}},
@@ -306,7 +334,7 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 		},
 		bson.D{{
 			Key: "$set", Value: bson.D{
-				{Key: "categories.$.tasks.$[t].lastEdited", Value: time.Now()},
+				{Key: "categories.$.tasks.$[t].lastEdited", Value: xutils.NowUTC()},
 				{Key: "categories.$.tasks.$[t].active", Value: newStatus}},
 		}},
 		&options,
@@ -346,8 +374,6 @@ func (s *Service) GetActiveTasks(userId primitive.ObjectID) ([]TaskDocument, err
 	return results, nil
 }
 
-
-
 func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDocument, error) {
 	ctx := context.Background()
 
@@ -358,7 +384,6 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		slog.Error("Couldn't find template", "error", template.Err())
 		return nil, template.Err()
 	}
-
 
 	var templateDoc TemplateTaskDocument
 	err := template.Decode(&templateDoc)
@@ -418,7 +443,6 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	return &task, nil
 }
 
-
 func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) error {
 	ctx := context.Background()
 
@@ -460,7 +484,7 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) err
 func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TaskDocument, error) {
 	ctx := context.Background()
 
-	inOneDay := time.Now()
+	inOneDay := xutils.NowUTC()
 
 	baseTime := inOneDay // Simulating which tasks to update in one day
 
@@ -494,7 +518,7 @@ func (s *Service) GetRecurringTasksWithPastDeadlines() ([]TaskDocument, error) {
 			bson.D{{"$unwind", "$tasks"}},
 			bson.D{{"$replaceRoot", bson.D{{"newRoot", "$tasks"}}}},
 			bson.D{{"$match", bson.D{{"templateID", bson.D{{"$exists", true}}}}}},
-		  bson.D{{"$match", bson.D{{"deadline", bson.D{{"$lt", time.Now()}}}}}},
+		  bson.D{{"$match", bson.D{{"deadline", bson.D{{"$lt", xutils.NowUTC()}}}}}},
 		}
 
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
@@ -540,4 +564,117 @@ func (s *Service) DeleteTaskByID(id primitive.ObjectID) error {
 	defer cursor.Close(ctx)
 	
 	return err
+}
+
+// UpdateTaskNotes updates the notes field of a task
+func (s *Service) UpdateTaskNotes(
+	id primitive.ObjectID,
+	categoryId primitive.ObjectID,
+	userId primitive.ObjectID,
+	updated UpdateTaskNotesDocument) error {
+
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryId, userId); err != nil {
+		return err
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryId},
+		bson.D{
+			{"$set", bson.D{
+				{"tasks.$[t].notes", updated.Notes},
+				{"tasks.$[t].lastEdited", xutils.NowUTC()},
+			}},
+		},
+		getTaskArrayFilterOptions(id),
+	)
+
+	return handleMongoError(ctx, "update task notes", err)
+}
+
+// UpdateTaskChecklist updates the checklist field of a task
+func (s *Service) UpdateTaskChecklist(
+	id primitive.ObjectID,
+	categoryId primitive.ObjectID,
+	userId primitive.ObjectID,
+	updated UpdateTaskChecklistDocument) error {
+
+	ctx := context.Background()
+
+	// First verify the category belongs to the user
+	var category Category.CategoryDocument
+	err := s.Tasks.FindOne(ctx, bson.M{
+		"_id":  categoryId,
+		"user": userId,
+	}).Decode(&category)
+	if err != nil {
+		return err
+	}
+
+	options := options.UpdateOptions{
+		ArrayFilters: &options.ArrayFilters{
+			Filters: bson.A{
+				bson.M{
+					"t._id": id,
+				},
+			},
+		},
+	}
+
+	_, err = s.Tasks.UpdateOne(ctx,
+		bson.M{
+			"_id": categoryId,
+		},
+		bson.D{{
+			Key: "$set", Value: bson.D{
+				{Key: "tasks.$[t].checklist", Value: updated.Checklist},
+				{Key: "tasks.$[t].lastEdited", Value: xutils.NowUTC()},
+			},
+		}},
+		&options,
+	)
+
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to update task checklist", slog.String("error", err.Error()))
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) verifyCategoryOwnership(ctx context.Context, categoryId, userId primitive.ObjectID) error {
+	var category Category.CategoryDocument
+	err := s.Tasks.FindOne(ctx, bson.M{
+		"_id":  categoryId,
+		"user": userId,
+	}).Decode(&category)
+	return err
+}
+
+func handleMongoError(ctx context.Context, operation string, err error) error {
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to "+operation, slog.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+/*
+	This returns a bson.D that can be used to update a task 
+*/
+func getCommonTaskUpdateFields() bson.D {
+	return bson.D{
+		{Key: "tasks.$[t].lastEdited", Value: xutils.NowUTC()},
+	}
+}
+
+func (s *Service) createTaskInCategory(ctx context.Context, categoryId primitive.ObjectID, task *TaskDocument) error {
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryId},
+		bson.M{"$push": bson.M{"tasks": task}},
+	)
+	return handleMongoError(ctx, "create task", err)
 }

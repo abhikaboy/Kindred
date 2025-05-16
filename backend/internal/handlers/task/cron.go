@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -36,9 +37,11 @@ func Cron(collections map[string]*mongo.Collection) {
 		slog.Info("Tasks to process", "count", len(tasks))
 		for _, task := range tasks {
 			if task.Deadline != nil {
-				fmt.Println("DEADLINE: " + task.ID.Hex() + " " + task.Content + " " + task.Deadline.Format(time.RFC3339))
+				deadlineUTC := xutils.ToUTC(*task.Deadline)
+				fmt.Println("DEADLINE: " + task.ID.Hex() + " " + task.Content + " " + deadlineUTC.Format(time.RFC3339))
 			} else if task.StartDate != nil {
-				fmt.Println("START TIME: " + task.ID.Hex() + " " + task.Content + " " + task.StartDate.Format(time.RFC3339))
+				startDateUTC := xutils.ToUTC(*task.StartDate)
+				fmt.Println("START TIME: " + task.ID.Hex() + " " + task.Content + " " + startDateUTC.Format(time.RFC3339))
 			}
 
 			newTask, err := service.CreateTaskFromTemplate(task.TemplateID)
