@@ -65,14 +65,11 @@ func NowUTC() time.Time {
 	return time.Now().UTC()
 }
 
-func ParseTimeToUTC(t *time.Time) (time.Time, error) {
-	if t == nil {
-		return time.Time{}, nil
-	}
-	t_, err := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+func ParseTimeToUTC(t time.Time) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, t.Format(time.RFC3339))
 	if err != nil {
 		return time.Time{}, err
 	}
-	return t_, nil
+	return t, nil
 }
 

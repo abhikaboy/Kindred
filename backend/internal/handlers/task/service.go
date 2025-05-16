@@ -10,7 +10,7 @@ import (
 	"log/slog"
 	"time"
 
-	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -576,8 +576,10 @@ func (s *Service) UpdateTaskNotes(
 	ctx := context.Background()
 
 	if err := s.verifyCategoryOwnership(ctx, categoryId, userId); err != nil {
-		return err
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
 	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Updating task notes", slog.String("categoryId", categoryId.Hex()), slog.String("id", id.Hex()), slog.String("userId", userId.Hex()))
 
 	_, err := s.Tasks.UpdateOne(
 		ctx,
@@ -604,7 +606,7 @@ func (s *Service) UpdateTaskChecklist(
 	ctx := context.Background()
 
 	// First verify the category belongs to the user
-	var category Category.CategoryDocument
+	var category types.CategoryDocument
 	err := s.Tasks.FindOne(ctx, bson.M{
 		"_id":  categoryId,
 		"user": userId,
@@ -645,7 +647,8 @@ func (s *Service) UpdateTaskChecklist(
 }
 
 func (s *Service) verifyCategoryOwnership(ctx context.Context, categoryId, userId primitive.ObjectID) error {
-	var category Category.CategoryDocument
+	slog.LogAttrs(ctx, slog.LevelInfo, "Verifying category ownership", slog.String("categoryId", categoryId.Hex()), slog.String("userId", userId.Hex()))
+	var category types.CategoryDocument
 	err := s.Tasks.FindOne(ctx, bson.M{
 		"_id":  categoryId,
 		"user": userId,

@@ -448,7 +448,9 @@ func (h *Handler) UpdateTaskNotes(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.UpdateTaskNotes(id, categoryId, userId, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
