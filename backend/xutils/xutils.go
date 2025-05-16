@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -55,3 +56,20 @@ func ParseIDs(c *fiber.Ctx, ids ...string) (error, []primitive.ObjectID) {
 	}
 	return err, ids_
 }
+
+func ToUTC(t time.Time) time.Time {
+	return t.UTC()
+}
+
+func NowUTC() time.Time {
+	return time.Now().UTC()
+}
+
+func ParseTimeToUTC(t time.Time) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
+}
+

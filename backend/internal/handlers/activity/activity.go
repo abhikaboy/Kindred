@@ -1,8 +1,7 @@
 package Activity
 
 import (
-	"time"
-
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,7 +31,7 @@ func (h *Handler) CreateActivity(c *fiber.Ctx) error {
 		Field1:    params.Field1,
 		Field2:    params.Field2,
 		Picture:   params.Picture,
-		Timestamp: time.Now(),
+		Timestamp: xutils.NowUTC(),
 	}
 
 	_, err := h.service.CreateActivity(&doc)
