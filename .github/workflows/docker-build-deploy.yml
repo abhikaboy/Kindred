@@ -20,6 +20,13 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+            - name: Set repository name
+              id: repo-name
+              run: |
+                  REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+                  REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+                  echo "REPO_OWNER=$REPO_OWNER" >> $GITHUB_ENV
+                  echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
 
             - name: Create .env file
               run: |
