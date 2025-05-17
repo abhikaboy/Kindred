@@ -58,22 +58,33 @@ func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
 
 // parseTimesToUTC parses deadline, startTime, and startDate to UTC format
 func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Time, error) {
-	deadline, err := xutils.ParseTimeToUTC(*params.Deadline)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("invalid deadline format: %w", err)
+	var deadline, startTime, startDate *time.Time
+
+	if params.Deadline != nil {
+		parsedDeadline, err := xutils.ParseTimeToUTC(*params.Deadline)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("invalid deadline format: %w", err)
+		}
+		deadline = &parsedDeadline
 	}
 	
-	startTime, err := xutils.ParseTimeToUTC(*params.StartTime)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("invalid start time format: %w", err)
+	if params.StartTime != nil {
+		parsedStartTime, err := xutils.ParseTimeToUTC(*params.StartTime)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("invalid start time format: %w", err)
+		}
+		startTime = &parsedStartTime
 	}
 	
-	startDate, err := xutils.ParseTimeToUTC(*params.StartDate)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("invalid start date format: %w", err)
+	if params.StartDate != nil {
+		parsedStartDate, err := xutils.ParseTimeToUTC(*params.StartDate)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("invalid start date format: %w", err)
+		}
+		startDate = &parsedStartDate
 	}
 	
-	return &deadline, &startTime, &startDate, nil
+	return deadline, startTime, startDate, nil
 }
 
 func (h *Handler) CreateTask(c *fiber.Ctx) error {
