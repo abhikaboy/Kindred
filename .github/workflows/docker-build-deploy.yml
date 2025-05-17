@@ -74,3 +74,25 @@ jobs:
                   labels: ${{ steps.meta.outputs.labels }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
+            - name: Deploy to Digital Ocean
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.DO_HOST }}
+                  username: ${{ secrets.DO_USERNAME }}
+                  key: ${{ secrets.DO_SSH_KEY }}
+                  script: |
+                      # Login to GitHub Container Registry
+                      echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+                      # Pull the latest image (using lowercase repository name)
+                      docker pull ghcr.io/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}:latest
+
+                      # Stop and remove the existing container (if it exists)
+                      docker stop kindred-backend || true
+                      docker rm kindred-backend || true
+
+                      # Run the new container with port 8081
+                      docker run -d --name kindred-backend --restart unless-stopped -p 80:8080 ghcr.io/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}:latest
+
+                      # Clean up unused images
+                      docker image prune -f
