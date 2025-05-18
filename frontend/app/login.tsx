@@ -2,13 +2,28 @@ import { View, Text, Dimensions, Image, TouchableOpacity, useColorScheme } from 
 import React, { useEffect, useState } from "react";
 import { getThemedColor } from "@/constants/Colors";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { Link, useRouter } from "expo-router";
+import { ErrorBoundaryProps, Link, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 type Props = {};
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+            <ThemedText type="heading">login</ThemedText>
+            <ThemedText type="default">{error.message}</ThemedText>
+            <ThemedText type="default">{error.stack}</ThemedText>
+            <ThemedText type="default">{error.name}</ThemedText>
+            <ThemedText type="default" onPress={retry}>
+                Try Again?
+            </ThemedText>
+        </View>
+    );
+}
 
 /*
     Landing page when you open the app for the very first time

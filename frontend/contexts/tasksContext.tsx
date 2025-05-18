@@ -28,6 +28,7 @@ type TaskContextType = {
 
     task: Task | null;
     setTask: (task: Task | null) => void;
+    doesWorkspaceExist: (name: string) => boolean;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -128,6 +129,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setWorkSpaces(workspacesCopy);
     };
 
+    const doesWorkspaceExist = (name: string) => {
+        for (const workspace of workspaces) {
+            if (workspace.name === name) return true;
+        }
+        return false;
+    };
+
     useEffect(() => {
         console.log("Change to selected Workspace has occured");
         console.log(selected);
@@ -158,6 +166,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setShowConfetti,
                 task,
                 setTask,
+                doesWorkspaceExist,
             }}>
             {children}
         </TaskContext.Provider>

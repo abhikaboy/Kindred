@@ -1,10 +1,28 @@
 // redirect to login if not logged in
 import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import { Redirect, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
+
+import { View } from "react-native";
+import { type ErrorBoundaryProps } from "expo-router";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { ThemedText } from "@/components/ThemedText";
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+            <ThemedText type="heading">{error.name}</ThemedText>
+            <ThemedText type="heading">root</ThemedText>
+            <ThemedText type="default">{error.stack}</ThemedText>
+            <ThemedText type="default">{error.message}</ThemedText>
+            <ThemedText type="default" onPress={retry}>
+                Try Again?
+            </ThemedText>
+        </View>
+    );
+}
 
 const layout = ({ children }: { children: React.ReactNode }) => {
     const { fetchAuthData } = useAuth();

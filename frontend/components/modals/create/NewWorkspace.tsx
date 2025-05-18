@@ -1,4 +1,4 @@
-import { StyleSheet, Text, Touchable, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, Touchable, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -16,11 +16,24 @@ type Props = {
 const NewWorkspace = ({ hide }: Props) => {
     let ThemedColor = useThemeColor();
     const [name, setName] = useState("");
-    const { selected, addWorkspace } = useTasks();
+    const { selected, addWorkspace, doesWorkspaceExist } = useTasks();
 
     const handleCreateWorkspace = async () => {
-        const response = await createWorkspace(name);
-        addWorkspace(name, response);
+        if (name.length == 0) {
+            Alert.alert("Invalid Workspace Name", "Workspace name cannot be empty");
+            return;
+        }
+        try {
+            if (doesWorkspaceExist(name)) {
+                Alert.alert("Workspace already exists", "Please enter a different name");
+                setName("");
+                throw new Error("Workspace already exists");
+            }
+            const response = await createWorkspace(name);
+            addWorkspace(name, response);
+        } catch (err) {
+            console.log(err);
+        }
     };
 
     return (

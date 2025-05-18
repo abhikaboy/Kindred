@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import TaskTabs from "@/components/inputs/TaskTabs";
-import { useLocalSearchParams } from "expo-router";
+import { ErrorBoundaryProps, useLocalSearchParams } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -222,6 +222,13 @@ export default function Task() {
                         </View>
                     </DataCard>
                 </ConditionalView>
+                <ConditionalView condition={task?.recurring != null && task?.recurDetails != null}>
+                    <DataCard title="Recurring">
+                        <View>
+                            <ThemedText type="lightBody">{JSON.stringify(task?.recurDetails)}</ThemedText>
+                        </View>
+                    </DataCard>
+                </ConditionalView>
             </ConditionalView>
             <ConditionalView condition={activeTab === 1}>
                 <TouchableOpacity
@@ -284,3 +291,15 @@ export default function Task() {
 }
 
 const styles = StyleSheet.create({});
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+            <ThemedText type="default">{error.message}</ThemedText>
+            <ThemedText type="default" onPress={retry}>
+                Try Again?
+            </ThemedText>
+        </View>
+    );
+}
