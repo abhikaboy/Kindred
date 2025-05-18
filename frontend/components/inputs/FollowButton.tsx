@@ -15,11 +15,11 @@ export default function FollowButton({ following }: Props) {
                 setFollowing(!follow);
             }}
             style={{
-                backgroundColor: follow ? ThemedColor.primaryPressed : ThemedColor.primary,
+                backgroundColor: follow ? ThemedColor.tertiary : ThemedColor.primary,
                 borderRadius: 100,
                 paddingVertical: 12,
                 paddingHorizontal: 20,
-                width: Dimensions.get("screen").width * 0.3,
+                width: "100%",
                 minWidth: Dimensions.get("screen").width * 0.3,
             }}>
             <Text

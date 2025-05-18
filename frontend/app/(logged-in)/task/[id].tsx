@@ -11,6 +11,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import ConditionalView from "@/components/ui/ConditionalView";
 import ChecklistToggle from "@/components/inputs/ChecklistToggle";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function Task() {
     const [activeTab, setActiveTab] = useState(0);
@@ -50,11 +51,16 @@ export default function Task() {
         ]);
     };
 
-    const loadBaseTime = async () => {
+    const loadBaseTime = async (id) => {
         try {
+            console.log("checking id", id);
             const storedTime = await AsyncStorage.getItem(`task_${id}_baseTime`);
+            const isRunning = await AsyncStorage.getItem(`task_${id}_isRunning`);
             if (storedTime) {
                 setBaseTime(new Date(parseInt(storedTime)));
+                if (isRunning == "true") {
+                    setIsRunning(true);
+                }
             }
         } catch (error) {
             console.error("Error loading base time:", error);
@@ -70,7 +76,7 @@ export default function Task() {
     };
 
     useEffect(() => {
-        loadBaseTime();
+        loadBaseTime(id as string);
     }, [id]);
 
     useEffect(() => {
@@ -90,13 +96,35 @@ export default function Task() {
         }
     }, [isRunning]);
 
-    const toggleTimer = () => {
-        const newIsRunning = !isRunning;
-        setIsRunning(newIsRunning);
-        if (newIsRunning) {
-            const newBaseTime = new Date();
-            setBaseTime(newBaseTime);
-            saveBaseTime(newBaseTime);
+    const startTimer = (id) => {
+        setIsRunning(true);
+        AsyncStorage.setItem(`task_${id}_isRunning`, "true");
+    };
+
+    const restartTimer = (id) => {
+        setIsRunning(true);
+        setBaseTime(new Date());
+        saveBaseTime(new Date());
+        AsyncStorage.setItem(`task_${id}_isRunning`, "true");
+    };
+
+    const pauseTimer = (id) => {
+        setIsRunning(false);
+        AsyncStorage.setItem(`task_${id}_isRunning`, "false");
+    };
+
+    const stopTimer = (id) => {
+        setIsRunning(false);
+        setBaseTime(new Date());
+        saveBaseTime(new Date());
+        AsyncStorage.setItem(`task_${id}_isRunning`, "false");
+    };
+
+    const toggleTimer = (id) => {
+        if (isRunning) {
+            pauseTimer(id);
+        } else {
+            startTimer(id);
         }
     };
 
@@ -108,7 +136,10 @@ export default function Task() {
                 paddingHorizontal: HORIZONTAL_PADDING,
                 gap: 16,
             }}>
-            <ThemedText type="heading">{name}</ThemedText>
+            <ThemedText type="heading">
+                {name}
+                {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
+            </ThemedText>
             <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={setActiveTab} />
             <ConditionalView condition={activeTab === 0}>
                 <DataCard title="Notes">
@@ -232,6 +263,19 @@ export default function Task() {
                 <ConditionalView condition={!isRunning}>
                     <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", marginTop: 24 }}>
                         <ThemedText type="lightBody">Tap the stopwatch to begin</ThemedText>
+                    </View>
+                </ConditionalView>
+                <ConditionalView condition={isRunning}>
+                    <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", marginTop: 24 }}>
+                        {/* <TouchableOpacity onPress={() => pauseTimer()}>
+                            <MaterialIcons name="pause" size={48} color={ThemedColor.text} />
+                        </TouchableOpacity> */}
+                        <TouchableOpacity onPress={() => restartTimer(id)}>
+                            <MaterialIcons name="restart-alt" size={48} color={ThemedColor.text} />
+                        </TouchableOpacity>
+                        {/* <TouchableOpacity onPress={() => stopTimer()}>
+                            <MaterialIcons name="stop" size={48} color={ThemedColor.text} />
+                        </TouchableOpacity> */}
                     </View>
                 </ConditionalView>
             </ConditionalView>

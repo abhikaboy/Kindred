@@ -75,6 +75,10 @@ export default function Profile() {
                     colors={["transparent", ThemedColor.background]}
                     style={[styles.headerImage, styles.gradientOverlay]}
                 />
+                <LinearGradient
+                    colors={[ThemedColor.background + "40", ThemedColor.background + "40"]}
+                    style={[styles.headerImage, styles.gradientOverlay]}
+                />
                 <Animated.Image src={user?.profile_picture || Icons.luffy} style={[styles.headerImage]} />
             </Animated.View>
 
@@ -85,14 +89,13 @@ export default function Profile() {
                     styles.contentContainer,
                     { marginTop: 24 + Dimensions.get("window").height * 0.4 - nameHeight },
                 ]}>
-                <ProfileStats friendsCount={user?.friends.length || 0} tasksComplete={user?.tasks_complete || 0} />
-
-                <View style={styles.section}>
-                    <ThemedText type="subtitle">Today</ThemedText>
-                    <TodayStats tasks={2} points={12} streak={242} />
+                <View style={{ width: "100%" }}>
+                    <ProfileStats friendsCount={user?.friends.length || 0} />
                 </View>
 
-                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4]} />
+                <TodayStats tasks={2} points={12} streak={242} posts={4} />
+
+                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} />
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -126,8 +129,9 @@ const styles = StyleSheet.create({
     contentContainer: {
         flex: 1,
         paddingHorizontal: 20,
-        gap: 16,
+        gap: 28,
         paddingBottom: 128,
+        width: "100%",
     },
     section: {
         gap: 16,

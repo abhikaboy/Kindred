@@ -35,7 +35,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
 
     useEffect(() => {
         if (options.length === 0) return;
-        setSelected(options[0]);
+        setSelected(selected);
     }, []);
 
     let mainBar = useAnimatedStyle(() => {

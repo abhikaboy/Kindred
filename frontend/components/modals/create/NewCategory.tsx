@@ -14,21 +14,26 @@ type Props = {
 
 const NewCategory = ({ goToStandard }: Props) => {
     const [name, setName] = useState("");
-    const { selected, addToWorkspace } = useTasks();
+    const { selected, addToWorkspace, setCreateCategory } = useTasks();
     const { request } = useRequest();
     let ThemedColor = useThemeColor();
 
     const createCategory = async () => {
-        const response = await request("POST", `/user/categories`, {
-            name: name,
-            workspaceName: selected,
-        });
+        try {
+            const response = await request("POST", `/user/categories`, {
+                name: name,
+                workspaceName: selected,
+            });
 
-        addToWorkspace(selected, response);
+            addToWorkspace(selected, response);
+            setCreateCategory({ label: name, id: response.id, special: false });
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     return (
-        <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
+        <View style={{ gap: 16, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                 <TouchableOpacity onPress={goToStandard}>
                     <Feather name="arrow-left" size={24} color={ThemedColor.text} />
@@ -41,7 +46,10 @@ const NewCategory = ({ goToStandard }: Props) => {
                 autofocus
                 placeHolder="Enter the Category Name"
                 onSubmit={() => {
-                    goToStandard();
+                    if (name.length > 0) {
+                        createCategory();
+                        goToStandard();
+                    }
                 }}
                 onChangeText={(text) => {
                     setName(text);

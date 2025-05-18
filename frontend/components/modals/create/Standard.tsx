@@ -26,12 +26,11 @@ const Standard = ({ hide, goTo }: Props) => {
     const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
     const { taskName, setTaskName, showAdvanced, setShowAdvanced } = useTaskCreation();
 
-    let selected = selectedCategory;
     console.log("Selected Category:" + selectedCategory);
 
     const createPost = async () => {
         if (categories.length === 0) return;
-        const response = await request("POST", `/user/tasks/${selected.id}`, {
+        const response = await request("POST", `/user/tasks/${selectedCategory.id}`, {
             priority: 1,
             content: taskName,
             value: 3,
@@ -43,7 +42,7 @@ const Standard = ({ hide, goTo }: Props) => {
             startDate: new Date(),
         });
 
-        addToCategory(selected.id, response);
+        addToCategory(selectedCategory.id, response);
     };
 
     if (categories) {
@@ -83,7 +82,7 @@ const Standard = ({ hide, goTo }: Props) => {
                         }),
                     { label: "+ New Category", id: "", special: true },
                 ]}
-                selected={selected}
+                selected={selectedCategory}
                 setSelected={setCreateCategory}
                 onSpecial={() => {
                     goTo(Screen.NEW_CATEGORY);

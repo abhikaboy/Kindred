@@ -12,8 +12,8 @@ type TaskContextType = {
     setWorkSpaces: (workspaces: Workspace[]) => void;
     getWorkspace: (name: string) => Workspace;
     fetchWorkspaces: () => void;
-    selected: string;
-    setSelected: (selected: string) => void;
+    selected: string; // workspace name
+    setSelected: (selected: string) => void; // workspace name
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
@@ -22,7 +22,7 @@ type TaskContextType = {
     removeFromWorkspace: (name: string, categoryId: string) => void;
 
     setCreateCategory: (Option: Option) => void;
-    selectedCategory: Option;
+    selectedCategory: Option; // category name
     showConfetti: boolean;
     setShowConfetti: (showConfetti: boolean) => void;
 
@@ -45,6 +45,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param option
      */
     const setCreateCategory = (option: Option) => {
+        if (option.id == "") return;
+        if (option.label == "") return;
         setSelectedCategory(option);
     };
 

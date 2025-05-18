@@ -16,7 +16,7 @@ export default function WeeklyActivity({ activityLevels }: WeeklyActivityProps) 
     return (
         <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/profile/Activity")} style={styles.section}>
             <View style={styles.header}>
-                <ThemedText type="subtitle">Past 7 Day</ThemedText>
+                <ThemedText type="subtitle">Recent Activity</ThemedText>
                 <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
             </View>
             <View style={styles.activityContainer}>

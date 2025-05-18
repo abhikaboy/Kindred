@@ -5,8 +5,8 @@ const Colors = {
     light: {
         text: "#13121F",
         header: "#13121F",
-        buttonText: "#fff",
-        background: "#FFF",
+        buttonText: "#fffFFF",
+        background: "#FFFFFF",
         disabled: "#66666633",
         input: "#66666633",
         lightened: "#F5f5f5",
@@ -25,7 +25,7 @@ const Colors = {
         modalTop: "#696969",
     },
     dark: {
-        text: "#fff",
+        text: "#fffFFF",
         modalTop: "#696969",
         header: "#F9EAFF",
         background: "#13121F",
