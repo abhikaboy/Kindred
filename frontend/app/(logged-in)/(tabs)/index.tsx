@@ -120,7 +120,7 @@ const Home = (props: Props) => {
                 </ConditionalView>
                 <ConditionalView condition={selected !== ""}>
                     <ScrollView>
-                        <View style={styles.categoriesContainer}>
+                        <View style={styles.categoriesContainer} key="cateogry-container">
                             {categories
                                 .sort((a, b) => b.tasks.length - a.tasks.length)
                                 .map((category) => {
@@ -174,7 +174,7 @@ const Home = (props: Props) => {
                         <View style={{ gap: 8, marginTop: 24 }}>
                             <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                             <ScrollView horizontal>
-                                <ConditionalView condition={workspaces.length > 0}>
+                                <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
                                     <View style={{ flexDirection: "row", gap: 8 }}>
                                         {workspaces.map((workspace) => (
                                             <TouchableOpacity
@@ -241,6 +241,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: "600",
+        paddingBottom: 16,
     },
     categoriesContainer: {
         gap: 16,

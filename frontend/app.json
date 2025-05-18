@@ -8,7 +8,7 @@
         "scheme": "kindred",
         "userInterfaceStyle": "automatic",
         "newArchEnabled": true,
-        "platforms": ["ios", "android"],
+        "platforms": ["ios", "android", "web"],
         "ios": {
             "supportsTablet": true,
             "infoPlist": {
@@ -29,7 +29,7 @@
             },
             "usesAppleSignIn": true,
             "bundleIdentifier": "com.kindred.kindredtsl",
-            "buildNumber": "10"
+            "buildNumber": "11"
         },
         "android": {
             "adaptiveIcon": {

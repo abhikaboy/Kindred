@@ -3,16 +3,9 @@ import { TouchableOpacity, View, StyleSheet, Image, Dimensions } from "react-nat
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import EditPost from "../modals/edit/EditPost";
-import { Task } from "@/api/types";
-import Svg, { Circle, Rect, Path } from "react-native-svg";
-import ConditionalView from "../ui/ConditionalView";
 import PrimaryButton from "../inputs/PrimaryButton";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
-import { PRIORITY_MAP } from "./TaskCard";
-
-type Priority = 1 | 2 | 3;
 
 interface TaskProps {
     content: string;
@@ -36,17 +29,7 @@ interface Props {
     tags: string[];
 }
 
-const BlueprintCard = ({
-    previewImage,
-    workspaceName,
-    username,
-    name,
-    time,
-    subscriberCount,
-    description,
-    tasks,
-    tags,
-}: Props) => {
+const BlueprintCard = ({ previewImage, workspaceName, username, name, time, subscriberCount, tags }: Props) => {
     let ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     return (
@@ -70,9 +53,9 @@ const BlueprintCard = ({
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                         <Feather name="users" size={18} color={ThemedColor.caption} />
 
-                        <ThemedText type="caption">{subscriberCount} subscribers</ThemedText>
+                        <ThemedText type="caption">{subscriberCount} Subscribers</ThemedText>
                     </View>
-                    <View style={{ alignItems: "center", flexDirection: "row", gap: 10}}>
+                    <View style={{ alignItems: "center", flexDirection: "row", gap: 10 }}>
                         {tags.map((tag, index) => (
                             <ThemedText
                                 key={index}
