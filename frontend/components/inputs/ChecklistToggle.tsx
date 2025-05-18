@@ -11,7 +11,7 @@ const ChecklistToggle = (props: Props) => {
         <TouchableOpacity
             onPress={() => setChecked(!checked)}
             style={{
-                backgroundColor: checked ? ThemedColor.primary : "#282738",
+                backgroundColor: checked ? ThemedColor.primary : ThemedColor.tertiary,
                 paddingVertical: 10,
                 paddingHorizontal: 10,
                 borderRadius: 8,

@@ -4,6 +4,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { loginWithToken } from "@/api/auth";
 import { router } from "expo-router";
+import { useSafeAsync } from "@/hooks/useSafeAsync";
 
 interface User {
     id: string;
@@ -76,6 +77,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<any | null>(null);
+    const safeAsync = useSafeAsync();
 
     async function register(email: string, appleAccountID: string) {
         const url = process.env.EXPO_PUBLIC_API_URL;
@@ -134,31 +136,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await login(user.appleAccountID);
         }
     }
+
     async function fetchAuthData() {
-        console.log("fetching auth data pt 1");
-        const authData = await getAuthData();
-        console.log("authData: ", authData);
-        if (authData) {
-            // set the axios headers to use the auth data
-            axios.defaults.headers.common["Authorization"] = "Bearer " + authData.access_token;
-            axios.defaults.headers.common["refresh_token"] = authData.refresh_token;
-            // make an api request
-            console.log("fetching auth data pt 2");
-            try {
+        const { result, error } = await safeAsync(async () => {
+            console.log("fetching auth data pt 1");
+            const authData = await getAuthData();
+            console.log("authData: ", authData);
+
+            if (authData) {
+                axios.defaults.headers.common["Authorization"] = "Bearer " + authData.access_token;
+                axios.defaults.headers.common["refresh_token"] = authData.refresh_token;
+
+                console.log("fetching auth data pt 2");
                 const user = await loginWithToken();
                 console.log("user successfully logged in!: ", user);
                 setUser(user);
                 return user;
-            } catch (error) {
-                console.log("Error: " + error);
-                logout();
-                return null;
             }
-        } else {
+
             console.log("No auth data found, returning null");
             logout();
             return null;
+        });
+
+        if (error) {
+            console.error("Error fetching auth data:", error);
+            logout();
+            return null;
         }
+
+        return result;
     }
 
     return (

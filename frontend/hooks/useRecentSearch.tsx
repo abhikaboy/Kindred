@@ -1,26 +1,41 @@
 import { useEffect, useState } from "react";
 import asyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAsync } from "../hooks/useSafeAsync";
 
 export function useRecentSearch(searchSet: string = "") {
     // two functions, append recent and get recents
     const [recents, setRecents] = useState<string[]>([]);
     const MAX_RECENTS = 6;
+    const safeAsync = useSafeAsync();
+
     useEffect(() => {
-        if (searchSet === "") {
-            setRecents(() => []);
-        }
-        // @ts-ignore
-        setRecents(async () => {
-            const recents = await asyncStorage.getItem(searchSet);
-            if (recents) {
-                console.log("found recent searches");
-                console.log(recents);
-                return JSON.parse(recents);
-            } else {
-                console.log("didn't find search set");
-                return [];
+        const loadRecents = async () => {
+            if (searchSet === "") {
+                setRecents(() => []);
+                return;
             }
-        });
+
+            const { result, error } = await safeAsync(async () => {
+                const recents = await asyncStorage.getItem(searchSet);
+                if (recents) {
+                    console.log("found recent searches");
+                    console.log(recents);
+                    return JSON.parse(recents);
+                } else {
+                    console.log("didn't find search set");
+                    return [];
+                }
+            });
+
+            if (error) {
+                console.error("Error loading recents:", error);
+                return;
+            }
+
+            setRecents(result);
+        };
+
+        loadRecents();
     }, [searchSet]);
 
     const appendSearch = async (search: string) => {

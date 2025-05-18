@@ -18,6 +18,7 @@ import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
+import { useSafeAsync } from "@/hooks/useSafeAsync";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -33,6 +34,7 @@ export default function RootLayout() {
     });
     const [shakeDetected, setShakeDetected] = useState(false);
     const [subscription, setSubscription] = useState(null);
+    const safeAsync = useSafeAsync();
 
     Accelerometer.setUpdateInterval(500); // Adjust update interval as needed
 
@@ -58,9 +60,19 @@ export default function RootLayout() {
     }, []);
 
     useEffect(() => {
-        if (loaded) {
-            SplashScreen.hideAsync();
-        }
+        const hideSplash = async () => {
+            if (loaded) {
+                const { error } = await safeAsync(async () => {
+                    await SplashScreen.hideAsync();
+                });
+
+                if (error) {
+                    console.error("Error hiding splash screen:", error);
+                }
+            }
+        };
+
+        hideSplash();
     }, [loaded]);
 
     if (!loaded) {

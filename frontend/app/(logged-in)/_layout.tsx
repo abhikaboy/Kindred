@@ -12,11 +12,21 @@ import { ThemedText } from "@/components/ThemedText";
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();
     return (
-        <ScrollView style={{ flex: 1, backgroundColor: ThemedColor.background, padding: 20, paddingTop: 200 }}>
+        <ScrollView
+            style={{
+                flex: 1,
+                backgroundColor: ThemedColor.background,
+                padding: 20,
+                paddingTop: 150,
+                paddingBottom: 150,
+                justifyContent: "center",
+                alignItems: "center",
+            }}>
             <ThemedText type="heading">{error.name}</ThemedText>
-            <ThemedText type="heading">root</ThemedText>
+            <ThemedText type="heading">Oops! Something went wrong.</ThemedText>
             <ThemedText type="default">{error.message}</ThemedText>
             <ThemedText type="default">{error.stack}</ThemedText>
+            <ThemedText type="default">{error.cause as string}</ThemedText>
             <ThemedText type="default" onPress={retry}>
                 Try Again?
             </ThemedText>

@@ -23,6 +23,8 @@ import Timeline from "@/components/home/Timeline";
 import { Image } from "react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useSafeAsync } from "@/hooks/useSafeAsync";
+
 type Props = {};
 
 const Home = (props: Props) => {
@@ -39,12 +41,24 @@ const Home = (props: Props) => {
 
     const [focusedCategory, setFocusedCategory] = useState<string>("");
 
+    const safeAsync = useSafeAsync();
+
     useEffect(() => {
-        fetchWorkspaces();
+        const loadWorkspaces = async () => {
+            const { error } = await safeAsync(async () => {
+                await fetchWorkspaces();
+            });
+
+            if (error) {
+                console.error("Error fetching workspaces:", error);
+            }
+        };
+
+        loadWorkspaces();
     }, [user]);
 
     useEffect(() => {
-        setInterval(() => {
+        const interval = setInterval(() => {
             // if (!creating) setTime(new Date().toLocaleTimeString());
         }, 1000);
 
@@ -67,6 +81,7 @@ const Home = (props: Props) => {
                 setTimeOfDay("Good Night 🌙");
             }
         }
+        return () => clearInterval(interval);
     }, []);
 
     const drawerRef = useRef<DrawerLayout>(null);

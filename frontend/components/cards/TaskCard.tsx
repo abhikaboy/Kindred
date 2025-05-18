@@ -47,18 +47,17 @@ const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, 
     }, []);
 
     useEffect(() => {
-        const checkTimerState = async () => {
-            try {
-                const isRunning = await AsyncStorage.getItem(`task_${id}_isRunning`);
-                if (isMounted.current) {
-                    setIsRunningState(isRunning === "true");
-                }
-            } catch (error) {
-                console.error("Error checking timer state:", error);
-            }
-        };
-
-        checkTimerState();
+        // const checkTimerState = async () => {
+        //     try {
+        //         const isRunning = await AsyncStorage.getItem(`task_${id}_isRunning`);
+        //         if (isMounted.current) {
+        //             setIsRunningState(isRunning === "true");
+        //         }
+        //     } catch (error) {
+        //         console.error("Error checking timer state:", error);
+        //     }
+        // };
+        // checkTimerState();
     }, [id]);
 
     const getPriorityColor = (level: PriorityLevel) => {
