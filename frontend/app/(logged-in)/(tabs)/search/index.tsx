@@ -162,7 +162,8 @@ const Search = (props: Props) => {
                                     time={workspace.time}
                                     subscriberCount={workspace.subscriberCount}
                                     description={workspace.description}
-                                    tasks={workspace.tasks}
+                                    // @ts-ignore
+                                    tasks={workspace.tasks as TaskProps[]}
                                     tags={workspace.tags}
                                 />
                             ))}
@@ -201,6 +202,7 @@ const Search = (props: Props) => {
                                     time={workspace.time}
                                     subscriberCount={workspace.subscriberCount}
                                     description={workspace.description}
+                                    // @ts-ignore
                                     tasks={workspace.tasks}
                                     tags={workspace.tags}
                                 />

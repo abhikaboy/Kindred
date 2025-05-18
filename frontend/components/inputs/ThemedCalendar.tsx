@@ -32,7 +32,6 @@ const ThemedCalendar = (props: Props) => {
     return (
         <View>
             <Calendar
-                horizontal={true}
                 theme={{
                     backgroundColor: ThemedColor.lightened,
                     calendarBackground: ThemedColor.lightened,
@@ -54,8 +53,6 @@ const ThemedCalendar = (props: Props) => {
                     textMonthFontWeight: "bold",
                     textDayHeaderFontFamily: "Outfit",
                 }}
-                displayName="Calendar"
-                firstDayOfWeek="monday"
                 markedDates={selectedDates.reduce((acc, date) => {
                     return {
                         ...acc,

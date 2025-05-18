@@ -52,7 +52,7 @@ export default function Profile() {
                 {
                     scale: interpolate(scrollOffset.value, [-HEADER_HEIGHT, 0, HEADER_HEIGHT], [1.5, 1, 1]),
                 },
-            ],
+            ] as const,
         };
     });
 

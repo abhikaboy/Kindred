@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import TaskTabs from "@/components/inputs/TaskTabs";
@@ -22,6 +22,15 @@ export default function Task() {
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
     const [checklistItem, setChecklistItem] = useState([]);
+
+    // Add a ref to track mounted state
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
 
     const formatElapsedTime = (milliseconds: number) => {
         const totalSeconds = Math.floor(milliseconds / 1000);
@@ -53,14 +62,18 @@ export default function Task() {
 
     const loadBaseTime = async (id) => {
         try {
-            console.log("checking id", id);
-            const storedTime = await AsyncStorage.getItem(`task_${id}_baseTime`);
-            const isRunning = await AsyncStorage.getItem(`task_${id}_isRunning`);
+            if (!isMounted.current) return;
+
+            const [storedTime, isRunning] = await Promise.all([
+                AsyncStorage.getItem(`task_${id}_baseTime`),
+                AsyncStorage.getItem(`task_${id}_isRunning`),
+            ]);
+
+            if (!isMounted.current) return;
+
             if (storedTime) {
                 setBaseTime(new Date(parseInt(storedTime)));
-                if (isRunning == "true") {
-                    setIsRunning(true);
-                }
+                setIsRunning(isRunning === "true");
             }
         } catch (error) {
             console.error("Error loading base time:", error);
@@ -88,17 +101,36 @@ export default function Task() {
     }, [checklistItem]);
 
     useEffect(() => {
-        if (isRunning) {
-            const interval = setInterval(() => {
-                setTime(new Date());
-            }, 1000);
-            return () => clearInterval(interval);
+        let interval: NodeJS.Timeout;
+
+        if (isRunning && isMounted.current) {
+            interval = setInterval(() => {
+                if (isMounted.current) {
+                    setTime(new Date());
+                }
+            }, 1000) as unknown as NodeJS.Timeout;
         }
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
     }, [isRunning]);
 
-    const startTimer = (id) => {
-        setIsRunning(true);
-        AsyncStorage.setItem(`task_${id}_isRunning`, "true");
+    const startTimer = async (id) => {
+        try {
+            await Promise.all([
+                AsyncStorage.setItem(`task_${id}_isRunning`, "true"),
+                AsyncStorage.setItem(`task_${id}_baseTime`, new Date().getTime().toString()),
+            ]);
+            if (isMounted.current) {
+                setIsRunning(true);
+                setBaseTime(new Date());
+            }
+        } catch (error) {
+            console.error("Error starting timer:", error);
+        }
     };
 
     const restartTimer = (id) => {
@@ -108,9 +140,15 @@ export default function Task() {
         AsyncStorage.setItem(`task_${id}_isRunning`, "true");
     };
 
-    const pauseTimer = (id) => {
-        setIsRunning(false);
-        AsyncStorage.setItem(`task_${id}_isRunning`, "false");
+    const pauseTimer = async (id) => {
+        try {
+            await AsyncStorage.setItem(`task_${id}_isRunning`, "false");
+            if (isMounted.current) {
+                setIsRunning(false);
+            }
+        } catch (error) {
+            console.error("Error pausing timer:", error);
+        }
     };
 
     const stopTimer = (id) => {
