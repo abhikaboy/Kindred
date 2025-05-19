@@ -14,7 +14,7 @@ import CreateModal from "@/components/modals/CreateModal";
 import BottomMenuModal from "@/components/modals/BottomMenuModal";
 import EditCategory from "@/components/modals/edit/EditCategory";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Category } from "../../../components/category";
+import { Category } from "../../../../components/category";
 import Confetti from "react-native-simple-confetti";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";

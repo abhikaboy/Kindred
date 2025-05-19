@@ -49,16 +49,16 @@ export default function TabLayout() {
                 }),
             }}>
             <Tabs.Screen
-                name="index"
+                name="(task)"
                 options={{
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
                     href: "/",
-                    tabBarBadge: 4,
+                    tabBarBadge: 1,
                 }}
             />
             <Tabs.Screen
-                name="feed"
+                name="(feed)"
                 options={{
                     title: "Feed",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
@@ -66,7 +66,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="playground"
+                name="(playground)"
                 options={{
                     title: "Playground",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
@@ -74,7 +74,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="search"
+                name="(search)"
                 options={{
                     title: "Search",
                     tabBarIcon: ({ color }) => <Octicons name="search" size={24} color={color} />,
@@ -82,7 +82,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="profile"
+                name="(profile)"
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color }) => <Octicons name="person" size={24} color={color} />,

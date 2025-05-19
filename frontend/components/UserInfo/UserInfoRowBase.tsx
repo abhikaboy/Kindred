@@ -3,6 +3,7 @@ import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PreviewIcon from "../profile/PreviewIcon";
+import { router } from "expo-router";
 
 type Props = {
     name: string;
@@ -13,11 +14,13 @@ type Props = {
     large?: boolean;
 };
 
-const UserInfoRowBase = ({ name, username, right, icon, large }: Props) => (
+const UserInfoRowBase = ({ name, username, right, icon, large, id }: Props) => (
     <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
         <View style={styles.row}>
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-                <PreviewIcon size={large ? "medium" : "small"} icon={icon}></PreviewIcon>
+                <TouchableOpacity onPress={() => (id != null && id != "" ? router.navigate(`/account/${id}`) : null)}>
+                    <PreviewIcon size={large ? "medium" : "small"} icon={icon}></PreviewIcon>
+                </TouchableOpacity>
                 <View style={{ gap: 0 }}>
                     <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
                         <ThemedText numberOfLines={1} ellipsizeMode="tail" type="default">

@@ -3,7 +3,9 @@ import React, { useEffect, useState } from "react";
 
 import { Calendar } from "react-native-calendars";
 import { useThemeColor } from "@/hooks/useThemeColor";
-type Props = {};
+type Props = {
+    dateReciever: (date: any) => void;
+};
 
 const ThemedCalendar = (props: Props) => {
     const [selectedDates, setSelectedDates] = useState<any>([]);
@@ -15,7 +17,12 @@ const ThemedCalendar = (props: Props) => {
             setSelectedDates(selectedDates.filter((date) => date !== day.dateString));
             return;
         }
+        if (selectedDates.length == 1) {
+            setSelectedDates([day.dateString]);
+            return;
+        }
         setSelectedDates([...selectedDates, day.dateString]);
+        props.dateReciever(day.dateString);
     };
 
     useEffect(() => {
@@ -36,8 +43,8 @@ const ThemedCalendar = (props: Props) => {
                     backgroundColor: ThemedColor.lightened,
                     calendarBackground: ThemedColor.lightened,
                     textSectionTitleColor: ThemedColor.text,
-                    selectedDayBackgroundColor: ThemedColor.primary,
-                    selectedDayTextColor: ThemedColor.text,
+                    selectedDayBackgroundColor: ThemedColor.tertiary,
+                    selectedDayTextColor: ThemedColor.primary,
                     todayTextColor: ThemedColor.primary,
                     dayTextColor: ThemedColor.text,
                     textDisabledColor: ThemedColor.disabled,
@@ -47,10 +54,10 @@ const ThemedCalendar = (props: Props) => {
                     agendaDayTextColor: ThemedColor.text,
                     agendaTodayColor: ThemedColor.primary,
                     arrowColor: ThemedColor.text,
-                    textDayFontFamily: "Outfit",
+                    textDayFontFamily: "OutfitLight",
                     textMonthFontFamily: "Outfit",
                     textMonthFontSize: 20,
-                    textMonthFontWeight: "bold",
+                    textMonthFontWeight: "semibold",
                     textDayHeaderFontFamily: "Outfit",
                 }}
                 markedDates={selectedDates.reduce((acc, date) => {

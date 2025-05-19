@@ -50,7 +50,7 @@ const CreateModal = (props: Props) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
     // Define snap points - we'll use percentages for flexibility
-    const snapPoints = useMemo(() => [screen === Screen.STANDARD ? "60%" : "70%", "90%"], [screen]);
+    const snapPoints = useMemo(() => [screen === Screen.STANDARD ? "64%" : "70%", "90%"], [screen]);
 
     const gestureHandler = useAnimatedGestureHandler({
         onStart: (_, ctx: any) => {

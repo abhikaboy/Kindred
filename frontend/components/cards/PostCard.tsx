@@ -125,7 +125,13 @@ const PostCard = ({
         <View style={styles.container}>
             <View style={{ flexDirection: "column", marginVertical: 16 }}>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
-                    <UserInfoRowTimed name={name} username={username} time={time} icon={icon} />
+                    <UserInfoRowTimed
+                        name={name}
+                        username={username}
+                        time={time}
+                        icon={icon}
+                        id={"67abe3c08052e49db74c4b62"}
+                    />
                 </View>
                 <View style={styles.col}>
                     {/* <View style={styles.row}>

@@ -6,14 +6,13 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 interface ProfileHeaderProps {
     displayName: string;
     handle: string;
-    nameHeight: number;
 }
 
-export default function ProfileHeader({ displayName, handle, nameHeight }: ProfileHeaderProps) {
+export default function ProfileHeader({ displayName, handle }: ProfileHeaderProps) {
     const ThemedColor = useThemeColor();
 
     return (
-        <View style={[styles.nameContainer, { top: Dimensions.get("window").height * 0.4 - nameHeight }]}>
+        <View style={[styles.nameContainer, { top: Dimensions.get("window").height * 0.4 }]}>
             <ThemedText type="hero" style={styles.displayName}>
                 {displayName}
             </ThemedText>

@@ -5,10 +5,8 @@ import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
 import { Dimensions, StyleSheet } from "react-native";
 import NewWorkspace from "../modals/create/NewWorkspace";
-import ModalHead from "../modals/ModalHead";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
-import BottomSheetKeyboardView from "@gorhom/bottom-sheet";
 import EditWorkspace from "../modals/edit/EditWorkspace";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
@@ -126,8 +124,8 @@ export const Drawer = ({ close }) => {
             <View style={{ paddingTop: 16, paddingBottom: 16 }}>
                 <TouchableOpacity
                     onPress={() => {
-                        setSelected(""); 
-                        close(); 
+                        setSelected("");
+                        close();
                     }}>
                     <ThemedText type="title">Workspaces</ThemedText>
                 </TouchableOpacity>

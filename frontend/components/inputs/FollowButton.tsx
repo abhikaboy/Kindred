@@ -1,21 +1,44 @@
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useRequest } from "@/hooks/useRequest";
 type Props = {
-    following: boolean;
+    connectionType: "none" | "friends" | "requested";
+    followeeid?: string;
+    followerid?: string;
 };
 
-export default function FollowButton({ following }: Props) {
-    const [follow, setFollowing] = useState(following);
+export default function FollowButton({ connectionType = "none", followeeid, followerid }: Props) {
+    const [relationship, setRelationship] = useState<keyof typeof relationshipMapping>(connectionType);
     let ThemedColor = useThemeColor();
+    const { request } = useRequest();
+
+    const relationshipMapping = {
+        none: {
+            next: "requested" as keyof typeof relationshipMapping,
+            text: "Follow",
+            color: ThemedColor.primary,
+        },
+        requested: {
+            next: "none" as keyof typeof relationshipMapping,
+            text: "Requested",
+            color: ThemedColor.lightened,
+        },
+        friends: {
+            next: "none" as keyof typeof relationshipMapping,
+            text: "Friends",
+            color: ThemedColor.lightened,
+        },
+    };
 
     return (
         <TouchableOpacity
             onPress={() => {
-                setFollowing(!follow);
+                setRelationship(relationshipMapping[relationship].next);
             }}
+            activeOpacity={0.6}
             style={{
-                backgroundColor: follow ? ThemedColor.tertiary : ThemedColor.primary,
+                backgroundColor: relationshipMapping[relationship].color,
                 borderRadius: 100,
                 paddingVertical: 12,
                 paddingHorizontal: 20,
@@ -29,7 +52,7 @@ export default function FollowButton({ following }: Props) {
                     textAlign: "center",
                     fontWeight: 400,
                 }}>
-                {follow ? "Following" : "Follow"}
+                {relationshipMapping[relationship].text}
             </Text>
         </TouchableOpacity>
     );

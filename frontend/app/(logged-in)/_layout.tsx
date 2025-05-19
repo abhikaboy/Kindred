@@ -21,10 +21,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
                 flex: 1,
                 backgroundColor: ThemedColor.background,
                 padding: 20,
-                paddingTop: 150,
-                paddingBottom: 150,
-                justifyContent: "center",
-                alignItems: "center",
             }}>
             <ThemedText type="heading">{error.name}</ThemedText>
             <ThemedText type="heading">Oops! Something went wrong.</ThemedText>
@@ -34,6 +30,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
             <ThemedText type="default" onPress={retry}>
                 Try Again?
             </ThemedText>
+            <View style={{ height: 100 }} />
         </ScrollView>
     );
 }

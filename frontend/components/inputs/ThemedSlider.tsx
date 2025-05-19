@@ -1,20 +1,19 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { TextInput } from "react-native-gesture-handler";
 import { GestureHandlerRootView, GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { ThemedText } from "../ThemedText";
 
-const INITIAL_BOX_SIZE = 40;
-const SLIDER_WIDTH = 300;
-
-const STEP_SIZE = SLIDER_WIDTH / 11;
-
 Animated.addWhitelistedNativeProps({ text: true });
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
+const SLIDER_WIDTH = 210;
+const INITIAL_BOX_SIZE = 40;
+
+const STEP_SIZE = SLIDER_WIDTH / 11;
 let ThemedColor = useThemeColor();
 const ThemedSlider = () => {
     const offset = useSharedValue(0);
@@ -75,17 +74,13 @@ const ThemedSlider = () => {
                                     height: 16,
                                     borderRadius: 12,
                                     margin: "auto",
-                                }}
-                            />
+                                }}>
+                                <Text style={styles.stepText}>{step.label}</Text>
+                            </View>
                         </Animated.View>
                     </GestureDetector>
                 </View>
             </GestureHandlerRootView>
-            <View style={styles.step}>
-                <ThemedText type="lightBody" style={styles.stepText}>
-                    {step.label}
-                </ThemedText>
-            </View>
         </View>
     );
 };
@@ -137,8 +132,11 @@ const styles = StyleSheet.create({
         alignItems: "flex-end",
     },
     stepText: {
-        fontSize: 15,
-        color: "white",
+        fontSize: 16,
+        width: "100%",
+        textAlign: "center",
+        marginTop: -2,
+        color: "black",
     },
 });
 

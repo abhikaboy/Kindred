@@ -2,11 +2,11 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView } from "react-native";
+import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView, Image } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PostCard from "@/components/cards/PostCard";
 import { Icons } from "@/constants/Icons";
-import { router, useRouter } from "expo-router";
+import { Link, router, useRouter } from "expo-router";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 export default function Feed() {
     const ThemedColor = useThemeColor();
@@ -14,16 +14,16 @@ export default function Feed() {
     const router = useRouter();
     return (
         <ThemedView style={styles.container}>
-            <View style={styles.headerContainer}>
-                <ThemedText type="subtitle">Kindred</ThemedText>
-                <TouchableOpacity
-                    onPress={() => {
-                        router.push("/(logged-in)/(tabs)/feed/Notifications");
-                    }}>
-                    <Ionicons name="heart-outline" size={28} color={ThemedColor.text} />
-                </TouchableOpacity>
-            </View>
             <ScrollView style={{ flex: 1 }}>
+                <View style={styles.headerContainer}>
+                    <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
+                    <TouchableOpacity
+                        onPress={() => {
+                            router.push("/(logged-in)/(tabs)/(feed)/Notifications");
+                        }}>
+                        <Ionicons name="heart-outline" size={28} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                </View>
                 <PostCard
                     icon={Icons.luffy}
                     name={"Abhik Ray"}
@@ -135,12 +135,13 @@ const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: Dimensions.get("window").height * 0.1,
+            paddingTop: Dimensions.get("window").height * 0.08,
         },
         headerContainer: {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
             paddingHorizontal: HORIZONTAL_PADDING,
+            paddingBottom: 16,
         },
     });

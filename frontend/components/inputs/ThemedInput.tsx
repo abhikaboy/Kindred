@@ -32,12 +32,14 @@ const ThemedInput = forwardRef(function ThemedInput(props: Props, ref: React.Ref
                 style={{
                     backgroundColor: ThemedColor.lightened,
                     color: ThemedColor.text,
-                    borderRadius: 20,
+                    borderRadius: 12,
                     padding: 16,
                     fontSize: 16,
-                    fontFamily: "Outfit",
+                    fontFamily: "OutfitLight",
                     paddingRight: 24,
                     paddingLeft: 24,
+                    borderWidth: 1,
+                    borderColor: ThemedColor.tertiary,
                 }}
             />
         </View>

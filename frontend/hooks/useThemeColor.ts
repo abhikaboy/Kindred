@@ -1,7 +1,6 @@
 import { getThemedColor } from "../constants/Colors";
-import { useColorScheme } from "react-native";
+import { Appearance } from "react-native";
 
 export function useThemeColor() {
-    const colorScheme = useColorScheme() ?? "light";
-    return getThemedColor(colorScheme);
+    return getThemedColor(Appearance.getColorScheme() ?? "light");
 }

@@ -33,7 +33,7 @@ export default function Playground() {
                 Development Environment 1 - Inputs
             </Link>
             <Link
-                href={"/Dev2"}
+                href={"/playground/Dev2"}
                 style={{
                     color: ThemedColor.text,
                     fontSize: 24,

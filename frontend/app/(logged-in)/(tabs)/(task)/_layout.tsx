@@ -1,7 +1,5 @@
-import BackButton from "@/components/BackButton";
-import { Stack } from "expo-router";
 import React from "react";
-
+import { Stack } from "expo-router";
 import { View } from "react-native";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -23,16 +21,11 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     );
 }
 
-export default function ProfileLayout() {
+export default function TaskLayout() {
     return (
         <Stack
             screenOptions={{
                 headerShown: false,
-                headerTransparent: true,
-
-                headerBackTitle: "",
-                headerBackButtonMenuEnabled: false,
-                headerLeft: () => <BackButton />,
             }}
         />
     );

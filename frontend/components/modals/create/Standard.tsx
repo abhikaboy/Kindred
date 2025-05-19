@@ -1,5 +1,5 @@
 import { Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import ThemedInput from "../../inputs/ThemedInput";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
@@ -14,7 +14,12 @@ import ThemedSwitch from "@/components/inputs/ThemedSwitch";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
-
+import { useSharedValue } from "react-native-reanimated";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import Entypo from "@expo/vector-icons/Entypo";
+import Octicons from "@expo/vector-icons/Octicons";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
 type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
@@ -25,8 +30,7 @@ const Standard = ({ hide, goTo }: Props) => {
     const { request } = useRequest();
     const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
     const { taskName, setTaskName, showAdvanced, setShowAdvanced } = useTaskCreation();
-
-    console.log("Selected Category:" + selectedCategory);
+    const ThemedColor = useThemeColor();
 
     const createPost = async () => {
         if (categories.length === 0) return;
@@ -53,8 +57,28 @@ const Standard = ({ hide, goTo }: Props) => {
         console.warn("Categories is null " + categories);
     }
 
+    const isPublic = useSharedValue(false);
+    const [isPublic2, setIsPublic] = useState(false);
+
     return (
-        <View style={{ gap: 16, flexDirection: "column", display: "flex" }} onTouchStart={() => Keyboard.dismiss()}>
+        <View style={{ gap: 8, flexDirection: "column", display: "flex" }} onTouchStart={() => Keyboard.dismiss()}>
+            <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
+                <ThemedText type="defaultSemiBold" style={{ fontSize: 20, letterSpacing: 0.5 }}>
+                    New Task
+                </ThemedText>
+                <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+                    <TouchableOpacity onPress={() => setIsPublic(!isPublic2)}>
+                        <Feather name={isPublic2 ? "eye" : "eye-off"} size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => {
+                            createPost();
+                            hide();
+                        }}>
+                        <Octicons name="plus" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                </View>
+            </View>
             <ThemedInput
                 autofocus={taskName.length === 0}
                 ref={nameRef}
@@ -88,29 +112,20 @@ const Standard = ({ hide, goTo }: Props) => {
                     goTo(Screen.NEW_CATEGORY);
                 }}
             />
-            <View style={{ gap: 8 }}>
-                <ThemedText type="lightBody">Priority</ThemedText>
+            <View style={{ gap: 16, marginVertical: 16 }}>
+                <ThemedText type="lightBody">Priority & Difficulty</ThemedText>
                 <View style={{ flexDirection: "row", gap: 16 }}>
                     <TrafficLight />
+                    <ThemedSlider />
                 </View>
-            </View>
-            <View style={{ gap: 16 }}>
-                <ThemedText type="lightBody">Difficulty</ThemedText>
-                <ThemedSlider />
-            </View>
-            <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
-                <ThemedSwitch />
-                <ThemedText type="lightBody">Edit Visibility</ThemedText>
             </View>
 
             <TouchableOpacity
-                style={{ flexDirection: "row", gap: 16, alignItems: "center", justifyContent: "space-between" }}
-                onPress={() => setShowAdvanced(!showAdvanced)}>
-                <ThemedText type="lightBody">Advanced Options</ThemedText>
-                <Ionicons name={showAdvanced ? "chevron-down" : "chevron-up"} size={24} color="white" />
+                style={{ flexDirection: "row", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+                <ThemedText type="lightBody">Timing</ThemedText>
             </TouchableOpacity>
-            <ConditionalView condition={showAdvanced}>
-                <View style={{ gap: 16, marginTop: 4 }}>
+            <ConditionalView condition={true}>
+                <View style={{ gap: 12, marginTop: 4 }}>
                     <AdvancedOption icon="calendar" label="Set Start Date" screen={Screen.STARTDATE} goTo={goTo} />
                     <AdvancedOption icon="time" label="Set Start Time" screen={Screen.STARTTIME} goTo={goTo} />
                     <AdvancedOption icon="calendar" label="Set Deadline" screen={Screen.DEADLINE} goTo={goTo} />

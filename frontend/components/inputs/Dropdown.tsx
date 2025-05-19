@@ -40,8 +40,8 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
 
     let mainBar = useAnimatedStyle(() => {
         return {
-            borderBottomLeftRadius: expanded.value ? 0 : 20,
-            borderBottomRightRadius: expanded.value ? 0 : 20,
+            borderBottomLeftRadius: expanded.value ? 0 : 12,
+            borderBottomRightRadius: expanded.value ? 0 : 12,
             borderBottomWidth: expanded.value ? 1 : 0,
             borderBottomColor: expanded.value ? ThemedColor.disabled : ThemedColor.lightened,
         };
@@ -59,7 +59,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                 style={[
                     mainBar,
                     {
-                        borderRadius: 20,
+                        borderRadius: 12,
                         padding: 16,
                         backgroundColor: ThemedColor.lightened,
                         paddingHorizontal: HORIZONTAL_PADDING,

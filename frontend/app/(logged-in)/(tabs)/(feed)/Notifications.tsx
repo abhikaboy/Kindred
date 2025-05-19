@@ -112,7 +112,7 @@ const FollowRequestsSection = ({ requests, styles }: { requests: FollowRequestPr
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <ThemedText type="subtitle">Friend Requests</ThemedText>
                 {requests.length > 3 && (
-                    <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/feed/FollowRequests")}>
+                    <TouchableOpacity onPress={() => router.push("/FollowRequests")}>
                         <ThemedText type="caption">see all {requests.length}</ThemedText>
                     </TouchableOpacity>
                 )}

@@ -17,44 +17,24 @@ import ProfileGallery from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
+import ParallaxBanner from "@/components/ui/ParallaxBanner";
 
 export default function Profile() {
-    const { user } = useAuth();
+    const user = {
+        id: "67ef139d4931ee7a9fb630fc",
+        display_name: "Coffee!~",
+        handle: "@coffee",
+        profile_picture: Icons.coffee,
+        friends: [{ id: "friend-1", display_name: "Jane Doe", handle: "jane_doe", profile_picture: Icons.luffy }],
+    };
+    // 67ef139d4931ee7a9fb630fc
     let ThemedColor = useThemeColor();
-    const router = useRouter();
 
-    const nameRef = useRef<View>(null);
-    const [nameHeight, setNameHeight] = useState(0);
     const [activeTab, setActiveTab] = useState(0);
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
-    const scrollOffset = useScrollViewOffset(scrollRef);
-
-    useEffect(() => {
-        if (nameRef.current) {
-            nameRef.current.measure((x, y, width, height, pageX, pageY) => {
-                setNameHeight(height);
-            });
-        }
-    }, [nameRef]);
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
-    const headerAnimatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                {
-                    translateY: interpolate(
-                        scrollOffset.value,
-                        [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
-                        [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.45]
-                    ),
-                },
-                {
-                    scale: interpolate(scrollOffset.value, [-HEADER_HEIGHT, 0, HEADER_HEIGHT], [1.5, 1, 1]),
-                },
-            ] as const,
-        };
-    });
 
     const mockTasks = {
         activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
@@ -70,32 +50,22 @@ export default function Profile() {
             ref={scrollRef}
             scrollEventThrottle={16}
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
-            <Animated.View style={[headerAnimatedStyle]}>
-                <LinearGradient
-                    colors={["transparent", ThemedColor.background]}
-                    style={[styles.headerImage, styles.gradientOverlay]}
-                />
-                <LinearGradient
-                    colors={[ThemedColor.background + "40", ThemedColor.background + "40"]}
-                    style={[styles.headerImage, styles.gradientOverlay]}
-                />
-                <Animated.Image src={user?.profile_picture || Icons.luffy} style={[styles.headerImage]} />
-            </Animated.View>
+            <ParallaxBanner
+                scrollRef={scrollRef}
+                backgroundImage={user?.profile_picture || Icons.luffy}
+                backgroundColor={ThemedColor.background}
+                headerHeight={HEADER_HEIGHT}
+            />
+            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} />
 
-            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} nameHeight={nameHeight} />
-
-            <View
-                style={[
-                    styles.contentContainer,
-                    { marginTop: 24 + Dimensions.get("window").height * 0.4 - nameHeight },
-                ]}>
+            <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>
                     <ProfileStats friendsCount={user?.friends.length || 0} />
                 </View>
 
                 <TodayStats tasks={2} points={12} streak={242} posts={4} />
 
-                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} />
+                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={user?.id} />
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
