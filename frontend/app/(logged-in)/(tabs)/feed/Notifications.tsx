@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
-import React, { ReactNode } from "react";
+import React from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -41,6 +41,95 @@ type FollowRequestProps = {
 type CombinedNotification =
     | (CommentNotificationProps & { type: "comment" })
     | (EncouragementNotificationProps & { type: "encouragement" });
+
+// Extract NotificationItem component
+const NotificationItem = ({
+    notification,
+    index,
+    styles,
+}: {
+    notification: CombinedNotification;
+    index: number;
+    styles: any;
+}) => {
+    return (
+        <View key={`${notification.type}-${index}`} style={styles.listItem}>
+            {notification.type === "comment" ? (
+                <UserInfoCommentNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    comment={notification.comment}
+                    icon={notification.icon}
+                    time={notification.time}
+                    image={notification.image}
+                />
+            ) : (
+                <UserInfoEncouragementNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    taskName={notification.taskName}
+                    icon={notification.icon}
+                    time={notification.time}
+                />
+            )}
+        </View>
+    );
+};
+
+// Extract NotificationSection component
+const NotificationSection = ({
+    title,
+    notifications,
+    styles,
+}: {
+    title: string;
+    notifications: CombinedNotification[];
+    styles: any;
+}) => {
+    if (notifications.length === 0) return null;
+
+    return (
+        <View style={styles.section}>
+            <ThemedText type="subtitle">{title}</ThemedText>
+            {notifications.map((notification, index) => (
+                <NotificationItem
+                    key={`${notification.type}-${index}`}
+                    notification={notification}
+                    index={index}
+                    styles={styles}
+                />
+            ))}
+        </View>
+    );
+};
+
+// Extract FollowRequestsSection component
+const FollowRequestsSection = ({ requests, styles }: { requests: FollowRequestProps[]; styles: any }) => {
+    if (requests.length === 0) return null;
+
+    return (
+        <View style={styles.section}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <ThemedText type="subtitle">Friend Requests</ThemedText>
+                {requests.length > 3 && (
+                    <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/feed/FollowRequests")}>
+                        <ThemedText type="caption">see all {requests.length}</ThemedText>
+                    </TouchableOpacity>
+                )}
+            </View>
+            {requests.slice(0, 4).map((request, index) => (
+                <View style={styles.listItem} key={`follow-${index}`}>
+                    <UserInfoFollowRequest
+                        name={request.name}
+                        icon={request.icon}
+                        username={request.username}
+                        userId={request.userId}
+                    />
+                </View>
+            ))}
+        </View>
+    );
+};
 
 const Notifications = () => {
     const ThemedColor = useThemeColor();
@@ -179,42 +268,6 @@ const Notifications = () => {
         filterByTimePeriod(encouragement_notifications, isThisMonth)
     );
 
-    const renderNotification = (notification: CombinedNotification, index: number): ReactNode => {
-        return (
-            <View key={`${notification.type}-${index}`} style={styles.listItem}>
-                {notification.type === "comment" ? (
-                    <UserInfoCommentNotification
-                        name={notification.name}
-                        userId={notification.userId}
-                        comment={notification.comment}
-                        icon={notification.icon}
-                        time={notification.time}
-                        image={notification.image}
-                    />
-                ) : (
-                    <UserInfoEncouragementNotification
-                        name={notification.name}
-                        userId={notification.userId}
-                        taskName={notification.taskName}
-                        icon={notification.icon}
-                        time={notification.time}
-                    />
-                )}
-            </View>
-        );
-    };
-
-    const renderSection = (title: string, notifications: CombinedNotification[]): ReactNode => {
-        if (notifications.length === 0) return null;
-
-        return (
-            <View style={styles.section}>
-                <ThemedText type="subtitle">{title}</ThemedText>
-                {notifications.map((notification, index) => renderNotification(notification, index))}
-            </View>
-        );
-    };
-
     return (
         <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
@@ -224,33 +277,10 @@ const Notifications = () => {
                 <ThemedText type="subtitle">Notifications</ThemedText>
             </View>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
-                {follow_requests.length > 0 && (
-                    <View style={styles.section}>
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                            <ThemedText type="subtitle">Friend Requests</ThemedText>
-                            {follow_requests.length > 3 && (
-                                <TouchableOpacity
-                                    onPress={() => router.push("/(logged-in)/(tabs)/feed/FollowRequests")}>
-                                    <ThemedText type="caption">see all {follow_requests.length}</ThemedText>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                        {follow_requests.slice(0, 4).map((request, index) => (
-                            <View style={styles.listItem} key={`follow-${index}`}>
-                                <UserInfoFollowRequest
-                                    name={request.name}
-                                    icon={request.icon}
-                                    username={request.username}
-                                    userId={request.userId}
-                                />
-                            </View>
-                        ))}
-                    </View>
-                )}
-
-                {renderSection("Today", todayNotifications)}
-                {renderSection("This Week", thisWeekNotifications)}
-                {renderSection("This Month", thisMonthNotifications)}
+                <FollowRequestsSection requests={follow_requests} styles={styles} />
+                <NotificationSection title="Today" notifications={todayNotifications} styles={styles} />
+                <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} />
+                <NotificationSection title="This Month" notifications={thisMonthNotifications} styles={styles} />
             </ScrollView>
         </ThemedView>
     );

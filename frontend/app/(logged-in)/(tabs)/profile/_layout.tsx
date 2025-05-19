@@ -7,6 +7,10 @@ import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
 
+export const unstable_settings = {
+    initialRouteName: "index",
+};
+
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();
     return (

@@ -14,6 +14,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 
+export const unstable_settings = {
+    initialRouteName: "index",
+};
+
 export default function Task() {
     const [activeTab, setActiveTab] = useState(0);
     const { name, id } = useLocalSearchParams();
@@ -89,9 +93,9 @@ export default function Task() {
         }
     };
 
-    useSafeAsync(async () => {
-        await loadBaseTime(id as string);
-    }, [id]);
+    // useSafeAsync(async () => {
+    //     await loadBaseTime(id as string);
+    // }, [id]);
 
     useEffect(() => {
         console.log(task);

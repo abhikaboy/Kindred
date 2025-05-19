@@ -4,10 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 
-import { ScrollView, View } from "react-native";
+import { ScrollView, View, ActivityIndicator } from "react-native";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
+
+export const unstable_settings = {
+    initialRouteName: "index",
+};
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();
@@ -60,27 +64,37 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         console.log("isLoading", isLoading);
     }, []);
 
+    useEffect(() => {
+        console.log("isLoading", isLoading);
+    }, [isLoading]);
+
+    if (!user && !isLoading) {
+        return <Redirect href="/login" />;
+    }
+
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color={"#000"} />
+            </View>
+        );
+    }
+
     return (
         <>
-            {isLoading ? (
-                <Stack screenOptions={{ headerShown: false }} />
-            ) : !user ? (
-                <Redirect href="/login" />
-            ) : (
-                <Stack
-                    screenOptions={{
-                        headerShown: false,
-                        headerTransparent: true,
-                        headerLeft: (tab) => <BackButton />,
-                        headerBackButtonDisplayMode: "minimal",
-                        headerTitleStyle: {
-                            fontFamily: "Outfit",
-                            fontWeight: 100,
-                            fontSize: 1,
-                        },
-                    }}
-                />
-            )}
+            <Stack
+                screenOptions={{
+                    headerShown: false,
+                    headerTransparent: true,
+                    headerLeft: (tab) => <BackButton />,
+                    headerBackButtonDisplayMode: "minimal",
+                    headerTitleStyle: {
+                        fontFamily: "Outfit",
+                        fontWeight: 100,
+                        fontSize: 1,
+                    },
+                }}
+            />
         </>
     );
 };

@@ -10,6 +10,10 @@ import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
+export const unstable_settings = {
+    initialRouteName: "index",
+};
+
 export default function TabLayout() {
     let ThemedColor = useThemeColor();
 
@@ -49,7 +53,7 @@ export default function TabLayout() {
                 options={{
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
-                    href: "",
+                    href: "/",
                     tabBarBadge: 4,
                 }}
             />
@@ -58,7 +62,7 @@ export default function TabLayout() {
                 options={{
                     title: "Feed",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
-                    href: "feed",
+                    href: "/feed",
                 }}
             />
             <Tabs.Screen
@@ -66,7 +70,7 @@ export default function TabLayout() {
                 options={{
                     title: "Playground",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
-                    href: "playground",
+                    href: "/playground",
                 }}
             />
             <Tabs.Screen
@@ -74,7 +78,7 @@ export default function TabLayout() {
                 options={{
                     title: "Search",
                     tabBarIcon: ({ color }) => <Octicons name="search" size={24} color={color} />,
-                    href: "search",
+                    href: "/search",
                 }}
             />
             <Tabs.Screen
@@ -82,7 +86,7 @@ export default function TabLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color }) => <Octicons name="person" size={24} color={color} />,
-                    href: "profile",
+                    href: "/profile",
                 }}
             />
         </Tabs>

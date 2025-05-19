@@ -44,6 +44,7 @@ const Home = (props: Props) => {
     const safeAsync = useSafeAsync();
 
     useEffect(() => {
+        if (!user || !workspaces) return;
         const loadWorkspaces = async () => {
             const { error } = await safeAsync(async () => {
                 await fetchWorkspaces();
