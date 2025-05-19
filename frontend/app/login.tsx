@@ -37,7 +37,7 @@ const login = (props: Props) => {
     const { user } = useAuth();
     useEffect(() => {
         if (user) {
-            router.push("/task");
+            router.push("/");
         }
     }, [user]);
 

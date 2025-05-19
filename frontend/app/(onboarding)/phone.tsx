@@ -113,7 +113,7 @@ const Index = (props: Props) => {
             <OnboardButton
                 disabled={phoneNumber.length < 10}
                 onPress={() => {
-                    router.push("/(onboarding)/verifyPhone");
+                    router.push("/(onboarding)/phone");
                 }}
             />
         </ThemedView>

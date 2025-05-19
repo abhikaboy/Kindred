@@ -29,7 +29,7 @@
             },
             "usesAppleSignIn": true,
             "bundleIdentifier": "com.kindred.kindredtsl",
-            "buildNumber": "20"
+            "buildNumber": "21"
         },
         "android": {
             "adaptiveIcon": {

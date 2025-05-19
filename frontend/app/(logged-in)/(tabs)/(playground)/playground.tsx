@@ -23,7 +23,7 @@ export default function Playground() {
             }>
             <ThemedText style={{ fontFamily: "Outfit" }}>This is the content of the playground page.</ThemedText>
             <Link
-                href={"/playground/Dev1"}
+                href={"/Dev1"}
                 style={{
                     color: ThemedColor.text,
                     fontSize: 24,
@@ -33,7 +33,7 @@ export default function Playground() {
                 Development Environment 1 - Inputs
             </Link>
             <Link
-                href={"/playground/Dev2"}
+                href={"/Dev2"}
                 style={{
                     color: ThemedColor.text,
                     fontSize: 24,
@@ -43,7 +43,7 @@ export default function Playground() {
                 Development Environment 2
             </Link>
             <Link
-                href={"/playground/Dev2"}
+                href={"/Dev2"}
                 style={{
                     color: ThemedColor.text,
                     fontSize: 24,
