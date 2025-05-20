@@ -99,7 +99,7 @@ jobs:
                       docker rm kindred-backend || true
 
                       # Run the new container with port 8081
-                      docker run -d --name kindred-backend --restart unless-stopped -p 80:8080 ghcr.io/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}:latest
+                      docker run -d --name kindred-backend --restart unless-stopped -p 8080:8080 ghcr.io/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}:latest
 
                       # Clean up unused images
                       docker image prune -f
