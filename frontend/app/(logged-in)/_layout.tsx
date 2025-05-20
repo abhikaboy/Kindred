@@ -70,11 +70,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (isLoading) {
-        return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color={"#000"} />
-            </View>
-        );
+        return <Stack screenOptions={{ headerShown: false }} />;
     }
 
     return (

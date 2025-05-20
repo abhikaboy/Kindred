@@ -34,7 +34,7 @@ async function request(method: string, url: string, body?: any) {
             data: body,
         });
 
-        console.log("Response: " + JSON.stringify(response.data));
+        // console.log("Response: " + JSON.stringify(response.data));
 
         // Handle successful response
         const access_response = response.headers["access_token"];
