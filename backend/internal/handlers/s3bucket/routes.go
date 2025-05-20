@@ -30,7 +30,7 @@ func Routes(app *fiber.App, presigner *s3.PresignClient) {
 		config:  cfg,
 	}
 
-	assets := app.Group("/api/v1/assets")
+	assets := app.Group("/v1/assets")
 
 	assets.Get("/:key/url", handler.GetPresignedUrlHandler)
 	assets.Post("/upload", handler.PostPresignedUrlHandler)

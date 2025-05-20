@@ -19,7 +19,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	service := newService(collections, cfg)
 	AuthHandler := Handler{service, cfg}
 
-	route := app.Group("/api/v1/auth")
+	route := app.Group("/v1/auth")
 
 	route.Post("/login", AuthHandler.Login)
 	route.Post("/register", AuthHandler.Register)
@@ -28,7 +28,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	route.Post("/login/apple", AuthHandler.LoginWithApple)
 	route.Post("/register/apple", AuthHandler.RegisterWithApple)
 
-	api := app.Group("/api/v1/user")
+	api := app.Group("/v1/user")
 	api.Use(AuthHandler.AuthenticateMiddleware)
 	api.Get("/", AuthHandler.Test)
 	api.Post("/login", AuthHandler.LoginWithToken)

@@ -603,7 +603,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {{
     service := newService(collections)
     handler := Handler{{service}}
 
-    apiV1 := app.Group("/api/v1")
+    apiV1 := app.Group("/v1")
     {name}s := apiV1.Group("/{lowercase(name)}s")
 
     {name}s.Post("/", handler.Create{name})
