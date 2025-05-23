@@ -46,7 +46,7 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
-	err = twillio.SendWaitlistEmail(doc.Email)
+	err = twillio.SendWaitlistEmail(doc.Email, doc.Name)
 	if err != nil {
 		slog.Error("Error sending waitlist email", "error", err.Error())
 	}

@@ -2,13 +2,22 @@ package twillio
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-func SendWaitlistEmail(to string) error {
+func SendWaitlistEmail(to string, name string) error {
+	// split name into first and last
+	first := strings.Split(name, " ")[0]
 	subject := "Welcome to Kindred's Waitlist"
-	htmlContent := "<p>Thank you for joining Kindred's Waitlist. We will be in touch soon.</p>"
+	htmlContent := fmt.Sprintf(`
+	<h2>Hey %s!</h2>
+	<p>Thank you for joining Kindred's Waitlist! We're working hard to bring Kindred to life and appreciate your support</p>
+	<p>In the meantime, feel free to share our website! Although its still in development, we'd love to spread the word</p>
+	<p>Thank you for your patience!</p>
+	<p>The Kindred Team 💜</p>
+	`, first)
 	return SendEmail(to, subject, "", htmlContent)
 }
 
