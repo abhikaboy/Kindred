@@ -45,6 +45,7 @@
         "plugins": [
             "expo-apple-authentication",
             "expo-router",
+            "expo-notifications",
             [
                 "expo-splash-screen",
                 {

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/abhikaboy/Kindred/internal/twillio"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
@@ -43,6 +44,11 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 			})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	err = twillio.SendWaitlistEmail(doc.Email)
+	if err != nil {
+		slog.Error("Error sending waitlist email", "error", err.Error())
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(doc)

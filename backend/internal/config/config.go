@@ -7,6 +7,7 @@ type Config struct {
 	Atlas `envPrefix:"ATLAS_"`
 	Auth  `envPrefix:"AUTH_"`
 	AWS   `envPrefix:"AWS_"`
+	Twillio `envPrefix:"TWILLIO_"`
 }
 
 func Load() (Config, error) {
