@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 import TaskCard from "./TaskCard";
+
 import { Task } from "@/api/types";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, { SharedValue, useAnimatedStyle } from "react-native-reanimated";
@@ -14,6 +15,8 @@ import { ThemedText } from "../ThemedText";
 import { markAsCompletedAPI, activateTaskAPI } from "@/api/task";
 import Confetti from "react-native-simple-confetti";
 import { useTasks } from "@/contexts/tasksContext";
+import { showToastable } from "react-native-toastable";
+import ProgressBar from "../ui/ProgressBar";
 type Props = {
     redirect?: boolean;
     categoryId: string;
@@ -41,6 +44,34 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task }:
         console.log(res);
         removeFromCategory(categoryId, taskId);
         setShowConfetti(true);
+        showToastable({
+            title: "Task completed!",
+            message: "Congrats! Click here to post and document your task!",
+            status: "success",
+            position: "top",
+            offset: 100,
+            duration: 5000,
+            titleStyle: {
+                color: "#000",
+            },
+            renderContent: (props) => (
+                <View
+                    style={{
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        backgroundColor: ThemedColor.success,
+                        borderRadius: 12,
+                        padding: 12,
+                    }}>
+                    <Text style={{ color: "#000" }}>{props.title}</Text>
+                    <Text style={{ color: "#000" }}>{props.message}</Text>
+                    <ProgressBar />
+                </View>
+            ),
+            messageStyle: {
+                color: "#000",
+            },
+        });
         setTimeout(() => {
             setShowConfetti(false);
         }, 1700);

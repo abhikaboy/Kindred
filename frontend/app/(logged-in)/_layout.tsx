@@ -15,6 +15,7 @@ import {
     addNotificationResponseListener,
     sendPushTokenToBackend,
 } from "@/utils/notificationService";
+import { showToastable, ToastableMessageStatus } from "react-native-toastable";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -48,8 +49,8 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
-    // const notificationListener = useRef<Notifications.Subscription>();
-    // const responseListener = useRef<Notifications.Subscription>();
+    const notificationListener = useRef<Notifications.Subscription | null>(null);
+    const responseListener = useRef<Notifications.Subscription | null>(null);
 
     const router = useRouter();
 
@@ -71,45 +72,61 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         console.log("isLoading", isLoading);
     }, []);
 
-    // // Push notification setup - optimized to avoid unnecessary API calls
-    // useEffect(() => {
-    //     // Only run this once when the user is authenticated
-    //     if (user) {
-    //         registerForPushNotificationsAsync().then((result) => {
-    //             if (result) {
-    //                 setExpoPushToken(result.token);
+    // Push notification setup - optimized to avoid unnecessary API calls
+    useEffect(() => {
+        // Only run this once when the user is authenticated
+        if (user) {
+            registerForPushNotificationsAsync().then((result) => {
+                if (result) {
+                    setExpoPushToken(result.token);
+                    console.log("push token", result);
 
-    //                 // Only send to backend if token is new or changed
-    //                 if (result.isNew) {
-    //                     sendPushTokenToBackend(result.token);
-    //                 }
-    //             }
-    //         });
+                    // Only send to backend if token is new or changed
+                    // TODO: Uncomment this when we have a way to check if the token is new or changed
+                    // if (result.isNew) {
+                    try {
+                        sendPushTokenToBackend(result.token);
+                    } catch (error) {
+                        console.error("Error sending push token to backend:", error);
+                        showToastable({
+                            message: "Error sending push token to backend",
+                            status: "danger",
+                            position: "top",
+                            offset: 100,
+                            duration: 3000,
+                            onToastableHide: () => {
+                                console.log("Toast hidden");
+                            },
+                        });
+                    }
+                    // }
+                }
+            });
 
-    //         // Notification handling remains the same
-    //         notificationListener.current = addNotificationListener((notification) => {
-    //             console.log("Notification received:", notification);
-    //         });
+            // Notification handling remains the same
+            notificationListener.current = addNotificationListener((notification) => {
+                console.log("Notification received:", notification);
+            });
 
-    //         responseListener.current = addNotificationResponseListener((response) => {
-    //             console.log("Notification response:", response);
-    //             const data = response.notification.request.content.data;
-    //             if (data?.screen) {
-    //                 router.push(data.screen);
-    //             }
-    //         });
-    //     }
+            responseListener.current = addNotificationResponseListener((response) => {
+                console.log("Notification response:", response);
+                const data = response.notification.request.content.data;
+                if (data?.screen) {
+                    router.push(data.screen);
+                }
+            });
+        }
 
-    //     // Cleanup function
-    //     return () => {
-    //         if (notificationListener.current) {
-    //             Notifications.removeNotificationSubscription(notificationListener.current);
-    //         }
-    //         if (responseListener.current) {
-    //             Notifications.removeNotificationSubscription(responseListener.current);
-    //         }
-    //     };
-    // }, [user]); // Only run when user changes (auth state changes)
+        // Cleanup function
+        return () => {
+            if (notificationListener.current) {
+                Notifications.removeNotificationSubscription(notificationListener.current);
+            }
+            if (responseListener.current) {
+                Notifications.removeNotificationSubscription(responseListener.current);
+            }
+        };
+    }, [user]); // Only run when user changes (auth state changes)
 
     useEffect(() => {
         console.log("isLoading", isLoading);

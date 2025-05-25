@@ -3,6 +3,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { updatePushToken } from "../api/auth";
 
 // Configure notifications appearance in foreground
 Notifications.setNotificationHandler({
@@ -68,13 +69,7 @@ export async function registerForPushNotificationsAsync() {
 // Send token to backend - only called when necessary
 export async function sendPushTokenToBackend(token) {
     try {
-        // Make API call to your backend
-        // const response = await fetch('your-api-endpoint', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ token }),
-        // });
-
+        await updatePushToken(token);
         console.log("Push token registered with backend:", token);
         return true;
     } catch (error) {

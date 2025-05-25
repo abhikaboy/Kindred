@@ -172,3 +172,12 @@ func (s *Service) CreateUser(user User) error {
 	_, err := s.users.InsertOne(context.Background(), user)
 	return err
 }
+
+/* 
+	Update the push token for a user
+*/
+
+func (s *Service) UpdatePushToken(user_id string, push_token string) error {
+	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$set": bson.M{"push_token": push_token}})
+	return err
+}
