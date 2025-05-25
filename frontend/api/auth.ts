@@ -64,7 +64,7 @@ export const loginWithToken = async (): Promise<User> => {
 export const updatePushToken = async (pushToken: string): Promise<void> => {
     try {
         const { request } = useRequest();
-        return await request("POST", "/user/pushtoken", { pushToken });
+        return await request("POST", "/user/pushtoken", { push_token: pushToken });
     } catch (error) {
         console.error("Push token update failed:", error);
         throw new Error("Failed to update push token. Please try again later.");

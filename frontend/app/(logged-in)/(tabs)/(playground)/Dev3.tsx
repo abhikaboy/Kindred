@@ -4,6 +4,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ProgressBar from "@/components/ui/ProgressBar";
+import TaskToast from "@/components/ui/TaskToast";
+import DefaultToast from "@/components/ui/DefaultToast";
 
 export default function Dev3() {
     const ThemedColor = useThemeColor();
@@ -25,7 +27,11 @@ export default function Dev3() {
                     gap: 16,
                     paddingBottom: Dimensions.get("screen").height * 0.12,
                 }}>
-                <ProgressBar />
+                <TaskToast message="You have earned 10 points!" status="success" />
+                <DefaultToast message="You have earned 10 points!" status="success" />
+                <DefaultToast message="Deleted Workspace" status="danger" />
+                <DefaultToast message="This is a Warning!" status="warning" />
+                <DefaultToast message="This is an Info!" status="info" />
             </ScrollView>
         </View>
     );

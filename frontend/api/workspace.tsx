@@ -1,5 +1,8 @@
+import React from "react";
+import { showToastable } from "react-native-toastable";
 import { Categories, Workspace } from "./types";
 import { useRequest } from "@/hooks/useRequest";
+import { showToast } from "@/utils/showToast";
 
 /**
  * Creates a new workspace
@@ -12,6 +15,7 @@ import { useRequest } from "@/hooks/useRequest";
 export const createWorkspace = async (name: string): Promise<Categories> => {
     try {
         const { request } = useRequest();
+        showToast("Workspace created!", "success");
         return await request("POST", `/user/categories`, {
             name: "!-proxy-!",
             workspaceName: name,
@@ -19,6 +23,7 @@ export const createWorkspace = async (name: string): Promise<Categories> => {
     } catch (error) {
         // Log the error for debugging
         console.error("Workspace creation failed:", error);
+        showToast("Failed to create workspace. Please try again later.", "danger");
         // Re-throw with a more user-friendly message
         throw new Error("Failed to create workspace. Please try again later.");
     }
@@ -38,6 +43,7 @@ export const fetchUserWorkspaces = async (userId: string): Promise<Workspace[]> 
     } catch (error) {
         // Log the error for debugging
         console.error("Failed to fetch workspaces:", error);
+        showToast("Failed to fetch workspaces. Please try again later.", "danger");
         // Re-throw with a more user-friendly message
         throw new Error("Failed to fetch workspaces. Please try again later.");
     }
