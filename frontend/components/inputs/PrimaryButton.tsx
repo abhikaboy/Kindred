@@ -19,7 +19,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline }:
                 {
                     width: "100%",
                     backgroundColor: ThemedColor.primary,
-                    borderRadius: 20,
+                    borderRadius: 12,
                     paddingVertical: 16,
                 },
                 style,

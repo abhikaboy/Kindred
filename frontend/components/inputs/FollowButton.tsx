@@ -39,7 +39,7 @@ export default function FollowButton({ connectionType = "none", followeeid, foll
             activeOpacity={0.6}
             style={{
                 backgroundColor: relationshipMapping[relationship].color,
-                borderRadius: 100,
+                borderRadius: 12,
                 paddingVertical: 12,
                 paddingHorizontal: 20,
                 width: "100%",
