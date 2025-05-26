@@ -27,7 +27,7 @@ func (h *Handler) CreateConnection(c *fiber.Ctx) error {
 	// convert reciever to a ObjectID
 	// err, ids := xutils.ParseIDs(c, params.Reciever, params.Requester.ID.Hex())
 	// if err != nil {
-		// return c.Status(fiber.StatusBadRequest).JSON(err)
+	// return c.Status(fiber.StatusBadRequest).JSON(err)
 	// }
 
 	doc := ConnectionDocument{

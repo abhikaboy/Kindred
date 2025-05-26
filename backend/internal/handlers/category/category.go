@@ -36,8 +36,8 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 	userId := ids[0]
 
 	doc := CategoryDocument{
-		ID:         primitive.NewObjectID(),
-		Name:       params.Name,
+		ID:            primitive.NewObjectID(),
+		Name:          params.Name,
 		WorkspaceName: params.WorkspaceName,
 		User:          userId,
 		Tasks:         make([]task.TaskDocument, 0),

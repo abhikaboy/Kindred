@@ -173,7 +173,7 @@ func (s *Service) CreateUser(user User) error {
 	return err
 }
 
-/* 
+/*
 	Update the push token for a user
 */
 

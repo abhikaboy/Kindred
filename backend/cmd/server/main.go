@@ -59,7 +59,7 @@ func run(stderr io.Writer, args []string) {
 	} else {
 		slog.LogAttrs(ctx, slog.LevelInfo, "Process on port killed successfully", slog.Int("port", port))
 	}
-  
+
 	// MongoDB Setup
 	db, err := xmongo.New(ctx, config.Atlas)
 	fmt.Printf("After New Mongo\n")
@@ -70,8 +70,8 @@ func run(stderr io.Writer, args []string) {
 
 	// SendGrid Setup
 	twillio.InitSendGrid(config.Twillio.SG_Token)
-	
-  // API Server Setup
+
+	// API Server Setup
 	app := server.New(db.Collections, db.Stream)
 	fmt.Printf("After New")
 

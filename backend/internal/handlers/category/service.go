@@ -90,11 +90,11 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 	ctx := context.Background()
 	// Insert the document into the collection
 
-	_, err := s.Categories.InsertOne(ctx , r)
+	_, err := s.Categories.InsertOne(ctx, r)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Category inserted", slog.String("id", r.ID.Hex()))
 
 	return r, nil
@@ -114,7 +114,7 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 
 	_, err = s.Categories.UpdateOne(ctx,
 		bson.M{
-			"_id":        id,
+			"_id": id,
 		},
 		bson.D{{Key: "$set", Value: bson.D{
 			{Key: "name", Value: updated.Name},

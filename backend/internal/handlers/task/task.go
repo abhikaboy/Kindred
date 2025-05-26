@@ -67,7 +67,7 @@ func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Ti
 		}
 		deadline = &parsedDeadline
 	}
-	
+
 	if params.StartTime != nil {
 		parsedStartTime, err := xutils.ParseTimeToUTC(*params.StartTime)
 		if err != nil {
@@ -75,7 +75,7 @@ func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Ti
 		}
 		startTime = &parsedStartTime
 	}
-	
+
 	if params.StartDate != nil {
 		parsedStartDate, err := xutils.ParseTimeToUTC(*params.StartDate)
 		if err != nil {
@@ -83,7 +83,7 @@ func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Ti
 		}
 		startDate = &parsedStartDate
 	}
-	
+
 	return deadline, startTime, startDate, nil
 }
 
@@ -104,13 +104,12 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		})
 	}
 
-
 	if err := validator.Validate(params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}
 	/**
-		Truncating the start date to the start of the day to 
-		make sure its detected as 1 day old as soon as the new day starts
+	Truncating the start date to the start of the day to
+	make sure its detected as 1 day old as soon as the new day starts
 	*/
 	if params.StartDate != nil {
 		// remove the time and only keep the date
@@ -132,36 +131,33 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
-	
-	
-	
-	doc := TaskDocument{
-		ID:           primitive.NewObjectID(),
-		Priority:     params.Priority,
-		Content:      params.Content,
-		Value:        params.Value,
-		Recurring:    params.Recurring,
-		RecurFrequency:    params.RecurFrequency,
-		Public:       params.Public,
-		Active:       params.Active,
-		Timestamp:    xutils.NowUTC(),
-		Notes:        params.Notes,
-		Checklist:    params.Checklist,
-		Deadline:     deadline,
-		StartTime:    startTime,
-		StartDate:    startDate,
-	}
 
+	doc := TaskDocument{
+		ID:             primitive.NewObjectID(),
+		Priority:       params.Priority,
+		Content:        params.Content,
+		Value:          params.Value,
+		Recurring:      params.Recurring,
+		RecurFrequency: params.RecurFrequency,
+		Public:         params.Public,
+		Active:         params.Active,
+		Timestamp:      xutils.NowUTC(),
+		Notes:          params.Notes,
+		Checklist:      params.Checklist,
+		Deadline:       deadline,
+		StartTime:      startTime,
+		StartDate:      startDate,
+	}
 
 	var template_id primitive.ObjectID = primitive.NewObjectID()
 	if doc.Recurring {
-    if(params.RecurFrequency == ""){
+		if params.RecurFrequency == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid recurring frequency",
 			})
 		} else {
 		}
-		if (params.RecurDetails == nil) {
+		if params.RecurDetails == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Recurring details are required",
 			})
@@ -186,20 +182,20 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		}
 		// Create a template for the recurring task
 		template_doc := TemplateTaskDocument{
-			CategoryID: categoryId,
-			ID:           template_id,
-			Content:      params.Content,
-			Priority:     params.Priority,
-			Value:        params.Value,
-			Public:       params.Public,
-			RecurType:    recurType,
-			RecurFrequency:    params.RecurFrequency,
-			RecurDetails: params.RecurDetails,
+			CategoryID:     categoryId,
+			ID:             template_id,
+			Content:        params.Content,
+			Priority:       params.Priority,
+			Value:          params.Value,
+			Public:         params.Public,
+			RecurType:      recurType,
+			RecurFrequency: params.RecurFrequency,
+			RecurDetails:   params.RecurDetails,
 
-			Deadline: deadline,
-			StartTime: startTime,
-			StartDate: startDate,
-			LastGenerated: baseTime,
+			Deadline:      deadline,
+			StartTime:     startTime,
+			StartDate:     startDate,
+			LastGenerated: &baseTime,
 		}
 
 		var next_occurence time.Time
@@ -223,8 +219,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 			}
 		}
 
-
-		template_doc.NextGenerated = next_occurence
+		template_doc.NextGenerated = &next_occurence
 
 		_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
 		if err != nil {
@@ -235,8 +230,6 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		doc.TemplateID = template_id
 	}
 
-
-	
 	_, err = h.service.CreateTask(categoryId, &doc)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
@@ -244,7 +237,6 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(doc)
 }
-
 
 func (h *Handler) GetTasks(c *fiber.Ctx) error {
 	Tasks, err := h.service.GetAllTasks()
@@ -277,7 +269,10 @@ func (h *Handler) GetTask(c *fiber.Ctx) error {
 
 	return c.JSON(Task)
 }
-/**
+
+/*
+*
+
 	@TODO - Add a verification to check if the user is the owner of the task
 */
 func (h *Handler) UpdateTask(c *fiber.Ctx) error {
@@ -307,7 +302,9 @@ func (h *Handler) UpdateTask(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-/**
+/*
+*
+
 	@TODO - Add a verification to check if the user is the owner of the task
 */
 func (h *Handler) CompleteTask(c *fiber.Ctx) error {
@@ -334,12 +331,11 @@ func (h *Handler) CompleteTask(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
-
 	return c.SendStatus(fiber.StatusOK)
 }
 
 /**
-	@TODO - Add a verification to check if the user is the owner of the task
+@TODO - Add a verification to check if the user is the owner of the task
 */
 
 func (h *Handler) DeleteTask(c *fiber.Ctx) error {
@@ -402,7 +398,6 @@ func (h *Handler) CreateTaskFromTemplate(c *fiber.Ctx) error {
 		})
 	}
 
-
 	template, err := h.service.CreateTaskFromTemplate(templateOID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
@@ -411,9 +406,8 @@ func (h *Handler) CreateTaskFromTemplate(c *fiber.Ctx) error {
 	return c.JSON(template)
 }
 
-
 /*
- Get all the tasks with start times that are at least a day older than the current time
+Get all the tasks with start times that are at least a day older than the current time
 */
 func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(c *fiber.Ctx) error {
 	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay()
