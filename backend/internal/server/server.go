@@ -46,7 +46,6 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 
 	task.Cron(collections)
 
-
 	return app
 }
 

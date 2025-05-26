@@ -60,6 +60,7 @@ export default function Dev2() {
                             <UserInfoFollowRequest
                                 name={"Beak"}
                                 username={"abhikaboyray"}
+                                userId={"123"}
                                 icon={Icons.lokye}></UserInfoFollowRequest>
                             <ScrollView horizontal style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                                 <ContactCard name="Abhik Ray" icon={Icons.luffy} handle="beak" following={true} />
@@ -67,11 +68,13 @@ export default function Dev2() {
                                 <ContactCard name="Coffee" icon={Icons.coffee} handle="coffee" following={true} />
                                 <ContactCard name="Latte" icon={Icons.latte} handle="latte" following={false} />
                             </ScrollView>
-                            <ThemedCalendar />
+                            <ThemedCalendar dateReciever={() => {}} />
                             <TaskCard
                                 content="Finish your homework bitch. Finish your homework bitch.Finish your homework bitch. "
-                                points={9}
-                                priority="3"
+                                priority={3}
+                                value={10}
+                                id={"123"}
+                                categoryId={"123"}
                             />
                             <UserInfoRowBase
                                 name={"Abhik Ray"}

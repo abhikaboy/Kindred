@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/abhikaboy/Kindred/internal/twillio"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
@@ -33,8 +34,8 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 		ID:        primitive.NewObjectID(),
 	}
 
-	_, err := h.service.CreateWaitlist(&doc); 
-    if err != nil {
+	_, err := h.service.CreateWaitlist(&doc)
+	if err != nil {
 		slog.Error("Error creating waitlist", "error", err.Error())
 		if strings.Contains(err.Error(), "duplicate key error") {
 			slog.Info("Email already exists", "email", doc.Email)
@@ -43,6 +44,11 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 			})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	err = twillio.SendWaitlistEmail(doc.Email, doc.Name)
+	if err != nil {
+		slog.Error("Error sending waitlist email", "error", err.Error())
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(doc)

@@ -32,4 +32,5 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	api.Use(AuthHandler.AuthenticateMiddleware)
 	api.Get("/", AuthHandler.Test)
 	api.Post("/login", AuthHandler.LoginWithToken)
+	api.Post("/pushtoken", AuthHandler.UpdatePushToken)
 }

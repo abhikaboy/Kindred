@@ -6,19 +6,18 @@ import (
 )
 
 type CreateCategoryParams struct {
-	Name string `bson:"name,omitempty" json:"name,omitempty"`
+	Name          string `bson:"name,omitempty" json:"name,omitempty"`
 	WorkspaceName string `bson:"workspaceName,omitempty" json:"workspaceName,omitempty"`
 }
 
 type CategoryDocument = types.CategoryDocument
-
 
 type UpdateCategoryDocument struct {
 	Name string `bson:"name,omitempty" json:"name,omitempty"`
 }
 
 type WorkspaceResult struct {
-	Name string `bson:"_id" json:"name"`
+	Name       string                   `bson:"_id" json:"name"`
 	Categories []types.CategoryDocument `bson:"categories" json:"categories"`
 }
 

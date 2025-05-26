@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 import TaskCard from "./TaskCard";
+
 import { Task } from "@/api/types";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, { SharedValue, useAnimatedStyle } from "react-native-reanimated";
@@ -11,9 +12,13 @@ import { Text } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
-import { markAsCompletedAPI, activateTaskAPI } from "@/api/task";
+import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
 import Confetti from "react-native-simple-confetti";
 import { useTasks } from "@/contexts/tasksContext";
+import { showToastable } from "react-native-toastable";
+import ProgressBar from "../ui/ProgressBar";
+import TaskToast from "../ui/TaskToast";
+import DefaultToast from "../ui/DefaultToast";
 type Props = {
     redirect?: boolean;
     categoryId: string;
@@ -24,14 +29,34 @@ const ThemedColor = useThemeColor();
 
 /* 
   Mark as completed function
+
 */
 
 export default function SwipableTaskCard({ redirect = false, categoryId, task }: Props) {
     const { removeFromCategory, setShowConfetti } = useTasks();
     const deleteTask = async (categoryId: string, taskId: string) => {
-        // const res = await deleteTask(categoryId, taskId);
-        // console.log(res);
-        removeFromCategory(categoryId, taskId);
+        try {
+            const res = await removeFromCategoryAPI(categoryId, taskId);
+            removeFromCategory(categoryId, taskId);
+            showToastable({
+                title: "Task deleted!",
+                status: "danger",
+                position: "top",
+                swipeDirection: "up",
+                duration: 2500,
+                message: "Task deleted!",
+                renderContent: (props) => <DefaultToast {...props} />,
+            });
+            console.log(res);
+        } catch (error) {
+            console.log(error);
+            showToastable({
+                title: "Error",
+                status: "danger",
+                position: "top",
+                message: "Error deleting task",
+            });
+        }
     };
     const markAsCompleted = async (categoryId: string, taskId: string) => {
         const res = await markAsCompletedAPI(categoryId, taskId, {
@@ -41,6 +66,30 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task }:
         console.log(res);
         removeFromCategory(categoryId, taskId);
         setShowConfetti(true);
+        showToastable({
+            title: "Task completed!",
+            status: "success",
+            position: "top",
+            message: "Congrats! Click here to post and document your task!",
+            onPress: () => {
+                console.log("pressed");
+            },
+            swipeDirection: "up",
+            duration: 5500,
+            renderContent: (props) => <TaskToast message={props.message} />,
+        });
+        showToastable({
+            title: "Task completed!",
+            status: "success",
+            position: "top",
+            swipeDirection: "left",
+            message: "You have earned 10 points!",
+            onPress: () => {
+                console.log("pressed");
+            },
+            duration: 5500,
+            renderContent: (props) => <TaskToast message={props.message} />,
+        });
         setTimeout(() => {
             setShowConfetti(false);
         }, 1700);

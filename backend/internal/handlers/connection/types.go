@@ -16,19 +16,20 @@ type UserExtendedReference struct {
 
 type CreateConnectionParams struct {
 	Requester UserExtendedReference `validate:"required" json:"requester"`
-	Reciever  primitive.ObjectID                `validate:"required" json:"reciever"`
+	Reciever  primitive.ObjectID    `validate:"required" json:"reciever"`
 }
 
 type ConnectionDocument struct {
 	ID        primitive.ObjectID    `bson:"_id" json:"id"`
 	Requester UserExtendedReference `validate:"required" json:"requester"`
-	Reciever  primitive.ObjectID                `validate:"required" json:"reciever"`
+	Reciever  primitive.ObjectID    `validate:"required" json:"reciever"`
 	Timestamp time.Time             `bson:"timestamp" json:"timestamp"`
 }
 
 type UpdateConnectionDocument struct {
-	// idk what goes here 
+	// idk what goes here
 }
+
 /*
 Connection Service to be used by Connection Handler to interact with the
 Database layer of the application

@@ -19,6 +19,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
+import Toastable from "react-native-toastable";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -75,6 +77,8 @@ export default function RootLayout() {
         hideSplash();
     }, [loaded]);
 
+    const { top } = useSafeAreaInsets();
+
     if (!loaded) {
         return null;
     }
@@ -85,6 +89,15 @@ export default function RootLayout() {
                 <TaskCreationProvider>
                     <GestureHandlerRootView style={{ flex: 1 }}>
                         <BottomSheetModalProvider>
+                            <Toastable
+                                statusMap={{
+                                    success: ThemedColor.success,
+                                    danger: ThemedColor.danger,
+                                    warning: ThemedColor.warning,
+                                    info: ThemedColor.primary,
+                                }}
+                                offset={top}
+                            />
                             {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
                             <Stack
                                 screenOptions={{

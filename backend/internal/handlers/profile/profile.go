@@ -7,7 +7,7 @@ import (
 
 type Handler struct {
 	service *Service
-}	
+}
 
 func (h *Handler) GetProfiles(c *fiber.Ctx) error {
 	Profiles, err := h.service.GetAllProfiles()
@@ -89,7 +89,7 @@ func (h *Handler) GetProfileByPhone(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(Profile)
-}	
+}
 
 func (h *Handler) SearchProfiles(c *fiber.Ctx) error {
 	query := c.Query("query", "")

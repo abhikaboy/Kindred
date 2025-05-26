@@ -14,11 +14,10 @@ type CreateWaitlistParams struct {
 
 type WaitlistDocument struct {
 	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Email string `validate:"required,email" json:"email"`
-	Name  string `validate:"required" json:"name"`
-	Timestamp time.Time `validate:"required" json:"timestamp"`
+	Email     string             `validate:"required,email" json:"email"`
+	Name      string             `validate:"required" json:"name"`
+	Timestamp time.Time          `validate:"required" json:"timestamp"`
 }
-
 
 /*
 Waitlist Service to be used by Waitlist Handler to interact with the
