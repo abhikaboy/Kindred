@@ -6,7 +6,7 @@ import (
 )
 
 /*
-	Router maps endpoints to handlers
+Router maps endpoints to handlers
 */
 func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	service := newService(collections)
@@ -40,5 +40,3 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	AuthorizedTasks.Post("/:category/:id/notes", handler.UpdateTaskNotes)
 	AuthorizedTasks.Post("/:category/:id/checklist", handler.UpdateTaskChecklist)
 }
-
-

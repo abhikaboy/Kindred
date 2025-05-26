@@ -26,33 +26,35 @@ func (s *Service) GetAllConnections() ([]ConnectionDocument, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var results = make([]ConnectionDocument,0)
+	var results = make([]ConnectionDocument, 0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
 
 	return results, nil
 }
+
 // GetAllConnections fetches all Connection documents from MongoDB
 func (s *Service) GetByReciever(id primitive.ObjectID) ([]ConnectionDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Connections.Find(ctx, bson.M{"reciever" : id})
+	cursor, err := s.Connections.Find(ctx, bson.M{"reciever": id})
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	var results = make([]ConnectionDocument,0)
+	var results = make([]ConnectionDocument, 0)
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
 
 	return results, nil
 }
+
 // GetAllConnections fetches all Connection documents from MongoDB
 func (s *Service) GetByRequester(id primitive.ObjectID) ([]ConnectionDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Connections.Find(ctx, bson.M{"requester._id" : id})
+	cursor, err := s.Connections.Find(ctx, bson.M{"requester._id": id})
 	if err != nil {
 		return nil, err
 	}

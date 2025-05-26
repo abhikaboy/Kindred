@@ -34,8 +34,8 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 		ID:        primitive.NewObjectID(),
 	}
 
-	_, err := h.service.CreateWaitlist(&doc); 
-    if err != nil {
+	_, err := h.service.CreateWaitlist(&doc)
+	if err != nil {
 		slog.Error("Error creating waitlist", "error", err.Error())
 		if strings.Contains(err.Error(), "duplicate key error") {
 			slog.Info("Email already exists", "email", doc.Email)

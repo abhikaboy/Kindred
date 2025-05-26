@@ -31,7 +31,7 @@ func applyTimeToDate(targetDate time.Time, sourceTime *time.Time) time.Time {
 	if sourceTime == nil {
 		return targetDate
 	}
-	
+
 	return time.Date(
 		targetDate.Year(),
 		targetDate.Month(),
@@ -50,7 +50,7 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 	switch template.RecurFrequency {
 	case "daily":
 		nextTime = baseTime.AddDate(0, 0, template.RecurDetails.Every)
-		
+
 	case "weekly":
 		nextTime = baseTime.AddDate(0, 0, 1)
 		found := false
@@ -64,22 +64,22 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 			}
 			nextTime = nextTime.AddDate(0, 0, 1)
 		}
-		
+
 		if !found {
 			nextTime = baseTime.AddDate(0, 0, 7*template.RecurDetails.Every)
 			return s.calculateNextRecurrence(&TemplateTaskDocument{
 				RecurType:      template.RecurType,
 				RecurFrequency: template.RecurFrequency,
 				RecurDetails:   template.RecurDetails,
-				LastGenerated:  nextTime,
+				LastGenerated:  &nextTime,
 			}, nextTime)
 		}
-		
+
 	case "monthly":
 		// Start with the current month
 		nextTime = baseTime
 		found := false
-		
+
 		// First try to find a valid day in the current month
 		for _, day := range template.RecurDetails.DaysOfMonth {
 			lastDayOfMonth := time.Date(nextTime.Year(), nextTime.Month()+1, 0, 0, 0, 0, 0, nextTime.Location()).Day()
@@ -87,7 +87,7 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 			if targetDay > lastDayOfMonth {
 				targetDay = lastDayOfMonth
 			}
-			
+
 			candidateTime := time.Date(nextTime.Year(), nextTime.Month(), targetDay, 0, 0, 0, 0, nextTime.Location())
 			if candidateTime.After(baseTime) {
 				nextTime = candidateTime
@@ -95,7 +95,7 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 				break
 			}
 		}
-		
+
 		// If no valid day found in current month, move to next month
 		if !found {
 			nextTime = time.Date(baseTime.Year(), baseTime.Month()+time.Month(template.RecurDetails.Every), 1, 0, 0, 0, 0, baseTime.Location())
@@ -103,17 +103,17 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 				RecurType:      template.RecurType,
 				RecurFrequency: template.RecurFrequency,
 				RecurDetails:   template.RecurDetails,
-				LastGenerated:  nextTime,
+				LastGenerated:  &nextTime,
 			}, nextTime)
 		}
-		
+
 	case "yearly":
 		nextTime = baseTime.AddDate(template.RecurDetails.Every, 0, 0)
-		
+
 	default:
 		return time.Time{}, fmt.Errorf("invalid recurrence frequency: %s", template.RecurFrequency)
 	}
-	
+
 	return nextTime, nil
 }
 
@@ -182,27 +182,25 @@ func (s *Service) PrintNextRecurrences(template *TemplateTaskDocument) {
 		)
 
 		// Update the template's LastGenerated for the next iteration
-		template.LastGenerated = nextTime
+		template.LastGenerated = &nextTime
 	}
 }
 
-
-
 func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
-return TaskDocument{
-		ID: primitive.NewObjectID(),
-		Content: templateDoc.Content,
-		Value: templateDoc.Value,
-		Recurring: true,
+	return TaskDocument{
+		ID:             primitive.NewObjectID(),
+		Content:        templateDoc.Content,
+		Value:          templateDoc.Value,
+		Recurring:      true,
 		RecurFrequency: templateDoc.RecurFrequency,
-		Deadline: templateDoc.Deadline,
-		StartTime: templateDoc.StartTime,
-		StartDate: templateDoc.StartDate,
-		Priority: templateDoc.Priority,
-		Public: templateDoc.Public,
-		Active: true,
-		Timestamp: xutils.NowUTC(),
-		LastEdited: xutils.NowUTC(),
-		TemplateID: templateDoc.ID,	
+		Deadline:       templateDoc.Deadline,
+		StartTime:      templateDoc.StartTime,
+		StartDate:      templateDoc.StartDate,
+		Priority:       templateDoc.Priority,
+		Public:         templateDoc.Public,
+		Active:         true,
+		Timestamp:      xutils.NowUTC(),
+		LastEdited:     xutils.NowUTC(),
+		TemplateID:     templateDoc.ID,
 	}
 }

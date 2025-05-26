@@ -72,4 +72,3 @@ func ParseTimeToUTC(t time.Time) (time.Time, error) {
 	}
 	return t, nil
 }
-

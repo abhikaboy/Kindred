@@ -57,7 +57,6 @@ var Indexes = []Index{
 	// },
 }
 
-
 var SearchIndexes = []SearchIndex{
 	{
 		Collection: "users",
@@ -75,10 +74,10 @@ var SearchIndexes = []SearchIndex{
 							{Key: "type", Value: "string"},
 							{Key: "analyzer", Value: "lucene.standard"},
 						},
-					},	
+						},
 					},
-				},
-			}}},
+					},
+				}}},
 			Options: options.SearchIndexes().SetName("display_name_text"),
 		},
 	},
