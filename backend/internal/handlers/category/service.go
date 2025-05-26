@@ -135,3 +135,12 @@ func (s *Service) DeleteCategory(userId primitive.ObjectID, id primitive.ObjectI
 	_, err := s.Categories.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
+
+func (s *Service) DeleteWorkspace(workspaceName string, user primitive.ObjectID) error {
+	ctx := context.Background()
+
+	filter := bson.M{"workspaceName": workspaceName, "user": user}
+	_, err := s.Categories.DeleteMany(ctx, filter)
+
+	return err
+}

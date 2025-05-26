@@ -1,6 +1,8 @@
 package Category
 
 import (
+	"log/slog"
+
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
@@ -36,8 +38,8 @@ func (h *Handler) CreateCategory(c *fiber.Ctx) error {
 	userId := ids[0]
 
 	doc := CategoryDocument{
-		ID:         primitive.NewObjectID(),
-		Name:       params.Name,
+		ID:            primitive.NewObjectID(),
+		Name:          params.Name,
 		WorkspaceName: params.WorkspaceName,
 		User:          userId,
 		Tasks:         make([]task.TaskDocument, 0),
@@ -143,4 +145,29 @@ func (h *Handler) DeleteCategory(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func (h *Handler) DeleteWorkspace(c *fiber.Ctx) error {
+
+	workspaceName := c.Params("name")
+	userId := c.UserContext().Value("user_id").(string)
+	user_id, err := primitive.ObjectIDFromHex(userId)
+
+	slog.Info("Deleting " + workspaceName)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid ID format for UserId",
+		})
+	}
+
+	err = h.service.DeleteWorkspace(workspaceName, user_id)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+
+	// TODO: check user id
 }
