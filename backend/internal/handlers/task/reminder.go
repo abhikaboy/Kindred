@@ -5,12 +5,21 @@ import (
 )
 
 func (h *Handler) HandleReminder(c *fiber.Ctx) error {
-	reminders, err := h.service.GetTasksWithPastReminders()
+	tasks, err := h.service.GetTasksWithPastReminders()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
+	// Send the reminders to the user
+	for _, task := range tasks {
+		err = h.service.SendReminder(task.UserID, task.Reminders[0], task.ID, task.Content)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+	}
 
-	return c.JSON(reminders)
+	return c.JSON(tasks)
 }
 
 func ParseReminder(params CreateTaskParams) []*Reminder {

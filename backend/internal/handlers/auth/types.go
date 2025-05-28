@@ -2,11 +2,8 @@ package auth
 
 import (
 	"github.com/abhikaboy/Kindred/internal/config"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
-	categories "github.com/abhikaboy/Kindred/internal/handlers/category"
 )
 
 type Service struct {
@@ -29,36 +26,9 @@ type TokenResponse struct {
 	User         string `json:"user"`
 }
 
-type User struct {
-	ID             primitive.ObjectID            `bson:"_id" json:"_id"`
-	Email          string                        `bson:"email" json:"email"`
-	Phone          string                        `bson:"phone" json:"phone"`
-	Password       string                        `bson:"password" json:"password"`
-	AppleID        string                        `bson:"apple_id,omitempty" json:"apple_id,omitempty"`
-	GoogleID       string                        `bson:"google_id,omitempty" json:"google_id,omitempty"`
-	RefreshToken   string                        `bson:"refresh_token" json:"refresh_token"`
-	TokenUsed      bool                          `bson:"token_used" json:"token_used"`
-	Count          float64                       `bson:"count" json:"count"`
-	Categories     []categories.CategoryDocument `bson:"categories" json:"categories"`
-	Friends        []primitive.ObjectID          `bson:"friends" json:"friends"`
-	TasksComplete  float64                       `bson:"tasks_complete" json:"tasks_complete"`
-	RecentActivity []activity.ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 
-	DisplayName    string `bson:"display_name" json:"display_name"`
-	Handle         string `bson:"handle" json:"handle"`
-	ProfilePicture string `bson:"profile_picture" json:"profile_picture"`
-}
-
-type SafeUser struct {
-	ID             primitive.ObjectID            `bson:"_id" json:"_id"`
-	DisplayName    string                        `bson:"display_name" json:"display_name"`
-	Handle         string                        `bson:"handle" json:"handle"`
-	ProfilePicture string                        `bson:"profile_picture" json:"profile_picture"`
-	Categories     []categories.CategoryDocument `bson:"categories" json:"categories"`
-	Friends        []primitive.ObjectID          `bson:"friends" json:"friends"`
-	TasksComplete  float64                       `bson:"tasks_complete" json:"tasks_complete"`
-	RecentActivity []activity.ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
-}
+type User = types.User
+type SafeUser = types.SafeUser
 
 type LoginRequest struct {
 	Email    string `validate:"required,email" json:"email"`
@@ -89,5 +59,5 @@ type RegisterRequest struct {
 }
 
 type UpdatePushTokenRequest struct {
-	PushToken string `validate:"required" json:"push_token"`
+	PushToken string `validate:"required" json:"push_token" bson:"push_token"`
 }

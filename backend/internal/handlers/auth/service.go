@@ -177,7 +177,7 @@ func (s *Service) CreateUser(user User) error {
 	Update the push token for a user
 */
 
-func (s *Service) UpdatePushToken(user_id string, push_token string) error {
+func (s *Service) UpdatePushToken(user_id primitive.ObjectID, push_token string) error {
 	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$set": bson.M{"push_token": push_token}})
 	return err
 }

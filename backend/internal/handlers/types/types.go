@@ -42,6 +42,7 @@ type TaskDocument struct {
 	Timestamp      time.Time          `bson:"timestamp" json:"timestamp"`
 	LastEdited     time.Time          `bson:"lastEdited" json:"lastEdited"`
 	TemplateID     primitive.ObjectID `bson:"templateID,omitempty" json:"templateID,omitempty"`
+	UserID         primitive.ObjectID `bson:"userID,omitempty" json:"userID,omitempty"`
 
 	Deadline  *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
@@ -100,4 +101,43 @@ type ChecklistItem struct {
 	Content   string `bson:"content" json:"content"`
 	Completed bool   `bson:"completed" json:"completed"`
 	Order     int    `bson:"order" json:"order"`
+}
+
+
+type User struct {
+	ID             primitive.ObjectID            `bson:"_id" json:"_id"`
+	Email          string                        `bson:"email" json:"email"`
+	Phone          string                        `bson:"phone" json:"phone"`
+	Password       string                        `bson:"password" json:"password"`
+	AppleID        string                        `bson:"apple_id,omitempty" json:"apple_id,omitempty"`
+	GoogleID       string                        `bson:"google_id,omitempty" json:"google_id,omitempty"`
+	RefreshToken   string                        `bson:"refresh_token" json:"refresh_token"`
+	TokenUsed      bool                          `bson:"token_used" json:"token_used"`
+	Count          float64                       `bson:"count" json:"count"`
+	Categories     []CategoryDocument `bson:"categories" json:"categories"`
+	Friends        []primitive.ObjectID          `bson:"friends" json:"friends"`
+	TasksComplete  float64                       `bson:"tasks_complete" json:"tasks_complete"`
+	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+	PushToken      string                        `bson:"push_token" json:"push_token"`
+
+	DisplayName    string `bson:"display_name" json:"display_name"`
+	Handle         string `bson:"handle" json:"handle"`
+	ProfilePicture string `bson:"profile_picture" json:"profile_picture"`
+}
+
+type SafeUser struct {
+	ID             primitive.ObjectID            `bson:"_id" json:"_id"`
+	DisplayName    string                        `bson:"display_name" json:"display_name"`
+	Handle         string                        `bson:"handle" json:"handle"`
+	ProfilePicture string                        `bson:"profile_picture" json:"profile_picture"`
+	Categories     []CategoryDocument `bson:"categories" json:"categories"`
+	Friends        []primitive.ObjectID          `bson:"friends" json:"friends"`
+	TasksComplete  float64                       `bson:"tasks_complete" json:"tasks_complete"`
+	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+}
+type ActivityDocument struct {
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	Field1    string             `bson:"field1" json:"field1"`
+	Picture   *string            `bson:"picture" json:"picture"`
+	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
 }

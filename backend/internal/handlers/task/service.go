@@ -39,6 +39,7 @@ func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 func getBaseTaskPipeline() []bson.D {
 	return []bson.D{
 		{{Key: "$unwind", Value: "$tasks"}},
+		{{Key: "$set", Value: bson.M{"tasks.userID": "$user"}}},
 		{{Key: "$replaceRoot", Value: bson.M{"newRoot": "$tasks"}}},
 	}
 }
@@ -720,4 +721,28 @@ func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 		return nil, err
 	}
 	return results, nil
+}
+
+func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, taskID primitive.ObjectID, taskName string) error {
+	ctx := context.Background()
+	// lookup the user 
+	var user types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Sending reminder to user", user.PushToken)
+
+	// send the reminder to the user
+
+	err = xutils.SendNotification( xutils.Notification{
+		Token: user.PushToken,
+		Message: "Reminder to: " + taskName,
+		Data: map[string]string{
+			"taskId": taskID.Hex(),
+		},
+	})
+
+	return err
 }
