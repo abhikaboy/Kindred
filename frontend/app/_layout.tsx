@@ -32,6 +32,7 @@ export default function RootLayout() {
         Outfit: require("../assets/fonts/Outfit-Variable.ttf"),
         OutfitLight: require("../assets/fonts/Outfit-Light.ttf"),
         Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),
+        FrauncesItalic: require("../assets/fonts/Fraunces-Italic.ttf"),
         SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
     const [shakeDetected, setShakeDetected] = useState(false);

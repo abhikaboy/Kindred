@@ -1,6 +1,6 @@
 import { View, Text, Dimensions, Image, TouchableOpacity, useColorScheme } from "react-native";
 import React, { useEffect, useState } from "react";
-import { getThemedColor } from "@/constants/Colors";
+import { Colors, getThemedColor } from "@/constants/Colors";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { ErrorBoundaryProps, Link, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,6 +8,7 @@ import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 type Props = {};
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
@@ -44,11 +45,66 @@ const login = (props: Props) => {
     return (
         <View
             style={{
-                backgroundColor: ThemedColor.background,
+                backgroundColor: Colors.light.background,
                 height: Dimensions.get("screen").height,
                 flex: 1,
                 flexDirection: "column",
             }}>
+            <View
+                style={{
+                    backgroundColor: Colors.dark.background,
+                    height: Dimensions.get("screen").height * 0.4,
+                    width: "95%",
+                    alignSelf: "center",
+                    borderRadius: 56,
+                    marginTop: 12,
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: Dimensions.get("screen").height * 0.06,
+                }}>
+                <View
+                    style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 4,
+                        borderRadius: 24,
+                        borderWidth: 1,
+                        borderColor: Colors.light.background,
+                    }}>
+                    <ThemedText type="lightBody" style={{ color: Colors.dark.text }}>
+                        Beta
+                    </ThemedText>
+                </View>
+                <ThemedText
+                    type="titleFraunces"
+                    style={{
+                        color: Colors.dark.text,
+                        fontWeight: 600,
+                        letterSpacing: -2,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        marginTop: Dimensions.get("screen").height * 0.03,
+                        fontSize: 64,
+                    }}>
+                    kindred
+                </ThemedText>
+                <ThemedText
+                    type="lightBody"
+                    style={{
+                        color: Colors.dark.text,
+                        fontFamily: "Outfit",
+                        fontSize: 20,
+                        fontStyle: "italic",
+                    }}>
+                    social productivity
+                </ThemedText>
+                <Image
+                    source={require("../assets/images/Checkmark.png")}
+                    style={{
+                        width: 50,
+                        resizeMode: "contain",
+                    }}></Image>
+            </View>
             <View
                 style={{
                     paddingHorizontal: HORIZONTAL_PADDING,
@@ -57,30 +113,6 @@ const login = (props: Props) => {
                     flex: 1,
                     flexDirection: "column",
                 }}>
-                <View
-                    style={{
-                        display: "flex",
-                        alignSelf: "flex-start",
-                        marginTop: Dimensions.get("screen").height / 7,
-                    }}>
-                    <ThemedText>Welcome to Kindred</ThemedText>
-                    <ThemedText
-                        type="hero"
-                        numberOfLines={2}
-                        adjustsFontSizeToFit={true}
-                        style={{
-                            fontFamily: "Fraunces",
-                            fontWeight: 800,
-                            fontSize: 48,
-                            color: ThemedColor.text,
-                        }}>
-                        <Text style={{ color: ThemedColor.primary }}>Productive</Text> Meets Social
-                    </ThemedText>
-                    <ThemedText type="lightBody">
-                        Become more productive and organized than ever before while staying connected with all your
-                        friends
-                    </ThemedText>
-                </View>
                 <Image
                     source={require("../assets/images/onboardinghero.png")}
                     style={{

@@ -18,7 +18,8 @@ export type ThemedTextProps = TextProps & {
         | "lightBody"
         | "caption"
         | "disabledTitle"
-        | "smallerDefault";
+        | "smallerDefault"
+        | "titleFraunces";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
@@ -33,6 +34,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 { color },
                 type === "default" ? styles.default : undefined,
                 type === "title" ? styles.title : undefined,
+                type === "titleFraunces" ? styles.titleFraunces : undefined,
                 type === "heading" ? styles.heading : undefined,
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
                 type === "subtitle" ? styles.subtitle : undefined,
@@ -81,11 +83,20 @@ const useStyles = (ThemedColor: any, scale: number) =>
             fontSize: 32 * scale,
             fontWeight: 600,
             fontFamily: "Outfit",
+            letterSpacing: -1,
         },
         title: {
-            fontSize: 32 * scale,
-            fontWeight: "medium",
+            fontSize: 36 * scale,
+            fontWeight: 600,
+            // fontFamily: "Fraunces",
             fontFamily: "Outfit",
+            letterSpacing: -1,
+        },
+        titleFraunces: {
+            fontSize: 36 * scale,
+            fontWeight: 600,
+            fontFamily: "Fraunces",
+            letterSpacing: -2,
         },
         subtitle: {
             fontSize: 20 * scale,
