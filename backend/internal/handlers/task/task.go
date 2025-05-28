@@ -131,6 +131,8 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		})
 	}
 
+	reminders := ParseReminder(params)
+
 	doc := TaskDocument{
 		ID:             primitive.NewObjectID(),
 		Priority:       params.Priority,
@@ -143,13 +145,13 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		Timestamp:      xutils.NowUTC(),
 		Notes:          params.Notes,
 		Checklist:      params.Checklist,
-		Reminders:      params.Reminders,
+		Reminders:      reminders,
 		Deadline:       deadline,
 		StartTime:      startTime,
 		StartDate:      startDate,
 	}
 
-	err = h.HandleRecurringTaskCreation(c, doc, params, categoryId, deadline, startTime, startDate)
+	err = h.HandleRecurringTaskCreation(c, doc, params, categoryId, deadline, startTime, startDate, reminders)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}

@@ -59,21 +59,10 @@ type Reminder struct {
 	TriggerTime time.Time `bson:"triggerTime" json:"triggerTime"`
 	Type        string    `bson:"type" json:"type"`
 	Sent        bool      `bson:"sent" json:"sent"`
-}
-	
-/*
-	 Specific to recurring tasks in the template tasks collection
-	 Occurence - How much after the start date to send the reminder
-	 Deadline - How much before the deadline to send the reminder
-	 Window - How much before the deadline
-*/
-type RecurringReminder struct {
-	TriggerTime time.Time `bson:"triggerTime" json:"triggerTime"`
 	AfterStart  bool      `bson:"afterStart" json:"afterStart"`
 	BeforeDeadline bool      `bson:"beforeDeadline" json:"beforeDeadline"`
-	Sent        bool      `bson:"sent" json:"sent"`
 }
-
+	
 type TemplateTaskDocument struct {
 	ID primitive.ObjectID `bson:"_id" json:"id"`
 
@@ -95,7 +84,7 @@ type TemplateTaskDocument struct {
 
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
-	Reminders []*RecurringReminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
 type RecurDetails struct {

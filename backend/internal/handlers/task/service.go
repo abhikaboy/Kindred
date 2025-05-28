@@ -134,8 +134,6 @@ func (s *Service) GetTaskByID(id primitive.ObjectID, user primitive.ObjectID) (*
 // InsertTask adds a new Task document
 func (s *Service) CreateTask(categoryId primitive.ObjectID, r *TaskDocument) (*TaskDocument, error) {
 	ctx := context.Background()
-	// Insert the document into the collection
-
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{

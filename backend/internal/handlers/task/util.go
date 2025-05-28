@@ -206,20 +206,18 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 	}
 }
 
-func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time) error {
+func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time, reminders []*Reminder) error {
 	var template_id primitive.ObjectID = primitive.NewObjectID()
 	if doc.Recurring {
 		if params.RecurFrequency == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid recurring frequency",
 			})
-		} else {
-		}
+		} 
 		if params.RecurDetails == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Recurring details are required",
 			})
-		} else {
 		}
 
 		recurType := "OCCURRENCE"
@@ -238,6 +236,15 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 		} else if params.StartTime != nil {
 			baseTime = *params.StartTime
 		}
+
+		// filter out non relative reminders
+		relativeReminders := make([]*Reminder, 0)
+		for _, reminder := range reminders {
+			if reminder.Type == "RELATIVE" {
+				relativeReminders = append(relativeReminders, reminder)
+			}
+		}
+
 		// Create a template for the recurring task
 		template_doc := TemplateTaskDocument{
 			CategoryID:     categoryId,
@@ -254,6 +261,7 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			StartTime:     startTime,
 			StartDate:     startDate,
 			LastGenerated: &baseTime,
+			Reminders:     relativeReminders,
 		}
 		var err error
 
@@ -291,3 +299,4 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 
 	return nil
 }
+
