@@ -47,7 +47,7 @@ func (h *Handler) HandleReminder(c *fiber.Ctx) error {
 }
 
 func (h *Handler) AddReminderToTask(c *fiber.Ctx) error {
-	err, ids := xutils.ParseIDs(c, c.Params("taskID"), c.Params("categoryID"), c.UserContext().Value("user_id").(string))
+	err, ids := xutils.ParseIDs(c, c.Params("id"), c.Params("category"), c.UserContext().Value("user_id").(string))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid taskID or categoryID or userID",

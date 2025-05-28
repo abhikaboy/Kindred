@@ -2,8 +2,10 @@ package xutils
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -49,8 +51,8 @@ func ParseIDs(c *fiber.Ctx, ids ...string) (error, []primitive.ObjectID) {
 	for index, id := range ids {
 		id_, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
-			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at "+string(index), slog.String("error", err.Error()), slog.String("id", id))
-			return err, nil
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at "+strconv.Itoa(index), slog.String("error", err.Error()), slog.String("id", id))
+			return errors.New(err.Error() + " at " + strconv.Itoa(index) +": [" + id + "]"), nil
 		}
 		ids_ = append(ids_, id_)
 	}

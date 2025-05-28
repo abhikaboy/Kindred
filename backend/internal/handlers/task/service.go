@@ -764,7 +764,8 @@ func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primi
 	// if the triggerTime is less than or equal to the current time, pull it from the list
 	_, err := s.Tasks.UpdateOne(ctx, 
 		bson.M{"_id": categoryID}, 
-		bson.M{"$set": bson.M{"tasks.$[t].reminders": bson.M{"$pull": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC() }}}}}, &options)
+		bson.M{"$pull": bson.M{"tasks.$[t].reminders": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC()}}}},
+		&options)
 	return err
 }
 
