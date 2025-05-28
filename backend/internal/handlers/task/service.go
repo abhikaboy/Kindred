@@ -696,3 +696,30 @@ func (s *Service) createTaskInCategory(ctx context.Context, categoryId primitive
 	)
 	return handleMongoError(ctx, "create task", err)
 }
+
+func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
+	ctx := context.Background()
+
+	pipeline := getBaseTaskPipeline()
+	pipeline = append(pipeline, bson.D{{"$match", bson.M{"reminders": bson.M{
+		"$exists": true,
+		"$elemMatch": bson.M{
+			"sent": false,
+			"triggerTime": bson.M{
+				"$lte": xutils.NowUTC(),
+			},
+		},
+	}}}})
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}

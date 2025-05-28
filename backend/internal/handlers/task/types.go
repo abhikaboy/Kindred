@@ -24,7 +24,7 @@ type CreateTaskParams struct {
 
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
-	Reminders []*time.Time     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
 type SortParams struct {
@@ -36,6 +36,7 @@ type TaskDocument = types.TaskDocument
 type RecurDetails = types.RecurDetails
 type TemplateTaskDocument = types.TemplateTaskDocument
 type ChecklistItem = types.ChecklistItem
+type Reminder = types.Reminder
 
 type UpdateTaskDocument struct {
 	Priority     int           `bson:"priority" json:"priority"`

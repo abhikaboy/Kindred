@@ -2,7 +2,6 @@ package task
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
@@ -100,7 +99,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&params); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": "Invalid request body " + err.Error(),
 		})
 	}
 
@@ -150,85 +149,9 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		StartDate:      startDate,
 	}
 
-	var template_id primitive.ObjectID = primitive.NewObjectID()
-	if doc.Recurring {
-		if params.RecurFrequency == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid recurring frequency",
-			})
-		} else {
-		}
-		if params.RecurDetails == nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Recurring details are required",
-			})
-		} else {
-		}
-
-		recurType := "OCCURRENCE"
-
-		// if we have a deadline with no start information
-		if params.Deadline != nil {
-			recurType = "DEADLINE"
-			if params.StartTime != nil || params.StartDate != nil {
-				recurType = "WINDOW"
-			}
-		}
-
-		baseTime := xutils.NowUTC()
-		if params.Deadline != nil {
-			baseTime = *params.Deadline
-		} else if params.StartTime != nil {
-			baseTime = *params.StartTime
-		}
-		// Create a template for the recurring task
-		template_doc := TemplateTaskDocument{
-			CategoryID:     categoryId,
-			ID:             template_id,
-			Content:        params.Content,
-			Priority:       params.Priority,
-			Value:          params.Value,
-			Public:         params.Public,
-			RecurType:      recurType,
-			RecurFrequency: params.RecurFrequency,
-			RecurDetails:   params.RecurDetails,
-
-			Deadline:      deadline,
-			StartTime:     startTime,
-			StartDate:     startDate,
-			LastGenerated: &baseTime,
-		}
-
-		var next_occurence time.Time
-		if recurType == "OCCURRENCE" {
-			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
-			if err != nil {
-				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating OCCURENCE template task", slog.String("error", err.Error()))
-				return c.Status(fiber.StatusInternalServerError).JSON(err)
-			}
-		} else if recurType == "DEADLINE" {
-			next_occurence, err = h.service.ComputeNextDeadline(&template_doc)
-			if err != nil {
-				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating DEADLINE template task", slog.String("error", err.Error()))
-				return c.Status(fiber.StatusInternalServerError).JSON(err)
-			}
-		} else if recurType == "WINDOW" {
-			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
-			if err != nil {
-				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating WINDOW template task", slog.String("error", err.Error()))
-				return c.Status(fiber.StatusInternalServerError).JSON(err)
-			}
-		}
-
-		template_doc.NextGenerated = &next_occurence
-
-		_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
-		if err != nil {
-			slog.LogAttrs(c.Context(), slog.LevelError, "Error creating template task", slog.String("error", err.Error()))
-			return c.Status(fiber.StatusInternalServerError).JSON(err)
-		}
-
-		doc.TemplateID = template_id
+	err = h.HandleRecurringTaskCreation(c, doc, params, categoryId, deadline, startTime, startDate)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	_, err = h.service.CreateTask(categoryId, &doc)
@@ -238,6 +161,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(doc)
 }
+
 
 func (h *Handler) GetTasks(c *fiber.Ctx) error {
 	Tasks, err := h.service.GetAllTasks()

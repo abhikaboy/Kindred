@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/xutils"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -203,4 +204,90 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		LastEdited:     xutils.NowUTC(),
 		TemplateID:     templateDoc.ID,
 	}
+}
+
+func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time) error {
+	var template_id primitive.ObjectID = primitive.NewObjectID()
+	if doc.Recurring {
+		if params.RecurFrequency == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid recurring frequency",
+			})
+		} else {
+		}
+		if params.RecurDetails == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Recurring details are required",
+			})
+		} else {
+		}
+
+		recurType := "OCCURRENCE"
+
+		// if we have a deadline with no start information
+		if params.Deadline != nil {
+			recurType = "DEADLINE"
+			if params.StartTime != nil || params.StartDate != nil {
+				recurType = "WINDOW"
+			}
+		}
+
+		baseTime := xutils.NowUTC()
+		if params.Deadline != nil {
+			baseTime = *params.Deadline
+		} else if params.StartTime != nil {
+			baseTime = *params.StartTime
+		}
+		// Create a template for the recurring task
+		template_doc := TemplateTaskDocument{
+			CategoryID:     categoryId,
+			ID:             template_id,
+			Content:        params.Content,
+			Priority:       params.Priority,
+			Value:          params.Value,
+			Public:         params.Public,
+			RecurType:      recurType,
+			RecurFrequency: params.RecurFrequency,
+			RecurDetails:   params.RecurDetails,
+
+			Deadline:      deadline,
+			StartTime:     startTime,
+			StartDate:     startDate,
+			LastGenerated: &baseTime,
+		}
+		var err error
+
+		var next_occurence time.Time
+		if recurType == "OCCURRENCE" {
+			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating OCCURENCE template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		} else if recurType == "DEADLINE" {
+			next_occurence, err = h.service.ComputeNextDeadline(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating DEADLINE template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		} else if recurType == "WINDOW" {
+			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating WINDOW template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		}
+
+		template_doc.NextGenerated = &next_occurence
+
+		_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
+		if err != nil {
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error creating template task", slog.String("error", err.Error()))
+			return c.Status(fiber.StatusInternalServerError).JSON(err)
+		}
+
+		doc.TemplateID = template_id
+	}
+
+	return nil
 }
