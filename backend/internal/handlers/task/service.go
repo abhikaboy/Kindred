@@ -767,3 +767,24 @@ func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primi
 		bson.M{"$set": bson.M{"tasks.$[t].reminders": bson.M{"$pull": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC() }}}}}, &options)
 	return err
 }
+
+func (s *Service) AddReminderToTask(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID, reminder Reminder) error {
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryID, userID); err != nil {
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.D{
+			{"$push", bson.M{
+				"tasks.$[t].reminders": reminder,
+			}},
+		},
+		getTaskArrayFilterOptions(taskID),
+	)
+
+	return handleMongoError(ctx, "add reminder to task", err)
+}

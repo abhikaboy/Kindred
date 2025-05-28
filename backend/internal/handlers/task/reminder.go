@@ -1,6 +1,8 @@
 package task
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -42,6 +44,35 @@ func (h *Handler) HandleReminder(c *fiber.Ctx) error {
 		"successful_updates": successful_updates,
 		"failed_updates": failed_updates,
 	})
+}
+
+func (h *Handler) AddReminderToTask(c *fiber.Ctx) error {
+	err, ids := xutils.ParseIDs(c, c.Params("taskID"), c.Params("categoryID"), c.UserContext().Value("user_id").(string))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid taskID or categoryID or userID",
+			"error_message": err.Error(),
+		})
+	}
+	taskID, categoryID, userID := ids[0], ids[1], ids[2]
+
+	reminder := types.Reminder{}
+	// using body parser
+	if err := c.BodyParser(&reminder); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid reminder",
+			"error_message": err.Error(),
+		})
+	}
+
+	err = h.service.AddReminderToTask(taskID, categoryID, userID, reminder)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	
+	return c.SendStatus(fiber.StatusOK)
 }
 
 func ParseReminder(params CreateTaskParams) []*Reminder {
