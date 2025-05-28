@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -86,4 +87,10 @@ type Service struct {
 	Tasks          *mongo.Collection
 	CompletedTasks *mongo.Collection
 	TemplateTasks  *mongo.Collection
+}
+
+type TaskID struct {
+	TaskID primitive.ObjectID 
+	CategoryID primitive.ObjectID 
+	UserID primitive.ObjectID 
 }

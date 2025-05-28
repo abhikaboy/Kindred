@@ -39,7 +39,7 @@ func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 func getBaseTaskPipeline() []bson.D {
 	return []bson.D{
 		{{Key: "$unwind", Value: "$tasks"}},
-		{{Key: "$set", Value: bson.M{"tasks.userID": "$user"}}},
+		{{Key: "$set", Value: bson.M{"tasks.userID": "$user", "tasks.categoryID": "$_id"}}},
 		{{Key: "$replaceRoot", Value: bson.M{"newRoot": "$tasks"}}},
 	}
 }
@@ -744,5 +744,26 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 		},
 	})
 
+	return err
+}
+
+func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID) error {
+	ctx := context.Background()
+
+	options := options.UpdateOptions{
+		ArrayFilters: &options.ArrayFilters{
+			Filters: bson.A{
+				bson.M{
+					"t._id": taskID,
+				},
+			},
+		},
+	}
+
+	// Pull the reminder from the list of reminders
+	// if the triggerTime is less than or equal to the current time, pull it from the list
+	_, err := s.Tasks.UpdateOne(ctx, 
+		bson.M{"_id": categoryID}, 
+		bson.M{"$set": bson.M{"tasks.$[t].reminders": bson.M{"$pull": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC() }}}}}, &options)
 	return err
 }

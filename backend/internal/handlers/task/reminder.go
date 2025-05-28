@@ -10,16 +10,38 @@ func (h *Handler) HandleReminder(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 	// Send the reminders to the user
+	successful_updates := make([]TaskID, 0)
+	failed_updates := make([]TaskID, 0)
 	for _, task := range tasks {
 		err = h.service.SendReminder(task.UserID, task.Reminders[0], task.ID, task.Content)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": err.Error(),
+			failed_updates = append(failed_updates, TaskID{
+				TaskID: task.ID,
+				CategoryID: task.CategoryID,
+				UserID: task.UserID,
 			})
+			continue
+		}
+		// change the sent field to true
+		successful_updates = append(successful_updates, TaskID{
+			TaskID: task.ID,
+			CategoryID: task.CategoryID,
+			UserID: task.UserID,
+		})
+	}
+
+	for _, update := range successful_updates {
+		err = h.service.UpdateReminderSent(update.TaskID, update.CategoryID, update.UserID)
+		if err != nil {
+			failed_updates = append(failed_updates, update)
 		}
 	}
 
-	return c.JSON(tasks)
+	return c.JSON(fiber.Map{
+		"tasks": tasks,
+		"successful_updates": successful_updates,
+		"failed_updates": failed_updates,
+	})
 }
 
 func ParseReminder(params CreateTaskParams) []*Reminder {

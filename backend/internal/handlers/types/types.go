@@ -42,7 +42,9 @@ type TaskDocument struct {
 	Timestamp      time.Time          `bson:"timestamp" json:"timestamp"`
 	LastEdited     time.Time          `bson:"lastEdited" json:"lastEdited"`
 	TemplateID     primitive.ObjectID `bson:"templateID,omitempty" json:"templateID,omitempty"`
+
 	UserID         primitive.ObjectID `bson:"userID,omitempty" json:"userID,omitempty"`
+	CategoryID     primitive.ObjectID `bson:"categoryID,omitempty" json:"categoryID,omitempty"`
 
 	Deadline  *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
