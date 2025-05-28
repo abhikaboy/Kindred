@@ -1,6 +1,7 @@
 package Activity
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -26,10 +27,9 @@ func (h *Handler) CreateActivity(c *fiber.Ctx) error {
 		})
 	}
 
-	doc := ActivityDocument{
+	doc := types.ActivityDocument{
 		ID:        primitive.NewObjectID(),
 		Field1:    params.Field1,
-		Field2:    params.Field2,
 		Picture:   params.Picture,
 		Timestamp: xutils.NowUTC(),
 	}

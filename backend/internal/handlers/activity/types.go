@@ -3,7 +3,7 @@ package Activity
 import (
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -18,13 +18,7 @@ type ActivityPoint struct {
 	value float64
 }
 
-type ActivityDocument struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Field1    string             `bson:"field1" json:"field1"`
-	Field2    Enumeration        `bson:"field2" json:"field2"`
-	Picture   *string            `bson:"picture" json:"picture"`
-	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
-}
+type ActivityDocument = types.ActivityDocument	
 
 type UpdateActivityDocument struct {
 	Field1  string      `bson:"field1,omitempty" json:"field1,omitempty"`

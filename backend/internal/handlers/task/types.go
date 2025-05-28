@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -24,6 +25,7 @@ type CreateTaskParams struct {
 
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
 type SortParams struct {
@@ -35,6 +37,7 @@ type TaskDocument = types.TaskDocument
 type RecurDetails = types.RecurDetails
 type TemplateTaskDocument = types.TemplateTaskDocument
 type ChecklistItem = types.ChecklistItem
+type Reminder = types.Reminder
 
 type UpdateTaskDocument struct {
 	Priority     int           `bson:"priority" json:"priority"`
@@ -84,4 +87,10 @@ type Service struct {
 	Tasks          *mongo.Collection
 	CompletedTasks *mongo.Collection
 	TemplateTasks  *mongo.Collection
+}
+
+type TaskID struct {
+	TaskID primitive.ObjectID 
+	CategoryID primitive.ObjectID 
+	UserID primitive.ObjectID 
 }

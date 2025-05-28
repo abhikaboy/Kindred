@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +19,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 }
 
 // GetAllActivitys fetches all Activity documents from MongoDB
-func (s *Service) GetAllActivitys() ([]ActivityDocument, error) {
+func (s *Service) GetAllActivitys() ([]types.ActivityDocument, error) {
 	ctx := context.Background()
 	cursor, err := s.Activitys.Find(ctx, bson.M{})
 	if err != nil {

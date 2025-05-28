@@ -18,11 +18,6 @@ func (r *LoginRequest) Validate() error {
 	return err
 }
 
-func (r *User) Validate() error {
-	required := []string{"Email", "Password", "ID", "RefreshToken"}
-	err := VerifyRequiredFieldsPresent(required, r)
-	return err
-}
 
 func VerifyRequiredFieldsPresent(r []string, item interface{}) error {
 	v := reflect.ValueOf(item)

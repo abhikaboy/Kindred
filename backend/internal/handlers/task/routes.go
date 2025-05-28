@@ -39,4 +39,6 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 
 	AuthorizedTasks.Post("/:category/:id/notes", handler.UpdateTaskNotes)
 	AuthorizedTasks.Post("/:category/:id/checklist", handler.UpdateTaskChecklist)
+	AuthorizedTasks.Get("/reminders", handler.HandleReminder)
+	AuthorizedTasks.Post("/:category/:id/reminder", handler.AddReminderToTask)
 }

@@ -229,7 +229,7 @@ const Home = (props: Props) => {
                                 }}>
                                 <Image
                                     source={require("@/assets/images/Checkmark.png")}
-                                    style={{ width: "30%", resizeMode: "contain" }}
+                                    style={{ width: "25%", resizeMode: "contain" }}
                                 />
                                 <ThemedText type="subtitle">Woohoo! All Clear!</ThemedText>
                             </View>

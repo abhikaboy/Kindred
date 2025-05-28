@@ -39,6 +39,7 @@ func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 func getBaseTaskPipeline() []bson.D {
 	return []bson.D{
 		{{Key: "$unwind", Value: "$tasks"}},
+		{{Key: "$set", Value: bson.M{"tasks.userID": "$user", "tasks.categoryID": "$_id"}}},
 		{{Key: "$replaceRoot", Value: bson.M{"newRoot": "$tasks"}}},
 	}
 }
@@ -134,8 +135,6 @@ func (s *Service) GetTaskByID(id primitive.ObjectID, user primitive.ObjectID) (*
 // InsertTask adds a new Task document
 func (s *Service) CreateTask(categoryId primitive.ObjectID, r *TaskDocument) (*TaskDocument, error) {
 	ctx := context.Background()
-	// Insert the document into the collection
-
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{
@@ -695,4 +694,98 @@ func (s *Service) createTaskInCategory(ctx context.Context, categoryId primitive
 		bson.M{"$push": bson.M{"tasks": task}},
 	)
 	return handleMongoError(ctx, "create task", err)
+}
+
+func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
+	ctx := context.Background()
+
+	pipeline := getBaseTaskPipeline()
+	pipeline = append(pipeline, bson.D{{"$match", bson.M{"reminders": bson.M{
+		"$exists": true,
+		"$elemMatch": bson.M{
+			"sent": false,
+			"triggerTime": bson.M{
+				"$lte": xutils.NowUTC(),
+			},
+		},
+	}}}})
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, taskID primitive.ObjectID, taskName string) error {
+	ctx := context.Background()
+	// lookup the user 
+	var user types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Sending reminder to user", user.PushToken)
+
+	// send the reminder to the user
+
+	err = xutils.SendNotification( xutils.Notification{
+		Token: user.PushToken,
+		Message: "Reminder to: " + taskName,
+		Data: map[string]string{
+			"taskId": taskID.Hex(),
+		},
+	})
+
+	return err
+}
+
+func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID) error {
+	ctx := context.Background()
+
+	options := options.UpdateOptions{
+		ArrayFilters: &options.ArrayFilters{
+			Filters: bson.A{
+				bson.M{
+					"t._id": taskID,
+				},
+			},
+		},
+	}
+
+	// Pull the reminder from the list of reminders
+	// if the triggerTime is less than or equal to the current time, pull it from the list
+	_, err := s.Tasks.UpdateOne(ctx, 
+		bson.M{"_id": categoryID}, 
+		bson.M{"$pull": bson.M{"tasks.$[t].reminders": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC()}}}},
+		&options)
+	return err
+}
+
+func (s *Service) AddReminderToTask(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID, reminder Reminder) error {
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryID, userID); err != nil {
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.D{
+			{"$push", bson.M{
+				"tasks.$[t].reminders": reminder,
+			}},
+		},
+		getTaskArrayFilterOptions(taskID),
+	)
+
+	return handleMongoError(ctx, "add reminder to task", err)
 }
