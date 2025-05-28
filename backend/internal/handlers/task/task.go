@@ -144,6 +144,7 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 		Timestamp:      xutils.NowUTC(),
 		Notes:          params.Notes,
 		Checklist:      params.Checklist,
+		Reminders:      params.Reminders,
 		Deadline:       deadline,
 		StartTime:      startTime,
 		StartDate:      startDate,

@@ -24,6 +24,7 @@ type CreateTaskParams struct {
 
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Reminders []*time.Time     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
 type SortParams struct {

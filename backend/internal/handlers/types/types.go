@@ -47,8 +47,9 @@ type TaskDocument struct {
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate *time.Time `bson:"startDate" json:"startDate"` // Defaults to today
 
-	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
-	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Notes      string          `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist  []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Reminders  []*time.Time    `bson:"reminders,omitempty" json:"reminders,omitempty"`	
 }
 
 type TemplateTaskDocument struct {
@@ -80,6 +81,7 @@ type RecurDetails struct {
 	DaysOfMonth []int  `validate:"omitempty,min=1,max=31,unique" bson:"daysOfMonth,omitempty" json:"daysOfMonth,omitempty"`
 	Months      []int  `validate:"omitempty,min=1,max=12,unique" bson:"months,omitempty" json:"months,omitempty"`
 	Behavior    string `validate:"required,oneof=BUILDUP ROLLING" bson:"behavior,omitempty" json:"behavior,omitempty"` // Buildup, Rolling
+	Reminders   []*time.Time `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
 type ChecklistItem struct {
