@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { TouchableOpacity, View, StyleSheet } from "react-native";
+import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export const PRIORITY_MAP = {
+    0: "none",
     1: "low",
     2: "medium",
     3: "high",
@@ -30,9 +31,20 @@ interface Props {
     id: string;
     categoryId: string;
     task?: Task;
+    height?: number;
 }
 
-const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, encourage = false, task }: Props) => {
+const TaskCard = ({
+    content,
+    value,
+    priority,
+    redirect = false,
+    id,
+    categoryId,
+    encourage = false,
+    task,
+    height = Dimensions.get("window").height * 0.07,
+}: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
     const ThemedColor = useThemeColor();
@@ -62,6 +74,8 @@ const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, 
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
+            case "none":
+                return ThemedColor.disabled + "00";
             case "low":
                 return ThemedColor.success;
             case "medium":
@@ -95,7 +109,12 @@ const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, 
         <TouchableOpacity
             style={[
                 styles.container,
-                { backgroundColor: ThemedColor.lightened, borderWidth: 1, borderColor: ThemedColor.tertiary },
+                {
+                    backgroundColor: ThemedColor.lightened,
+                    borderWidth: 1,
+                    borderColor: ThemedColor.tertiary,
+                    height: height,
+                },
             ]}
             disabled={!redirect && !encourage}
             onPress={handlePress}
@@ -140,7 +159,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
         borderRadius: 16,
-        paddingVertical: 20,
+        justifyContent: "center",
     },
     row: {
         flexDirection: "row",

@@ -77,7 +77,7 @@ const Home = (props: Props) => {
                             <ThemedText type="lightBody">{new Date().toDateString()}</ThemedText>
                             <Ionicons name="return-down-back-outline" size={24} color={ThemedColor.text} />
                         </View>
-                        <View>
+                        <View style={{ marginTop: 8 }}>
                             <Timeline />
                         </View>
                         <View style={{ gap: 8, marginTop: 24 }}>

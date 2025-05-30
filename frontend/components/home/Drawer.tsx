@@ -1,6 +1,6 @@
 import { useTasks } from "@/contexts/tasksContext";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { View, TouchableOpacity, ScrollView, Keyboard, Platform } from "react-native";
+import { View, TouchableOpacity, ScrollView, Keyboard, Platform, Image } from "react-native";
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
 import { Dimensions, StyleSheet } from "react-native";
@@ -9,6 +9,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import EditWorkspace from "../modals/edit/EditWorkspace";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -121,14 +123,25 @@ export const Drawer = ({ close }) => {
 
             <EditWorkspace editing={editing} setEditing={setEditing} id={focusedWorkspace} />
 
-            <View style={{ paddingTop: 16, paddingBottom: 16, paddingHorizontal: HORIZONTAL_PADDING }}>
+            <View
+                style={{
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    paddingHorizontal: HORIZONTAL_PADDING,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                }}>
                 <TouchableOpacity
                     onPress={() => {
                         setSelected("");
                         close();
                     }}>
-                    <ThemedText type="title">Workspaces</ThemedText>
+                    <ThemedText type="title">kindred</ThemedText>
                 </TouchableOpacity>
+                <ThemedText type="subtitle_subtle">v0.1.0</ThemedText>
+                {/* <Image source={require("@/assets/images/Checkmark.png")} style={{ width: 32, height: 26 }} /> */}
             </View>
             <TouchableOpacity
                 style={{
@@ -148,49 +161,139 @@ export const Drawer = ({ close }) => {
             <ScrollView
                 style={{ width: "100%" }}
                 contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.2 }}>
-                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
+                <View
+                    style={{
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                    }}>
+                    <Ionicons name="home" size={16} color={ThemedColor.caption} />
+                    <ThemedText type="subtitle_subtle">HOME</ThemedText>
+                </View>
+                <DrawerItem
+                    title="Home"
+                    selected={selected}
+                    onPress={() => {
+                        setSelected("");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
+                    title="Today"
+                    selected={selected}
+                    onPress={() => {
+                        setSelected("");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
+                    title="Upcoming"
+                    selected={selected}
+                    onPress={() => {
+                        setSelected("");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
+                <View
+                    style={{
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                    }}>
+                    <Ionicons name="person" size={16} color={ThemedColor.caption} />
                     <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
                 </View>
                 {workspaces.map((workspace) => (
-                    <TouchableOpacity
-                        style={[
-                            {
-                                paddingVertical: 12,
-                                flexDirection: "row",
-                                width: "100%",
-                                display: "flex",
-                                alignItems: "center",
-                                paddingHorizontal: HORIZONTAL_PADDING,
-                                gap: 8,
-                            },
-                            selected == workspace.name ? { backgroundColor: ThemedColor.tertiary } : undefined,
-                        ]}
-                        onLongPress={() => {
-                            setFocusedWorkspace(workspace.name);
-                            setEditing(true);
-                        }}
+                    <DrawerItem
                         onPress={() => {
                             setSelected(workspace.name);
                             close();
                         }}
-                        key={workspace.name}>
-                        <SelectedIndicator selected={selected === workspace.name} />
-                        <ThemedText
-                            type="default"
-                            style={{ fontFamily: "Outfit", fontWeight: "medium" }}
-                            key={workspace.name}>
-                            {workspace.name}
-                        </ThemedText>
-                    </TouchableOpacity>
+                        onLongPress={() => {
+                            setFocusedWorkspace(workspace.name);
+                            setEditing(true);
+                        }}
+                        key={workspace.name}
+                        title={workspace.name}
+                        selected={selected}
+                    />
                 ))}
+                <TouchableOpacity onPress={() => {}}>
+                    <View
+                        style={{
+                            paddingHorizontal: HORIZONTAL_PADDING,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <Ionicons name="document-text" size={16} color={ThemedColor.caption} />
+                            <ThemedText type="subtitle_subtle">BLUEPRINTS</ThemedText>
+                        </View>
+                        <AntDesign name="question" size={20} color={ThemedColor.caption} />
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={{
+                        paddingVertical: 12,
+                        flexDirection: "row",
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        gap: 8,
+                    }}
+                    onPress={() => {}}>
+                    <ThemedText type="default">+ Build a Blueprint</ThemedText>
+                </TouchableOpacity>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
-                    <ThemedText type="subtitle_subtle">BLUEPRINTS</ThemedText>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Ionicons name="archive" size={16} color={ThemedColor.caption} />
+                        <ThemedText type="subtitle_subtle">ARCHIVE</ThemedText>
+                    </View>
                 </View>
-                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
-                    <ThemedText type="subtitle_subtle">ARCHIVE</ThemedText>
+                <View style={{}}>
+                    <DrawerItem
+                        title="Completed Tasks"
+                        selected={selected}
+                        onPress={() => setSelected("Completed Tasks")}
+                        onLongPress={() => {}}
+                    />
                 </View>
             </ScrollView>
         </View>
+    );
+};
+
+const DrawerItem = ({ title, selected, onPress, onLongPress }) => {
+    const ThemedColor = useThemeColor();
+    return (
+        <TouchableOpacity
+            style={[
+                {
+                    paddingVertical: 12,
+                    flexDirection: "row",
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    paddingHorizontal: HORIZONTAL_PADDING,
+                    gap: 8,
+                },
+                selected == title ? { backgroundColor: ThemedColor.tertiary } : undefined,
+            ]}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            key={title}>
+            <SelectedIndicator selected={selected === title} />
+            <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }} key={title}>
+                {title}
+            </ThemedText>
+        </TouchableOpacity>
     );
 };
 

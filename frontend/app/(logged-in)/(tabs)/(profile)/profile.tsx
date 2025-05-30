@@ -43,6 +43,7 @@ export default function Profile() {
         <Animated.ScrollView
             ref={scrollRef}
             scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
             <ParallaxBanner
                 scrollRef={scrollRef}
