@@ -131,6 +131,6 @@ const useStyles = (ThemedColor: any, scale: number) =>
             fontFamily: "Outfit",
             color: ThemedColor.caption,
             opacity: 1,
-            paddingVertical: 8,
+            paddingVertical: 16,
         },
     });

@@ -13,6 +13,8 @@ import ChecklistToggle from "@/components/inputs/ChecklistToggle";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -179,10 +181,12 @@ export default function Task() {
                 paddingHorizontal: HORIZONTAL_PADDING,
                 gap: 16,
             }}>
-            <ThemedText type="title">
-                {name}
-                {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
-            </ThemedText>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
+                <ThemedText type="title">
+                    {name}
+                    {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
+                </ThemedText>
+            </View>
             <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={setActiveTab} />
             <ConditionalView condition={activeTab === 0}>
                 <ScrollView contentContainerStyle={{ gap: 20 }}>
