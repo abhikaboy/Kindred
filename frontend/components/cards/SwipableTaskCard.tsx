@@ -15,7 +15,7 @@ import { ThemedText } from "../ThemedText";
 import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
 import Confetti from "react-native-simple-confetti";
 import { useTasks } from "@/contexts/tasksContext";
-import { showToastable } from "react-native-toastable";
+import { hideToastable, showToastable } from "react-native-toastable";
 import ProgressBar from "../ui/ProgressBar";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
@@ -88,7 +88,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task }:
                 console.log("pressed");
             },
             duration: 5500,
-            renderContent: (props) => <TaskToast message={props.message} />,
+            renderContent: (props) => <TaskToast message={props.message} onToastableHide={() => hideToastable()} />,
         });
         setTimeout(() => {
             setShowConfetti(false);

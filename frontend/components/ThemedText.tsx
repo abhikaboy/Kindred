@@ -19,7 +19,8 @@ export type ThemedTextProps = TextProps & {
         | "caption"
         | "disabledTitle"
         | "smallerDefault"
-        | "titleFraunces";
+        | "titleFraunces"
+        | "subtitle_subtle";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
@@ -28,12 +29,15 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
     const base = 393;
     const scale = Dimensions.get("screen").width / base;
     const styles = useStyles(ThemedColor, scale);
+
+    let useStyledHeader = true;
+
     return (
         <Text
             style={[
                 { color },
                 type === "default" ? styles.default : undefined,
-                type === "title" ? styles.title : undefined,
+                type === "title" ? (useStyledHeader ? styles.titleFraunces : styles.title) : undefined,
                 type === "titleFraunces" ? styles.titleFraunces : undefined,
                 type === "heading" ? styles.heading : undefined,
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
@@ -44,6 +48,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "caption" ? styles.caption : undefined,
                 type === "disabledTitle" ? styles.disabledTitle : undefined,
                 type === "smallerDefault" ? styles.smallerDefault : undefined,
+                type === "subtitle_subtle" ? styles.subtitle_subtle : undefined,
                 style,
             ]}
             {...rest}
@@ -97,6 +102,7 @@ const useStyles = (ThemedColor: any, scale: number) =>
             fontWeight: 600,
             fontFamily: "Fraunces",
             letterSpacing: -2,
+            // lineHeight: 36 * scale,
         },
         subtitle: {
             fontSize: 20 * scale,
@@ -118,5 +124,13 @@ const useStyles = (ThemedColor: any, scale: number) =>
             fontSize: 14 * scale,
             fontWeight: "400",
             fontFamily: "OutfitLight",
+        },
+        subtitle_subtle: {
+            fontSize: 14 * scale,
+            fontWeight: "500",
+            fontFamily: "Outfit",
+            color: ThemedColor.caption,
+            opacity: 1,
+            paddingVertical: 16,
         },
     });

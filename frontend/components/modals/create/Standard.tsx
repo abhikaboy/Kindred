@@ -63,7 +63,7 @@ const Standard = ({ hide, goTo }: Props) => {
     return (
         <View style={{ gap: 8, flexDirection: "column", display: "flex" }} onTouchStart={() => Keyboard.dismiss()}>
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
-                <ThemedText type="defaultSemiBold" style={{ fontSize: 20, letterSpacing: 0.5 }}>
+                <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
                     New Task
                 </ThemedText>
                 <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
@@ -75,7 +75,7 @@ const Standard = ({ hide, goTo }: Props) => {
                             createPost();
                             hide();
                         }}>
-                        <Octicons name="plus" size={24} color={ThemedColor.text} />
+                        <Feather name="plus" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -112,16 +112,25 @@ const Standard = ({ hide, goTo }: Props) => {
                     goTo(Screen.NEW_CATEGORY);
                 }}
             />
-            <View style={{ gap: 16, marginVertical: 16 }}>
-                <ThemedText type="lightBody">Priority & Difficulty</ThemedText>
-                <View style={{ flexDirection: "row", gap: 16 }}>
-                    <TrafficLight />
-                    <ThemedSlider />
-                </View>
+            <View style={{ gap: 16, marginVertical: 8 }}>
+                <ThemedText type="lightBody">Priority</ThemedText>
+                <TrafficLight />
+            </View>
+
+            <View style={{ flexDirection: "column", marginVertical: 4, gap: 16 }}>
+                <ThemedText type="lightBody">Difficulty</ThemedText>
+                <ThemedSlider />
             </View>
 
             <TouchableOpacity
-                style={{ flexDirection: "row", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+                style={{
+                    flexDirection: "row",
+                    gap: 16,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginVertical: 4,
+                    marginTop: 16,
+                }}>
                 <ThemedText type="lightBody">Timing</ThemedText>
             </TouchableOpacity>
             <ConditionalView condition={true}>

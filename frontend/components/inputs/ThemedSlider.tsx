@@ -1,6 +1,6 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React, { useState } from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, Dimensions } from "react-native";
 import { TextInput } from "react-native-gesture-handler";
 import { GestureHandlerRootView, GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
@@ -10,7 +10,7 @@ Animated.addWhitelistedNativeProps({ text: true });
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
-const SLIDER_WIDTH = 210;
+const SLIDER_WIDTH = Dimensions.get("window").width * 0.89;
 const INITIAL_BOX_SIZE = 40;
 
 const STEP_SIZE = SLIDER_WIDTH / 11;
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     sliderTrack: {
         width: SLIDER_WIDTH,
         height: 25,
-        backgroundColor: ThemedColor.text,
+        backgroundColor: ThemedColor.tertiary,
         // backgroundColor: ThemedColor.primary,
         borderRadius: 25,
         justifyContent: "center",

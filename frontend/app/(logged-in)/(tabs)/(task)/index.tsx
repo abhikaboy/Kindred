@@ -1,29 +1,21 @@
-import { Dimensions, StyleSheet, ScrollView, View, Touchable, TouchableOpacity } from "react-native";
+import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import TaskCard from "@/components/cards/TaskCard";
 import { useAuth } from "@/hooks/useAuth";
-import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
-
 import { DrawerLayout } from "react-native-gesture-handler";
 import CreateModal from "@/components/modals/CreateModal";
-import BottomMenuModal from "@/components/modals/BottomMenuModal";
-import EditCategory from "@/components/modals/edit/EditCategory";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Category } from "../../../../components/category";
-import Confetti from "react-native-simple-confetti";
-import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Timeline from "@/components/home/Timeline";
 import { Image } from "react-native";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
+import Workspace from "./workspace";
 
 type Props = {};
 
@@ -32,19 +24,15 @@ const Home = (props: Props) => {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
-    const { categories, fetchWorkspaces, selected, showConfetti, workspaces, setSelected } = useTasks();
+    const { fetchWorkspaces, selected, workspaces, setSelected } = useTasks();
 
-    const [time, setTime] = useState(new Date().toLocaleTimeString());
-    const [timeOfDay, setTimeOfDay] = useState("Good Morning! ☀");
     const [creating, setCreating] = useState(false);
-    const [editing, setEditing] = useState(false);
-
-    const [focusedCategory, setFocusedCategory] = useState<string>("");
 
     const safeAsync = useSafeAsync();
 
     useEffect(() => {
         if (!user || !workspaces) return;
+        if (user._id === "") return;
         const loadWorkspaces = async () => {
             const { error } = await safeAsync(async () => {
                 await fetchWorkspaces();
@@ -58,34 +46,13 @@ const Home = (props: Props) => {
         loadWorkspaces();
     }, [user]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            // if (!creating) setTime(new Date().toLocaleTimeString());
-        }, 1000);
-
-        // get the hour from the time
-        let split = time.split(":");
-        let hour = parseInt(split[0]);
-        let pm = split[split.length - 1];
-
-        if (pm.includes("PM")) {
-            if (hour >= 6) {
-                setTimeOfDay("Good Evening! 🌆");
-            } else {
-                setTimeOfDay("Good Afternoon ☕️");
-            }
-        }
-        if (pm.includes("AM")) {
-            if (hour >= 6) {
-                setTimeOfDay("Good Morning! ☀");
-            } else {
-                setTimeOfDay("Good Night 🌙");
-            }
-        }
-        return () => clearInterval(interval);
-    }, []);
-
     const drawerRef = useRef<DrawerLayout>(null);
+
+    // If a workspace is selected, show the workspace component
+    if (selected !== "") {
+        return <Workspace />;
+    }
+
     return (
         <DrawerLayout
             ref={drawerRef}
@@ -95,85 +62,11 @@ const Home = (props: Props) => {
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front">
-            <ConditionalView condition={showConfetti}>
-                <View
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 1000,
-                        height: Dimensions.get("screen").height,
-                    }}>
-                    <ConfettiCannon
-                        count={50}
-                        origin={{
-                            x: Dimensions.get("screen").width / 2,
-                            y: (Dimensions.get("screen").height / 4) * 3.7,
-                        }}
-                        fallSpeed={1200}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                    />
-                </View>
-            </ConditionalView>
             <CreateModal visible={creating} setVisible={setCreating} />
-            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <ThemedView style={styles.container}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
-                <ConditionalView condition={selected !== ""}>
-                    <View style={styles.headerContainer}>
-                        <ThemedText type="title" style={styles.title}>
-                            {selected || "Good Morning! ☀"}
-                        </ThemedText>
-                        <ThemedText type="lightBody">
-                            Treat yourself to a cup of coffee and a good book. You deserve it.
-                        </ThemedText>
-                    </View>
-                </ConditionalView>
-                <ConditionalView condition={selected !== ""}>
-                    <ScrollView>
-                        <View style={styles.categoriesContainer} key="cateogry-container">
-                            {categories
-                                .sort((a, b) => b.tasks.length - a.tasks.length)
-                                .map((category) => {
-                                    if (category.name === "!-proxy-!") {
-                                        if (categories.length === 1) {
-                                            return (
-                                                <View key={category.id + category.name}>
-                                                    <ThemedText>You have no workspaces!</ThemedText>
-                                                </View>
-                                            );
-                                        }
-                                    } else
-                                        return (
-                                            <Category
-                                                key={category.id + category.name}
-                                                id={category.id}
-                                                name={category.name}
-                                                tasks={category.tasks}
-                                                onLongPress={(categoryId) => {
-                                                    setEditing(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                                onPress={(categoryId) => {
-                                                    setCreating(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                            />
-                                        );
-                                })}
-                            <TouchableOpacity
-                                onPress={() => setCreating(true)}
-                                style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
-                                <ThemedText type="defaultSemiBold">+</ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                    </ScrollView>
-                </ConditionalView>
 
                 <ConditionalView condition={selected === ""}>
                     <View style={styles.headerContainer}>
@@ -184,7 +77,7 @@ const Home = (props: Props) => {
                             <ThemedText type="lightBody">{new Date().toDateString()}</ThemedText>
                             <Ionicons name="return-down-back-outline" size={24} color={ThemedColor.text} />
                         </View>
-                        <View>
+                        <View style={{ marginTop: 8 }}>
                             <Timeline />
                         </View>
                         <View style={{ gap: 8, marginTop: 24 }}>
@@ -194,6 +87,7 @@ const Home = (props: Props) => {
                                     <View style={{ flexDirection: "row", gap: 8 }}>
                                         {workspaces.map((workspace) => (
                                             <TouchableOpacity
+                                                key={workspace.name}
                                                 onPress={() => {
                                                     setSelected(workspace.name);
                                                 }}
@@ -253,21 +147,8 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
-        gap: 8,
     },
     title: {
         fontWeight: "600",
-        paddingBottom: 16,
-    },
-    categoriesContainer: {
-        gap: 16,
-        marginTop: 0,
-    },
-    addButton: {
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        paddingVertical: 12,
-        borderRadius: 12,
     },
 });

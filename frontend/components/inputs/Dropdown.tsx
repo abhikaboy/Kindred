@@ -50,7 +50,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
     const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
     const AnimatedArrow = Animated.createAnimatedComponent(Entypo);
     return (
-        <Animated.View>
+        <Animated.View style={{ borderRadius: 12, borderWidth: 1, borderColor: ThemedColor.tertiary }}>
             <AnimatedTouchableOpacity
                 onPress={() => {
                     expanded.value = !expanded.value;
@@ -67,7 +67,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                         justifyContent: "space-between",
                     },
                 ]}>
-                <ThemedText type="lightBody">{selected.label}</ThemedText>
+                <ThemedText type="lightBody">{selected.label || "Select a Category"}</ThemedText>
                 {expandedState ? (
                     <AnimatedArrow
                         name="chevron-down"

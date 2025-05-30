@@ -1,8 +1,12 @@
 import { StyleSheet, Text, View, Switch, Dimensions, TouchableOpacity } from "react-native";
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { ThemedText } from "../ThemedText";
 type Props = {};
-
+type Entry = {
+    color: string;
+    label: string;
+};
 const TrafficLight = (props: Props) => {
     const [value, setValue] = React.useState(0);
     let ThemedColor = useThemeColor();
@@ -14,22 +18,29 @@ const TrafficLight = (props: Props) => {
                 flexDirection: "row",
                 gap: 16,
             }}>
-            {[ThemedColor.error, ThemedColor.warning, ThemedColor.success].map((color, index) => {
+            {[
+                { color: ThemedColor.success, label: "Low" },
+                { color: ThemedColor.warning, label: "Medium" },
+                { color: ThemedColor.error, label: "High" },
+            ].map((entry, index) => {
                 return (
                     <TouchableOpacity
                         key={index}
-                        style={{ ...styles.buttonBase, backgroundColor: color }}
+                        style={{ alignItems: "center", flexDirection: "row", gap: 8 }}
                         onPress={() => {
                             setValue(index);
                         }}>
-                        {value === index && (
-                            <View
-                                style={{
-                                    ...styles.selected,
-                                    backgroundColor: "#fff",
-                                }}
-                            />
-                        )}
+                        <View style={{ ...styles.buttonBase, backgroundColor: entry.color }}>
+                            {value === index && (
+                                <View
+                                    style={{
+                                        ...styles.selected,
+                                        backgroundColor: "#fff",
+                                    }}
+                                />
+                            )}
+                        </View>
+                        <ThemedText type="default">{entry.label}</ThemedText>
                     </TouchableOpacity>
                 );
             })}

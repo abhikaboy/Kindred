@@ -28,7 +28,7 @@ const ContactCard = ({ name, icon, handle, following }: Props) => {
                         @{handle}
                     </ThemedText>
                 </View>
-                <FollowButton following={following} />
+                <FollowButton connectionType={"none"} />
             </View>
         </TouchableOpacity>
     );

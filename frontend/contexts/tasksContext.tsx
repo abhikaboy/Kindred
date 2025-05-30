@@ -143,6 +143,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const selectedWorkspace = getWorkspace(selected);
         if (selectedWorkspace == null) return;
         setCategories(selectedWorkspace.categories);
+        setSelectedCategory({ label: "", id: "", special: false });
     }, [selected, workspaces]);
 
     return (

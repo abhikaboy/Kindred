@@ -30,10 +30,20 @@ const Activity = (props: Props) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const styles = stylesheet(ThemedColor);
 
+    const setYearWithinBounds = (year: number) => {
+        if (year < 2024) {
+            setYear(2024);
+        } else if (year > new Date().getFullYear()) {
+            setYear(new Date().getFullYear());
+        } else {
+            setYear(year);
+        }
+    };
+
     return (
         <ThemedView>
             <ScrollView contentContainerStyle={styles.scrollViewContent} style={styles.scrollView}>
-                <ThemedText type="defaultSemiBold" style={styles.title}>
+                <ThemedText type="title" style={styles.title}>
                     Activity
                 </ThemedText>
                 <ThemedText type="lightBody" style={styles.subtitle}>
@@ -41,14 +51,14 @@ const Activity = (props: Props) => {
                 </ThemedText>
 
                 <View style={styles.yearSelector}>
-                    <TouchableOpacity onPress={() => setYear(year - 1)}>
+                    <TouchableOpacity onPress={() => setYearWithinBounds(year - 1)}>
                         <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <View style={styles.yearContainer}>
                         <Ionicons name="calendar" size={24} color={ThemedColor.text} />
                         <ThemedText type="lightBody">{year}</ThemedText>
                     </View>
-                    <TouchableOpacity onPress={() => setYear(year + 1)}>
+                    <TouchableOpacity onPress={() => setYearWithinBounds(year + 1)}>
                         <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
