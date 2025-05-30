@@ -16,7 +16,7 @@ type Props = {
 const NewWorkspace = ({ hide }: Props) => {
     let ThemedColor = useThemeColor();
     const [name, setName] = useState("");
-    const { selected, addWorkspace, doesWorkspaceExist } = useTasks();
+    const { selected, addWorkspace, doesWorkspaceExist, setSelected } = useTasks();
 
     const handleCreateWorkspace = async () => {
         if (name.length == 0) {
@@ -31,8 +31,12 @@ const NewWorkspace = ({ hide }: Props) => {
             }
             const response = await createWorkspace(name);
             addWorkspace(name, response);
+            setSelected(name);
+            hide();
         } catch (err) {
             console.log(err);
+            Alert.alert("Error", "Failed to create workspace");
+            setName("");
         }
     };
 
@@ -42,36 +46,31 @@ const NewWorkspace = ({ hide }: Props) => {
                 <TouchableOpacity onPress={hide}>
                     <Feather name="arrow-left" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                <ThemedText type="defaultSemiBold" style={styles.title}>
+                <ThemedText type="subtitle" style={styles.title}>
                     New Workspace
                 </ThemedText>
             </View>
-            <ThemedInput
-                autofocus
-                placeHolder="Enter the Workspace Name"
-                onSubmit={() => {
-                    handleCreateWorkspace();
-                    hide();
-                }}
-                onChangeText={(text) => {
-                    setName(text);
-                }}
-                value={name}
-                setValue={setName}
-            />
-            <View style={styles.buttonContainer}>
-                <PrimaryButton
-                    title="Create Workspace"
-                    onPress={() => {
-                        handleCreateWorkspace()
-                            .then(() => {
-                                hide();
-                            })
-                            .catch((err) => {
-                                console.log(err);
-                            });
+            <View style={{ gap: 12 }}>
+                <ThemedInput
+                    autofocus
+                    placeHolder="Enter the Workspace Name"
+                    onSubmit={() => {
+                        handleCreateWorkspace();
                     }}
+                    onChangeText={(text) => {
+                        setName(text);
+                    }}
+                    value={name}
+                    setValue={setName}
                 />
+                <View style={styles.buttonContainer}>
+                    <PrimaryButton
+                        title="Create Workspace"
+                        onPress={() => {
+                            handleCreateWorkspace();
+                        }}
+                    />
+                </View>
             </View>
         </View>
     );
@@ -84,6 +83,7 @@ const styles = StyleSheet.create({
         gap: 24,
         display: "flex",
         flexDirection: "column",
+        marginTop: 16,
     },
     header: {
         display: "flex",
@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     buttonContainer: {
-        gap: 16,
         width: "100%",
         alignItems: "center",
     },

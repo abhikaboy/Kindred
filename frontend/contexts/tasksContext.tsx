@@ -62,7 +62,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const fetchWorkspaces = async () => {
         console.log("fetching workspaces via API");
-        if (!user) return;
         const data = await fetchUserWorkspaces(user._id);
         setWorkSpaces(data);
     };
@@ -144,6 +143,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const selectedWorkspace = getWorkspace(selected);
         if (selectedWorkspace == null) return;
         setCategories(selectedWorkspace.categories);
+        setSelectedCategory({ label: "", id: "", special: false });
     }, [selected, workspaces]);
 
     return (

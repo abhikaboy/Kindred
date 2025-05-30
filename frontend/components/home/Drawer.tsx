@@ -148,6 +148,9 @@ export const Drawer = ({ close }) => {
             <ScrollView
                 style={{ width: "100%" }}
                 contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.2 }}>
+                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
+                    <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
+                </View>
                 {workspaces.map((workspace) => (
                     <TouchableOpacity
                         style={[
@@ -180,6 +183,12 @@ export const Drawer = ({ close }) => {
                         </ThemedText>
                     </TouchableOpacity>
                 ))}
+                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
+                    <ThemedText type="subtitle_subtle">BLUEPRINTS</ThemedText>
+                </View>
+                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
+                    <ThemedText type="subtitle_subtle">ARCHIVE</ThemedText>
+                </View>
             </ScrollView>
         </View>
     );

@@ -87,6 +87,9 @@ const Home = (props: Props) => {
     }, []);
 
     const drawerRef = useRef<DrawerLayout>(null);
+
+    const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
+
     return (
         <DrawerLayout
             ref={drawerRef}
@@ -135,37 +138,39 @@ const Home = (props: Props) => {
                         </ThemedText>
                     </View>
                 </ConditionalView>
-                <ConditionalView condition={selected !== ""}>
-                    <ScrollView>
+                <ConditionalView condition={selected !== "" && noCategories}>
+                    <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 32 }}>
+                        <ThemedText type="lightBody">This workspace is empty!</ThemedText>
+                        <TouchableOpacity
+                            onPress={() => setCreating(true)}
+                            style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
+                            <ThemedText type="defaultSemiBold">+</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </ConditionalView>
+                <ConditionalView condition={selected !== "" && !noCategories}>
+                    <ScrollView showsVerticalScrollIndicator={false}>
                         <View style={styles.categoriesContainer} key="cateogry-container">
                             {categories
                                 .sort((a, b) => b.tasks.length - a.tasks.length)
+                                .filter((category) => category.name !== "!-proxy-!")
                                 .map((category) => {
-                                    if (category.name === "!-proxy-!") {
-                                        if (categories.length === 1) {
-                                            return (
-                                                <View key={category.id + category.name}>
-                                                    <ThemedText>You have no workspaces!</ThemedText>
-                                                </View>
-                                            );
-                                        }
-                                    } else
-                                        return (
-                                            <Category
-                                                key={category.id + category.name}
-                                                id={category.id}
-                                                name={category.name}
-                                                tasks={category.tasks}
-                                                onLongPress={(categoryId) => {
-                                                    setEditing(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                                onPress={(categoryId) => {
-                                                    setCreating(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                            />
-                                        );
+                                    return (
+                                        <Category
+                                            key={category.id + category.name}
+                                            id={category.id}
+                                            name={category.name}
+                                            tasks={category.tasks}
+                                            onLongPress={(categoryId) => {
+                                                setEditing(true);
+                                                setFocusedCategory(categoryId);
+                                            }}
+                                            onPress={(categoryId) => {
+                                                setCreating(true);
+                                                setFocusedCategory(categoryId);
+                                            }}
+                                        />
+                                    );
                                 })}
                             <TouchableOpacity
                                 onPress={() => setCreating(true)}

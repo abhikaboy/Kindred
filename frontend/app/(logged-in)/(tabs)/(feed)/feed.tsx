@@ -15,15 +15,16 @@ export default function Feed() {
     return (
         <ThemedView style={styles.container}>
             <ScrollView style={{ flex: 1 }}>
-                <View style={styles.headerContainer}>
-                    <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
-                    <TouchableOpacity
-                        onPress={() => {
-                            router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                        }}>
-                        <Ionicons name="heart-outline" size={28} color={ThemedColor.text} />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                        router.push("/(logged-in)/(tabs)/(feed)/Notifications");
+                    }}>
+                    <View style={styles.headerContainer}>
+                        <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
+                        <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                    </View>
+                </TouchableOpacity>
                 <PostCard
                     icon={Icons.luffy}
                     name={"Abhik Ray"}
@@ -135,13 +136,13 @@ const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: Dimensions.get("window").height * 0.08,
+            paddingTop: Dimensions.get("window").height * 0.09,
         },
         headerContainer: {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
             paddingHorizontal: HORIZONTAL_PADDING,
-            paddingBottom: 16,
+            paddingBottom: 8,
         },
     });
