@@ -1,8 +1,8 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import FollowButton from "@/components/inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import PrimaryButton from "../inputs/PrimaryButton";
 
 interface ProfileStatsProps {
     friendsCount: number;
@@ -13,7 +13,7 @@ export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
     return (
         <View style={styles.statsContainer}>
             <View style={{ width: "50%" }}>
-                <FollowButton connectionType="none" />
+                <PrimaryButton title="Edit Profile" onPress={() => {}} />
             </View>
             <View
                 style={{

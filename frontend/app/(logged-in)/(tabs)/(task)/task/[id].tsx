@@ -179,7 +179,7 @@ export default function Task() {
                 paddingHorizontal: HORIZONTAL_PADDING,
                 gap: 16,
             }}>
-            <ThemedText type="heading">
+            <ThemedText type="title">
                 {name}
                 {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
             </ThemedText>

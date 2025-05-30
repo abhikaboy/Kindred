@@ -93,7 +93,10 @@ const TaskCard = ({ content, value, priority, redirect = false, id, categoryId, 
 
     return (
         <TouchableOpacity
-            style={[styles.container, { backgroundColor: ThemedColor.lightened }]}
+            style={[
+                styles.container,
+                { backgroundColor: ThemedColor.lightened, borderWidth: 1, borderColor: ThemedColor.tertiary },
+            ]}
             disabled={!redirect && !encourage}
             onPress={handlePress}
             onLongPress={handleLongPress}>

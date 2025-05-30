@@ -30,7 +30,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline }:
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,
-                    // fontSize: 20,
+                    fontSize: 15,
                 }}>
                 {title}
             </Text>

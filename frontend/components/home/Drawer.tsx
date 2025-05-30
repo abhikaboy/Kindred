@@ -121,7 +121,7 @@ export const Drawer = ({ close }) => {
 
             <EditWorkspace editing={editing} setEditing={setEditing} id={focusedWorkspace} />
 
-            <View style={{ paddingTop: 16, paddingBottom: 16 }}>
+            <View style={{ paddingTop: 16, paddingBottom: 16, paddingHorizontal: HORIZONTAL_PADDING }}>
                 <TouchableOpacity
                     onPress={() => {
                         setSelected("");
@@ -130,8 +130,24 @@ export const Drawer = ({ close }) => {
                     <ThemedText type="title">Workspaces</ThemedText>
                 </TouchableOpacity>
             </View>
+            <TouchableOpacity
+                style={{
+                    paddingTop: 4,
+                    width: "100%",
+                    paddingBottom: 16,
+                    marginBottom: Dimensions.get("screen").height * 0.01,
+                    paddingHorizontal: HORIZONTAL_PADDING,
+                    borderTopWidth: 0,
+                    borderWidth: 2,
+                    borderColor: ThemedColor.tertiary,
+                }}
+                onPress={() => setCreating(true)}>
+                <ThemedText type="default">+ New Workspace</ThemedText>
+            </TouchableOpacity>
 
-            <ScrollView style={{ width: "100%" }}>
+            <ScrollView
+                style={{ width: "100%" }}
+                contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.2 }}>
                 {workspaces.map((workspace) => (
                     <TouchableOpacity
                         style={[
@@ -139,9 +155,9 @@ export const Drawer = ({ close }) => {
                                 paddingVertical: 12,
                                 flexDirection: "row",
                                 width: "100%",
-                                borderRadius: 16,
                                 display: "flex",
                                 alignItems: "center",
+                                paddingHorizontal: HORIZONTAL_PADDING,
                                 gap: 8,
                             },
                             selected == workspace.name ? { backgroundColor: ThemedColor.tertiary } : undefined,
@@ -164,11 +180,6 @@ export const Drawer = ({ close }) => {
                         </ThemedText>
                     </TouchableOpacity>
                 ))}
-                <TouchableOpacity
-                    style={{ paddingTop: 16, paddingBottom: Dimensions.get("screen").height * 0.2 }}
-                    onPress={() => setCreating(true)}>
-                    <ThemedText type="default">+ New Workspace</ThemedText>
-                </TouchableOpacity>
             </ScrollView>
         </View>
     );
@@ -182,7 +193,6 @@ const styles = (ThemedColor) =>
             flexDirection: "column",
             justifyContent: "flex-start",
             alignItems: "flex-start",
-            paddingHorizontal: HORIZONTAL_PADDING,
             paddingTop: 64,
             backgroundColor: ThemedColor.lightened,
             width: Dimensions.get("screen").width * 0.75,

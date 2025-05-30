@@ -10,6 +10,11 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
+import {
+    AppleAuthenticationButton,
+    AppleAuthenticationButtonStyle,
+    AppleAuthenticationButtonType,
+} from "expo-apple-authentication";
 
 type Props = {
     visible: boolean;
@@ -196,43 +201,36 @@ export const OnboardModal = (props: Props) => {
                             <ThemedText> or </ThemedText>
                             <View style={styles.divider} />
                         </View>
-                        <View
+                        <AppleAuthenticationButton
+                            onPress={() => {
+                                if (mode === "register") {
+                                    apple_regiser();
+                                } else {
+                                    apple_login();
+                                }
+                                setVisible(false);
+                            }}
+                            buttonType={AppleAuthenticationButtonType.SIGN_IN}
+                            buttonStyle={AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+                            cornerRadius={12}
                             style={{
-                                flexDirection: "row",
-                                gap: 12,
                                 width: "90%",
-                                justifyContent: "center",
-                            }}>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (mode === "register") {
-                                        apple_regiser();
-                                    } else {
-                                        apple_login();
-                                    }
-                                    setVisible(false);
-                                }}
-                                style={styles.outlineButton}>
-                                <View style={{ borderRadius: 12, width: "100%", overflow: "hidden" }}>
-                                    <BlurView
-                                        style={{ width: "100%", alignItems: "center", padding: 4 }}
-                                        intensity={25}
-                                        tint={ThemedColor.background}>
-                                        <AntDesign name="apple-o" size={32} color={ThemedColor.text} />
-                                    </BlurView>
-                                </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setVisible(false)} style={styles.outlineButton}>
-                                <View style={{ borderRadius: 12, width: "100%", overflow: "hidden" }}>
-                                    <BlurView
-                                        style={{ width: "100%", alignItems: "center", padding: 4 }}
-                                        intensity={25}
-                                        tint={ThemedColor.background}>
-                                        <AntDesign name="google" size={32} color={ThemedColor.text} />
-                                    </BlurView>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
+                                height: 48,
+                                alignItems: "center",
+                                padding: 4,
+                            }}
+                        />
+                        <PrimaryButton
+                            title="Continue with Google"
+                            onPress={() => setVisible(false)}
+                            ghost
+                            style={{
+                                backgroundColor: "#854DFF00",
+                                borderRadius: 12,
+                                borderColor: ThemedColor.text,
+                                width: "90%",
+                            }}
+                        />
                     </View>
                 </BlurView>
             </BottomSheetView>
@@ -253,8 +251,8 @@ const useStyles = (ThemedColor: any) =>
             width: "38%",
             borderStyle: "solid",
             borderColor: ThemedColor.text,
-            borderWidth: 1,
-            height: 2,
+            borderWidth: 0.5,
+            height: 1,
         },
         outlineButton: {
             width: "50%",

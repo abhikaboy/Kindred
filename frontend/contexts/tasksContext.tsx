@@ -62,6 +62,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const fetchWorkspaces = async () => {
         console.log("fetching workspaces via API");
+        if (!user) return;
         const data = await fetchUserWorkspaces(user._id);
         setWorkSpaces(data);
     };

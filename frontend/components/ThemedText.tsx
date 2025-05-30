@@ -28,12 +28,15 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
     const base = 393;
     const scale = Dimensions.get("screen").width / base;
     const styles = useStyles(ThemedColor, scale);
+
+    let useStyledHeader = true;
+
     return (
         <Text
             style={[
                 { color },
                 type === "default" ? styles.default : undefined,
-                type === "title" ? styles.title : undefined,
+                type === "title" ? (useStyledHeader ? styles.titleFraunces : styles.title) : undefined,
                 type === "titleFraunces" ? styles.titleFraunces : undefined,
                 type === "heading" ? styles.heading : undefined,
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
@@ -97,6 +100,7 @@ const useStyles = (ThemedColor: any, scale: number) =>
             fontWeight: 600,
             fontFamily: "Fraunces",
             letterSpacing: -2,
+            // lineHeight: 36 * scale,
         },
         subtitle: {
             fontSize: 20 * scale,

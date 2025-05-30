@@ -45,6 +45,7 @@ const Home = (props: Props) => {
 
     useEffect(() => {
         if (!user || !workspaces) return;
+        if (user._id === "") return;
         const loadWorkspaces = async () => {
             const { error } = await safeAsync(async () => {
                 await fetchWorkspaces();
@@ -253,7 +254,6 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
-        gap: 8,
     },
     title: {
         fontWeight: "600",

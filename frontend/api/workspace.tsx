@@ -39,11 +39,13 @@ export const createWorkspace = async (name: string): Promise<Categories> => {
 export const fetchUserWorkspaces = async (userId: string): Promise<Workspace[]> => {
     try {
         const { request } = useRequest();
-        return await request("GET", `/user/Categories/${userId}`);
+        const result = await request("GET", `/user/Categories/${userId}`);
+        console.log("result", result);
+        return result;
     } catch (error) {
         // Log the error for debugging
-        console.error("Failed to fetch workspaces:", error);
-        showToast("Failed to fetch workspaces. Please try again later.", "danger");
+        console.error("Failed to fetch workspaces:", error.message);
+        showToast("Failed to fetch workspaces. Please try again later. " + userId, "danger");
         // Re-throw with a more user-friendly message
         throw new Error("Failed to fetch workspaces. Please try again later.");
     }

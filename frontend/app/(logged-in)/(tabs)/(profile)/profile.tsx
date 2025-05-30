@@ -18,6 +18,7 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
+import ProfileEdit from "@/components/profile/ProfileEdit";
 
 export default function Profile() {
     const { user } = useAuth();
@@ -53,7 +54,7 @@ export default function Profile() {
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>
-                    <ProfileStats friendsCount={user?.friends.length || 0} />
+                    <ProfileEdit friendsCount={user?.friends.length || 0} />
                 </View>
 
                 <TodayStats tasks={2} points={12} streak={242} posts={4} />

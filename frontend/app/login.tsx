@@ -133,7 +133,7 @@ const login = (props: Props) => {
                         bottom: 64,
                     }}>
                     <OnboardModal visible={visible} setVisible={setVisible} mode={mode} />
-                    <PrimaryButton title="Get Started" onPress={() => setVisible(true)} />
+                    <PrimaryButton title="Join Kindred" onPress={() => setVisible(true)} />
                     <ThemedText style={{ textAlign: "center", alignItems: "flex-end" }}>
                         Already have an account?{" "}
                         <TouchableOpacity
