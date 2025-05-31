@@ -6,10 +6,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) HandleReminder(c *fiber.Ctx) error {
+func (h *Handler) HandleReminder() (fiber.Map, error) {
 	tasks, err := h.service.GetTasksWithPastReminders()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return fiber.Map{
+			"error": err.Error(),
+		}, err
 	}
 	// Send the reminders to the user
 	successful_updates := make([]TaskID, 0)
@@ -39,11 +41,11 @@ func (h *Handler) HandleReminder(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.JSON(fiber.Map{
+	return fiber.Map{
 		"tasks": tasks,
 		"successful_updates": successful_updates,
 		"failed_updates": failed_updates,
-	})
+	}, nil	
 }
 
 func (h *Handler) AddReminderToTask(c *fiber.Ctx) error {

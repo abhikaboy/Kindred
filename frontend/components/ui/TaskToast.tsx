@@ -90,7 +90,7 @@ export default function TaskToast(props: ToastableBodyParams) {
             <Reanimated.View style={[animatedStyle]}>
                 <Animated.View
                     style={{
-                        backgroundColor: ThemedColor.tertiary,
+                        backgroundColor: ThemedColor.lightened,
                         borderRadius: 12,
                         boxShadow: `0px 4px 16px 0px #00000050`,
                         flexDirection: "column",

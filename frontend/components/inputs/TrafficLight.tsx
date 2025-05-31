@@ -2,21 +2,23 @@ import { StyleSheet, Text, View, Switch, Dimensions, TouchableOpacity } from "re
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
-type Props = {};
+type Props = {
+    setValue: (value: number) => void;
+    value: number;
+};
 type Entry = {
     color: string;
     label: string;
 };
-const TrafficLight = (props: Props) => {
-    const [value, setValue] = React.useState(0);
+const TrafficLight = ({ setValue, value }: Props) => {
     let ThemedColor = useThemeColor();
 
     return (
         <View
             style={{
                 display: "flex",
-                flexDirection: "row",
-                gap: 16,
+                flexDirection: "column",
+                gap: 8,
             }}>
             {[
                 { color: ThemedColor.success, label: "Low" },
@@ -26,12 +28,12 @@ const TrafficLight = (props: Props) => {
                 return (
                     <TouchableOpacity
                         key={index}
-                        style={{ alignItems: "center", flexDirection: "row", gap: 8 }}
+                        style={{ alignItems: "center", flexDirection: "row-reverse", gap: 8 }}
                         onPress={() => {
-                            setValue(index);
+                            setValue(index + 1);
                         }}>
                         <View style={{ ...styles.buttonBase, backgroundColor: entry.color }}>
-                            {value === index && (
+                            {value - 1 === index && (
                                 <View
                                     style={{
                                         ...styles.selected,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -13,8 +14,9 @@ Router maps endpoints to handlers
 */
 func Cron(collections map[string]*mongo.Collection) {
 	service := newService(collections)
+	handler := Handler{service}
 
-	// Get all tasks with start times older than one da	y
+	/* Recurring Tasks */
 
 	c := cron.New()
 	id, err := c.AddFunc("@every 1m", func() {
@@ -45,6 +47,18 @@ func Cron(collections map[string]*mongo.Collection) {
 				fmt.Println(newTask)
 			}
 		}
+
+		/* Reminders */
+
+		reminder_result, err := handler.HandleReminder()
+		if err != nil {
+			slog.Error("Error handling reminder", "error", fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		fmt.Println(reminder_result)
+
 		slog.Info("Cron job finished")
 	})
 	if err != nil {

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, TextInput } from "react-native";
 import React, { forwardRef } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 type Props = {
     onSubmit?: () => void;
     onChangeText?: (text: string) => void;
@@ -13,7 +14,10 @@ type Props = {
     onBlur?: () => void;
 };
 
-const ThemedInput = forwardRef(function ThemedInput(props: Props, ref: React.Ref<TextInput>) {
+const ThemedInput = forwardRef(function ThemedInput(
+    props: Props,
+    ref: React.Ref<React.ElementRef<typeof BottomSheetTextInput>>
+) {
     let ThemedColor = useThemeColor();
 
     return (

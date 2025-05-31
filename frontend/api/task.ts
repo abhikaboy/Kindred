@@ -1,6 +1,24 @@
 import { Task, Categories, Workspace, CompleteTaskBody } from "./types";
 import { useRequest } from "@/hooks/useRequest";
 
+// Backend CreateTaskParams equivalent
+type CreateTaskParams = {
+    priority: number; // 1-3
+    content: string;
+    value: number; // 0-10
+    recurring: boolean;
+    recurFrequency?: string;
+    recurDetails?: RecurDetails;
+    public: boolean;
+    active: boolean;
+    deadline?: string;
+    startTime?: string;
+    startDate?: string;
+    notes?: string;
+    checklist?: ChecklistItem[];
+    reminders?: Reminder[];
+};
+
 /**
  * Adds a task to a specific category
  * API: Makes POST request to add a task to a category
@@ -8,7 +26,7 @@ import { useRequest } from "@/hooks/useRequest";
  * @param categoryId - The ID of the category to add the task to
  * @param task - The task to add
  */
-export const addToCategory = async (categoryId: string, task: Task): Promise<void> => {
+export const addToCategory = async (categoryId: string, task: CreateTaskParams): Promise<void> => {
     const { request } = useRequest();
     return await request("POST", `/user/categories/${categoryId}/tasks`, task);
 };

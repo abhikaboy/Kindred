@@ -8,9 +8,10 @@ type Props = {
     ghost?: boolean;
     outline?: boolean;
     disabled?: boolean;
+    children?: React.ReactNode;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline, disabled }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, disabled, children }: Props) {
     let ThemedColor = useThemeColor();
 
     return (
@@ -33,6 +34,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
                 },
                 style,
             ]}>
+            {children}
             <Text
                 style={{
                     color: ghost || outline ? ThemedColor.primary : ThemedColor.buttonText,
