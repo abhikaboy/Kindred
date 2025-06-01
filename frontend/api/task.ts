@@ -2,7 +2,7 @@ import { Task, Categories, Workspace, CompleteTaskBody } from "./types";
 import { useRequest } from "@/hooks/useRequest";
 
 // Backend CreateTaskParams equivalent
-type CreateTaskParams = {
+export type CreateTaskParams = {
     priority: number; // 1-3
     content: string;
     value: number; // 0-10

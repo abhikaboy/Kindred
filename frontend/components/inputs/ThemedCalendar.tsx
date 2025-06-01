@@ -7,7 +7,7 @@ type Props = {
     dateReciever: (date: any) => void;
 };
 
-const ThemedCalendar = (props: Props) => {
+const ThemedCalendar = ({ dateReciever }: Props) => {
     const [selectedDates, setSelectedDates] = useState<any>([]);
     let ThemedColor = useThemeColor();
 
@@ -15,14 +15,14 @@ const ThemedCalendar = (props: Props) => {
         console.log("selected day", day.dateString);
         if (selectedDates.includes(day.dateString)) {
             setSelectedDates(selectedDates.filter((date) => date !== day.dateString));
+            console.log("dateReciever", null);
+            dateReciever(null);
             return;
         }
-        if (selectedDates.length == 1) {
-            setSelectedDates([day.dateString]);
-            return;
-        }
-        setSelectedDates([...selectedDates, day.dateString]);
-        props.dateReciever(day.dateString);
+        setSelectedDates([day.dateString]);
+        dateReciever(new Date(day.dateString));
+        return;
+        // setSelectedDates([...selectedDates, day.dateString]);
     };
 
     useEffect(() => {

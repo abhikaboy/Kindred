@@ -22,8 +22,8 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import Popover from "react-native-popover-view";
-import { CreateTaskParams } from "@/api/task";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import { CreateTaskParams } from "@/api/task";
 type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
@@ -54,6 +54,7 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
         isPublic,
         setIsPublic,
         setValue,
+        resetTaskCreation,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const createPost = async () => {
@@ -67,19 +68,20 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
             active: false,
             checklist: [],
             notes: "", // TODO: Add notes
-            startDate: startDate,
-            startTime: startTime,
-            deadline: deadline,
+            startDate: startDate?.toISOString(),
+            startTime: startTime?.toISOString(),
+            deadline: deadline?.toISOString(),
             reminders: reminders,
         };
         if (recurring) {
             postBody.recurFrequency = recurFrequency;
-            postBody.recurDetails = recurDetails;
+            postBody.recurDetails = recurDetails as RecurDetails;
         }
         console.log(postBody);
         const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody);
 
         addToCategory(selectedCategory.id, response);
+        resetTaskCreation();
     };
 
     if (categories) {
@@ -207,7 +209,7 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
                         type="defaultSemiBold"
                         style={{
                             padding: 12,
-                            textAlign: "right",
+                            textAlign: "left",
                             fontWeight: 500,
                             fontSize: 20,
                         }}>
@@ -241,9 +243,24 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
             </TouchableOpacity>
             <ConditionalView condition={true}>
                 <View style={{ gap: 12, marginTop: 4 }}>
-                    <AdvancedOption icon="calendar" label="Set Start Date" screen={Screen.STARTDATE} goTo={goTo} />
-                    <AdvancedOption icon="time" label="Set Start Time" screen={Screen.STARTTIME} goTo={goTo} />
-                    <AdvancedOption icon="calendar" label="Set Deadline" screen={Screen.DEADLINE} goTo={goTo} />
+                    <AdvancedOption
+                        icon="calendar"
+                        label={startDate ? "Start Date: " + new Date(startDate).toLocaleDateString() : "Set Start Date"}
+                        screen={Screen.STARTDATE}
+                        goTo={goTo}
+                    />
+                    <AdvancedOption
+                        icon="time"
+                        label={startTime ? "Start Time: " + new Date(startTime).toLocaleTimeString() : "Set Start Time"}
+                        screen={Screen.STARTTIME}
+                        goTo={goTo}
+                    />
+                    <AdvancedOption
+                        icon="calendar"
+                        label={deadline ? "Deadline: " + new Date(deadline).toLocaleString() : "Set Deadline"}
+                        screen={Screen.DEADLINE}
+                        goTo={goTo}
+                    />
                     <AdvancedOption icon="repeat" label="Make Recurring" screen={Screen.RECURRING} goTo={goTo} />
                     <AdvancedOption icon="alarm" label="Add Reminder" screen={Screen.REMINDER} goTo={goTo} />
                     <AdvancedOption icon="people" label="Add Collaborators" screen={Screen.COLLABORATORS} goTo={goTo} />

@@ -53,7 +53,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [recurFrequency, setRecurFrequency] = useState("");
     const [recurDetails, setRecurDetails] = useState({
         every: 1,
-        daysOfWeek: [],
+        daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
         behavior: "ROLLING",
     });
     const [deadline, setDeadline] = useState<Date | null>(null);
@@ -61,6 +61,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [isPublic, setIsPublic] = useState(false);
+
     const setTaskName = (name: string) => {
         setTaskNameState(name);
         // check if the name has the word "at {number}" or "by {number}" or a date
@@ -78,6 +79,21 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
 
     const resetTaskCreation = () => {
         setTaskName("");
+        setSuggestion("");
+        setPriority(1);
+        setValue(3);
+        setRecurring(false);
+        setRecurFrequency("");
+        setRecurDetails({
+            every: 1,
+            daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+            behavior: "ROLLING",
+        });
+        setDeadline(null);
+        setStartTime(null);
+        setStartDate(null);
+        setReminders([]);
+        setIsPublic(false);
         setShowAdvanced(false);
     };
 

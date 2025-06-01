@@ -28,7 +28,7 @@ const TrafficLight = ({ setValue, value }: Props) => {
                 return (
                     <TouchableOpacity
                         key={index}
-                        style={{ alignItems: "center", flexDirection: "row-reverse", gap: 8 }}
+                        style={{ alignItems: "center", flexDirection: "row", gap: 8 }}
                         onPress={() => {
                             setValue(index + 1);
                         }}>
