@@ -23,6 +23,7 @@ type Props = {
 
 const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskId, autoSave = false }: Props) => {
     const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(initialChecklist);
+    const [newItemContent, setNewItemContent] = useState<string>(""); // Add state for bottom input
     const ThemedColor = useThemeColor();
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -115,6 +116,43 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
         }
     };
 
+    const addChecklistItemFromInput = () => {
+        if (newItemContent.trim() === "") return; // Don't add empty items
+
+        const newItem = {
+            content: newItemContent.trim(),
+            completed: false,
+            order: checklistItems.length,
+        };
+
+        setChecklistItems([...checklistItems, newItem]);
+        setNewItemContent(""); // Clear the input
+    };
+
+    const addChecklistItemAndCreateNew = () => {
+        if (newItemContent.trim() === "") return; // Don't add empty items
+
+        const newItem = {
+            content: newItemContent.trim(),
+            completed: false,
+            order: checklistItems.length,
+        };
+
+        const emptyItem = {
+            content: "",
+            completed: false,
+            order: checklistItems.length + 1,
+        };
+
+        setChecklistItems([...checklistItems, newItem, emptyItem]);
+        setNewItemContent(""); // Clear the input
+
+        // Focus the newly created empty item
+        setTimeout(() => {
+            inputRefs.current[checklistItems.length + 1]?.focus();
+        }, 100);
+    };
+
     return (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
             <View style={{ gap: 8 }}>
@@ -144,20 +182,25 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
                         </View>
                     ))}
                 </ConditionalView>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <ChecklistToggle />
-                    <TextInput
-                        placeholder="Add a checklist item"
-                        style={{
-                            flex: 1,
-                            paddingVertical: 8,
-                            fontSize: 16,
-                            color: ThemedColor.body,
-                            fontFamily: "OutfitLight",
-                        }}
-                        onSubmitEditing={() => addEmptyChecklistItem(checklistItems.length)}
-                    />
-                </View>
+
+                <ConditionalView condition={checklistItems.length === 0}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <ChecklistToggle checked={false} onToggle={() => {}} />
+                        <TextInput
+                            value={newItemContent}
+                            onChangeText={setNewItemContent}
+                            onSubmitEditing={addChecklistItemAndCreateNew}
+                            style={{
+                                flex: 1,
+                                paddingVertical: 8,
+                                fontSize: 16,
+                                color: ThemedColor.body,
+                                fontFamily: "OutfitLight",
+                            }}
+                            placeholder="Enter checklist item"
+                        />
+                    </View>
+                </ConditionalView>
             </View>
         </KeyboardAvoidingView>
     );
