@@ -15,6 +15,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useDebounce } from "@/hooks/useDebounce";
+import { updateNotesAPI } from "@/api/task";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -22,7 +24,7 @@ export const unstable_settings = {
 
 export default function Task() {
     const [activeTab, setActiveTab] = useState(0);
-    const { name, id } = useLocalSearchParams();
+    const { name, id, categoryId } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
     const { task } = useTasks();
     const [isRunning, setIsRunning] = useState(false);
@@ -173,6 +175,10 @@ export default function Task() {
         }
     };
 
+    const updateNotes = useDebounce(async (notes: string) => {
+        await updateNotesAPI(categoryId as string, id as string, notes);
+    }, 2000);
+
     return (
         <ThemedView
             style={{
@@ -194,7 +200,7 @@ export default function Task() {
                         <TextInput
                             value={task?.notes}
                             onChangeText={(text) => {
-                                // setTask({ ...task, notes: text });
+                                updateNotes(text);
                             }}
                             placeholder="Tap to add notes"
                             style={{

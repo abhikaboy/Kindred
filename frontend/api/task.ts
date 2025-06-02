@@ -66,3 +66,16 @@ export const activateTaskAPI = async (categoryId: string, taskId: string): Promi
     const { request } = useRequest();
     return request("POST", `/user/tasks/active/${categoryId}/${taskId}`);
 };
+
+/**
+ * Updates the Notes for a task
+ * API: Makes PUT request to update the notes for a task
+ * Frontend: Updates task state in TaskContext by updating the notes for the task
+ * @param categoryId - The ID of the category to update the notes for
+ * @param taskId - The ID of the task to update the notes for
+ * @param notes - The new notes for the task
+ */
+export const updateNotesAPI = async (categoryId: string, taskId: string, notes: string): Promise<void> => {
+    const { request } = useRequest();
+    return request("POST", `/user/tasks/${categoryId}/${taskId}/notes`, { notes: notes });
+};
