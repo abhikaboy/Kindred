@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { formatLocalDate } from "@/utils/timeUtils";
 
 type Props = {
     goToStandard: () => void;
@@ -22,7 +23,7 @@ const StartDate = ({ goToStandard }: Props) => {
                     <Feather name="arrow-left" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={{ textAlign: "center" }}>
-                    Set Start Date {startDate ? new Date(startDate).toLocaleDateString() : "No Date Selected"}
+                    Set Start Date {startDate ? formatLocalDate(startDate) : "No Date Selected"}
                 </ThemedText>
             </View>
             <ThemedCalendar dateReciever={setStartDate} />

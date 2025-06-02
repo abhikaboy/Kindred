@@ -24,6 +24,8 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { CreateTaskParams } from "@/api/task";
+import { formatLocalDate, formatLocalTime, formatLocalDateTime } from "@/utils/timeUtils";
+
 type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
@@ -245,19 +247,19 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
                 <View style={{ gap: 12, marginTop: 4 }}>
                     <AdvancedOption
                         icon="calendar"
-                        label={startDate ? "Start Date: " + new Date(startDate).toLocaleDateString() : "Set Start Date"}
+                        label={startDate ? "Start Date: " + formatLocalDate(startDate) : "Set Start Date"}
                         screen={Screen.STARTDATE}
                         goTo={goTo}
                     />
                     <AdvancedOption
                         icon="time"
-                        label={startTime ? "Start Time: " + new Date(startTime).toLocaleTimeString() : "Set Start Time"}
+                        label={startTime ? "Start Time: " + formatLocalTime(startTime) : "Set Start Time"}
                         screen={Screen.STARTTIME}
                         goTo={goTo}
                     />
                     <AdvancedOption
-                        icon="calendar"
-                        label={deadline ? "Deadline: " + new Date(deadline).toLocaleString() : "Set Deadline"}
+                        icon="flag"
+                        label={deadline ? "Deadline: " + formatLocalDateTime(deadline) : "Set Deadline"}
                         screen={Screen.DEADLINE}
                         goTo={goTo}
                     />

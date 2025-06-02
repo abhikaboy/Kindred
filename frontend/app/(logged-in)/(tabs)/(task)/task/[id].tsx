@@ -1,4 +1,14 @@
-import { Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    KeyboardAvoidingView,
+    Platform,
+} from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,14 +19,15 @@ import DataCard from "@/components/task/DataCard";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useTasks } from "@/contexts/tasksContext";
 import ConditionalView from "@/components/ui/ConditionalView";
-import ChecklistToggle from "@/components/inputs/ChecklistToggle";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updateNotesAPI } from "@/api/task";
+import { updateNotesAPI, updateChecklistAPI } from "@/api/task";
+import Checklist from "@/components/task/Checklist";
+import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -30,7 +41,6 @@ export default function Task() {
     const [isRunning, setIsRunning] = useState(false);
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
-    const [checklistItem, setChecklistItem] = useState([]);
 
     // Add a ref to track mounted state
     const isMounted = useRef(true);
@@ -50,25 +60,6 @@ export default function Task() {
         const seconds = totalSeconds % 60;
 
         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    };
-
-    const addEmptyChecklistItem = () => {
-        setChecklistItem([
-            ...checklistItem,
-            {
-                order: task?.checklist?.length,
-                content: "",
-                completed: false,
-            },
-        ]);
-    };
-
-    const modifyChecklistItem = (index: number, content: string) => {
-        setChecklistItem([
-            ...checklistItem.slice(0, index),
-            { ...checklistItem[index], content },
-            ...checklistItem.slice(index + 1),
-        ]);
     };
 
     const loadBaseTime = async (id) => {
@@ -104,10 +95,6 @@ export default function Task() {
     useEffect(() => {
         console.log(task);
     }, [task]);
-
-    useEffect(() => {
-        task.checklist = checklistItem;
-    }, [checklistItem]);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -195,101 +182,87 @@ export default function Task() {
             </View>
             <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={setActiveTab} />
             <ConditionalView condition={activeTab === 0}>
-                <ScrollView contentContainerStyle={{ gap: 20 }}>
-                    <DataCard title="Notes" key="notes">
-                        <TextInput
-                            value={task?.notes}
-                            onChangeText={(text) => {
-                                updateNotes(text);
-                            }}
-                            placeholder="Tap to add notes"
-                            style={{
-                                backgroundColor: ThemedColor.lightened,
-                                paddingVertical: 8,
-                                fontSize: 16,
-                                color: ThemedColor.body,
-                                fontFamily: "OutfitLight",
-                            }}
-                        />
-                    </DataCard>
-                    <DataCard title="Checklist" key="checklist">
-                        <ConditionalView condition={task?.checklist?.length > 0}>
-                            {checklistItem.map((item, index) => (
-                                <View key={item.id} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                                    <ChecklistToggle />
-                                    <TextInput
-                                        value={item.content}
-                                        onChangeText={(text) => {
-                                            modifyChecklistItem(index, text);
-                                        }}
-                                        style={{
-                                            paddingVertical: 8,
-                                            fontSize: 16,
-                                            color: ThemedColor.body,
-                                            fontFamily: "OutfitLight",
-                                        }}
-                                    />
-                                </View>
-                            ))}
-                        </ConditionalView>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            <ChecklistToggle />
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
+                    <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 50 }}>
+                        <DataCard title="Notes" key="notes">
                             <TextInput
-                                placeholder="Add a checklist item"
+                                value={task?.notes}
+                                onChangeText={(text) => {
+                                    updateNotes(text);
+                                }}
+                                placeholder="Tap to add notes"
                                 style={{
+                                    backgroundColor: ThemedColor.lightened,
                                     paddingVertical: 8,
                                     fontSize: 16,
                                     color: ThemedColor.body,
                                     fontFamily: "OutfitLight",
-                                    width: "100%",
-                                }}
-                                onSubmitEditing={() => {
-                                    console.log("checklistItem");
-                                    addEmptyChecklistItem();
                                 }}
                             />
-                        </View>
-                    </DataCard>
-                    <ConditionalView condition={task?.startDate != null} key="startDate">
-                        <DataCard title="Start Date">
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                }}>
-                                <ThemedText type="lightBody">
-                                    {new Date(task?.startDate).toLocaleDateString()}
-                                </ThemedText>
-                                <ThemedText type="lightBody">
-                                    {new Date(task?.startDate).toLocaleTimeString()}
-                                </ThemedText>
-                            </View>
                         </DataCard>
-                    </ConditionalView>
-                    <ConditionalView condition={task?.deadline != null} key="deadline">
-                        <DataCard title="Deadline">
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                }}>
-                                <ThemedText type="lightBody">
-                                    {new Date(task?.deadline).toLocaleTimeString()}
-                                </ThemedText>
-                                <ThemedText type="lightBody">
-                                    {new Date(task?.deadline).toLocaleDateString()}
-                                </ThemedText>
-                            </View>
+                        <DataCard title="Checklist" key="checklist">
+                            <Checklist
+                                initialChecklist={
+                                    task?.checklist?.map((item, index) => ({
+                                        id: item.id,
+                                        content: item.content,
+                                        completed: item.completed,
+                                        order: index, // Add order based on array index
+                                    })) || []
+                                }
+                                categoryId={categoryId as string}
+                                taskId={id as string}
+                                autoSave={true}
+                                onChecklistChange={(checklist) => {
+                                    // Update local task state for immediate UI feedback
+                                    if (task) {
+                                        task.checklist = checklist.map((item) => ({
+                                            id: item.id || "",
+                                            content: item.content,
+                                            completed: item.completed,
+                                        }));
+                                    }
+                                }}
+                            />
                         </DataCard>
-                    </ConditionalView>
-                    <ConditionalView condition={task?.recurring != null && task?.recurDetails != null} key="recurring">
-                        <DataCard title="Recurring">
-                            <View>
-                                <ThemedText type="lightBody">{JSON.stringify(task?.recurDetails)}</ThemedText>
-                            </View>
-                        </DataCard>
-                    </ConditionalView>
-                </ScrollView>
+                        <ConditionalView condition={task?.startDate != null} key="startDate">
+                            <DataCard title="Start Date">
+                                <View
+                                    style={{
+                                        flexDirection: "row",
+                                        justifyContent: "space-between",
+                                    }}>
+                                    <ThemedText type="lightBody">{formatLocalDate(task?.startDate)}</ThemedText>
+                                    <ThemedText type="lightBody">{formatLocalTime(task?.startDate)}</ThemedText>
+                                </View>
+                            </DataCard>
+                        </ConditionalView>
+                        <ConditionalView condition={task?.deadline != null} key="deadline">
+                            <DataCard title="Deadline">
+                                <View
+                                    style={{
+                                        flexDirection: "row",
+                                        justifyContent: "space-between",
+                                    }}>
+                                    <ThemedText type="lightBody">{formatLocalDate(task?.deadline)}</ThemedText>
+                                    <ThemedText type="lightBody">{formatLocalTime(task?.deadline)}</ThemedText>
+                                </View>
+                            </DataCard>
+                        </ConditionalView>
+                        <ConditionalView
+                            condition={task?.recurring != null && task?.recurDetails != null}
+                            key="recurring">
+                            <DataCard title="Recurring">
+                                <View>
+                                    <ThemedText type="lightBody">{JSON.stringify(task?.recurDetails)}</ThemedText>
+                                </View>
+                            </DataCard>
+                        </ConditionalView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </ConditionalView>
             <ConditionalView condition={activeTab === 1}>
                 <TouchableOpacity

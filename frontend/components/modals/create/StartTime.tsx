@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { formatLocalTime } from "@/utils/timeUtils";
 
 type Props = {
     goToStandard: () => void;
@@ -40,7 +41,7 @@ const StartTime = ({ goToStandard }: Props) => {
             />
             <PrimaryButton
                 onPress={goToStandard}
-                title={startTime ? "Set Start Time: " + new Date(startTime).toLocaleTimeString() : "Set Start Time"}
+                title={startTime ? "Set Start Time: " + formatLocalTime(startTime) : "Set Start Time"}
             />
         </View>
     );

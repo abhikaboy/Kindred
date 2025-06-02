@@ -8,6 +8,8 @@ import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
+
 type Props = {
     goToStandard: () => void;
 };
@@ -68,11 +70,8 @@ const Deadline = ({ goToStandard }: Props) => {
                 onPress={goToStandard}
                 title={
                     deadline
-                        ? "Set Deadline: " +
-                          new Date(deadline).toLocaleDateString() +
-                          " " +
-                          new Date(deadline).toLocaleTimeString()
-                        : "Set Deadline"
+                        ? "Set Deadline: " + formatLocalDate(deadline) + " at " + formatLocalTime(deadline)
+                        : "No deadline selected"
                 }
             />
         </View>
