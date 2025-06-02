@@ -79,3 +79,47 @@ export const updateNotesAPI = async (categoryId: string, taskId: string, notes: 
     const { request } = useRequest();
     return request("POST", `/user/tasks/${categoryId}/${taskId}/notes`, { notes: notes });
 };
+
+/**
+ * Updates the Checklist for a task
+ * API: Makes POST request to update the checklist for a task
+ * Frontend: Updates task state in TaskContext by updating the checklist for the task
+ * @param categoryId - The ID of the category to update the checklist for
+ * @param taskId - The ID of the task to update the checklist for
+ * @param checklist - The new checklist for the task
+ */
+export const updateChecklistAPI = async (
+    categoryId: string,
+    taskId: string,
+    checklist: ChecklistItem[]
+): Promise<void> => {
+    const { request } = useRequest();
+    return request("POST", `/user/tasks/${categoryId}/${taskId}/checklist`, { checklist: checklist });
+};
+
+/**
+ * Adds a reminder to a task
+ * API: Makes POST request to add a reminder to a task
+ * Frontend: Updates task state in TaskContext by adding the reminder to the task
+ * @param categoryId - The ID of the category to add the reminder to
+ * @param taskId - The ID of the task to add the reminder to
+ * @param reminder - The reminder to add to the task
+ */
+
+export const addReminderAPI = async (categoryId: string, taskId: string, reminder: Reminder): Promise<void> => {
+    const { request } = useRequest();
+    return request("POST", `/user/tasks/${categoryId}/${taskId}/reminders`, { reminder: reminder });
+};
+
+/**
+ * Deletes a reminder from a task
+ * API: Makes DELETE request to delete a reminder from a task
+ * Frontend: Updates task state in TaskContext by deleting the reminder from the task
+ * @param categoryId - The ID of the category to delete the reminder from
+ * @param taskId - The ID of the task to delete the reminder from
+ * @param triggerTime - The trigger time of the reminder to delete
+ */
+export const deleteReminderAPI = async (categoryId: string, taskId: string, triggerTime: string): Promise<void> => {
+    const { request } = useRequest();
+    return request("DELETE", `/user/tasks/${categoryId}/${taskId}/reminders`, { triggerTime: triggerTime });
+};
