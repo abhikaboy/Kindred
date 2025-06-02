@@ -776,6 +776,8 @@ func (s *Service) AddReminderToTask(taskID primitive.ObjectID, categoryID primit
 		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
 	}
 
+	// frontend would calculate trigger time based on the thingies
+
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{"_id": categoryID},

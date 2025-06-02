@@ -54,7 +54,7 @@ func setupApp() *fiber.App {
 		Level: compress.LevelBestSpeed,
 	}))
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusOK).SendString("Welcome to PlateMate!")
+		return c.Status(fiber.StatusOK).SendString("Welcome to Kindred!")
 	})
 	return app
 }

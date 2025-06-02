@@ -1,11 +1,13 @@
 import { View } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { TouchableOpacity } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { formatLocalTime } from "@/utils/timeUtils";
 
 type Props = {
     goToStandard: () => void;
@@ -13,7 +15,7 @@ type Props = {
 
 const StartTime = ({ goToStandard }: Props) => {
     const ThemedColor = useThemeColor();
-
+    const { startTime, setStartTime } = useTaskCreation();
     return (
         <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
@@ -26,16 +28,21 @@ const StartTime = ({ goToStandard }: Props) => {
             </View>
             <DateTimePicker
                 style={{ width: "100%", height: 100 }}
-                value={new Date()}
+                value={startTime || new Date()}
+                onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                        setStartTime(selectedDate);
+                    }
+                }}
                 testID="bruh"
                 mode="time"
                 is24Hour={true}
                 display="spinner"
-                onChange={(date) => {
-                    console.log(date);
-                }}
             />
-            <PrimaryButton onPress={goToStandard} title="Set Start Time" />
+            <PrimaryButton
+                onPress={goToStandard}
+                title={startTime ? "Set Start Time: " + formatLocalTime(startTime) : "Set Start Time"}
+            />
         </View>
     );
 };

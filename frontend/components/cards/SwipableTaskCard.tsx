@@ -147,7 +147,7 @@ function LeftAction(
         let percent = (drag.value - threshold * 3) / threshold;
         let opacity = 1 - percent;
         if (opacity <= 0) {
-            // markAsCompleted(categoryId, id);
+            markAsCompleted(categoryId, id);
         }
         return {
             transform: [{ translateX: drag.value - width }],

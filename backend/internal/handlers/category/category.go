@@ -136,12 +136,7 @@ func (h *Handler) DeleteCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	user_id, err := primitive.ObjectIDFromHex(c.Params("user"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format for UserId",
-		})
-	}
+	user_id := c.UserContext().Value("user_id").(primitive.ObjectID)
 
 	if err := h.service.DeleteCategory(user_id, id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err)

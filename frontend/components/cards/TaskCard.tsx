@@ -92,7 +92,7 @@ const TaskCard = ({
         if (!redirect) return;
         router.push({
             pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-            params: { name: content, id },
+            params: { name: content, id: id, categoryId: categoryId },
         });
         if (task) {
             setTask(task);

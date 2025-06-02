@@ -63,6 +63,7 @@ type Reminder struct {
 	Type        string    `bson:"type" json:"type"`
 	Sent        bool      `bson:"sent" json:"sent"`
 	AfterStart  bool      `bson:"afterStart" json:"afterStart"`
+	BeforeStart bool      `bson:"beforeStart" json:"beforeStart"`
 	BeforeDeadline bool      `bson:"beforeDeadline" json:"beforeDeadline"`
 }
 	

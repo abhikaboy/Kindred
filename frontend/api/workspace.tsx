@@ -43,7 +43,7 @@ export const fetchUserWorkspaces = async (userId: string): Promise<Workspace[]> 
         console.log("result", result);
         return result;
     } catch (error) {
-        // Log the error for debugging
+        // Log the error for debugiging
         console.error("Failed to fetch workspaces:", error.message);
         showToast("Failed to fetch workspaces. Please try again later. " + userId, "danger");
         // Re-throw with a more user-friendly message
