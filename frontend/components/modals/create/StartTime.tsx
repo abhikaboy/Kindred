@@ -8,6 +8,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { formatLocalTime } from "@/utils/timeUtils";
+import SuggestedTag from "@/components/inputs/SuggestedTag";
 
 type Props = {
     goToStandard: () => void;
@@ -25,6 +26,36 @@ const StartTime = ({ goToStandard }: Props) => {
                 <ThemedText type="defaultSemiBold" style={{ textAlign: "center" }}>
                     Set Start Time
                 </ThemedText>
+            </View>
+            <View style={{ display: "flex", flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
+                <SuggestedTag
+                    tag="Now"
+                    onPress={() => {
+                        setStartTime(new Date());
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="In 15 Minutes"
+                    onPress={() => {
+                        setStartTime(new Date(Date.now() + 15 * 60 * 1000));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="In 1 Hour"
+                    onPress={() => {
+                        setStartTime(new Date(Date.now() + 30 * 60 * 1000));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="Noon"
+                    onPress={() => {
+                        setStartTime(new Date(new Date().setHours(12, 0, 0, 0)));
+                        goToStandard();
+                    }}
+                />
             </View>
             <DateTimePicker
                 style={{ width: "100%", height: 100 }}
