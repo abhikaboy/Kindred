@@ -78,18 +78,6 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task }:
             duration: 5500,
             renderContent: (props) => <TaskToast message={props.message} />,
         });
-        showToastable({
-            title: "Task completed!",
-            status: "success",
-            position: "top",
-            swipeDirection: "left",
-            message: "You have earned 10 points!",
-            onPress: () => {
-                console.log("pressed");
-            },
-            duration: 5500,
-            renderContent: (props) => <TaskToast message={props.message} onToastableHide={() => hideToastable()} />,
-        });
         setTimeout(() => {
             setShowConfetti(false);
         }, 1700);

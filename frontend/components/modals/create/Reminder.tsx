@@ -11,7 +11,8 @@ import { useTaskCreation } from "@/contexts/taskCreationContext";
 import Dropdown from "@/components/inputs/Dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
-import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
+import { combineDateAndTime, copyTime } from "@/utils/timeUtils";
+import { add, Duration, sub } from "date-fns";
 
 type Props = {
     goToStandard: () => void;
@@ -138,18 +139,25 @@ const RelativeReminderOptions = ({
     );
 };
 
-const AbsoluteReminderOptions = ({ ThemedColor }: { ThemedColor: any }) => {
-    const [date, setDate] = React.useState<Date | null>(null);
-    const [time, setTime] = React.useState<Date | null>(null);
-
+const AbsoluteReminderOptions = ({
+    setTime,
+    setDate,
+    date,
+    time,
+}: {
+    setTime: (val: Date) => void;
+    setDate: (val: Date) => void;
+    date: Date | null;
+    time: Date | null;
+}) => {
     // Combine date and time for display
     let summary = "No date/time selected";
     if (date && time) {
-        summary = `${formatLocalDate(date)} at ${formatLocalTime(time)}`;
+        summary = `${date.toLocaleDateString()} at ${time.toLocaleTimeString()}`;
     } else if (date) {
-        summary = formatLocalDate(date);
+        summary = date.toLocaleDateString();
     } else if (time) {
-        summary = formatLocalTime(time);
+        summary = time.toLocaleTimeString();
     }
 
     return (
@@ -186,7 +194,7 @@ const Reminder = ({ goToStandard }: Props) => {
     const [type, setType] = React.useState<{ label: string; id: string } | null>(null);
     const [reminderType, setReminderType] = React.useState<"relative" | "absolute">("relative");
     const [time, setTime] = React.useState<Date | null>(null);
-
+    const [date, setDate] = React.useState<Date | null>(null);
     // Max values for each unit
     const unitMax: Record<string, number> = {
         minutes: 59,
@@ -273,13 +281,24 @@ const Reminder = ({ goToStandard }: Props) => {
                         deadline={deadline}
                     />
                 )}
-                {reminderType === "absolute" && <AbsoluteReminderOptions ThemedColor={ThemedColor} />}
+                {reminderType === "absolute" && (
+                    <AbsoluteReminderOptions setTime={setTime} setDate={setDate} date={date} time={time} />
+                )}
             </ScrollView>
             <View style={{ display: "flex", flexDirection: "row", gap: 8 }}>
                 <PrimaryButton
                     title="Add Reminder"
                     onPress={() => {
-                        let reminder = ProduceReminder(reminderType, number, unit, type, time || new Date());
+                        let reminder = ProduceReminder(
+                            reminderType,
+                            number,
+                            unit,
+                            type,
+                            time || new Date(),
+                            startDate,
+                            startTime,
+                            deadline
+                        );
                         if (reminder) {
                             console.log(reminder);
                             goToStandard();
@@ -298,29 +317,31 @@ const ProduceReminder = (
     number: number,
     unit: "minutes" | "hours" | "days",
     type: { label: string; id: string } | null,
-    time: Date
+    time: Date,
+    startDate: Date,
+    startTime: Date,
+    deadline: Date
 ): Reminder => {
-    const triggerTime = new Date();
+    let triggerTime = new Date();
 
     // For absolute reminders, use the provided time directly
     if (reminderType === "absolute") {
-        triggerTime.setFullYear(time.getFullYear());
-        triggerTime.setMonth(time.getMonth());
-        triggerTime.setDate(time.getDate());
-        triggerTime.setHours(time.getHours());
-        triggerTime.setMinutes(time.getMinutes());
-        triggerTime.setSeconds(0);
-        triggerTime.setMilliseconds(0);
+        triggerTime = new Date(time);
     } else {
-        // For relative reminders, calculate based on the reference time
-        if (type?.label.toLowerCase().includes("before")) {
-            number = -number;
+        if (type?.label.toLowerCase().includes("start")) {
+            triggerTime = combineDateAndTime(startDate, startTime || startDate);
+        } else if (type?.label.toLowerCase().includes("deadline")) {
+            triggerTime = new Date(deadline);
         }
 
-        // Convert the unit to minutes
-        const minutesToAdd = number * (unit === "minutes" ? 1 : unit === "hours" ? 60 : 1440); // days
-
-        triggerTime.setMinutes(triggerTime.getMinutes() + minutesToAdd);
+        const duration: Duration = { [unit]: number };
+        console.log(duration);
+        // For relative reminders, calculate based on the reference time
+        if (type?.label.toLowerCase().includes("before")) {
+            triggerTime = sub(triggerTime, duration);
+        } else {
+            triggerTime = add(triggerTime, duration);
+        }
     }
 
     // Determine the relative flags based on the type

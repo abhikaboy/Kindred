@@ -18,35 +18,54 @@ export interface RegisterRequest {
     password: string;
 }
 
+export interface Reminder {
+    triggerTime: string; // ISO string
+    type: string;
+    sent: boolean;
+    afterStart: boolean;
+    beforeStart: boolean;
+    beforeDeadline: boolean;
+    afterDeadline?: boolean;
+}
+
+export interface ChecklistItem {
+    content: string;
+    completed: boolean;
+    order: number;
+    id?: string; // for frontend use
+}
+
+export interface RecurDetails {
+    every: number;
+    daysOfWeek?: number[];
+    daysOfMonth?: number[];
+    months?: number[];
+    behavior: "BUILDUP" | "ROLLING";
+    reminders?: string[];
+}
+
 export interface Task {
     id: string;
+    priority: number;
     content: string;
     value: number;
-    priority: number;
     recurring: boolean;
     recurFrequency?: string;
     recurType?: string;
-    recurDetails?: {
-        every: number;
-        daysOfWeek?: number[];
-        daysOfMonth?: number[];
-        months?: number[];
-        behavior: "BUILDUP" | "ROLLING";
-    };
+    recurDetails?: RecurDetails;
     public: boolean;
     active: boolean;
     timestamp: string;
     lastEdited: string;
     templateID?: string;
+    userID?: string;
+    categoryID?: string;
     deadline?: string;
     startTime?: string;
     startDate?: string;
     notes?: string;
-    checklist?: {
-        id: string;
-        content: string;
-        completed: boolean;
-    }[];
+    checklist?: ChecklistItem[];
+    reminders?: Reminder[];
 }
 
 export interface Categories {

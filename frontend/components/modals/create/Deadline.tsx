@@ -25,15 +25,18 @@ const Deadline = ({ goToStandard }: Props) => {
 
     const combineDateAndTime = () => {
         if (date && time) {
-            setDeadline(new Date(date.toISOString().split("T")[0] + "T" + time.toISOString().split("T")[1]));
+            // Combine local date and time parts
+            const combined = new Date(date);
+            combined.setHours(time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds());
+            setDeadline(combined);
             return;
         }
         if (date) {
-            setDeadline(new Date(date.toISOString()));
+            setDeadline(new Date(date));
             return;
         }
         if (time) {
-            setDeadline(new Date(time.toISOString()));
+            setDeadline(new Date(time));
             return;
         }
         setDeadline(null);
@@ -55,7 +58,7 @@ const Deadline = ({ goToStandard }: Props) => {
             </View>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                 <ThemedText type="defaultSemiBold">Deadline:</ThemedText>
-                <ThemedText type="defaultSemiBold">{formatLocalDate(deadline)}</ThemedText>
+                <ThemedText type="defaultSemiBold">{deadline ? deadline.toLocaleDateString() : ""}</ThemedText>
             </View>
             <ScrollView
                 horizontal
@@ -117,7 +120,7 @@ const Deadline = ({ goToStandard }: Props) => {
                 onPress={goToStandard}
                 title={
                     deadline
-                        ? "Set Deadline: " + formatLocalDate(deadline) + " at " + formatLocalTime(deadline)
+                        ? "Set Deadline: " + deadline.toLocaleDateString() + " at " + deadline.toLocaleTimeString()
                         : "No deadline selected"
                 }
             />

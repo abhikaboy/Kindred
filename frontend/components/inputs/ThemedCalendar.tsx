@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Calendar } from "react-native-calendars";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { stringToLocalAwareDate } from "@/utils/timeUtils";
+
 type Props = {
     dateReciever: (date: any) => void;
 };
@@ -21,7 +22,7 @@ const ThemedCalendar = ({ dateReciever }: Props) => {
             return;
         }
         setSelectedDates([day.dateString]);
-        dateReciever(stringToLocalAwareDate(day.dateString)); // include the timezone
+        dateReciever(stringToLocalAwareDate(day.dateString)); // use local midnight
         return;
         // setSelectedDates([...selectedDates, day.dateString]);
     };
@@ -37,9 +38,17 @@ const ThemedCalendar = ({ dateReciever }: Props) => {
         );
     }, [selectedDates]);
 
+    // Get today's date in local time as YYYY-MM-DD
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const minDateLocal = `${yyyy}-${mm}-${dd}`;
+
     return (
         <View>
             <Calendar
+                minDate={minDateLocal}
                 theme={{
                     backgroundColor: ThemedColor.lightened,
                     calendarBackground: ThemedColor.lightened,

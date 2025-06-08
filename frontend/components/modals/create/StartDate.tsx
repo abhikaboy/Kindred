@@ -29,7 +29,7 @@ const StartDate = ({ goToStandard }: Props) => {
             </View>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                 <ThemedText type="defaultSemiBold">Start Date:</ThemedText>
-                <ThemedText type="defaultSemiBold">{formatLocalDate(startDate)}</ThemedText>
+                <ThemedText type="defaultSemiBold">{startDate ? startDate.toLocaleDateString() : ""}</ThemedText>
             </View>
             <View style={{ display: "flex", flexDirection: "row", gap: 4 }}>
                 <SuggestedTag
