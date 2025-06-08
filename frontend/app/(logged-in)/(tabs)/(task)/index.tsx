@@ -16,6 +16,9 @@ import { Image } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Workspace from "./workspace";
+import TaskCard from "@/components/cards/TaskCard";
+import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
+import Today from "./today";
 
 type Props = {};
 
@@ -24,8 +27,8 @@ const Home = (props: Props) => {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
-    const { fetchWorkspaces, selected, workspaces, setSelected } = useTasks();
-
+    const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks } = useTasks();
+    const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
     const [creating, setCreating] = useState(false);
 
     const safeAsync = useSafeAsync();
@@ -47,6 +50,10 @@ const Home = (props: Props) => {
     }, [user]);
 
     const drawerRef = useRef<DrawerLayout>(null);
+
+    if (selected == "Today") {
+        return <Today />;
+    }
 
     // If a workspace is selected, show the workspace component
     if (selected !== "") {
@@ -80,54 +87,80 @@ const Home = (props: Props) => {
                         <View style={{ marginTop: 8 }}>
                             <Timeline />
                         </View>
-                        <View style={{ gap: 8, marginTop: 24 }}>
-                            <ThemedText type="subtitle">Recent Workspaces</ThemedText>
-                            <ScrollView horizontal>
-                                <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
-                                    <View style={{ flexDirection: "row", gap: 8 }}>
-                                        {workspaces.map((workspace) => (
-                                            <TouchableOpacity
-                                                key={workspace.name}
-                                                onPress={() => {
-                                                    setSelected(workspace.name);
-                                                }}
-                                                style={{
-                                                    padding: 16,
-                                                    borderRadius: 12,
-                                                    backgroundColor: ThemedColor.lightened,
-                                                }}>
-                                                <ThemedText type="lightBody">{workspace.name}</ThemedText>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </ConditionalView>
-                                <TouchableOpacity
-                                    onPress={() => setCreating(true)}
-                                    style={{
-                                        padding: 16,
-                                        borderRadius: 12,
-                                        backgroundColor: ThemedColor.lightened,
-                                    }}>
-                                    <ThemedText type="lightBody">+ Create Workspace</ThemedText>
-                                </TouchableOpacity>
-                            </ScrollView>
-                        </View>
-                        <View>
-                            <View
-                                style={{
-                                    width: "100%",
-                                    marginTop: 48,
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: 16,
-                                }}>
-                                <Image
-                                    source={require("@/assets/images/Checkmark.png")}
-                                    style={{ width: "25%", resizeMode: "contain" }}
-                                />
-                                <ThemedText type="subtitle">Woohoo! All Clear!</ThemedText>
+                        <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }}>
+                            <View style={{ gap: 8, marginTop: 24 }}>
+                                <ThemedText type="subtitle">Recent Workspaces</ThemedText>
+                                <ScrollView horizontal>
+                                    <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
+                                        <View style={{ flexDirection: "row", gap: 8 }}>
+                                            {workspaces.map((workspace) => (
+                                                <TouchableOpacity
+                                                    key={workspace.name}
+                                                    onPress={() => {
+                                                        setSelected(workspace.name);
+                                                    }}
+                                                    style={{
+                                                        padding: 16,
+                                                        borderRadius: 12,
+                                                        backgroundColor: ThemedColor.lightened,
+                                                    }}>
+                                                    <ThemedText type="lightBody">{workspace.name}</ThemedText>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </ConditionalView>
+                                    <TouchableOpacity
+                                        onPress={() => setCreating(true)}
+                                        style={{
+                                            padding: 16,
+                                            borderRadius: 12,
+                                            backgroundColor: ThemedColor.lightened,
+                                        }}>
+                                        <ThemedText type="lightBody">+ Create Workspace</ThemedText>
+                                    </TouchableOpacity>
+                                </ScrollView>
                             </View>
-                        </View>
+                            <View style={{ gap: 8 }}>
+                                <ThemedText type="subtitle">Due Today</ThemedText>
+                                <ScrollView contentContainerStyle={{ gap: 8 }}>
+                                    {dueTodayTasks.map((task) => (
+                                        <SwipableTaskCard
+                                            key={task.id}
+                                            redirect={true}
+                                            categoryId={task.categoryID}
+                                            task={task}
+                                            categoryName={task.categoryName}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </View>
+                            <View style={{ gap: 8 }}>
+                                <ThemedText type="subtitle">Scheduled for Today</ThemedText>
+                                <ScrollView contentContainerStyle={{ gap: 8 }}>
+                                    {startTodayTasks.map((task) => (
+                                        <SwipableTaskCard
+                                            key={task.id}
+                                            redirect={true}
+                                            categoryId={task.categoryID}
+                                            task={task}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </View>
+                            <View style={{ gap: 8 }}>
+                                <ThemedText type="subtitle">All Tasks</ThemedText>
+                                <ScrollView contentContainerStyle={{ gap: 8 }}>
+                                    {allTasks.map((task) => (
+                                        <SwipableTaskCard
+                                            key={task.id}
+                                            redirect={true}
+                                            categoryId={task.categoryID}
+                                            task={task}
+                                        />
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </ScrollView>
                     </View>
                 </ConditionalView>
             </ThemedView>
@@ -137,6 +170,26 @@ const Home = (props: Props) => {
 
 export default Home;
 
+const AllClear = () => {
+    return (
+        <View>
+            <View
+                style={{
+                    width: "100%",
+                    marginTop: 48,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 16,
+                }}>
+                <Image
+                    source={require("@/assets/images/Checkmark.png")}
+                    style={{ width: "25%", resizeMode: "contain" }}
+                />
+                <ThemedText type="subtitle">Woohoo! All Clear!</ThemedText>
+            </View>
+        </View>
+    );
+};
 const styles = StyleSheet.create({
     container: {
         flex: 1,

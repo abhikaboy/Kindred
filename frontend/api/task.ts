@@ -52,7 +52,11 @@ export const removeFromCategoryAPI = async (categoryId: string, taskId: string):
  */
 export const markAsCompletedAPI = async (categoryId: string, taskId: string, body: CompleteTaskBody): Promise<void> => {
     const { request } = useRequest();
-    return request("POST", `/user/tasks/complete/${categoryId}/${taskId}`, body);
+    try {
+        return await request("POST", `/user/tasks/complete/${categoryId}/${taskId}`, body);
+    } catch (error) {
+        throw error;
+    }
 };
 
 /**

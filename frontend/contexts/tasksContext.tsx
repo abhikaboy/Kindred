@@ -1,9 +1,10 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
+import { isFuture, isPast, isToday } from "date-fns";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 
@@ -29,6 +30,13 @@ type TaskContextType = {
     task: Task | null;
     setTask: (task: Task | null) => void;
     doesWorkspaceExist: (name: string) => boolean;
+    unnestedTasks: Task[];
+    startTodayTasks: Task[];
+    dueTodayTasks: Task[];
+    pastStartTasks: Task[];
+    pastDueTasks: Task[];
+    futureTasks: Task[];
+    allTasks: Task[];
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -41,6 +49,54 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [task, setTask] = useState<Task | null>(null);
 
     const [showConfetti, setShowConfetti] = useState(false);
+
+    const unnestedTasks = useMemo(() => {
+        let res = workspaces
+            .flatMap((workspace) => workspace.categories)
+            .flatMap((category) =>
+                category.tasks.map((task) => ({
+                    ...task,
+                    categoryID: category.id,
+                    categoryName: category.name,
+                }))
+            );
+        return res;
+    }, [workspaces]);
+
+    const startTodayTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isToday(new Date(task?.startDate));
+        });
+    }, [unnestedTasks]);
+
+    const dueTodayTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isToday(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const pastStartTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isPast(new Date(task?.startDate));
+        });
+    }, [unnestedTasks]);
+
+    const pastDueTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isPast(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const futureTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isFuture(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const allTasks = useMemo(() => {
+        return unnestedTasks;
+    }, [unnestedTasks]);
+
     /**
      * Sets the selected category within the creation menu
      * @param option
@@ -168,6 +224,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 task,
                 setTask,
                 doesWorkspaceExist,
+                unnestedTasks,
+                startTodayTasks,
+                dueTodayTasks,
+                pastStartTasks,
+                pastDueTasks,
+                futureTasks,
+                allTasks,
             }}>
             {children}
         </TaskContext.Provider>

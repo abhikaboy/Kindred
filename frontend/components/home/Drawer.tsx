@@ -173,7 +173,7 @@ export const Drawer = ({ close }) => {
                 </View>
                 <DrawerItem
                     title="Home"
-                    selected={selected}
+                    selected={selected == "" ? "Home" : selected}
                     onPress={() => {
                         setSelected("");
                         close();
@@ -184,7 +184,7 @@ export const Drawer = ({ close }) => {
                     title="Today"
                     selected={selected}
                     onPress={() => {
-                        setSelected("");
+                        setSelected("Today");
                         close();
                     }}
                     onLongPress={() => {}}
