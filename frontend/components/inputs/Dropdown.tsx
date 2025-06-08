@@ -21,9 +21,10 @@ type Props = {
     selected: Option;
     setSelected: Dispatch<SetStateAction<Option>>;
     onSpecial: () => void;
+    width?: string;
 };
 
-const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
+const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
     const reducedMotion = useReducedMotion();
@@ -50,7 +51,8 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
     const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
     const AnimatedArrow = Animated.createAnimatedComponent(Entypo);
     return (
-        <Animated.View style={{ borderRadius: 12, borderWidth: 1, borderColor: ThemedColor.tertiary, width: "80%" }}>
+        <Animated.View
+            style={{ borderRadius: 12, borderWidth: 1, borderColor: ThemedColor.tertiary, width: width || "80%" }}>
             <AnimatedTouchableOpacity
                 onPress={() => {
                     expanded.value = !expanded.value;

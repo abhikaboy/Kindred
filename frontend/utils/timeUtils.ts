@@ -1,4 +1,16 @@
 /**
+ * Date to Local Aware Date
+ */
+
+export const stringToLocalAwareDate = (date: string) => {
+    const [year, month, day] = date.split("-").map(Number);
+    const localDate = new Date();
+    localDate.setFullYear(year, month - 1, day);
+    localDate.setHours(0, 0, 0, 0);
+    return localDate;
+};
+
+/**
  * Converts a UTC time to the user's local timezone
  * @param utcTime - UTC time as a string, Date object, or timestamp
  * @returns Date object in local timezone
@@ -54,7 +66,7 @@ export const formatLocalDate = (utcTime: string | Date | number, options?: Intl.
  * @param options - Intl.DateTimeFormatOptions for formatting
  * @returns Formatted time string in local timezone
  */
-export const formatLocalTime = (utcTime: string | Date | number, options?: Intl.DateTimeFormatOptions): string => {
+export const formatLocalTime = (utcTime: Date, options?: Intl.DateTimeFormatOptions): string => {
     console.log("formatLocalTime input:", utcTime, "type:", typeof utcTime);
     const localDate = convertUTCToLocal(utcTime);
     console.log("convertUTCToLocal output:", localDate);

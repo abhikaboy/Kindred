@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 
 import { Calendar } from "react-native-calendars";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { stringToLocalAwareDate } from "@/utils/timeUtils";
 type Props = {
     dateReciever: (date: any) => void;
 };
@@ -20,7 +21,7 @@ const ThemedCalendar = ({ dateReciever }: Props) => {
             return;
         }
         setSelectedDates([day.dateString]);
-        dateReciever(new Date(day.dateString));
+        dateReciever(stringToLocalAwareDate(day.dateString)); // include the timezone
         return;
         // setSelectedDates([...selectedDates, day.dateString]);
     };
@@ -60,6 +61,7 @@ const ThemedCalendar = ({ dateReciever }: Props) => {
                     textMonthFontWeight: "semibold",
                     textDayHeaderFontFamily: "Outfit",
                 }}
+                markingType="period"
                 markedDates={selectedDates.reduce((acc, date) => {
                     return {
                         ...acc,

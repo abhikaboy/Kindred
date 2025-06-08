@@ -76,7 +76,7 @@ const Recurring = ({ goToStandard }: Props) => {
                         { label: "Every Week On", id: "weekly" },
                         { label: "Every Month On", id: "monthly" },
                         { label: "Annually", id: "yearly" },
-                        { label: "Every Weekday", id: "yearly" },
+                        { label: "Every Weekday", id: "weekday" },
                     ]}
                 />
             </View>

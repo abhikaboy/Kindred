@@ -60,7 +60,7 @@ type TaskDocument struct {
 */
 type Reminder struct {
 	TriggerTime time.Time `bson:"triggerTime" json:"triggerTime"`
-	Type        string    `bson:"type" json:"type"`
+	Type        string    `bson:"type" json:"type"` // relative, absolute
 	Sent        bool      `bson:"sent" json:"sent"`
 	AfterStart  bool      `bson:"afterStart" json:"afterStart"`
 	BeforeStart bool      `bson:"beforeStart" json:"beforeStart"`
