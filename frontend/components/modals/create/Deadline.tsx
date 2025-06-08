@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
@@ -9,6 +9,7 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
+import SuggestedTag from "@/components/inputs/SuggestedTag";
 
 type Props = {
     goToStandard: () => void;
@@ -24,15 +25,18 @@ const Deadline = ({ goToStandard }: Props) => {
 
     const combineDateAndTime = () => {
         if (date && time) {
-            setDeadline(new Date(date.toISOString().split("T")[0] + "T" + time.toISOString().split("T")[1]));
+            // Combine local date and time parts
+            const combined = new Date(date);
+            combined.setHours(time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds());
+            setDeadline(combined);
             return;
         }
         if (date) {
-            setDeadline(new Date(date.toISOString()));
+            setDeadline(new Date(date));
             return;
         }
         if (time) {
-            setDeadline(new Date(time.toISOString()));
+            setDeadline(new Date(time));
             return;
         }
         setDeadline(null);
@@ -52,9 +56,55 @@ const Deadline = ({ goToStandard }: Props) => {
                     Set Deadline
                 </ThemedText>
             </View>
+            <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
+                <ThemedText type="defaultSemiBold">Deadline:</ThemedText>
+                <ThemedText type="defaultSemiBold">{deadline ? deadline.toLocaleDateString() : ""}</ThemedText>
+            </View>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                <SuggestedTag
+                    tag="EOD Today"
+                    onPress={() => {
+                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="EOD Tomorrow"
+                    onPress={() => {
+                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="1 Hour"
+                    onPress={() => {
+                        setTime(new Date(Date.now() + 60 * 60 * 1000));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="In a Week"
+                    onPress={() => {
+                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
+                        setDate(new Date(new Date().setDate(new Date().getDate() + 7)));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="End of This Week"
+                    onPress={() => {
+                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
+                        setDate(new Date(new Date().setDate(new Date().getDate() + (7 - new Date().getDay())))); // the closest Sunday
+                        goToStandard();
+                    }}
+                />
+            </ScrollView>
             <ThemedCalendar dateReciever={setDate} />
             <DateTimePicker
-                style={{ width: "100%", height: 100 }}
+                style={{ width: "100%" }}
                 value={time || new Date()}
                 onChange={(event, selectedDate) => {
                     if (selectedDate) {
@@ -64,13 +114,13 @@ const Deadline = ({ goToStandard }: Props) => {
                 testID="bruh"
                 mode="time"
                 is24Hour={true}
-                display="spinner"
             />
+
             <PrimaryButton
                 onPress={goToStandard}
                 title={
                     deadline
-                        ? "Set Deadline: " + formatLocalDate(deadline) + " at " + formatLocalTime(deadline)
+                        ? "Set Deadline: " + deadline.toLocaleDateString() + " at " + deadline.toLocaleTimeString()
                         : "No deadline selected"
                 }
             />

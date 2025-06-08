@@ -162,6 +162,7 @@ export default function Task() {
         }
     };
 
+    console.log(task);
     const updateNotes = useDebounce(async (notes: string) => {
         await updateNotesAPI(categoryId as string, id as string, notes);
     }, 2000);
@@ -223,6 +224,7 @@ export default function Task() {
                                             id: item.id || "",
                                             content: item.content,
                                             completed: item.completed,
+                                            order: item.order,
                                         }));
                                     }
                                 }}
@@ -235,8 +237,14 @@ export default function Task() {
                                         flexDirection: "row",
                                         justifyContent: "space-between",
                                     }}>
-                                    <ThemedText type="lightBody">{formatLocalDate(task?.startDate)}</ThemedText>
-                                    <ThemedText type="lightBody">{formatLocalTime(task?.startDate)}</ThemedText>
+                                    <ThemedText type="lightBody">
+                                        {new Date(task?.startDate).toLocaleDateString()}
+                                    </ThemedText>
+                                    <ThemedText type="lightBody">
+                                        {task?.startTime
+                                            ? new Date(task?.startTime).toLocaleTimeString()
+                                            : "No Start Time"}
+                                    </ThemedText>
                                 </View>
                             </DataCard>
                         </ConditionalView>
@@ -247,18 +255,35 @@ export default function Task() {
                                         flexDirection: "row",
                                         justifyContent: "space-between",
                                     }}>
-                                    <ThemedText type="lightBody">{formatLocalDate(task?.deadline)}</ThemedText>
-                                    <ThemedText type="lightBody">{formatLocalTime(task?.deadline)}</ThemedText>
+                                    <ThemedText type="lightBody">
+                                        {new Date(task?.deadline).toLocaleDateString()}
+                                    </ThemedText>
+                                    <ThemedText type="lightBody">
+                                        {task?.deadline
+                                            ? new Date(task?.deadline).toLocaleTimeString()
+                                            : "No Deadline Time"}
+                                    </ThemedText>
                                 </View>
                             </DataCard>
                         </ConditionalView>
                         <ConditionalView
-                            condition={task?.recurring != null && task?.recurDetails != null}
+                            condition={task?.recurring != null || task?.recurDetails != null}
                             key="recurring">
                             <DataCard title="Recurring">
                                 <View>
                                     <ThemedText type="lightBody">{JSON.stringify(task?.recurDetails)}</ThemedText>
                                 </View>
+                            </DataCard>
+                        </ConditionalView>
+                        <ConditionalView condition={task?.reminders != null} key="reminders">
+                            <DataCard title="Reminders">
+                                {task?.reminders?.map((reminder) => (
+                                    <View key={reminder.triggerTime.toString()}>
+                                        <ThemedText type="lightBody">
+                                            {new Date(reminder.triggerTime).toLocaleString()}
+                                        </ThemedText>
+                                    </View>
+                                ))}
                             </DataCard>
                         </ConditionalView>
                     </ScrollView>

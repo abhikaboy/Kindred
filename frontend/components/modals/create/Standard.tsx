@@ -247,19 +247,19 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
                 <View style={{ gap: 12, marginTop: 4 }}>
                     <AdvancedOption
                         icon="calendar"
-                        label={startDate ? "Start Date: " + formatLocalDate(startDate) : "Set Start Date"}
+                        label={startDate ? "Start Date: " + startDate.toLocaleDateString() : "Set Start Date"}
                         screen={Screen.STARTDATE}
                         goTo={goTo}
                     />
                     <AdvancedOption
                         icon="time"
-                        label={startTime ? "Start Time: " + formatLocalTime(startTime) : "Set Start Time"}
+                        label={startTime ? "Start Time: " + startTime.toLocaleTimeString() : "Set Start Time"}
                         screen={Screen.STARTTIME}
                         goTo={goTo}
                     />
                     <AdvancedOption
                         icon="flag"
-                        label={deadline ? "Deadline: " + formatLocalDateTime(deadline) : "Set Deadline"}
+                        label={deadline ? "Deadline: " + deadline.toLocaleString() : "Set Deadline"}
                         screen={Screen.DEADLINE}
                         goTo={goTo}
                     />
