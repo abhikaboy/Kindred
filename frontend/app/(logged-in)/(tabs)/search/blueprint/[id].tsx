@@ -20,7 +20,7 @@ export default function BlueprintDetailScreen() {
     if (!selectedBlueprint) {
         return (
             <ThemedView>
-                <ThemedText type="subtitle">Navigate back to the homey homee page.</ThemedText>
+                <ThemedText type="subtitle">Navigate back to the homey home page.</ThemedText>
             </ThemedView>
         );
     }
@@ -56,7 +56,7 @@ export default function BlueprintDetailScreen() {
                         <ThemedText type="default">{selectedBlueprint.description}</ThemedText>
 
                         <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-                            <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />{" "}
+                            <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
                             <ThemedText type="smallerDefault">{selectedBlueprint.time}</ThemedText>
                         </View>
 
