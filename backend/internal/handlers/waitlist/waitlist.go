@@ -31,7 +31,7 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 		for _, fieldErr := range validationErrors {
 			errorMap[fieldErr.FailedField] = fieldErr.Tag
 		}
-		
+
 		return xerr.ValidationError(c, "Invalid input data", errorMap)
 	}
 
@@ -42,8 +42,8 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 		ID:        primitive.NewObjectID(),
 	}
 
-	_, err := h.service.CreateWaitlist(&doc); 
-    if err != nil {
+	_, err := h.service.CreateWaitlist(&doc)
+	if err != nil {
 		slog.LogAttrs(
 			c.Context(),
 			slog.LevelError,
@@ -51,7 +51,7 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 			xslog.Error(err),
 			slog.String("email", doc.Email),
 		)
-		
+
 		if strings.Contains(err.Error(), "duplicate key error") {
 			slog.LogAttrs(
 				c.Context(),
@@ -61,7 +61,7 @@ func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
 			)
 			return xerr.DuplicateError(c, "Waitlist entry", "email", doc.Email)
 		}
-		
+
 		return xerr.ServerError(c, err)
 	}
 
@@ -112,7 +112,7 @@ func (h *Handler) GetWaitlist(c *fiber.Ctx) error {
 func (h *Handler) DeleteWaitlist(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := primitive.ObjectIDFromHex(idParam)
-	
+
 	if err != nil {
 		return xerr.ValidationError(c, "Invalid ID format", map[string]string{
 			"id": "Must be a valid ObjectID",
@@ -127,7 +127,7 @@ func (h *Handler) DeleteWaitlist(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status": "success",
+		"status":  "success",
 		"message": "Waitlist entry deleted successfully",
 	})
 }

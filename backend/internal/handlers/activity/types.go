@@ -18,7 +18,7 @@ type ActivityPoint struct {
 	value float64
 }
 
-type ActivityDocument = types.ActivityDocument	
+type ActivityDocument = types.ActivityDocument
 
 type UpdateActivityDocument struct {
 	Field1  string      `bson:"field1,omitempty" json:"field1,omitempty"`

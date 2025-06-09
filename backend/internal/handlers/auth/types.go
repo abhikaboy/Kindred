@@ -26,7 +26,6 @@ type TokenResponse struct {
 	User         string `json:"user"`
 }
 
-
 type User = types.User
 type SafeUser = types.SafeUser
 

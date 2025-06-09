@@ -92,7 +92,7 @@ func (h *Handler) GetCategoriesByUser(c *fiber.Ctx) error {
 	categories, err := h.service.GetCategoriesByUser(id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "No categories found",
+			"error":   "No categories found",
 			"message": err.Error(),
 		})
 	}

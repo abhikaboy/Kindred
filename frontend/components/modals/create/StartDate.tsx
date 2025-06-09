@@ -33,6 +33,7 @@ const StartDate = ({ goToStandard }: Props) => {
             </View>
             <View style={{ display: "flex", flexDirection: "row", gap: 4 }}>
                 <SuggestedTag
+                    caption={new Date().toLocaleDateString()}
                     tag="Today"
                     onPress={() => {
                         setStartDate(new Date());
@@ -40,6 +41,7 @@ const StartDate = ({ goToStandard }: Props) => {
                     }}
                 />
                 <SuggestedTag
+                    caption={new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()}
                     tag="Tomorrow"
                     onPress={() => {
                         setStartDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
@@ -47,6 +49,7 @@ const StartDate = ({ goToStandard }: Props) => {
                     }}
                 />
                 <SuggestedTag
+                    caption={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                     tag="In a Week"
                     onPress={() => {
                         setStartDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));

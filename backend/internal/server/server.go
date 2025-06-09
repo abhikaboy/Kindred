@@ -5,6 +5,7 @@ import (
 
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	blueprint "github.com/abhikaboy/Kindred/internal/handlers/blueprint"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	connections "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
@@ -43,6 +44,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) *
 	profile.Routes(app, collections)
 	waitlist.Routes(app, collections)
 	socket.Routes(app, collections, stream)
+	blueprint.Routes(app, collections)
 
 	task.Cron(collections)
 

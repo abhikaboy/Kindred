@@ -7,10 +7,10 @@ import (
 var Client *expo.PushClient
 
 type Notification struct {
-	Token string
+	Token   string
 	Message string
-	Data map[string]string
-	Title string
+	Data    map[string]string
+	Title   string
 }
 
 func initExpoClient() {
@@ -28,12 +28,12 @@ func SendNotification(notification Notification) error {
 	}
 
 	response, err := Client.Publish(&expo.PushMessage{
-		To: []expo.ExponentPushToken{pushToken},
-		Body: notification.Message,
-		Data: notification.Data,
+		To:    []expo.ExponentPushToken{pushToken},
+		Body:  notification.Message,
+		Data:  notification.Data,
 		Title: notification.Title,
 		Sound: "default",
-	})	
+	})
 
 	if err != nil {
 		return err

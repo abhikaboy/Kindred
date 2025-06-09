@@ -18,7 +18,6 @@ func (r *LoginRequest) Validate() error {
 	return err
 }
 
-
 func VerifyRequiredFieldsPresent(r []string, item interface{}) error {
 	v := reflect.ValueOf(item)
 	for _, field := range r {

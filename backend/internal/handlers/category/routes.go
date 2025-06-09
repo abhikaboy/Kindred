@@ -29,5 +29,5 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	ProtectedCategories.Patch("/:id", handler.UpdatePartialCategory)
 	ProtectedCategories.Get("/:id", handler.GetCategoriesByUser)
 	ProtectedCategories.Delete("/workspace/:name", handler.DeleteWorkspace)
-	
+
 }
