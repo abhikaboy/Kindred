@@ -1,11 +1,11 @@
-import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity } from "react-native";
+import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity, ActivityIndicator } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import React, { useEffect, useRef, useState } from "react";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -18,9 +18,13 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
+import { useQuery } from "@tanstack/react-query";
+import { getProfile } from "@/api/profile";
+import { type Profile } from "@/api/types";
 
 export default function Profile() {
-    const user = {
+    const { id } = useLocalSearchParams();
+    const fallback_profile = {
         id: "67ef139d4931ee7a9fb630fc",
         display_name: "Coffee!~",
         handle: "@coffee",
@@ -45,6 +49,16 @@ export default function Profile() {
         ],
     };
 
+    const { data: profile, isLoading } = useQuery<Profile>({
+        queryKey: ["profile", id],
+        queryFn: () => getProfile(id as string),
+        enabled: !!id,
+    });
+
+    if (isLoading) {
+        return <ActivityIndicator />;
+    }
+
     return (
         <Animated.ScrollView
             ref={scrollRef}
@@ -52,20 +66,20 @@ export default function Profile() {
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
             <ParallaxBanner
                 scrollRef={scrollRef}
-                backgroundImage={user?.profile_picture || Icons.luffy}
+                backgroundImage={profile?.profile_picture || Icons.luffy}
                 backgroundColor={ThemedColor.background}
                 headerHeight={HEADER_HEIGHT}
             />
-            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} />
+            <ProfileHeader displayName={profile?.display_name || ""} handle={profile?.handle || ""} />
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>
-                    <ProfileStats friendsCount={user?.friends.length || 0} />
+                    <ProfileStats friendsCount={profile?.friends?.length || 0} />
                 </View>
 
                 <TodayStats tasks={2} points={12} streak={242} posts={4} />
 
-                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={user?.id} />
+                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={profile?.id} />
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 

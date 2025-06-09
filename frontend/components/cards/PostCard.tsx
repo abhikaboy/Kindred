@@ -130,7 +130,7 @@ const PostCard = ({
                         username={username}
                         time={time}
                         icon={icon}
-                        id={"67abe3c08052e49db74c4b62"}
+                        id={"67ef139d4931ee7a9fb630fc"}
                     />
                 </View>
                 <View style={styles.col}>

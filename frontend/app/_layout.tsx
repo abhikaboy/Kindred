@@ -21,6 +21,7 @@ import { router } from "expo-router";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -79,47 +80,60 @@ export default function RootLayout() {
     }, [loaded]);
 
     const { top } = useSafeAreaInsets();
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                refetchOnWindowFocus: false,
+                refetchOnMount: false,
+                refetchOnReconnect: false,
+                retry: false,
+                staleTime: 1000 * 60 * 5, // 5 minutes
+            },
+        },
+    });
 
     if (!loaded) {
         return null;
     }
 
     return (
-        <AuthProvider>
-            <TasksProvider>
-                <TaskCreationProvider>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                        <BottomSheetModalProvider>
-                            <Toastable
-                                statusMap={{
-                                    success: ThemedColor.success,
-                                    danger: ThemedColor.danger,
-                                    warning: ThemedColor.warning,
-                                    info: ThemedColor.primary,
-                                }}
-                                offset={top}
-                            />
-                            {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
-                            <Stack
-                                screenOptions={{
-                                    headerShown: true,
-                                    headerTransparent: true,
-                                    headerLeft: (tab) => <BackButton />,
-                                    headerTintColor: ThemedColor.text,
-                                    headerBackButtonDisplayMode: "minimal",
-                                    headerTitleStyle: {
-                                        fontFamily: "Outfit",
-                                        fontWeight: 100,
-                                        fontSize: 1,
-                                        color: ThemedColor.primary,
-                                    },
-                                }}
-                            />
-                            <StatusBar style="light" />
-                        </BottomSheetModalProvider>
-                    </GestureHandlerRootView>
-                </TaskCreationProvider>
-            </TasksProvider>
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <TasksProvider>
+                    <TaskCreationProvider>
+                        <GestureHandlerRootView style={{ flex: 1 }}>
+                            <BottomSheetModalProvider>
+                                <Toastable
+                                    statusMap={{
+                                        success: ThemedColor.success,
+                                        danger: ThemedColor.danger,
+                                        warning: ThemedColor.warning,
+                                        info: ThemedColor.primary,
+                                    }}
+                                    offset={top}
+                                />
+                                {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
+                                <Stack
+                                    screenOptions={{
+                                        headerShown: true,
+                                        headerTransparent: true,
+                                        headerLeft: (tab) => <BackButton />,
+                                        headerTintColor: ThemedColor.text,
+                                        headerBackButtonDisplayMode: "minimal",
+                                        headerTitleStyle: {
+                                            fontFamily: "Outfit",
+                                            fontWeight: 100,
+                                            fontSize: 1,
+                                            color: ThemedColor.primary,
+                                        },
+                                    }}
+                                />
+                                <StatusBar style="light" />
+                            </BottomSheetModalProvider>
+                        </GestureHandlerRootView>
+                    </TaskCreationProvider>
+                </TasksProvider>
+            </AuthProvider>
+        </QueryClientProvider>
     );
 }
