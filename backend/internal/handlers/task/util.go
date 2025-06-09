@@ -213,7 +213,7 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid recurring frequency",
 			})
-		} 
+		}
 		if params.RecurDetails == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Recurring details are required",
@@ -299,4 +299,3 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 
 	return nil
 }
-

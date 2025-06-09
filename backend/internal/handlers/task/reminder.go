@@ -20,17 +20,17 @@ func (h *Handler) HandleReminder() (fiber.Map, error) {
 		err = h.service.SendReminder(task.UserID, task.Reminders[0], task.ID, task.Content)
 		if err != nil {
 			failed_updates = append(failed_updates, TaskID{
-				TaskID: task.ID,
+				TaskID:     task.ID,
 				CategoryID: task.CategoryID,
-				UserID: task.UserID,
+				UserID:     task.UserID,
 			})
 			continue
 		}
 		// change the sent field to true
 		successful_updates = append(successful_updates, TaskID{
-			TaskID: task.ID,
+			TaskID:     task.ID,
 			CategoryID: task.CategoryID,
-			UserID: task.UserID,
+			UserID:     task.UserID,
 		})
 	}
 
@@ -42,17 +42,17 @@ func (h *Handler) HandleReminder() (fiber.Map, error) {
 	}
 
 	return fiber.Map{
-		"tasks": tasks,
+		"tasks":              tasks,
 		"successful_updates": successful_updates,
-		"failed_updates": failed_updates,
-	}, nil	
+		"failed_updates":     failed_updates,
+	}, nil
 }
 
 func (h *Handler) AddReminderToTask(c *fiber.Ctx) error {
 	err, ids := xutils.ParseIDs(c, c.Params("id"), c.Params("category"), c.UserContext().Value("user_id").(string))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid taskID or categoryID or userID",
+			"error":         "Invalid taskID or categoryID or userID",
 			"error_message": err.Error(),
 		})
 	}
@@ -62,7 +62,7 @@ func (h *Handler) AddReminderToTask(c *fiber.Ctx) error {
 	// using body parser
 	if err := c.BodyParser(&reminder); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid reminder",
+			"error":         "Invalid reminder",
 			"error_message": err.Error(),
 		})
 	}
@@ -73,7 +73,7 @@ func (h *Handler) AddReminderToTask(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
-	
+
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -83,10 +83,10 @@ func ParseReminder(params CreateTaskParams) []*Reminder {
 		// If the reminder is absolute, then the trigger time is a time
 		if reminder.Type == "ABSOLUTE" {
 			reminders = append(reminders, &Reminder{
-				TriggerTime: reminder.TriggerTime,
-				Sent:        false,
-				Type:        reminder.Type,
-				AfterStart:  reminder.AfterStart,
+				TriggerTime:    reminder.TriggerTime,
+				Sent:           false,
+				Type:           reminder.Type,
+				AfterStart:     reminder.AfterStart,
 				BeforeDeadline: reminder.BeforeDeadline,
 			})
 		}
@@ -99,10 +99,10 @@ func ParseReminder(params CreateTaskParams) []*Reminder {
 				reminder.TriggerTime = params.Deadline.Add(params.Deadline.Sub(reminder.TriggerTime))
 			}
 			reminders = append(reminders, &Reminder{
-				TriggerTime: reminder.TriggerTime,
-				Sent:        false,
-				Type:        reminder.Type,
-				AfterStart:  reminder.AfterStart,
+				TriggerTime:    reminder.TriggerTime,
+				Sent:           false,
+				Type:           reminder.Type,
+				AfterStart:     reminder.AfterStart,
 				BeforeDeadline: reminder.BeforeDeadline,
 			})
 		}

@@ -133,7 +133,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		GoogleID: googleid.(string),
 	}
 
-	// TODO: Validate using go validator package 
+	// TODO: Validate using go validator package
 
 	// if err = user.Validate(); err != nil {
 	// 	return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))

@@ -39,7 +39,7 @@ func WriteException(c *fiber.Ctx, err mongo.WriteException) error {
 	)
 
 	requestID := c.Locals("requestid")
-	
+
 	if strings.Contains(msg, "duplicate key error") {
 		// Handle duplicate key errors with a friendly message
 		fieldInfo := "document"
@@ -50,7 +50,7 @@ func WriteException(c *fiber.Ctx, err mongo.WriteException) error {
 				fieldInfo = "username"
 			}
 		}
-		
+
 		return c.Status(http.StatusConflict).JSON(ErrorResponse{
 			Status:     http.StatusConflict,
 			Message:    "A record with this " + fieldInfo + " already exists",
@@ -62,13 +62,13 @@ func WriteException(c *fiber.Ctx, err mongo.WriteException) error {
 
 	if strings.Contains(msg, "Document failed validation") {
 		// Handle validation errors with detailed feedback
-			slog.LogAttrs(
-				c.Context(),
-				slog.LevelError,
-				"Error parsing validation error",
-				xslog.Error(err),
-			)
-		
+		slog.LogAttrs(
+			c.Context(),
+			slog.LevelError,
+			"Error parsing validation error",
+			xslog.Error(err),
+		)
+
 		return c.Status(http.StatusBadRequest).JSON(ErrorResponse{
 			Status:     http.StatusBadRequest,
 			Message:    "The document failed validation checks",
@@ -80,11 +80,11 @@ func WriteException(c *fiber.Ctx, err mongo.WriteException) error {
 	}
 
 	return c.Status(http.StatusBadRequest).JSON(ErrorResponse{
-		Status:     http.StatusBadRequest,
-		Message:    "Database write operation failed",
-		Error:      "WriteError",
-		Details:    err.WriteErrors,
-		RequestID:  fmt.Sprintf("%v", requestID),
+		Status:    http.StatusBadRequest,
+		Message:   "Database write operation failed",
+		Error:     "WriteError",
+		Details:   err.WriteErrors,
+		RequestID: fmt.Sprintf("%v", requestID),
 	})
 }
 
@@ -92,7 +92,7 @@ func FailedValidation(c *fiber.Ctx, err mongo.CommandError) error {
 	msg := err.Raw.String()
 
 	requestID := c.Locals("requestid")
-	
+
 	slog.LogAttrs(
 		c.Context(),
 		slog.LevelError,
@@ -108,7 +108,6 @@ func FailedValidation(c *fiber.Ctx, err mongo.CommandError) error {
 		Suggestion: "Please check your input and ensure it meets all requirements",
 	})
 }
-
 
 // ErrorHandler is the central error handler for Fiber
 func ErrorHandler(c *fiber.Ctx, err error) error {

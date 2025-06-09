@@ -725,7 +725,7 @@ func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 
 func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, taskID primitive.ObjectID, taskName string) error {
 	ctx := context.Background()
-	// lookup the user 
+	// lookup the user
 	var user types.User
 	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
 	if err != nil {
@@ -736,8 +736,8 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 
 	// send the reminder to the user
 
-	err = xutils.SendNotification( xutils.Notification{
-		Token: user.PushToken,
+	err = xutils.SendNotification(xutils.Notification{
+		Token:   user.PushToken,
 		Message: "Reminder to: " + taskName,
 		Data: map[string]string{
 			"taskId": taskID.Hex(),
@@ -762,8 +762,8 @@ func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primi
 
 	// Pull the reminder from the list of reminders
 	// if the triggerTime is less than or equal to the current time, pull it from the list
-	_, err := s.Tasks.UpdateOne(ctx, 
-		bson.M{"_id": categoryID}, 
+	_, err := s.Tasks.UpdateOne(ctx,
+		bson.M{"_id": categoryID},
 		bson.M{"$pull": bson.M{"tasks.$[t].reminders": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC()}}}},
 		&options)
 	return err

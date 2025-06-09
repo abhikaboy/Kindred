@@ -164,7 +164,6 @@ func (h *Handler) CreateTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(doc)
 }
 
-
 func (h *Handler) GetTasks(c *fiber.Ctx) error {
 	Tasks, err := h.service.GetAllTasks()
 	if err != nil {
