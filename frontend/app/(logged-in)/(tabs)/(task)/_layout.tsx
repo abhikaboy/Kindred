@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
+import BackButton from "@/components/BackButton";
 
 export const unstable_settings = {
     initialRouteName: "index",

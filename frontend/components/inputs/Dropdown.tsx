@@ -22,9 +22,10 @@ type Props = {
     setSelected: Dispatch<SetStateAction<Option>>;
     onSpecial: () => void;
     width?: string;
+    ghost?: boolean;
 };
 
-const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) => {
+const Dropdown = ({ options, selected, setSelected, onSpecial, width, ghost }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
     const reducedMotion = useReducedMotion();
@@ -54,8 +55,8 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
         <Animated.View
             style={{
                 borderRadius: 12,
-                borderWidth: 1,
-                borderColor: ThemedColor.tertiary,
+                borderWidth: ghost ? 0 : 1,
+                borderColor: ghost ? "transparent" : ThemedColor.tertiary,
                 width: width || "50%",
                 shadowColor: ThemedColor.text,
             }}>
@@ -69,7 +70,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
                     {
                         borderRadius: 12,
                         padding: 16,
-                        paddingLeft: 16,
+                        paddingLeft: ghost ? 0 : 16,
                         backgroundColor: ThemedColor.background,
                         paddingHorizontal: HORIZONTAL_PADDING,
                         flexDirection: "row",
@@ -104,6 +105,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
                         borderColor: ThemedColor.tertiary,
                         borderTopWidth: 0,
                         borderBottomLeftRadius: 12,
+                        backgroundColor: ThemedColor.background,
                         borderBottomRightRadius: 12,
                     }}>
                     {options.map((item, index) => {
@@ -122,6 +124,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
                                     paddingHorizontal: HORIZONTAL_PADDING,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
+                                    borderRadius: 12,
                                 }}>
                                 <ThemedText type="lightBody">{item.label}</ThemedText>
                             </AnimatedTouchableOpacity>

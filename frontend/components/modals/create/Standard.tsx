@@ -1,4 +1,4 @@
-import { Dimensions, Keyboard, StyleSheet, Text, TextInput, Touchable, TouchableOpacity, View } from "react-native";
+import { Dimensions, Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import ThemedInput from "../../inputs/ThemedInput";
 import Dropdown from "../../inputs/Dropdown";
@@ -7,37 +7,26 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { Screen } from "../CreateModal";
 import { ThemedText } from "@/components/ThemedText";
-import SelectedIndicator from "@/components/SelectedIndicator";
 import TrafficLight from "@/components/inputs/TrafficLight";
 import ThemedSlider from "@/components/inputs/ThemedSlider";
-import ThemedSwitch from "@/components/inputs/ThemedSwitch";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
-import { useSharedValue } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Entypo from "@expo/vector-icons/Entypo";
-import Octicons from "@expo/vector-icons/Octicons";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { CreateTaskParams } from "@/api/task";
-import { formatLocalDate, formatLocalTime, formatLocalDateTime } from "@/utils/timeUtils";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
-    bottomAnchorRef: React.RefObject<View>;
 };
 
-const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
+const Standard = ({ hide, goTo }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
-    const [showPriority, setShowPriority] = useState(false);
     const {
         taskName,
         setTaskName,
@@ -49,14 +38,11 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
         recurring,
         recurFrequency,
         recurDetails,
-        setPriority,
         deadline,
         startTime,
         startDate,
         reminders,
         isPublic,
-        setIsPublic,
-        setValue,
         resetTaskCreation,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
@@ -127,6 +113,7 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
                             }),
                         { label: "+ New Category", id: "", special: true },
                     ]}
+                    ghost
                     selected={selectedCategory}
                     setSelected={setCreateCategory}
                     onSpecial={() => {
@@ -312,13 +299,15 @@ const PriorityPicker = ({
                 }}>
                 Priority
             </ThemedText>
-            <TrafficLight
-                setValue={(value) => {
-                    setPriority(value);
-                    setShowPriority(false);
-                }}
-                value={priority}
-            />
+            <View style={{ padding: 12 }}>
+                <TrafficLight
+                    setValue={(value) => {
+                        setPriority(value);
+                        setShowPriority(false);
+                    }}
+                    value={priority}
+                />
+            </View>
         </Popover>
     );
 };

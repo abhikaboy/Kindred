@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Dimensions, Platform, TouchableOpacity } from "react-native";
+import { Dimensions, Platform, TouchableOpacity, View } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
 import Octicons from "@expo/vector-icons/Octicons";
@@ -31,20 +31,38 @@ export default function TabLayout() {
                 headerTitleStyle: {
                     fontFamily: "Outfit",
                 },
-                tabBarActiveBackgroundColor: ThemedColor.lightened,
+                tabBarActiveBackgroundColor: ThemedColor.lightened + "a0",
                 tabBarButton: HapticTab,
-                tabBarItemStyle: {},
                 tabBarBackground: TabBarBackground,
                 tabBarStyle: Platform.select({
                     ios: {
-                        position: "absolute",
-                        height: 83,
                         borderTopWidth: 1,
-                        borderColor: ThemedColor.background,
+                        borderColor: ThemedColor.tertiary,
+                        position: "absolute",
+                        marginBottom: 32,
+                        marginHorizontal: "5%",
+                        paddingBottom: 0,
+                        height: 80,
+                        paddingTop: 10,
+                        borderRadius: 500,
+                        width: "90%",
+                        overflow: "hidden",
+                        alignItems: "center",
+                        borderWidth: 1,
+                    },
+                    android: {
+                        height: 80,
+                        paddingTop: 0,
+                        borderRadius: 500,
+                        width: "90%",
+                        overflow: "hidden",
                     },
                     default: {
-                        height: 83,
-                        borderTopWidth: 1,
+                        height: 80,
+                        paddingTop: 0,
+                        borderRadius: 500,
+                        width: "90%",
+                        overflow: "hidden",
                     },
                 }),
             }}>
@@ -63,14 +81,6 @@ export default function TabLayout() {
                     title: "Feed",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
                     href: "/feed",
-                }}
-            />
-            <Tabs.Screen
-                name="(playground)"
-                options={{
-                    title: "Playground",
-                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
-                    href: "/playground",
                 }}
             />
             <Tabs.Screen
