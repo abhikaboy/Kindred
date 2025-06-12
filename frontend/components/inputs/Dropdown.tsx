@@ -44,7 +44,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
             borderBottomLeftRadius: expanded.value ? 0 : 12,
             borderBottomRightRadius: expanded.value ? 0 : 12,
             borderBottomWidth: expanded.value ? 1 : 0,
-            borderBottomColor: expanded.value ? ThemedColor.disabled : ThemedColor.lightened,
+            borderBottomColor: expanded.value ? ThemedColor.disabled : ThemedColor.tertiary,
         };
     });
 
@@ -52,7 +52,13 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
     const AnimatedArrow = Animated.createAnimatedComponent(Entypo);
     return (
         <Animated.View
-            style={{ borderRadius: 12, borderWidth: 1, borderColor: ThemedColor.tertiary, width: width || "80%" }}>
+            style={{
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ThemedColor.tertiary,
+                width: width || "50%",
+                shadowColor: ThemedColor.text,
+            }}>
             <AnimatedTouchableOpacity
                 onPress={() => {
                     expanded.value = !expanded.value;
@@ -63,7 +69,8 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
                     {
                         borderRadius: 12,
                         padding: 16,
-                        backgroundColor: ThemedColor.lightened,
+                        paddingLeft: 16,
+                        backgroundColor: ThemedColor.background,
                         paddingHorizontal: HORIZONTAL_PADDING,
                         flexDirection: "row",
                         justifyContent: "space-between",
@@ -89,7 +96,16 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
                 )}
             </AnimatedTouchableOpacity>
             {expandedState && (
-                <Animated.View entering={reducedMotion ? null : FadeInUp} exiting={reducedMotion ? null : FadeOut}>
+                <Animated.View
+                    entering={reducedMotion ? null : FadeInUp}
+                    exiting={reducedMotion ? null : FadeOut}
+                    style={{
+                        borderWidth: 1,
+                        borderColor: ThemedColor.tertiary,
+                        borderTopWidth: 0,
+                        borderBottomLeftRadius: 12,
+                        borderBottomRightRadius: 12,
+                    }}>
                     {options.map((item, index) => {
                         return (
                             <AnimatedTouchableOpacity
@@ -101,7 +117,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) =
                                     setExpandedState(false);
                                 }}
                                 style={{
-                                    backgroundColor: ThemedColor.lightened,
+                                    backgroundColor: ThemedColor.background,
                                     padding: 8,
                                     paddingHorizontal: HORIZONTAL_PADDING,
                                     flexDirection: "row",

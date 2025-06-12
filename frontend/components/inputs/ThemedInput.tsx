@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput } from "react-native";
+import { StyleSheet, Text, View, TextInput, StyleProp, TextStyle } from "react-native";
 import React, { forwardRef } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
@@ -12,6 +12,8 @@ type Props = {
     value: string;
     setValue: (text: string) => void;
     onBlur?: () => void;
+    ghost?: boolean;
+    textStyle?: StyleProp<TextStyle>;
 };
 
 const ThemedInput = forwardRef(function ThemedInput(
@@ -34,16 +36,17 @@ const ThemedInput = forwardRef(function ThemedInput(
                 onBlur={props?.onBlur}
                 value={props.value}
                 style={{
-                    backgroundColor: ThemedColor.lightened,
+                    backgroundColor: props.ghost ? "transparent" : ThemedColor.lightened,
                     color: ThemedColor.text,
                     borderRadius: 12,
                     padding: 16,
                     fontSize: 16,
                     fontFamily: "OutfitLight",
-                    paddingRight: 24,
-                    paddingLeft: 24,
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
+                    paddingRight: props.ghost ? 0 : 24,
+                    paddingLeft: props.ghost ? 0 : 24,
+                    borderWidth: props.ghost ? 0 : 1,
+                    borderColor: props.ghost ? ThemedColor.tertiary : ThemedColor.lightened,
+                    ...(props.textStyle as object),
                 }}
             />
         </View>

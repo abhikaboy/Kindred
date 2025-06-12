@@ -1,4 +1,4 @@
-import { View, Text, Animated, Dimensions } from "react-native";
+import { View, Text, Animated, Dimensions, TouchableOpacity } from "react-native";
 import React, { useRef } from "react";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -14,6 +14,7 @@ import Reanimated, {
     withSpring,
     withTiming,
 } from "react-native-reanimated";
+import { useRouter } from "expo-router";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -85,6 +86,8 @@ export default function TaskToast(props: ToastableBodyParams) {
     translateY.value = 0;
     opacity.value = 1;
 
+    const router = useRouter();
+
     return (
         <PanGestureHandler onGestureEvent={gestureHandler} enabled={true}>
             <Reanimated.View style={[animatedStyle]}>
@@ -108,7 +111,9 @@ export default function TaskToast(props: ToastableBodyParams) {
                             <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
                             <ThemedText>{props.message}</ThemedText>
                         </View>
-                        <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
+                        <TouchableOpacity onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/posting")}>
+                            <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
+                        </TouchableOpacity>
                     </View>
                     <ProgressBar start={0} bar={ThemedColor.success} />
                 </Animated.View>
