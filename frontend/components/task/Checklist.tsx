@@ -174,7 +174,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
                                     flex: 1,
                                     paddingVertical: 8,
                                     fontSize: 16,
-                                    color: ThemedColor.body,
+                                    color: ThemedColor.text,
                                     fontFamily: "OutfitLight",
                                 }}
                                 placeholder="Enter checklist item"
@@ -194,7 +194,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
                                 flex: 1,
                                 paddingVertical: 8,
                                 fontSize: 16,
-                                color: ThemedColor.body,
+                                color: ThemedColor.text,
                                 fontFamily: "OutfitLight",
                             }}
                             placeholder="Enter checklist item"

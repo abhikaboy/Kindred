@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"io"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/server"
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
-	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,11 +30,11 @@ func TestIndexRoute(t *testing.T) {
 			route:         "/",
 			expectedError: false,
 			expectedCode:  200,
-			expectedBody:  "Welcome to Kindred!",
+			expectedBody:  `{"message":"Welcome to [NAME]!"}`,
 		},
 	}
 
-	app := setup(t)
+	_, httpServer := setup(t)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -47,8 +46,10 @@ func TestIndexRoute(t *testing.T) {
 			)
 			assert.NoErrorf(t, err, tt.desc)
 
-			// Perform the request plain with the app. The -1 disables request latency.
-			res, err := app.Test(req, -1)
+			// Create a response recorder to record the response
+			rr := httptest.NewRecorder()
+			httpServer.Handler.ServeHTTP(rr, req)
+
 			if !tt.expectedError {
 				assert.NoErrorf(t, err, tt.desc)
 			}
@@ -58,22 +59,15 @@ func TestIndexRoute(t *testing.T) {
 				return
 			}
 
-			assert.Equalf(t, tt.expectedCode, res.StatusCode, tt.desc)
+			assert.Equalf(t, tt.expectedCode, rr.Code, tt.desc)
 
-			body, err := io.ReadAll(res.Body)
-			assert.NoErrorf(t, err, tt.desc)
-			assert.Equalf(t, tt.expectedBody, string(body), tt.desc)
+			body := rr.Body.String()
+			assert.Equalf(t, tt.expectedBody, body, tt.desc)
 		})
 	}
-
-	t.Cleanup(func() {
-		if err := app.Shutdown(); err != nil {
-			t.Fatalf("Failed to shutdown server: %v", err)
-		}
-	})
 }
 
-func setup(t *testing.T) *fiber.App {
+func setup(t *testing.T) (*http.Server, *http.Server) {
 	t.Helper()
 	if err := godotenv.Load(filepath.Join("..", "..", ".env")); err != nil {
 		t.Fatal("Failed to load .env")
@@ -88,5 +82,6 @@ func setup(t *testing.T) *fiber.App {
 	if err != nil {
 		t.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
-	return server.New(db.Collections, db.Stream)
+	_, httpServer := server.New(db.Collections, db.Stream)
+	return httpServer, httpServer
 }

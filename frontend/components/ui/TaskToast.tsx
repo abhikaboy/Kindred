@@ -111,7 +111,7 @@ export default function TaskToast(props: ToastableBodyParams) {
                             <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
                             <ThemedText>{props.message}</ThemedText>
                         </View>
-                        <TouchableOpacity onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/posting")}>
+                        <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/posting")}>
                             <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
                         </TouchableOpacity>
                     </View>

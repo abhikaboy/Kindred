@@ -48,8 +48,7 @@ export default function Posting() {
                             flexDirection: "row",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            paddingVertical: 12,
-                            paddingHorizontal: HORIZONTAL_PADDING,
+                            padding: HORIZONTAL_PADDING,
                         }}>
                         <Ionicons
                             name={flash === "off" ? "flash-outline" : "flash-off-outline"}
@@ -69,7 +68,7 @@ export default function Posting() {
                         ghost
                         title="Post Without Photo"
                         onPress={() => {
-                            router.push("/(logged-in)/(tabs)/(task)/index");
+                            router.push("/(logged-in)/(tabs)/(task)/");
                         }}
                     />
                 </>

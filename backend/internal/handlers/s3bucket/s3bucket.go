@@ -1,11 +1,11 @@
 package s3bucket
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 
 	"github.com/abhikaboy/Kindred/internal/config"
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 )
 
 type GetParams struct {
@@ -23,42 +23,37 @@ type Handler struct {
 	config  config.Config
 }
 
-func (h *Handler) GetPresignedUrlHandler(c *fiber.Ctx) error {
-	key := c.Params("key")
+func (h *Handler) GetPresignedUrlHuma(ctx context.Context, input *GetPresignedUrlInput) (*GetPresignedUrlOutput, error) {
+	key := input.Key
 
 	// get the name of the bucket
 	bucketName := h.config.AWS.BucketName
 	if bucketName == "" {
-		return fmt.Errorf("S3_BUCKET environment variable is not set")
+		return nil, huma.Error500InternalServerError("S3_BUCKET environment variable is not set", fmt.Errorf("bucket name not configured"))
 	}
 
 	object := &GetParams{
 		Bucket: bucketName,
 		Key:    key,
 	}
+	
 	url, err := h.service.GetPresignedUrl(object)
 	if err != nil {
-		return err
+		return nil, huma.Error500InternalServerError("Failed to generate presigned URL", err)
 	}
-	jsonData, err := json.MarshalIndent(url, "", " ")
-	if err != nil {
-		return err
-	}
-	c.Set("Content-Type", "application/json")
-	return c.Send(jsonData)
+	
+	return &GetPresignedUrlOutput{Body: url}, nil
 }
 
-func (h *Handler) PostPresignedUrlHandler(c *fiber.Ctx) error {
-	fileType := c.Query("fileType")
+func (h *Handler) CreatePresignedUrlHuma(ctx context.Context, input *CreatePresignedUrlInput) (*CreatePresignedUrlOutput, error) {
+	fileType := input.FileType
 	if fileType == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "fileType query parameter is required",
-		})
+		return nil, huma.Error400BadRequest("fileType query parameter is required", nil)
 	}
 
 	bucketName := h.config.AWS.BucketName
 	if bucketName == "" {
-		return fmt.Errorf("S3_BUCKET environment variable is not set")
+		return nil, huma.Error500InternalServerError("S3_BUCKET environment variable is not set", fmt.Errorf("bucket name not configured"))
 	}
 
 	object := &PostParams{
@@ -68,12 +63,8 @@ func (h *Handler) PostPresignedUrlHandler(c *fiber.Ctx) error {
 
 	urlAndKey, err := h.service.CreateUrlAndKey(object)
 	if err != nil {
-		return err
+		return nil, huma.Error500InternalServerError("Failed to create presigned URL", err)
 	}
-	jsonData, err := json.MarshalIndent(urlAndKey, "", " ")
-	if err != nil {
-		return err
-	}
-	c.Set("Content-Type", "application/json")
-	return c.Send(jsonData)
+	
+	return &CreatePresignedUrlOutput{Body: urlAndKey}, nil
 }

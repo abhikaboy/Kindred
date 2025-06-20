@@ -1,11 +1,14 @@
 package Blueprint
 
 import (
+	"context"
+	"fmt"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/abhikaboy/Kindred/internal/xvalidator"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -14,38 +17,30 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) CreateBlueprint(c *fiber.Ctx) error {
-	var params CreateBlueprintParams
-	if err := c.BodyParser(&params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid request body",
-			"message": err.Error(),
-		})
+func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprintInput) (*CreateBlueprintOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	validate := validator.New()
-	if err := validate.Struct(params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid request body",
-			"message": err.Error(),
-		})
-	}
-
-	ownerid, err := primitive.ObjectIDFromHex(c.UserContext().Value("user_id").(string))
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid user ID",
-			"message": err.Error(),
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	ownerid, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
 	doc := BlueprintDocument{
 		ID:               primitive.NewObjectID(),
-		Banner:           params.Banner,
-		Name:             params.Name,
-		Tags:             params.Tags,
-		Description:      params.Description,
-		Duration:         params.Duration,
+		Banner:           input.Body.Banner,
+		Name:             input.Body.Name,
+		Tags:             input.Body.Tags,
+		Description:      input.Body.Description,
+		Duration:         input.Body.Duration,
 		Subscribers:      []primitive.ObjectID{},
 		SubscribersCount: 0,
 		Timestamp:        time.Now(),
@@ -58,151 +53,134 @@ func (h *Handler) CreateBlueprint(c *fiber.Ctx) error {
 	}
 
 	Blueprint, err := h.service.CreateBlueprint(&doc)
-	
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create blueprint",
-			"message": err.Error(),
-		})
+		return nil, huma.Error500InternalServerError("Failed to create blueprint", err)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(Blueprint)
+	return &CreateBlueprintOutput{Body: *Blueprint}, nil
 }
 
-func (h *Handler) GetBlueprints(c *fiber.Ctx) error {
+func (h *Handler) GetBlueprintsHuma(ctx context.Context, input *GetBlueprintsInput) (*GetBlueprintsOutput, error) {
 	Blueprints, err := h.service.GetAllBlueprints()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to get blueprints",
-			"message": err.Error(),
-		})
+		return nil, huma.Error500InternalServerError("Failed to get blueprints", err)
 	}
 
-	return c.JSON(Blueprints)
+	return &GetBlueprintsOutput{Body: Blueprints}, nil
 }
 
-func (h *Handler) GetBlueprint(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) GetBlueprintHuma(ctx context.Context, input *GetBlueprintInput) (*GetBlueprintOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid ID format",
-			"message": err.Error(),
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	Blueprint, err := h.service.GetBlueprintByID(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Blueprint not found",
-			"message": err.Error(),
-		})
+		return nil, huma.Error404NotFound("Blueprint not found", err)
 	}
 
-	return c.JSON(Blueprint)
+	return &GetBlueprintOutput{Body: *Blueprint}, nil
 }
 
-func (h *Handler) UpdatePartialBlueprint(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) UpdateBlueprintHuma(ctx context.Context, input *UpdateBlueprintInput) (*UpdateBlueprintOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid ID format",
-			"message": err.Error(),
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	var update UpdateBlueprintDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid request body",
-			"message": err.Error(),
-		})
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	if err := h.service.UpdatePartialBlueprint(id, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to update blueprint",
-			"message": err.Error(),
-		})
+	if err := h.service.UpdatePartialBlueprint(id, input.Body); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update blueprint", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	resp := &UpdateBlueprintOutput{}
+	resp.Body.Message = "Blueprint updated successfully"
+	return resp, nil
 }
 
-func (h *Handler) DeleteBlueprint(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) DeleteBlueprintHuma(ctx context.Context, input *DeleteBlueprintInput) (*DeleteBlueprintOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid ID format",
-			"message": err.Error(),
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	if err := h.service.DeleteBlueprint(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to delete blueprint",
-			"message": err.Error(),
-		})
+		return nil, huma.Error500InternalServerError("Failed to delete blueprint", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	resp := &DeleteBlueprintOutput{}
+	resp.Body.Message = "Blueprint deleted successfully"
+	return resp, nil
 }
 
-func (h *Handler) SubscribeToBlueprint(c *fiber.Ctx) error {
-	blueprintID, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) SubscribeToBlueprintHuma(ctx context.Context, input *SubscribeToBlueprintInput) (*SubscribeToBlueprintOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid blueprint ID",
-			"message": err.Error(),
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
-	userID, err := primitive.ObjectIDFromHex(c.UserContext().Value("user_id").(string))
+
+	blueprintID, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid user ID",
-			"message": err.Error(),
-		})
+		return nil, huma.Error400BadRequest("Invalid blueprint ID", err)
 	}
+
+	userID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
 	err = h.service.SubscribeToBlueprint(blueprintID, userID)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error":   "Already subscribed or blueprint not found",
-			})
+			return nil, huma.Error400BadRequest("Already subscribed or blueprint not found", err)
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to subscribe",
-			"message": err.Error(),
-		})
+		return nil, huma.Error500InternalServerError("Failed to subscribe", err)
 	}
-	return c.SendStatus(fiber.StatusOK)
+
+	resp := &SubscribeToBlueprintOutput{}
+	resp.Body.Message = "Subscribed to blueprint successfully"
+	return resp, nil
 }
 
-func (h *Handler) UnsubscribeFromBlueprint(c *fiber.Ctx) error {
-	blueprintID, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) UnsubscribeFromBlueprintHuma(ctx context.Context, input *UnsubscribeFromBlueprintInput) (*UnsubscribeFromBlueprintOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid blueprint ID",
-			"message": err.Error(),
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
-	userID, err := primitive.ObjectIDFromHex(c.UserContext().Value("user_id").(string))
+
+	blueprintID, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Invalid user ID",
-			"message": err.Error(),
-		})
+		return nil, huma.Error400BadRequest("Invalid blueprint ID", err)
 	}
+
+	userID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
 	err = h.service.UnsubscribeFromBlueprint(blueprintID, userID)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error":   "Not subscribed or blueprint not found",
-			})
+			return nil, huma.Error400BadRequest("Not subscribed or blueprint not found", err)
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to unsubscribe",
-			"message": err.Error(),
-		})
+		return nil, huma.Error500InternalServerError("Failed to unsubscribe", err)
 	}
-	return c.SendStatus(fiber.StatusOK)
+
+	resp := &UnsubscribeFromBlueprintOutput{}
+	resp.Body.Message = "Unsubscribed from blueprint successfully"
+	return resp, nil
 }
