@@ -39,7 +39,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,refresh_token,X-Requested-With,Accept,Origin,Cache-Control,X-File-Name")
-			w.Header().Set("Access-Control-Expose-Headers", "Authorization,refresh_token")
+			w.Header().Set("Access-Control-Expose-Headers", "Authorization,refresh_token,access_token")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
 			

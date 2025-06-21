@@ -13,11 +13,9 @@ type LoginInput struct {
 }
 
 type LoginOutput struct {
-	Headers struct {
-		AccessToken  string `header:"access_token"`
-		RefreshToken string `header:"refresh_token"`
-	}
-	Body SafeUser `json:"body"`
+	AccessToken  string   `header:"access_token"`
+	RefreshToken string   `header:"refresh_token"`
+	Body         SafeUser `json:"body"`
 }
 
 // Register Operation Types
@@ -26,10 +24,8 @@ type RegisterInput struct {
 }
 
 type RegisterOutput struct {
-	Headers struct {
-		AccessToken  string `header:"access_token"`
-		RefreshToken string `header:"refresh_token"`
-	}
+	AccessToken  string `header:"access_token"`
+	RefreshToken string `header:"refresh_token"`
 	Body struct {
 		Message string `json:"message" example:"User Created Successfully"`
 	}

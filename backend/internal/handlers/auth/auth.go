@@ -31,8 +31,8 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 	}
 
 	resp := &LoginOutput{}
-	resp.Headers.AccessToken = access
-	resp.Headers.RefreshToken = refresh
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
 	resp.Body = types.SafeUser{
 		ID:             user.ID,
 		DisplayName:    user.DisplayName,
@@ -150,8 +150,8 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	}
 
 	resp := &RegisterOutput{}
-	resp.Headers.AccessToken = access
-	resp.Headers.RefreshToken = refresh
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
 	resp.Body.Message = "User Created Successfully"
 	
 	return resp, nil
@@ -176,8 +176,8 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 	}
 
 	resp := &LoginOutput{}
-	resp.Headers.AccessToken = access
-	resp.Headers.RefreshToken = refresh
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
 	resp.Body = types.SafeUser{
 		ID:             user.ID,
 		DisplayName:    user.DisplayName,
