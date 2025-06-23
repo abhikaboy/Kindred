@@ -29,9 +29,15 @@ func (s *Service) GetAllBlueprints() ([]BlueprintDocument, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var results []BlueprintDocument = make([]BlueprintDocument, 0)
-	if err := cursor.All(ctx, &results); err != nil {
+	var internalResults []BlueprintDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
 		return nil, err
+	}
+
+	// Convert internal documents to API documents
+	results := make([]BlueprintDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
 	}
 
 	return results, nil
@@ -42,8 +48,8 @@ func (s *Service) GetBlueprintByID(id primitive.ObjectID) (*BlueprintDocument, e
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
-	var Blueprint BlueprintDocument
-	err := s.Blueprints.FindOne(ctx, filter).Decode(&Blueprint)
+	var internalBlueprint BlueprintDocumentInternal
+	err := s.Blueprints.FindOne(ctx, filter).Decode(&internalBlueprint)
 
 	if err == mongo.ErrNoDocuments {
 		// No matching Blueprint found
@@ -53,14 +59,14 @@ func (s *Service) GetBlueprintByID(id primitive.ObjectID) (*BlueprintDocument, e
 		return nil, err
 	}
 
-	return &Blueprint, nil
+	return internalBlueprint.ToAPI(), nil
 }
 
-// InsertBlueprint adds a new Blueprint document
-func (s *Service) CreateBlueprint(r *BlueprintDocument) (*BlueprintDocument, error) {
+// CreateBlueprint adds a new Blueprint document
+func (s *Service) CreateBlueprint(r *BlueprintDocumentInternal) (*BlueprintDocument, error) {
 	ctx := context.Background()
 
-	Blueprint := BlueprintDocument{
+	blueprint := BlueprintDocumentInternal{
 		ID:               primitive.NewObjectID(),
 		Banner:           r.Banner,
 		Name:             r.Name,
@@ -75,7 +81,7 @@ func (s *Service) CreateBlueprint(r *BlueprintDocument) (*BlueprintDocument, err
 	slog.Info("Creating blueprint", "owner_id", r.Owner.ID)
 	cursor, err := s.Users.Aggregate(ctx, []bson.M{
 		{
-			"$match": bson.M{"_id": &r.Owner.ID},
+			"$match": bson.M{"_id": r.Owner.ID},
 		},
 		{
 			"$project": bson.M{"handle": 1, "display_name": 1, "profile_picture": 1},
@@ -83,20 +89,20 @@ func (s *Service) CreateBlueprint(r *BlueprintDocument) (*BlueprintDocument, err
 	})
 	defer cursor.Close(ctx)
 
-	var user types.UserExtendedReference
+	var user types.UserExtendedReferenceInternal
 	cursor.Next(ctx)
 	if err := cursor.Decode(&user); err != nil {
 		return nil, err
 	}
 
-	Blueprint.Owner = &user
+	blueprint.Owner = &user
 
-	_, err = s.Blueprints.InsertOne(ctx, Blueprint)
+	_, err = s.Blueprints.InsertOne(ctx, blueprint)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Blueprint, nil
+	return blueprint.ToAPI(), nil
 }
 
 // UpdatePartialBlueprint updates only specified fields of a Blueprint document by ObjectID.

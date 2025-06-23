@@ -27,19 +27,33 @@ func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnect
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	doc := ConnectionDocument{
+	// Convert receiver ID from string to ObjectID
+	receiverID, err := primitive.ObjectIDFromHex(input.Body.Reciever)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid receiver ID format", err)
+	}
+
+	// Convert requester to internal type
+	requesterInternal := ConnectionUserInternal{
+		ID:      primitive.NewObjectID(), // This should come from the actual user data
+		Picture: input.Body.Requester.Picture,
+		Name:    input.Body.Requester.Name,
+		Handle:  input.Body.Requester.Handle,
+	}
+
+	internalDoc := ConnectionDocumentInternal{
 		ID:        primitive.NewObjectID(),
-		Requester: input.Body.Requester,
-		Reciever:  input.Body.Reciever,
+		Requester: requesterInternal,
+		Reciever:  receiverID,
 		Timestamp: xutils.NowUTC(),
 	}
 
-	_, err = h.service.CreateConnection(&doc)
+	connection, err := h.service.CreateConnection(&internalDoc)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to create connection", err)
 	}
 
-	return &CreateConnectionOutput{Body: doc}, nil
+	return &CreateConnectionOutput{Body: *connection}, nil
 }
 
 func (h *Handler) GetConnectionsHuma(ctx context.Context, input *GetConnectionsInput) (*GetConnectionsOutput, error) {

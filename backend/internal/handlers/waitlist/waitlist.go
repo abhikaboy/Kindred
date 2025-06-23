@@ -24,21 +24,21 @@ func (h *Handler) CreateWaitlistHuma(ctx context.Context, input *CreateWaitlistI
 		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	doc := WaitlistDocument{
+	internalDoc := WaitlistDocumentInternal{
 		Email:     input.Body.Email,
 		Name:      input.Body.Name,
 		Timestamp: xutils.NowUTC(),
 		ID:        primitive.NewObjectID(),
 	}
 
-	_, err := h.service.CreateWaitlist(&doc)
+	waitlist, err := h.service.CreateWaitlist(&internalDoc)
 	if err != nil {
 		slog.LogAttrs(
 			ctx,
 			slog.LevelError,
 			"Error creating waitlist entry",
 			slog.String("error", err.Error()),
-			slog.String("email", doc.Email),
+			slog.String("email", internalDoc.Email),
 		)
 
 		if strings.Contains(err.Error(), "duplicate key error") {
@@ -46,27 +46,27 @@ func (h *Handler) CreateWaitlistHuma(ctx context.Context, input *CreateWaitlistI
 				ctx,
 				slog.LevelInfo,
 				"Email already exists in waitlist",
-				slog.String("email", doc.Email),
+				slog.String("email", internalDoc.Email),
 			)
-			return nil, huma.Error409Conflict("Duplicate email", fmt.Errorf("email %s already exists in waitlist", doc.Email))
+			return nil, huma.Error409Conflict("Duplicate email", fmt.Errorf("email %s already exists in waitlist", internalDoc.Email))
 		}
 
 		return nil, huma.Error500InternalServerError("Failed to create waitlist entry", err)
 	}
 
-	err = twillio.SendWaitlistEmail(doc.Email, doc.Name)
+	err = twillio.SendWaitlistEmail(internalDoc.Email, internalDoc.Name)
 	if err != nil {
 		slog.LogAttrs(
 			ctx,
 			slog.LevelError,
 			"Error sending waitlist email",
 			slog.String("error", err.Error()),
-			slog.String("email", doc.Email),
+			slog.String("email", internalDoc.Email),
 		)
 		// We continue since the user was added to the waitlist successfully
 	}
 
-	return &CreateWaitlistOutput{Body: doc}, nil
+	return &CreateWaitlistOutput{Body: *waitlist}, nil
 }
 
 func (h *Handler) GetWaitlistsHuma(ctx context.Context, input *GetWaitlistsInput) (*GetWaitlistsOutput, error) {

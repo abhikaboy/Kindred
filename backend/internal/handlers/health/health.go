@@ -35,7 +35,7 @@ func RegisterHealthOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-health",
 		Method:      http.MethodGet,
-		Path:        "/v1/health/",
+		Path:        "/v1/health",
 		Summary:     "Health check endpoint",
 		Description: "Returns the health status of the API",
 		Tags:        []string{"health"},

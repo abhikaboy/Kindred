@@ -34,7 +34,8 @@ func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprin
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	doc := BlueprintDocument{
+	// Create internal document for database operations
+	internalDoc := BlueprintDocumentInternal{
 		ID:               primitive.NewObjectID(),
 		Banner:           input.Body.Banner,
 		Name:             input.Body.Name,
@@ -44,7 +45,7 @@ func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprin
 		Subscribers:      []primitive.ObjectID{},
 		SubscribersCount: 0,
 		Timestamp:        time.Now(),
-		Owner: &types.UserExtendedReference{
+		Owner: &types.UserExtendedReferenceInternal{
 			ID:             ownerid,
 			DisplayName:    "",
 			Handle:         "",
@@ -52,21 +53,21 @@ func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprin
 		},
 	}
 
-	Blueprint, err := h.service.CreateBlueprint(&doc)
+	blueprint, err := h.service.CreateBlueprint(&internalDoc)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to create blueprint", err)
 	}
 
-	return &CreateBlueprintOutput{Body: *Blueprint}, nil
+	return &CreateBlueprintOutput{Body: *blueprint}, nil
 }
 
 func (h *Handler) GetBlueprintsHuma(ctx context.Context, input *GetBlueprintsInput) (*GetBlueprintsOutput, error) {
-	Blueprints, err := h.service.GetAllBlueprints()
+	blueprints, err := h.service.GetAllBlueprints()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to get blueprints", err)
 	}
 
-	return &GetBlueprintsOutput{Body: Blueprints}, nil
+	return &GetBlueprintsOutput{Body: blueprints}, nil
 }
 
 func (h *Handler) GetBlueprintHuma(ctx context.Context, input *GetBlueprintInput) (*GetBlueprintOutput, error) {
@@ -75,12 +76,12 @@ func (h *Handler) GetBlueprintHuma(ctx context.Context, input *GetBlueprintInput
 		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	Blueprint, err := h.service.GetBlueprintByID(id)
+	blueprint, err := h.service.GetBlueprintByID(id)
 	if err != nil {
 		return nil, huma.Error404NotFound("Blueprint not found", err)
 	}
 
-	return &GetBlueprintOutput{Body: *Blueprint}, nil
+	return &GetBlueprintOutput{Body: *blueprint}, nil
 }
 
 func (h *Handler) UpdateBlueprintHuma(ctx context.Context, input *UpdateBlueprintInput) (*UpdateBlueprintOutput, error) {
