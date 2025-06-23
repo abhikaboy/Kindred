@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle, TextStyle } from "react-native";
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
@@ -9,9 +9,10 @@ type Props = {
     outline?: boolean;
     disabled?: boolean;
     children?: React.ReactNode;
+    textStyle?: TextStyle;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline, disabled, children }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, disabled, children, textStyle }: Props) {
     let ThemedColor = useThemeColor();
 
     return (
@@ -42,6 +43,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
                     fontFamily: "Outfit",
                     fontWeight: 500,
                     fontSize: 15,
+                    ...textStyle,
                 }}>
                 {title}
             </Text>
