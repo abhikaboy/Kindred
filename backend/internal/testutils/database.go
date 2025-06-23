@@ -11,6 +11,7 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,21 +33,35 @@ type TestConfig struct {
 
 // NewTestDB creates a new test database connection
 func NewTestDB(ctx context.Context, cfg TestConfig) (*TestDB, error) {
+	fmt.Println("=== NewTestDB Debug Log ===")
+	
 	// Create test database name
 	testDBName := cfg.AtlasConfig.Environment
 	if cfg.UseRandomDB {
 		testDBName = generateTestDBName()
+		fmt.Printf("Generated random test DB name: %s\n", testDBName)
+	} else {
+		fmt.Printf("Using configured test DB name: %s\n", testDBName)
 	}
 
 	// Override the environment to use our test database
 	testAtlasConfig := cfg.AtlasConfig
 	testAtlasConfig.Environment = testDBName
 
+	fmt.Printf("Test connection config:\n")
+	fmt.Printf("  User: %s\n", testAtlasConfig.User)
+	fmt.Printf("  Cluster: %s\n", testAtlasConfig.Cluster)
+	fmt.Printf("  Environment: %s\n", testAtlasConfig.Environment)
+	fmt.Printf("  URI: %s\n", maskPassword(testAtlasConfig.URI()))
+
 	// Connect directly without validation (for testing)
+	fmt.Println("Attempting to connect to test database...")
 	db, err := connectTestDB(ctx, testAtlasConfig)
 	if err != nil {
+		fmt.Printf("❌ Failed to connect to test database: %v\n", err)
 		return nil, fmt.Errorf("failed to create test database connection: %w", err)
 	}
+	fmt.Println("✅ Successfully connected to test database")
 
 	testDB := &TestDB{
 		DB:         db,
@@ -57,6 +72,9 @@ func NewTestDB(ctx context.Context, cfg TestConfig) (*TestDB, error) {
 	slog.LogAttrs(ctx, slog.LevelInfo, "Test database created",
 		slog.String("database_name", testDBName),
 		slog.Bool("managed", cfg.CleanupDB))
+
+	fmt.Printf("✅ NewTestDB completed successfully - DB name: %s\n", testDBName)
+	fmt.Println("=== End NewTestDB Debug Log ===")
 
 	return testDB, nil
 }
@@ -217,22 +235,142 @@ func generateTestDBName() string {
 
 // TestDBFromEnv creates a test database configuration from environment variables
 func TestDBFromEnv() (TestConfig, error) {
+	fmt.Println("=== TestDBFromEnv Debug Log ===")
+	
+	// Check current working directory
+	if cwd, err := os.Getwd(); err == nil {
+		fmt.Printf("Current working directory: %s\n", cwd)
+	}
+	
+	// Try to find .env.test in multiple locations
+	envTestPaths := []string{
+		".env.test",           // Current directory
+		"../.env.test",        // Parent directory
+		"../../.env.test",     // Grandparent directory
+		"../../../.env.test",  // Great-grandparent directory
+	}
+	
+	var foundEnvTestPath string
+	for _, path := range envTestPaths {
+		if _, err := os.Stat(path); err == nil {
+			foundEnvTestPath = path
+			fmt.Printf("✅ .env.test file found at: %s\n", path)
+			break
+		}
+	}
+	
+	if foundEnvTestPath == "" {
+		fmt.Println("❌ .env.test file not found in any expected location")
+		// Check for .env as fallback
+		envPaths := []string{
+			".env",
+			"../.env", 
+			"../../.env",
+			"../../../.env",
+		}
+		
+		var foundEnvPath string
+		for _, path := range envPaths {
+			if _, err := os.Stat(path); err == nil {
+				foundEnvPath = path
+				fmt.Printf("✅ .env file found at: %s\n", path)
+				break
+			}
+		}
+		
+		if foundEnvPath == "" {
+			fmt.Println("❌ No .env or .env.test file found")
+			return TestConfig{}, fmt.Errorf("no environment file found in current or parent directories")
+		}
+	}
+	
+	// Check environment variables before loading
+	fmt.Println("Environment variables before loading:")
+	fmt.Printf("ATLAS_USER: %s\n", os.Getenv("ATLAS_USER"))
+	fmt.Printf("ATLAS_PASS: %s\n", maskPassword(os.Getenv("ATLAS_PASS")))
+	fmt.Printf("ATLAS_CLUSTER: %s\n", os.Getenv("ATLAS_CLUSTER"))
+	fmt.Printf("ATLAS_ENVIRONMENT: %s\n", os.Getenv("ATLAS_ENVIRONMENT"))
+	
+	// Try to load .env.test first, then fall back to .env
+	fmt.Println("\nAttempting to load environment file...")
+	if foundEnvTestPath != "" {
+		fmt.Printf("Loading .env.test from: %s\n", foundEnvTestPath)
+		if err := godotenv.Load(foundEnvTestPath); err != nil {
+			fmt.Printf("❌ Failed to load %s: %v\n", foundEnvTestPath, err)
+			return TestConfig{}, fmt.Errorf("failed to load .env.test from %s: %w", foundEnvTestPath, err)
+		}
+		fmt.Printf("✅ Successfully loaded .env.test from: %s\n", foundEnvTestPath)
+	} else {
+		// Fallback to .env
+		envPaths := []string{
+			".env",
+			"../.env", 
+			"../../.env",
+			"../../../.env",
+		}
+		
+		var loaded bool
+		for _, path := range envPaths {
+			if _, err := os.Stat(path); err == nil {
+				fmt.Printf("Loading .env from: %s\n", path)
+				if err := godotenv.Load(path); err != nil {
+					fmt.Printf("❌ Failed to load %s: %v\n", path, err)
+					continue
+				}
+				fmt.Printf("✅ Successfully loaded .env from: %s\n", path)
+				loaded = true
+				break
+			}
+		}
+		
+		if !loaded {
+			return TestConfig{}, fmt.Errorf("failed to load any environment file")
+		}
+	}
+	
+	// Check environment variables after loading
+	fmt.Println("Environment variables after loading:")
+	fmt.Printf("ATLAS_USER: %s\n", os.Getenv("ATLAS_USER"))
+	fmt.Printf("ATLAS_PASS: %s\n", maskPassword(os.Getenv("ATLAS_PASS")))
+	fmt.Printf("ATLAS_CLUSTER: %s\n", os.Getenv("ATLAS_CLUSTER"))
+	fmt.Printf("ATLAS_ENVIRONMENT: %s\n", os.Getenv("ATLAS_ENVIRONMENT"))
+	
+	fmt.Println("\nAttempting to load config...")
 	cfg, err := config.Load()
 	if err != nil {
+		fmt.Printf("❌ Failed to load config: %v\n", err)
 		return TestConfig{}, fmt.Errorf("failed to load config: %w", err)
 	}
+	
+	fmt.Println("✅ Config loaded successfully:")
+	fmt.Printf("  ATLAS_USER: %s\n", cfg.Atlas.User)
+	fmt.Printf("  ATLAS_CLUSTER: %s\n", cfg.Atlas.Cluster)
+	fmt.Printf("  ATLAS_ENVIRONMENT: %s\n", cfg.Atlas.Environment)
+	fmt.Printf("  MongoDB URI: %s\n", maskPassword(cfg.Atlas.URI()))
 
 	// Override environment for testing
 	testCfg := cfg.Atlas
 	if !strings.Contains(testCfg.Environment, "test") {
 		testCfg.Environment = "test_" + testCfg.Environment
+		fmt.Printf("Modified environment to: %s\n", testCfg.Environment)
 	}
+
+	fmt.Println("✅ TestDBFromEnv completed successfully")
+	fmt.Println("=== End TestDBFromEnv Debug Log ===")
 
 	return TestConfig{
 		AtlasConfig: testCfg,
 		UseRandomDB: true,
 		CleanupDB:   true,
 	}, nil
+}
+
+// Helper function to mask passwords in logs
+func maskPassword(password string) string {
+	if len(password) > 3 {
+		return password[:3] + "***"
+	}
+	return "***"
 }
 
 // IsTestEnvironment checks if we're running in a test environment
@@ -258,8 +396,6 @@ func IsCI() bool {
 	}
 	return false
 }
-
-
 
 // connectTestDB creates a database connection specifically for testing
 // This bypasses the environment validation that exists in the main xmongo package
@@ -287,14 +423,27 @@ func connectTestDB(ctx context.Context, cfg config.Atlas) (*xmongo.DB, error) {
 
 // connectTestClient connects to MongoDB for testing
 func connectTestClient(ctx context.Context, uri string) (*mongo.Client, error) {
+	fmt.Printf("=== connectTestClient Debug ===\n")
+	fmt.Printf("Connecting to URI: %s\n", maskPassword(uri))
+	
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
+	
+	fmt.Println("Attempting mongo.Connect...")
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
+		fmt.Printf("❌ mongo.Connect failed: %v\n", err)
 		return nil, fmt.Errorf("failed to connect to test database: %w", err)
 	}
+	fmt.Println("✅ mongo.Connect successful")
+	
+	fmt.Println("Attempting to ping database...")
 	if err := client.Ping(ctx, nil); err != nil {
+		fmt.Printf("❌ ping failed: %v\n", err)
 		return nil, fmt.Errorf("failed to ping test database: %w", err)
 	}
+	fmt.Println("✅ ping successful")
+	fmt.Println("=== End connectTestClient Debug ===")
+	
 	return client, nil
 } 
