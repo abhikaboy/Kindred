@@ -202,7 +202,7 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		Active:         true,
 		Timestamp:      xutils.NowUTC(),
 		LastEdited:     xutils.NowUTC(),
-		TemplateID:     templateDoc.ID,
+		TemplateID:     &templateDoc.ID,
 	}
 }
 
@@ -294,7 +294,7 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			return c.Status(fiber.StatusInternalServerError).JSON(err)
 		}
 
-		doc.TemplateID = template_id
+		doc.TemplateID = &template_id
 	}
 
 	return nil

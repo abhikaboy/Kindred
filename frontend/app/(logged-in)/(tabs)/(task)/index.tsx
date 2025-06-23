@@ -16,7 +16,6 @@ import { Image } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Workspace from "./workspace";
-import TaskCard from "@/components/cards/TaskCard";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import Today from "./today";
 

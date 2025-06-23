@@ -1,7 +1,10 @@
 package health
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"context"
+	"net/http"
+
+	"github.com/danielgtaylor/huma/v2"
 )
 
 /*
@@ -11,6 +14,30 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) GetHealth(c *fiber.Ctx) error {
-	return c.SendStatus(fiber.StatusOK)
+// HealthInput represents the input for the health check endpoint
+type HealthInput struct{}
+
+// HealthOutput represents the output for the health check endpoint  
+type HealthOutput struct {
+	Body struct {
+		Status string `json:"status" example:"ok"`
+	}
+}
+
+func (h *Handler) GetHealth(ctx context.Context, input *HealthInput) (*HealthOutput, error) {
+	resp := &HealthOutput{}
+	resp.Body.Status = "ok"
+	return resp, nil
+}
+
+// RegisterHealthOperation registers the health check operation with Huma
+func RegisterHealthOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-health",
+		Method:      http.MethodGet,
+		Path:        "/v1/health/",
+		Summary:     "Health check endpoint",
+		Description: "Returns the health status of the API",
+		Tags:        []string{"health"},
+	}, handler.GetHealth)
 }

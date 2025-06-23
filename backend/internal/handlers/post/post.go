@@ -1,9 +1,13 @@
 package Post
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/abhikaboy/Kindred/xutils"
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -11,105 +15,107 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) CreatePost(c *fiber.Ctx) error {
-	var params CreatePostParams
-	if err := c.BodyParser(&params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*CreatePostOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	validate := validator.New()
-	if err := validate.Struct(params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Validation failed",
-		})
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
 	doc := PostDocument{
 		ID:        primitive.NewObjectID(),
-		Field1:    params.Field1,
-		Field2:    params.Field2,
-		Picture:   params.Picture,
+		Field1:    input.Body.Field1,
+		Field2:    input.Body.Field2,
+		Picture:   input.Body.Picture,
 		Timestamp: xutils.NowUTC(),
 	}
 
-	_, err := h.service.CreatePost(&doc)
+	_, err = h.service.CreatePost(&doc)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create Post",
-		})
+		return nil, huma.Error500InternalServerError("Failed to create post", err)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(doc)
+	return &CreatePostOutput{Body: doc}, nil
 }
 
-func (h *Handler) GetPosts(c *fiber.Ctx) error {
-	Posts, err := h.service.GetAllPosts()
+func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetPostsOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch Posts",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	return c.JSON(Posts)
+	posts, err := h.service.GetAllPosts()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get posts", err)
+	}
+
+	return &GetPostsOutput{Body: posts}, nil
 }
 
-func (h *Handler) GetPost(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) GetPostHuma(ctx context.Context, input *GetPostInput) (*GetPostOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	Post, err := h.service.GetPostByID(id)
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Post not found",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	return c.JSON(Post)
+	post, err := h.service.GetPostByID(id)
+	if err != nil {
+		return nil, huma.Error404NotFound("Post not found", err)
+	}
+
+	return &GetPostOutput{Body: *post}, nil
 }
 
-func (h *Handler) UpdatePartialPost(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) UpdatePostHuma(ctx context.Context, input *UpdatePostInput) (*UpdatePostOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	var update UpdatePostDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	if err := h.service.UpdatePartialPost(id, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update Post",
-		})
+	if err := h.service.UpdatePartialPost(id, input.Body); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update post", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	resp := &UpdatePostOutput{}
+	resp.Body.Message = "Post updated successfully"
+	return resp, nil
 }
 
-func (h *Handler) DeletePost(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) DeletePostHuma(ctx context.Context, input *DeletePostInput) (*DeletePostOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	if err := h.service.DeletePost(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete Post",
-		})
+		return nil, huma.Error500InternalServerError("Failed to delete post", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	resp := &DeletePostOutput{}
+	resp.Body.Message = "Post deleted successfully"
+	return resp, nil
 }

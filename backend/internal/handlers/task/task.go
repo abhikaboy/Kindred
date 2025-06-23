@@ -1,13 +1,15 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/abhikaboy/Kindred/xutils"
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -18,41 +20,37 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) GetTasksByUser(c *fiber.Ctx) error {
-	user_id := c.UserContext().Value("user_id").(string)
-
-	id := c.Query("id", user_id) // uses the logged in user if not specified
-	userId, err := primitive.ObjectIDFromHex(id)
-
+func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput) (*GetTasksByUserOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format " + err.Error() + " ID: " + id,
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	var sort SortParams
-
-	sort.SortBy = c.Query("sortBy", "timestamp")
-	sort.SortDir, err = strconv.Atoi(c.Query("sortDir", "-1"))
-
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid sortDir format",
-		})
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	sortAggregation := bson.D{
-		{Key: "$sort", Value: bson.M{
-			sort.SortBy: sort.SortDir,
-		}},
+	// Construct bson.D for sorting based on input parameters
+	var sortDocument bson.D
+	if input.SortBy != "" {
+		sortDir := 1
+		if input.SortDir == "desc" {
+			sortDir = -1
+		}
+		sortDocument = bson.D{{Key: input.SortBy, Value: sortDir}}
+	} else {
+		// Default sort by timestamp descending
+		sortDocument = bson.D{{Key: "timestamp", Value: -1}}
 	}
 
-	Tasks, err := h.service.GetTasksByUser(userId, sortAggregation)
+	tasks, err := h.service.GetTasksByUser(user_id_obj, sortDocument)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
 	}
 
-	return c.JSON(Tasks)
+	return &GetTasksByUserOutput{Body: tasks}, nil
 }
 
 // parseTimesToUTC parses deadline, startTime, and startDate to UTC format
@@ -86,327 +84,370 @@ func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Ti
 	return deadline, startTime, startDate, nil
 }
 
-func (h *Handler) CreateTask(c *fiber.Ctx) error {
-	var params CreateTaskParams
+func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*CreateTaskOutput, error) {
+	errs := validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
 
-	user_id := c.UserContext().Value("user_id").(string)
-
-	err, ids := xutils.ParseIDs(c, c.Params("category"), user_id)
+	categoryIDFromPath := input.Category
+	categoryID, err := primitive.ObjectIDFromHex(categoryIDFromPath)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
-	}
-	_, categoryId := ids[1], ids[0]
-
-	if err := c.BodyParser(&params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body " + err.Error(),
-		})
+		return nil, huma.Error400BadRequest("Invalid category ID", err)
 	}
 
-	if err := validator.Validate(params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
-	}
-	/**
-	Truncating the start date to the start of the day to
-	make sure its detected as 1 day old as soon as the new day starts
-	*/
-	if params.StartDate != nil {
-		// remove the time and only keep the date
-		truncated := params.StartDate.Truncate(24 * time.Hour)
-		params.StartDate = &truncated
-	}
-
-	if params.RecurDetails != nil {
-		if params.RecurDetails.Every == 0 {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Every is required",
-			})
-		}
-	}
-	// parse times to UTC
-	deadline, startTime, startDate, err := parseTimesToUTC(&params)
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	reminders := ParseReminder(params)
+	userObjID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
 
-	doc := TaskDocument{
+	taskParams := input.Body
+
+	// Create task document using fields from CreateTaskParams
+	task := TaskDocument{
 		ID:             primitive.NewObjectID(),
-		Priority:       params.Priority,
-		Content:        params.Content,
-		Value:          params.Value,
-		Recurring:      params.Recurring,
-		RecurFrequency: params.RecurFrequency,
-		Public:         params.Public,
-		Active:         params.Active,
-		Timestamp:      xutils.NowUTC(),
-		Notes:          params.Notes,
-		Checklist:      params.Checklist,
-		Reminders:      reminders,
-		Deadline:       deadline,
-		StartTime:      startTime,
-		StartDate:      startDate,
+		Priority:       taskParams.Priority,
+		Content:        taskParams.Content,
+		Value:          taskParams.Value,
+		Recurring:      taskParams.Recurring,
+		RecurFrequency: taskParams.RecurFrequency,
+		RecurDetails:   taskParams.RecurDetails,
+		Public:         taskParams.Public,
+		Active:         taskParams.Active,
+		UserID:         userObjID,
+		CategoryID:     categoryID,
+		Deadline:       taskParams.Deadline,
+		StartTime:      taskParams.StartTime,
+		StartDate:      taskParams.StartDate,
+		Notes:          taskParams.Notes,
+		Checklist:      taskParams.Checklist,
+		Reminders:      taskParams.Reminders,
+		Timestamp:      time.Now(),
+		LastEdited:     time.Now(),
 	}
 
-	err = h.HandleRecurringTaskCreation(c, doc, params, categoryId, deadline, startTime, startDate, reminders)
+	// Set default StartDate to today if not provided
+	if task.StartDate == nil {
+		now := time.Now()
+		task.StartDate = &now
+	}
+
+	doc, err := h.service.CreateTask(categoryID, &task)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Failed to create task", err)
 	}
 
-	_, err = h.service.CreateTask(categoryId, &doc)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(doc)
+	return &CreateTaskOutput{Body: *doc}, nil
 }
 
-func (h *Handler) GetTasks(c *fiber.Ctx) error {
-	Tasks, err := h.service.GetAllTasks()
+func (h *Handler) GetTasks(ctx context.Context, input *GetTasksInput) (*GetTasksOutput, error) {
+	tasks, err := h.service.GetAllTasks()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch Tasks",
-		})
+		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
 	}
 
-	return c.JSON(Tasks)
+	return &GetTasksOutput{Body: tasks}, nil
 }
 
-func (h *Handler) GetTask(c *fiber.Ctx) error {
-	user_id := c.UserContext().Value("user_id").(string)
-	userId, err := primitive.ObjectIDFromHex(user_id)
-
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) GetTask(ctx context.Context, input *GetTaskInput) (*GetTaskOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	Task, err := h.service.GetTaskByID(id, userId)
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Task not found",
-		})
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	return c.JSON(Task)
-}
-
-/*
-*
-
-	@TODO - Add a verification to check if the user is the owner of the task
-*/
-func (h *Handler) UpdateTask(c *fiber.Ctx) error {
-	context_id := c.UserContext().Value("user_id").(string)
-
-	_, err := primitive.ObjectIDFromHex(context_id)
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
-	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
-
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	var update UpdateTaskDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+	task, err := h.service.GetTaskByID(id, user_id_obj)
+	if err != nil {
+		return nil, huma.Error404NotFound("Task not found", err)
 	}
 
-	if _, err := h.service.UpdatePartialTask(id, categoryId, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
-	}
-
-	return c.SendStatus(fiber.StatusOK)
+	return &GetTaskOutput{Body: *task}, nil
 }
 
 /*
 *
-
 	@TODO - Add a verification to check if the user is the owner of the task
 */
-func (h *Handler) CompleteTask(c *fiber.Ctx) error {
-	context_id := c.UserContext().Value("user_id").(string)
-
-	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*UpdateTaskOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
-	}
-	user_id, categoryId, id := ids[0], ids[1], ids[2]
-
-	var data CompleteTaskDocument
-	if err := c.BodyParser(&data); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
 	}
 
-	if err := h.service.CompleteTask(user_id, id, categoryId, data); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
 	}
 
-	if err = h.service.IncrementTaskCompletedAndDelete(user_id, categoryId, id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	// Extract user_id from context (set by auth middleware)
+	_, err = auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	updateData := input.Body
+
+	// Use the UpdatePartialTask service method which matches the available service signature
+	_, err = h.service.UpdatePartialTask(id, categoryID, updateData)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task", err)
+	}
+
+	resp := &UpdateTaskOutput{}
+	resp.Body.Message = "Task updated successfully"
+	return resp, nil
+}
+
+/*
+*
+	@TODO - Add a verification to check if the user is the owner of the task
+*/
+func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*CompleteTaskOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	// Use the CompleteTask service method instead
+	err = h.service.CompleteTask(userObjID, id, categoryID, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to complete task", err)
+	}
+
+	resp := &CompleteTaskOutput{}
+	resp.Body.Message = "Task completed successfully"
+	return resp, nil
 }
 
 /**
 @TODO - Add a verification to check if the user is the owner of the task
 */
 
-func (h *Handler) DeleteTask(c *fiber.Ctx) error {
-	context_id := c.UserContext().Value("user_id").(string)
-
-	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*DeleteTaskOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
-	}
-	_, categoryId, id := ids[0], ids[1], ids[2]
-
-	if err := h.service.DeleteTask(categoryId, id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	_, err = auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	err = h.service.DeleteTask(categoryID, id)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to delete task", err)
+	}
+
+	resp := &DeleteTaskOutput{}
+	resp.Body.Message = "Task deleted successfully"
+	return resp, nil
 }
 
-func (h *Handler) ActivateTask(c *fiber.Ctx) error {
-	context_id := c.UserContext().Value("user_id").(string)
-
-	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+func (h *Handler) ActivateTask(ctx context.Context, input *ActivateTaskInput) (*ActivateTaskOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
-	}
-	user_id, categoryId, id := ids[0], ids[1], ids[2]
-
-	newStatus := c.QueryBool("active", false)
-
-	if err := h.service.ActivateTask(user_id, categoryId, id, newStatus); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	active, err := strconv.ParseBool(input.Active)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid active parameter", err)
+	}
+
+	err = h.service.ActivateTask(userObjID, categoryID, id, active)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task activation status", err)
+	}
+
+	resp := &ActivateTaskOutput{}
+	resp.Body.Message = "Task activation status updated successfully"
+	return resp, nil
 }
 
-func (h *Handler) GetActiveTasks(c *fiber.Ctx) error {
-
-	err, ids := xutils.ParseIDs(c, c.Params("id"))
+func (h *Handler) GetActiveTasks(ctx context.Context, input *GetActiveTasksInput) (*GetActiveTasksOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
-	id := ids[0]
 
 	tasks, err := h.service.GetActiveTasks(id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Failed to fetch active tasks", err)
 	}
 
-	return c.JSON(tasks)
+	return &GetActiveTasksOutput{Body: tasks}, nil
 }
 
-func (h *Handler) CreateTaskFromTemplate(c *fiber.Ctx) error {
-	templateId := c.Params("id")
-
-	templateOID, err := primitive.ObjectIDFromHex(templateId)
+func (h *Handler) CreateTaskFromTemplate(ctx context.Context, input *CreateTaskFromTemplateInput) (*CreateTaskFromTemplateOutput, error) {
+	templateID, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid template ID format", err)
 	}
 
-	template, err := h.service.CreateTaskFromTemplate(templateOID)
+	// Extract user_id from context (set by auth middleware)
+	_, err = auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	return c.JSON(template)
+	doc, err := h.service.CreateTaskFromTemplate(templateID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to create task from template", err)
+	}
+
+	return &CreateTaskFromTemplateOutput{Body: *doc}, nil
 }
 
 /*
 Get all the tasks with start times that are at least a day older than the current time
 */
-func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(c *fiber.Ctx) error {
+func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(ctx context.Context, input *GetTasksWithStartTimesOlderThanOneDayInput) (*GetTasksWithStartTimesOlderThanOneDayOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
 	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
 	}
 
-	return c.JSON(tasks)
+	return &GetTasksWithStartTimesOlderThanOneDayOutput{Body: tasks}, nil
 }
 
-func (h *Handler) GetRecurringTasksWithPastDeadlines(c *fiber.Ctx) error {
-	tasks, err := h.service.GetRecurringTasksWithPastDeadlines()
+func (h *Handler) GetRecurringTasksWithPastDeadlines(ctx context.Context, input *GetRecurringTasksWithPastDeadlinesInput) (*GetRecurringTasksWithPastDeadlinesOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	return c.JSON(tasks)
+	tasks, err := h.service.GetRecurringTasksWithPastDeadlines()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch recurring tasks", err)
+	}
+
+	return &GetRecurringTasksWithPastDeadlinesOutput{Body: tasks}, nil
 }
 
 // UpdateTaskNotes updates the notes field of a task
-func (h *Handler) UpdateTaskNotes(c *fiber.Ctx) error {
-	context_id := c.UserContext().Value("user_id").(string)
-	userId, err := primitive.ObjectIDFromHex(context_id)
+func (h *Handler) UpdateTaskNotes(ctx context.Context, input *UpdateTaskNotesInput) (*UpdateTaskNotesOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
 	}
 
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
-	categoryId, err := primitive.ObjectIDFromHex(c.Params("category"))
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
 	}
 
-	var update UpdateTaskNotesDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	if err := h.service.UpdateTaskNotes(id, categoryId, userId, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	err = h.service.UpdateTaskNotes(id, categoryID, userObjID, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task notes", err)
+	}
+
+	resp := &UpdateTaskNotesOutput{}
+	resp.Body.Message = "Task notes updated successfully"
+	return resp, nil
 }
 
 // UpdateTaskChecklist updates the checklist field of a task
-func (h *Handler) UpdateTaskChecklist(c *fiber.Ctx) error {
-	context_id := c.UserContext().Value("user_id").(string)
-
-	err, ids := xutils.ParseIDs(c, context_id, c.Params("category"), c.Params("id"))
+func (h *Handler) UpdateTaskChecklist(ctx context.Context, input *UpdateTaskChecklistInput) (*UpdateTaskChecklistOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(err)
-	}
-	userId, categoryId, id := ids[0], ids[1], ids[2]
-
-	var update UpdateTaskChecklistDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
 	}
 
-	if err := h.service.UpdateTaskChecklist(id, categoryId, userId, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	err = h.service.UpdateTaskChecklist(id, categoryID, userObjID, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task checklist", err)
+	}
+
+	resp := &UpdateTaskChecklistOutput{}
+	resp.Body.Message = "Task checklist updated successfully"
+	return resp, nil
 }

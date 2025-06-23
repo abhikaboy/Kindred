@@ -2,107 +2,118 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
-	"github.com/abhikaboy/Kindred/internal/xerr"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-/*
-	Handler to execute business logic for Health Endpoint
-*/
-
-/*
-	Given an email/username and password, check if the credentials are valid and return
-	both an access token and a refresh token.
-*/
-
-func (h *Handler) Login(c *fiber.Ctx) error {
-	var req LoginRequest
-	err := c.BodyParser(&req)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
-	}
-
-	errs := xvalidator.Validator.Validate(req)
+// LoginHuma handles user login with email/password
+func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(errs)
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromCredentials(req.Email, req.Password)
+	id, count, user, err := h.service.LoginFromCredentials(input.Body.Email, input.Body.Password)
 	if err != nil {
-		return err
+		return nil, huma.Error500InternalServerError("Login failed", err)
 	}
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
-	c.Response().Header.Add("access_token", access)
-	c.Response().Header.Add("refresh_token", refresh)
-
-	return c.Status(fiber.StatusOK).JSON(user)
-}
-
-func (h *Handler) LoginWithToken(c *fiber.Ctx) error {
-	// use the user_id from the context
-	user_id := c.UserContext().Value("user_id")
-	if user_id == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(xerr.BadRequest(errors.New("User ID is not found")))
-	}
-
-	user, err := h.service.GetUser(user_id.(string))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(xerr.BadRequest(err))
+		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(user)
+	resp := &LoginOutput{}
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
+	resp.Body = types.SafeUser{
+		ID:             user.ID,
+		DisplayName:    user.DisplayName,
+		Handle:         user.Handle,
+		ProfilePicture: user.ProfilePicture,
+		Categories:     user.Categories,
+		Friends:        user.Friends,
+		TasksComplete:  user.TasksComplete,
+		RecentActivity: user.RecentActivity,
+	}
+	
+	return resp, nil
 }
 
-func (h *Handler) RegisterWithApple(c *fiber.Ctx) error {
-	var req RegisterRequestApple
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
+// LoginWithTokenHuma handles login with existing token (PROTECTED ROUTE)
+func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenInput) (*LoginOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
-	slog.Info("Register Request With Apple", "request", req.AppleID)
-	c.SetUserContext(context.WithValue(c.Context(), "apple_id", req.AppleID))
 
-	return h.Register(c)
+	user, err := h.service.GetUser(user_id)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("User retrieval failed", err)
+	}
+
+	resp := &LoginOutput{}
+	resp.Body = types.SafeUser{
+		ID:             user.ID,
+		DisplayName:    user.DisplayName,
+		Handle:         user.Handle,
+		ProfilePicture: user.ProfilePicture,
+		Categories:     user.Categories,
+		Friends:        user.Friends,
+		TasksComplete:  user.TasksComplete,
+		RecentActivity: user.RecentActivity,
+	}
+	return resp, nil
 }
 
-func (h *Handler) Register(c *fiber.Ctx) error {
-	var req RegisterRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
+// RegisterHuma handles regular user registration
+func (h *Handler) RegisterHuma(ctx context.Context, input *RegisterInput) (*RegisterOutput, error) {
+	return h.RegisterWithContext(ctx, input)
+}
+
+// RegisterWithAppleHuma handles Apple registration
+func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
+	slog.Info("Register Request With Apple", "request", input.Body.AppleID)
+	
+	// Convert to regular register input and add Apple ID to context
+	ctxWithApple := context.WithValue(ctx, "apple_id", input.Body.AppleID)
+	
+	registerInput := &RegisterInput{
+		Body: RegisterRequest{
+			Email:    input.Body.Email,
+			Password: "", // Apple registration doesn't require password
+		},
 	}
+	
+	return h.RegisterWithContext(ctxWithApple, registerInput)
+}
 
-	slog.Info("Register Request", "request", req, "apple_id", c.UserContext().Value("apple_id"))
+// RegisterWithContext handles registration with context (used for Apple/Google)
+func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput) (*RegisterOutput, error) {
+	slog.Info("Register Request", "request", input.Body, "apple_id", ctx.Value("apple_id"))
 
-	errs := xvalidator.Validator.Validate(&req)
+	errs := xvalidator.Validator.Validate(&input.Body)
 	if len(errs) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(errs)
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	id := primitive.NewObjectID()
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), 0) // new users use count = 0
-
 	if err != nil {
-		return err
+		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
 
-	c.Response().Header.Add("access_token", access)
-	c.Response().Header.Add("refresh_token", refresh)
-
-	aaid := c.UserContext().Value("apple_id")
-	googleid := c.UserContext().Value("google_id")
-
-	fmt.Println(aaid)
-	fmt.Println(googleid)
+	aaid := ctx.Value("apple_id")
+	googleid := ctx.Value("google_id")
 
 	if aaid == nil {
 		aaid = ""
@@ -113,8 +124,8 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	user := User{
-		Email:        req.Email,
-		Password:     req.Password,
+		Email:        input.Body.Email,
+		Password:     input.Body.Password,
 		ID:           id,
 		RefreshToken: refresh,
 		TokenUsed:    false,
@@ -133,215 +144,123 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		GoogleID: googleid.(string),
 	}
 
-	// TODO: Validate using go validator package
-
-	// if err = user.Validate(); err != nil {
-	// 	return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
-	// }
-
 	err = h.service.CreateUser(user)
-
-	/*
-		Create user could fail for the following reasons:
-		1. User already exists
-		   - Do a Login instead
-		2. User started account creation but didn't finish
-	*/
-
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
+		return nil, huma.Error400BadRequest("User creation failed", err)
 	}
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "User Created Successfully",
-	})
+
+	resp := &RegisterOutput{}
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
+	resp.Body.Message = "User Created Successfully"
+	
+	return resp, nil
 }
 
-func (h *Handler) LoginWithApple(c *fiber.Ctx) error {
-	var req LoginRequestApple
-	err := c.BodyParser(&req)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
-	}
-
-	errs := xvalidator.Validator.Validate(req)
+// LoginWithAppleHuma handles Apple login
+func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleInput) (*LoginOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(errs)
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromApple(req.AppleID)
+	id, count, user, err := h.service.LoginFromApple(input.Body.AppleID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Apple login failed", err)
 	}
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
-	c.Response().Header.Add("access_token", access)
-	c.Response().Header.Add("refresh_token", refresh)
-	return c.Status(fiber.StatusOK).JSON(user)
-}
-
-func (h *Handler) Test(c *fiber.Ctx) error {
-	return c.SendString("Authorized!")
-}
-
-func (h *Handler) AuthenticateMiddleware(c *fiber.Ctx) error {
-	header := c.Get("Authorization")
-	refreshToken := c.Get("refresh_token")
-
-	if len(header) == 0 {
-		return fiber.NewError(400, "Not Authorized, Tokens not passed")
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
 
-	split := strings.Split(header, " ")
+	resp := &LoginOutput{}
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
+	resp.Body = types.SafeUser{
+		ID:             user.ID,
+		DisplayName:    user.DisplayName,
+		Handle:         user.Handle,
+		ProfilePicture: user.ProfilePicture,
+		Categories:     user.Categories,
+		Friends:        user.Friends,
+		TasksComplete:  user.TasksComplete,
+		RecentActivity: user.RecentActivity,
+	}
+	
+	return resp, nil
+}
 
+// TestHuma handles the test authentication endpoint (PROTECTED ROUTE)
+func (h *Handler) TestHuma(ctx context.Context, input *TestInput) (*TestOutput, error) {
+	// Extract user_id from context to verify auth middleware is working
+	user_id, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	resp := &TestOutput{}
+	resp.Body.Message = fmt.Sprintf("Authorized! User ID: %s", user_id)
+	return resp, nil
+}
+
+// LogoutHuma handles user logout
+func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOutput, error) {
+	if len(input.Authorization) == 0 {
+		return nil, huma.Error400BadRequest("Not Authorized, Tokens not passed", nil)
+	}
+
+	split := strings.Split(input.Authorization, " ")
 	if len(split) != 2 {
-		return fiber.NewError(400, "Not Authorized, Invalid Token Format")
+		return nil, huma.Error400BadRequest("Not Authorized, Invalid Token Format", nil)
 	}
+	
 	tokenType, accessToken := split[0], split[1]
-
 	if tokenType != "Bearer" {
-		return fiber.NewError(400, "Not Authorized, Invalid Token Type")
+		return nil, huma.Error400BadRequest("Not Authorized, Invalid Token Type", nil)
 	}
 
-	access, refresh, user_id, err := h.ValidateAndGenerateTokens(c, accessToken, refreshToken)
-
-	fmt.Println("saving user in this request: " + *user_id)
-
-	context := context.WithValue(c.Context(), "user_id", *user_id)
-	c.Request().Header.Set("id", accessToken)
-	c.SetUserContext(context)
-
-	c.Response().Header.Add("access_token", *access)
-	c.Response().Header.Add("refresh_token", *refresh)
-
-	if err != nil {
-		return err
-	}
-
-	return c.Next()
-}
-
-func (h *Handler) ValidateRefreshToken(c *fiber.Ctx, refreshToken string) (float64, error) {
-	// Okay, so the access token is invalid now we check if the refresh token is valid
-	user_id, count, err := h.service.ValidateToken(refreshToken)
-	if err != nil {
-		return 0, fiber.NewError(400, "Not Authorized: Access and Refresh Tokens are Expired "+err.Error())
-	}
-	// Check if the refresh token is unused
-	id, err := primitive.ObjectIDFromHex(user_id)
-	if err != nil {
-		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage Invalid ID "+err.Error())
-	}
-
-	used, err := h.service.CheckIfTokenUsed(id)
-	if err != nil {
-		return 0, fiber.NewError(400, "Not Authorized, Error Validating Token Reusage "+err.Error())
-	} else if used {
-		return 0, fiber.NewError(400, "Not Authorized, Token Reuse Detected")
-	}
-	return count, nil
-}
-
-/*
-	Given an access and refresh token, check if they are valid
-	and return a new pair of tokens if refresh token is valid.
-*/
-
-func (h *Handler) ValidateAndGenerateTokens(c *fiber.Ctx, accessToken string, refreshToken string) (*string, *string, *string, error) {
-	/*
-		Check our tokens are valid by first checking if the access token is valid
-		and then checking if the refresh token is valid if the access token is invalid
-	*/
-	user_id, count, err := h.service.ValidateToken(accessToken)
-	var access_error error
-	if err != nil {
-		fmt.Println("access token is invalid or expired")
-		access_error = fiber.NewError(400, "Not Authorized, Access Token is Invalid "+err.Error())
-		count, err = h.ValidateRefreshToken(c, refreshToken)
-		if err != nil {
-			fmt.Println("refresh token is invalid or expired")
-			return nil, nil, nil, err
-		}
-		fmt.Println("refresh token is valid")
-		// now that we know the refresh is token, we can reset the error and get the user_id again.
-		user_id, _, _ = h.service.ValidateToken(refreshToken)
-		access_error = nil // reset the error since the refresh token is valid
-	}
-	// use the same count as the existing token
-	// Our refresh token is valid and unused, so we can use it to generate a new set of tokens
-	access, refresh, err := h.service.GenerateTokens(user_id, count)
-	if err != nil {
-		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Generating Tokens")
-	}
-
-	if err := h.service.UseToken(user_id); err != nil {
-		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Error Updating Token Usage")
-	}
-
-	return &access, &refresh, &user_id, access_error
-}
-
-/*
-	Given an access token, invalidate the access token and refresh token.
-	Invalidate the token by increasing the "count" field by one.
-*/
-
-func (h *Handler) Logout(c *fiber.Ctx) error {
-	header := c.Get("Authorization")
-
-	if len(header) == 0 {
-		return fiber.NewError(400, "Not Authorized, Tokens not passed")
-	}
-
-	split := strings.Split(header, " ")
-
-	if len(split) != 2 {
-		return fiber.NewError(400, "Not Authorized, Invalid Token Format")
-	}
-	tokenType, accessToken := split[0], split[1]
-
-	if tokenType != "Bearer" {
-		return fiber.NewError(400, "Not Authorized, Invalid Token Type")
-	}
 	// increase the count by one
 	user_id, _, err := h.service.ValidateToken(accessToken)
 	if err != nil {
-		return err
+		return nil, huma.Error400BadRequest("Token validation failed", err)
 	}
+	
 	err = h.service.InvalidateTokens(user_id)
 	if err != nil {
-		return err
+		return nil, huma.Error500InternalServerError("Token invalidation failed", err)
 	}
-	return c.SendString("Logout Successful")
+
+	resp := &LogoutOutput{}
+	resp.Body.Message = "Logout Successful"
+	return resp, nil
 }
 
-func (h *Handler) UpdatePushToken(c *fiber.Ctx) error {
-	user_id := c.UserContext().Value("user_id")
-	if user_id == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(xerr.BadRequest(errors.New("User ID is not found")))
+// UpdatePushTokenHuma handles push token updates (PROTECTED ROUTE)
+func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushTokenInput) (*UpdatePushTokenOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	var req UpdatePushTokenRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
-	}
-
-	errs := xvalidator.Validator.Validate(req)
+	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(errs)
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	user_id_obj, err := primitive.ObjectIDFromHex(user_id.(string))
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	err = h.service.UpdatePushToken(user_id_obj, req.PushToken)
+	err = h.service.UpdatePushToken(user_id_obj, input.Body.PushToken)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(xerr.BadRequest(err))
+		return nil, huma.Error500InternalServerError("Push token update failed", err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Push Token Updated Successfully",
-	})
-}
+	resp := &UpdatePushTokenOutput{}
+	resp.Body.Message = "Push Token Updated Successfully"
+	return resp, nil
+} 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -72,12 +73,16 @@ func run(stderr io.Writer, args []string) {
 	twillio.InitSendGrid(config.Twillio.SG_Token)
 
 	// API Server Setup
-	app := server.New(db.Collections, db.Stream)
+	_, httpServer := server.New(db.Collections, db.Stream)
 	fmt.Printf("After New")
+
+	// Update server address
+	httpServer.Addr = ":" + config.App.Port
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Hour)
 	go func() {
-		if err := app.Listen(":" + config.App.Port); err != nil {
+		slog.LogAttrs(ctx, slog.LevelInfo, "Starting server on port", slog.String("port", config.App.Port))
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fatal(ctx, "Failed to start server", err)
 		}
 	}()
@@ -94,7 +99,10 @@ func run(stderr io.Writer, args []string) {
 		"Stopping server",
 	)
 
-	if err := app.Shutdown(); err != nil {
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		fatal(ctx, "Failed to shutdown server", err)
 	}
 

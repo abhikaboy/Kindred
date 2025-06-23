@@ -1,28 +1,27 @@
 package Profile
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 /*
 Router maps endpoints to handlers
 */
-func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
+func Routes(api huma.API, collections map[string]*mongo.Collection) {
 	service := newService(collections)
 	handler := Handler{service}
 
-	// Add a group for API versioning
-	apiV1 := app.Group("/v1")
+	RegisterProfileOperations(api, &handler)
+}
 
-	// Add Sample group under API Version 1
-	Profiles := apiV1.Group("/Profiles")
-	Profiles.Get("/search", handler.SearchProfiles)
-	Profiles.Get("/:id", handler.GetProfile)
-	Profiles.Patch("/:id", handler.UpdatePartialProfile)
-	Profiles.Delete("/:id", handler.DeleteProfile)
-	Profiles.Get("/email/:email", handler.GetProfileByEmail)
-	Profiles.Get("/phone/:phone", handler.GetProfileByPhone)
-	Profiles.Get("/", handler.GetProfiles)
-
+// RegisterProfileOperations registers all profile operations with Huma
+func RegisterProfileOperations(api huma.API, handler *Handler) {
+	RegisterGetProfilesOperation(api, handler)
+	RegisterGetProfileOperation(api, handler)
+	RegisterUpdateProfileOperation(api, handler)
+	RegisterDeleteProfileOperation(api, handler)
+	RegisterGetProfileByEmailOperation(api, handler)
+	RegisterGetProfileByPhoneOperation(api, handler)
+	RegisterSearchProfilesOperation(api, handler)
 }

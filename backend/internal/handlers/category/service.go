@@ -144,3 +144,33 @@ func (s *Service) DeleteWorkspace(workspaceName string, user primitive.ObjectID)
 
 	return err
 }
+
+func (s *Service) GetWorkspaces(userId primitive.ObjectID) ([]WorkspaceResult, error) {
+	ctx := context.Background()
+
+	filter := bson.M{"user": userId}
+	cursor, err := s.Categories.Aggregate(ctx, mongo.Pipeline{
+		{
+			{Key: "$match", Value: filter},
+		},
+		{
+			{Key: "$group", Value: bson.M{
+				"_id": "$$ROOT.workspaceName",
+				"categories": bson.M{
+					"$push": "$$ROOT",
+				},
+			}},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	results := make([]WorkspaceResult, 0)
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}

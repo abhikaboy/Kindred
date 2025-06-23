@@ -9,10 +9,20 @@ type Props = {
     label: string;
     screen: Screen;
     goTo: (screen: Screen) => void;
+    showUnconfigured?: boolean;
+    configured?: boolean;
 };
 
-const AdvancedOption = ({ icon, label, screen, goTo }: Props) => {
+const AdvancedOption = ({ icon, label, screen, goTo, showUnconfigured, configured }: Props) => {
     const ThemedColor = useThemeColor();
+    // if we should only show configured and we are confugred then dont show
+    if (!showUnconfigured && !configured) {
+        return null;
+    }
+    // if we should show unconfigured and we are configured then dont show
+    if (showUnconfigured && configured) {
+        return null;
+    }
     return (
         <TouchableOpacity
             onPress={() => goTo(screen)}

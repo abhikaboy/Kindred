@@ -18,7 +18,7 @@ const UserInfoRowBase = ({ name, username, right, icon, large, id }: Props) => (
     <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
         <View style={styles.row}>
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-                <TouchableOpacity onPress={() => (id != null && id != "" ? router.navigate(`/account/${id}`) : null)}>
+                <TouchableOpacity onPress={() => (id != null && id != "" ? router.push(`/account/${id}`) : null)}>
                     <PreviewIcon size={large ? "medium" : "small"} icon={icon}></PreviewIcon>
                 </TouchableOpacity>
                 <View style={{ gap: 0 }}>

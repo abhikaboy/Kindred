@@ -1,27 +1,25 @@
 package Activity
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 /*
 Router maps endpoints to handlers
 */
-func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
+func Routes(api huma.API, collections map[string]*mongo.Collection) {
 	service := newService(collections)
 	handler := Handler{service}
 
-	// Add a group for API versioning
-	apiV1 := app.Group("/v1")
+	RegisterActivityOperations(api, &handler)
+}
 
-	// Add Sample group under API Version 1
-	Activitys := apiV1.Group("/Activity")
-
-	Activitys.Post("/", handler.CreateActivity)
-	Activitys.Get("/", handler.GetActivitys)
-	Activitys.Get("/:id", handler.GetActivity)
-	Activitys.Patch("/:id", handler.UpdatePartialActivity)
-	Activitys.Delete("/:id", handler.DeleteActivity)
-
+// RegisterActivityOperations registers all activity operations with Huma
+func RegisterActivityOperations(api huma.API, handler *Handler) {
+	RegisterCreateActivityOperation(api, handler)
+	RegisterGetActivitiesOperation(api, handler)
+	RegisterGetActivityOperation(api, handler)
+	RegisterUpdateActivityOperation(api, handler)
+	RegisterDeleteActivityOperation(api, handler)
 }
