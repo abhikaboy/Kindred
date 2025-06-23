@@ -26,15 +26,21 @@ func (s *Service) GetAllConnections() ([]ConnectionDocument, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var results = make([]ConnectionDocument, 0)
-	if err := cursor.All(ctx, &results); err != nil {
+	var internalResults []ConnectionDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
 		return nil, err
+	}
+
+	// Convert internal documents to API documents
+	results := make([]ConnectionDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
 	}
 
 	return results, nil
 }
 
-// GetAllConnections fetches all Connection documents from MongoDB
+// GetByReciever fetches all Connection documents from MongoDB by receiver ID
 func (s *Service) GetByReciever(id primitive.ObjectID) ([]ConnectionDocument, error) {
 	ctx := context.Background()
 	cursor, err := s.Connections.Find(ctx, bson.M{"reciever": id})
@@ -43,15 +49,21 @@ func (s *Service) GetByReciever(id primitive.ObjectID) ([]ConnectionDocument, er
 	}
 	defer cursor.Close(ctx)
 
-	var results = make([]ConnectionDocument, 0)
-	if err := cursor.All(ctx, &results); err != nil {
+	var internalResults []ConnectionDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
 		return nil, err
+	}
+
+	// Convert internal documents to API documents
+	results := make([]ConnectionDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
 	}
 
 	return results, nil
 }
 
-// GetAllConnections fetches all Connection documents from MongoDB
+// GetByRequester fetches all Connection documents from MongoDB by requester ID
 func (s *Service) GetByRequester(id primitive.ObjectID) ([]ConnectionDocument, error) {
 	ctx := context.Background()
 	cursor, err := s.Connections.Find(ctx, bson.M{"requester._id": id})
@@ -60,9 +72,15 @@ func (s *Service) GetByRequester(id primitive.ObjectID) ([]ConnectionDocument, e
 	}
 	defer cursor.Close(ctx)
 
-	var results = make([]ConnectionDocument, 0)
-	if err := cursor.All(ctx, &results); err != nil {
+	var internalResults []ConnectionDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
 		return nil, err
+	}
+
+	// Convert internal documents to API documents
+	results := make([]ConnectionDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
 	}
 
 	return results, nil
@@ -73,8 +91,8 @@ func (s *Service) GetConnectionByID(id primitive.ObjectID) (*ConnectionDocument,
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
-	var Connection ConnectionDocument
-	err := s.Connections.FindOne(ctx, filter).Decode(&Connection)
+	var internalConnection ConnectionDocumentInternal
+	err := s.Connections.FindOne(ctx, filter).Decode(&internalConnection)
 
 	if err == mongo.ErrNoDocuments {
 		// No matching Connection found
@@ -84,11 +102,11 @@ func (s *Service) GetConnectionByID(id primitive.ObjectID) (*ConnectionDocument,
 		return nil, err
 	}
 
-	return &Connection, nil
+	return internalConnection.ToAPI(), nil
 }
 
-// InsertConnection adds a new Connection document
-func (s *Service) CreateConnection(r *ConnectionDocument) (*ConnectionDocument, error) {
+// CreateConnection adds a new Connection document
+func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDocument, error) {
 	ctx := context.Background()
 	// Insert the document into the collection
 
@@ -97,12 +115,12 @@ func (s *Service) CreateConnection(r *ConnectionDocument) (*ConnectionDocument, 
 		return nil, err
 	}
 
-	// Cast the inserted ID to ObjectID
+	// Cast the inserted ID to ObjectID and update the internal document
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Connection inserted", slog.String("id", id.Hex()))
 
-	return r, nil
+	return r.ToAPI(), nil
 }
 
 // UpdatePartialConnection updates only specified fields of a Connection document by ObjectID.

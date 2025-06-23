@@ -152,10 +152,23 @@ func RegisterRegisterWithAppleOperation(api huma.API, handler *Handler) {
 
 // RegisterTestOperation registers the test endpoint
 func RegisterTestOperation(api huma.API, handler *Handler) {
+	// Register the version with trailing slash
+	huma.Register(api, huma.Operation{
+		OperationID: "auth-test-slash",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/",
+		Summary:     "Test authentication",
+		Description: "Test endpoint for authenticated users",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *TestInput) (*TestOutput, error) {
+		return handler.TestHuma(ctx, input)
+	})
+	
+	// Register the version without trailing slash
 	huma.Register(api, huma.Operation{
 		OperationID: "auth-test",
 		Method:      http.MethodGet,
-		Path:        "/v1/user/",
+		Path:        "/v1/user",
 		Summary:     "Test authentication",
 		Description: "Test endpoint for authenticated users",
 		Tags:        []string{"auth"},

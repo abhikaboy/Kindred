@@ -7,12 +7,14 @@ import (
 
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	Blueprint "github.com/abhikaboy/Kindred/internal/handlers/blueprint"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
+	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
@@ -56,6 +58,10 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	// Rate limiting middleware (equivalent to Fiber's limiter)
 	router.Use(middleware.Throttle(10)) // 10 requests per window
 
+	// Add middleware to handle trailing slash normalization
+	// This middleware will redirect requests to the canonical URL
+	router.Use(middleware.RedirectSlashes)
+
 	// Create auth middleware for protected routes
 	authMW := auth.AuthMiddlewareForServer(collections)
 	
@@ -85,13 +91,14 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	connection.Routes(api, collections)
 	post.Routes(api, collections)
 	
+	// Register waitlist and blueprint routes
+	Waitlist.Routes(api, collections)
+	Blueprint.Routes(api, collections)
+	
 	// TODO: Convert remaining routes to Huma
-	// waitlist.Routes(api, collections)
 	// socket.Routes(api, collections, stream)
-	// blueprint.Routes(api, collections)
 
-	// TODO: Start cron jobs
-	// task.Cron(collections)
+	task.Cron(collections)
 
 	// Create HTTP server
 	server := &http.Server{
