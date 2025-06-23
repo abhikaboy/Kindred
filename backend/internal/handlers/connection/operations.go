@@ -10,7 +10,8 @@ import (
 
 // Create Connection
 type CreateConnectionInput struct {
-	Authorization string                   `header:"Authorization" required:"true"`
+	Authorization string                   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	Body          CreateConnectionParams `json:"body"`
 }
 
@@ -20,7 +21,8 @@ type CreateConnectionOutput struct {
 
 // Get Connections (all)
 type GetConnectionsInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 }
 
 type GetConnectionsOutput struct {
@@ -29,7 +31,8 @@ type GetConnectionsOutput struct {
 
 // Get Connection by ID
 type GetConnectionInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 
@@ -39,7 +42,8 @@ type GetConnectionOutput struct {
 
 // Get Connections by Receiver
 type GetConnectionsByReceiverInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 }
 
 type GetConnectionsByReceiverOutput struct {
@@ -48,7 +52,8 @@ type GetConnectionsByReceiverOutput struct {
 
 // Get Connections by Requester
 type GetConnectionsByRequesterInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 
@@ -58,7 +63,8 @@ type GetConnectionsByRequesterOutput struct {
 
 // Update Connection
 type UpdateConnectionInput struct {
-	Authorization string                      `header:"Authorization" required:"true"`
+	Authorization string                      `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                      `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string                      `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateConnectionDocument  `json:"body"`
 }
@@ -71,7 +77,8 @@ type UpdateConnectionOutput struct {
 
 // Delete Connection
 type DeleteConnectionInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 

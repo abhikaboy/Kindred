@@ -10,7 +10,8 @@ import (
 
 // Create Blueprint
 type CreateBlueprintInput struct {
-	Authorization string                `header:"Authorization" required:"true"`
+	Authorization string                `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	Body          CreateBlueprintParams `json:"body"`
 }
 
@@ -36,7 +37,8 @@ type GetBlueprintOutput struct {
 
 // Update Blueprint
 type UpdateBlueprintInput struct {
-	Authorization string                    `header:"Authorization" required:"true"`
+	Authorization string                    `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                    `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string                    `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateBlueprintDocument `json:"body"`
 }
@@ -49,7 +51,8 @@ type UpdateBlueprintOutput struct {
 
 // Delete Blueprint
 type DeleteBlueprintInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 
@@ -61,7 +64,8 @@ type DeleteBlueprintOutput struct {
 
 // Subscribe to Blueprint
 type SubscribeToBlueprintInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 
@@ -73,7 +77,8 @@ type SubscribeToBlueprintOutput struct {
 
 // Unsubscribe from Blueprint
 type UnsubscribeFromBlueprintInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 

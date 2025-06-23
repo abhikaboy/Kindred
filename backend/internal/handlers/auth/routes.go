@@ -24,6 +24,17 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 }
 
 /*
+NewServiceForServer creates an auth service for the server
+*/
+func NewServiceForServer(collections map[string]*mongo.Collection) *Service {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+	return newService(collections, cfg)
+}
+
+/*
 AuthMiddlewareForServer creates auth middleware for the server
 */
 func AuthMiddlewareForServer(collections map[string]*mongo.Collection) func(http.Handler) http.Handler {
