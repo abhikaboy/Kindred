@@ -2,8 +2,7 @@ package server
 
 import (
 	"context"
-	"net/http"
-	"time"
+	"fmt"
 
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -15,68 +14,69 @@ import (
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
+	"github.com/abhikaboy/Kindred/internal/xlog"
+
+	"log/slog"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/danielgtaylor/huma/v2/adapters/humachi"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/danielgtaylor/huma/v2/adapters/humafiber"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (huma.API, *http.Server) {
-	router := chi.NewRouter()
+func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (huma.API, *fiber.App) {
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			slog.Error("🚨 FIBER ERROR:", "error", err.Error(), "path", c.Path())
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		},
+	})
 	
-	// Add Chi middleware (equivalent to Fiber middleware)
-	router.Use(middleware.RequestID)
-	router.Use(middleware.RealIP)
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.Compress(5)) // equivalent to Fiber's compress level
-	router.Use(middleware.Heartbeat("/"))
+	// Add global request logging middleware FIRST
+	app.Use(func(c *fiber.Ctx) error {
+		xlog.RequestLog(c.Method(), c.Path())
+		return c.Next()
+	})
+	
+	// Add Fiber middleware
+	app.Use(logger.New())
+	app.Use(recover.New())
+	app.Use(compress.New())
 	
 	// Add CORS middleware
-	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Set CORS headers
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,refresh_token,X-Requested-With,Accept,Origin,Cache-Control,X-File-Name")
-			w.Header().Set("Access-Control-Expose-Headers", "Authorization,refresh_token,access_token")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
-			
-			// Handle preflight OPTIONS request
-			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-			
-			next.ServeHTTP(w, r)
-		})
-	})
-
-	// Rate limiting middleware (equivalent to Fiber's limiter)
-	router.Use(middleware.Throttle(10)) // 10 requests per window
-
-	// Add middleware to handle trailing slash normalization
-	// This middleware will redirect requests to the canonical URL
-	router.Use(middleware.RedirectSlashes)
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000", // Specific origins for development
+		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+		AllowHeaders:     "Content-Type,Authorization,refresh_token,X-Requested-With,Accept,Origin,Cache-Control,X-File-Name",
+		ExposeHeaders:    "Authorization,refresh_token,access_token",
+		AllowCredentials: true,
+		MaxAge:           86400, // 24 hours
+	}))
 
 	// Create auth middleware for protected routes
-	authMW := auth.AuthMiddlewareForServer(collections)
+	authMW := auth.FiberAuthMiddlewareForServer(collections)
+	
+	xlog.ServerLog("Creating Fiber auth middleware and applying to /v1/user routes")
 	
 	// Apply auth middleware only to protected routes (user-specific endpoints)
-	router.Route("/v1/user", func(r chi.Router) {
-		r.Use(authMW)
+	app.Use("/v1/user", func(c *fiber.Ctx) error {
+		xlog.AuthLog(fmt.Sprintf("Request in protected /v1/user route: %s %s", 
+			c.Method(), c.Path()))
+		
+		// Apply the Fiber auth middleware
+		return authMW(c)
 	})
 
-	// Create Huma API
+	// Create Huma API with Fiber adapter
 	config := huma.DefaultConfig("Kindred API", "1.0.0")
-	config.Info.Description = "Kindred API built with Huma v2"
-	api := humachi.New(router, config)
+	config.Info.Description = "Kindred API built with Huma v2 and Fiber"
+	api := humafiber.New(app, config)
 
-	// TODO: Initialize sockets
-	// sockets.New()
+	xlog.ServerLog("Huma API created with Fiber adapter, registering routes...")
 
 	// Register welcome route
 	RegisterWelcomeRoute(api)
@@ -100,16 +100,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 
 	task.Cron(collections)
 
-	// Create HTTP server
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
+	xlog.ServerLog("All routes registered, Fiber app ready")
 
-	return api, server
+	return api, app
 }
 
 // WelcomeInput represents the input for the welcome endpoint
@@ -126,7 +119,7 @@ type WelcomeOutput struct {
 func RegisterWelcomeRoute(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-welcome",
-		Method:      http.MethodGet,
+		Method:      "GET",
 		Path:        "/welcome",
 		Summary:     "Welcome endpoint",
 		Description: "Returns a welcome message",

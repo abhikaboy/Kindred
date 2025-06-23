@@ -9,6 +9,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -50,7 +51,7 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 // LoginWithTokenHuma handles login with existing token (PROTECTED ROUTE)
 func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenInput) (*LoginOutput, error) {
 	// Extract user_id from context (set by auth middleware)
-	user_id, err := RequireAuth(ctx)
+	user_id, err := RequireAuthFromHuma(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
@@ -263,4 +264,21 @@ func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushToke
 	resp := &UpdatePushTokenOutput{}
 	resp.Body.Message = "Push Token Updated Successfully"
 	return resp, nil
+}
+
+// RequireAuthFromHuma extracts user ID from Huma context by bridging to the underlying Fiber context
+func RequireAuthFromHuma(ctx context.Context) (string, error) {
+	// Try to get user ID from the standard context first (set by middleware)
+	if userID, ok := ctx.Value(UserIDContextKey).(string); ok {
+		slog.Info("✅ REQUIRE AUTH HUMA: User authenticated via context", "user_id", userID)
+		return userID, nil
+	}
+	
+	// If that doesn't work, check if we can find the Fiber context
+	if fiberCtx, ok := ctx.Value("fiber_ctx").(*fiber.Ctx); ok {
+		return RequireAuthFiber(fiberCtx)
+	}
+	
+	slog.Error("❌ REQUIRE AUTH HUMA: User not found in context")
+	return "", fmt.Errorf("user not authenticated")
 } 

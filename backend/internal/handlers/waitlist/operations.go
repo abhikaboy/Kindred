@@ -19,7 +19,8 @@ type CreateWaitlistOutput struct {
 
 // Get Waitlists (all)
 type GetWaitlistsInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 }
 
 type GetWaitlistsOutput struct {
@@ -28,7 +29,8 @@ type GetWaitlistsOutput struct {
 
 // Get Waitlist by ID
 type GetWaitlistInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 
@@ -38,7 +40,8 @@ type GetWaitlistOutput struct {
 
 // Delete Waitlist
 type DeleteWaitlistInput struct {
-	Authorization string `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
 }
 
