@@ -74,6 +74,9 @@ type SearchProfilesOutput struct {
 	Body []ProfileDocument `json:"body"`
 }
 
+// Note: Image upload functionality moved to centralized /v1/uploads endpoints
+// Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead
+
 // Operation registrations
 
 func RegisterGetProfilesOperation(api huma.API, handler *Handler) {
@@ -151,4 +154,7 @@ func RegisterSearchProfilesOperation(api huma.API, handler *Handler) {
 		Description: "Search for user profiles by query string",
 		Tags:        []string{"profiles"},
 	}, handler.SearchProfiles)
-} 
+}
+
+// Note: Profile picture upload operations moved to centralized upload service
+// Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead 

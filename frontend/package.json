@@ -8,7 +8,9 @@
         "ios": "expo start --ios",
         "test": "jest test",
         "lint": "expo lint",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "generate-types": "openapi-typescript api/api-spec.yaml -o api/generated/types.ts",
+        "generate-types:watch": "openapi-typescript api/api-spec.yaml -o api/generated/types.ts --watch"
     },
     "jest": {
         "preset": "jest-expo"
@@ -53,6 +55,9 @@
         "expo-system-ui": "~5.0.7",
         "expo-web-browser": "~14.1.6",
         "i": "^0.3.7",
+        "openapi-fetch": "^0.14.0",
+        "openapi-react-query": "^0.5.0",
+        "openapi-typescript": "^7.8.0",
         "prettier": "3.4.2",
         "react": "19.0.0",
         "react-dom": "19.0.0",
@@ -98,7 +103,7 @@
         "jest": "^29.7.0",
         "jest-expo": "~53.0.5",
         "react-test-renderer": "18.3.1",
-        "typescript": "~5.8.3"
+        "typescript": "^5.8.3"
     },
     "private": true
 }

@@ -92,6 +92,39 @@ async function request(method: string, url: string, body?: any) {
     }
 }
 
+// Import the new typed client
+import { client } from "./useTypedAPI";
+import type { paths } from "@/api/generated/types";
+
+// Type-safe request method using openapi-fetch
+async function typedRequest<TPath extends keyof paths, TMethod extends keyof paths[TPath]>(
+    path: TPath,
+    method: TMethod,
+    // @ts-ignore - Complex type inference, but works at runtime
+    options?: paths[TPath][TMethod] extends { requestBody: { content: { "application/json": infer T } } }
+        ? { body: T }
+        : { body?: never }
+) {
+    try {
+        // @ts-ignore - Complex type inference
+        const response = await client[method.toString().toUpperCase()](path, options);
+
+        if (response.error) {
+            throw new Error(`API Error: ${JSON.stringify(response.error)}`);
+        }
+
+        return response.data;
+    } catch (error) {
+        console.log("Typed Request Failed!", error);
+        throw error;
+    }
+}
+
 export const useRequest = () => {
-    return { request: request, history: getHistory, errorHistory: getErrorHistory };
+    return {
+        request: request,
+        typedRequest: typedRequest,
+        history: getHistory,
+        errorHistory: getErrorHistory,
+    };
 };

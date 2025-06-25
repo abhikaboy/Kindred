@@ -1,130 +1,157 @@
-import { Task, Categories, Workspace, CompleteTaskBody } from "./types";
-import { useRequest } from "@/hooks/useRequest";
+import { client } from "@/hooks/useTypedAPI";
+import type { paths, components } from "./generated/types";
+import { withAuthHeaders } from "./utils";
 
-// Backend CreateTaskParams equivalent
-export type CreateTaskParams = {
-    priority: number; // 1-3
-    content: string;
-    value: number; // 0-10
-    recurring: boolean;
-    recurFrequency?: string;
-    recurDetails?: RecurDetails;
-    public: boolean;
-    active: boolean;
-    deadline?: string;
-    startTime?: string;
-    startDate?: string;
-    notes?: string;
-    checklist?: ChecklistItem[];
-    reminders?: Reminder[];
-};
+// Extract the type definitions from the generated types
+type TaskDocument = components["schemas"]["TaskDocument"];
+type UpdateTaskChecklistDocument = components["schemas"]["UpdateTaskChecklistDocument"];
+type UpdateTaskNotesDocument = components["schemas"]["UpdateTaskNotesDocument"];
+type CreateTaskParams = components["schemas"]["CreateTaskParams"];
+type CompleteTaskDocument = components["schemas"]["CompleteTaskDocument"];
 
 /**
- * Adds a task to a specific category
- * API: Makes POST request to add a task to a category
+ * Create a new task in a specific category
+ * API: Makes POST request to create task in the specified category
  * Frontend: Updates categories state in TaskContext by adding the task to the specified category
  * @param categoryId - The ID of the category to add the task to
- * @param task - The task to add
+ * @param task - The task data to create
  */
-export const addToCategory = async (categoryId: string, task: CreateTaskParams): Promise<void> => {
-    const { request } = useRequest();
-    return await request("POST", `/user/categories/${categoryId}/tasks`, task);
+export const createTaskAPI = async (categoryId: string, task: CreateTaskParams): Promise<TaskDocument> => {
+    const { data, error } = await client.POST("/v1/user/tasks/{category}", {
+        params: withAuthHeaders({
+            path: { category: categoryId },
+        }),
+        body: task,
+    });
+
+    if (error) {
+        throw new Error(`Failed to create task: ${JSON.stringify(error)}`);
+    }
+
+    return data;
 };
 
 /**
- * Removes a task from a category
- * API: Makes DELETE request to remove a task from a category
- * Frontend: Updates categories state in TaskContext by removing the task from the specified category
- * @param categoryId - The ID of the category to remove the task from
- * @param taskId - The ID of the task to remove
+ * Remove a task from a category
+ * API: Makes DELETE request to remove the task
+ * Frontend: The task is removed from the category in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to delete
  */
 export const removeFromCategoryAPI = async (categoryId: string, taskId: string): Promise<void> => {
-    const { request } = useRequest();
-    return await request("DELETE", `/user/tasks/${categoryId}/${taskId}`);
-};
+    const { error } = await client.DELETE("/v1/user/tasks/{category}/{id}", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+    });
 
-/**
- * Marks a task as completed
- * API: Makes PUT request to mark a task as completed
- * Frontend: Updates task state in TaskContext by marking the task as completed
- * @param categoryId - The ID of the category to mark the task in
- * @param taskId - The ID of the task to mark as completed
- */
-export const markAsCompletedAPI = async (categoryId: string, taskId: string, body: CompleteTaskBody): Promise<void> => {
-    const { request } = useRequest();
-    try {
-        return await request("POST", `/user/tasks/complete/${categoryId}/${taskId}`, body);
-    } catch (error) {
-        throw error;
+    if (error) {
+        throw new Error(`Failed to delete task: ${JSON.stringify(error)}`);
     }
 };
 
 /**
- * Activates a task
- * API: Makes PUT request to activate a task
- * Frontend: Updates task state in TaskContext by activating the task
- * @param taskId - The ID of the task to activate
- * @param categoryId - The ID of the category to activate the task in
- */
-export const activateTaskAPI = async (categoryId: string, taskId: string): Promise<void> => {
-    const { request } = useRequest();
-    return request("POST", `/user/tasks/active/${categoryId}/${taskId}`);
-};
-
-/**
- * Updates the Notes for a task
- * API: Makes PUT request to update the notes for a task
- * Frontend: Updates task state in TaskContext by updating the notes for the task
- * @param categoryId - The ID of the category to update the notes for
- * @param taskId - The ID of the task to update the notes for
- * @param notes - The new notes for the task
- */
-export const updateNotesAPI = async (categoryId: string, taskId: string, notes: string): Promise<void> => {
-    const { request } = useRequest();
-    return request("POST", `/user/tasks/${categoryId}/${taskId}/notes`, { notes: notes });
-};
-
-/**
- * Updates the Checklist for a task
- * API: Makes POST request to update the checklist for a task
- * Frontend: Updates task state in TaskContext by updating the checklist for the task
- * @param categoryId - The ID of the category to update the checklist for
- * @param taskId - The ID of the task to update the checklist for
- * @param checklist - The new checklist for the task
+ * Update task checklist
+ * API: Makes POST request to update the checklist field
+ * Frontend: The checklist is updated in the task in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param checklist - The new checklist data
  */
 export const updateChecklistAPI = async (
     categoryId: string,
     taskId: string,
-    checklist: ChecklistItem[]
+    checklist: UpdateTaskChecklistDocument["checklist"]
 ): Promise<void> => {
-    const { request } = useRequest();
-    return request("POST", `/user/tasks/${categoryId}/${taskId}/checklist`, { checklist: checklist });
+    const { error } = await client.POST("/v1/user/tasks/{category}/{id}/checklist", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: { checklist },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update checklist: ${JSON.stringify(error)}`);
+    }
 };
 
 /**
- * Adds a reminder to a task
- * API: Makes POST request to add a reminder to a task
- * Frontend: Updates task state in TaskContext by adding the reminder to the task
- * @param categoryId - The ID of the category to add the reminder to
- * @param taskId - The ID of the task to add the reminder to
- * @param reminder - The reminder to add to the task
+ * Update task notes
+ * API: Makes POST request to update the notes field
+ * Frontend: The notes are updated in the task in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param notes - The new notes content
  */
+export const updateNotesAPI = async (categoryId: string, taskId: string, notes: string): Promise<void> => {
+    const { error } = await client.POST("/v1/user/tasks/{category}/{id}/notes", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: { notes },
+    });
 
-export const addReminderAPI = async (categoryId: string, taskId: string, reminder: Reminder): Promise<void> => {
-    const { request } = useRequest();
-    return request("POST", `/user/tasks/${categoryId}/${taskId}/reminders`, { reminder: reminder });
+    if (error) {
+        throw new Error(`Failed to update notes: ${JSON.stringify(error)}`);
+    }
 };
 
 /**
- * Deletes a reminder from a task
- * API: Makes DELETE request to delete a reminder from a task
- * Frontend: Updates task state in TaskContext by deleting the reminder from the task
- * @param categoryId - The ID of the category to delete the reminder from
- * @param taskId - The ID of the task to delete the reminder from
- * @param triggerTime - The trigger time of the reminder to delete
+ * Mark a task as completed
+ * API: Makes POST request to complete the task
+ * Frontend: The task is marked as completed in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to complete
+ * @param completeData - The completion data
  */
+export const markAsCompletedAPI = async (
+    categoryId: string,
+    taskId: string,
+    completeData: CompleteTaskDocument
+): Promise<void> => {
+    const { error } = await client.POST("/v1/user/tasks/complete/{category}/{id}", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: completeData,
+    });
 
-export const deleteReminderAPI = async (categoryId: string, taskId: string, triggerTime: string): Promise<void> => {
-    const { request } = useRequest();
-    return request("DELETE", `/user/tasks/${categoryId}/${taskId}/reminders`, { triggerTime: triggerTime });
+    if (error) {
+        throw new Error(`Failed to complete task: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Activate/deactivate a task
+ * API: Makes POST request to change task active status
+ * Frontend: The task active status is updated in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to activate/deactivate
+ * @param active - Whether to activate (true) or deactivate (false) the task
+ */
+export const activateTaskAPI = async (categoryId: string, taskId: string, active: boolean = true): Promise<void> => {
+    const { error } = await client.POST("/v1/user/tasks/active/{category}/{id}", {
+        params: withAuthHeaders({
+            path: { category: categoryId, id: taskId },
+            query: { active: active.toString() },
+        }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to activate task: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Get tasks by user
+ * API: Makes GET request to retrieve user's tasks
+ * Frontend: Used to populate tasks in TaskContext
+ * @param id - Optional user ID filter
+ * @param sortBy - Optional sort field
+ * @param sortDir - Optional sort direction
+ */
+export const getTasksByUserAPI = async (id?: string, sortBy?: string, sortDir?: string): Promise<TaskDocument[]> => {
+    const { data, error } = await client.GET("/v1/user/tasks/", {
+        params: withAuthHeaders({
+            query: { id, sortBy, sortDir },
+        }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get tasks: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
 };

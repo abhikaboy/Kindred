@@ -82,8 +82,6 @@ func (h *Handler) RegisterHuma(ctx context.Context, input *RegisterInput) (*Regi
 
 // RegisterWithAppleHuma handles Apple registration
 func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
-	slog.Info("Register Request With Apple", "request", input.Body.AppleID)
-	
 	// Convert to regular register input and add Apple ID to context
 	ctxWithApple := context.WithValue(ctx, "apple_id", input.Body.AppleID)
 	
@@ -99,8 +97,6 @@ func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWith
 
 // RegisterWithContext handles registration with context (used for Apple/Google)
 func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput) (*RegisterOutput, error) {
-	slog.Info("Register Request", "request", input.Body, "apple_id", ctx.Value("apple_id"))
-
 	errs := xvalidator.Validator.Validate(&input.Body)
 	if len(errs) > 0 {
 		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
@@ -270,7 +266,6 @@ func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushToke
 func RequireAuthFromHuma(ctx context.Context) (string, error) {
 	// Try to get user ID from the standard context first (set by middleware)
 	if userID, ok := ctx.Value(UserIDContextKey).(string); ok {
-		slog.Info("✅ REQUIRE AUTH HUMA: User authenticated via context", "user_id", userID)
 		return userID, nil
 	}
 	

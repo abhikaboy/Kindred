@@ -41,6 +41,7 @@ export default function Task() {
     const [isRunning, setIsRunning] = useState(false);
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
+    const [localNotes, setLocalNotes] = useState("");
 
     // Add a ref to track mounted state
     const isMounted = useRef(true);
@@ -94,6 +95,10 @@ export default function Task() {
 
     useEffect(() => {
         console.log(task);
+        // Update local notes when task data loads
+        if (task?.notes !== undefined) {
+            setLocalNotes(task.notes);
+        }
     }, [task]);
 
     useEffect(() => {
@@ -164,7 +169,9 @@ export default function Task() {
 
     console.log(task);
     const updateNotes = useDebounce(async (notes: string) => {
-        await updateNotesAPI(categoryId as string, id as string, notes);
+        if (task && categoryId && id) {
+            await updateNotesAPI(categoryId as string, id as string, notes);
+        }
     }, 2000);
 
     return (
@@ -190,8 +197,11 @@ export default function Task() {
                     <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 50 }}>
                         <DataCard title="Notes" key="notes">
                             <TextInput
-                                value={task?.notes}
+                                value={localNotes}
                                 onChangeText={(text) => {
+                                    // Update local state immediately for UI responsiveness
+                                    setLocalNotes(text);
+                                    // Debounced API call
                                     updateNotes(text);
                                 }}
                                 placeholder="Tap to add notes"
