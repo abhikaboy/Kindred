@@ -193,3 +193,6 @@ func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesI
 	resp := &SearchProfilesOutput{Body: profiles}
 	return resp, nil
 }
+
+// Note: Profile picture upload functionality moved to centralized upload service
+// Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead

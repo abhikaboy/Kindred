@@ -9,8 +9,13 @@ import (
 Router maps endpoints to handlers
 */
 func Routes(api huma.API, collections map[string]*mongo.Collection) {
+	// Initialize service
 	service := newService(collections)
-	handler := Handler{service}
+
+	// Create handler
+	handler := Handler{
+		service: service,
+	}
 
 	RegisterProfileOperations(api, &handler)
 }
@@ -24,4 +29,5 @@ func RegisterProfileOperations(api huma.API, handler *Handler) {
 	RegisterGetProfileByEmailOperation(api, handler)
 	RegisterGetProfileByPhoneOperation(api, handler)
 	RegisterSearchProfilesOperation(api, handler)
+	// Note: Profile picture upload operations moved to /v1/uploads endpoints
 }

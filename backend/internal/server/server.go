@@ -12,6 +12,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
+	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
 	"github.com/abhikaboy/Kindred/internal/xlog"
@@ -81,6 +82,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	// Register welcome route
 	RegisterWelcomeRoute(api)
 
+	// Create presigner
+	presigner := spaces.NewPresigner()
+
 	// Register converted routes
 	health.Routes(api, collections)
 	auth.Routes(api, collections)
@@ -90,7 +94,8 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	task.Routes(api, collections)
 	connection.Routes(api, collections)
 	post.Routes(api, collections)
-	
+	spaces.Routes(api, presigner)
+
 	// Register waitlist and blueprint routes
 	Waitlist.Routes(api, collections)
 	Blueprint.Routes(api, collections)

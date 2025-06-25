@@ -40,11 +40,11 @@ jobs:
                   ATLAS_CLUSTER=${{ secrets.ATLAS_CLUSTER }}
                   ATLAS_ENVIRONMENT=${{ secrets.ATLAS_ENVIRONMENT }}
 
-                  # AWS Configuration
-                  AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
-                  AWS_REGION=${{ secrets.AWS_REGION }}
-                  AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-                  AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  # Digital Ocean Spaces Configuration
+                  SPACES_BUCKET_NAME=${{ secrets.SPACES_BUCKET_NAME }}
+                  SPACES_REGION=${{ secrets.SPACES_REGION }}
+                  SPACES_ACCESS_KEY_ID=${{ secrets.SPACES_ACCESS_KEY_ID }}
+                  SPACES_SECRET_ACCESS_KEY=${{ secrets.SPACES_SECRET_ACCESS_KEY }}
 
                   # Auth Configuration
                   AUTH_SECRET=${{ secrets.AUTH_SECRET }}
