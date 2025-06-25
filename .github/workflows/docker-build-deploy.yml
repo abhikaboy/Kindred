@@ -41,10 +41,14 @@ jobs:
                   ATLAS_ENVIRONMENT=${{ secrets.ATLAS_ENVIRONMENT }}
 
                   # Digital Ocean Spaces Configuration
-                  SPACES_BUCKET_NAME=${{ secrets.SPACES_BUCKET_NAME }}
-                  SPACES_REGION=${{ secrets.SPACES_REGION }}
-                  SPACES_ACCESS_KEY_ID=${{ secrets.SPACES_ACCESS_KEY_ID }}
-                  SPACES_SECRET_ACCESS_KEY=${{ secrets.SPACES_SECRET_ACCESS_KEY }}
+                  DO_SPACES_URL=https://kindred.nyc3.digitaloceanspaces.com
+                  DO_SPACES_ACCESS_KEY=${{ secrets.DO_SPACES_ACCESS_KEY }}
+                  DO_SPACES_SECRET_KEY=${{ secrets.DO_SPACES_SECRET_KEY }}
+                  DO_SPACES_BUCKET=kindred
+                  DO_SPACES_REGION=nyc3
+
+                  # Twillio Configuration
+                  TWILLIO_SG_TOKEN=${{ secrets.TWILLIO_SG_TOKEN }}
 
                   # Auth Configuration
                   AUTH_SECRET=${{ secrets.AUTH_SECRET }}
