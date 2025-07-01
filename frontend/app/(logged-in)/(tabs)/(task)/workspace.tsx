@@ -99,8 +99,12 @@ const Workspace = (props: Props) => {
                     </View>
                 </ConditionalView>
 
-                <ConditionalView condition={selected !== "" && noCategories} animated={true} triggerDep={selected}>
-                    <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 32 }}>
+                <ConditionalView
+                    condition={selected !== "" && noCategories}
+                    animated={true}
+                    triggerDep={selected}
+                    style={{ height: "100%", marginTop: 8 }}>
+                    <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                         <ThemedText type="lightBody">This workspace is empty!</ThemedText>
                         <TouchableOpacity
                             onPress={() => setCreating(true)}

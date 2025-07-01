@@ -74,7 +74,7 @@ const Standard = ({ hide, goTo }: Props) => {
     };
 
     if (categories) {
-        if (categories.length == 1) {
+        if (categories.filter((c) => c.name !== "!-proxy-!").length == 0) {
             goTo(Screen.NEW_CATEGORY);
         }
     } else {
