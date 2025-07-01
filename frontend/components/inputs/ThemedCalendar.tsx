@@ -3,9 +3,13 @@ import React, { useEffect, useState } from "react";
 
 import { Calendar } from "react-native-calendars";
 import { useThemeColor } from "@/hooks/useThemeColor";
-type Props = {};
+import { stringToLocalAwareDate } from "@/utils/timeUtils";
 
-const ThemedCalendar = (props: Props) => {
+type Props = {
+    dateReciever: (date: any) => void;
+};
+
+const ThemedCalendar = ({ dateReciever }: Props) => {
     const [selectedDates, setSelectedDates] = useState<any>([]);
     let ThemedColor = useThemeColor();
 
@@ -13,9 +17,14 @@ const ThemedCalendar = (props: Props) => {
         console.log("selected day", day.dateString);
         if (selectedDates.includes(day.dateString)) {
             setSelectedDates(selectedDates.filter((date) => date !== day.dateString));
+            console.log("dateReciever", null);
+            dateReciever(null);
             return;
         }
-        setSelectedDates([...selectedDates, day.dateString]);
+        setSelectedDates([day.dateString]);
+        dateReciever(stringToLocalAwareDate(day.dateString)); // use local midnight
+        return;
+        // setSelectedDates([...selectedDates, day.dateString]);
     };
 
     useEffect(() => {
@@ -29,16 +38,23 @@ const ThemedCalendar = (props: Props) => {
         );
     }, [selectedDates]);
 
+    // Get today's date in local time as YYYY-MM-DD
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const minDateLocal = `${yyyy}-${mm}-${dd}`;
+
     return (
         <View>
             <Calendar
-                horizontal={true}
+                minDate={minDateLocal}
                 theme={{
                     backgroundColor: ThemedColor.lightened,
                     calendarBackground: ThemedColor.lightened,
                     textSectionTitleColor: ThemedColor.text,
-                    selectedDayBackgroundColor: ThemedColor.primary,
-                    selectedDayTextColor: ThemedColor.text,
+                    selectedDayBackgroundColor: ThemedColor.tertiary,
+                    selectedDayTextColor: ThemedColor.primary,
                     todayTextColor: ThemedColor.primary,
                     dayTextColor: ThemedColor.text,
                     textDisabledColor: ThemedColor.disabled,
@@ -48,14 +64,13 @@ const ThemedCalendar = (props: Props) => {
                     agendaDayTextColor: ThemedColor.text,
                     agendaTodayColor: ThemedColor.primary,
                     arrowColor: ThemedColor.text,
-                    textDayFontFamily: "Outfit",
+                    textDayFontFamily: "OutfitLight",
                     textMonthFontFamily: "Outfit",
                     textMonthFontSize: 20,
-                    textMonthFontWeight: "bold",
+                    textMonthFontWeight: "semibold",
                     textDayHeaderFontFamily: "Outfit",
                 }}
-                displayName="Calendar"
-                firstDayOfWeek="monday"
+                markingType="period"
                 markedDates={selectedDates.reduce((acc, date) => {
                     return {
                         ...acc,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -91,11 +90,11 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 	ctx := context.Background()
 	// Insert the document into the collection
 
-	_, err := s.Categories.InsertOne(ctx , r)
+	_, err := s.Categories.InsertOne(ctx, r)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Category inserted", slog.String("id", r.ID.Hex()))
 
 	return r, nil
@@ -115,11 +114,11 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 
 	_, err = s.Categories.UpdateOne(ctx,
 		bson.M{
-			"_id":        id,
+			"_id": id,
 		},
 		bson.D{{Key: "$set", Value: bson.D{
 			{Key: "name", Value: updated.Name},
-			{Key: "lastEdited", Value: time.Now()},
+			{Key: "lastEdited", Value: xutils.NowUTC()},
 		}}},
 	)
 	if err != nil {
@@ -134,5 +133,14 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 func (s *Service) DeleteCategory(userId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()
 	_, err := s.Categories.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+func (s *Service) DeleteWorkspace(workspaceName string, user primitive.ObjectID) error {
+	ctx := context.Background()
+
+	filter := bson.M{"workspaceName": workspaceName, "user": user}
+	_, err := s.Categories.DeleteMany(ctx, filter)
+
 	return err
 }

@@ -48,9 +48,19 @@ const CreateModal = (props: Props) => {
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+    const bottomAnchorRef = useRef<View>(null);
+    const [bottomAnchorHeight, setBottomAnchorHeight] = useState(0);
+
+    useEffect(() => {
+        if (bottomAnchorRef.current) {
+            bottomAnchorRef.current.measure((x, y, width, height, pageX, pageY) => {
+                setBottomAnchorHeight(height);
+            });
+        }
+    }, [bottomAnchorRef.current]);
 
     // Define snap points - we'll use percentages for flexibility
-    const snapPoints = useMemo(() => ["60%", "90"], []);
+    const snapPoints = useMemo(() => [screen === Screen.STANDARD ? "65%" : "70%", "90%"], [screen]);
 
     const gestureHandler = useAnimatedGestureHandler({
         onStart: (_, ctx: any) => {
@@ -141,7 +151,11 @@ const CreateModal = (props: Props) => {
             case Screen.STANDARD:
                 return (
                     <Animated.View style={animatedStyle}>
-                        <Standard hide={() => props.setVisible(false)} goTo={goToScreen} />
+                        <Standard
+                            hide={() => props.setVisible(false)}
+                            goTo={goToScreen}
+                            bottomAnchorRef={bottomAnchorRef}
+                        />
                     </Animated.View>
                 );
             case Screen.NEW_CATEGORY:

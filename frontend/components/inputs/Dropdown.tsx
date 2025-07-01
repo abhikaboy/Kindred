@@ -21,9 +21,10 @@ type Props = {
     selected: Option;
     setSelected: Dispatch<SetStateAction<Option>>;
     onSpecial: () => void;
+    width?: string;
 };
 
-const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
+const Dropdown = ({ options, selected, setSelected, onSpecial, width }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
     const reducedMotion = useReducedMotion();
@@ -35,13 +36,13 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
 
     useEffect(() => {
         if (options.length === 0) return;
-        setSelected(options[0]);
+        setSelected(selected);
     }, []);
 
     let mainBar = useAnimatedStyle(() => {
         return {
-            borderBottomLeftRadius: expanded.value ? 0 : 20,
-            borderBottomRightRadius: expanded.value ? 0 : 20,
+            borderBottomLeftRadius: expanded.value ? 0 : 12,
+            borderBottomRightRadius: expanded.value ? 0 : 12,
             borderBottomWidth: expanded.value ? 1 : 0,
             borderBottomColor: expanded.value ? ThemedColor.disabled : ThemedColor.lightened,
         };
@@ -50,7 +51,8 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
     const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
     const AnimatedArrow = Animated.createAnimatedComponent(Entypo);
     return (
-        <Animated.View>
+        <Animated.View
+            style={{ borderRadius: 12, borderWidth: 1, borderColor: ThemedColor.tertiary, width: width || "80%" }}>
             <AnimatedTouchableOpacity
                 onPress={() => {
                     expanded.value = !expanded.value;
@@ -59,7 +61,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                 style={[
                     mainBar,
                     {
-                        borderRadius: 20,
+                        borderRadius: 12,
                         padding: 16,
                         backgroundColor: ThemedColor.lightened,
                         paddingHorizontal: HORIZONTAL_PADDING,
@@ -67,7 +69,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial }: Props) => {
                         justifyContent: "space-between",
                     },
                 ]}>
-                <ThemedText type="lightBody">{selected.label}</ThemedText>
+                <ThemedText type="lightBody">{selected.label || "Select a Category"}</ThemedText>
                 {expandedState ? (
                     <AnimatedArrow
                         name="chevron-down"

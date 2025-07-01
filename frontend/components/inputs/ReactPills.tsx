@@ -14,8 +14,8 @@ type Props = {
 const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
     const userId = "67ba5abb616b5e6544e0137b";
 
-    const getHasReacted = (reaction : SlackReaction, userId: string) => {
-		if (!reaction || !reaction.ids) return false; 
+    const getHasReacted = (reaction: SlackReaction, userId: string) => {
+        if (!reaction || !reaction.ids) return false;
         const idsSet = new Set(reaction.ids ?? []);
         return idsSet.has(userId);
     };
@@ -43,7 +43,7 @@ const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
                 borderStyle: "solid",
                 borderColor: hasReacted ? "#854dff" : "#321E5D",
                 borderWidth: 1.4,
-                borderRadius: 23,
+                borderRadius: 12,
                 paddingHorizontal: 9,
                 paddingVertical: 5,
                 gap: 6,

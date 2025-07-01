@@ -54,3 +54,19 @@ export const loginWithToken = async (): Promise<User> => {
         throw new Error("Session expired. Please login again.");
     }
 };
+
+/**
+ * Update the push token for a user
+ * API: Makes POST request to update the push token
+ * @param pushToken - The new push token
+ * @throws {Error} When the request fails or push token is invalid
+ */
+export const updatePushToken = async (pushToken: string): Promise<void> => {
+    try {
+        const { request } = useRequest();
+        return await request("POST", "/user/pushtoken", { push_token: pushToken });
+    } catch (error) {
+        console.error("Push token update failed:", error);
+        throw new Error("Failed to update push token. Please try again later.");
+    }
+};

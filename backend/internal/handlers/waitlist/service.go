@@ -79,4 +79,3 @@ func (s *Service) DeleteWaitlist(id primitive.ObjectID) error {
 	_, err := s.Waitlists.DeleteOne(ctx, filter)
 	return err
 }
-

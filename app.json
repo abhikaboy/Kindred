@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "1f1b52a1-6aa4-4f81-aac9-3d5568190dfe"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.suntex.kindred"
+    }
+  }
+}

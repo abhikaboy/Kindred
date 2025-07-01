@@ -1,34 +1,24 @@
 package Category
 
 import (
-	"time"
-
-	"github.com/abhikaboy/Kindred/internal/handlers/task"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type CreateCategoryParams struct {
-	Name string `bson:"name,omitempty" json:"name,omitempty"`
+	Name          string `bson:"name,omitempty" json:"name,omitempty"`
 	WorkspaceName string `bson:"workspaceName,omitempty" json:"workspaceName,omitempty"`
 }
 
-type CategoryDocument struct {
-	ID         primitive.ObjectID  `bson:"_id" json:"id"`
-	Name       string              `bson:"name" json:"name"`
-	WorkspaceName string `bson:"workspaceName" json:"workspaceName"`
-	LastEdited time.Time           `bson:"lastEdited" json:"lastEdited"`
-	Tasks      []task.TaskDocument `bson:"tasks" json:"tasks"`
-	User       primitive.ObjectID  `bson:"user" json:"user"`
-}
+type CategoryDocument = types.CategoryDocument
 
 type UpdateCategoryDocument struct {
 	Name string `bson:"name,omitempty" json:"name,omitempty"`
 }
 
 type WorkspaceResult struct {
-	Name string `bson:"_id" json:"name"`
-	Categories []CategoryDocument `bson:"categories" json:"categories"`
+	Name       string                   `bson:"_id" json:"name"`
+	Categories []types.CategoryDocument `bson:"categories" json:"categories"`
 }
 
 /*

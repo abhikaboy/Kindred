@@ -1,8 +1,8 @@
 package Activity
 
 import (
-	"time"
-
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -27,12 +27,11 @@ func (h *Handler) CreateActivity(c *fiber.Ctx) error {
 		})
 	}
 
-	doc := ActivityDocument{
+	doc := types.ActivityDocument{
 		ID:        primitive.NewObjectID(),
 		Field1:    params.Field1,
-		Field2:    params.Field2,
 		Picture:   params.Picture,
-		Timestamp: time.Now(),
+		Timestamp: xutils.NowUTC(),
 	}
 
 	_, err := h.service.CreateActivity(&doc)

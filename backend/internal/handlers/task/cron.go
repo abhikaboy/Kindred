@@ -3,24 +3,25 @@ package task
 import (
 	"fmt"
 	"log/slog"
-	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 /*
-	Router maps endpoints to handlers
+Router maps endpoints to handlers
 */
 func Cron(collections map[string]*mongo.Collection) {
 	service := newService(collections)
+	handler := Handler{service}
 
-	// Get all tasks with start times older than one da	y
+	/* Recurring Tasks */
 
 	c := cron.New()
 	id, err := c.AddFunc("@every 1m", func() {
 		slog.Info("Cron job started")
-		tasks := make([]TaskDocument, 0)
+		tasks := make([]TemplateTaskDocument, 0)
 		recurringTasks, err := service.GetTasksWithStartTimesOlderThanOneDay()
 		if err != nil {
 			slog.Error("Error getting tasks with start times older than one day", "error", err)
@@ -35,27 +36,29 @@ func Cron(collections map[string]*mongo.Collection) {
 
 		slog.Info("Tasks to process", "count", len(tasks))
 		for _, task := range tasks {
-			if task.Deadline != nil {
-				fmt.Println("DEADLINE: " + task.ID.Hex() + " " + task.Content + " " + task.Deadline.Format(time.RFC3339))
-			} else if task.StartDate != nil {
-				fmt.Println("START TIME: " + task.ID.Hex() + " " + task.Content + " " + task.StartDate.Format(time.RFC3339))
-			}
-
-			newTask, err := service.CreateTaskFromTemplate(task.TemplateID)
+			// TOOD: Optimize to take the template itself rather than the ID
+			newTask, err := service.CreateTaskFromTemplate(task.ID)
 			if err != nil {
 				slog.Error("Error creating task from template", "error", err)
 				if err.Error() == "mongo: no documents in result" {
-					slog.Info("No template found, deleting task", "task", task.TemplateID)
-					// delete the task somehow 
-					err = service.DeleteTaskByID(task.ID)
-					if err != nil {
-						slog.Error("Error deleting task from template", "error", err)
-					}
+					slog.Info("No template found, deleting task", "task", task.ID)
 				}
 			} else {
 				fmt.Println(newTask)
 			}
 		}
+
+		/* Reminders */
+
+		reminder_result, err := handler.HandleReminder()
+		if err != nil {
+			slog.Error("Error handling reminder", "error", fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		fmt.Println(reminder_result)
+
 		slog.Info("Cron job finished")
 	})
 	if err != nil {
@@ -65,5 +68,3 @@ func Cron(collections map[string]*mongo.Collection) {
 	c.Start()
 	slog.Info("Cron scheduler started", "id", id)
 }
-
-

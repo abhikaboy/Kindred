@@ -17,7 +17,6 @@ export default function TaskTabs({ tabs, activeTab, setActiveTab }: Props) {
                 <TouchableOpacity key={index} style={styles.tab} onPress={() => setActiveTab(index)}>
                     <ThemedText
                         key={index}
-                        type="title"
                         style={[styles.tabText, activeTab === index ? styles.activeTabText : styles.inactiveTabText]}>
                         {tab}
                     </ThemedText>

@@ -6,20 +6,22 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/xutils"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // getBaseTime returns the appropriate base time for recurrence calculations
 func getBaseTime(template *TemplateTaskDocument) time.Time {
 	// baseTime := template.LastGenerated
-	baseTime := time.Now()
+	baseTime := xutils.NowUTC()
 	if baseTime.IsZero() {
 		if template.StartDate != nil {
-			baseTime = *template.StartDate
+			baseTime = xutils.ToUTC(*template.StartDate)
 		} else if template.Deadline != nil {
-			baseTime = *template.Deadline
+			baseTime = xutils.ToUTC(*template.Deadline)
 		} else {
-			baseTime = time.Now()
+			baseTime = xutils.NowUTC()
 		}
 	}
 	return baseTime
@@ -30,7 +32,7 @@ func applyTimeToDate(targetDate time.Time, sourceTime *time.Time) time.Time {
 	if sourceTime == nil {
 		return targetDate
 	}
-	
+
 	return time.Date(
 		targetDate.Year(),
 		targetDate.Month(),
@@ -49,7 +51,7 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 	switch template.RecurFrequency {
 	case "daily":
 		nextTime = baseTime.AddDate(0, 0, template.RecurDetails.Every)
-		
+
 	case "weekly":
 		nextTime = baseTime.AddDate(0, 0, 1)
 		found := false
@@ -63,22 +65,22 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 			}
 			nextTime = nextTime.AddDate(0, 0, 1)
 		}
-		
+
 		if !found {
 			nextTime = baseTime.AddDate(0, 0, 7*template.RecurDetails.Every)
 			return s.calculateNextRecurrence(&TemplateTaskDocument{
 				RecurType:      template.RecurType,
 				RecurFrequency: template.RecurFrequency,
 				RecurDetails:   template.RecurDetails,
-				LastGenerated:  nextTime,
+				LastGenerated:  &nextTime,
 			}, nextTime)
 		}
-		
+
 	case "monthly":
 		// Start with the current month
 		nextTime = baseTime
 		found := false
-		
+
 		// First try to find a valid day in the current month
 		for _, day := range template.RecurDetails.DaysOfMonth {
 			lastDayOfMonth := time.Date(nextTime.Year(), nextTime.Month()+1, 0, 0, 0, 0, 0, nextTime.Location()).Day()
@@ -86,7 +88,7 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 			if targetDay > lastDayOfMonth {
 				targetDay = lastDayOfMonth
 			}
-			
+
 			candidateTime := time.Date(nextTime.Year(), nextTime.Month(), targetDay, 0, 0, 0, 0, nextTime.Location())
 			if candidateTime.After(baseTime) {
 				nextTime = candidateTime
@@ -94,7 +96,7 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 				break
 			}
 		}
-		
+
 		// If no valid day found in current month, move to next month
 		if !found {
 			nextTime = time.Date(baseTime.Year(), baseTime.Month()+time.Month(template.RecurDetails.Every), 1, 0, 0, 0, 0, baseTime.Location())
@@ -102,17 +104,17 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 				RecurType:      template.RecurType,
 				RecurFrequency: template.RecurFrequency,
 				RecurDetails:   template.RecurDetails,
-				LastGenerated:  nextTime,
+				LastGenerated:  &nextTime,
 			}, nextTime)
 		}
-		
+
 	case "yearly":
 		nextTime = baseTime.AddDate(template.RecurDetails.Every, 0, 0)
-		
+
 	default:
 		return time.Time{}, fmt.Errorf("invalid recurrence frequency: %s", template.RecurFrequency)
 	}
-	
+
 	return nextTime, nil
 }
 
@@ -181,27 +183,120 @@ func (s *Service) PrintNextRecurrences(template *TemplateTaskDocument) {
 		)
 
 		// Update the template's LastGenerated for the next iteration
-		template.LastGenerated = nextTime
+		template.LastGenerated = &nextTime
 	}
 }
-
-
 
 func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
-return TaskDocument{
-		ID: primitive.NewObjectID(),
-		Content: templateDoc.Content,
-		Value: templateDoc.Value,
-		Recurring: true,
+	return TaskDocument{
+		ID:             primitive.NewObjectID(),
+		Content:        templateDoc.Content,
+		Value:          templateDoc.Value,
+		Recurring:      true,
 		RecurFrequency: templateDoc.RecurFrequency,
-		Deadline: templateDoc.Deadline,
-		StartTime: templateDoc.StartTime,
-		StartDate: templateDoc.StartDate,
-		Priority: templateDoc.Priority,
-		Public: templateDoc.Public,
-		Active: true,
-		Timestamp: time.Now(),
-		LastEdited: time.Now(),
-		TemplateID: templateDoc.ID,	
+		Deadline:       templateDoc.Deadline,
+		StartTime:      templateDoc.StartTime,
+		StartDate:      templateDoc.StartDate,
+		Priority:       templateDoc.Priority,
+		Public:         templateDoc.Public,
+		Active:         true,
+		Timestamp:      xutils.NowUTC(),
+		LastEdited:     xutils.NowUTC(),
+		TemplateID:     templateDoc.ID,
 	}
 }
+
+func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time, reminders []*Reminder) error {
+	var template_id primitive.ObjectID = primitive.NewObjectID()
+	if doc.Recurring {
+		if params.RecurFrequency == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid recurring frequency",
+			})
+		} 
+		if params.RecurDetails == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Recurring details are required",
+			})
+		}
+
+		recurType := "OCCURRENCE"
+
+		// if we have a deadline with no start information
+		if params.Deadline != nil {
+			recurType = "DEADLINE"
+			if params.StartTime != nil || params.StartDate != nil {
+				recurType = "WINDOW"
+			}
+		}
+
+		baseTime := xutils.NowUTC()
+		if params.Deadline != nil {
+			baseTime = *params.Deadline
+		} else if params.StartTime != nil {
+			baseTime = *params.StartTime
+		}
+
+		// filter out non relative reminders
+		relativeReminders := make([]*Reminder, 0)
+		for _, reminder := range reminders {
+			if reminder.Type == "RELATIVE" {
+				relativeReminders = append(relativeReminders, reminder)
+			}
+		}
+
+		// Create a template for the recurring task
+		template_doc := TemplateTaskDocument{
+			CategoryID:     categoryId,
+			ID:             template_id,
+			Content:        params.Content,
+			Priority:       params.Priority,
+			Value:          params.Value,
+			Public:         params.Public,
+			RecurType:      recurType,
+			RecurFrequency: params.RecurFrequency,
+			RecurDetails:   params.RecurDetails,
+
+			Deadline:      deadline,
+			StartTime:     startTime,
+			StartDate:     startDate,
+			LastGenerated: &baseTime,
+			Reminders:     relativeReminders,
+		}
+		var err error
+
+		var next_occurence time.Time
+		if recurType == "OCCURRENCE" {
+			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating OCCURENCE template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		} else if recurType == "DEADLINE" {
+			next_occurence, err = h.service.ComputeNextDeadline(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating DEADLINE template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		} else if recurType == "WINDOW" {
+			next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+			if err != nil {
+				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating WINDOW template task", slog.String("error", err.Error()))
+				return c.Status(fiber.StatusInternalServerError).JSON(err)
+			}
+		}
+
+		template_doc.NextGenerated = &next_occurence
+
+		_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
+		if err != nil {
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error creating template task", slog.String("error", err.Error()))
+			return c.Status(fiber.StatusInternalServerError).JSON(err)
+		}
+
+		doc.TemplateID = template_id
+	}
+
+	return nil
+}
+

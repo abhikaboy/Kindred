@@ -8,15 +8,16 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 
 interface WeeklyActivityProps {
     activityLevels: number[];
+    userid: string;
 }
 
-export default function WeeklyActivity({ activityLevels }: WeeklyActivityProps) {
+export default function WeeklyActivity({ activityLevels, userid = "67abe3c08052e49db74c4b62" }: WeeklyActivityProps) {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     return (
-        <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/profile/Activity")} style={styles.section}>
+        <TouchableOpacity onPress={() => router.push(`/activity/${userid}`)} style={styles.section}>
             <View style={styles.header}>
-                <ThemedText type="subtitle">Past 7 Day</ThemedText>
+                <ThemedText type="subtitle">Recent Activity</ThemedText>
                 <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
             </View>
             <View style={styles.activityContainer}>

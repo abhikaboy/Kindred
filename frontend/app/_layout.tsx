@@ -19,6 +19,9 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
+import { useSafeAsync } from "@/hooks/useSafeAsync";
+import Toastable from "react-native-toastable";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -30,10 +33,12 @@ export default function RootLayout() {
         Outfit: require("../assets/fonts/Outfit-Variable.ttf"),
         OutfitLight: require("../assets/fonts/Outfit-Light.ttf"),
         Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),
+        FrauncesItalic: require("../assets/fonts/Fraunces-Italic.ttf"),
         SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
     const [shakeDetected, setShakeDetected] = useState(false);
     const [subscription, setSubscription] = useState(null);
+    const safeAsync = useSafeAsync();
 
     Accelerometer.setUpdateInterval(500); // Adjust update interval as needed
 
@@ -59,10 +64,22 @@ export default function RootLayout() {
     }, []);
 
     useEffect(() => {
-        if (loaded) {
-            SplashScreen.hideAsync();
-        }
+        const hideSplash = async () => {
+            if (loaded) {
+                const { error } = await safeAsync(async () => {
+                    await SplashScreen.hideAsync();
+                });
+
+                if (error) {
+                    console.error("Error hiding splash screen:", error);
+                }
+            }
+        };
+
+        hideSplash();
     }, [loaded]);
+
+    const { top } = useSafeAreaInsets();
 
     if (!loaded) {
         return null;
@@ -72,29 +89,36 @@ export default function RootLayout() {
         <AuthProvider>
             <TasksProvider>
                 <TaskCreationProvider>
-                    <BlueprintCreationProvider>
-                        <GestureHandlerRootView style={{ flex: 1 }}>
-                            <BottomSheetModalProvider>
-                                {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
-                                <Stack
-                                    screenOptions={{
-                                        headerShown: true,
-                                        headerTransparent: true,
-                                        headerLeft: (tab) => <BackButton />,
-                                        headerTintColor: ThemedColor.text,
-                                        headerBackButtonDisplayMode: "minimal",
-                                        headerTitleStyle: {
-                                            fontFamily: "Outfit",
-                                            fontWeight: 100,
-                                            fontSize: 1,
-                                            color: ThemedColor.primary,
-                                        },
-                                    }}
-                                />
-                                <StatusBar style="light" />
-                            </BottomSheetModalProvider>
-                        </GestureHandlerRootView>
-                    </BlueprintCreationProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                        <BottomSheetModalProvider>
+                            <Toastable
+                                statusMap={{
+                                    success: ThemedColor.success,
+                                    danger: ThemedColor.danger,
+                                    warning: ThemedColor.warning,
+                                    info: ThemedColor.primary,
+                                }}
+                                offset={top}
+                            />
+                            {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
+                            <Stack
+                                screenOptions={{
+                                    headerShown: true,
+                                    headerTransparent: true,
+                                    headerLeft: (tab) => <BackButton />,
+                                    headerTintColor: ThemedColor.text,
+                                    headerBackButtonDisplayMode: "minimal",
+                                    headerTitleStyle: {
+                                        fontFamily: "Outfit",
+                                        fontWeight: 100,
+                                        fontSize: 1,
+                                        color: ThemedColor.primary,
+                                    },
+                                }}
+                            />
+                            <StatusBar style="light" />
+                        </BottomSheetModalProvider>
+                    </GestureHandlerRootView>
                 </TaskCreationProvider>
             </TasksProvider>
         </AuthProvider>

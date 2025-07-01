@@ -2,16 +2,18 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
-type Props = {};
+type Props = {
+    checked?: boolean;
+    onToggle?: () => void;
+};
 
-const ChecklistToggle = (props: Props) => {
-    const [checked, setChecked] = useState(false);
+const ChecklistToggle = ({ checked = false, onToggle }: Props) => {
     const ThemedColor = useThemeColor();
     return (
         <TouchableOpacity
-            onPress={() => setChecked(!checked)}
+            onPress={onToggle}
             style={{
-                backgroundColor: checked ? ThemedColor.primary : "#282738",
+                backgroundColor: checked ? ThemedColor.primary : ThemedColor.tertiary,
                 paddingVertical: 10,
                 paddingHorizontal: 10,
                 borderRadius: 8,

@@ -7,7 +7,7 @@ type Props = {
 };
 const ActivityPoint = ({ level }: Props) => {
     let ThemedColor = useThemeColor();
-    const LEVELS = { 1: ThemedColor.text, 2: "#aff0c6", 3: "#5CFF95", 4: "#069A3A" };
+    const LEVELS = { 1: ThemedColor.tertiary, 2: "#aff0c6", 3: "#5CFF95", 4: "#069A3A" };
     const [display, setDisplay] = useState(false);
     return (
         <TouchableOpacity onPress={() => setDisplay(!display)}>

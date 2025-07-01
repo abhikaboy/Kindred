@@ -7,8 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
-	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
-	categories "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xerr"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/gofiber/fiber/v2"
@@ -121,10 +120,10 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		TokenUsed:    false,
 		Count:        0,
 
-		Categories:     make([]categories.CategoryDocument, 0),
+		Categories:     make([]types.CategoryDocument, 0),
 		Friends:        make([]primitive.ObjectID, 0),
 		TasksComplete:  0,
-		RecentActivity: make([]activity.ActivityDocument, 0),
+		RecentActivity: make([]types.ActivityDocument, 0),
 
 		DisplayName:    "Default Username",
 		Handle:         "@default",
@@ -134,9 +133,11 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		GoogleID: googleid.(string),
 	}
 
-	if err = user.Validate(); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
-	}
+	// TODO: Validate using go validator package 
+
+	// if err = user.Validate(); err != nil {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
+	// }
 
 	err = h.service.CreateUser(user)
 
@@ -312,4 +313,35 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		return err
 	}
 	return c.SendString("Logout Successful")
+}
+
+func (h *Handler) UpdatePushToken(c *fiber.Ctx) error {
+	user_id := c.UserContext().Value("user_id")
+	if user_id == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(xerr.BadRequest(errors.New("User ID is not found")))
+	}
+
+	var req UpdatePushTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.InvalidJSON())
+	}
+
+	errs := xvalidator.Validator.Validate(req)
+	if len(errs) > 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(errs)
+	}
+
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id.(string))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(xerr.BadRequest(err))
+	}
+
+	err = h.service.UpdatePushToken(user_id_obj, req.PushToken)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(xerr.BadRequest(err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Push Token Updated Successfully",
+	})
 }

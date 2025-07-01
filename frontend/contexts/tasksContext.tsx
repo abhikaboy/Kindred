@@ -1,9 +1,10 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
+import { isFuture, isPast, isToday } from "date-fns";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 
@@ -12,8 +13,8 @@ type TaskContextType = {
     setWorkSpaces: (workspaces: Workspace[]) => void;
     getWorkspace: (name: string) => Workspace;
     fetchWorkspaces: () => void;
-    selected: string;
-    setSelected: (selected: string) => void;
+    selected: string; // workspace name
+    setSelected: (selected: string) => void; // workspace name
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
@@ -22,12 +23,20 @@ type TaskContextType = {
     removeFromWorkspace: (name: string, categoryId: string) => void;
 
     setCreateCategory: (Option: Option) => void;
-    selectedCategory: Option;
+    selectedCategory: Option; // category name
     showConfetti: boolean;
     setShowConfetti: (showConfetti: boolean) => void;
 
     task: Task | null;
     setTask: (task: Task | null) => void;
+    doesWorkspaceExist: (name: string) => boolean;
+    unnestedTasks: Task[];
+    startTodayTasks: Task[];
+    dueTodayTasks: Task[];
+    pastStartTasks: Task[];
+    pastDueTasks: Task[];
+    futureTasks: Task[];
+    allTasks: Task[];
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -40,11 +49,61 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [task, setTask] = useState<Task | null>(null);
 
     const [showConfetti, setShowConfetti] = useState(false);
+
+    const unnestedTasks = useMemo(() => {
+        let res = workspaces
+            .flatMap((workspace) => workspace.categories)
+            .flatMap((category) =>
+                category.tasks.map((task) => ({
+                    ...task,
+                    categoryID: category.id,
+                    categoryName: category.name,
+                }))
+            );
+        return res;
+    }, [workspaces]);
+
+    const startTodayTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isToday(new Date(task?.startDate));
+        });
+    }, [unnestedTasks]);
+
+    const dueTodayTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isToday(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const pastStartTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isPast(new Date(task?.startDate));
+        });
+    }, [unnestedTasks]);
+
+    const pastDueTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isPast(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const futureTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            return isFuture(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const allTasks = useMemo(() => {
+        return unnestedTasks;
+    }, [unnestedTasks]);
+
     /**
      * Sets the selected category within the creation menu
      * @param option
      */
     const setCreateCategory = (option: Option) => {
+        if (option.id == "") return;
+        if (option.label == "") return;
         setSelectedCategory(option);
     };
 
@@ -126,6 +185,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setWorkSpaces(workspacesCopy);
     };
 
+    const doesWorkspaceExist = (name: string) => {
+        for (const workspace of workspaces) {
+            if (workspace.name === name) return true;
+        }
+        return false;
+    };
+
     useEffect(() => {
         console.log("Change to selected Workspace has occured");
         console.log(selected);
@@ -133,6 +199,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const selectedWorkspace = getWorkspace(selected);
         if (selectedWorkspace == null) return;
         setCategories(selectedWorkspace.categories);
+        setSelectedCategory({ label: "", id: "", special: false });
     }, [selected, workspaces]);
 
     return (
@@ -156,6 +223,14 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setShowConfetti,
                 task,
                 setTask,
+                doesWorkspaceExist,
+                unnestedTasks,
+                startTodayTasks,
+                dueTodayTasks,
+                pastStartTasks,
+                pastDueTasks,
+                futureTasks,
+                allTasks,
             }}>
             {children}
         </TaskContext.Provider>

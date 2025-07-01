@@ -1,26 +1,24 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text, Dimensions } from "react-native";
 import { TextInput } from "react-native-gesture-handler";
 import { GestureHandlerRootView, GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { ThemedText } from "../ThemedText";
 
-const INITIAL_BOX_SIZE = 40;
-const SLIDER_WIDTH = 300;
-
-const STEP_SIZE = SLIDER_WIDTH / 11;
-
 Animated.addWhitelistedNativeProps({ text: true });
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
+const SLIDER_WIDTH = Dimensions.get("window").width * 0.89;
+const INITIAL_BOX_SIZE = 40;
+
+const STEP_SIZE = SLIDER_WIDTH / 11;
 let ThemedColor = useThemeColor();
-const ThemedSlider = () => {
+const ThemedSlider = ({ setStep }: { setStep: (step: number) => void }) => {
     const offset = useSharedValue(0);
     const MAX_VALUE = SLIDER_WIDTH - INITIAL_BOX_SIZE;
     const POINTS = [
-        { label: "0", value: 0 },
         { label: "1", value: 1 },
         { label: "2", value: 2 },
         { label: "3", value: 3 },
@@ -31,8 +29,9 @@ const ThemedSlider = () => {
         { label: "8", value: 8 },
         { label: "9", value: 9 },
         { label: "10", value: 10 },
+        { label: "11", value: 11 },
     ];
-    const [step, setStep] = useState(POINTS[0]);
+    setStep(POINTS[0].value);
     const pan = Gesture.Pan()
         .onChange((event) => {
             offset.value = Math.max(0, Math.min(MAX_VALUE, offset.value + event.changeX));
@@ -56,7 +55,7 @@ const ThemedSlider = () => {
     useAnimatedReaction(
         () => Math.round(offset.value / STEP_SIZE),
         (stepIndex) => {
-            runOnJS(setStep)(POINTS[stepIndex] || POINTS[0]);
+            runOnJS(setStep)(POINTS[stepIndex]?.value || POINTS[0].value);
         }
     );
 
@@ -75,17 +74,11 @@ const ThemedSlider = () => {
                                     height: 16,
                                     borderRadius: 12,
                                     margin: "auto",
-                                }}
-                            />
+                                }}></View>
                         </Animated.View>
                     </GestureDetector>
                 </View>
             </GestureHandlerRootView>
-            <View style={styles.step}>
-                <ThemedText type="lightBody" style={styles.stepText}>
-                    {step.label}
-                </ThemedText>
-            </View>
         </View>
     );
 };
@@ -103,7 +96,7 @@ const styles = StyleSheet.create({
     sliderTrack: {
         width: SLIDER_WIDTH,
         height: 25,
-        backgroundColor: ThemedColor.text,
+        backgroundColor: ThemedColor.tertiary,
         // backgroundColor: ThemedColor.primary,
         borderRadius: 25,
         justifyContent: "center",
@@ -137,8 +130,11 @@ const styles = StyleSheet.create({
         alignItems: "flex-end",
     },
     stepText: {
-        fontSize: 15,
-        color: "white",
+        fontSize: 16,
+        width: "100%",
+        textAlign: "center",
+        marginTop: -2,
+        color: "black",
     },
 });
 

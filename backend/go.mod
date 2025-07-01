@@ -15,6 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.76.1
 	github.com/gofiber/contrib/socketio v1.1.4
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/oliveroneill/exponent-server-sdk-golang v0.0.0-20210823140141-d050598be512
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 )
 

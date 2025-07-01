@@ -8,7 +8,7 @@
         "scheme": "kindred",
         "userInterfaceStyle": "automatic",
         "newArchEnabled": true,
-        "platforms": ["ios", "android"],
+        "platforms": ["ios", "android", "web"],
         "ios": {
             "supportsTablet": true,
             "infoPlist": {
@@ -29,7 +29,7 @@
             },
             "usesAppleSignIn": true,
             "bundleIdentifier": "com.kindred.kindredtsl",
-            "buildNumber": "9"
+            "buildNumber": "22"
         },
         "android": {
             "adaptiveIcon": {
@@ -45,6 +45,7 @@
         "plugins": [
             "expo-apple-authentication",
             "expo-router",
+            "expo-notifications",
             [
                 "expo-splash-screen",
                 {

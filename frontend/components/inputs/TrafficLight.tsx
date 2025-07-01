@@ -1,35 +1,48 @@
 import { StyleSheet, Text, View, Switch, Dimensions, TouchableOpacity } from "react-native";
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
-type Props = {};
-
-const TrafficLight = (props: Props) => {
-    const [value, setValue] = React.useState(0);
+import { ThemedText } from "../ThemedText";
+type Props = {
+    setValue: (value: number) => void;
+    value: number;
+};
+type Entry = {
+    color: string;
+    label: string;
+};
+const TrafficLight = ({ setValue, value }: Props) => {
     let ThemedColor = useThemeColor();
 
     return (
         <View
             style={{
                 display: "flex",
-                flexDirection: "row",
-                gap: 16,
+                flexDirection: "column",
+                gap: 8,
             }}>
-            {[ThemedColor.error, ThemedColor.warning, ThemedColor.success].map((color, index) => {
+            {[
+                { color: ThemedColor.success, label: "Low" },
+                { color: ThemedColor.warning, label: "Medium" },
+                { color: ThemedColor.error, label: "High" },
+            ].map((entry, index) => {
                 return (
                     <TouchableOpacity
                         key={index}
-                        style={{ ...styles.buttonBase, backgroundColor: color }}
+                        style={{ alignItems: "center", flexDirection: "row", gap: 8 }}
                         onPress={() => {
-                            setValue(index);
+                            setValue(index + 1);
                         }}>
-                        {value === index && (
-                            <View
-                                style={{
-                                    ...styles.selected,
-                                    backgroundColor: "#fff",
-                                }}
-                            />
-                        )}
+                        <View style={{ ...styles.buttonBase, backgroundColor: entry.color }}>
+                            {value - 1 === index && (
+                                <View
+                                    style={{
+                                        ...styles.selected,
+                                        backgroundColor: "#fff",
+                                    }}
+                                />
+                            )}
+                        </View>
+                        <ThemedText type="default">{entry.label}</ThemedText>
                     </TouchableOpacity>
                 );
             })}

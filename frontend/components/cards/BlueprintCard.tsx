@@ -53,7 +53,7 @@ const BlueprintCard = ({
             tags,
         });
         router.push({
-            pathname: "/(logged-in)/(tabs)/search/blueprint/[id]",
+            pathname: "/(logged-in)/(tabs)/(search)/blueprint/[id]",
             params: {
                 id: id,
                 name: workspaceName,
@@ -75,14 +75,14 @@ const BlueprintCard = ({
                 <View style={styles.informationContainer}>
                     <ThemedText type="subtitle">{workspaceName}</ThemedText>
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-                        <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />{" "}
+                        <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
                         <ThemedText type="smallerDefault">{time}</ThemedText>
                     </View>
 
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                         <Feather name="users" size={18} color={ThemedColor.caption} />
 
-                        <ThemedText type="caption">{subscriberCount} subscribers</ThemedText>
+                        <ThemedText type="caption">{subscriberCount} Subscribers</ThemedText>
                     </View>
                     <View style={{ alignItems: "center", flexDirection: "row", gap: 10 }}>
                         {tags.map((tag, index) => (

@@ -23,7 +23,9 @@ function getErrorHistory() {
 }
 
 async function request(method: string, url: string, body?: any) {
-    console.log("Method: " + method + " URL: " + url + " Body: " + JSON.stringify(body));
+    console.log(
+        "Method: " + method + " URL: " + process.env.EXPO_PUBLIC_API_URL + url + " Body: " + JSON.stringify(body)
+    );
     try {
         let response = await axios({
             url: process.env.EXPO_PUBLIC_API_URL + url,
@@ -34,7 +36,7 @@ async function request(method: string, url: string, body?: any) {
             data: body,
         });
 
-        console.log("Response: " + JSON.stringify(response.data));
+        // console.log("Response: " + JSON.stringify(response.data));
 
         // Handle successful response
         const access_response = response.headers["access_token"];

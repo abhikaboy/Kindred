@@ -7,30 +7,41 @@ type Props = {
     style?: ViewStyle;
     ghost?: boolean;
     outline?: boolean;
+    disabled?: boolean;
+    children?: React.ReactNode;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, disabled, children }: Props) {
     let ThemedColor = useThemeColor();
 
     return (
         <TouchableOpacity
+            disabled={disabled}
             onPress={onPress}
             style={[
                 {
                     width: "100%",
-                    backgroundColor: ThemedColor.primary,
-                    borderRadius: 20,
+                    backgroundColor: ghost
+                        ? "transparent"
+                        : outline
+                          ? ThemedColor.lightened + "20"
+                          : ThemedColor.primary,
+                    borderRadius: 12,
                     paddingVertical: 16,
+                    borderWidth: outline ? 1 : 0,
+                    borderColor: outline ? ThemedColor.primary : "transparent",
+                    opacity: disabled ? 0.5 : 1,
                 },
                 style,
             ]}>
+            {children}
             <Text
                 style={{
-                    color: ghost ? ThemedColor.text : ThemedColor.buttonText,
+                    color: ghost || outline ? ThemedColor.primary : ThemedColor.buttonText,
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,
-                    // fontSize: 20,
+                    fontSize: 15,
                 }}>
                 {title}
             </Text>

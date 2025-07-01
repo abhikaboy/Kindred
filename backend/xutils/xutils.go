@@ -2,8 +2,11 @@ package xutils
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -48,10 +51,26 @@ func ParseIDs(c *fiber.Ctx, ids ...string) (error, []primitive.ObjectID) {
 	for index, id := range ids {
 		id_, err := primitive.ObjectIDFromHex(id)
 		if err != nil {
-			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at "+string(index), slog.String("error", err.Error()), slog.String("id", id))
-			return err, nil
+			slog.LogAttrs(c.Context(), slog.LevelError, "Error Parsing IDs at "+strconv.Itoa(index), slog.String("error", err.Error()), slog.String("id", id))
+			return errors.New(err.Error() + " at " + strconv.Itoa(index) +": [" + id + "]"), nil
 		}
 		ids_ = append(ids_, id_)
 	}
 	return err, ids_
+}
+
+func ToUTC(t time.Time) time.Time {
+	return t.UTC()
+}
+
+func NowUTC() time.Time {
+	return time.Now().UTC()
+}
+
+func ParseTimeToUTC(t time.Time) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+	if err != nil {
+		return time.Time{}, err
+	}
+	return t, nil
 }

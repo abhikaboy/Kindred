@@ -65,7 +65,7 @@ func (s *Service) GetProfileByEmail(email string) (*ProfileDocument, error) {
 	}
 
 	return &Profile, nil
-} 
+}
 
 func (s *Service) GetProfileByPhone(phone string) (*ProfileDocument, error) {
 	ctx := context.Background()
@@ -86,7 +86,7 @@ func (s *Service) SearchProfiles(query string) ([]ProfileDocument, error) {
 	ctx := context.Background()
 
 	var results = make([]ProfileDocument, 0)
-		
+
 	pipeline := mongo.Pipeline{
 		// $search stage using Atlas Search
 		bson.D{
@@ -159,7 +159,7 @@ func (s *Service) SearchProfiles(query string) ([]ProfileDocument, error) {
 
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
-	}	
+	}
 	return results, nil
 }
 
@@ -188,4 +188,3 @@ func (s *Service) DeleteProfile(id primitive.ObjectID) error {
 	_, err := s.Profiles.DeleteOne(ctx, filter)
 	return err
 }
-

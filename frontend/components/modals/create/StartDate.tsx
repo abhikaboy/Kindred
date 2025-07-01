@@ -1,11 +1,14 @@
 import { View } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
 import { TouchableOpacity } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { formatLocalDate } from "@/utils/timeUtils";
+import SuggestedTag from "@/components/inputs/SuggestedTag";
 
 type Props = {
     goToStandard: () => void;
@@ -13,7 +16,7 @@ type Props = {
 
 const StartDate = ({ goToStandard }: Props) => {
     const ThemedColor = useThemeColor();
-
+    const { startDate, setStartDate } = useTaskCreation();
     return (
         <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
@@ -24,8 +27,35 @@ const StartDate = ({ goToStandard }: Props) => {
                     Set Start Date
                 </ThemedText>
             </View>
-            <ThemedCalendar />
-            <PrimaryButton onPress={goToStandard} title="Set Start Date" />
+            <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
+                <ThemedText type="defaultSemiBold">Start Date:</ThemedText>
+                <ThemedText type="defaultSemiBold">{startDate ? startDate.toLocaleDateString() : ""}</ThemedText>
+            </View>
+            <View style={{ display: "flex", flexDirection: "row", gap: 4 }}>
+                <SuggestedTag
+                    tag="Today"
+                    onPress={() => {
+                        setStartDate(new Date());
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="Tomorrow"
+                    onPress={() => {
+                        setStartDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+                        goToStandard();
+                    }}
+                />
+                <SuggestedTag
+                    tag="In a Week"
+                    onPress={() => {
+                        setStartDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+                        goToStandard();
+                    }}
+                />
+            </View>
+            <ThemedCalendar dateReciever={setStartDate} />
+            <PrimaryButton onPress={() => goToStandard()} title="Set Start Date" />
         </View>
     );
 };

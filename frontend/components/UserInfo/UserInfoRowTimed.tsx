@@ -10,13 +10,14 @@ type Props = {
     id?: string;
 };
 
-const UserInfoRowTimed = ({ name, username, time, icon }: Props) => {
+const UserInfoRowTimed = ({ name, username, time, icon, id }: Props) => {
     return (
         <UserInfoRowBase
             name={name}
             username={username}
             right={<ThemedText type="caption">{time}hr ago</ThemedText>}
             icon={icon}
+            id={id}
         />
     );
 };

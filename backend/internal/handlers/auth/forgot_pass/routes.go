@@ -12,7 +12,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	service := newService(collections)
 	handler := Handler{service}
 
-	apiV1 := app.Group("/api/v1")
+	apiV1 := app.Group("/v1")
 	userV1 := apiV1.Group("/user")
 
 	userV1.Post("/forgot-password", handler.ForgotPassword)

@@ -13,7 +13,7 @@ func Routes(app *fiber.App, collections map[string]*mongo.Collection) {
 	handler := Handler{service}
 
 	// Add a group for API versioning
-	apiV1 := app.Group("/api/v1")
+	apiV1 := app.Group("/v1")
 
 	// Add Sample group under API Version 1
 	Activitys := apiV1.Group("/Activity")

@@ -8,12 +8,18 @@ type Props = {
     username: string;
     icon: string;
     id?: string;
+    connectionType?: any;
 };
 
-const UserInfoRowFollow = ({ name, username, icon}: Props) => {
+const UserInfoRowFollow = ({ name, username, icon, id, connectionType = "none" }: Props) => {
     return (
-        <UserInfoRowBase name={name} username={username} right={<FollowButton following={false} />} icon={icon} large
-/>
+        <UserInfoRowBase
+            name={name}
+            username={username}
+            right={<FollowButton connectionType={connectionType} />}
+            icon={icon}
+            id={id}
+        />
     );
 };
 

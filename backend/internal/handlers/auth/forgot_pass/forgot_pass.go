@@ -47,7 +47,7 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 
 }
 
-// VerifyOTP handles the GET /api/v1/user/verify-otp endpoint.
+// VerifyOTP handles the GET /v1/user/verify-otp endpoint.
 func (h *Handler) VerifyOTP(c *fiber.Ctx) error {
 
 	reqInputs := VerifyOTPRequestParams{
@@ -73,7 +73,7 @@ func (h *Handler) VerifyOTP(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// ChangePassword handles the POST /api/v1/user/change-password endpoint.
+// ChangePassword handles the POST /v1/user/change-password endpoint.
 func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 
 	var reqBody ChangePasswordRequestBody

@@ -4,6 +4,7 @@ import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PreviewIcon from "../profile/PreviewIcon";
 import PrimaryButton from "../inputs/PrimaryButton";
+import { router } from "expo-router";
 
 type Props = {
     name: string;
@@ -16,10 +17,16 @@ const UserInfoFollowRequest = ({ name, username, icon, userId }: Props) => (
     <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
         <View style={styles.row}>
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-                <PreviewIcon size={"smallMedium"} icon={icon}></PreviewIcon>
+                <TouchableOpacity onPress={() => router.push(`/account/${userId}`)}>
+                    <PreviewIcon size={"smallMedium"} icon={icon}></PreviewIcon>
+                </TouchableOpacity>
                 <View style={{ gap: 0 }}>
                     <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
-                        <ThemedText numberOfLines={1} ellipsizeMode="tail" style={{fontWeight: 500}} type="smallerDefault">
+                        <ThemedText
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            style={{ fontWeight: 500 }}
+                            type="smallerDefault">
                             {name}
                         </ThemedText>
                     </View>

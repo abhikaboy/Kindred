@@ -17,6 +17,41 @@ type BottomMenuOption = {
     callback: () => void;
 };
 
+type Reminder = {
+    triggerTime: Date;
+    type: string;
+    sent: boolean;
+    afterStart: boolean;
+    beforeStart: boolean;
+    beforeDeadline: boolean;
+    afterDeadline: boolean;
+};
+
+// Types for nested structures
+type RecurDetails = {
+    every: number;
+    daysOfWeek?: number[];
+    daysOfMonth?: number[];
+    months?: number[];
+    behavior: "BUILDUP" | "ROLLING";
+    reminders?: string[];
+};
+
+type ChecklistItem = {
+    content: string;
+    completed: boolean;
+    order: number;
+};
+
+type Reminder = {
+    triggerTime: string;
+    type: string;
+    sent: boolean;
+    afterStart: boolean;
+    beforeStart: boolean;
+    beforeDeadline: boolean;
+};
+
 type Priority = "1" | "2" | "3";
 
 type Props = {
