@@ -69,7 +69,7 @@ func NewPresigner() *s3.PresignClient {
 	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.UsePathStyle = false // Digital Ocean Spaces uses virtual-hosted-style URLs
 	})
-	
+
 	// Create presigner client
 	return s3.NewPresignClient(s3Client)
 }

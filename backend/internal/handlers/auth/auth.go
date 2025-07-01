@@ -44,7 +44,7 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 		TasksComplete:  user.TasksComplete,
 		RecentActivity: user.RecentActivity,
 	}
-	
+
 	return resp, nil
 }
 
@@ -84,14 +84,14 @@ func (h *Handler) RegisterHuma(ctx context.Context, input *RegisterInput) (*Regi
 func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
 	// Convert to regular register input and add Apple ID to context
 	ctxWithApple := context.WithValue(ctx, "apple_id", input.Body.AppleID)
-	
+
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:    input.Body.Email,
 			Password: "", // Apple registration doesn't require password
 		},
 	}
-	
+
 	return h.RegisterWithContext(ctxWithApple, registerInput)
 }
 
@@ -150,7 +150,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	resp.AccessToken = access
 	resp.RefreshToken = refresh
 	resp.Body.Message = "User Created Successfully"
-	
+
 	return resp, nil
 }
 
@@ -185,7 +185,7 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 		TasksComplete:  user.TasksComplete,
 		RecentActivity: user.RecentActivity,
 	}
-	
+
 	return resp, nil
 }
 
@@ -212,7 +212,7 @@ func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOu
 	if len(split) != 2 {
 		return nil, huma.Error400BadRequest("Not Authorized, Invalid Token Format", nil)
 	}
-	
+
 	tokenType, accessToken := split[0], split[1]
 	if tokenType != "Bearer" {
 		return nil, huma.Error400BadRequest("Not Authorized, Invalid Token Type", nil)
@@ -223,7 +223,7 @@ func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOu
 	if err != nil {
 		return nil, huma.Error400BadRequest("Token validation failed", err)
 	}
-	
+
 	err = h.service.InvalidateTokens(user_id)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Token invalidation failed", err)
@@ -268,12 +268,12 @@ func RequireAuthFromHuma(ctx context.Context) (string, error) {
 	if userID, ok := ctx.Value(UserIDContextKey).(string); ok {
 		return userID, nil
 	}
-	
+
 	// If that doesn't work, check if we can find the Fiber context
 	if fiberCtx, ok := ctx.Value("fiber_ctx").(*fiber.Ctx); ok {
 		return RequireAuthFiber(fiberCtx)
 	}
-	
+
 	slog.Error("❌ REQUIRE AUTH HUMA: User not found in context")
 	return "", fmt.Errorf("user not authenticated")
-} 
+}

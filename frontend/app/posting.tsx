@@ -96,7 +96,6 @@ export default function Posting() {
                             facing={facing}
                             ref={camera}
                             flash={flash}
-                            torchMode={torch ? "on" : "off"}
                         />
                     )}
                     <BlurView

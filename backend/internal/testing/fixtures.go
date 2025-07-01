@@ -26,8 +26,8 @@ func NewTestFixtures() *TestFixtures {
 // AsMap returns fixtures as a map for seeding
 func (tf *TestFixtures) AsMap() map[string][]interface{} {
 	return map[string][]interface{}{
-		"users":            tf.Users,
-		"friend-requests":  tf.Connections,
+		"users":           tf.Users,
+		"friend-requests": tf.Connections,
 	}
 }
 
@@ -152,4 +152,4 @@ func CleanFixtures() map[string][]interface{} {
 		"users":           {},
 		"friend-requests": {},
 	}
-} 
+}

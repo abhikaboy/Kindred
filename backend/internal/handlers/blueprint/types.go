@@ -31,25 +31,25 @@ type BlueprintDocument struct {
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
 type BlueprintDocumentInternal struct {
-	ID               primitive.ObjectID                    `bson:"_id,omitempty"`
-	Banner           string                                `bson:"banner"`
-	Name             string                                `bson:"name"`
-	Tags             []string                              `bson:"tags"`
-	Description      string                                `bson:"description"`
-	Duration         string                                `bson:"duration"`
-	Subscribers      []primitive.ObjectID                  `bson:"subscribers"`
-	Owner            *types.UserExtendedReferenceInternal  `bson:"owner"`
-	SubscribersCount int64                                 `bson:"subscribersCount"`
-	Timestamp        time.Time                             `bson:"timestamp"`
+	ID               primitive.ObjectID                   `bson:"_id,omitempty"`
+	Banner           string                               `bson:"banner"`
+	Name             string                               `bson:"name"`
+	Tags             []string                             `bson:"tags"`
+	Description      string                               `bson:"description"`
+	Duration         string                               `bson:"duration"`
+	Subscribers      []primitive.ObjectID                 `bson:"subscribers"`
+	Owner            *types.UserExtendedReferenceInternal `bson:"owner"`
+	SubscribersCount int64                                `bson:"subscribersCount"`
+	Timestamp        time.Time                            `bson:"timestamp"`
 }
 
 type UpdateBlueprintDocument struct {
-	Banner      *string   `bson:"banner,omitempty" json:"banner,omitempty" example:"https://example.com/new-banner.jpg" doc:"New banner image URL"`
-	Name        *string   `bson:"name,omitempty" json:"name,omitempty" example:"Updated Morning Routine" doc:"New name for the blueprint"`
-	Tags        *[]string `bson:"tags,omitempty" json:"tags,omitempty" example:"[\"productivity\",\"morning\",\"health\"]" doc:"Updated tags"`
-	Description *string   `bson:"description,omitempty" json:"description,omitempty" example:"An updated comprehensive morning routine" doc:"New description"`
-	Duration    *string   `bson:"duration,omitempty" json:"duration,omitempty" example:"45m" doc:"Updated expected duration"`
-	Subscribers *[]string `bson:"subscribers,omitempty" json:"subscribers,omitempty" example:"[\"507f1f77bcf86cd799439012\"]" doc:"Updated subscriber list"`
+	Banner      *string    `bson:"banner,omitempty" json:"banner,omitempty" example:"https://example.com/new-banner.jpg" doc:"New banner image URL"`
+	Name        *string    `bson:"name,omitempty" json:"name,omitempty" example:"Updated Morning Routine" doc:"New name for the blueprint"`
+	Tags        *[]string  `bson:"tags,omitempty" json:"tags,omitempty" example:"[\"productivity\",\"morning\",\"health\"]" doc:"Updated tags"`
+	Description *string    `bson:"description,omitempty" json:"description,omitempty" example:"An updated comprehensive morning routine" doc:"New description"`
+	Duration    *string    `bson:"duration,omitempty" json:"duration,omitempty" example:"45m" doc:"Updated expected duration"`
+	Subscribers *[]string  `bson:"subscribers,omitempty" json:"subscribers,omitempty" example:"[\"507f1f77bcf86cd799439012\"]" doc:"Updated subscriber list"`
 	Timestamp   *time.Time `bson:"timestamp,omitempty" json:"timestamp,omitempty" example:"2023-01-02T00:00:00Z" doc:"Update timestamp"`
 }
 
@@ -59,12 +59,12 @@ func (b *BlueprintDocumentInternal) ToAPI() *BlueprintDocument {
 	for i, sub := range b.Subscribers {
 		subscribers[i] = sub.Hex()
 	}
-	
+
 	var owner *types.UserExtendedReference
 	if b.Owner != nil {
 		owner = b.Owner.ToAPI()
 	}
-	
+
 	return &BlueprintDocument{
 		ID:               b.ID.Hex(),
 		Banner:           b.Banner,
@@ -86,5 +86,5 @@ func (b *BlueprintDocumentInternal) ToAPI() *BlueprintDocument {
 
 type Service struct {
 	Blueprints *mongo.Collection
-	Users *mongo.Collection
+	Users      *mongo.Collection
 }

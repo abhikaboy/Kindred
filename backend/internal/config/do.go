@@ -6,4 +6,4 @@ type DO struct {
 	SpacesSecretKey string `env:"SPACES_SECRET_KEY"`
 	SpacesBucket    string `env:"SPACES_BUCKET" envDefault:"kindred"`
 	SpacesRegion    string `env:"SPACES_REGION" envDefault:"nyc3"`
-} 
+}

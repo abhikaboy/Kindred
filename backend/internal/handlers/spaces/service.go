@@ -73,7 +73,7 @@ func (s *Service) GenerateImageUploadURL(ctx context.Context, params *ImageUploa
 	// Generate unique filename with proper extension
 	fileExt := getFileExtension(params.FileType)
 	fileUUID := uuid.New().String()
-	
+
 	// Create organized key structure: resource-type/resource-id/uuid.ext
 	key := fmt.Sprintf("%ss/%s/%s%s", params.ResourceType, params.ResourceID, fileUUID, fileExt)
 
@@ -128,12 +128,12 @@ func getFileExtension(contentType string) string {
 func ValidateImageType(contentType string) bool {
 	validTypes := []string{
 		"image/jpeg",
-		"image/jpg", 
+		"image/jpg",
 		"image/png",
 		"image/gif",
 		"image/webp",
 	}
-	
+
 	for _, validType := range validTypes {
 		if contentType == validType {
 			return true

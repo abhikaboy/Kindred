@@ -85,13 +85,13 @@ func (h *Handler) GetProfileByPhone(ctx context.Context, input *GetProfileByPhon
 func (h *Handler) SearchProfiles(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
 	var profiles []ProfileDocument
 	var err error
-	
+
 	if input.Query == "" {
 		profiles, err = h.service.GetAllProfiles()
 	} else {
 		profiles, err = h.service.SearchProfiles(input.Query)
 	}
-	
+
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
 	}
@@ -179,13 +179,13 @@ func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileBy
 func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
 	var profiles []ProfileDocument
 	var err error
-	
+
 	if input.Query == "" {
 		profiles, err = h.service.GetAllProfiles()
 	} else {
 		profiles, err = h.service.SearchProfiles(input.Query)
 	}
-	
+
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
 	}

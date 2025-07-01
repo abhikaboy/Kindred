@@ -10,7 +10,7 @@ import (
 
 // Create Category
 type CreateCategoryInput struct {
-	Authorization string                `header:"Authorization" required:"true"`
+	Authorization string               `header:"Authorization" required:"true"`
 	Body          CreateCategoryParams `json:"body"`
 }
 
@@ -52,10 +52,10 @@ type GetWorkspacesOutput struct {
 	Body []WorkspaceResult `json:"body"`
 }
 
-// Update Category  
+// Update Category
 type UpdateCategoryInput struct {
-	Authorization string                  `header:"Authorization" required:"true"`
-	ID            string                  `path:"id" example:"507f1f77bcf86cd799439011"`
+	Authorization string                 `header:"Authorization" required:"true"`
+	ID            string                 `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateCategoryDocument `json:"body"`
 }
 
@@ -175,4 +175,4 @@ func RegisterDeleteWorkspaceOperation(api huma.API, handler *Handler) {
 		Description: "Delete a workspace and all its categories",
 		Tags:        []string{"categories"},
 	}, handler.DeleteWorkspace)
-} 
+}

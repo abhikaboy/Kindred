@@ -791,3 +791,11 @@ func (s *Service) AddReminderToTask(taskID primitive.ObjectID, categoryID primit
 
 	return handleMongoError(ctx, "add reminder to task", err)
 }
+
+func (s *Service) GetTemplateByID(id primitive.ObjectID) (*TemplateTaskDocument, error) {
+	ctx := context.Background()
+
+	var template TemplateTaskDocument
+	err := s.TemplateTasks.FindOne(ctx, bson.M{"_id": id}).Decode(&template)
+	return &template, err
+}

@@ -15,17 +15,17 @@ func BenchmarkTokenGeneration(b *testing.B) {
 			Secret: "test-secret-key-for-benchmarking",
 		},
 	}
-	
+
 	service := &Service{
 		config: cfg,
 	}
-	
+
 	userID := "user123"
 	count := float64(0)
 	exp := time.Now().Add(time.Hour).Unix()
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := service.GenerateToken(userID, exp, count)
 		if err != nil {
@@ -41,23 +41,23 @@ func BenchmarkTokenValidation(b *testing.B) {
 			Secret: "test-secret-key-for-benchmarking",
 		},
 	}
-	
+
 	service := &Service{
 		config: cfg,
 	}
-	
+
 	// Generate a token to validate
 	userID := "user123"
 	count := float64(0)
 	exp := time.Now().Add(time.Hour).Unix()
-	
+
 	token, err := service.GenerateToken(userID, exp, count)
 	if err != nil {
 		b.Fatal(err)
 	}
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 			return []byte(cfg.Auth.Secret), nil
@@ -75,16 +75,16 @@ func BenchmarkAccessTokenGeneration(b *testing.B) {
 			Secret: "test-secret-key-for-benchmarking",
 		},
 	}
-	
+
 	service := &Service{
 		config: cfg,
 	}
-	
+
 	userID := "user123"
 	count := float64(0)
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := service.GenerateAccessToken(userID, count)
 		if err != nil {
@@ -100,16 +100,16 @@ func BenchmarkRefreshTokenGeneration(b *testing.B) {
 			Secret: "test-secret-key-for-benchmarking",
 		},
 	}
-	
+
 	service := &Service{
 		config: cfg,
 	}
-	
+
 	userID := "user123"
 	count := float64(0)
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := service.GenerateRefreshToken(userID, count)
 		if err != nil {
@@ -125,16 +125,16 @@ func BenchmarkBothTokensGeneration(b *testing.B) {
 			Secret: "test-secret-key-for-benchmarking",
 		},
 	}
-	
+
 	service := &Service{
 		config: cfg,
 	}
-	
+
 	userID := "user123"
 	count := float64(0)
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, _, err := service.GenerateTokens(userID, count)
 		if err != nil {
@@ -146,9 +146,9 @@ func BenchmarkBothTokensGeneration(b *testing.B) {
 // BenchmarkHeaderStructureCreation benchmarks creating output structures with headers
 func BenchmarkHeaderStructureCreation(b *testing.B) {
 	userID := "user123"
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_ = &LoginOutput{
 			AccessToken:  "access-token-" + userID,
@@ -159,4 +159,4 @@ func BenchmarkHeaderStructureCreation(b *testing.B) {
 			},
 		}
 	}
-} 
+}

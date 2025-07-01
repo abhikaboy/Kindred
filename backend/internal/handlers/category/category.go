@@ -129,7 +129,7 @@ func (h *Handler) DeleteCategory(ctx context.Context, input *DeleteCategoryInput
 
 func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInput) (*DeleteWorkspaceOutput, error) {
 	workspaceName := input.Name
-	
+
 	// Extract user_id from context (set by auth middleware)
 	user_id_str, err := auth.RequireAuth(ctx)
 	if err != nil {

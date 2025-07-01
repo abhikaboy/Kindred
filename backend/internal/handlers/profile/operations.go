@@ -157,4 +157,4 @@ func RegisterSearchProfilesOperation(api huma.API, handler *Handler) {
 }
 
 // Note: Profile picture upload operations moved to centralized upload service
-// Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead 
+// Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead

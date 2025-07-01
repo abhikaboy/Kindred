@@ -35,7 +35,7 @@ type GetActivityOutput struct {
 
 // Update Activity
 type UpdateActivityInput struct {
-	ID   string                  `path:"id" example:"507f1f77bcf86cd799439011"`
+	ID   string                 `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body UpdateActivityDocument `json:"body"`
 }
 
@@ -111,4 +111,4 @@ func RegisterDeleteActivityOperation(api huma.API, handler *Handler) {
 		Description: "Delete an activity record",
 		Tags:        []string{"activities"},
 	}, handler.DeleteActivity)
-} 
+}

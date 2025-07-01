@@ -109,4 +109,4 @@ func RegisterS3BucketOperations(api huma.API, handler *Handler) {
 	RegisterCreatePresignedUrlOperation(api, handler)
 	RegisterGenerateImageUploadURLOperation(api, handler)
 	RegisterConfirmImageUploadOperation(api, handler)
-} 
+}

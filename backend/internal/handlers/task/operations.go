@@ -22,8 +22,8 @@ type GetTasksByUserOutput struct {
 
 // Create Task
 type CreateTaskInput struct {
-	Authorization string            `header:"Authorization" required:"true"`
-	Category      string            `path:"category" example:"507f1f77bcf86cd799439011"`
+	Authorization string           `header:"Authorization" required:"true"`
+	Category      string           `path:"category" example:"507f1f77bcf86cd799439011"`
 	Body          CreateTaskParams `json:"body"`
 }
 
@@ -50,9 +50,9 @@ type GetTaskOutput struct {
 
 // Update Task
 type UpdateTaskInput struct {
-	Authorization string              `header:"Authorization" required:"true"`
-	ID            string              `path:"id" example:"507f1f77bcf86cd799439011"`
-	Category      string              `path:"category" example:"507f1f77bcf86cd799439011"`
+	Authorization string             `header:"Authorization" required:"true"`
+	ID            string             `path:"id" example:"507f1f77bcf86cd799439011"`
+	Category      string             `path:"category" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateTaskDocument `json:"body"`
 }
 
@@ -115,6 +115,15 @@ type GetActiveTasksOutput struct {
 // Create Task from Template
 type CreateTaskFromTemplateInput struct {
 	ID string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetTemplateByIDInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetTemplateByIDOutput struct {
+	Body TemplateTaskDocument `json:"body"`
 }
 
 type CreateTaskFromTemplateOutput struct {
@@ -317,4 +326,15 @@ func RegisterUpdateTaskChecklistOperation(api huma.API, handler *Handler) {
 		Description: "Update the checklist field of a task",
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTaskChecklist)
-} 
+}
+
+func RegisterGetTemplateByIDOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-template-by-id",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tasks/template/{id}",
+		Summary:     "Get template by ID",
+		Description: "Retrieve a template by its ID",
+		Tags:        []string{"tasks"},
+	}, handler.GetTemplateByID)
+}

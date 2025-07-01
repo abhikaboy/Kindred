@@ -8,6 +8,7 @@ type UpdateTaskChecklistDocument = components["schemas"]["UpdateTaskChecklistDoc
 type UpdateTaskNotesDocument = components["schemas"]["UpdateTaskNotesDocument"];
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 type CompleteTaskDocument = components["schemas"]["CompleteTaskDocument"];
+type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
 /**
  * Create a new task in a specific category
@@ -154,4 +155,22 @@ export const getTasksByUserAPI = async (id?: string, sortBy?: string, sortDir?: 
     }
 
     return data || [];
+};
+
+/**
+ * Get template by ID
+ * API: Makes GET request to retrieve a template by its ID
+ * Frontend: Used to populate the template in TaskContext
+ * @param id - The ID of the template to retrieve
+ */
+export const getTemplateByIDAPI = async (id: string): Promise<TemplateTaskDocument> => {
+    const { data, error } = await client.GET("/v1/user/tasks/template/{id}", {
+        params: withAuthHeaders({ path: { id } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get template: ${JSON.stringify(error)}`);
+    }
+
+    return data;
 };
