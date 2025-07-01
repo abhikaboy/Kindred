@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, Image } from "react-native";
+import { View, Text, Dimensions, Image, TouchableOpacity } from "react-native";
 import React, { useRef, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -20,6 +20,7 @@ export default function Posting() {
     const camera = useRef<CameraView>(null);
     const [photo, setPhoto] = useState<string | null>(null);
     const [flash, setFlash] = useState<FlashMode>("off");
+    const [torch, setTorch] = useState<boolean>(false);
     let ThemedColor = useThemeColor();
 
     const takePicture = async () => {
@@ -95,6 +96,7 @@ export default function Posting() {
                             facing={facing}
                             ref={camera}
                             flash={flash}
+                            torchMode={torch ? "on" : "off"}
                         />
                     )}
                     <BlurView
@@ -115,37 +117,64 @@ export default function Posting() {
                             // Show when photo is set
                             <>
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                                    <PrimaryButton onPress={retakePhoto} title="Retake" style={{ flex: 1 }} />
-                                    <Ionicons
-                                        name="library-outline"
-                                        size={32}
-                                        color={ThemedColor.primary}
-                                        onPress={pickImage}
+                                    <PrimaryButton
+                                        onPress={continueWithPhoto}
+                                        title="Continue"
+                                        style={{ width: "100%" }}
                                     />
                                 </View>
-                                <PrimaryButton onPress={continueWithPhoto} title="Continue" style={{ width: "100%" }} />
+                                <PrimaryButton
+                                    onPress={retakePhoto}
+                                    ghost
+                                    title="Retake"
+                                    style={{ flex: 1 }}
+                                    textStyle={{ color: "#fff" }}
+                                />
                             </>
                         ) : (
                             // Show when no photo is set (camera view)
                             <>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 24 }}>
+                                    <Ionicons
+                                        name="flashlight-outline"
+                                        size={32}
+                                        color="#ffffff00"
+                                        onPress={() => setTorch(!torch)}
+                                    />
                                     <Ionicons
                                         name={flash === "off" ? "flash-outline" : "flash-off-outline"}
-                                        size={24}
-                                        color={ThemedColor.primary}
+                                        size={32}
+                                        color="#fff"
                                         onPress={() => setFlash(flash === "off" ? "on" : "off")}
                                     />
-                                    <PrimaryButton
-                                        onPress={takePicture}
-                                        title="Take Picture"
-                                        style={{ width: "60%" }}
-                                    />
+                                    <View
+                                        style={{
+                                            borderRadius: 302,
+                                            backgroundColor: "#ffffff00",
+                                            padding: 6,
+                                            borderWidth: 2,
+                                            borderColor: "#ffffff",
+                                        }}>
+                                        <TouchableOpacity
+                                            onPress={takePicture}
+                                            style={{
+                                                width: 64,
+                                                height: 64,
+                                                borderRadius: 32,
+                                                backgroundColor: "#ffffff",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                            }}
+                                        />
+                                    </View>
                                     <Ionicons
                                         name="camera-reverse-outline"
                                         size={32}
-                                        color={ThemedColor.primary}
+                                        color="#fff"
                                         onPress={() => setFacing(facing === "back" ? "front" : "back")}
                                     />
+
+                                    <Ionicons name="library-outline" size={32} color="#fff" onPress={pickImage} />
                                 </View>
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                                     <PrimaryButton
@@ -155,12 +184,6 @@ export default function Posting() {
                                         onPress={() => {
                                             router.back();
                                         }}
-                                    />
-                                    <Ionicons
-                                        name="library-outline"
-                                        size={32}
-                                        color={ThemedColor.primary}
-                                        onPress={pickImage}
                                     />
                                 </View>
                             </>
