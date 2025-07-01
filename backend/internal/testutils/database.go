@@ -34,7 +34,7 @@ type TestConfig struct {
 // NewTestDB creates a new test database connection
 func NewTestDB(ctx context.Context, cfg TestConfig) (*TestDB, error) {
 	fmt.Println("=== NewTestDB Debug Log ===")
-	
+
 	// Create test database name
 	testDBName := cfg.AtlasConfig.Environment
 	if cfg.UseRandomDB {
@@ -134,13 +134,13 @@ func (tdb *TestDB) SeedData(ctx context.Context, fixtures map[string][]interface
 		}
 
 		collection := tdb.DB.DB.Collection(collectionName)
-		
+
 		// Add collection to the collections map if not present
 		if tdb.DB.Collections == nil {
 			tdb.DB.Collections = make(map[string]*mongo.Collection)
 		}
 		tdb.DB.Collections[collectionName] = collection
-		
+
 		// Insert documents
 		result, err := collection.InsertMany(ctx, docs)
 		if err != nil {
@@ -192,7 +192,7 @@ func (tdb *TestDB) EnsureIndexes(ctx context.Context) error {
 // WaitForIndex waits for an index to be ready
 func (tdb *TestDB) WaitForIndex(ctx context.Context, collectionName string, timeout time.Duration) error {
 	collection := tdb.DB.DB.Collection(collectionName)
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -208,12 +208,12 @@ func (tdb *TestDB) WaitForIndex(ctx context.Context, collectionName string, time
 			if err != nil {
 				continue
 			}
-			
+
 			var indexes []bson.M
 			if err := cursor.All(ctx, &indexes); err != nil {
 				continue
 			}
-			
+
 			// Check if we have at least the default _id index
 			if len(indexes) > 0 {
 				return nil
@@ -229,27 +229,27 @@ func generateTestDBName() string {
 	for i := range b {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
-	
+
 	return fmt.Sprintf("test_%s_%d", string(b), time.Now().Unix())
 }
 
 // TestDBFromEnv creates a test database configuration from environment variables
 func TestDBFromEnv() (TestConfig, error) {
 	fmt.Println("=== TestDBFromEnv Debug Log ===")
-	
+
 	// Check current working directory
 	if cwd, err := os.Getwd(); err == nil {
 		fmt.Printf("Current working directory: %s\n", cwd)
 	}
-	
+
 	// Try to find .env.test in multiple locations
 	envTestPaths := []string{
-		".env.test",           // Current directory
-		"../.env.test",        // Parent directory
-		"../../.env.test",     // Grandparent directory
-		"../../../.env.test",  // Great-grandparent directory
+		".env.test",          // Current directory
+		"../.env.test",       // Parent directory
+		"../../.env.test",    // Grandparent directory
+		"../../../.env.test", // Great-grandparent directory
 	}
-	
+
 	var foundEnvTestPath string
 	for _, path := range envTestPaths {
 		if _, err := os.Stat(path); err == nil {
@@ -258,17 +258,17 @@ func TestDBFromEnv() (TestConfig, error) {
 			break
 		}
 	}
-	
+
 	if foundEnvTestPath == "" {
 		fmt.Println("❌ .env.test file not found in any expected location")
 		// Check for .env as fallback
 		envPaths := []string{
 			".env",
-			"../.env", 
+			"../.env",
 			"../../.env",
 			"../../../.env",
 		}
-		
+
 		var foundEnvPath string
 		for _, path := range envPaths {
 			if _, err := os.Stat(path); err == nil {
@@ -277,20 +277,20 @@ func TestDBFromEnv() (TestConfig, error) {
 				break
 			}
 		}
-		
+
 		if foundEnvPath == "" {
 			fmt.Println("❌ No .env or .env.test file found")
 			return TestConfig{}, fmt.Errorf("no environment file found in current or parent directories")
 		}
 	}
-	
+
 	// Check environment variables before loading
 	fmt.Println("Environment variables before loading:")
 	fmt.Printf("ATLAS_USER: %s\n", os.Getenv("ATLAS_USER"))
 	fmt.Printf("ATLAS_PASS: %s\n", maskPassword(os.Getenv("ATLAS_PASS")))
 	fmt.Printf("ATLAS_CLUSTER: %s\n", os.Getenv("ATLAS_CLUSTER"))
 	fmt.Printf("ATLAS_ENVIRONMENT: %s\n", os.Getenv("ATLAS_ENVIRONMENT"))
-	
+
 	// Try to load .env.test first, then fall back to .env
 	fmt.Println("\nAttempting to load environment file...")
 	if foundEnvTestPath != "" {
@@ -304,11 +304,11 @@ func TestDBFromEnv() (TestConfig, error) {
 		// Fallback to .env
 		envPaths := []string{
 			".env",
-			"../.env", 
+			"../.env",
 			"../../.env",
 			"../../../.env",
 		}
-		
+
 		var loaded bool
 		for _, path := range envPaths {
 			if _, err := os.Stat(path); err == nil {
@@ -322,26 +322,26 @@ func TestDBFromEnv() (TestConfig, error) {
 				break
 			}
 		}
-		
+
 		if !loaded {
 			return TestConfig{}, fmt.Errorf("failed to load any environment file")
 		}
 	}
-	
+
 	// Check environment variables after loading
 	fmt.Println("Environment variables after loading:")
 	fmt.Printf("ATLAS_USER: %s\n", os.Getenv("ATLAS_USER"))
 	fmt.Printf("ATLAS_PASS: %s\n", maskPassword(os.Getenv("ATLAS_PASS")))
 	fmt.Printf("ATLAS_CLUSTER: %s\n", os.Getenv("ATLAS_CLUSTER"))
 	fmt.Printf("ATLAS_ENVIRONMENT: %s\n", os.Getenv("ATLAS_ENVIRONMENT"))
-	
+
 	fmt.Println("\nAttempting to load config...")
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("❌ Failed to load config: %v\n", err)
 		return TestConfig{}, fmt.Errorf("failed to load config: %w", err)
 	}
-	
+
 	fmt.Println("✅ Config loaded successfully:")
 	fmt.Printf("  ATLAS_USER: %s\n", cfg.Atlas.User)
 	fmt.Printf("  ATLAS_CLUSTER: %s\n", cfg.Atlas.Cluster)
@@ -377,7 +377,7 @@ func maskPassword(password string) string {
 func IsTestEnvironment(env string) bool {
 	testEnvs := []string{"test", "testing", "development", "dev"}
 	env = strings.ToLower(env)
-	
+
 	for _, testEnv := range testEnvs {
 		if strings.Contains(env, testEnv) || env == testEnv {
 			return true
@@ -408,7 +408,7 @@ func connectTestDB(ctx context.Context, cfg config.Atlas) (*xmongo.DB, error) {
 
 	// Use the database directly without validation
 	db := client.Database(cfg.Environment)
-	
+
 	// Setup collections map (empty initially for tests)
 	collections := make(map[string]*mongo.Collection)
 
@@ -425,10 +425,10 @@ func connectTestDB(ctx context.Context, cfg config.Atlas) (*xmongo.DB, error) {
 func connectTestClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	fmt.Printf("=== connectTestClient Debug ===\n")
 	fmt.Printf("Connecting to URI: %s\n", maskPassword(uri))
-	
+
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
-	
+
 	fmt.Println("Attempting mongo.Connect...")
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
@@ -436,7 +436,7 @@ func connectTestClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, fmt.Errorf("failed to connect to test database: %w", err)
 	}
 	fmt.Println("✅ mongo.Connect successful")
-	
+
 	fmt.Println("Attempting to ping database...")
 	if err := client.Ping(ctx, nil); err != nil {
 		fmt.Printf("❌ ping failed: %v\n", err)
@@ -444,6 +444,6 @@ func connectTestClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	}
 	fmt.Println("✅ ping successful")
 	fmt.Println("=== End connectTestClient Debug ===")
-	
+
 	return client, nil
-} 
+}

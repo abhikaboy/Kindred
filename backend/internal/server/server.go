@@ -36,18 +36,18 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		},
 	})
-	
+
 	// Add global request logging middleware FIRST
 	app.Use(func(c *fiber.Ctx) error {
 		xlog.RequestLog(c.Method(), c.Path())
 		return c.Next()
 	})
-	
+
 	// Add Fiber middleware
 	app.Use(logger.New())
 	app.Use(recover.New())
 	app.Use(compress.New())
-	
+
 	// Add CORS middleware
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000", // Specific origins for development
@@ -60,14 +60,14 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 
 	// Create auth middleware for protected routes
 	authMW := auth.FiberAuthMiddlewareForServer(collections)
-	
+
 	xlog.ServerLog("Creating Fiber auth middleware and applying to /v1/user routes")
-	
+
 	// Apply auth middleware only to protected routes (user-specific endpoints)
 	app.Use("/v1/user", func(c *fiber.Ctx) error {
-		xlog.AuthLog(fmt.Sprintf("Request in protected /v1/user route: %s %s", 
+		xlog.AuthLog(fmt.Sprintf("Request in protected /v1/user route: %s %s",
 			c.Method(), c.Path()))
-		
+
 		// Apply the Fiber auth middleware
 		return authMW(c)
 	})
@@ -99,7 +99,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	// Register waitlist and blueprint routes
 	Waitlist.Routes(api, collections)
 	Blueprint.Routes(api, collections)
-	
+
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)
 

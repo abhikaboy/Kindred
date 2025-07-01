@@ -105,4 +105,4 @@ func BenchmarkAuthService_GenerateToken(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
-} 
+}

@@ -16,7 +16,7 @@ const (
 	Purple = "\033[35m"
 	Cyan   = "\033[36m"
 	White  = "\033[37m"
-	
+
 	// Background colors
 	BgRed    = "\033[41m"
 	BgGreen  = "\033[42m"
@@ -24,7 +24,7 @@ const (
 	BgBlue   = "\033[44m"
 	BgPurple = "\033[45m"
 	BgCyan   = "\033[46m"
-	
+
 	// Text styles
 	Bold      = "\033[1m"
 	Dim       = "\033[2m"
@@ -51,73 +51,73 @@ func Color(color, text string) string {
 }
 
 // Colored logging helpers
-func RedText(text string) string { return Color(Red, text) }
-func GreenText(text string) string { return Color(Green, text) }
+func RedText(text string) string    { return Color(Red, text) }
+func GreenText(text string) string  { return Color(Green, text) }
 func YellowText(text string) string { return Color(Yellow, text) }
-func BlueText(text string) string { return Color(Blue, text) }
+func BlueText(text string) string   { return Color(Blue, text) }
 func PurpleText(text string) string { return Color(Purple, text) }
-func CyanText(text string) string { return Color(Cyan, text) }
-func WhiteText(text string) string { return Color(White, text) }
+func CyanText(text string) string   { return Color(Cyan, text) }
+func WhiteText(text string) string  { return Color(White, text) }
 
 // Bold colored text
-func BoldRed(text string) string { return Color(Bold+Red, text) }
-func BoldGreen(text string) string { return Color(Bold+Green, text) }
+func BoldRed(text string) string    { return Color(Bold+Red, text) }
+func BoldGreen(text string) string  { return Color(Bold+Green, text) }
 func BoldYellow(text string) string { return Color(Bold+Yellow, text) }
-func BoldBlue(text string) string { return Color(Bold+Blue, text) }
+func BoldBlue(text string) string   { return Color(Bold+Blue, text) }
 func BoldPurple(text string) string { return Color(Bold+Purple, text) }
-func BoldCyan(text string) string { return Color(Bold+Cyan, text) }
+func BoldCyan(text string) string   { return Color(Bold+Cyan, text) }
 
 // Specific logging themes (simplified to avoid double coloring)
-func AuthLog(msg string) { 
+func AuthLog(msg string) {
 	slog.Info("🔐 AUTH: " + msg)
 }
 
-func AuthSuccess(msg string) { 
+func AuthSuccess(msg string) {
 	slog.Info("✅ AUTH SUCCESS: " + msg)
 }
 
-func AuthError(msg string) { 
+func AuthError(msg string) {
 	slog.Error("❌ AUTH ERROR: " + msg)
 }
 
-func ValidationLog(msg string) { 
+func ValidationLog(msg string) {
 	slog.Info("🔍 VALIDATION: " + msg)
 }
 
-func RequestLog(method, path string) { 
+func RequestLog(method, path string) {
 	slog.Info(fmt.Sprintf("🌐 %s %s", method, path))
 }
 
-func ServerLog(msg string) { 
+func ServerLog(msg string) {
 	slog.Info("🔧 SERVER: " + msg)
 }
 
-func RefreshLog(msg string) { 
+func RefreshLog(msg string) {
 	slog.Info("🔄 REFRESH: " + msg)
 }
 
-func SuccessLog(msg string) { 
+func SuccessLog(msg string) {
 	slog.Info("✅ SUCCESS: " + msg)
 }
 
-func ErrorLog(msg string) { 
+func ErrorLog(msg string) {
 	slog.Error("❌ ERROR: " + msg)
 }
 
-func CompletionLog(msg string) { 
+func CompletionLog(msg string) {
 	slog.Info("🎯 COMPLETE: " + msg)
 }
 
 // Database operation colors
-func DBLog(msg string) { 
+func DBLog(msg string) {
 	slog.Info("💾 DB: " + msg)
 }
 
-func DBSuccess(msg string) { 
+func DBSuccess(msg string) {
 	slog.Info("✅ DB SUCCESS: " + msg)
 }
 
-func DBError(msg string) { 
+func DBError(msg string) {
 	slog.Error("❌ DB ERROR: " + msg)
 }
 
@@ -140,4 +140,4 @@ func StatusColor(code int) string {
 func LogWithStatus(msg string, code int) {
 	coloredCode := Color(StatusColor(code), fmt.Sprintf("%d", code))
 	slog.Info(fmt.Sprintf("%s [%s]", msg, coloredCode))
-} 
+}

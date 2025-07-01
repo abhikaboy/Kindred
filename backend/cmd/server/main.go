@@ -122,7 +122,7 @@ func newLogger(logLevel string, verbose bool, stderr io.Writer) *slog.Logger {
 	case "error":
 		level = slog.LevelError.Level()
 	}
-	
+
 	// Use simple text handler with ANSI codes like Fiber does
 	return slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{
 		AddSource: logLevel == "debug",
@@ -134,21 +134,21 @@ func newLogger(logLevel string, verbose bool, stderr io.Writer) *slog.Logger {
 				case slog.LevelDebug:
 					a.Value = slog.StringValue("\033[36mDEBUG\033[0m") // Cyan like Fiber
 				case slog.LevelInfo:
-					a.Value = slog.StringValue("\033[32mINFO\033[0m")  // Green like Fiber
+					a.Value = slog.StringValue("\033[32mINFO\033[0m") // Green like Fiber
 				case slog.LevelWarn:
-					a.Value = slog.StringValue("\033[33mWARN\033[0m")  // Yellow
+					a.Value = slog.StringValue("\033[33mWARN\033[0m") // Yellow
 				case slog.LevelError:
 					a.Value = slog.StringValue("\033[31mERROR\033[0m") // Red
 				}
 			}
-			
-			// Color the messages like Fiber does  
+
+			// Color the messages like Fiber does
 			if a.Key == slog.MessageKey {
 				msg := a.Value.String()
 				if strings.HasPrefix(msg, "🔐") {
 					a.Value = slog.StringValue("\033[35m" + msg + "\033[0m") // Magenta
 				} else if strings.HasPrefix(msg, "🌐") {
-					a.Value = slog.StringValue("\033[34m" + msg + "\033[0m") // Blue  
+					a.Value = slog.StringValue("\033[34m" + msg + "\033[0m") // Blue
 				} else if strings.HasPrefix(msg, "✅") {
 					a.Value = slog.StringValue("\033[32m" + msg + "\033[0m") // Green
 				} else if strings.HasPrefix(msg, "❌") {
@@ -163,7 +163,7 @@ func newLogger(logLevel string, verbose bool, stderr io.Writer) *slog.Logger {
 					a.Value = slog.StringValue("\033[36m" + msg + "\033[0m") // Cyan
 				}
 			}
-			
+
 			return a
 		},
 	}))

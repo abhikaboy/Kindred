@@ -46,10 +46,10 @@ type ConnectionDocument struct {
 
 // Internal version for MongoDB operations
 type ConnectionDocumentInternal struct {
-	ID        primitive.ObjectID      `bson:"_id,omitempty"`
-	Requester ConnectionUserInternal  `bson:"requester"`
-	Reciever  primitive.ObjectID      `bson:"reciever"`
-	Timestamp time.Time               `bson:"timestamp"`
+	ID        primitive.ObjectID     `bson:"_id,omitempty"`
+	Requester ConnectionUserInternal `bson:"requester"`
+	Reciever  primitive.ObjectID     `bson:"reciever"`
+	Timestamp time.Time              `bson:"timestamp"`
 }
 
 // Helper function to convert from internal to API type

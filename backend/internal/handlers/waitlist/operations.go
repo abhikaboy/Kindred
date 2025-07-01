@@ -104,4 +104,4 @@ func RegisterWaitlistOperations(api huma.API, handler *Handler) {
 	RegisterGetWaitlistsOperation(api, handler)
 	RegisterGetWaitlistOperation(api, handler)
 	RegisterDeleteWaitlistOperation(api, handler)
-} 
+}

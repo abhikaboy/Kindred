@@ -17,7 +17,7 @@ type Handler struct {
 // HealthInput represents the input for the health check endpoint
 type HealthInput struct{}
 
-// HealthOutput represents the output for the health check endpoint  
+// HealthOutput represents the output for the health check endpoint
 type HealthOutput struct {
 	Body struct {
 		Status string `json:"status" example:"ok"`

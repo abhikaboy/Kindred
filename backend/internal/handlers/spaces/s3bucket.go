@@ -36,12 +36,12 @@ func (h *Handler) GetPresignedUrlHuma(ctx context.Context, input *GetPresignedUr
 		Bucket: bucketName,
 		Key:    key,
 	}
-	
+
 	url, err := h.service.GetPresignedUrl(object)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to generate presigned URL", err)
 	}
-	
+
 	return &GetPresignedUrlOutput{Body: url}, nil
 }
 
@@ -65,7 +65,7 @@ func (h *Handler) CreatePresignedUrlHuma(ctx context.Context, input *CreatePresi
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to create presigned URL", err)
 	}
-	
+
 	return &CreatePresignedUrlOutput{Body: urlAndKey}, nil
 }
 
@@ -113,7 +113,7 @@ func (h *Handler) ConfirmImageUpload(ctx context.Context, input *ConfirmImageUpl
 	// For now, this is a placeholder that confirms the upload
 	// In a real implementation, you'd need to import and call the appropriate service
 	// based on the ResourceType to update the database record
-	
+
 	switch input.ResourceType {
 	case "profile":
 		// TODO: Import profile service and update profile picture

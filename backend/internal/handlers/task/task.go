@@ -182,6 +182,7 @@ func (h *Handler) GetTask(ctx context.Context, input *GetTaskInput) (*GetTaskOut
 
 /*
 *
+
 	@TODO - Add a verification to check if the user is the owner of the task
 */
 func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*UpdateTaskOutput, error) {
@@ -216,6 +217,7 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 
 /*
 *
+
 	@TODO - Add a verification to check if the user is the owner of the task
 */
 func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*CompleteTaskOutput, error) {
@@ -450,4 +452,18 @@ func (h *Handler) UpdateTaskChecklist(ctx context.Context, input *UpdateTaskChec
 	resp := &UpdateTaskChecklistOutput{}
 	resp.Body.Message = "Task checklist updated successfully"
 	return resp, nil
+}
+
+func (h *Handler) GetTemplateByID(ctx context.Context, input *GetTemplateByIDInput) (*GetTemplateByIDOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid template ID format", err)
+	}
+
+	template, err := h.service.GetTemplateByID(id)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch template", err)
+	}
+
+	return &GetTemplateByIDOutput{Body: *template}, nil
 }

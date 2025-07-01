@@ -193,7 +193,7 @@ func (s *Service) DeleteProfile(id primitive.ObjectID) error {
 func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string) error {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
-	
+
 	update := bson.M{
 		"$set": bson.M{
 			"profile_picture": pictureURL,

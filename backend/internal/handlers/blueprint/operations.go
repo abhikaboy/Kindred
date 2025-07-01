@@ -37,9 +37,9 @@ type GetBlueprintOutput struct {
 
 // Update Blueprint
 type UpdateBlueprintInput struct {
-	Authorization string                    `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                    `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	ID            string                    `path:"id" example:"507f1f77bcf86cd799439011"`
+	Authorization string                  `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                  `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                  `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateBlueprintDocument `json:"body"`
 }
 
@@ -176,4 +176,4 @@ func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterDeleteBlueprintOperation(api, handler)
 	RegisterSubscribeToBlueprintOperation(api, handler)
 	RegisterUnsubscribeFromBlueprintOperation(api, handler)
-} 
+}

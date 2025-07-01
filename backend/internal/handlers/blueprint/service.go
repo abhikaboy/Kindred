@@ -16,7 +16,7 @@ import (
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
 		Blueprints: collections["blueprints"],
-		Users: collections["users"],
+		Users:      collections["users"],
 	}
 }
 
@@ -137,7 +137,7 @@ func (s *Service) SubscribeToBlueprint(blueprintID, userID primitive.ObjectID) e
 	filter := bson.M{"_id": blueprintID, "subscribers": bson.M{"$ne": userID}}
 	update := bson.M{
 		"$addToSet": bson.M{"subscribers": userID},
-		"$inc": bson.M{"subscribersCount": 1},
+		"$inc":      bson.M{"subscribersCount": 1},
 	}
 	result, err := s.Blueprints.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *Service) UnsubscribeFromBlueprint(blueprintID, userID primitive.ObjectI
 	ctx := context.Background()
 	filter := bson.M{"_id": blueprintID, "subscribers": userID}
 	update := bson.M{
-		"$inc": bson.M{"subscribersCount": -1},
+		"$inc":  bson.M{"subscribersCount": -1},
 		"$pull": bson.M{"subscribers": userID},
 	}
 	result, err := s.Blueprints.UpdateOne(ctx, filter, update)

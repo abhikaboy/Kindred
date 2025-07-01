@@ -10,8 +10,8 @@ import (
 
 // Create Connection
 type CreateConnectionInput struct {
-	Authorization string                   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Authorization string                 `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                 `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	Body          CreateConnectionParams `json:"body"`
 }
 
@@ -63,10 +63,10 @@ type GetConnectionsByRequesterOutput struct {
 
 // Update Connection
 type UpdateConnectionInput struct {
-	Authorization string                      `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                      `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	ID            string                      `path:"id" example:"507f1f77bcf86cd799439011"`
-	Body          UpdateConnectionDocument  `json:"body"`
+	Authorization string                   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                   `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateConnectionDocument `json:"body"`
 }
 
 type UpdateConnectionOutput struct {
@@ -176,4 +176,4 @@ func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterGetConnectionsByRequesterOperation(api, handler)
 	RegisterUpdateConnectionOperation(api, handler)
 	RegisterDeleteConnectionOperation(api, handler)
-} 
+}

@@ -26,7 +26,7 @@ type RegisterInput struct {
 type RegisterOutput struct {
 	AccessToken  string `header:"access_token"`
 	RefreshToken string `header:"refresh_token"`
-	Body struct {
+	Body         struct {
 		Message string `json:"message" example:"User Created Successfully"`
 	}
 }
@@ -70,8 +70,8 @@ type LoginWithTokenInput struct {
 
 // Update Push Token Operation Types
 type UpdatePushTokenInput struct {
-	Authorization string `header:"Authorization" required:"true"`
-	Body         UpdatePushTokenRequest `json:"body"`
+	Authorization string                 `header:"Authorization" required:"true"`
+	Body          UpdatePushTokenRequest `json:"body"`
 }
 
 type UpdatePushTokenOutput struct {
@@ -163,7 +163,7 @@ func RegisterTestOperation(api huma.API, handler *Handler) {
 	}, func(ctx context.Context, input *TestInput) (*TestOutput, error) {
 		return handler.TestHuma(ctx, input)
 	})
-	
+
 	// Register the version without trailing slash
 	huma.Register(api, huma.Operation{
 		OperationID: "auth-test",
@@ -203,4 +203,4 @@ func RegisterUpdatePushTokenOperation(api huma.API, handler *Handler) {
 	}, func(ctx context.Context, input *UpdatePushTokenInput) (*UpdatePushTokenOutput, error) {
 		return handler.UpdatePushTokenHuma(ctx, input)
 	})
-} 
+}

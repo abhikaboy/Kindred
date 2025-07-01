@@ -126,4 +126,4 @@ func RegisterPostOperations(api huma.API, handler *Handler) {
 	RegisterGetPostOperation(api, handler)
 	RegisterUpdatePostOperation(api, handler)
 	RegisterDeletePostOperation(api, handler)
-} 
+}
