@@ -1,7 +1,9 @@
 package Profile
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"context"
+
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -9,100 +11,188 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) GetProfiles(c *fiber.Ctx) error {
-	Profiles, err := h.service.GetAllProfiles()
+func (h *Handler) GetProfiles(ctx context.Context, input *GetProfilesInput) (*GetProfilesOutput, error) {
+	profiles, err := h.service.GetAllProfiles()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Failed to get profiles", err)
 	}
 
-	return c.JSON(Profiles)
+	return &GetProfilesOutput{Body: profiles}, nil
 }
 
-func (h *Handler) GetProfile(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) GetProfile(ctx context.Context, input *GetProfileInput) (*GetProfileOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	Profile, err := h.service.GetProfileByID(id)
+	profile, err := h.service.GetProfileByID(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(err)
+		return nil, huma.Error404NotFound("Profile not found", err)
 	}
 
-	return c.JSON(Profile)
+	return &GetProfileOutput{Body: *profile}, nil
 }
 
-func (h *Handler) UpdatePartialProfile(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) UpdatePartialProfile(ctx context.Context, input *UpdateProfileInput) (*UpdateProfileOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	var update UpdateProfileDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+	if err := h.service.UpdatePartialProfile(id, input.Body); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update profile", err)
 	}
 
-	if err := h.service.UpdatePartialProfile(id, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
-	}
-
-	return c.SendStatus(fiber.StatusOK)
+	resp := &UpdateProfileOutput{}
+	resp.Body.Message = "Profile updated successfully"
+	return resp, nil
 }
 
-func (h *Handler) DeleteProfile(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) DeleteProfile(ctx context.Context, input *DeleteProfileInput) (*DeleteProfileOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	if err := h.service.DeleteProfile(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		return nil, huma.Error500InternalServerError("Failed to delete profile", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	resp := &DeleteProfileOutput{}
+	resp.Body.Message = "Profile deleted successfully"
+	return resp, nil
 }
 
-func (h *Handler) GetProfileByEmail(c *fiber.Ctx) error {
-	email := c.Params("email")
-	Profile, err := h.service.GetProfileByEmail(email)
+func (h *Handler) GetProfileByEmail(ctx context.Context, input *GetProfileByEmailInput) (*GetProfileByEmailOutput, error) {
+	profile, err := h.service.GetProfileByEmail(input.Email)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(err)
+		return nil, huma.Error404NotFound("Profile not found", err)
 	}
 
-	return c.JSON(Profile)
+	return &GetProfileByEmailOutput{Body: *profile}, nil
 }
 
-func (h *Handler) GetProfileByPhone(c *fiber.Ctx) error {
-	phone := c.Params("phone")
-	Profile, err := h.service.GetProfileByPhone(phone)
+func (h *Handler) GetProfileByPhone(ctx context.Context, input *GetProfileByPhoneInput) (*GetProfileByPhoneOutput, error) {
+	profile, err := h.service.GetProfileByPhone(input.Phone)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(err)
+		return nil, huma.Error404NotFound("Profile not found", err)
 	}
 
-	return c.JSON(Profile)
+	return &GetProfileByPhoneOutput{Body: *profile}, nil
 }
 
-func (h *Handler) SearchProfiles(c *fiber.Ctx) error {
-	query := c.Query("query", "")
-	var Profiles []ProfileDocument
+func (h *Handler) SearchProfiles(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
+	var profiles []ProfileDocument
 	var err error
-	if query == "" {
-		Profiles, err = h.service.GetAllProfiles()
+
+	if input.Query == "" {
+		profiles, err = h.service.GetAllProfiles()
 	} else {
-		Profiles, err = h.service.SearchProfiles(query)
-	}
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(err)
+		profiles, err = h.service.SearchProfiles(input.Query)
 	}
 
-	return c.JSON(Profiles)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
+	}
+
+	return &SearchProfilesOutput{Body: profiles}, nil
 }
+
+// Huma-style handlers
+
+func (h *Handler) GetProfilesHuma(ctx context.Context, input *GetProfilesInput) (*GetProfilesOutput, error) {
+	profiles, err := h.service.GetAllProfiles()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get profiles", err)
+	}
+
+	resp := &GetProfilesOutput{Body: profiles}
+	return resp, nil
+}
+
+func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*GetProfileOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	profile, err := h.service.GetProfileByID(id)
+	if err != nil {
+		return nil, huma.Error404NotFound("Profile not found", err)
+	}
+
+	resp := &GetProfileOutput{Body: *profile}
+	return resp, nil
+}
+
+func (h *Handler) UpdateProfileHuma(ctx context.Context, input *UpdateProfileInput) (*UpdateProfileOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	if err := h.service.UpdatePartialProfile(id, input.Body); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update profile", err)
+	}
+
+	resp := &UpdateProfileOutput{}
+	resp.Body.Message = "Profile updated successfully"
+	return resp, nil
+}
+
+func (h *Handler) DeleteProfileHuma(ctx context.Context, input *DeleteProfileInput) (*DeleteProfileOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	if err := h.service.DeleteProfile(id); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to delete profile", err)
+	}
+
+	resp := &DeleteProfileOutput{}
+	resp.Body.Message = "Profile deleted successfully"
+	return resp, nil
+}
+
+func (h *Handler) GetProfileByEmailHuma(ctx context.Context, input *GetProfileByEmailInput) (*GetProfileByEmailOutput, error) {
+	profile, err := h.service.GetProfileByEmail(input.Email)
+	if err != nil {
+		return nil, huma.Error404NotFound("Profile not found", err)
+	}
+
+	resp := &GetProfileByEmailOutput{Body: *profile}
+	return resp, nil
+}
+
+func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileByPhoneInput) (*GetProfileByPhoneOutput, error) {
+	profile, err := h.service.GetProfileByPhone(input.Phone)
+	if err != nil {
+		return nil, huma.Error404NotFound("Profile not found", err)
+	}
+
+	resp := &GetProfileByPhoneOutput{Body: *profile}
+	return resp, nil
+}
+
+func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
+	var profiles []ProfileDocument
+	var err error
+
+	if input.Query == "" {
+		profiles, err = h.service.GetAllProfiles()
+	} else {
+		profiles, err = h.service.SearchProfiles(input.Query)
+	}
+
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
+	}
+
+	resp := &SearchProfilesOutput{Body: profiles}
+	return resp, nil
+}
+
+// Note: Profile picture upload functionality moved to centralized upload service
+// Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead

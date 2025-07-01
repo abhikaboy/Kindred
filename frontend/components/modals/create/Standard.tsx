@@ -1,4 +1,4 @@
-import { Dimensions, Keyboard, StyleSheet, Text, TextInput, Touchable, TouchableOpacity, View } from "react-native";
+import { Dimensions, Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import ThemedInput from "../../inputs/ThemedInput";
 import Dropdown from "../../inputs/Dropdown";
@@ -7,36 +7,26 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { Screen } from "../CreateModal";
 import { ThemedText } from "@/components/ThemedText";
-import SelectedIndicator from "@/components/SelectedIndicator";
 import TrafficLight from "@/components/inputs/TrafficLight";
 import ThemedSlider from "@/components/inputs/ThemedSlider";
-import ThemedSwitch from "@/components/inputs/ThemedSwitch";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
-import { useSharedValue } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Entypo from "@expo/vector-icons/Entypo";
-import Octicons from "@expo/vector-icons/Octicons";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { CreateTaskParams } from "@/api/task";
-import { formatLocalDate, formatLocalTime, formatLocalDateTime } from "@/utils/timeUtils";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
-    bottomAnchorRef: React.RefObject<View>;
 };
 
-const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
+const Standard = ({ hide, goTo }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
-    const [showPriority, setShowPriority] = useState(false);
     const {
         taskName,
         setTaskName,
@@ -48,14 +38,11 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
         recurring,
         recurFrequency,
         recurDetails,
-        setPriority,
         deadline,
         startTime,
         startDate,
         reminders,
         isPublic,
-        setIsPublic,
-        setValue,
         resetTaskCreation,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
@@ -97,21 +84,7 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
     return (
         <View style={{ gap: 8, flexDirection: "column", display: "flex" }} onTouchStart={() => Keyboard.dismiss()}>
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
-                <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
-                    New Task
-                </ThemedText>
-                <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
-                    <TouchableOpacity onPress={() => setIsPublic(!isPublic)}>
-                        <Feather name={isPublic ? "eye" : "eye-off"} size={24} color={ThemedColor.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => {
-                            createPost();
-                            hide();
-                        }}>
-                        <Feather name="plus" size={24} color={ThemedColor.text} />
-                    </TouchableOpacity>
-                </View>
+                <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}></View>
             </View>
             {suggestion && (
                 <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
@@ -120,8 +93,52 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
                     </ThemedText>
                 </View>
             )}
-
+            <View
+                style={{
+                    flexDirection: "row",
+                    flex: 1,
+                    justifyContent: "space-between",
+                    width: "100%",
+                    height: "auto",
+                    minHeight: 55,
+                    gap: 8,
+                    zIndex: 1000,
+                }}>
+                <Dropdown
+                    options={[
+                        ...categories
+                            .filter((c) => c.name !== "!-proxy-!")
+                            .map((c) => {
+                                return { label: c.name, id: c.id, special: false };
+                            }),
+                        { label: "+ New Category", id: "", special: true },
+                    ]}
+                    ghost
+                    selected={selectedCategory}
+                    setSelected={setCreateCategory}
+                    onSpecial={() => {
+                        goTo(Screen.NEW_CATEGORY);
+                    }}
+                    width="76%"
+                />
+                <TouchableOpacity
+                    style={{
+                        borderRadius: 12,
+                        padding: 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 1,
+                        borderColor: ThemedColor.tertiary,
+                    }}
+                    onPress={() => {
+                        createPost();
+                        hide();
+                    }}>
+                    <ThemedText type="caption">Create</ThemedText>
+                </TouchableOpacity>
+            </View>
             <ThemedInput
+                ghost
                 autofocus={taskName.length === 0}
                 ref={nameRef as React.Ref<React.ElementRef<typeof BottomSheetTextInput>>}
                 placeHolder="Enter the Task Name"
@@ -138,135 +155,32 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
                 }}
                 value={taskName}
                 setValue={setTaskName}
+                textStyle={{
+                    fontSize: 24,
+                    fontFamily: "Outfit",
+                    fontWeight: 500,
+                    letterSpacing: -0.2,
+                }}
             />
-            <View
-                style={{
-                    flexDirection: "row",
-                    flex: 1,
-                    justifyContent: "space-between",
-                    width: "100%",
-                    height: "auto",
-                    minHeight: 55,
-                    zIndex: 1000,
-                }}>
-                <Dropdown
-                    options={[
-                        ...categories
-                            .filter((c) => c.name !== "!-proxy-!")
-                            .map((c) => {
-                                return { label: c.name, id: c.id, special: false };
-                            }),
-                        { label: "+ New Category", id: "", special: true },
-                    ]}
-                    selected={selectedCategory}
-                    setSelected={setCreateCategory}
-                    onSpecial={() => {
-                        goTo(Screen.NEW_CATEGORY);
-                    }}
-                />
-                <Popover
-                    popoverStyle={{
-                        backgroundColor: ThemedColor.background,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: ThemedColor.tertiary,
-                        width: Dimensions.get("window").width * 0.4,
-                        padding: 12,
-                    }}
-                    isVisible={showPriority}
-                    onRequestClose={() => {
-                        setShowPriority(false);
-                    }}
-                    from={
-                        <TouchableOpacity
-                            onPress={() => {
-                                setShowPriority(true);
-                            }}
-                            style={{
-                                width: Dimensions.get("window").width * 0.15,
-                                backgroundColor: ThemedColor.background,
-                                height: "100%",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                borderRadius: 12,
-                                borderWidth: 1,
-                                borderColor: ThemedColor.tertiary,
-                            }}>
-                            {priority === 0 ? (
-                                <Feather name="flag" size={24} color={ThemedColor.text} />
-                            ) : priority === 1 ? (
-                                <Feather name="flag" size={24} color={ThemedColor.success} />
-                            ) : priority === 2 ? (
-                                <Feather name="flag" size={24} color={ThemedColor.warning} />
-                            ) : priority === 3 ? (
-                                <Feather name="flag" size={24} color={ThemedColor.error} />
-                            ) : priority === 4 ? (
-                                <Feather name="flag" size={24} color={ThemedColor.error} />
-                            ) : (
-                                <Feather name="flag" size={24} color={ThemedColor.tertiary} />
-                            )}
-                        </TouchableOpacity>
-                    }>
-                    <ThemedText
-                        type="defaultSemiBold"
-                        style={{
-                            padding: 12,
-                            textAlign: "left",
-                            fontWeight: 500,
-                            fontSize: 20,
-                        }}>
-                        Priority
-                    </ThemedText>
-                    <TrafficLight
-                        setValue={(value) => {
-                            setPriority(value);
-                            setShowPriority(false);
-                        }}
-                        value={priority}
-                    />
-                </Popover>
-            </View>
-
-            <View style={{ flexDirection: "column", marginVertical: 4, gap: 16, marginTop: 16 }} ref={bottomAnchorRef}>
-                <ThemedText type="lightBody">Difficulty: Level {value}</ThemedText>
-                <ThemedSlider setStep={setValue} />
-            </View>
-
+            <PrimaryOptionRow />
+            <AdvancedOptionList goTo={goTo} showUnconfigured={false} />
             <TouchableOpacity
+                onPress={() => {
+                    setShowAdvanced(!showAdvanced);
+                }}
                 style={{
                     flexDirection: "row",
                     gap: 16,
                     alignItems: "center",
                     justifyContent: "space-between",
-                    marginVertical: 4,
-                    marginTop: 16,
+                    paddingVertical: 8,
+                    paddingTop: 16,
                 }}>
-                <ThemedText type="lightBody">Timing</ThemedText>
+                <ThemedText type="lightBody">Advanced Options</ThemedText>
+                <Feather name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={ThemedColor.text} />
             </TouchableOpacity>
-            <ConditionalView condition={true}>
-                <View style={{ gap: 12, marginTop: 4 }}>
-                    <AdvancedOption
-                        icon="calendar"
-                        label={startDate ? "Start Date: " + startDate.toLocaleDateString() : "Set Start Date"}
-                        screen={Screen.STARTDATE}
-                        goTo={goTo}
-                    />
-                    <AdvancedOption
-                        icon="time"
-                        label={startTime ? "Start Time: " + startTime.toLocaleTimeString() : "Set Start Time"}
-                        screen={Screen.STARTTIME}
-                        goTo={goTo}
-                    />
-                    <AdvancedOption
-                        icon="flag"
-                        label={deadline ? "Deadline: " + deadline.toLocaleString() : "Set Deadline"}
-                        screen={Screen.DEADLINE}
-                        goTo={goTo}
-                    />
-                    <AdvancedOption icon="repeat" label="Make Recurring" screen={Screen.RECURRING} goTo={goTo} />
-                    <AdvancedOption icon="alarm" label="Add Reminder" screen={Screen.REMINDER} goTo={goTo} />
-                    <AdvancedOption icon="people" label="Add Collaborators" screen={Screen.COLLABORATORS} goTo={goTo} />
-                </View>
+            <ConditionalView condition={showAdvanced}>
+                <AdvancedOptionList goTo={goTo} showUnconfigured={true} />
             </ConditionalView>
         </View>
     );
@@ -275,3 +189,239 @@ const Standard = ({ hide, goTo, bottomAnchorRef }: Props) => {
 export default Standard;
 
 const styles = StyleSheet.create({});
+
+const PrimaryOptionRow = () => {
+    const ThemedColor = useThemeColor();
+    const [showPriority, setShowPriority] = useState(false);
+    const { priority, setPriority, value, setValue, isPublic, setIsPublic } = useTaskCreation();
+    return (
+        <View
+            style={{
+                flexDirection: "row",
+                gap: 8,
+                alignItems: "center",
+                marginTop: Dimensions.get("screen").height * 0.05,
+            }}>
+            <PriorityPicker
+                showPriority={showPriority}
+                setShowPriority={setShowPriority}
+                priority={priority}
+                setPriority={setPriority}
+            />
+            <DifficultyPopover value={value} setValue={setValue} />
+            <TouchableOpacity
+                onPress={() => {
+                    setIsPublic(!isPublic);
+                }}
+                style={{
+                    backgroundColor: ThemedColor.background,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: ThemedColor.tertiary,
+                    padding: 12,
+                    flexDirection: "row",
+                    gap: 4,
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}>
+                <Feather name={isPublic ? "eye" : "eye-off"} size={20} color={ThemedColor.text} />
+                <ThemedText type="lightBody">{isPublic ? "Public" : "Private"}</ThemedText>
+            </TouchableOpacity>
+        </View>
+    );
+};
+
+const PriorityPicker = ({
+    showPriority,
+    setShowPriority,
+    priority,
+    setPriority,
+}: {
+    showPriority: boolean;
+    setShowPriority: (value: boolean) => void;
+    priority: number;
+    setPriority: (value: number) => void;
+}) => {
+    const ICON_SIZE = 20;
+    const ThemedColor = useThemeColor();
+
+    const priorityMapping = {
+        0: ThemedColor.tertiary,
+        1: ThemedColor.success,
+        2: ThemedColor.warning,
+        3: ThemedColor.error,
+        4: ThemedColor.error,
+    };
+
+    return (
+        <Popover
+            popoverStyle={{
+                backgroundColor: ThemedColor.background,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ThemedColor.tertiary,
+                width: Dimensions.get("window").width * 0.4,
+                padding: 12,
+            }}
+            isVisible={showPriority}
+            onRequestClose={() => {
+                setShowPriority(false);
+            }}
+            from={
+                <TouchableOpacity
+                    onPress={() => {
+                        setShowPriority(true);
+                    }}
+                    style={{
+                        backgroundColor: ThemedColor.background,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: ThemedColor.tertiary,
+                        flexDirection: "row",
+                        gap: 4,
+                        padding: 12,
+                    }}>
+                    <Feather name="flag" size={ICON_SIZE} color={priorityMapping[priority]} />
+                    <ThemedText type="lightBody" style={{ fontSize: 16 }}>
+                        Priority
+                    </ThemedText>
+                </TouchableOpacity>
+            }>
+            <ThemedText
+                type="defaultSemiBold"
+                style={{
+                    padding: 12,
+                    textAlign: "left",
+                    fontWeight: 500,
+                    fontSize: 20,
+                }}>
+                Priority
+            </ThemedText>
+            <View style={{ padding: 12 }}>
+                <TrafficLight
+                    setValue={(value) => {
+                        setPriority(value);
+                        setShowPriority(false);
+                    }}
+                    value={priority}
+                />
+            </View>
+        </Popover>
+    );
+};
+
+const DifficultyPopover = ({ value, setValue }: { value: number; setValue: (value: number) => void }) => {
+    const [showDifficulty, setShowDifficulty] = React.useState(false);
+    const ICON_SIZE = 20;
+    const ThemedColor = useThemeColor();
+    return (
+        <Popover
+            popoverStyle={{
+                backgroundColor: ThemedColor.background,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ThemedColor.tertiary,
+                width: Dimensions.get("window").width * 0.8,
+                padding: 16,
+                alignItems: "center",
+            }}
+            isVisible={showDifficulty}
+            onRequestClose={() => setShowDifficulty(false)}
+            from={
+                <TouchableOpacity
+                    onPress={() => setShowDifficulty(true)}
+                    style={{
+                        backgroundColor: ThemedColor.background,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: ThemedColor.tertiary,
+                        flexDirection: "row",
+                        gap: 4,
+                        padding: 12,
+                    }}>
+                    <FontAwesome6 name="dumbbell" size={ICON_SIZE} color={ThemedColor.primary} />
+                    <ThemedText type="lightBody" style={{ fontSize: 16 }}>
+                        Difficulty
+                    </ThemedText>
+                </TouchableOpacity>
+            }>
+            <ThemedText
+                type="defaultSemiBold"
+                style={{
+                    padding: 12,
+                    textAlign: "left",
+                    fontWeight: 500,
+                    fontSize: 20,
+                }}>
+                Difficulty: Level {value}
+            </ThemedText>
+            <ThemedSlider setStep={setValue} width={0.7} />
+        </Popover>
+    );
+};
+
+const AdvancedOptionList = ({
+    goTo,
+    showUnconfigured,
+}: {
+    goTo: (screen: Screen) => void;
+    showUnconfigured: boolean;
+}) => {
+    const { startDate, startTime, deadline, reminders, recurring, recurFrequency } = useTaskCreation();
+    return (
+        <View style={{ gap: 12, marginTop: 4 }}>
+            <AdvancedOption
+                icon="calendar"
+                label={startDate ? "Start Date: " + startDate.toLocaleDateString() : "Set Start Date"}
+                screen={Screen.STARTDATE}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={startDate !== null}
+            />
+            <AdvancedOption
+                icon="time"
+                label={startTime ? "Start Time: " + startTime.toLocaleTimeString() : "Set Start Time"}
+                screen={Screen.STARTTIME}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={startTime !== null}
+            />
+            <AdvancedOption
+                icon="flag"
+                label={deadline ? "Deadline: " + deadline.toLocaleString() : "Set Deadline"}
+                screen={Screen.DEADLINE}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={deadline !== null}
+            />
+            <AdvancedOption
+                icon="repeat"
+                label={recurring ? "Recurring: " + recurFrequency : "Make Recurring"}
+                screen={Screen.RECURRING}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={reminders.length > 0}
+            />
+            <AdvancedOption
+                icon="alarm"
+                label={reminders.length > 0 ? "Reminders: " + reminders.length : "Add Reminder"}
+                screen={Screen.REMINDER}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={recurring}
+            />
+            <AdvancedOption
+                icon="people"
+                label="Add Collaborators"
+                screen={Screen.COLLABORATORS}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={false}
+            />
+        </View>
+    );
+};

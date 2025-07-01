@@ -10,12 +10,12 @@ Animated.addWhitelistedNativeProps({ text: true });
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
-const SLIDER_WIDTH = Dimensions.get("window").width * 0.89;
 const INITIAL_BOX_SIZE = 40;
 
-const STEP_SIZE = SLIDER_WIDTH / 11;
 let ThemedColor = useThemeColor();
-const ThemedSlider = ({ setStep }: { setStep: (step: number) => void }) => {
+const ThemedSlider = ({ setStep, width }: { setStep: (step: number) => void; width: number }) => {
+    let SLIDER_WIDTH = width ? Dimensions.get("window").width * width : Dimensions.get("window").width * 0.89;
+    let STEP_SIZE = SLIDER_WIDTH / 11;
     const offset = useSharedValue(0);
     const MAX_VALUE = SLIDER_WIDTH - INITIAL_BOX_SIZE;
     const POINTS = [
@@ -58,7 +58,7 @@ const ThemedSlider = ({ setStep }: { setStep: (step: number) => void }) => {
             runOnJS(setStep)(POINTS[stepIndex]?.value || POINTS[0].value);
         }
     );
-
+    const styles = getStyles(SLIDER_WIDTH);
     return (
         <View>
             <GestureHandlerRootView style={styles.container}>
@@ -83,59 +83,60 @@ const ThemedSlider = ({ setStep }: { setStep: (step: number) => void }) => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        //justifyContent: "center",
-        //alignItems: "center",
-        gap: 32,
-    },
-    filled: {
-        backgroundColor: ThemedColor.primary,
-    },
-    sliderTrack: {
-        width: SLIDER_WIDTH,
-        height: 25,
-        backgroundColor: ThemedColor.tertiary,
-        // backgroundColor: ThemedColor.primary,
-        borderRadius: 25,
-        justifyContent: "center",
-    },
-    sliderTrackFilled: {
-        width: SLIDER_WIDTH,
-        height: 25,
-        backgroundColor: ThemedColor.primary,
-        // backgroundColor: ThemedColor.primary,
-        borderRadius: 25,
-        justifyContent: "center",
-    },
-    sliderHandle: {
-        width: 40,
-        height: 40,
-        backgroundColor: ThemedColor.primary,
-        // background: "linear-gradient(to right, #00ff00, #ff0000)",
-        borderRadius: 20,
-        position: "absolute",
-        shadowColor: "rgba(0, 0, 0, 0.25)",
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-    boxWidthText: {
-        textAlign: "center",
-        fontSize: 18,
-    },
-    step: {
-        alignItems: "flex-end",
-    },
-    stepText: {
-        fontSize: 16,
-        width: "100%",
-        textAlign: "center",
-        marginTop: -2,
-        color: "black",
-    },
-});
+const getStyles = (SLIDER_WIDTH: number) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            //justifyContent: "center",
+            //alignItems: "center",
+            gap: 32,
+        },
+        filled: {
+            backgroundColor: ThemedColor.primary,
+        },
+        sliderTrack: {
+            width: SLIDER_WIDTH,
+            height: 25,
+            backgroundColor: ThemedColor.tertiary,
+            // backgroundColor: ThemedColor.primary,
+            borderRadius: 25,
+            justifyContent: "center",
+        },
+        sliderTrackFilled: {
+            width: SLIDER_WIDTH,
+            height: 25,
+            backgroundColor: ThemedColor.primary,
+            // backgroundColor: ThemedColor.primary,
+            borderRadius: 25,
+            justifyContent: "center",
+        },
+        sliderHandle: {
+            width: 40,
+            height: 40,
+            backgroundColor: ThemedColor.primary,
+            // background: "linear-gradient(to right, #00ff00, #ff0000)",
+            borderRadius: 20,
+            position: "absolute",
+            shadowColor: "rgba(0, 0, 0, 0.25)",
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 1,
+            shadowRadius: 4,
+            elevation: 4,
+        },
+        boxWidthText: {
+            textAlign: "center",
+            fontSize: 18,
+        },
+        step: {
+            alignItems: "flex-end",
+        },
+        stepText: {
+            fontSize: 16,
+            width: "100%",
+            textAlign: "center",
+            marginTop: -2,
+            color: "black",
+        },
+    });
 
 export default ThemedSlider;

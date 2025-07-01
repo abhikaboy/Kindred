@@ -188,3 +188,18 @@ func (s *Service) DeleteProfile(id primitive.ObjectID) error {
 	_, err := s.Profiles.DeleteOne(ctx, filter)
 	return err
 }
+
+// UpdateProfilePicture updates the profile picture URL for a specific user
+func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string) error {
+	ctx := context.Background()
+	filter := bson.M{"_id": id}
+
+	update := bson.M{
+		"$set": bson.M{
+			"profile_picture": pictureURL,
+		},
+	}
+
+	_, err := s.Profiles.UpdateOne(ctx, filter, update)
+	return err
+}

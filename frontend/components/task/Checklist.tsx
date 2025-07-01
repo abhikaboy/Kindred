@@ -24,12 +24,20 @@ type Props = {
 const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskId, autoSave = false }: Props) => {
     const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(initialChecklist);
     const [newItemContent, setNewItemContent] = useState<string>(""); // Add state for bottom input
+    const [isUserEdit, setIsUserEdit] = useState(false);
     const ThemedColor = useThemeColor();
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
+    // Update checklist items when initialChecklist changes (task data loads)
+    useEffect(() => {
+        setChecklistItems(initialChecklist);
+        // Reset user edit flag when new data loads
+        setIsUserEdit(false);
+    }, [initialChecklist]);
+
     // Debounced API call to update checklist
     const debouncedUpdateChecklist = useDebounce(async (checklist: ChecklistItem[]) => {
-        if (autoSave && categoryId && taskId) {
+        if (autoSave && categoryId && taskId && isUserEdit) {
             try {
                 await updateChecklistAPI(categoryId, taskId, checklist);
             } catch (error) {
@@ -38,15 +46,15 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
         }
     }, 2000);
 
-    // Notify parent component when checklist changes
+    // Notify parent component when checklist changes and auto-save if enabled
     useEffect(() => {
         onChecklistChange?.(checklistItems);
 
-        // Auto-save to API if enabled
-        if (autoSave) {
+        // Only auto-save if this was a user-initiated edit
+        if (autoSave && isUserEdit) {
             debouncedUpdateChecklist(checklistItems);
         }
-    }, [checklistItems, onChecklistChange, autoSave, debouncedUpdateChecklist]);
+    }, [checklistItems, onChecklistChange, autoSave, isUserEdit, debouncedUpdateChecklist]);
 
     // Update refs array when checklist items change
     useEffect(() => {
@@ -54,6 +62,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     }, [checklistItems.length]);
 
     const addEmptyChecklistItem = (afterIndex?: number) => {
+        setIsUserEdit(true);
         const insertIndex = afterIndex !== undefined ? afterIndex + 1 : checklistItems.length;
         setChecklistItems([
             ...checklistItems.slice(0, insertIndex),
@@ -75,6 +84,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     };
 
     const modifyChecklistItem = (index: number, content: string) => {
+        setIsUserEdit(true);
         setChecklistItems([
             ...checklistItems.slice(0, index),
             { ...checklistItems[index], content },
@@ -83,6 +93,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     };
 
     const toggleChecklistItem = (index: number) => {
+        setIsUserEdit(true);
         setChecklistItems([
             ...checklistItems.slice(0, index),
             { ...checklistItems[index], completed: !checklistItems[index].completed },
@@ -91,6 +102,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     };
 
     const removeChecklistItem = (index: number) => {
+        setIsUserEdit(true);
         const newItems = [...checklistItems.slice(0, index), ...checklistItems.slice(index + 1)];
         // Update order for items after the removed item
         const reorderedItems = newItems.map((item, idx) => ({
@@ -119,6 +131,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     const addChecklistItemFromInput = () => {
         if (newItemContent.trim() === "") return; // Don't add empty items
 
+        setIsUserEdit(true);
         const newItem = {
             content: newItemContent.trim(),
             completed: false,
@@ -132,6 +145,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     const addChecklistItemAndCreateNew = () => {
         if (newItemContent.trim() === "") return; // Don't add empty items
 
+        setIsUserEdit(true);
         const newItem = {
             content: newItemContent.trim(),
             completed: false,
@@ -174,7 +188,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
                                     flex: 1,
                                     paddingVertical: 8,
                                     fontSize: 16,
-                                    color: ThemedColor.body,
+                                    color: ThemedColor.text,
                                     fontFamily: "OutfitLight",
                                 }}
                                 placeholder="Enter checklist item"
@@ -194,7 +208,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
                                 flex: 1,
                                 paddingVertical: 8,
                                 fontSize: 16,
-                                color: ThemedColor.body,
+                                color: ThemedColor.text,
                                 fontFamily: "OutfitLight",
                             }}
                             placeholder="Enter checklist item"

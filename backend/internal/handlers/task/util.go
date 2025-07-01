@@ -202,7 +202,7 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		Active:         true,
 		Timestamp:      xutils.NowUTC(),
 		LastEdited:     xutils.NowUTC(),
-		TemplateID:     templateDoc.ID,
+		TemplateID:     &templateDoc.ID,
 	}
 }
 
@@ -213,7 +213,7 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid recurring frequency",
 			})
-		} 
+		}
 		if params.RecurDetails == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Recurring details are required",
@@ -294,9 +294,8 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			return c.Status(fiber.StatusInternalServerError).JSON(err)
 		}
 
-		doc.TemplateID = template_id
+		doc.TemplateID = &template_id
 	}
 
 	return nil
 }
-

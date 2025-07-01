@@ -25,9 +25,10 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updateNotesAPI, updateChecklistAPI } from "@/api/task";
+import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI } from "@/api/task";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
+import { TemplateTaskDocument } from "@/api/generated/types";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -41,6 +42,10 @@ export default function Task() {
     const [isRunning, setIsRunning] = useState(false);
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
+    const [localNotes, setLocalNotes] = useState("");
+
+    const [hasTemplate, setHasTemplate] = useState(false);
+    const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
 
     // Add a ref to track mounted state
     const isMounted = useRef(true);
@@ -92,8 +97,23 @@ export default function Task() {
     //     await loadBaseTime(id as string);
     // }, [id]);
 
+    const getTemplate = async (id: string) => {
+        const template = await getTemplateByIDAPI(id);
+        console.log(template);
+        setTemplate(template);
+    };
+
     useEffect(() => {
         console.log(task);
+        if (task?.templateID != null) {
+            setHasTemplate(true);
+            getTemplate(task.templateID);
+            // make a request to the server to get the template
+        }
+        // Update local notes when task data loads
+        if (task?.notes !== undefined) {
+            setLocalNotes(task.notes);
+        }
     }, [task]);
 
     useEffect(() => {
@@ -164,7 +184,9 @@ export default function Task() {
 
     console.log(task);
     const updateNotes = useDebounce(async (notes: string) => {
-        await updateNotesAPI(categoryId as string, id as string, notes);
+        if (task && categoryId && id) {
+            await updateNotesAPI(categoryId as string, id as string, notes);
+        }
     }, 2000);
 
     return (
@@ -190,8 +212,11 @@ export default function Task() {
                     <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 50 }}>
                         <DataCard title="Notes" key="notes">
                             <TextInput
-                                value={task?.notes}
+                                value={localNotes}
                                 onChangeText={(text) => {
+                                    // Update local state immediately for UI responsiveness
+                                    setLocalNotes(text);
+                                    // Debounced API call
                                     updateNotes(text);
                                 }}
                                 placeholder="Tap to add notes"
@@ -267,11 +292,12 @@ export default function Task() {
                             </DataCard>
                         </ConditionalView>
                         <ConditionalView
-                            condition={task?.recurring != null || task?.recurDetails != null}
+                            condition={task?.recurring != null && task?.recurDetails != null}
                             key="recurring">
                             <DataCard title="Recurring">
                                 <View>
                                     <ThemedText type="lightBody">{JSON.stringify(task?.recurDetails)}</ThemedText>
+                                    <ThemedText type="lightBody">{JSON.stringify(task?.recurring)}</ThemedText>
                                 </View>
                             </DataCard>
                         </ConditionalView>

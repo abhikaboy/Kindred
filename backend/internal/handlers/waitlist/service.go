@@ -25,9 +25,15 @@ func (s *Service) GetAllWaitlists() ([]WaitlistDocument, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var results []WaitlistDocument = make([]WaitlistDocument, 0)
-	if err := cursor.All(ctx, &results); err != nil {
+	var internalResults []WaitlistDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
 		return nil, err
+	}
+
+	// Convert internal documents to API documents
+	results := make([]WaitlistDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
 	}
 
 	return results, nil
@@ -38,8 +44,8 @@ func (s *Service) GetWaitlistByID(id primitive.ObjectID) (*WaitlistDocument, err
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
-	var Waitlist WaitlistDocument
-	err := s.Waitlists.FindOne(ctx, filter).Decode(&Waitlist)
+	var internalWaitlist WaitlistDocumentInternal
+	err := s.Waitlists.FindOne(ctx, filter).Decode(&internalWaitlist)
 
 	if err == mongo.ErrNoDocuments {
 		// No matching Waitlist found
@@ -49,11 +55,11 @@ func (s *Service) GetWaitlistByID(id primitive.ObjectID) (*WaitlistDocument, err
 		return nil, err
 	}
 
-	return &Waitlist, nil
+	return internalWaitlist.ToAPI(), nil
 }
 
-// InsertWaitlist adds a new Waitlist document
-func (s *Service) CreateWaitlist(r *WaitlistDocument) (*WaitlistDocument, error) {
+// CreateWaitlist adds a new Waitlist document
+func (s *Service) CreateWaitlist(r *WaitlistDocumentInternal) (*WaitlistDocument, error) {
 	ctx := context.Background()
 	// Insert the document into the collection
 
@@ -62,12 +68,12 @@ func (s *Service) CreateWaitlist(r *WaitlistDocument) (*WaitlistDocument, error)
 		return nil, err
 	}
 
-	// Cast the inserted ID to ObjectID
+	// Cast the inserted ID to ObjectID and update the internal document
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Waitlist inserted", slog.String("id", id.Hex()))
 
-	return r, nil
+	return r.ToAPI(), nil
 }
 
 // DeleteWaitlist removes a Waitlist document by ObjectID.

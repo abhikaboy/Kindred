@@ -72,13 +72,14 @@ func run(stderr io.Writer, args []string) {
 	twillio.InitSendGrid(config.Twillio.SG_Token)
 
 	// API Server Setup
-	app := server.New(db.Collections, db.Stream)
+	_, fiberApp := server.New(db.Collections, db.Stream)
 	fmt.Printf("After New")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Hour)
 	go func() {
-		if err := app.Listen(":" + config.App.Port); err != nil {
-			fatal(ctx, "Failed to start server", err)
+		slog.LogAttrs(ctx, slog.LevelInfo, "Starting Fiber server on port", slog.String("port", config.App.Port))
+		if err := fiberApp.Listen(":" + config.App.Port); err != nil {
+			fatal(ctx, "Failed to start Fiber server", err)
 		}
 	}()
 
@@ -91,11 +92,14 @@ func run(stderr io.Writer, args []string) {
 	slog.LogAttrs(
 		ctx,
 		slog.LevelInfo,
-		"Stopping server",
+		"Stopping Fiber server",
 	)
 
-	if err := app.Shutdown(); err != nil {
-		fatal(ctx, "Failed to shutdown server", err)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	if err := fiberApp.ShutdownWithContext(shutdownCtx); err != nil {
+		fatal(ctx, "Failed to shutdown Fiber server", err)
 	}
 
 	slog.LogAttrs(
@@ -118,9 +122,50 @@ func newLogger(logLevel string, verbose bool, stderr io.Writer) *slog.Logger {
 	case "error":
 		level = slog.LevelError.Level()
 	}
-	return slog.New(slog.NewJSONHandler(stderr, &slog.HandlerOptions{
+
+	// Use simple text handler with ANSI codes like Fiber does
+	return slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{
 		AddSource: logLevel == "debug",
 		Level:     level,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.LevelKey {
+				level := a.Value.Any().(slog.Level)
+				switch level {
+				case slog.LevelDebug:
+					a.Value = slog.StringValue("\033[36mDEBUG\033[0m") // Cyan like Fiber
+				case slog.LevelInfo:
+					a.Value = slog.StringValue("\033[32mINFO\033[0m") // Green like Fiber
+				case slog.LevelWarn:
+					a.Value = slog.StringValue("\033[33mWARN\033[0m") // Yellow
+				case slog.LevelError:
+					a.Value = slog.StringValue("\033[31mERROR\033[0m") // Red
+				}
+			}
+
+			// Color the messages like Fiber does
+			if a.Key == slog.MessageKey {
+				msg := a.Value.String()
+				if strings.HasPrefix(msg, "🔐") {
+					a.Value = slog.StringValue("\033[35m" + msg + "\033[0m") // Magenta
+				} else if strings.HasPrefix(msg, "🌐") {
+					a.Value = slog.StringValue("\033[34m" + msg + "\033[0m") // Blue
+				} else if strings.HasPrefix(msg, "✅") {
+					a.Value = slog.StringValue("\033[32m" + msg + "\033[0m") // Green
+				} else if strings.HasPrefix(msg, "❌") {
+					a.Value = slog.StringValue("\033[31m" + msg + "\033[0m") // Red
+				} else if strings.HasPrefix(msg, "🔍") {
+					a.Value = slog.StringValue("\033[36m" + msg + "\033[0m") // Cyan
+				} else if strings.HasPrefix(msg, "🔄") {
+					a.Value = slog.StringValue("\033[33m" + msg + "\033[0m") // Yellow
+				} else if strings.HasPrefix(msg, "🎯") {
+					a.Value = slog.StringValue("\033[35m" + msg + "\033[0m") // Magenta
+				} else if strings.HasPrefix(msg, "🔧") {
+					a.Value = slog.StringValue("\033[36m" + msg + "\033[0m") // Cyan
+				}
+			}
+
+			return a
+		},
 	}))
 }
 

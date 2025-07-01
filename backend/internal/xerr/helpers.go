@@ -9,7 +9,7 @@ import (
 // RespondWithError is a helper to quickly return a standardized error response
 func RespondWithError(c *fiber.Ctx, status int, message string, errorType string, details interface{}, suggestion string) error {
 	requestID := c.Locals("requestid")
-	
+
 	return c.Status(status).JSON(ErrorResponse{
 		Status:     status,
 		Message:    message,
@@ -83,7 +83,7 @@ func DuplicateError(c *fiber.Ctx, resourceType string, field string, value strin
 // ServerError is a helper to create internal server error responses
 func ServerError(c *fiber.Ctx, err error) error {
 	requestID := c.Locals("requestid")
-	
+
 	return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 		Status:     fiber.StatusInternalServerError,
 		Message:    "An unexpected error occurred",
@@ -99,4 +99,4 @@ func requestToString(requestID interface{}) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", requestID)
-} 
+}

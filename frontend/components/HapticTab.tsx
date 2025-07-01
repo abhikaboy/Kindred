@@ -9,10 +9,13 @@ export function HapticTab(props: BottomTabBarButtonProps) {
             {...props}
             pressOpacity={0.2}
             style={{
-                zIndex: 30,
+                zIndex: 10,
+                borderRadius: 500,
+                overflow: "hidden",
             }}
             onPressIn={async (ev) => {
                 if (process.env.EXPO_OS === "ios") {
+                    console.log("Haptic");
                     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 }
                 props.onPressIn?.(ev);

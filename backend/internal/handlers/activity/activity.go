@@ -1,10 +1,12 @@
 package Activity
 
 import (
+	"context"
+
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -12,104 +14,155 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) CreateActivity(c *fiber.Ctx) error {
-	var params CreateActivityParams
-	if err := c.BodyParser(&params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
+func (h *Handler) CreateActivity(ctx context.Context, input *CreateActivityInput) (*CreateActivityOutput, error) {
 	validate := validator.New()
-	if err := validate.Struct(params); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Validation failed",
-		})
+	if err := validate.Struct(input.Body); err != nil {
+		return nil, huma.Error400BadRequest("Validation failed", err)
 	}
 
 	doc := types.ActivityDocument{
 		ID:        primitive.NewObjectID(),
-		Field1:    params.Field1,
-		Picture:   params.Picture,
+		Field1:    input.Body.Field1,
+		Picture:   input.Body.Picture,
 		Timestamp: xutils.NowUTC(),
 	}
 
 	_, err := h.service.CreateActivity(&doc)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create Activity",
-		})
+		return nil, huma.Error500InternalServerError("Failed to create Activity", err)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(doc)
+	return &CreateActivityOutput{Body: doc}, nil
 }
 
-func (h *Handler) GetActivitys(c *fiber.Ctx) error {
-	Activitys, err := h.service.GetAllActivitys()
+func (h *Handler) GetActivities(ctx context.Context, input *GetActivitiesInput) (*GetActivitiesOutput, error) {
+	activities, err := h.service.GetAllActivitys()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch Activitys",
-		})
+		return nil, huma.Error500InternalServerError("Failed to fetch activities", err)
 	}
 
-	return c.JSON(Activitys)
+	return &GetActivitiesOutput{Body: activities}, nil
 }
 
-func (h *Handler) GetActivity(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) GetActivity(ctx context.Context, input *GetActivityInput) (*GetActivityOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	Activity, err := h.service.GetActivityByID(id)
+	activity, err := h.service.GetActivityByID(id)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Activity not found",
-		})
+		return nil, huma.Error404NotFound("Activity not found", err)
 	}
 
-	return c.JSON(Activity)
+	return &GetActivityOutput{Body: *activity}, nil
 }
 
-func (h *Handler) UpdatePartialActivity(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) UpdatePartialActivity(ctx context.Context, input *UpdateActivityInput) (*UpdateActivityOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
-	var update UpdateActivityDocument
-	if err := c.BodyParser(&update); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+	if err := h.service.UpdatePartialActivity(id, input.Body); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update Activity", err)
 	}
 
-	if err := h.service.UpdatePartialActivity(id, update); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update Activity",
-		})
-	}
-
-	return c.SendStatus(fiber.StatusOK)
+	resp := &UpdateActivityOutput{}
+	resp.Body.Message = "Activity updated successfully"
+	return resp, nil
 }
 
-func (h *Handler) DeleteActivity(c *fiber.Ctx) error {
-	id, err := primitive.ObjectIDFromHex(c.Params("id"))
+func (h *Handler) DeleteActivity(ctx context.Context, input *DeleteActivityInput) (*DeleteActivityOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
-		})
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	if err := h.service.DeleteActivity(id); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete Activity",
-		})
+		return nil, huma.Error500InternalServerError("Failed to delete Activity", err)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	resp := &DeleteActivityOutput{}
+	resp.Body.Message = "Activity deleted successfully"
+	return resp, nil
+}
+
+// Huma-style handlers
+
+func (h *Handler) CreateActivityHuma(ctx context.Context, input *CreateActivityInput) (*CreateActivityOutput, error) {
+	validate := validator.New()
+	if err := validate.Struct(input.Body); err != nil {
+		return nil, huma.Error400BadRequest("Validation failed", err)
+	}
+
+	doc := types.ActivityDocument{
+		ID:        primitive.NewObjectID(),
+		Field1:    input.Body.Field1,
+		Picture:   input.Body.Picture,
+		Timestamp: xutils.NowUTC(),
+	}
+
+	_, err := h.service.CreateActivity(&doc)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to create activity", err)
+	}
+
+	resp := &CreateActivityOutput{Body: doc}
+	return resp, nil
+}
+
+func (h *Handler) GetActivitiesHuma(ctx context.Context, input *GetActivitiesInput) (*GetActivitiesOutput, error) {
+	activities, err := h.service.GetAllActivitys()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get activities", err)
+	}
+
+	resp := &GetActivitiesOutput{Body: activities}
+	return resp, nil
+}
+
+func (h *Handler) GetActivityHuma(ctx context.Context, input *GetActivityInput) (*GetActivityOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	activity, err := h.service.GetActivityByID(id)
+	if err != nil {
+		return nil, huma.Error404NotFound("Activity not found", err)
+	}
+
+	resp := &GetActivityOutput{Body: *activity}
+	return resp, nil
+}
+
+func (h *Handler) UpdateActivityHuma(ctx context.Context, input *UpdateActivityInput) (*UpdateActivityOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	if err := h.service.UpdatePartialActivity(id, input.Body); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update activity", err)
+	}
+
+	resp := &UpdateActivityOutput{}
+	resp.Body.Message = "Activity updated successfully"
+	return resp, nil
+}
+
+func (h *Handler) DeleteActivityHuma(ctx context.Context, input *DeleteActivityInput) (*DeleteActivityOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	if err := h.service.DeleteActivity(id); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to delete activity", err)
+	}
+
+	resp := &DeleteActivityOutput{}
+	resp.Body.Message = "Activity deleted successfully"
+	return resp, nil
 }

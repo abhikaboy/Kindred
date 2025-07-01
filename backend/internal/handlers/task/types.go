@@ -90,7 +90,7 @@ type Service struct {
 }
 
 type TaskID struct {
-	TaskID primitive.ObjectID 
-	CategoryID primitive.ObjectID 
-	UserID primitive.ObjectID 
+	TaskID     primitive.ObjectID
+	CategoryID primitive.ObjectID
+	UserID     primitive.ObjectID
 }

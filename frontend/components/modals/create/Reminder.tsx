@@ -12,7 +12,7 @@ import Dropdown from "@/components/inputs/Dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { combineDateAndTime, copyTime } from "@/utils/timeUtils";
-import { add, Duration, sub } from "date-fns";
+import { add, Duration, sub, addHours, addMinutes } from "date-fns";
 
 type Props = {
     goToStandard: () => void;
@@ -47,12 +47,48 @@ const RelativeReminderOptions = ({
 }) => {
     // Define all possible suggestions
     const allSuggestions = [
-        { tag: "10m before start", type: "start", before: true, minutes: 10 },
-        { tag: "1h before start", type: "start", before: true, minutes: 60 },
-        { tag: "1h after start", type: "start", before: false, minutes: 60 },
-        { tag: "1h before deadline", type: "deadline", before: true, minutes: 60 },
-        { tag: "6h before deadline", type: "deadline", before: true, minutes: 360 },
-        { tag: "1h after deadline", type: "deadline", before: false, minutes: 60 },
+        {
+            tag: "10m before start",
+            caption: addMinutes(new Date(startTime || startDate), -10).toLocaleTimeString(),
+            type: "start",
+            before: true,
+            minutes: 10,
+        },
+        {
+            tag: "1h before start",
+            caption: addHours(new Date(startTime || startDate), -1).toLocaleTimeString(),
+            type: "start",
+            before: true,
+            minutes: 60,
+        },
+        {
+            tag: "1h after start",
+            caption: addHours(new Date(startTime || startDate), 1).toLocaleTimeString(),
+            type: "start",
+            before: false,
+            minutes: 60,
+        },
+        {
+            tag: "1h before deadline",
+            caption: addHours(new Date(deadline), -1).toLocaleTimeString(),
+            type: "deadline",
+            before: true,
+            minutes: 60,
+        },
+        {
+            tag: "6h before deadline",
+            caption: addHours(new Date(deadline), -6).toLocaleTimeString(),
+            type: "deadline",
+            before: true,
+            minutes: 360,
+        },
+        {
+            tag: "1h after deadline",
+            caption: addHours(new Date(deadline), -6).toLocaleTimeString(),
+            type: "deadline",
+            before: false,
+            minutes: 60,
+        },
     ];
 
     // Filter suggestions based on available times
@@ -88,21 +124,31 @@ const RelativeReminderOptions = ({
                     Suggestions
                 </ThemedText>
             </View>
-            <View style={{ display: "flex", flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-                {availableSuggestions.map((suggestion, index) => (
-                    <SuggestedTag key={index} tag={suggestion.tag} onPress={() => handleSuggestionPress(suggestion)} />
-                ))}
+            <View>
+                <ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>
+                    <View style={{ gap: 8, display: "flex", flexDirection: "row" }}>
+                        {availableSuggestions.map((suggestion, index) => (
+                            <SuggestedTag
+                                key={index}
+                                tag={suggestion.tag}
+                                caption={suggestion.caption}
+                                onPress={() => handleSuggestionPress(suggestion)}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
             </View>
             <View>
                 <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
                     When
                 </ThemedText>
             </View>
-            <View style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
+            <View style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%", width: "100%" }}>
                 <View
                     style={{
                         borderRadius: 12,
                         padding: 2,
+                        width: "100%",
                     }}>
                     <Dropdown
                         options={dropdownOptions}

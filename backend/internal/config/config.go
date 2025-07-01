@@ -6,7 +6,7 @@ type Config struct {
 	App     `envPrefix:"APP_"`
 	Atlas   `envPrefix:"ATLAS_"`
 	Auth    `envPrefix:"AUTH_"`
-	AWS     `envPrefix:"AWS_"`
+	DO      `envPrefix:"DO_"`
 	Twillio `envPrefix:"TWILLIO_"`
 }
 

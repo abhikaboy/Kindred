@@ -1,15 +1,16 @@
 package Waitlist
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/twillio"
-	"github.com/abhikaboy/Kindred/internal/xerr"
-	"github.com/abhikaboy/Kindred/internal/xslog"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/abhikaboy/Kindred/xutils"
-	"github.com/gofiber/fiber/v2"
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -17,117 +18,116 @@ type Handler struct {
 	service *Service
 }
 
-func (h *Handler) CreateWaitlist(c *fiber.Ctx) error {
-	var params CreateWaitlistParams
-	if err := c.BodyParser(&params); err != nil {
-		return xerr.ValidationError(c, "Invalid request body format", map[string]string{
-			"body": "Could not parse JSON body",
-		})
+func (h *Handler) CreateWaitlistHuma(ctx context.Context, input *CreateWaitlistInput) (*CreateWaitlistOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	if validationErrors := xvalidator.Validator.Validate(params); len(validationErrors) > 0 {
-		// Convert validation errors to a map
-		errorMap := make(map[string]string)
-		for _, fieldErr := range validationErrors {
-			errorMap[fieldErr.FailedField] = fieldErr.Tag
-		}
-		
-		return xerr.ValidationError(c, "Invalid input data", errorMap)
-	}
-
-	doc := WaitlistDocument{
-		Email:     params.Email,
-		Name:      params.Name,
+	internalDoc := WaitlistDocumentInternal{
+		Email:     input.Body.Email,
+		Name:      input.Body.Name,
 		Timestamp: xutils.NowUTC(),
 		ID:        primitive.NewObjectID(),
 	}
 
-	_, err := h.service.CreateWaitlist(&doc); 
-    if err != nil {
-		slog.LogAttrs(
-			c.Context(),
-			slog.LevelError,
-			"Error creating waitlist entry",
-			xslog.Error(err),
-			slog.String("email", doc.Email),
-		)
-		
-		if strings.Contains(err.Error(), "duplicate key error") {
-			slog.LogAttrs(
-				c.Context(),
-				slog.LevelInfo,
-				"Email already exists in waitlist",
-				slog.String("email", doc.Email),
-			)
-			return xerr.DuplicateError(c, "Waitlist entry", "email", doc.Email)
-		}
-		
-		return xerr.ServerError(c, err)
-	}
-
-	err = twillio.SendWaitlistEmail(doc.Email, doc.Name)
+	waitlist, err := h.service.CreateWaitlist(&internalDoc)
 	if err != nil {
 		slog.LogAttrs(
-			c.Context(),
+			ctx,
+			slog.LevelError,
+			"Error creating waitlist entry",
+			slog.String("error", err.Error()),
+			slog.String("email", internalDoc.Email),
+		)
+
+		if strings.Contains(err.Error(), "duplicate key error") {
+			slog.LogAttrs(
+				ctx,
+				slog.LevelInfo,
+				"Email already exists in waitlist",
+				slog.String("email", internalDoc.Email),
+			)
+			return nil, huma.Error409Conflict("Duplicate email", fmt.Errorf("email %s already exists in waitlist", internalDoc.Email))
+		}
+
+		return nil, huma.Error500InternalServerError("Failed to create waitlist entry", err)
+	}
+
+	err = twillio.SendWaitlistEmail(internalDoc.Email, internalDoc.Name)
+	if err != nil {
+		slog.LogAttrs(
+			ctx,
 			slog.LevelError,
 			"Error sending waitlist email",
-			xslog.Error(err),
-			slog.String("email", doc.Email),
+			slog.String("error", err.Error()),
+			slog.String("email", internalDoc.Email),
 		)
 		// We continue since the user was added to the waitlist successfully
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(doc)
+	return &CreateWaitlistOutput{Body: *waitlist}, nil
 }
 
-func (h *Handler) GetWaitlists(c *fiber.Ctx) error {
-	waitlists, err := h.service.GetAllWaitlists()
+func (h *Handler) GetWaitlistsHuma(ctx context.Context, input *GetWaitlistsInput) (*GetWaitlistsOutput, error) {
+	// Extract user_id from context for authorization (admin check could be added here)
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return xerr.ServerError(c, err)
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	return c.JSON(waitlists)
+	waitlists, err := h.service.GetAllWaitlists()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch waitlists", err)
+	}
+
+	return &GetWaitlistsOutput{Body: waitlists}, nil
 }
 
-func (h *Handler) GetWaitlist(c *fiber.Ctx) error {
-	idParam := c.Params("id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+func (h *Handler) GetWaitlistHuma(ctx context.Context, input *GetWaitlistInput) (*GetWaitlistOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return xerr.ValidationError(c, "Invalid ID format", map[string]string{
-			"id": "Must be a valid ObjectID",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	waitlist, err := h.service.GetWaitlistByID(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "no documents") {
-			return xerr.ResourceNotFound(c, "Waitlist entry", idParam)
+			return nil, huma.Error404NotFound("Waitlist entry not found", err)
 		}
-		return xerr.ServerError(c, err)
+		return nil, huma.Error500InternalServerError("Failed to fetch waitlist entry", err)
 	}
 
-	return c.JSON(waitlist)
+	return &GetWaitlistOutput{Body: *waitlist}, nil
 }
 
-func (h *Handler) DeleteWaitlist(c *fiber.Ctx) error {
-	idParam := c.Params("id")
-	id, err := primitive.ObjectIDFromHex(idParam)
-	
+func (h *Handler) DeleteWaitlistHuma(ctx context.Context, input *DeleteWaitlistInput) (*DeleteWaitlistOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return xerr.ValidationError(c, "Invalid ID format", map[string]string{
-			"id": "Must be a valid ObjectID",
-		})
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
 	}
 
 	if err := h.service.DeleteWaitlist(id); err != nil {
 		if strings.Contains(err.Error(), "no documents") {
-			return xerr.ResourceNotFound(c, "Waitlist entry", idParam)
+			return nil, huma.Error404NotFound("Waitlist entry not found", err)
 		}
-		return xerr.ServerError(c, err)
+		return nil, huma.Error500InternalServerError("Failed to delete waitlist entry", err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status": "success",
-		"message": "Waitlist entry deleted successfully",
-	})
+	resp := &DeleteWaitlistOutput{}
+	resp.Body.Status = "success"
+	resp.Body.Message = "Waitlist entry deleted successfully"
+	return resp, nil
 }
