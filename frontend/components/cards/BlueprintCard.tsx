@@ -6,35 +6,64 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "../inputs/PrimaryButton";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
-
-interface TaskProps {
-    content: string;
-    value: number;
-    priority: string;
-    redirect?: boolean;
-    encourage?: boolean;
-    id: string;
-    categoryId: string;
-}
+import { useBlueprints } from "@/contexts/blueprintContext";
 
 interface Props {
+    id: string;
     previewImage: string;
+    userImage: string; 
     workspaceName: string;
     username: string;
     name: string;
     time: string;
     subscriberCount: number;
     description: string;
-    tasks: TaskProps[];
     tags: string[];
 }
 
-const BlueprintCard = ({ previewImage, workspaceName, username, name, time, subscriberCount, tags }: Props) => {
+const BlueprintCard = ({
+    id,
+    previewImage,
+    userImage,
+    workspaceName,
+    username,
+    name,
+    time,
+    subscriberCount,
+    description,
+    tags,
+}: Props) => {
     let ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
+    const router = useRouter();
+    const { setSelectedBlueprint } = useBlueprints();
+
+
+    const handlePress = () => {
+        setSelectedBlueprint({
+            id,
+            previewImage,
+            userImage,
+            workspaceName,
+            username,
+            name,
+            time,
+            subscriberCount,
+            description,
+            tags,
+        });
+        router.push({
+            pathname: "/(logged-in)/(tabs)/(search)/blueprint/[id]",
+            params: {
+                id: id,
+                name: workspaceName,
+            },
+        });
+    };
+
     return (
         <View style={styles.container}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handlePress}>
                 <Image
                     source={{ uri: previewImage }}
                     style={{
@@ -46,7 +75,7 @@ const BlueprintCard = ({ previewImage, workspaceName, username, name, time, subs
                 <View style={styles.informationContainer}>
                     <ThemedText type="subtitle">{workspaceName}</ThemedText>
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-                        <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />{" "}
+                        <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
                         <ThemedText type="smallerDefault">{time}</ThemedText>
                     </View>
 
