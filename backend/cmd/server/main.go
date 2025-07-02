@@ -21,6 +21,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/twillio"
 	"github.com/abhikaboy/Kindred/internal/xslog"
 	"github.com/joho/godotenv"
+	"github.com/lmittmann/tint"
 )
 
 func main() {
@@ -35,7 +36,7 @@ func run(stderr io.Writer, args []string) {
 		fmt.Fprint(stderr, err)
 		os.Exit(1)
 	}
-	logger := newLogger(*logLevelFlag, *verboseFlag, stderr)
+	logger := newLogger(*logLevelFlag, *verboseFlag, os.Stderr)
 
 	slog.SetDefault(logger)
 
@@ -121,52 +122,15 @@ func newLogger(logLevel string, verbose bool, stderr io.Writer) *slog.Logger {
 		level = slog.LevelWarn.Level()
 	case "error":
 		level = slog.LevelError.Level()
+	case "info":
+		level = slog.LevelInfo.Level()
 	}
 
-	// Use simple text handler with ANSI codes like Fiber does
-	return slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{
-		AddSource: logLevel == "debug",
+	handler := tint.NewHandler(stderr, &tint.Options{
 		Level:     level,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				switch level {
-				case slog.LevelDebug:
-					a.Value = slog.StringValue("\033[36mDEBUG\033[0m") // Cyan like Fiber
-				case slog.LevelInfo:
-					a.Value = slog.StringValue("\033[32mINFO\033[0m") // Green like Fiber
-				case slog.LevelWarn:
-					a.Value = slog.StringValue("\033[33mWARN\033[0m") // Yellow
-				case slog.LevelError:
-					a.Value = slog.StringValue("\033[31mERROR\033[0m") // Red
-				}
-			}
-
-			// Color the messages like Fiber does
-			if a.Key == slog.MessageKey {
-				msg := a.Value.String()
-				if strings.HasPrefix(msg, "🔐") {
-					a.Value = slog.StringValue("\033[35m" + msg + "\033[0m") // Magenta
-				} else if strings.HasPrefix(msg, "🌐") {
-					a.Value = slog.StringValue("\033[34m" + msg + "\033[0m") // Blue
-				} else if strings.HasPrefix(msg, "✅") {
-					a.Value = slog.StringValue("\033[32m" + msg + "\033[0m") // Green
-				} else if strings.HasPrefix(msg, "❌") {
-					a.Value = slog.StringValue("\033[31m" + msg + "\033[0m") // Red
-				} else if strings.HasPrefix(msg, "🔍") {
-					a.Value = slog.StringValue("\033[36m" + msg + "\033[0m") // Cyan
-				} else if strings.HasPrefix(msg, "🔄") {
-					a.Value = slog.StringValue("\033[33m" + msg + "\033[0m") // Yellow
-				} else if strings.HasPrefix(msg, "🎯") {
-					a.Value = slog.StringValue("\033[35m" + msg + "\033[0m") // Magenta
-				} else if strings.HasPrefix(msg, "🔧") {
-					a.Value = slog.StringValue("\033[36m" + msg + "\033[0m") // Cyan
-				}
-			}
-
-			return a
-		},
-	}))
+		AddSource: logLevel == "debug",
+	})
+	return slog.New(handler)
 }
 
 func fatal(ctx context.Context, msg string, err error) {
