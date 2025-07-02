@@ -16,6 +16,7 @@ import {
     sendPushTokenToBackend,
 } from "@/utils/notificationService";
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
+import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -142,19 +143,21 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <>
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    headerTransparent: true,
-                    headerLeft: (tab) => <BackButton />,
-                    headerBackButtonDisplayMode: "minimal",
-                    headerTitleStyle: {
-                        fontFamily: "Outfit",
-                        fontWeight: 100,
-                        fontSize: 1,
-                    },
-                }}
-            />
+            <BlueprintCreationProvider>
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        headerTransparent: true,
+                        headerLeft: (tab) => <BackButton />,
+                        headerBackButtonDisplayMode: "minimal",
+                        headerTitleStyle: {
+                            fontFamily: "Outfit",
+                            fontWeight: 100,
+                            fontSize: 1,
+                        },
+                    }}
+                />
+            </BlueprintCreationProvider>
         </>
     );
 };

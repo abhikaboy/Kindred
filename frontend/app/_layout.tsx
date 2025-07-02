@@ -18,6 +18,7 @@ import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
+import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
