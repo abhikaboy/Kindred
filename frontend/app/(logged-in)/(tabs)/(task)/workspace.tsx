@@ -12,6 +12,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Category } from "../../../../components/category";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
+import SlidingText from "@/components/ui/SlidingText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -74,7 +75,7 @@ const Workspace = (props: Props) => {
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
 
-                <ConditionalView condition={selected !== ""}>
+                <ConditionalView condition={selected !== ""} animated={true} triggerDep={selected}>
                     <View style={styles.headerContainer}>
                         <View
                             style={{
@@ -83,16 +84,14 @@ const Workspace = (props: Props) => {
                                 justifyContent: "space-between",
                                 paddingBottom: 16,
                             }}>
-                            <ThemedText type="title" style={styles.title}>
+                            <SlidingText type="title" style={styles.title}>
                                 {selected || "Good Morning! ☀"}
-                            </ThemedText>
-                            <ConditionalView condition={selected !== ""}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                                    <TouchableOpacity onPress={() => setReordering(true)}>
-                                        <Ionicons name="chevron-expand-outline" size={28} color={ThemedColor.text} />
-                                    </TouchableOpacity>
-                                </View>
-                            </ConditionalView>
+                            </SlidingText>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+                                <TouchableOpacity onPress={() => setReordering(true)}>
+                                    <Ionicons name="chevron-expand-outline" size={28} color={ThemedColor.text} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
                         <ThemedText type="lightBody">
                             Treat yourself to a cup of coffee and a good book. You deserve it.
@@ -100,8 +99,12 @@ const Workspace = (props: Props) => {
                     </View>
                 </ConditionalView>
 
-                <ConditionalView condition={selected !== "" && noCategories}>
-                    <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 32 }}>
+                <ConditionalView
+                    condition={selected !== "" && noCategories}
+                    animated={true}
+                    triggerDep={selected}
+                    style={{ height: "100%", marginTop: 8 }}>
+                    <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                         <ThemedText type="lightBody">This workspace is empty!</ThemedText>
                         <TouchableOpacity
                             onPress={() => setCreating(true)}
@@ -111,7 +114,7 @@ const Workspace = (props: Props) => {
                     </View>
                 </ConditionalView>
 
-                <ConditionalView condition={selected !== "" && !noCategories}>
+                <ConditionalView condition={selected !== "" && !noCategories} animated={true} triggerDep={selected}>
                     <ScrollView showsVerticalScrollIndicator={false}>
                         <View style={styles.categoriesContainer} key="cateogry-container">
                             {categories

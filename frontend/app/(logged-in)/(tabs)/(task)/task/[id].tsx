@@ -28,7 +28,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI } from "@/api/task";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
-import { TemplateTaskDocument } from "@/api/generated/types";
+import { RecurDetails, TemplateTaskDocument } from "@/api/generated/types";
+import Feather from "@expo/vector-icons/Feather";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -46,6 +47,7 @@ export default function Task() {
 
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
+    const [recurDetails, setRecurDetails] = useState<RecurDetails | null>(null);
 
     // Add a ref to track mounted state
     const isMounted = useRef(true);
@@ -101,6 +103,7 @@ export default function Task() {
         const template = await getTemplateByIDAPI(id);
         console.log(template);
         setTemplate(template);
+        setRecurDetails(template?.recurDetails);
     };
 
     useEffect(() => {
@@ -109,6 +112,10 @@ export default function Task() {
             setHasTemplate(true);
             getTemplate(task.templateID);
             // make a request to the server to get the template
+        } else {
+            setHasTemplate(false);
+            setRecurDetails(null);
+            setTemplate(null);
         }
         // Update local notes when task data loads
         if (task?.notes !== undefined) {
@@ -198,10 +205,16 @@ export default function Task() {
                 gap: 16,
             }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
-                <ThemedText type="title">
+                <ThemedText type="title" style={{ flexWrap: "wrap", width: "80%" }}>
                     {name}
                     {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
                 </ThemedText>
+                <TouchableOpacity
+                    onPress={() => {
+                        // open some modal to edit the task
+                    }}>
+                    <Feather name="edit" size={24} color={ThemedColor.text} />
+                </TouchableOpacity>
             </View>
             <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={setActiveTab} />
             <ConditionalView condition={activeTab === 0}>
@@ -291,13 +304,17 @@ export default function Task() {
                                 </View>
                             </DataCard>
                         </ConditionalView>
-                        <ConditionalView
-                            condition={task?.recurring != null && task?.recurDetails != null}
-                            key="recurring">
+                        <ConditionalView condition={recurDetails != null} key="recurring">
                             <DataCard title="Recurring">
-                                <View>
-                                    <ThemedText type="lightBody">{JSON.stringify(task?.recurDetails)}</ThemedText>
-                                    <ThemedText type="lightBody">{JSON.stringify(task?.recurring)}</ThemedText>
+                                <View style={{ flexDirection: "column", gap: 8 }}>
+                                    <ThemedText type="lightBody">
+                                        {DetailsToString(recurDetails, template?.recurFrequency, template?.recurType)}
+                                    </ThemedText>
+                                    <ThemedText type="lightBody">
+                                        {template?.recurType === "OCCURRENCE"
+                                            ? "Repeating Start Date"
+                                            : "Repeating Deadline"}
+                                    </ThemedText>
                                 </View>
                             </DataCard>
                         </ConditionalView>
@@ -387,4 +404,44 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
             </ThemedText>
         </View>
     );
+}
+
+function DetailsToString(details: RecurDetails, frequency: string, type: string) {
+    let caseMap = new Map<string, string>([
+        ["[0,1,1,1,1,1,0]", "Weekdays"],
+        ["[0,0,0,0,0,0,1]", "Weekends"],
+        ["[1,1,1,1,1,1,1]", "Every day of the week"],
+    ]);
+
+    let daysOfWeekMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    let arrayToDays = (array: number[]) => {
+        let numEntries = array.filter((day) => day === 1).length;
+        if (numEntries == 1) {
+            return daysOfWeekMapping[array.findIndex((day) => day === 1)];
+        }
+        if (numEntries == 2) {
+            return (
+                daysOfWeekMapping[array.findIndex((day) => day === 1)] +
+                " and " +
+                daysOfWeekMapping[array.findLastIndex((day) => day === 1)]
+            );
+        }
+        return array.map((day, index) => {
+            if (day === 1) {
+                return daysOfWeekMapping[index];
+            }
+        });
+    };
+    switch (frequency) {
+        case "daily":
+            return `Every ${details.every > 1 ? details.every : ""} day${details.every > 1 ? "s" : ""}`;
+        case "weekly":
+            // special case for weekdays, weekends
+            let lastPart = caseMap.has(JSON.stringify(details.daysOfWeek))
+                ? caseMap.get(JSON.stringify(details.daysOfWeek))
+                : arrayToDays(details.daysOfWeek);
+            return `Every${details.every > 1 ? details.every : ""} week${details.every > 1 ? "s" : ""} on ${lastPart}`;
+        case "monthly":
+            return `${frequency} ${type} ${details.recurDay} ${details.recurMonth} ${details.recurYear}`;
+    }
 }

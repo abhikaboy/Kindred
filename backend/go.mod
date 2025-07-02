@@ -45,6 +45,7 @@ require (
 	github.com/gofiber/contrib/websocket v1.3.4 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/lmittmann/tint v1.1.2 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect

@@ -27,8 +27,10 @@ const NewCategory = ({ goToStandard }: Props) => {
 
             addToWorkspace(selected, response);
             setCreateCategory({ label: name, id: response.id, special: false });
+            return true;
         } catch (error) {
             console.log(error);
+            return false;
         }
     };
 
@@ -45,10 +47,12 @@ const NewCategory = ({ goToStandard }: Props) => {
             <ThemedInput
                 autofocus
                 placeHolder="Enter the Category Name"
-                onSubmit={() => {
+                onSubmit={async () => {
                     if (name.length > 0) {
-                        createCategory();
-                        goToStandard();
+                        const success = await createCategory();
+                        if (success) {
+                            goToStandard();
+                        }
                     }
                 }}
                 onChangeText={(text) => {
