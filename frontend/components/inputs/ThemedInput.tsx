@@ -14,6 +14,7 @@ type Props = {
     onBlur?: () => void;
     ghost?: boolean;
     textStyle?: StyleProp<TextStyle>;
+    textArea?: boolean;
 };
 
 const ThemedInput = forwardRef(function ThemedInput(
@@ -29,6 +30,8 @@ const ThemedInput = forwardRef(function ThemedInput(
                 autoFocus={props?.autofocus}
                 placeholder={props?.placeHolder}
                 onSubmitEditing={props?.onSubmit}
+                multiline={props.textArea}
+                numberOfLines={props.textArea ? 4 : 1}
                 onChangeText={(text) => {
                     props.setValue(text);
                     props.onChangeText?.(text);
@@ -45,6 +48,8 @@ const ThemedInput = forwardRef(function ThemedInput(
                     paddingRight: props.ghost ? 0 : 24,
                     paddingLeft: props.ghost ? 0 : 24,
                     borderWidth: props.ghost ? 0 : 1,
+                    minHeight: props.textArea ? 100 : undefined,
+                    textAlignVertical: props.textArea ? "top" : "center",
                     borderColor: props.ghost ? ThemedColor.tertiary : ThemedColor.lightened,
                     ...(props.textStyle as object),
                 }}

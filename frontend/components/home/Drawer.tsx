@@ -11,6 +11,7 @@ import EditWorkspace from "../modals/edit/EditWorkspace";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -95,6 +96,10 @@ export const Drawer = ({ close }) => {
         ),
         []
     );
+    const handleCreateBlueprint = () => {
+        close();
+        router.push("/(logged-in)/(tabs)/(task)/blueprint/create");
+    };
 
     return (
         <View style={styles(ThemedColor).drawerContainer}>
@@ -248,7 +253,7 @@ export const Drawer = ({ close }) => {
                         paddingHorizontal: HORIZONTAL_PADDING,
                         gap: 8,
                     }}
-                    onPress={() => {}}>
+                    onPress={handleCreateBlueprint}>
                     <ThemedText type="default">+ Build a Blueprint</ThemedText>
                 </TouchableOpacity>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>

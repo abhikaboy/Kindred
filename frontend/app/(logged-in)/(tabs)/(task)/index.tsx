@@ -18,6 +18,7 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Workspace from "./workspace";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import Today from "./today";
+import { router } from "expo-router";
 
 type Props = {};
 
@@ -58,6 +59,7 @@ const Home = (props: Props) => {
     if (selected !== "") {
         return <Workspace />;
     }
+    
 
     return (
         <DrawerLayout
