@@ -18,6 +18,8 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Workspace from "./workspace";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import Today from "./today";
+import { MotiView } from "moti";
+import { Skeleton } from "moti/skeleton";
 
 type Props = {};
 
@@ -26,7 +28,7 @@ const Home = (props: Props) => {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
-    const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks } = useTasks();
+    const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks, fetchingWorkspaces } = useTasks();
     const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
     const [creating, setCreating] = useState(false);
 
@@ -87,26 +89,34 @@ const Home = (props: Props) => {
                             <Timeline />
                         </View>
                         <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }}>
-                            <View style={{ gap: 8, marginTop: 24 }}>
-                                <ThemedText type="subtitle">Recent Workspaces</ThemedText>
+                            <MotiView style={{ gap: 8, marginTop: 24 }}>
+                                <Skeleton>
+                                    <ThemedText type="subtitle">Recent Workspaces</ThemedText>
+                                </Skeleton>
                                 <ScrollView horizontal>
-                                    <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
-                                        <View style={{ flexDirection: "row", gap: 8 }}>
-                                            {workspaces.map((workspace) => (
-                                                <TouchableOpacity
-                                                    key={workspace.name}
-                                                    onPress={() => {
-                                                        setSelected(workspace.name);
-                                                    }}
-                                                    style={{
-                                                        padding: 16,
-                                                        borderRadius: 12,
-                                                        backgroundColor: ThemedColor.lightened,
-                                                    }}>
-                                                    <ThemedText type="lightBody">{workspace.name}</ThemedText>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
+                                    <ConditionalView
+                                        condition={workspaces.length > 0 && !fetchingWorkspaces}
+                                        key="workspaces-container">
+                                        <MotiView style={{ flexDirection: "row", gap: 8 }}>
+                                            <Skeleton.Group key="workspaces-skeleton" show={fetchingWorkspaces}>
+                                                {workspaces.map((workspace) => (
+                                                    <Skeleton key={workspace.name} radius="round">
+                                                        <TouchableOpacity
+                                                            key={workspace.name}
+                                                            onPress={() => {
+                                                                setSelected(workspace.name);
+                                                            }}
+                                                            style={{
+                                                                padding: 16,
+                                                                borderRadius: 12,
+                                                                backgroundColor: ThemedColor.lightened,
+                                                            }}>
+                                                            <ThemedText type="lightBody">{workspace.name}</ThemedText>
+                                                        </TouchableOpacity>
+                                                    </Skeleton>
+                                                ))}
+                                            </Skeleton.Group>
+                                        </MotiView>
                                     </ConditionalView>
                                     <TouchableOpacity
                                         onPress={() => setCreating(true)}
@@ -118,7 +128,7 @@ const Home = (props: Props) => {
                                         <ThemedText type="lightBody">+ Create Workspace</ThemedText>
                                     </TouchableOpacity>
                                 </ScrollView>
-                            </View>
+                            </MotiView>
                             <View style={{ gap: 8 }}>
                                 <ThemedText type="subtitle">Due Today</ThemedText>
                                 <ScrollView contentContainerStyle={{ gap: 8 }}>

@@ -237,7 +237,7 @@ export default function Task() {
                                     backgroundColor: ThemedColor.lightened,
                                     paddingVertical: 8,
                                     fontSize: 16,
-                                    color: ThemedColor.body,
+                                    color: ThemedColor.text,
                                     fontFamily: "OutfitLight",
                                 }}
                             />

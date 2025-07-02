@@ -21,6 +21,7 @@ type TaskContextType = {
     addWorkspace: (name: string, category: Categories) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
+    fetchingWorkspaces: boolean;
 
     setCreateCategory: (Option: Option) => void;
     selectedCategory: Option; // category name
@@ -45,7 +46,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [selected, setSelected] = useState<string>(""); // Workspace
     const [categories, setCategories] = useState<Categories[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
-
+    const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
 
     const [showConfetti, setShowConfetti] = useState(false);
@@ -117,9 +118,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     };
 
     const fetchWorkspaces = async () => {
+        setFetchingWorkspaces(true);
         console.log("fetching workspaces via API");
         const data = await fetchUserWorkspaces(user._id);
         setWorkSpaces(data);
+        setFetchingWorkspaces(false);
     };
 
     /**
@@ -231,6 +234,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 pastDueTasks,
                 futureTasks,
                 allTasks,
+                fetchingWorkspaces,
             }}>
             {children}
         </TaskContext.Provider>
