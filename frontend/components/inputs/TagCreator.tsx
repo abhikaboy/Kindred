@@ -55,9 +55,9 @@ const TagCreator = ({ onTagsChange, placeholder = "Add tags...", initialTags = [
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
-                    Tags
+            <View style={styles.header} >
+                <ThemedText type="lightBody">
+                    Tag
                 </ThemedText>
 
                 <ThemedText type="caption" style={styles.helperText}>
@@ -67,12 +67,12 @@ const TagCreator = ({ onTagsChange, placeholder = "Add tags...", initialTags = [
                 </ThemedText>
             </View>
             <ThemedInput
-                value={inputValue}
-                setValue={handleInputChange}
-                placeHolder={placeholder}
-                onSubmit={handleInputSubmit}
-                onChangeText={handleInputChange}
-            />
+                    value={inputValue}
+                    setValue={handleInputChange}
+                    placeHolder={placeholder}
+                    onSubmit={handleInputSubmit}
+                    onChangeText={handleInputChange}
+                />
 
             {tags.length > 0 && (
                 <View style={styles.tagsContainer}>
@@ -101,8 +101,8 @@ const createStyles = (ThemedColor: any) =>
             width: "100%",
         },
         header: {
-            flexDirection: "row",
-            justifyContent: "space-between",
+            flexDirection: "row", 
+            justifyContent: "space-between"
         },
         tagsContainer: {
             flexDirection: "row",
@@ -115,7 +115,6 @@ const createStyles = (ThemedColor: any) =>
             paddingHorizontal: 12,
             paddingVertical: 6,
             backgroundColor: ThemedColor.primary,
-            borderWidth: 1,
             borderRadius: 8,
             gap: 6,
         },

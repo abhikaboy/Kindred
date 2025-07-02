@@ -98,7 +98,7 @@ export const Drawer = ({ close }) => {
     );
     const handleCreateBlueprint = () => {
         close();
-        router.push("/(logged-in)/(tabs)/(task)/blueprint/create");
+        router.push("/blueprint/create");
     };
 
     return (
