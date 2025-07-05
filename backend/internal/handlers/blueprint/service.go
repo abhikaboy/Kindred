@@ -166,3 +166,44 @@ func (s *Service) UnsubscribeFromBlueprint(blueprintID, userID primitive.ObjectI
 	}
 	return nil
 }
+
+func (s *Service) SearchBlueprints(query string) ([]BlueprintDocument, error) {
+	ctx := context.Background()
+	slog.Info("Searching blueprints", "query", query)
+	cursor, err := s.Blueprints.Aggregate(ctx, mongo.Pipeline{
+		bson.D{
+			{"$search", bson.D{
+				{"index", "blueprints_text"},
+				{"text", bson.D{
+					{"query", query},
+					{"path", bson.A{"name", "description", "tags", "owner.handle"}},
+					{"fuzzy", bson.D{{"maxEdits", 2}}},
+				}},
+			}},
+		},
+		bson.D{
+			{"$sort", bson.D{{"score", -1}, {"timestamp", -1}}},
+		},
+		bson.D{
+			{"$limit", 10},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	slog.Info("Cursor", "cursor length", cursor.RemainingBatchLength())
+
+	var internalResults []BlueprintDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
+		return nil, err
+	}
+
+	results := make([]BlueprintDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
+	}
+
+	return results, nil
+}

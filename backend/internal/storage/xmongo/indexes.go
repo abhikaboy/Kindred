@@ -81,4 +81,33 @@ var SearchIndexes = []SearchIndex{
 			Options: options.SearchIndexes().SetName("display_name_text"),
 		},
 	},
+	{
+		Collection: "blueprints",
+		Model: mongo.SearchIndexModel{
+			Definition: bson.D{
+				{Key: "mappings", Value: bson.D{
+					{Key: "dynamic", Value: true},
+					{Key: "fields", Value: bson.D{
+						{Key: "name", Value: bson.D{
+							{Key: "type", Value: "string"},
+							{Key: "analyzer", Value: "lucene.standard"},
+						}},
+						{Key: "description", Value: bson.D{
+							{Key: "type", Value: "string"},
+							{Key: "analyzer", Value: "lucene.standard"},
+						}},
+						{Key: "tags", Value: bson.D{
+							{Key: "type", Value: "string"},
+							{Key: "analyzer", Value: "lucene.standard"},
+						}},
+						{Key: "owner.handle", Value: bson.D{
+							{Key: "type", Value: "string"},
+							{Key: "analyzer", Value: "lucene.standard"},
+						}},
+					}},
+				}},
+			},
+			Options: options.SearchIndexes().SetName("blueprints_text"),
+		},
+	},
 }

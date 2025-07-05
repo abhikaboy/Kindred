@@ -185,3 +185,11 @@ func (h *Handler) UnsubscribeFromBlueprintHuma(ctx context.Context, input *Unsub
 	resp.Body.Message = "Unsubscribed from blueprint successfully"
 	return resp, nil
 }
+
+func (h *Handler) SearchBlueprintsHuma(ctx context.Context, input *SearchBlueprintsInput) (*SearchBlueprintsOutput, error) {
+	blueprints, err := h.service.SearchBlueprints(input.Query)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to search blueprints", err)
+	}
+	return &SearchBlueprintsOutput{Body: blueprints}, nil
+}
