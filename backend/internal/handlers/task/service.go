@@ -799,3 +799,18 @@ func (s *Service) GetTemplateByID(id primitive.ObjectID) (*TemplateTaskDocument,
 	err := s.TemplateTasks.FindOne(ctx, bson.M{"_id": id}).Decode(&template)
 	return &template, err
 }
+
+func (s *Service) GetCompletedTasks(userId primitive.ObjectID) ([]TaskDocument, error) {
+	ctx := context.Background()
+	cursor, err := s.CompletedTasks.Find(ctx, bson.M{"userID": userId})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
