@@ -25,6 +25,7 @@
         "@react-native-picker/picker": "2.11.0",
         "@tanstack/react-query": "^5.80.6",
         "@testing-library/react-native": "^12.9.0",
+        "ajv-keywords": "^5.1.0",
         "axios": "^1.7.9",
         "babel-plugin-module-resolver": "^5.0.2",
         "date-fns": "^4.1.0",
@@ -81,7 +82,7 @@
         "react-native-simple-confetti": "^0.1.2",
         "react-native-star-rating-widget": "^1.9.2",
         "react-native-svg": "^15.12.0",
-        "react-native-svg-transformer": "^1.5.0",
+        "react-native-svg-transformer": "^1.5.1",
         "react-native-toastable": "^0.5.0",
         "react-native-web": "^0.20.0",
         "react-native-webview": "13.13.5",
@@ -106,6 +107,10 @@
         "jest-expo": "~53.0.5",
         "react-test-renderer": "18.3.1",
         "typescript": "^5.8.3"
+    },
+    "resolutions": {
+        "ajv": "^8.9.0",
+        "ajv-keywords": "^5.1.0"
     },
     "private": true
 }

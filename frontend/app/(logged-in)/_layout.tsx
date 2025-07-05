@@ -1,7 +1,7 @@
 // redirect to login if not logged in
 import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { Redirect, Stack, useRouter } from "expo-router";
+import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
 import { ScrollView, View, ActivityIndicator } from "react-native";
@@ -141,25 +141,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         return <Stack screenOptions={{ headerShown: false }} />;
     }
 
-    return (
-        <>
-            <BlueprintCreationProvider>
-                <Stack
-                    screenOptions={{
-                        headerShown: false,
-                        headerTransparent: true,
-                        headerLeft: (tab) => <BackButton />,
-                        headerBackButtonDisplayMode: "minimal",
-                        headerTitleStyle: {
-                            fontFamily: "Outfit",
-                            fontWeight: 100,
-                            fontSize: 1,
-                        },
-                    }}
-                />
-            </BlueprintCreationProvider>
-        </>
-    );
+    return <Stack screenOptions={{ headerShown: false }} />;
 };
 
 export default layout;

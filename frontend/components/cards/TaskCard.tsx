@@ -11,6 +11,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -52,6 +53,14 @@ const TaskCard = ({
     const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
 
+    const debouncedRedirect = useDebounce(() => {
+        if (!redirect) return;
+        router.push({
+            pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
+            params: { name: content, id: id, categoryId: categoryId },
+        });
+    }, 100);
+
     useEffect(() => {
         return () => {
             isMounted.current = false;
@@ -89,13 +98,9 @@ const TaskCard = ({
         if (encourage) {
             console.log("encouragement!");
         }
-        if (!redirect) return;
-        router.push({
-            pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-            params: { name: content, id: id, categoryId: categoryId },
-        });
         if (task) {
             setTask(task);
+            debouncedRedirect();
         } else {
             // theres some error
         }

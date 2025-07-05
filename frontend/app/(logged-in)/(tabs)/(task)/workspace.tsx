@@ -50,7 +50,7 @@ const Workspace = (props: Props) => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        zIndex: 1000,
+                        zIndex: 10,
                         height: Dimensions.get("screen").height,
                     }}>
                     <ConfettiCannon

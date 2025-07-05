@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useColorScheme, View } from "react-native";
+import { Dimensions, useColorScheme, View } from "react-native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Slot, Stack } from "expo-router";
@@ -102,36 +102,23 @@ export default function RootLayout() {
             <AuthProvider>
                 <TasksProvider>
                     <TaskCreationProvider>
-                        <GestureHandlerRootView style={{ flex: 1 }}>
-                            <BottomSheetModalProvider>
-                                <Toastable
-                                    statusMap={{
-                                        success: ThemedColor.success,
-                                        danger: ThemedColor.danger,
-                                        warning: ThemedColor.warning,
-                                        info: ThemedColor.primary,
-                                    }}
-                                    offset={top}
-                                />
-                                {/* In Expo Router v2 and SDK 53, we use Slot instead of NavigationContainer */}
-                                <Stack
-                                    screenOptions={{
-                                        headerShown: true,
-                                        headerTransparent: true,
-                                        headerLeft: (tab) => <BackButton />,
-                                        headerTintColor: ThemedColor.text,
-                                        headerBackButtonDisplayMode: "minimal",
-                                        headerTitleStyle: {
-                                            fontFamily: "Outfit",
-                                            fontWeight: 100,
-                                            fontSize: 1,
-                                            color: ThemedColor.primary,
-                                        },
-                                    }}
-                                />
-                                <StatusBar style="light" />
-                            </BottomSheetModalProvider>
-                        </GestureHandlerRootView>
+                        <BlueprintCreationProvider>
+                            <GestureHandlerRootView style={{ flex: 1 }}>
+                                <BottomSheetModalProvider>
+                                    <Toastable
+                                        statusMap={{
+                                            success: ThemedColor.success,
+                                            danger: ThemedColor.danger,
+                                            warning: ThemedColor.warning,
+                                            info: ThemedColor.primary,
+                                        }}
+                                        offset={top}
+                                    />
+                                    <Slot />
+                                    <StatusBar style="light" />
+                                </BottomSheetModalProvider>
+                            </GestureHandlerRootView>
+                        </BlueprintCreationProvider>
                     </TaskCreationProvider>
                 </TasksProvider>
             </AuthProvider>

@@ -71,7 +71,6 @@ export default function TabLayout() {
                 options={{
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
-                    href: "/",
                     tabBarBadge: 1,
                 }}
             />
