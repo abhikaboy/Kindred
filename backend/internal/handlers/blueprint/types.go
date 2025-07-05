@@ -8,6 +8,95 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Input/Output types for blueprint operations
+
+// Create Blueprint
+type CreateBlueprintInput struct {
+	Authorization string                `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          CreateBlueprintParams `json:"body"`
+}
+
+type CreateBlueprintOutput struct {
+	Body BlueprintDocument `json:"body"`
+}
+
+// Get Blueprints (all)
+type GetBlueprintsInput struct{}
+
+type GetBlueprintsOutput struct {
+	Body []BlueprintDocument `json:"body"`
+}
+
+// Get Blueprint by ID
+type GetBlueprintInput struct {
+	ID string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetBlueprintOutput struct {
+	Body BlueprintDocument `json:"body"`
+}
+
+// Update Blueprint
+type UpdateBlueprintInput struct {
+	Authorization string                  `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                  `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                  `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateBlueprintDocument `json:"body"`
+}
+
+type UpdateBlueprintOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Blueprint updated successfully"`
+	}
+}
+
+// Delete Blueprint
+type DeleteBlueprintInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type DeleteBlueprintOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Blueprint deleted successfully"`
+	}
+}
+
+// Subscribe to Blueprint
+type SubscribeToBlueprintInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type SubscribeToBlueprintOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Subscribed to blueprint successfully"`
+	}
+}
+
+// Unsubscribe from Blueprint
+type UnsubscribeFromBlueprintInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type UnsubscribeFromBlueprintOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Unsubscribed from blueprint successfully"`
+	}
+}
+
+type SearchBlueprintsInput struct {
+	Query string `query:"query" example:"morning routine"`
+}
+
+type SearchBlueprintsOutput struct {
+	Body []BlueprintDocument `json:"body"`
+}
 type CreateBlueprintParams struct {
 	Banner      string   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
 	Name        string   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`
@@ -88,3 +177,4 @@ type Service struct {
 	Blueprints *mongo.Collection
 	Users      *mongo.Collection
 }
+
