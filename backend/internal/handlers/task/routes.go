@@ -32,4 +32,5 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterUpdateTaskNotesOperation(api, handler)
 	RegisterUpdateTaskChecklistOperation(api, handler)
 	RegisterGetTemplateByIDOperation(api, handler)
+	RegisterGetCompletedTasksOperation(api, handler)
 }

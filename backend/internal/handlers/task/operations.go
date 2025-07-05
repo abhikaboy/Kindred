@@ -172,6 +172,18 @@ type UpdateTaskChecklistOutput struct {
 	}
 }
 
+// Get Completed Tasks
+// Input for fetching completed tasks for a user
+// Output is a list of TaskDocument
+
+type GetCompletedTasksInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type GetCompletedTasksOutput struct {
+	Body []TaskDocument `json:"body"`
+}
+
 // Operation registrations
 
 func RegisterGetTasksByUserOperation(api huma.API, handler *Handler) {
@@ -337,4 +349,15 @@ func RegisterGetTemplateByIDOperation(api huma.API, handler *Handler) {
 		Description: "Retrieve a template by its ID",
 		Tags:        []string{"tasks"},
 	}, handler.GetTemplateByID)
+}
+
+func RegisterGetCompletedTasksOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-completed-tasks",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tasks/completed",
+		Summary:     "Get completed tasks",
+		Description: "Retrieve all completed tasks for the logged in user",
+		Tags:        []string{"tasks"},
+	}, handler.GetCompletedTasks)
 }

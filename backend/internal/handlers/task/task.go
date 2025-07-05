@@ -467,3 +467,22 @@ func (h *Handler) GetTemplateByID(ctx context.Context, input *GetTemplateByIDInp
 
 	return &GetTemplateByIDOutput{Body: *template}, nil
 }
+
+func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTasksInput) (*GetCompletedTasksOutput, error) {
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	tasks, err := h.service.GetCompletedTasks(userObjID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
+	}
+
+	return &GetCompletedTasksOutput{Body: tasks}, nil
+}
