@@ -19,6 +19,7 @@ require (
 	github.com/gofiber/contrib/socketio v1.1.6
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/lmittmann/tint v1.1.2
 	github.com/oliveroneill/exponent-server-sdk-golang v0.0.0-20210823140141-d050598be512
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 )
@@ -45,7 +46,6 @@ require (
 	github.com/gofiber/contrib/websocket v1.3.4 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/lmittmann/tint v1.1.2 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
