@@ -20,7 +20,10 @@ import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import Today from "./today";
 import { MotiView } from "moti";
 import { Skeleton } from "moti/skeleton";
-
+import { useNavigation, useRouter } from "expo-router";
+import BasicCard from "@/components/cards/BasicCard";
+import DashboardCards from "@/components/dashboard/DashboardCards";
+// import Sparkle from "@/assets/icons/sparkle.svg";
 type Props = {};
 
 const Home = (props: Props) => {
@@ -31,6 +34,9 @@ const Home = (props: Props) => {
     const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks, fetchingWorkspaces } = useTasks();
     const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
     const [creating, setCreating] = useState(false);
+
+    const router = useRouter();
+    const navigation = useNavigation();
 
     const safeAsync = useSafeAsync();
 
@@ -46,6 +52,7 @@ const Home = (props: Props) => {
                 console.error("Error fetching workspaces:", error);
             }
         };
+        console.log("loading workspaces");
 
         loadWorkspaces();
     }, [user]);
@@ -81,18 +88,17 @@ const Home = (props: Props) => {
                         <ThemedText type="title" style={styles.title}>
                             Welcome {user?.display_name}! ☀️
                         </ThemedText>
-                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                            <ThemedText type="lightBody">{new Date().toDateString()}</ThemedText>
-                            <Ionicons name="return-down-back-outline" size={24} color={ThemedColor.text} />
-                        </View>
-                        <View style={{ marginTop: 8 }}>
-                            <Timeline />
-                        </View>
+
                         <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }}>
-                            <MotiView style={{ gap: 8, marginTop: 24 }}>
-                                <Skeleton>
-                                    <ThemedText type="subtitle">Recent Workspaces</ThemedText>
-                                </Skeleton>
+                            <MotiView style={{ gap: 16, marginTop: 24 }}>
+                                <BasicCard>
+                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                        <ThemedText type="default">Encouragements</ThemedText>
+                                        <ThemedText type="default">2</ThemedText>
+                                    </View>
+                                </BasicCard>
+                                <DashboardCards />
+                                <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView horizontal>
                                     <ConditionalView
                                         condition={workspaces.length > 0 && !fetchingWorkspaces}
@@ -129,46 +135,6 @@ const Home = (props: Props) => {
                                     </TouchableOpacity>
                                 </ScrollView>
                             </MotiView>
-                            <View style={{ gap: 8 }}>
-                                <ThemedText type="subtitle">Due Today</ThemedText>
-                                <ScrollView contentContainerStyle={{ gap: 8 }}>
-                                    {dueTodayTasks.map((task) => (
-                                        <SwipableTaskCard
-                                            key={task.id}
-                                            redirect={true}
-                                            categoryId={task.categoryID}
-                                            task={task}
-                                            categoryName={task.categoryName}
-                                        />
-                                    ))}
-                                </ScrollView>
-                            </View>
-                            <View style={{ gap: 8 }}>
-                                <ThemedText type="subtitle">Scheduled for Today</ThemedText>
-                                <ScrollView contentContainerStyle={{ gap: 8 }}>
-                                    {startTodayTasks.map((task) => (
-                                        <SwipableTaskCard
-                                            key={task.id}
-                                            redirect={true}
-                                            categoryId={task.categoryID}
-                                            task={task}
-                                        />
-                                    ))}
-                                </ScrollView>
-                            </View>
-                            <View style={{ gap: 8 }}>
-                                <ThemedText type="subtitle">All Tasks</ThemedText>
-                                <ScrollView contentContainerStyle={{ gap: 8 }}>
-                                    {allTasks.map((task) => (
-                                        <SwipableTaskCard
-                                            key={task.id}
-                                            redirect={true}
-                                            categoryId={task.categoryID}
-                                            task={task}
-                                        />
-                                    ))}
-                                </ScrollView>
-                            </View>
                         </ScrollView>
                     </View>
                 </ConditionalView>

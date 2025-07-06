@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import TaskTabs from "@/components/inputs/TaskTabs";
-import { ErrorBoundaryProps, useLocalSearchParams } from "expo-router";
+import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -189,6 +189,8 @@ export default function Task() {
         }
     };
 
+    const router = useRouter();
+
     console.log(task);
     const updateNotes = useDebounce(async (notes: string) => {
         if (task && categoryId && id) {
@@ -200,11 +202,27 @@ export default function Task() {
         <ThemedView
             style={{
                 flex: 1,
-                paddingTop: Dimensions.get("screen").height * 0.12,
                 paddingHorizontal: HORIZONTAL_PADDING,
                 gap: 16,
+                position: "relative",
+                paddingTop: Dimensions.get("screen").height * 0.07,
             }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
+            <TouchableOpacity
+                onPress={() => router.back()}
+                style={{
+                    zIndex: 1000,
+                    paddingVertical: 16,
+                    left: 0,
+                }}>
+                <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
+            </TouchableOpacity>
+            <View
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    justifyContent: "space-between",
+                }}>
                 <ThemedText type="title" style={{ flexWrap: "wrap", width: "80%" }}>
                     {name}
                     {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
