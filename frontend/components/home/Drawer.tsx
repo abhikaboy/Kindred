@@ -96,6 +96,10 @@ export const Drawer = ({ close }) => {
         ),
         []
     );
+    const handleCreateBlueprint = () => {
+        close();
+        router.push("/blueprint/create");
+    };
 
     return (
         <View style={styles(ThemedColor).drawerContainer}>
@@ -252,7 +256,7 @@ export const Drawer = ({ close }) => {
                         paddingHorizontal: HORIZONTAL_PADDING,
                         gap: 8,
                     }}
-                    onPress={() => {}}>
+                    onPress={handleCreateBlueprint}>
                     <ThemedText type="default">+ Build a Blueprint</ThemedText>
                 </TouchableOpacity>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>

@@ -24,6 +24,8 @@ import { useNavigation, useRouter } from "expo-router";
 import BasicCard from "@/components/cards/BasicCard";
 import DashboardCards from "@/components/dashboard/DashboardCards";
 // import Sparkle from "@/assets/icons/sparkle.svg";
+import { router } from "expo-router";
+
 type Props = {};
 
 const Home = (props: Props) => {
@@ -67,6 +69,7 @@ const Home = (props: Props) => {
     if (selected !== "") {
         return <Workspace />;
     }
+    
 
     return (
         <DrawerLayout

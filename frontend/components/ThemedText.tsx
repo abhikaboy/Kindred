@@ -10,6 +10,7 @@ export type ThemedTextProps = TextProps & {
     type?:
         | "default"
         | "heading"
+        | "fancyFrauncesHeading"
         | "title"
         | "defaultSemiBold"
         | "subtitle"
@@ -40,6 +41,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "title" ? (useStyledHeader ? styles.titleFraunces : styles.title) : undefined,
                 type === "titleFraunces" ? styles.titleFraunces : undefined,
                 type === "heading" ? styles.heading : undefined,
+                type === "fancyFrauncesHeading" ? styles.fancyFrauncesHeading : undefined,
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
                 type === "subtitle" ? styles.subtitle : undefined,
                 type === "link" ? styles.link : undefined,
@@ -88,6 +90,12 @@ const useStyles = (ThemedColor: any, scale: number) =>
             fontSize: 32 * scale,
             fontWeight: 600,
             fontFamily: "Outfit",
+            letterSpacing: -1,
+        },
+        fancyFrauncesHeading: {
+            fontSize: 32 * scale,
+            fontWeight: 600,
+            fontFamily: "Fraunces",
             letterSpacing: -1,
         },
         title: {
