@@ -13,7 +13,13 @@ export const unstable_settings = {
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();
     return (
-        <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+        <View
+            style={{
+                flex: 1,
+                backgroundColor: ThemedColor.background,
+                justifyContent: "center",
+                alignItems: "center",
+            }}>
             <ThemedText type="default">{error.message}</ThemedText>
             <ThemedText type="default" onPress={retry}>
                 Try Again?

@@ -11,6 +11,7 @@ import EditWorkspace from "../modals/edit/EditWorkspace";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -176,24 +177,27 @@ export const Drawer = ({ close }) => {
                     selected={selected == "" ? "Home" : selected}
                     onPress={() => {
                         setSelected("");
+                        router.navigate("/(logged-in)/(tabs)/(task)/");
                         close();
                     }}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
-                    title="Today"
+                    title="Daily"
                     selected={selected}
                     onPress={() => {
-                        setSelected("Today");
+                        setSelected("Daily");
+                        router.navigate("/(logged-in)/(tabs)/(task)/daily");
                         close();
                     }}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
-                    title="Upcoming"
+                    title="Analytics"
                     selected={selected}
                     onPress={() => {
-                        setSelected("");
+                        setSelected("Analytics");
+                        router.navigate("/(logged-in)/(tabs)/(task)/analytics");
                         close();
                     }}
                     onLongPress={() => {}}

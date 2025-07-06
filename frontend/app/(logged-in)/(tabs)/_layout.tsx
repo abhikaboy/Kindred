@@ -44,7 +44,7 @@ export default function TabLayout() {
                         paddingBottom: 0,
                         height: 80,
                         paddingTop: 10,
-                        borderRadius: 500,
+                        borderRadius: 30,
                         width: "90%",
                         overflow: "hidden",
                         alignItems: "center",
@@ -60,7 +60,7 @@ export default function TabLayout() {
                     default: {
                         height: 80,
                         paddingTop: 0,
-                        borderRadius: 500,
+                        borderRadius: 90,
                         width: "90%",
                         overflow: "hidden",
                     },
@@ -72,6 +72,7 @@ export default function TabLayout() {
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
                     tabBarBadge: 1,
+                    href: "/",
                 }}
             />
             <Tabs.Screen

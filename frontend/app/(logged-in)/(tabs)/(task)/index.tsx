@@ -38,13 +38,6 @@ const Home = (props: Props) => {
     const router = useRouter();
     const navigation = useNavigation();
 
-    // useEffect(() => {
-    //     navigation.reset({
-    //         index: 0,
-    //         routes: [{ name: "index" } as any],
-    //     });
-    // }, []);
-
     const safeAsync = useSafeAsync();
 
     useEffect(() => {
@@ -59,6 +52,7 @@ const Home = (props: Props) => {
                 console.error("Error fetching workspaces:", error);
             }
         };
+        console.log("loading workspaces");
 
         loadWorkspaces();
     }, [user]);

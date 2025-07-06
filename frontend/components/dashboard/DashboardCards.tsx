@@ -4,6 +4,7 @@ import DashboardCard from "../cards/DashboardCard";
 import Svg, { Path } from "react-native-svg";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 type Props = {};
 
 const DashboardCards = (props: Props) => {
@@ -21,6 +22,7 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
+                    onPress={() => router.push("/(logged-in)/(tabs)/(task)/daily")}
                 />
                 <DashboardCard
                     title="Analytics"
@@ -32,6 +34,7 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
+                    onPress={() => router.push("/(logged-in)/(tabs)/(task)/analytics")}
                 />
             </View>
 
@@ -46,6 +49,7 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
+                    onPress={() => router.push("/(logged-in)/(tabs)/(task)/calendar")}
                 />
                 <DashboardCard
                     title="Workspaces"
@@ -57,6 +61,9 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
+                    onPress={() => {
+                        router.push("/(logged-in)/(tabs)/(task)/workspaces");
+                    }}
                 />
             </View>
         </View>

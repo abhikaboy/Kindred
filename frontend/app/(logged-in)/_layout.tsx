@@ -57,7 +57,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         setIsLoading(true);
-
+        if (user) {
+            setIsLoading(false);
+            return;
+        }
         if (isLoading) {
             fetchAuthData()
                 .then((user) => {

@@ -6,16 +6,17 @@ import React from "react";
 export type ThemedViewProps = ViewProps & {
     lightColor?: string;
     darkColor?: string;
+    noFlex?: boolean;
 };
 
-export function ThemedView({ style, lightColor, darkColor, ...otherProps }: ThemedViewProps) {
+export function ThemedView({ style, lightColor, darkColor, noFlex, ...otherProps }: ThemedViewProps) {
     let ThemedColor = useThemeColor();
     return (
         <View
             style={[
                 {
                     backgroundColor: ThemedColor.background,
-                    flex: 1,
+                    flex: noFlex ? 1 : 1,
                     flexDirection: "column",
                     minHeight: Dimensions.get("screen").height,
                 },
