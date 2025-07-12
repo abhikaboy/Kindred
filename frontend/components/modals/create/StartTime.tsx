@@ -27,7 +27,7 @@ const StartTime = ({ goToStandard }: Props) => {
                     Set Start Time
                 </ThemedText>
             </View>
-            <View style={{ display: "flex", flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
+            <View style={{ display: "flex", flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
                 <SuggestedTag
                     tag="Now"
                     onPress={() => {

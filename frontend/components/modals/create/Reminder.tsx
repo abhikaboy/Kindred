@@ -1,4 +1,4 @@
-import { View, ScrollView } from "react-native";
+import { View, ScrollView, Dimensions } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
@@ -13,6 +13,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { combineDateAndTime, copyTime } from "@/utils/timeUtils";
 import { add, Duration, sub, addHours, addMinutes } from "date-fns";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
     goToStandard: () => void;
@@ -300,14 +301,14 @@ const Reminder = ({ goToStandard }: Props) => {
                         <PrimaryButton
                             title="Relative"
                             onPress={() => setReminderType("relative")}
-                            style={{ width: "50%", height: 48 }}
+                            style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
                             outline={reminderType !== "relative"}
                         />
                         <PrimaryButton
                             title="Absolute"
                             outline={reminderType !== "absolute"}
                             onPress={() => setReminderType("absolute")}
-                            style={{ width: "50%", height: 48 }}
+                            style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
                         />
                     </View>
                 </View>
@@ -351,7 +352,7 @@ const Reminder = ({ goToStandard }: Props) => {
                             setReminders([reminder]);
                         }
                     }}
-                    style={{ width: "100%", height: 48 }}
+                    style={{ width: "100%", marginBottom: 32 }}
                 />
             </View>
         </View>

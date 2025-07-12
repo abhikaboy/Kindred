@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator } from "react-native";
+import { ScrollView, View, ActivityIndicator, Image } from "react-native";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
@@ -17,6 +17,9 @@ import {
 } from "@/utils/notificationService";
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
+import { MotiView } from "moti";
+import { Skeleton } from "moti/skeleton";
+import { ThemedView } from "@/components/ThemedView";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -45,81 +48,89 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 const layout = ({ children }: { children: React.ReactNode }) => {
-    const { fetchAuthData } = useAuth();
-
+    const { user, fetchAuthData } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
+    const authInitialized = useRef(false);
 
     const router = useRouter();
 
+    // Handle initial authentication - only run once
     useEffect(() => {
-        setIsLoading(true);
-        if (user) {
-            setIsLoading(false);
+        if (authInitialized.current) return;
+
+        const initializeAuth = async () => {
+            try {
+                setIsLoading(true);
+                await fetchAuthData();
+            } catch (error) {
+                console.error("Authentication failed:", error);
+                router.replace("/login");
+            } finally {
+                setIsLoading(false);
+                authInitialized.current = true;
+            }
+        };
+
+        initializeAuth();
+    }, []); // Empty dependency array is correct here
+
+    // Handle authentication state changes
+    useEffect(() => {
+        if (!authInitialized.current) return;
+
+        // If auth was initialized but no user, redirect to login
+        if (!user) {
+            router.replace("/login");
             return;
         }
-        if (isLoading) {
-            fetchAuthData()
-                .then((user) => {
-                    setUser(user);
-                    setIsLoading(false);
-                })
-                .catch((error) => {
-                    setIsLoading(false);
-                    router.replace("/login");
-                });
-        }
 
-        console.log("isLoading", isLoading);
-    }, []);
+        // User is authenticated, stop loading
+        setIsLoading(false);
+    }, [user, router]);
 
-    // Push notification setup - optimized to avoid unnecessary API calls
+    // Push notification setup - only run when user is authenticated
     useEffect(() => {
-        // Only run this once when the user is authenticated
-        if (user) {
-            registerForPushNotificationsAsync().then((result) => {
+        if (!user) return;
+
+        const setupNotifications = async () => {
+            try {
+                const result = await registerForPushNotificationsAsync();
                 if (result) {
                     setExpoPushToken(result.token);
                     console.log("push token", result);
 
-                    // Only send to backend if token is new or changed
-                    // TODO: Uncomment this when we have a way to check if the token is new or changed
-                    // if (result.isNew) {
-                    try {
-                        sendPushTokenToBackend(result.token);
-                    } catch (error) {
-                        console.error("Error sending push token to backend:", error);
-                        showToastable({
-                            message: "Error sending push token to backend",
-                            status: "danger",
-                            position: "top",
-                            offset: 100,
-                            duration: 3000,
-                            onToastableHide: () => {
-                                console.log("Toast hidden");
-                            },
-                        });
-                    }
-                    // }
+                    // Send token to backend
+                    await sendPushTokenToBackend(result.token);
                 }
-            });
+            } catch (error) {
+                console.error("Error setting up push notifications:", error);
+                showToastable({
+                    message: "Error setting up push notifications",
+                    status: "danger",
+                    position: "top",
+                    offset: 100,
+                    duration: 3000,
+                });
+            }
+        };
 
-            // Notification handling remains the same
-            notificationListener.current = addNotificationListener((notification) => {
-                console.log("Notification received:", notification);
-            });
+        setupNotifications();
 
-            responseListener.current = addNotificationResponseListener((response) => {
-                console.log("Notification response:", response);
-                const data = response.notification.request.content.data;
-                if (data?.screen) {
-                    router.push(data.screen);
-                }
-            });
-        }
+        // Set up notification listeners
+        notificationListener.current = addNotificationListener((notification) => {
+            console.log("Notification received:", notification);
+        });
+
+        responseListener.current = addNotificationResponseListener((response) => {
+            console.log("Notification response:", response);
+            const data = response.notification.request.content.data;
+            if (data?.screen) {
+                router.push(data.screen);
+            }
+        });
 
         // Cleanup function
         return () => {
@@ -130,18 +141,36 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 Notifications.removeNotificationSubscription(responseListener.current);
             }
         };
-    }, [user]); // Only run when user changes (auth state changes)
+    }, [user]); // Only run when user changes
 
-    useEffect(() => {
-        console.log("isLoading", isLoading);
-    }, [isLoading]);
-
-    if (!user && !isLoading) {
-        return <Redirect href="/login" />;
+    // Show loading state while authenticating
+    if (isLoading) {
+        return (
+            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <MotiView
+                    from={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{
+                        type: "timing",
+                        duration: 500,
+                    }}
+                    exit={{ opacity: 0, scale: 0.9 }}>
+                    <Image
+                        source={require("@/assets/splash-icon.png")}
+                        style={{
+                            width: 120,
+                            height: 120,
+                            resizeMode: "contain",
+                        }}
+                    />
+                </MotiView>
+            </ThemedView>
+        );
     }
 
-    if (isLoading) {
-        return <Stack screenOptions={{ headerShown: false }} />;
+    // If no user after loading, redirect will be handled by the useEffect above
+    if (!user) {
+        return <Redirect href="/login" />;
     }
 
     return <Stack screenOptions={{ headerShown: false }} />;

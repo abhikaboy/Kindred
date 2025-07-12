@@ -69,7 +69,6 @@ const Home = (props: Props) => {
     if (selected !== "") {
         return <Workspace />;
     }
-    
 
     return (
         <DrawerLayout
@@ -103,13 +102,13 @@ const Home = (props: Props) => {
                                 <DashboardCards />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView horizontal>
-                                    <ConditionalView
-                                        condition={workspaces.length > 0 && !fetchingWorkspaces}
-                                        key="workspaces-container">
+                                    <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
                                         <MotiView style={{ flexDirection: "row", gap: 8 }}>
                                             <Skeleton.Group key="workspaces-skeleton" show={fetchingWorkspaces}>
                                                 {workspaces.map((workspace) => (
-                                                    <Skeleton key={workspace.name} radius="round">
+                                                    <Skeleton
+                                                        key={workspace.name}
+                                                        colors={[ThemedColor.lightened, ThemedColor.lightened + "50"]}>
                                                         <TouchableOpacity
                                                             key={workspace.name}
                                                             onPress={() => {
