@@ -5,10 +5,12 @@ import Svg, { Path } from "react-native-svg";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useTasks } from "@/contexts/tasksContext";
 type Props = {};
 
 const DashboardCards = (props: Props) => {
     const ThemedColor = useThemeColor();
+    const { setSelected } = useTasks();
     return (
         <View style={{ flexDirection: "column", gap: 16, width: "100%" }}>
             <View style={{ flexDirection: "row", gap: 16, width: "100%" }}>
@@ -22,7 +24,10 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
-                    onPress={() => router.push("/(logged-in)/(tabs)/(task)/daily")}
+                    onPress={() => {
+                        setSelected("Daily");
+                        router.push("/(logged-in)/(tabs)/(task)/daily");
+                    }}
                 />
                 <DashboardCard
                     title="Analytics"
@@ -34,7 +39,10 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
-                    onPress={() => router.push("/(logged-in)/(tabs)/(task)/analytics")}
+                    onPress={() => {
+                        setSelected("Analytics");
+                        router.push("/(logged-in)/(tabs)/(task)/analytics");
+                    }}
                 />
             </View>
 
@@ -49,7 +57,10 @@ const DashboardCards = (props: Props) => {
                             />
                         </Svg>
                     }
-                    onPress={() => router.push("/(logged-in)/(tabs)/(task)/calendar")}
+                    onPress={() => {
+                        setSelected("Calendar");
+                        router.push("/(logged-in)/(tabs)/(task)/calendar");
+                    }}
                 />
                 <DashboardCard
                     title="Workspaces"

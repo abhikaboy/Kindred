@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
+import { useReminder, Reminder } from "@/hooks/useReminder";
 
 type TaskCreationContextType = {
     taskName: string;
@@ -62,6 +63,65 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [isPublic, setIsPublic] = useState(false);
 
+    const { getDeadlineReminder, getStartDateReminder } = useReminder();
+
+    // Wrap setDeadline to auto-add 1h-before reminder
+    const setDeadlineWithReminder = (deadline: Date | null) => {
+        setDeadline(deadline);
+        if (deadline) {
+            const reminder = getDeadlineReminder(deadline);
+            if (reminder) {
+                setReminders((prev) => {
+                    // Avoid duplicate reminders for the same triggerTime/type
+                    const exists = prev.some(
+                        (r) =>
+                            r.type === reminder.type &&
+                            r.beforeDeadline &&
+                            Math.abs(r.triggerTime.getTime() - reminder.triggerTime.getTime()) < 60000
+                    );
+                    if (!exists) return [...prev, reminder];
+                    return prev;
+                });
+            }
+        }
+    };
+
+    // Wrap setStartDate to auto-add absolute reminder
+    const setStartDateWithReminder = (startDate: Date | null) => {
+        setStartDate(startDate);
+        if (startDate) {
+            const reminder = getStartDateReminder(startDate, startTime);
+            if (reminder) {
+                setReminders((prev) => {
+                    // Avoid duplicate reminders for the same triggerTime/type
+                    const exists = prev.some(
+                        (r) =>
+                            r.type === reminder.type &&
+                            !r.beforeDeadline &&
+                            Math.abs(r.triggerTime.getTime() - reminder.triggerTime.getTime()) < 60000
+                    );
+                    if (!exists) return [...prev, reminder];
+                    return prev;
+                });
+            }
+        }
+    };
+
+    // Optionally, update startDate reminder if startTime changes
+    const setStartTimeWithReminder = (startTimeVal: Date | null) => {
+        setStartTime(startTimeVal);
+        if (startDate && startTimeVal) {
+            const reminder = getStartDateReminder(startDate, startTimeVal);
+            if (reminder) {
+                setReminders((prev) => {
+                    // Remove old absolute startDate reminders, add new one
+                    const filtered = prev.filter((r) => !(r.type === "ABSOLUTE" && !r.beforeDeadline));
+                    return [...filtered, reminder];
+                });
+            }
+        }
+    };
+
     const setTaskName = (name: string) => {
         setTaskNameState(name);
         // check if the name has the word "at {number}" or "by {number}" or a date
@@ -123,9 +183,9 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 setRecurring,
                 setRecurFrequency,
                 setRecurDetails,
-                setDeadline,
-                setStartTime,
-                setStartDate,
+                setDeadline: setDeadlineWithReminder,
+                setStartDate: setStartDateWithReminder,
+                setStartTime: setStartTimeWithReminder,
             }}>
             {children}
         </TaskCreationContext.Provider>

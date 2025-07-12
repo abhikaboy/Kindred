@@ -63,10 +63,10 @@ const Deadline = ({ goToStandard }: Props) => {
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                contentContainerStyle={{ display: "flex", flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
                 <SuggestedTag
                     caption={new Date().toLocaleDateString()}
-                    tag="EOD Today"
+                    tag="Today"
                     onPress={() => {
                         setTime(new Date(new Date().setHours(23, 59, 59, 999)));
                         goToStandard();
@@ -74,7 +74,7 @@ const Deadline = ({ goToStandard }: Props) => {
                 />
                 <SuggestedTag
                     caption={new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()}
-                    tag="EOD Tomorrow"
+                    tag="Tomorrow"
                     onPress={() => {
                         setTime(new Date(new Date().setHours(23, 59, 59, 999)));
                         goToStandard();
