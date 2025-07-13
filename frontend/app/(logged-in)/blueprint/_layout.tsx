@@ -10,6 +10,7 @@ import Details from "@/components/blueprint/Details";
 import Tasks from "@/components/blueprint/Tasks";
 import StepProgress from "@/components/blueprint/StepTracker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { useBlueprints } from "@/hooks/useBlueprint";
 
 export type BlueprintData = {
     blueprintName: string;
@@ -39,8 +40,11 @@ const BlueprintCreationLayout = () => {
         tasks: [],
     });
 
+    const [isCreating, setIsCreating] = useState(false);
+
     const router = useRouter();
     const ThemedColor = useThemeColor();
+    const { createBlueprint, error} = useBlueprints(); 
 
     const steps = [
         { number: 1, title: "Instruction" },
@@ -51,6 +55,25 @@ const BlueprintCreationLayout = () => {
     const updateBlueprintData = (updates: Partial<BlueprintData>) => {
         setBlueprintData(prev => ({ ...prev, ...updates }));
     };
+
+    const handleCreateBlueprint = async () => {
+        try {
+            setIsCreating(true); 
+            const blueprintRequest = {
+                banner: blueprintData.bannerImage,
+                name: blueprintData.blueprintName, 
+                tags: blueprintData.selectedTags,
+                description: blueprintData.description, 
+                duration: blueprintData.duration
+            };
+
+            const createdBlueprint = await createBlueprint(blueprintRequest);
+        } catch (err) {
+
+        } finally {
+            setIsCreating(false); 
+        }
+    } 
 
     const handleNext = () => {
         if (currentStep < 3) {
@@ -137,7 +160,7 @@ const BlueprintCreationLayout = () => {
                 <PrimaryButton 
                     title={currentStep === 3 ? "Create Blueprint" : "Continue"}
                     onPress={handleNext} 
-                    disabled={!isStepValid()}
+                    disabled={!isStepValid() || isCreating}
                 />
             </View>
         </ThemedView>
