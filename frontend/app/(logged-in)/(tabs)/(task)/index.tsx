@@ -25,6 +25,7 @@ import BasicCard from "@/components/cards/BasicCard";
 import DashboardCards from "@/components/dashboard/DashboardCards";
 // import Sparkle from "@/assets/icons/sparkle.svg";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {};
 
@@ -37,9 +38,7 @@ const Home = (props: Props) => {
     const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
     const [creating, setCreating] = useState(false);
 
-    const router = useRouter();
-    const navigation = useNavigation();
-
+    const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
 
     useEffect(() => {
@@ -80,7 +79,7 @@ const Home = (props: Props) => {
             drawerPosition="left"
             drawerType="front">
             <CreateModal visible={creating} setVisible={setCreating} />
-            <ThemedView style={styles.container}>
+            <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
@@ -170,7 +169,6 @@ const AllClear = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: Dimensions.get("screen").height * 0.09,
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingBottom: Dimensions.get("screen").height * 0.12,
     },

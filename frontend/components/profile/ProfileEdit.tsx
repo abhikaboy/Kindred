@@ -3,6 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "../inputs/PrimaryButton";
+import { router } from "expo-router";
 
 interface ProfileStatsProps {
     friendsCount: number;
@@ -13,7 +14,12 @@ export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
     return (
         <View style={styles.statsContainer}>
             <View style={{ width: "50%" }}>
-                <PrimaryButton title="Edit Profile" onPress={() => {}} />
+                <PrimaryButton
+                    title="Edit Profile"
+                    onPress={() => {
+                        router.push("/(logged-in)/(tabs)/(profile)/edit");
+                    }}
+                />
             </View>
             <View
                 style={{

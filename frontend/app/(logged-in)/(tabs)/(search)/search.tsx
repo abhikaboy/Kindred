@@ -14,6 +14,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import * as Contacts from "expo-contacts";
 import BlueprintCard from "@/components/cards/BlueprintCard";
 import { useBlueprints } from "@/contexts/blueprintContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {};
 
@@ -69,6 +70,8 @@ const Search = (props: Props) => {
         },
     ];
 
+    const insets = useSafeAreaInsets();
+
     const contacts = [
         { id: "1", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
         { id: "2", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
@@ -114,8 +117,8 @@ const Search = (props: Props) => {
         description: string;
         tags: string[];
     };
-    
-    const renderWorkspace = ({ item, index }: { item: Workspace, index: number }) => (
+
+    const renderWorkspace = ({ item, index }: { item: Workspace; index: number }) => (
         <BlueprintCard
             previewImage={item.previewImage}
             workspaceName={item.workspaceName}
@@ -131,20 +134,16 @@ const Search = (props: Props) => {
     );
 
     const renderContacts = ({ item }) => (
-        <ContactCard 
-            name={item.name} 
-            icon={item.icon} 
-            handle={item.handle} 
-            following={item.following} 
-        />
+        <ContactCard name={item.name} icon={item.icon} handle={item.handle} following={item.following} />
     );
 
     return (
         <ThemedView
             style={{
-                paddingVertical: Dimensions.get("screen").height * 0.1,
+                paddingTop: insets.top,
+                paddingBottom: insets.bottom,
             }}>
-            <View style={{paddingHorizontal: 16}}>
+            <View style={{ paddingHorizontal: 16 }}>
                 <SearchBox
                     value={searchTerm}
                     placeholder={"Search for your friends!"}
@@ -158,7 +157,9 @@ const Search = (props: Props) => {
 
             <ScrollView style={{ paddingVertical: Dimensions.get("screen").height * 0.03 }}>
                 <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
-                    <ThemedText style={{ paddingHorizontal: 16 }} type="subtitle">Fitness</ThemedText>
+                    <ThemedText style={{ paddingHorizontal: 16 }} type="subtitle">
+                        Fitness
+                    </ThemedText>
 
                     <FlatList
                         data={workspaces}
@@ -199,7 +200,7 @@ const Search = (props: Props) => {
                     {searched && (
                         <Animated.View style={[focusStyle]} exiting={FadeOut}>
                             <ThemedText type="subtitle">Results</ThemedText>
-                            <ScrollView style={{ marginTop: 20, minHeight: "100%"}}>
+                            <ScrollView style={{ marginTop: 20, minHeight: "100%" }}>
                                 <View>
                                     <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
                                     <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />

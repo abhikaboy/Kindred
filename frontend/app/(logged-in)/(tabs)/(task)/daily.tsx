@@ -11,6 +11,7 @@ import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
 import { useTasks } from "@/contexts/tasksContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {};
 
@@ -28,6 +29,7 @@ const Daily = (props: Props) => {
     const drawerRef = useRef(null);
     const pagerRef = useRef<PagerView>(null);
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
         const d = new Date();
@@ -112,7 +114,7 @@ const Daily = (props: Props) => {
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front">
-            <View style={[styles.container, { flex: 1 }]}>
+            <View style={[styles.container, { flex: 1, paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
@@ -169,7 +171,6 @@ export default Daily;
 
 const styles = StyleSheet.create({
     container: {
-        paddingTop: Dimensions.get("screen").height * 0.09,
         paddingHorizontal: HORIZONTAL_PADDING,
     },
     headerContainer: {
