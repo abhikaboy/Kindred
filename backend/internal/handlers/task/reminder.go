@@ -88,6 +88,7 @@ func ParseReminder(params CreateTaskParams) []*Reminder {
 				Type:           reminder.Type,
 				AfterStart:     reminder.AfterStart,
 				BeforeDeadline: reminder.BeforeDeadline,
+				AfterDeadline:  reminder.AfterDeadline,
 			})
 		}
 		// If the reminder is relative, then the trigger time is a duration from the start date or deadline
@@ -98,12 +99,18 @@ func ParseReminder(params CreateTaskParams) []*Reminder {
 			if reminder.BeforeDeadline {
 				reminder.TriggerTime = params.Deadline.Add(params.Deadline.Sub(reminder.TriggerTime))
 			}
+			if reminder.AfterDeadline {
+				if params.Deadline != nil {
+					reminder.TriggerTime = (*params.Deadline).Add(reminder.TriggerTime.Sub(*params.Deadline))
+				}
+			}
 			reminders = append(reminders, &Reminder{
 				TriggerTime:    reminder.TriggerTime,
 				Sent:           false,
 				Type:           reminder.Type,
 				AfterStart:     reminder.AfterStart,
 				BeforeDeadline: reminder.BeforeDeadline,
+				AfterDeadline:  reminder.AfterDeadline,
 			})
 		}
 	}

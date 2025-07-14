@@ -18,12 +18,14 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import DefaultModal from "@/components/modals/DefaultModal";
 import ReorderCategories from "@/components/modals/ReorderCategories";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {};
 
 const Workspace = (props: Props) => {
     let ThemedColor = useThemeColor();
     const { categories, selected, showConfetti } = useTasks();
+    const insets = useSafeAreaInsets();
 
     const [creating, setCreating] = useState(false);
     const [editing, setEditing] = useState(false);
@@ -70,7 +72,7 @@ const Workspace = (props: Props) => {
             <DefaultModal visible={reordering} setVisible={setReordering}>
                 <ReorderCategories hide={() => setReordering(false)} />
             </DefaultModal>
-            <ThemedView style={styles.container}>
+            <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
@@ -156,7 +158,6 @@ export default Workspace;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: Dimensions.get("screen").height * 0.09,
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingBottom: Dimensions.get("screen").height * 0.12,
     },
