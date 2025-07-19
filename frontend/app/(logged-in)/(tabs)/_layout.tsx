@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Dimensions, Platform, TouchableOpacity, View } from "react-native";
+import { usePathname } from "expo-router";
 
 import { HapticTab } from "@/components/HapticTab";
 import Octicons from "@expo/vector-icons/Octicons";
@@ -16,11 +17,21 @@ export const unstable_settings = {
 
 export default function TabLayout() {
     let ThemedColor = useThemeColor();
+    const pathname = usePathname();
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
     };
+
+    // Define screens where you want to hide the tab bar
+    const hideTabBarScreens = [
+        "/blueprint",
+        "/blueprint/create",
+        // Add other screen paths where you want to hide tabs
+    ];
+
+    const shouldHideTabBar = hideTabBarScreens.some((screen) => pathname.startsWith(screen));
 
     return (
         <Tabs
@@ -41,29 +52,34 @@ export default function TabLayout() {
                     alignItems: "center",
                     justifyContent: "center",
                 },
-                tabBarStyle: Platform.select({
-                    ios: {
-                        borderTopWidth: 1,
-                        borderColor: ThemedColor.tertiary,
-                        position: "absolute",
-                        marginBottom: 32,
-                        marginHorizontal: "3%",
-                        paddingBottom: 0,
-                        borderRadius: 30,
-                        width: "94%",
-                        overflow: "hidden",
-                        borderWidth: 1,
-                        alignItems: "center",
-                    },
-                    android: {
-                        height: 80,
-                        paddingTop: 0,
-                        borderRadius: 500,
-                        width: "90%",
-                        overflow: "hidden",
-                        alignItems: "center",
-                    },
-                }),
+                tabBarStyle: shouldHideTabBar
+                    ? { display: "none" }
+                    : Platform.select({
+                          ios: {
+                              borderTopWidth: 1,
+                              borderColor: ThemedColor.tertiary,
+                              position: "absolute",
+                              marginBottom: 32,
+                              marginHorizontal: "3%",
+                              paddingBottom: 0,
+                              borderRadius: 30,
+                              width: "94%",
+                              overflow: "hidden",
+                              borderWidth: 1,
+                              alignItems: "center",
+                          },
+                          android: {
+                              height: 80,
+                              paddingTop: 0,
+                              borderRadius: 500,
+                              width: "90%",
+                              overflow: "hidden",
+                              alignItems: "center",
+                          },
+                      }),
+                cardStyle: {
+                    backgroundColor: ThemedColor.background, // Use theme background
+                },
             }}>
             <Tabs.Screen
                 name="(task)"

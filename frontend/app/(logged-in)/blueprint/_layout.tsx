@@ -11,6 +11,7 @@ import Tasks from "@/components/blueprint/Tasks";
 import StepProgress from "@/components/blueprint/StepTracker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createBlueprintToBackend } from "@/api/blueprint";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type BlueprintData = {
     blueprintName: string;
@@ -32,6 +33,7 @@ export type Task = {
 
 const BlueprintCreationLayout = () => {
     const [currentStep, setCurrentStep] = useState(1);
+    const insets = useSafeAreaInsets();
     const [blueprintData, setBlueprintData] = useState<BlueprintData>({
         blueprintName: "",
         selectedTags: [],
@@ -39,7 +41,7 @@ const BlueprintCreationLayout = () => {
         description: "",
         duration: "",
         tasks: [],
-        category: "", 
+        category: "",
     });
 
     const [isCreating, setIsCreating] = useState(false);
@@ -59,16 +61,16 @@ const BlueprintCreationLayout = () => {
 
     const handleCreateBlueprint = async () => {
         try {
-            setIsCreating(true); 
-            
+            setIsCreating(true);
+
             const createdBlueprint = await createBlueprintToBackend(
                 blueprintData.bannerImage,
                 blueprintData.blueprintName,
                 blueprintData.selectedTags,
                 blueprintData.description,
-                blueprintData.duration,
+                blueprintData.duration
             );
-            
+
             if (createdBlueprint) {
                 console.log("Blueprint created successfully:", createdBlueprint);
                 router.back();
@@ -76,9 +78,9 @@ const BlueprintCreationLayout = () => {
         } catch (error) {
             console.error("Error creating blueprint:", error);
         } finally {
-            setIsCreating(false); 
+            setIsCreating(false);
         }
-    }
+    };
 
     const handleNext = () => {
         if (currentStep < 3) {
@@ -122,7 +124,7 @@ const BlueprintCreationLayout = () => {
         }
     };
 
-    const styles = createStyles(ThemedColor);
+    const styles = createStyles(ThemedColor, insets);
 
     return (
         <ThemedView style={styles.container}>
@@ -157,13 +159,12 @@ const BlueprintCreationLayout = () => {
     );
 };
 
-const createStyles = (ThemedColor: any) =>
+const createStyles = (ThemedColor: any, insets: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
             backgroundColor: ThemedColor.background,
-            paddingTop: 60,
-            paddingBottom: 100,
+            paddingTop: insets.top,
         },
         header: {
             flexDirection: "row",
@@ -179,6 +180,7 @@ const createStyles = (ThemedColor: any) =>
         },
         scrollView: {
             flex: 1,
+            height: "100%",
         },
         scrollContent: {
             paddingHorizontal: 20,
@@ -187,8 +189,7 @@ const createStyles = (ThemedColor: any) =>
         },
         continueButtonContainer: {
             paddingHorizontal: 20,
-            paddingTop: 12,
-            paddingBottom: 36,
+            paddingBottom: insets.bottom,
         },
         continueButton: {
             paddingVertical: 16,

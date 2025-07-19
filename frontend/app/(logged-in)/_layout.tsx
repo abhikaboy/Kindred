@@ -54,7 +54,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
     const authInitialized = useRef(false);
-
+    const ThemedColor = useThemeColor();
     const router = useRouter();
 
     // Handle initial authentication - only run once
@@ -173,7 +173,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         return <Redirect href="/login" />;
     }
 
-    return <Stack screenOptions={{ headerShown: false }} />;
+    return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />;
 };
 
 export default layout;
