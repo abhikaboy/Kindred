@@ -12,30 +12,42 @@ import PreviewIcon from "@/components/profile/PreviewIcon";
 import { PanGestureHandler, State } from "react-native-gesture-handler";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 
+const blueprintImage = require("@/assets/images/blueprintReplacement.png");
+
 export default function BlueprintDetailScreen() {
     const { id } = useLocalSearchParams();
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
 
-    const { selectedBlueprint, getBlueprintById, setSelectedBlueprint } = useBlueprints();
+    const { selectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe } = useBlueprints();
 
     if (!selectedBlueprint) {
         return (
-            <ThemedView>
-                <ThemedText type="subtitle">Navigate back to the homey home page.</ThemedText>
+            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ThemedText type="subtitle">Navigate back to the home page.</ThemedText>
             </ThemedView>
         );
     }
 
+    const isSubscribed = getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []);
+    const isLoading = getIsLoading(selectedBlueprint.id);
+    const currentSubscriberCount = getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscriberCount);
+
+    const onSubscribePress = async () => {
+        await handleSubscribe(selectedBlueprint.id, selectedBlueprint.subscribers || []);
+    };
+
+    const getImageSource = () => {
+        if (selectedBlueprint.previewImage && selectedBlueprint.previewImage.trim() !== "") {
+            return { uri: selectedBlueprint.previewImage };
+        }
+        return blueprintImage;
+    };
+
     return (
         <ParallaxScrollView
             headerBackgroundColor={{ light: ThemedColor.background, dark: ThemedColor.background }}
-            headerImage={
-                <Image
-                    source={{uri: selectedBlueprint.previewImage}}
-                    style={styles.headerImage}
-                />
-            }>
+            headerImage={<Image source={getImageSource()} style={styles.headerImage} />}>
             <View style={styles.informationContainer}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <View style={{ flexDirection: "row", gap: 14 }}>
@@ -48,10 +60,14 @@ export default function BlueprintDetailScreen() {
                     </View>
 
                     <PrimaryButton
-                        style={{ height: 38, width: 85, paddingVertical: 10, paddingHorizontal: 10 }}
-                        title={"Subscribe"}
-                        onPress={() => console.log("subscribed to")}></PrimaryButton>
+                        style={{ height: 38, width: 100, paddingVertical: 10, paddingHorizontal: 10 }}
+                        title={isLoading ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
+                        outline={isSubscribed}
+                        onPress={onSubscribePress}
+                        disabled={isLoading}
+                    />
                 </View>
+
                 <ThemedText type="subtitle">{selectedBlueprint.workspaceName}</ThemedText>
                 <ThemedText type="default">{selectedBlueprint.description}</ThemedText>
 
@@ -62,10 +78,10 @@ export default function BlueprintDetailScreen() {
 
                 <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                     <Feather name="users" size={18} color={ThemedColor.caption} />
-
-                    <ThemedText type="caption">{selectedBlueprint.subscriberCount} subscribers</ThemedText>
+                    <ThemedText type="caption">{currentSubscriberCount} subscribers</ThemedText>
                 </View>
-                <View style={{ alignItems: "center", flexDirection: "row", gap: 10 }}>
+
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
                     {selectedBlueprint.tags.map((tag, index) => (
                         <ThemedText
                             key={index}
@@ -92,15 +108,14 @@ const stylesheet = (ThemedColor: any) =>
             resizeMode: "cover",
         },
         informationContainer: {
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
             flexDirection: "column",
-            paddingVertical: 18,
-            marginHorizontal: -12,
-
+            paddingHorizontal: 20,
+            paddingVertical: 24,
             gap: 13,
             backgroundColor: ThemedColor.background,
-            marginTop: -20,
+            marginTop: -23,
         },
         tag: {
             borderWidth: 1,

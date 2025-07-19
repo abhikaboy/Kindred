@@ -10,6 +10,7 @@ import Details from "@/components/blueprint/Details";
 import Tasks from "@/components/blueprint/Tasks";
 import StepProgress from "@/components/blueprint/StepTracker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { createBlueprintToBackend } from "@/api/blueprint";
 
 export type BlueprintData = {
     blueprintName: string;
@@ -18,6 +19,7 @@ export type BlueprintData = {
     description: string;
     duration: string;
     tasks: Task[];
+    category: string;
 };
 
 export type Task = {
@@ -37,7 +39,10 @@ const BlueprintCreationLayout = () => {
         description: "",
         duration: "",
         tasks: [],
+        category: "", 
     });
+
+    const [isCreating, setIsCreating] = useState(false);
 
     const router = useRouter();
     const ThemedColor = useThemeColor();
@@ -49,14 +54,37 @@ const BlueprintCreationLayout = () => {
     ];
 
     const updateBlueprintData = (updates: Partial<BlueprintData>) => {
-        setBlueprintData(prev => ({ ...prev, ...updates }));
+        setBlueprintData((prev) => ({ ...prev, ...updates }));
     };
+
+    const handleCreateBlueprint = async () => {
+        try {
+            setIsCreating(true); 
+            
+            const createdBlueprint = await createBlueprintToBackend(
+                blueprintData.bannerImage,
+                blueprintData.blueprintName,
+                blueprintData.selectedTags,
+                blueprintData.description,
+                blueprintData.duration,
+            );
+            
+            if (createdBlueprint) {
+                console.log("Blueprint created successfully:", createdBlueprint);
+                router.back();
+            }
+        } catch (error) {
+            console.error("Error creating blueprint:", error);
+        } finally {
+            setIsCreating(false); 
+        }
+    }
 
     const handleNext = () => {
         if (currentStep < 3) {
             setCurrentStep(currentStep + 1);
         } else {
-            console.log("Creating blueprint:", blueprintData);
+            handleCreateBlueprint();
         }
     };
 
@@ -71,26 +99,11 @@ const BlueprintCreationLayout = () => {
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
-                return (
-                    <Instructions 
-                        data={blueprintData}
-                        onUpdate={updateBlueprintData}
-                    />
-                );
+                return <Instructions data={blueprintData} onUpdate={updateBlueprintData} />;
             case 2:
-                return (
-                    <Details 
-                        data={blueprintData}
-                        onUpdate={updateBlueprintData}
-                    />
-                );
+                return <Details data={blueprintData} onUpdate={updateBlueprintData} />;
             case 3:
-                return (
-                    <Tasks 
-                        data={blueprintData}
-                        onUpdate={updateBlueprintData}
-                    />
-                );
+                return <Tasks data={blueprintData} onUpdate={updateBlueprintData} />;
             default:
                 return null;
         }
@@ -116,7 +129,7 @@ const BlueprintCreationLayout = () => {
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                 <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
             </TouchableOpacity>
-            
+
             <View style={styles.header}>
                 <ThemedText type="fancyFrauncesHeading">New Blueprint</ThemedText>
             </View>
@@ -134,10 +147,10 @@ const BlueprintCreationLayout = () => {
             </ScrollView>
 
             <View style={styles.continueButtonContainer}>
-                <PrimaryButton 
+                <PrimaryButton
                     title={currentStep === 3 ? "Create Blueprint" : "Continue"}
-                    onPress={handleNext} 
-                    disabled={!isStepValid()}
+                    onPress={handleNext}
+                    disabled={!isStepValid() || isCreating}
                 />
             </View>
         </ThemedView>

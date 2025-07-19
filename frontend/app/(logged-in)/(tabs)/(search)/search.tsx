@@ -2,86 +2,29 @@ import { Dimensions, StyleSheet, ScrollView, View, Text, Pressable, Keyboard, Fl
 import React, { useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import TaskCard, { PRIORITY_MAP } from "@/components/cards/TaskCard";
 import { SearchBox } from "@/components/SearchBox";
 import ContactCard from "@/components/cards/ContactCard";
 import { Icons } from "@/constants/Icons";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
-import * as SMS from "expo-sms";
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import * as Contacts from "expo-contacts";
 import BlueprintCard from "@/components/cards/BlueprintCard";
-import { useBlueprints } from "@/contexts/blueprintContext";
+import { getBlueprintsToBackend, searchBlueprintsFromBackend } from "@/api/blueprint";
+import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type Props = {};
 
 const Search = (props: Props) => {
-    const workspaces = [
-        {
-            id: "12345678",
-            previewImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
-            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-            workspaceName: "Tech Innovators",
-            username: "techinnovate",
-            name: "lok ye",
-            time: "2 hours ago",
-            subscriberCount: 1248,
-            description: "A community of tech enthusiasts sharing the latest innovations and projects.",
-            tags: ["AI", "Programming", "Design"],
-        },
-        {
-            id: "123456789",
-            previewImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-            workspaceName: "Creative Minds",
-            username: "creativeminds",
-            name: "lok ye",
-            time: "1 day ago",
-            subscriberCount: 956,
-            description: "A workspace for creative professionals to share ideas and collaborate on projects.",
-            tags: ["AI", "Design", "Marketing"],
-        },
-        {
-            id: "1234567891",
-            previewImage: "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
-            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-            workspaceName: "Tech Innovators",
-            username: "techinnovate",
-            name: "lok ye",
-            time: "2 hours ago",
-            subscriberCount: 1248,
-            description: "A community of tech enthusiasts sharing the latest innovations and projects.",
-            tags: ["Creative", "Programming", "Design"],
-        },
-        {
-            id: "1234567892",
-            previewImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-            userImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-            workspaceName: "Creative Minds",
-            username: "creativeminds",
-            name: "lok ye",
-            time: "1 day ago",
-            subscriberCount: 956,
-            description: "A workspace for creative professionals to share ideas and collaborate on projects.",
-            tags: ["Creative", "Design", "Marketing"],
-        },
-    ];
-
-    const insets = useSafeAreaInsets();
-
-    const contacts = [
-        { id: "1", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "2", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-        { id: "3", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "4", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-    ];
+    const [blueprints, setBlueprints] = React.useState<BlueprintDocument[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
     const [searchTerm, setSearchTerm] = React.useState("");
     const [searched, setSearched] = React.useState(false);
     const [focused, setFocused] = React.useState(false);
+    const [searchResults, setSearchResults] = React.useState<BlueprintDocument[]>([]);
+    const [isSearching, setIsSearching] = React.useState(false);
     const ThemedColor = useThemeColor();
 
     const opacity = useSharedValue(1);
@@ -92,20 +35,56 @@ const Search = (props: Props) => {
         };
     });
 
+    const insets = useSafeAreaInsets();
+
+    useEffect(() => {
+        const loadBlueprints = async () => {
+            setLoading(true);
+            try {
+                const data = await getBlueprintsToBackend();
+                setBlueprints(data);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadBlueprints();
+    }, []);
+
+    const handleSearch = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            setSearched(false);
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const results = await searchBlueprintsFromBackend(query);
+            setSearchResults(results);
+            setSearched(true);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            handleSearch(searchTerm);
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
+
     const onSubmit = () => {
-        setSearched(searchTerm.trim() != "");
+        handleSearch(searchTerm);
     };
 
     useEffect(() => {
         opacity.value = withTiming(focused ? 0.05 : 1);
     }, [focused]);
 
-    const { setBlueprints } = useBlueprints();
-    useEffect(() => {
-        setBlueprints(workspaces);
-    }, []);
-
-    type Workspace = {
+    type Blueprint = {
         id: string;
         previewImage: string;
         userImage: string;
@@ -118,20 +97,44 @@ const Search = (props: Props) => {
         tags: string[];
     };
 
-    const renderWorkspace = ({ item, index }: { item: Workspace; index: number }) => (
+    const renderBlueprint = ({ item }: { item: BlueprintDocument }) => (
         <BlueprintCard
-            previewImage={item.previewImage}
-            workspaceName={item.workspaceName}
-            username={item.username}
-            name={item.name}
-            time={item.time}
-            subscriberCount={item.subscriberCount}
+            previewImage={item.banner}
+            workspaceName={item.name}
+            username={item.owner?.handle || ""}
+            name={item.owner?.display_name || ""}
+            time={new Date(item.timestamp).toLocaleDateString()}
+            subscriberCount={item.subscribersCount}
             description={item.description}
             tags={item.tags}
             id={item.id}
-            userImage={item.userImage}
+            userImage={item.owner?.profile_picture || ""}
+            subscribers={item.subscribers}
         />
     );
+
+    if (loading) {
+        return (
+            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ThemedText>Loading blueprints...</ThemedText>
+            </ThemedView>
+        );
+    }
+
+    if (error) {
+        return (
+            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ThemedText>Error: {error}</ThemedText>
+            </ThemedView>
+        );
+    }
+
+    const contacts = [
+        { id: "1", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
+        { id: "2", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
+        { id: "3", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
+        { id: "4", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
+    ];
 
     const renderContacts = ({ item }) => (
         <ContactCard name={item.name} icon={item.icon} handle={item.handle} following={item.following} />
@@ -157,13 +160,9 @@ const Search = (props: Props) => {
 
             <ScrollView style={{ paddingVertical: Dimensions.get("screen").height * 0.03 }}>
                 <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
-                    <ThemedText style={{ paddingHorizontal: 16 }} type="subtitle">
-                        Fitness
-                    </ThemedText>
-
                     <FlatList
-                        data={workspaces}
-                        renderItem={renderWorkspace}
+                        data={blueprints}
+                        renderItem={renderBlueprint}
                         keyExtractor={(item) => item.id}
                         horizontal={true}
                         showsHorizontalScrollIndicator={false}
@@ -185,30 +184,48 @@ const Search = (props: Props) => {
                             />
                         </Animated.View>
                     )}
-                    <ThemedText type="subtitle" style={{ marginTop: 30, paddingHorizontal: 16 }}>
-                        Creativity
-                    </ThemedText>
-                    <FlatList
-                        data={workspaces}
-                        renderItem={renderWorkspace}
-                        keyExtractor={(item) => item.id}
-                        horizontal={true}
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 16, gap: 20 }}
-                        ItemSeparatorComponent={() => <View style={{ width: 4 }} />}
-                    />
                     {searched && (
                         <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                            <ThemedText type="subtitle">Results</ThemedText>
-                            <ScrollView style={{ marginTop: 20, minHeight: "100%" }}>
-                                <View>
-                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
-                                    <UserInfoRowFollow name={"Abhik Ray"} username={"beak"} icon={Icons.luffy} />
+                            <ThemedText type="subtitle" style={{ paddingHorizontal: 16 }}>
+                                {isSearching ? "Searching..." : "Results"}
+                            </ThemedText>
+
+                            {isSearching ? (
+                                <View style={{ padding: 20, alignItems: "center" }}>
+                                    <ThemedText>Searching blueprints...</ThemedText>
                                 </View>
-                            </ScrollView>
+                            ) : (
+                                <ScrollView style={{ marginTop: 20, minHeight: "100%" }}>
+                                    <View style={{ paddingHorizontal: 16 }}>
+                                        {searchResults.length > 0 ? (
+                                            searchResults.map((blueprint) => (
+                                                <View key={blueprint.id} style={{ marginBottom: 16 }}>
+                                                    <BlueprintCard
+                                                        previewImage={blueprint.banner}
+                                                        workspaceName={blueprint.name}
+                                                        username={blueprint.owner?.handle || ""}
+                                                        name={blueprint.owner?.display_name || ""}
+                                                        time={new Date(blueprint.timestamp).toLocaleDateString()}
+                                                        subscriberCount={blueprint.subscribersCount}
+                                                        description={blueprint.description}
+                                                        tags={blueprint.tags}
+                                                        id={blueprint.id}
+                                                        userImage={blueprint.owner?.profile_picture || ""}
+                                                        subscribers={blueprint.subscribers}
+                                                        large={true}
+                                                    />
+                                                </View>
+                                            ))
+                                        ) : (
+                                            <View style={{ padding: 20, alignItems: "center" }}>
+                                                <ThemedText style={{ textAlign: "center", opacity: 0.7 }}>
+                                                    No blueprints found for "{searchTerm}"
+                                                </ThemedText>
+                                            </View>
+                                        )}
+                                    </View>
+                                </ScrollView>
+                            )}
                         </Animated.View>
                     )}
                 </Pressable>
