@@ -96,6 +96,14 @@ export interface CompleteTaskBody {
     timeTaken: string;
 }
 
+// Relationship status types
+export type RelationshipStatus = "none" | "requested" | "received" | "connected" | "self";
+
+export interface RelationshipInfo {
+    status: RelationshipStatus;
+    request_id?: string;
+}
+
 export interface Profile {
     id: string;
     display_name: string;
@@ -103,4 +111,5 @@ export interface Profile {
     profile_picture: string;
     tasks_complete: number;
     friends: string[];
+    relationship?: RelationshipInfo;
 }

@@ -18,12 +18,14 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
-import { useQuery } from "@tanstack/react-query";
+import FollowButton from "@/components/inputs/FollowButton";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
-import { type Profile } from "@/api/types";
+import { type Profile, type RelationshipStatus } from "@/api/types";
 
 export default function Profile() {
     const { id } = useLocalSearchParams();
+    const queryClient = useQueryClient();
     const fallback_profile = {
         id: "67ef139d4931ee7a9fb630fc",
         display_name: "Coffee!~",
@@ -55,6 +57,20 @@ export default function Profile() {
         enabled: !!id,
     });
 
+    // Handle relationship changes
+    const handleRelationshipChange = (newStatus: RelationshipStatus) => {
+        if (profile) {
+            // Update the profile data in the cache
+            queryClient.setQueryData(["profile", id], {
+                ...profile,
+                relationship: {
+                    ...profile.relationship,
+                    status: newStatus,
+                },
+            });
+        }
+    };
+
     if (isLoading) {
         return <ActivityIndicator />;
     }
@@ -74,8 +90,15 @@ export default function Profile() {
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>
-                    <ProfileStats friendsCount={profile?.friends?.length || 0} />
+                    <ProfileStats friendsCount={profile?.friends?.length || 0} profileUserId={profile?.id} />
                 </View>
+
+                {/* Follow Button */}
+                {profile && (
+                    <View style={styles.followButtonContainer}>
+                        <FollowButton profile={profile} onRelationshipChange={handleRelationshipChange} />
+                    </View>
+                )}
 
                 <TodayStats tasks={2} points={12} streak={242} posts={4} />
 
@@ -84,7 +107,14 @@ export default function Profile() {
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <ConditionalView condition={activeTab == 0}>
-                    <TaskList {...mockTasks} />
+                    <TaskList
+                        {...mockTasks}
+                        encouragementConfig={{
+                            userHandle: profile?.handle,
+                            receiverId: profile?.id || "",
+                            categoryName: "Profile Tasks",
+                        }}
+                    />
                 </ConditionalView>
 
                 <ConditionalView condition={activeTab == 1}>
@@ -116,6 +146,10 @@ const styles = StyleSheet.create({
         gap: 28,
         paddingBottom: 128,
         width: "100%",
+    },
+    followButtonContainer: {
+        width: "100%",
+        alignItems: "center",
     },
     section: {
         gap: 16,

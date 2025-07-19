@@ -65,7 +65,14 @@ export default function Profile() {
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <ConditionalView condition={activeTab == 0}>
-                    <TaskList {...mockTasks} />
+                    <TaskList
+                        {...mockTasks}
+                        encouragementConfig={{
+                            userHandle: user?.handle,
+                            receiverId: user?.id || "",
+                            categoryName: "Profile Tasks",
+                        }}
+                    />
                 </ConditionalView>
 
                 <ConditionalView condition={activeTab == 1}>

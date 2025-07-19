@@ -8,7 +8,9 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	Blueprint "github.com/abhikaboy/Kindred/internal/handlers/blueprint"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
+	congratulation "github.com/abhikaboy/Kindred/internal/handlers/congratulation"
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
+	encouragement "github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
@@ -99,6 +101,10 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	// Register waitlist and blueprint routes
 	Waitlist.Routes(api, collections)
 	Blueprint.Routes(api, collections)
+
+	// Register encouragement and congratulation routes
+	encouragement.Routes(api, collections)
+	congratulation.Routes(api, collections)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)
