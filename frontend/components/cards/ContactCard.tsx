@@ -13,9 +13,12 @@ type Props = {
     id?: string;
 };
 
-const ContactCard = ({ name, icon, handle, following }: Props) => {
+const ContactCard = ({ name, icon, handle, following, id }: Props) => {
     let ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
+
+    const connectionType = following ? "friends" : "none";
+
     return (
         <TouchableOpacity style={styles.container}>
             <PreviewIcon size="large" icon={icon} />
@@ -28,6 +31,7 @@ const ContactCard = ({ name, icon, handle, following }: Props) => {
                         @{handle}
                     </ThemedText>
                 </View>
+                {id && <FollowButton connectionType={connectionType} followeeid={id} />}
             </View>
         </TouchableOpacity>
     );

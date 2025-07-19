@@ -6,14 +6,16 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 
 interface ProfileStatsProps {
     friendsCount: number;
+    profileUserId?: string; // ID of the profile being viewed
 }
 
-export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
+export default function ProfileStats({ friendsCount, profileUserId }: ProfileStatsProps) {
     const ThemedColor = useThemeColor();
+
     return (
         <View style={styles.statsContainer}>
             <View style={{ width: "50%" }}>
-                <FollowButton connectionType="none" />
+                <FollowButton connectionType="none" followeeid={profileUserId} />
             </View>
             <View
                 style={{

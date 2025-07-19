@@ -34,7 +34,11 @@ interface Props {
     categoryId: string;
     task?: Task;
     height?: number;
-    userHandle?: string;
+    encouragementConfig?: {
+        userHandle?: string;
+        receiverId: string;
+        categoryName: string;
+    };
 }
 
 const TaskCard = ({
@@ -47,7 +51,7 @@ const TaskCard = ({
     encourage = false,
     task,
     height = Dimensions.get("window").height * 0.07,
-    userHandle,
+    encouragementConfig,
 }: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
@@ -174,7 +178,7 @@ const TaskCard = ({
                     priority,
                     categoryId,
                 }}
-                userHandle={userHandle}
+                encouragementConfig={encouragementConfig}
             />
         </>
     );

@@ -68,8 +68,8 @@ export default function Dev1() {
                     }}
                     onSubmit={() => {}}
                 />
-                <FollowButton following />
-                <FollowButton following={false} />
+                <FollowButton connectionType="friends" followeeid="test-user-id" />
+                <FollowButton connectionType="none" followeeid="test-user-id" />
                 <View style={{ display: "flex", flexDirection: "row", gap: 16, margin: "auto" }}>
                     <View style={{ width: "80%" }}>
                         <SearchBox

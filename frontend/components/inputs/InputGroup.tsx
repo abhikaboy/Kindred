@@ -4,11 +4,15 @@ import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ConditionalView from "../ui/ConditionalView";
 
-const InputGroup = ({
-    options,
-}: {
-    options: { label: string; value: string | boolean; placeholder: string; type: string }[];
-}) => {
+interface InputOption {
+    label: string;
+    value: string | boolean;
+    placeholder: string;
+    type: string;
+    onChange?: (value: string | boolean) => void;
+}
+
+const InputGroup = ({ options }: { options: InputOption[] }) => {
     let ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
     return (
@@ -23,16 +27,24 @@ const InputGroup = ({
                             value={option.value as string}
                             placeholder={option.placeholder}
                             style={styles.input}
+                            onChangeText={(text) => {
+                                if (option.onChange) {
+                                    option.onChange(text);
+                                }
+                            }}
                         />
                     </ConditionalView>
                     <ConditionalView condition={option.type === "toggle"}>
                         <Switch
                             value={option.value as boolean}
+                            style={{
+                                height: 16,
+                            }}
                             trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                            onValueChange={() => {
-                                console.log("toggle");
-                                // update the value
-                                option.value = !option.value;
+                            onValueChange={(value) => {
+                                if (option.onChange) {
+                                    option.onChange(value);
+                                }
                             }}
                         />
                     </ConditionalView>

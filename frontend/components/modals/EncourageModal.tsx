@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Dimensions, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -9,6 +9,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Octicons from "@expo/vector-icons/Octicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createEncouragementAPI } from "@/api/encouragement";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -20,10 +21,14 @@ interface EncourageModalProps {
         priority: number;
         categoryId: string;
     };
-    userHandle?: string;
+    encouragementConfig?: {
+        userHandle?: string;
+        receiverId: string; // ID of the user receiving the encouragement
+        categoryName: string; // Name of the category the task belongs to
+    };
 }
 
-export default function EncourageModal({ visible, setVisible, task, userHandle }: EncourageModalProps) {
+export default function EncourageModal({ visible, setVisible, task, encouragementConfig }: EncourageModalProps) {
     const ThemedColor = useThemeColor();
     const [encouragementMessage, setEncouragementMessage] = useState("");
     const [encouragementsLeft, setEncouragementsLeft] = useState(2);
@@ -75,19 +80,40 @@ export default function EncourageModal({ visible, setVisible, task, userHandle }
     }, [visible]);
 
     const handleSendEncouragement = async () => {
-        // TODO: Implement send encouragement logic
-        console.log("Sending encouragement:", encouragementMessage);
+        if (!encouragementConfig?.receiverId || !task || !encouragementConfig?.categoryName) {
+            Alert.alert("Error", "Missing required information to send encouragement");
+            return;
+        }
 
-        // Update encouragements left
-        const newCount = Math.max(0, encouragementsLeft - 1);
-        setEncouragementsLeft(newCount);
+        try {
+            // Create the encouragement data
+            const encouragementData = {
+                receiver: encouragementConfig.receiverId,
+                message: encouragementMessage.trim(),
+                categoryName: encouragementConfig.categoryName,
+                taskName: task.content,
+            };
 
-        // Save to storage
-        await saveEncouragementsLeft(newCount);
+            // Make the API call
+            await createEncouragementAPI(encouragementData);
 
-        // Clear message and close modal
-        setEncouragementMessage("");
-        setVisible(false);
+            // Update encouragements left
+            const newCount = Math.max(0, encouragementsLeft - 1);
+            setEncouragementsLeft(newCount);
+
+            // Save to storage
+            await saveEncouragementsLeft(newCount);
+
+            // Clear message and close modal
+            setEncouragementMessage("");
+            setVisible(false);
+
+            // Show success message
+            Alert.alert("Success", "Encouragement sent successfully!");
+        } catch (error) {
+            console.error("Error sending encouragement:", error);
+            Alert.alert("Error", "Failed to send encouragement. Please try again.");
+        }
     };
 
     return (
@@ -118,18 +144,18 @@ export default function EncourageModal({ visible, setVisible, task, userHandle }
 
                 {/* Title */}
                 <ThemedText type="defaultSemiBold" style={[styles.title, { color: ThemedColor.text }]}>
-                    Encourage {userHandle || "User"}
+                    Encourage {encouragementConfig?.userHandle || "User"}
                 </ThemedText>
 
                 {/* Description */}
                 <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.text }]}>
-                    {userHandle || "User"} will get a notification after sending the encouragement
+                    {encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement
                 </ThemedText>
 
                 {/* Text Input */}
                 <View style={styles.inputContainer}>
                     <BottomSheetTextInput
-                        placeholder={`Tap to type an encouraging message to ${userHandle || "User"}`}
+                        placeholder={`Tap to type an encouraging message to ${encouragementConfig?.userHandle || "User"}`}
                         placeholderTextColor={ThemedColor.caption}
                         value={encouragementMessage}
                         onChangeText={setEncouragementMessage}

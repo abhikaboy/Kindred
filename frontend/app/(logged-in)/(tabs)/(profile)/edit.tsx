@@ -1,5 +1,5 @@
-import { View, Image, TouchableOpacity, Dimensions } from "react-native";
-import React from "react";
+import { View, Image, TouchableOpacity, Dimensions, Alert } from "react-native";
+import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -8,10 +8,138 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Svg, { Path, Rect } from "react-native-svg";
 import InputGroup from "@/components/inputs/InputGroup";
+import * as ImagePicker from "expo-image-picker";
+import { uploadProfilePicture, getMimeTypeFromUri } from "@/api/upload";
+import { updateProfile } from "@/api/profile";
+import { router } from "expo-router";
+
 const Edit = () => {
     const insets = useSafeAreaInsets();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     let ThemedColor = useThemeColor();
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Form state
+    const [displayName, setDisplayName] = useState(user?.display_name || "");
+    const [handle, setHandle] = useState(user?.handle || "");
+    const [activityEnabled, setActivityEnabled] = useState(true);
+    const [pushNotifications, setPushNotifications] = useState(false);
+    const [todaysTasks, setTodaysTasks] = useState(false);
+
+    const pickImage = async () => {
+        try {
+            // Request permissions
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (status !== "granted") {
+                alert("Sorry, we need camera roll permissions to make this work!");
+                return;
+            }
+
+            // Launch image picker
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const imageUri = result.assets[0].uri;
+                setSelectedImage(imageUri);
+                console.log("Selected image:", imageUri);
+            }
+        } catch (error) {
+            console.error("Image picker error:", error);
+            alert("Failed to pick image. Please try again.");
+        }
+    };
+
+    const handleSave = async () => {
+        if (!user?._id) {
+            Alert.alert("Error", "User ID not found. Please try logging in again.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            let profilePictureUrl = user.profile_picture;
+
+            // If there's a new image selected, upload it first
+            if (selectedImage && selectedImage !== user.profile_picture) {
+                console.log("Uploading new profile picture...");
+                const fileType = getMimeTypeFromUri(selectedImage);
+                profilePictureUrl = await uploadProfilePicture(user._id, selectedImage, fileType);
+                console.log("Profile picture uploaded:", profilePictureUrl);
+                console.log("Type of profilePictureUrl:", typeof profilePictureUrl);
+            }
+
+            // Prepare update data with snake_case field names as expected by API
+            const updateData: any = {};
+
+            if (displayName !== user.display_name) {
+                updateData.display_name = displayName;
+            }
+
+            if (handle !== user.handle) {
+                updateData.handle = handle;
+            }
+
+            if (profilePictureUrl !== user.profile_picture) {
+                // Ensure profilePictureUrl is a string, not an object
+                if (typeof profilePictureUrl === "string") {
+                    updateData.profile_picture = profilePictureUrl;
+                } else {
+                    console.error("profilePictureUrl is not a string:", profilePictureUrl);
+                    throw new Error("Invalid profile picture URL format");
+                }
+            }
+
+            // Debug: Log the update data
+            console.log("Update data being sent:", JSON.stringify(updateData, null, 2));
+
+            // Only update if there are changes
+            if (Object.keys(updateData).length > 0) {
+                console.log("Updating profile with data:", updateData);
+                await updateProfile(user._id, updateData);
+                console.log("Profile updated successfully");
+
+                // Update the local user state using the auth context
+                updateUser({
+                    display_name: displayName,
+                    handle: handle,
+                    profile_picture: profilePictureUrl,
+                });
+
+                console.log("Profile saved successfully!");
+
+                Alert.alert("Success", "Profile updated successfully!");
+                router.back();
+            } else {
+                Alert.alert("No Changes", "No changes were made to save.");
+            }
+        } catch (error) {
+            console.error("Save failed:", error);
+            console.error("Error details:", error.message);
+
+            // Provide more specific error messages
+            let errorMessage = "Failed to save profile. Please try again.";
+            if (error.response?.status === 422) {
+                errorMessage = "Invalid profile data. Please check your input and try again.";
+            } else if (error.response?.status === 401) {
+                errorMessage = "Authentication error. Please log in again.";
+            } else if (error.response?.status === 404) {
+                errorMessage = "Profile not found. Please try again.";
+            }
+
+            Alert.alert("Error", errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <ThemedView
             style={{
@@ -28,11 +156,22 @@ const Edit = () => {
                     justifyContent: "space-between",
                     alignItems: "center",
                 }}>
-                <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
-                    ←
-                </ThemedText>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <ThemedText type="defaultSemiBold" style={{ fontSize: 28 }}>
+                        ←
+                    </ThemedText>
+                </TouchableOpacity>
                 <ThemedText type="defaultSemiBold">Edit Profile</ThemedText>
-                <ThemedText type="defaultSemiBold">Save</ThemedText>
+                <TouchableOpacity onPress={handleSave} disabled={isSaving}>
+                    <ThemedText
+                        type="defaultSemiBold"
+                        style={{
+                            opacity: isSaving ? 0.5 : 1,
+                            color: isSaving ? ThemedColor.text : ThemedColor.primary,
+                        }}>
+                        {isSaving ? "Saving..." : "Save"}
+                    </ThemedText>
+                </TouchableOpacity>
             </View>
             <View
                 style={{
@@ -47,7 +186,7 @@ const Edit = () => {
                         console.log("viewing the profile picture");
                     }}>
                     <Image
-                        source={{ uri: user?.profile_picture }}
+                        source={{ uri: selectedImage || user?.profile_picture }}
                         style={{
                             width: 128,
                             height: 128,
@@ -58,6 +197,8 @@ const Edit = () => {
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
+                    onPress={pickImage}
+                    disabled={isSaving}
                     style={{
                         position: "absolute",
                         left: Dimensions.get("window").width / 2,
@@ -65,6 +206,7 @@ const Edit = () => {
                         backgroundColor: ThemedColor.lightened,
                         borderRadius: 100,
                         borderColor: ThemedColor.text,
+                        opacity: isSaving ? 0.5 : 1,
                     }}>
                     <Svg width="52" height="52" viewBox="0 0 52 52" fill="none">
                         <Rect x="0.5" y="0.5" width="51" height="51" rx="25.5" fill={ThemedColor.lightened} />
@@ -85,15 +227,17 @@ const Edit = () => {
                     options={[
                         {
                             label: "Display Name",
-                            value: user?.display_name,
+                            value: displayName,
                             placeholder: "Enter your display name",
                             type: "text",
+                            onChange: (value: string) => setDisplayName(value),
                         },
                         {
                             label: "Handle",
-                            value: user?.handle,
+                            value: handle,
                             placeholder: "Enter your handle",
                             type: "text",
+                            onChange: (value: string) => setHandle(value),
                         },
                     ]}
                 />
@@ -106,21 +250,24 @@ const Edit = () => {
                     options={[
                         {
                             label: "Activity",
-                            value: true,
+                            value: activityEnabled,
                             placeholder: "asdjaosd",
                             type: "toggle",
+                            onChange: (value: boolean) => setActivityEnabled(value),
                         },
                         {
                             label: "Push Notifications",
-                            value: false,
+                            value: pushNotifications,
                             placeholder: "asdjaosd",
                             type: "toggle",
+                            onChange: (value: boolean) => setPushNotifications(value),
                         },
                         {
                             label: "Today's Tasks",
-                            value: false,
+                            value: todaysTasks,
                             placeholder: "asdjaosd",
                             type: "toggle",
+                            onChange: (value: boolean) => setTodaysTasks(value),
                         },
                     ]}
                 />

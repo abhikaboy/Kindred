@@ -15,9 +15,14 @@ interface TaskListProps {
     activeTasks: Task[];
     todayTasks: Task[];
     completedTasks: Task[];
+    encouragementConfig?: {
+        userHandle?: string;
+        receiverId: string;
+        categoryName: string;
+    };
 }
 
-export default function TaskList({ activeTasks, todayTasks, completedTasks }: TaskListProps) {
+export default function TaskList({ activeTasks, todayTasks, completedTasks, encouragementConfig }: TaskListProps) {
     return (
         <>
             <View style={styles.taskSection}>
@@ -44,6 +49,7 @@ export default function TaskList({ activeTasks, todayTasks, completedTasks }: Ta
                         id={task.id}
                         categoryId="profile"
                         encourage={task.encourage}
+                        encouragementConfig={encouragementConfig}
                     />
                 ))}
             </View>
