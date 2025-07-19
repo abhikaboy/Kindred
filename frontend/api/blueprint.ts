@@ -297,9 +297,9 @@ export const unSubscribeToBlueprint = async (blueprintId: string): Promise<Unsub
  * @returns 
  */
 export const searchBlueprints = async (query: string): Promise<BlueprintDocument[]> => {
-    const { data, error } = await client.GET("/v1/blueprints", {
+    const { data, error } = await client.GET("/v1/blueprints/search/", {
         params: withAuthHeaders({ 
-            query: { q: query } 
+            query: { query : query },
         }),
     });
 

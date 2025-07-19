@@ -1,11 +1,12 @@
 // Step1Instruction.tsx
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Keyboard } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import TagCreator from "@/components/inputs/TagCreator";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
+import LongTextInput from "../inputs/LongTextInput";
 
 type Props = {
     data: BlueprintData;
@@ -19,27 +20,41 @@ const Instructions = ({ data, onUpdate }: Props) => {
     const handleNameChange = (blueprintName: string) => {
         onUpdate({ blueprintName });
     };
+    const handleDescriptionChange = (description: string) => {
+        onUpdate({ description });
+    };
 
     const handleTagsChange = (selectedTags: string[]) => {
         onUpdate({ selectedTags });
     };
 
-    const handleImageSelected = (bannerImage: string) => {
-        onUpdate({ bannerImage });
-    };
-
     return (
         <View style={styles.stepContent}>
             <View style={styles.fieldContainer}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
-                    Name
-                </ThemedText>
                 <ThemedInput
+                    ghost
+                    placeHolder="Enter Blueprint Name"
+                    onBlur={() => {
+                        Keyboard.dismiss();
+                    }}
+                    textStyle={{
+                        fontSize: 24,
+                        fontFamily: "Outfit",
+                        fontWeight: "500",
+                        letterSpacing: -0.2,
+                    }}
                     value={data.blueprintName}
                     setValue={handleNameChange}
-                    placeHolder="Enter Blueprint name"
+                />
+                <LongTextInput
+                    placeholder="Enter a Description"
+                    value={data.description}
+                    setValue={handleDescriptionChange}
+                    fontSize={16}
+                    minHeight={100}
                 />
             </View>
+            <View style={styles.separator} />
 
             <View style={styles.fieldContainer}>
                 <TagCreator
@@ -48,12 +63,6 @@ const Instructions = ({ data, onUpdate }: Props) => {
                     maxTags={10}
                     initialTags={data.selectedTags}
                 />
-            </View>
-
-            <View style={styles.fieldContainer}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
-                    Banner Image
-                </ThemedText>
             </View>
         </View>
     );
@@ -65,7 +74,12 @@ const createStyles = (ThemedColor: any) =>
             gap: 32,
         },
         fieldContainer: {
-            gap: 12,
+            borderRadius: 1,
+            borderColor: ThemedColor.lightened,
+        },
+        separator: {
+            height: 1,
+            backgroundColor: ThemedColor.tertiary,
         },
         fieldLabel: {
             fontSize: 16,

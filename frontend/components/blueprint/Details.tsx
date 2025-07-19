@@ -14,28 +14,20 @@ const Details = ({ data, onUpdate }: Props) => {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
 
-    const handleDescriptionChange = (description: string) => {
-        onUpdate({ description });
-    };
-
+ 
     const handleDurationChange = (duration: string) => {
         onUpdate({ duration });
     };
+    const handleImageSelected = (bannerImage: string) => {
+        onUpdate({ bannerImage });
+    };
 
+    const handleCategoryChange = (category: string) => {
+        onUpdate({ category });
+    };
     return (
         <View style={styles.stepContent}>
-            <View style={styles.fieldContainer}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
-                    Description
-                </ThemedText>
-                <ThemedInput
-                    value={data.description}
-                    setValue={handleDescriptionChange}
-                    placeHolder="Describe your blueprint"
-                    textStyle={{ minHeight: 100, textAlignVertical: "top" }}
-                    textArea={true}
-                />
-            </View>
+           
 
             <View style={styles.fieldContainer}>
                 <ThemedText type="lightBody" style={styles.fieldLabel}>
@@ -46,6 +38,22 @@ const Details = ({ data, onUpdate }: Props) => {
                     setValue={handleDurationChange}
                     placeHolder="Enter Frequency or Duration of blueprint"
                 />
+            </View>
+
+            <View style={styles.fieldContainer}>
+                <ThemedText type="lightBody" style={styles.fieldLabel}>
+                    Category
+                </ThemedText>
+                <ThemedInput
+                    value={data.category}
+                    setValue={handleCategoryChange}
+                    placeHolder="Enter a category of blueprint"
+                />
+            </View>
+            <View style={styles.fieldContainer}>
+                <ThemedText type="lightBody" style={styles.fieldLabel}>
+                    Banner Image
+                </ThemedText>
             </View>
         </View>
     );

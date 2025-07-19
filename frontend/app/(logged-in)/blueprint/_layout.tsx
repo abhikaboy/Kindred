@@ -19,6 +19,7 @@ export type BlueprintData = {
     description: string;
     duration: string;
     tasks: Task[];
+    category: string;
 };
 
 export type Task = {
@@ -38,6 +39,7 @@ const BlueprintCreationLayout = () => {
         description: "",
         duration: "",
         tasks: [],
+        category: "", 
     });
 
     const [isCreating, setIsCreating] = useState(false);
@@ -64,7 +66,7 @@ const BlueprintCreationLayout = () => {
                 blueprintData.blueprintName,
                 blueprintData.selectedTags,
                 blueprintData.description,
-                blueprintData.duration
+                blueprintData.duration,
             );
             
             if (createdBlueprint) {

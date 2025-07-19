@@ -1,5 +1,6 @@
-import { PRIORITY_MAP } from "@/components/cards/TaskCard";
 import React, { createContext, useContext, useState } from "react";
+import { subscribeToBlueprintToBackend, unsubscribeToBlueprintToBackend } from "@/api/blueprint";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Blueprint {
     id: string;
@@ -12,35 +13,111 @@ export interface Blueprint {
     subscriberCount: number;
     description: string;
     tags: string[];
+    subscribers?: string[];
 }
 
 type BlueprintContextType = {
-    blueprints: Blueprint[];
-    setBlueprints: React.Dispatch<React.SetStateAction<Blueprint[]>>;
     selectedBlueprint: Blueprint | null;
     setSelectedBlueprint: (blueprint: Blueprint) => void;
-    getBlueprintById: (id: string) => Blueprint | undefined;
+    getIsSubscribed: (id: string, subscribers: string[]) => boolean;
+    getIsLoading: (id: string) => boolean;
+    getSubscriberCount: (id: string, originalCount: number) => number;
+    handleSubscribe: (id: string, subscribers: string[]) => Promise<boolean>;
 };
 
 const BlueprintCreationContext = createContext<BlueprintContextType | undefined>(undefined);
 
 export const BlueprintCreationProvider = ({ children }: { children: React.ReactNode }) => {
-    const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
     const [selectedBlueprint, setSelectedBlueprintState] = useState<Blueprint | null>(null);
+    const [subscriptionStates, setSubscriptionStates] = useState<Record<string, boolean>>({});
+    const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+    const { user } = useAuth();
+    const [subscriberCounts, setSubscriberCounts] = useState<Record<string, number>>({}); 
 
     const setSelectedBlueprint = (blueprint: Blueprint) => {
         setSelectedBlueprintState(blueprint);
+        setSubscriberCounts((prev) => ({
+            ...prev,
+            [blueprint.id]: blueprint.subscriberCount,
+        }));
     };
-    const getBlueprintById = (id: string) => {
-        return blueprints.find((blueprint) => blueprint.id === id);
+
+    const getIsSubscribed = (id: string, subscribers: string[]) => {
+        if (subscriptionStates[id] !== undefined) {
+            return subscriptionStates[id];
+        }
+        if (user && user._id && subscribers) {
+            const isSubscribed = subscribers.includes(user._id);
+            setSubscriptionStates((prev) => ({ ...prev, [id]: isSubscribed }));
+            return isSubscribed;
+        }
+        return false;
+    };
+
+    const getSubscriberCount = (id: string, originalCount: number) => {
+        return subscriberCounts[id] !== undefined ? subscriberCounts[id] : originalCount;
+    };
+
+    const getIsLoading = (id: string) => {
+        return loadingStates[id] || false;
+    };
+
+    const handleSubscribe = async (id: string, subscribers: string[]) => {
+        if (!user || !user._id) {
+            console.error("User not authenticated");
+            return false;
+        }
+
+        try {
+            setLoadingStates((prev) => ({ ...prev, [id]: true }));
+
+            const currentIsSubscribed = getIsSubscribed(id, subscribers);
+
+            if (currentIsSubscribed) {
+                setSubscriptionStates((prev) => ({ ...prev, [id]: false }));
+
+                setSubscriberCounts((prev) => ({
+                    ...prev,
+                    [id]: Math.max(0, (prev[id] || 0) - 1), 
+                }));
+
+                if (selectedBlueprint && selectedBlueprint.id === id) {
+                    setSelectedBlueprintState({
+                        ...selectedBlueprint,
+                        subscriberCount: Math.max(0, selectedBlueprint.subscriberCount - 1),
+                    });
+                }
+
+                return true;
+            } else {
+                setSubscriptionStates((prev) => ({ ...prev, [id]: true }));
+                setSubscriberCounts((prev) => ({
+                    ...prev,
+                    [id]: (prev[id] || 0) + 1,
+                }));
+
+                if (selectedBlueprint && selectedBlueprint.id === id) {
+                    setSelectedBlueprintState({
+                        ...selectedBlueprint,
+                        subscriberCount: selectedBlueprint.subscriberCount + 1,
+                    });
+                }
+                return true;
+            }
+        } catch (error) {
+            return false;
+        } finally {
+            setLoadingStates((prev) => ({ ...prev, [id]: false }));
+        }
     };
 
     const value = {
-        blueprints,
-        setBlueprints,
         selectedBlueprint,
         setSelectedBlueprint,
-        getBlueprintById,
+        getIsSubscribed,
+        getIsLoading,
+        handleSubscribe,
+        getSubscriberCount,
     };
 
     return <BlueprintCreationContext.Provider value={value}>{children}</BlueprintCreationContext.Provider>;
