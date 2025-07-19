@@ -18,12 +18,11 @@ const SuggestedTag = ({ tag, onPress, caption }: Props) => {
             style={{
                 display: "flex",
                 flexDirection: "column",
-                padding: 16,
+                padding: 12,
+                paddingHorizontal: 12,
                 gap: 0,
                 borderRadius: 12,
-                backgroundColor: ThemedColor.primary + "10",
-                borderWidth: 1,
-                borderColor: ThemedColor.primary,
+                backgroundColor: ThemedColor.tertiary,
             }}>
             <ThemedText type="defaultSemiBold">{tag}</ThemedText>
             {caption && (

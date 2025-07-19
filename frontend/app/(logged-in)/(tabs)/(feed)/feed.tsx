@@ -8,12 +8,14 @@ import PostCard from "@/components/cards/PostCard";
 import { Icons } from "@/constants/Icons";
 import { Link, router, useRouter } from "expo-router";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     return (
-        <ThemedView style={styles.container}>
+        <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
             <ScrollView style={{ flex: 1 }}>
                 <TouchableOpacity
                     activeOpacity={0.8}
@@ -136,7 +138,6 @@ const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: Dimensions.get("window").height * 0.09,
         },
         headerContainer: {
             flexDirection: "row",

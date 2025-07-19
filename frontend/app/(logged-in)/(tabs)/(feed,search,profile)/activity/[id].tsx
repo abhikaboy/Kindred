@@ -6,6 +6,7 @@ import ActivityPoint from "@/components/profile/ActivityPoint";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 type Props = {};
 
 const month_to_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -28,6 +29,7 @@ const Activity = (props: Props) => {
     const ThemedColor = useThemeColor();
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
+    const insets = useSafeAreaInsets();
     const styles = stylesheet(ThemedColor);
 
     const setYearWithinBounds = (year: number) => {
@@ -41,7 +43,7 @@ const Activity = (props: Props) => {
     };
 
     return (
-        <ThemedView>
+        <ThemedView style={{ paddingTop: insets.top }}>
             <ScrollView contentContainerStyle={styles.scrollViewContent} style={styles.scrollView}>
                 <ThemedText type="title" style={styles.title}>
                     Activity
@@ -90,7 +92,6 @@ const stylesheet = (ThemedColor: any) =>
             paddingHorizontal: HORIZONTAL_PADDING,
         },
         scrollView: {
-            top: Dimensions.get("window").height * 0.1,
             flex: 1,
             flexDirection: "column",
         },

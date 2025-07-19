@@ -154,17 +154,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return fetchPromiseRef.current;
         }
 
-        // If it's been less than 1 second since last fetch, wait until we can fetch
-        if (timeSinceLastFetch < 1000) {
-            // Return a promise that resolves after the remaining time
-            const remainingTime = 1000 - timeSinceLastFetch;
-
+        const rateLimit = 2000;
+        // Increase rate limit to 5 seconds to be more aggressive about preventing calls
+        if (timeSinceLastFetch < rateLimit) {
+            const remainingTime = rateLimit - timeSinceLastFetch;
             console.log(`Rate limiting fetchAuthData, waiting ${remainingTime}ms before next call`);
 
-            // Create a new promise that will resolve after the rate limit period
             const promise = new Promise((resolve) => {
                 setTimeout(() => {
-                    // Recursively call fetchAuthData after delay and pass result to this promise
                     fetchPromiseRef.current = null;
                     resolve(fetchAuthData());
                 }, remainingTime);

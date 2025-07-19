@@ -65,6 +65,7 @@ type Reminder struct {
 	AfterStart     bool      `bson:"afterStart" json:"afterStart"`
 	BeforeStart    bool      `bson:"beforeStart" json:"beforeStart"`
 	BeforeDeadline bool      `bson:"beforeDeadline" json:"beforeDeadline"`
+	AfterDeadline  bool      `bson:"afterDeadline" json:"afterDeadline"`
 }
 
 type TemplateTaskDocument struct {

@@ -165,6 +165,7 @@ export const Drawer = ({ close }) => {
 
             <ScrollView
                 style={{ width: "100%" }}
+                showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.2 }}>
                 <View
                     style={{

@@ -10,6 +10,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import BlueprintCard from "@/components/cards/BlueprintCard";
 import { getBlueprintsToBackend, searchBlueprintsFromBackend } from "@/api/blueprint";
 import type { components } from "@/api/generated/types";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type Props = {};
@@ -33,6 +34,8 @@ const Search = (props: Props) => {
             backgroundColor: ThemedColor.background,
         };
     });
+
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         const loadBlueprints = async () => {
@@ -93,7 +96,7 @@ const Search = (props: Props) => {
         description: string;
         tags: string[];
     };
-    
+
     const renderBlueprint = ({ item }: { item: BlueprintDocument }) => (
         <BlueprintCard
             previewImage={item.banner}
@@ -140,7 +143,8 @@ const Search = (props: Props) => {
     return (
         <ThemedView
             style={{
-                paddingVertical: Dimensions.get("screen").height * 0.1,
+                paddingTop: insets.top,
+                paddingBottom: insets.bottom,
             }}>
             <View style={{ paddingHorizontal: 16 }}>
                 <SearchBox

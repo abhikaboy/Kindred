@@ -23,6 +23,7 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AnimatePresence } from "moti";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -99,29 +100,31 @@ export default function RootLayout() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <TasksProvider>
-                    <TaskCreationProvider>
-                        <BlueprintCreationProvider>
-                            <GestureHandlerRootView style={{ flex: 1 }}>
-                                <BottomSheetModalProvider>
-                                    <Toastable
-                                        statusMap={{
-                                            success: ThemedColor.success,
-                                            danger: ThemedColor.danger,
-                                            warning: ThemedColor.warning,
-                                            info: ThemedColor.primary,
-                                        }}
-                                        offset={top}
-                                    />
-                                    <Slot />
-                                    <StatusBar style="light" />
-                                </BottomSheetModalProvider>
-                            </GestureHandlerRootView>
-                        </BlueprintCreationProvider>
-                    </TaskCreationProvider>
-                </TasksProvider>
-            </AuthProvider>
+            <AnimatePresence>
+                <AuthProvider>
+                    <TasksProvider>
+                        <TaskCreationProvider>
+                            <BlueprintCreationProvider>
+                                <GestureHandlerRootView style={{ flex: 1 }}>
+                                    <BottomSheetModalProvider>
+                                        <Toastable
+                                            statusMap={{
+                                                success: ThemedColor.success,
+                                                danger: ThemedColor.danger,
+                                                warning: ThemedColor.warning,
+                                                info: ThemedColor.primary,
+                                            }}
+                                            offset={top}
+                                        />
+                                        <Slot />
+                                        <StatusBar style="light" />
+                                    </BottomSheetModalProvider>
+                                </GestureHandlerRootView>
+                            </BlueprintCreationProvider>
+                        </TaskCreationProvider>
+                    </TasksProvider>
+                </AuthProvider>
+            </AnimatePresence>
         </QueryClientProvider>
     );
 }
