@@ -32,7 +32,7 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
     const [subscriptionStates, setSubscriptionStates] = useState<Record<string, boolean>>({});
     const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
     const { user } = useAuth();
-    const [subscriberCounts, setSubscriberCounts] = useState<Record<string, number>>({}); 
+    const [subscriberCounts, setSubscriberCounts] = useState<Record<string, number>>({});
 
     const setSelectedBlueprint = (blueprint: Blueprint) => {
         setSelectedBlueprintState(blueprint);
@@ -74,11 +74,11 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
             const currentIsSubscribed = getIsSubscribed(id, subscribers);
 
             if (currentIsSubscribed) {
+                await unsubscribeToBlueprintToBackend(id);
                 setSubscriptionStates((prev) => ({ ...prev, [id]: false }));
-
                 setSubscriberCounts((prev) => ({
                     ...prev,
-                    [id]: Math.max(0, (prev[id] || 0) - 1), 
+                    [id]: Math.max(0, (prev[id] || 0) - 1),
                 }));
 
                 if (selectedBlueprint && selectedBlueprint.id === id) {
@@ -90,6 +90,7 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
 
                 return true;
             } else {
+                await subscribeToBlueprintToBackend(id);
                 setSubscriptionStates((prev) => ({ ...prev, [id]: true }));
                 setSubscriberCounts((prev) => ({
                     ...prev,
