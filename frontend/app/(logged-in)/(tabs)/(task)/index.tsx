@@ -16,7 +16,6 @@ import { Image } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Workspace from "./workspace";
-import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import Today from "./today";
 import { MotiView } from "moti";
 import { Skeleton } from "moti/skeleton";
@@ -117,6 +116,7 @@ const Home = (props: Props) => {
                                                                 padding: 16,
                                                                 borderRadius: 12,
                                                                 backgroundColor: ThemedColor.lightened,
+                                                                boxShadow: ThemedColor.shadowSmall,
                                                             }}>
                                                             <ThemedText type="lightBody">{workspace.name}</ThemedText>
                                                         </TouchableOpacity>

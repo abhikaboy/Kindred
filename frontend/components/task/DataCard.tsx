@@ -22,8 +22,7 @@ const DataCard = (props: Props) => {
                 gap: 8,
                 borderRadius: 12,
                 height: "auto",
-                borderWidth: 1,
-                borderColor: ThemedColor.tertiary,
+                boxShadow: ThemedColor.shadowSmall,
             }}>
             <ThemedText type="subtitle">{props.title}</ThemedText>
             {props.content && <ThemedText type="default">{props.content}</ThemedText>}

@@ -118,7 +118,7 @@ const TaskCard = ({
                     backgroundColor: ThemedColor.lightened,
                     borderWidth: 1,
                     borderColor: ThemedColor.tertiary,
-                    height: height,
+                    minHeight: height,
                 },
             ]}
             disabled={!redirect && !encourage}

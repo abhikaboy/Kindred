@@ -23,6 +23,7 @@ export const Colors = {
         tabIconDefault: "#9BA1A6",
         tabIconSelected: tintColorDark,
         modalTop: "#696969",
+        shadowSmall: "0px 1px 5px 0px #0000001a",
     },
     dark: {
         text: "#fffFFF",
@@ -44,6 +45,7 @@ export const Colors = {
         icon: "#9BA1A6",
         tabIconDefault: "#9BA1A6",
         tabIconSelected: tintColorDark,
+        shadowSmall: "0px 1px 5px 0px #ffffff0f",
     },
 };
 let ThemedColor = Colors.dark;

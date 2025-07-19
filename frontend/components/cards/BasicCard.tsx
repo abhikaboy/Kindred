@@ -15,6 +15,7 @@ const BasicCard = ({ children }: Props) => {
                 borderRadius: 12,
                 padding: 16,
                 justifyContent: "space-between",
+                boxShadow: ThemedColor.shadowSmall,
             }}>
             {children}
         </View>

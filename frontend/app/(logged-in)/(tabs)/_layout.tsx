@@ -67,6 +67,7 @@ export default function TabLayout() {
                               overflow: "hidden",
                               borderWidth: 1,
                               alignItems: "center",
+                              boxShadow: ThemedColor.shadowSmall,
                           },
                           android: {
                               height: 80,
@@ -75,6 +76,7 @@ export default function TabLayout() {
                               width: "90%",
                               overflow: "hidden",
                               alignItems: "center",
+                              boxShadow: ThemedColor.shadowSmall,
                           },
                       }),
                 cardStyle: {

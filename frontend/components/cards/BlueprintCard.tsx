@@ -152,6 +152,7 @@ const stylesheet = (ThemedColor: any, large: boolean) =>
             backgroundColor: ThemedColor.lightened,
             borderBottomLeftRadius: 11,
             borderBottomRightRadius: 11,
+            boxShadow: ThemedColor.shadowSmall,
         },
         tag: {
             borderWidth: 1,
