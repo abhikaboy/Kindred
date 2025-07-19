@@ -28,7 +28,6 @@ const ContactCard = ({ name, icon, handle, following }: Props) => {
                         @{handle}
                     </ThemedText>
                 </View>
-                <FollowButton connectionType={"none"} />
             </View>
         </TouchableOpacity>
     );
@@ -42,9 +41,10 @@ const useStyles = (ThemedColor: any) =>
             flex: 1,
             backgroundColor: ThemedColor.lightened,
             borderRadius: 10,
-            padding: 16,
+            padding: 24,
             gap: 12,
             maxWidth: Dimensions.get("screen").width * 0.4,
             alignItems: "center",
+            boxShadow: ThemedColor.shadowSmall,
         },
     });

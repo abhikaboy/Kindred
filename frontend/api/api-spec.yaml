@@ -6,7 +6,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/ActivateTaskOutputBody.json'
+            - https://example.com/schemas/ActivateTaskOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -23,7 +23,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/ActivityDocument.json'
+            - https://example.com/schemas/ActivityDocument.json
           format: uri
           readOnly: true
           type: string
@@ -34,7 +34,7 @@ components:
         picture:
           type:
             - string
-            - 'null'
+            - "null"
         timestamp:
           format: date-time
           type: string
@@ -50,14 +50,14 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/BlueprintDocument.json'
+            - https://example.com/schemas/BlueprintDocument.json
           format: uri
           readOnly: true
           type: string
         banner:
           description: Banner image URL
           examples:
-            - 'https://example.com/banner.jpg'
+            - https://example.com/banner.jpg
           type: string
         description:
           description: Description of the blueprint
@@ -80,7 +80,7 @@ components:
             - Morning Routine
           type: string
         owner:
-          $ref: '#/components/schemas/UserExtendedReference'
+          $ref: "#/components/schemas/UserExtendedReference"
           description: Owner information
         subscribers:
           description: List of subscriber user IDs
@@ -90,7 +90,7 @@ components:
             type: string
           type:
             - array
-            - 'null'
+            - "null"
         subscribersCount:
           description: Number of subscribers
           examples:
@@ -106,11 +106,11 @@ components:
             type: string
           type:
             - array
-            - 'null'
+            - "null"
         timestamp:
           description: Creation timestamp
           examples:
-            - '2023-01-01T00:00:00Z'
+            - "2023-01-01T00:00:00Z"
           format: date-time
           type: string
       required:
@@ -131,7 +131,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CategoryDocument.json'
+            - https://example.com/schemas/CategoryDocument.json
           format: uri
           readOnly: true
           type: string
@@ -144,10 +144,10 @@ components:
           type: string
         tasks:
           items:
-            $ref: '#/components/schemas/TaskDocument'
+            $ref: "#/components/schemas/TaskDocument"
           type:
             - array
-            - 'null'
+            - "null"
         user:
           type: string
         workspaceName:
@@ -181,7 +181,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CompleteTaskDocument.json'
+            - https://example.com/schemas/CompleteTaskDocument.json
           format: uri
           readOnly: true
           type: string
@@ -199,7 +199,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CompleteTaskOutputBody.json'
+            - https://example.com/schemas/CompleteTaskOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -210,13 +210,129 @@ components:
       required:
         - message
       type: object
+    ConfirmImageUploadInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/ConfirmImageUploadInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        public_url:
+          examples:
+            - https://kindred.nyc3.digitaloceanspaces.com/profiles/507f1f77bcf86cd799439011/uuid.jpg
+          type: string
+      required:
+        - public_url
+      type: object
+    ConfirmImageUploadOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/ConfirmImageUploadOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Image upload confirmed successfully
+          type: string
+      required:
+        - message
+      type: object
+    CongratulationDocument:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/CongratulationDocument.json
+          format: uri
+          readOnly: true
+          type: string
+        categoryName:
+          description: Category name
+          examples:
+            - Work
+          type: string
+        id:
+          description: Unique identifier for the congratulation
+          examples:
+            - 507f1f77bcf86cd799439011
+          type: string
+        message:
+          description: Congratulation message
+          examples:
+            - Congratulations on completing your task!
+          type: string
+        read:
+          description: Whether the congratulation has been read
+          examples:
+            - false
+          type: boolean
+        receiver:
+          description: Receiver user ID
+          examples:
+            - 507f1f77bcf86cd799439012
+          type: string
+        sender:
+          $ref: "#/components/schemas/CongratulationSender"
+          description: Sender information
+        taskName:
+          description: Task name
+          examples:
+            - Complete project proposal
+          type: string
+        timestamp:
+          description: Creation timestamp
+          examples:
+            - "2023-01-01T00:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - sender
+        - receiver
+        - message
+        - timestamp
+        - categoryName
+        - taskName
+        - read
+      type: object
+    CongratulationSender:
+      additionalProperties: false
+      properties:
+        id:
+          description: Sender's user ID
+          examples:
+            - 507f1f77bcf86cd799439011
+          type: string
+        name:
+          description: Sender's name
+          examples:
+            - John Doe
+          type: string
+        picture:
+          description: Sender's profile picture URL
+          examples:
+            - https://example.com/avatar.jpg
+          type: string
+      required:
+        - name
+        - picture
+        - id
+      type: object
     ConnectionDocument:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/ConnectionDocument.json'
+            - https://example.com/schemas/ConnectionDocument.json
           format: uri
           readOnly: true
           type: string
@@ -231,12 +347,12 @@ components:
             - 507f1f77bcf86cd799439012
           type: string
         requester:
-          $ref: '#/components/schemas/ConnectionUser'
+          $ref: "#/components/schemas/ConnectionUser"
           description: Connection requester information
         timestamp:
           description: Connection timestamp
           examples:
-            - '2023-01-01T00:00:00Z'
+            - "2023-01-01T00:00:00Z"
           format: date-time
           type: string
       required:
@@ -266,10 +382,10 @@ components:
         picture:
           description: Profile picture URL
           examples:
-            - 'https://example.com/avatar.jpg'
+            - https://example.com/avatar.jpg
           type:
             - string
-            - 'null'
+            - "null"
       required:
         - _id
         - picture
@@ -282,7 +398,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreateActivityParams.json'
+            - https://example.com/schemas/CreateActivityParams.json
           format: uri
           readOnly: true
           type: string
@@ -293,7 +409,7 @@ components:
         picture:
           type:
             - string
-            - 'null'
+            - "null"
       required:
         - field1
         - field2
@@ -305,14 +421,14 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreateBlueprintParams.json'
+            - https://example.com/schemas/CreateBlueprintParams.json
           format: uri
           readOnly: true
           type: string
         banner:
           description: Banner image URL for the blueprint
           examples:
-            - 'https://example.com/banner.jpg'
+            - https://example.com/banner.jpg
           type: string
         description:
           description: Description of the blueprint
@@ -338,7 +454,7 @@ components:
             type: string
           type:
             - array
-            - 'null'
+            - "null"
       required:
         - banner
         - name
@@ -352,7 +468,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreateCategoryParams.json'
+            - https://example.com/schemas/CreateCategoryParams.json
           format: uri
           readOnly: true
           type: string
@@ -361,13 +477,49 @@ components:
         workspaceName:
           type: string
       type: object
+    CreateCongratulationParams:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/CreateCongratulationParams.json
+          format: uri
+          readOnly: true
+          type: string
+        categoryName:
+          description: Category name
+          examples:
+            - Work
+          type: string
+        message:
+          description: Congratulation message
+          examples:
+            - Congratulations on completing your task!
+          type: string
+        receiver:
+          description: Receiver user ID
+          examples:
+            - 507f1f77bcf86cd799439012
+          type: string
+        taskName:
+          description: Task name
+          examples:
+            - Complete project proposal
+          type: string
+      required:
+        - receiver
+        - message
+        - categoryName
+        - taskName
+      type: object
     CreateConnectionParams:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreateConnectionParams.json'
+            - https://example.com/schemas/CreateConnectionParams.json
           format: uri
           readOnly: true
           type: string
@@ -377,11 +529,47 @@ components:
             - 507f1f77bcf86cd799439012
           type: string
         requester:
-          $ref: '#/components/schemas/ConnectionUser'
+          $ref: "#/components/schemas/ConnectionUser"
           description: Connection requester information
       required:
         - requester
         - reciever
+      type: object
+    CreateEncouragementParams:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/CreateEncouragementParams.json
+          format: uri
+          readOnly: true
+          type: string
+        categoryName:
+          description: Category name
+          examples:
+            - Work
+          type: string
+        message:
+          description: Encouragement message
+          examples:
+            - Great job on completing your task!
+          type: string
+        receiver:
+          description: Receiver user ID
+          examples:
+            - 507f1f77bcf86cd799439012
+          type: string
+        taskName:
+          description: Task name
+          examples:
+            - Complete project proposal
+          type: string
+      required:
+        - receiver
+        - message
+        - categoryName
+        - taskName
       type: object
     CreatePostParams:
       additionalProperties: false
@@ -389,7 +577,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreatePostParams.json'
+            - https://example.com/schemas/CreatePostParams.json
           format: uri
           readOnly: true
           type: string
@@ -400,7 +588,7 @@ components:
         picture:
           type:
             - string
-            - 'null'
+            - "null"
       required:
         - field1
         - field2
@@ -412,7 +600,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreateTaskParams.json'
+            - https://example.com/schemas/CreateTaskParams.json
           format: uri
           readOnly: true
           type: string
@@ -420,10 +608,10 @@ components:
           type: boolean
         checklist:
           items:
-            $ref: '#/components/schemas/ChecklistItem'
+            $ref: "#/components/schemas/ChecklistItem"
           type:
             - array
-            - 'null'
+            - "null"
         content:
           type: string
         deadline:
@@ -437,17 +625,17 @@ components:
         public:
           type: boolean
         recurDetails:
-          $ref: '#/components/schemas/RecurDetails'
+          $ref: "#/components/schemas/RecurDetails"
         recurFrequency:
           type: string
         recurring:
           type: boolean
         reminders:
           items:
-            $ref: '#/components/schemas/Reminder'
+            $ref: "#/components/schemas/Reminder"
           type:
             - array
-            - 'null'
+            - "null"
         startDate:
           format: date-time
           type: string
@@ -471,7 +659,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/CreateWaitlistParams.json'
+            - https://example.com/schemas/CreateWaitlistParams.json
           format: uri
           readOnly: true
           type: string
@@ -495,7 +683,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteActivityOutputBody.json'
+            - https://example.com/schemas/DeleteActivityOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -512,7 +700,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteBlueprintOutputBody.json'
+            - https://example.com/schemas/DeleteBlueprintOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -529,7 +717,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteCategoryOutputBody.json'
+            - https://example.com/schemas/DeleteCategoryOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -540,13 +728,30 @@ components:
       required:
         - message
       type: object
+    DeleteCongratulationOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/DeleteCongratulationOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Congratulation deleted successfully
+          type: string
+      required:
+        - message
+      type: object
     DeleteConnectionOutputBody:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteConnectionOutputBody.json'
+            - https://example.com/schemas/DeleteConnectionOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -557,13 +762,30 @@ components:
       required:
         - message
       type: object
+    DeleteEncouragementOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/DeleteEncouragementOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Encouragement deleted successfully
+          type: string
+      required:
+        - message
+      type: object
     DeletePostOutputBody:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeletePostOutputBody.json'
+            - https://example.com/schemas/DeletePostOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -580,7 +802,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteProfileOutputBody.json'
+            - https://example.com/schemas/DeleteProfileOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -597,7 +819,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteTaskOutputBody.json'
+            - https://example.com/schemas/DeleteTaskOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -614,7 +836,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteWaitlistOutputBody.json'
+            - https://example.com/schemas/DeleteWaitlistOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -636,7 +858,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/DeleteWorkspaceOutputBody.json'
+            - https://example.com/schemas/DeleteWorkspaceOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -647,13 +869,93 @@ components:
       required:
         - message
       type: object
+    EncouragementDocument:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/EncouragementDocument.json
+          format: uri
+          readOnly: true
+          type: string
+        categoryName:
+          description: Category name
+          examples:
+            - Work
+          type: string
+        id:
+          description: Unique identifier for the encouragement
+          examples:
+            - 507f1f77bcf86cd799439011
+          type: string
+        message:
+          description: Encouragement message
+          examples:
+            - Great job on completing your task!
+          type: string
+        read:
+          description: Whether the encouragement has been read
+          examples:
+            - false
+          type: boolean
+        receiver:
+          description: Receiver user ID
+          examples:
+            - 507f1f77bcf86cd799439012
+          type: string
+        sender:
+          $ref: "#/components/schemas/EncouragementSender"
+          description: Sender information
+        taskName:
+          description: Task name
+          examples:
+            - Complete project proposal
+          type: string
+        timestamp:
+          description: Creation timestamp
+          examples:
+            - "2023-01-01T00:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - sender
+        - receiver
+        - message
+        - timestamp
+        - categoryName
+        - taskName
+        - read
+      type: object
+    EncouragementSender:
+      additionalProperties: false
+      properties:
+        id:
+          description: Sender's user ID
+          examples:
+            - 507f1f77bcf86cd799439011
+          type: string
+        name:
+          description: Sender's name
+          examples:
+            - John Doe
+          type: string
+        picture:
+          description: Sender's profile picture URL
+          examples:
+            - https://example.com/avatar.jpg
+          type: string
+      required:
+        - name
+        - picture
+        - id
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
         location:
-          description: >-
-            Where the error occurred, e.g. 'body.items[3].tags' or
-            'path.thing-id'
+          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
           type: string
         message:
           description: Error message text
@@ -667,30 +969,26 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/ErrorModel.json'
+            - https://example.com/schemas/ErrorModel.json
           format: uri
           readOnly: true
           type: string
         detail:
-          description: >-
-            A human-readable explanation specific to this occurrence of the
-            problem.
+          description: A human-readable explanation specific to this occurrence of the problem.
           examples:
             - Property foo is required but is missing.
           type: string
         errors:
           description: Optional list of individual error details
           items:
-            $ref: '#/components/schemas/ErrorDetail'
+            $ref: "#/components/schemas/ErrorDetail"
           type:
             - array
-            - 'null'
+            - "null"
         instance:
-          description: >-
-            A URI reference that identifies the specific occurrence of the
-            problem.
+          description: A URI reference that identifies the specific occurrence of the problem.
           examples:
-            - 'https://example.com/error-log/abc123'
+            - https://example.com/error-log/abc123
           format: uri
           type: string
         status:
@@ -700,19 +998,49 @@ components:
           format: int64
           type: integer
         title:
-          description: >-
-            A short, human-readable summary of the problem type. This value
-            should not change between occurrences of the error.
+          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
           examples:
             - Bad Request
           type: string
         type:
-          default: 'about:blank'
+          default: about:blank
           description: A URI reference to human-readable documentation for the error.
           examples:
-            - 'https://example.com/errors/example'
+            - https://example.com/errors/example
           format: uri
           type: string
+      type: object
+    GenerateImageUploadURLOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/GenerateImageUploadURLOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        key:
+          examples:
+            - profiles/507f1f77bcf86cd799439011/uuid.jpg
+          type: string
+        message:
+          examples:
+            - Upload URL generated successfully
+          type: string
+        public_url:
+          examples:
+            - https://kindred.nyc3.digitaloceanspaces.com/profiles/507f1f77bcf86cd799439011/uuid.jpg
+          type: string
+        upload_url:
+          examples:
+            - https://presigned-upload-url...
+          type: string
+      required:
+        - upload_url
+        - key
+        - public_url
+        - message
       type: object
     HealthOutputBody:
       additionalProperties: false
@@ -720,7 +1048,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/HealthOutputBody.json'
+            - https://example.com/schemas/HealthOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -737,7 +1065,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/LoginRequest.json'
+            - https://example.com/schemas/LoginRequest.json
           format: uri
           readOnly: true
           type: string
@@ -755,7 +1083,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/LoginRequestApple.json'
+            - https://example.com/schemas/LoginRequestApple.json
           format: uri
           readOnly: true
           type: string
@@ -770,7 +1098,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/LogoutOutputBody.json'
+            - https://example.com/schemas/LogoutOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -781,13 +1109,61 @@ components:
       required:
         - message
       type: object
+    MarkCongratulationsReadOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/MarkCongratulationsReadOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        count:
+          description: Number of congratulations marked as read
+          examples:
+            - 2
+          format: int64
+          type: integer
+        message:
+          examples:
+            - Congratulations marked as read successfully
+          type: string
+      required:
+        - message
+        - count
+      type: object
+    MarkEncouragementsReadOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/MarkEncouragementsReadOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        count:
+          description: Number of encouragements marked as read
+          examples:
+            - 2
+          format: int64
+          type: integer
+        message:
+          examples:
+            - Encouragements marked as read successfully
+          type: string
+      required:
+        - message
+        - count
+      type: object
     PostDocument:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/PostDocument.json'
+            - https://example.com/schemas/PostDocument.json
           format: uri
           readOnly: true
           type: string
@@ -800,7 +1176,7 @@ components:
         picture:
           type:
             - string
-            - 'null'
+            - "null"
         timestamp:
           format: date-time
           type: string
@@ -817,7 +1193,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/ProfileDocument.json'
+            - https://example.com/schemas/ProfileDocument.json
           format: uri
           readOnly: true
           type: string
@@ -828,7 +1204,7 @@ components:
             type: string
           type:
             - array
-            - 'null'
+            - "null"
         handle:
           type: string
         id:
@@ -836,7 +1212,7 @@ components:
         profile_picture:
           type:
             - string
-            - 'null'
+            - "null"
         tasks_complete:
           format: int64
           type: integer
@@ -859,14 +1235,14 @@ components:
             type: integer
           type:
             - array
-            - 'null'
+            - "null"
         daysOfWeek:
           items:
             format: int64
             type: integer
           type:
             - array
-            - 'null'
+            - "null"
         every:
           format: int64
           type: integer
@@ -876,16 +1252,16 @@ components:
             type: integer
           type:
             - array
-            - 'null'
+            - "null"
         reminders:
           items:
             format: date-time
             type:
               - string
-              - 'null'
+              - "null"
           type:
             - array
-            - 'null'
+            - "null"
       type: object
     RegisterOutputBody:
       additionalProperties: false
@@ -893,7 +1269,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/RegisterOutputBody.json'
+            - https://example.com/schemas/RegisterOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -910,7 +1286,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/RegisterRequest.json'
+            - https://example.com/schemas/RegisterRequest.json
           format: uri
           readOnly: true
           type: string
@@ -928,7 +1304,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/RegisterRequestApple.json'
+            - https://example.com/schemas/RegisterRequestApple.json
           format: uri
           readOnly: true
           type: string
@@ -943,6 +1319,8 @@ components:
     Reminder:
       additionalProperties: false
       properties:
+        afterDeadline:
+          type: boolean
         afterStart:
           type: boolean
         beforeDeadline:
@@ -963,6 +1341,7 @@ components:
         - afterStart
         - beforeStart
         - beforeDeadline
+        - afterDeadline
       type: object
     SafeUser:
       additionalProperties: false
@@ -970,7 +1349,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/SafeUser.json'
+            - https://example.com/schemas/SafeUser.json
           format: uri
           readOnly: true
           type: string
@@ -978,10 +1357,10 @@ components:
           type: string
         categories:
           items:
-            $ref: '#/components/schemas/CategoryDocument'
+            $ref: "#/components/schemas/CategoryDocument"
           type:
             - array
-            - 'null'
+            - "null"
         display_name:
           type: string
         friends:
@@ -989,17 +1368,17 @@ components:
             type: string
           type:
             - array
-            - 'null'
+            - "null"
         handle:
           type: string
         profile_picture:
           type: string
         recent_activity:
           items:
-            $ref: '#/components/schemas/ActivityDocument'
+            $ref: "#/components/schemas/ActivityDocument"
           type:
             - array
-            - 'null'
+            - "null"
         tasks_complete:
           format: double
           type: number
@@ -1019,7 +1398,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/SubscribeToBlueprintOutputBody.json'
+            - https://example.com/schemas/SubscribeToBlueprintOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1036,7 +1415,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/TaskDocument.json'
+            - https://example.com/schemas/TaskDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1046,10 +1425,10 @@ components:
           type: string
         checklist:
           items:
-            $ref: '#/components/schemas/ChecklistItem'
+            $ref: "#/components/schemas/ChecklistItem"
           type:
             - array
-            - 'null'
+            - "null"
         content:
           type: string
         deadline:
@@ -1068,7 +1447,7 @@ components:
         public:
           type: boolean
         recurDetails:
-          $ref: '#/components/schemas/RecurDetails'
+          $ref: "#/components/schemas/RecurDetails"
         recurFrequency:
           type: string
         recurType:
@@ -1077,15 +1456,15 @@ components:
           type: boolean
         reminders:
           items:
-            $ref: '#/components/schemas/Reminder'
+            $ref: "#/components/schemas/Reminder"
           type:
             - array
-            - 'null'
+            - "null"
         startDate:
           format: date-time
           type:
             - string
-            - 'null'
+            - "null"
         startTime:
           format: date-time
           type: string
@@ -1114,14 +1493,21 @@ components:
     TemplateTaskDocument:
       additionalProperties: false
       properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/TemplateTaskDocument.json
+          format: uri
+          readOnly: true
+          type: string
         categoryID:
           type: string
         checklist:
           items:
-            $ref: '#/components/schemas/ChecklistItem'
+            $ref: "#/components/schemas/ChecklistItem"
           type:
             - array
-            - 'null'
+            - "null"
         content:
           type: string
         deadline:
@@ -1136,12 +1522,12 @@ components:
           format: date-time
           type:
             - string
-            - 'null'
+            - "null"
         nextGenerated:
           format: date-time
           type:
             - string
-            - 'null'
+            - "null"
         notes:
           type: string
         priority:
@@ -1150,17 +1536,17 @@ components:
         public:
           type: boolean
         recurDetails:
-          $ref: '#/components/schemas/RecurDetails'
+          $ref: "#/components/schemas/RecurDetails"
         recurFrequency:
           type: string
         recurType:
           type: string
         reminders:
           items:
-            $ref: '#/components/schemas/Reminder'
+            $ref: "#/components/schemas/Reminder"
           type:
             - array
-            - 'null'
+            - "null"
         startDate:
           format: date-time
           type: string
@@ -1189,7 +1575,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/TestOutputBody.json'
+            - https://example.com/schemas/TestOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1206,8 +1592,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - >-
-              https://example.com/schemas/UnsubscribeFromBlueprintOutputBody.json
+            - https://example.com/schemas/UnsubscribeFromBlueprintOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1224,7 +1609,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateActivityDocument.json'
+            - https://example.com/schemas/UpdateActivityDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1241,7 +1626,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateActivityOutputBody.json'
+            - https://example.com/schemas/UpdateActivityOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1258,14 +1643,14 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateBlueprintDocument.json'
+            - https://example.com/schemas/UpdateBlueprintDocument.json
           format: uri
           readOnly: true
           type: string
         banner:
           description: New banner image URL
           examples:
-            - 'https://example.com/new-banner.jpg'
+            - https://example.com/new-banner.jpg
           type: string
         description:
           description: New description
@@ -1301,7 +1686,7 @@ components:
         timestamp:
           description: Update timestamp
           examples:
-            - '2023-01-02T00:00:00Z'
+            - "2023-01-02T00:00:00Z"
           format: date-time
           type: string
       type: object
@@ -1311,7 +1696,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateBlueprintOutputBody.json'
+            - https://example.com/schemas/UpdateBlueprintOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1328,12 +1713,66 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateCategoryDocument.json'
+            - https://example.com/schemas/UpdateCategoryDocument.json
           format: uri
           readOnly: true
           type: string
         name:
           type: string
+      type: object
+    UpdateCongratulationDocument:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateCongratulationDocument.json
+          format: uri
+          readOnly: true
+          type: string
+        categoryName:
+          description: New category name
+          examples:
+            - Updated Work
+          type: string
+        message:
+          description: New message
+          examples:
+            - Updated congratulation message
+          type: string
+        read:
+          description: Read status
+          examples:
+            - true
+          type: boolean
+        taskName:
+          description: New task name
+          examples:
+            - Updated task name
+          type: string
+        timestamp:
+          description: Update timestamp
+          examples:
+            - "2023-01-02T00:00:00Z"
+          format: date-time
+          type: string
+      type: object
+    UpdateCongratulationOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateCongratulationOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Congratulation updated successfully
+          type: string
+      required:
+        - message
       type: object
     UpdateConnectionDocument:
       additionalProperties: false
@@ -1341,7 +1780,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateConnectionDocument.json'
+            - https://example.com/schemas/UpdateConnectionDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1352,7 +1791,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateConnectionOutputBody.json'
+            - https://example.com/schemas/UpdateConnectionOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1363,13 +1802,67 @@ components:
       required:
         - message
       type: object
+    UpdateEncouragementDocument:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateEncouragementDocument.json
+          format: uri
+          readOnly: true
+          type: string
+        categoryName:
+          description: New category name
+          examples:
+            - Updated Work
+          type: string
+        message:
+          description: New message
+          examples:
+            - Updated encouragement message
+          type: string
+        read:
+          description: Read status
+          examples:
+            - true
+          type: boolean
+        taskName:
+          description: New task name
+          examples:
+            - Updated task name
+          type: string
+        timestamp:
+          description: Update timestamp
+          examples:
+            - "2023-01-02T00:00:00Z"
+          format: date-time
+          type: string
+      type: object
+    UpdateEncouragementOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/UpdateEncouragementOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Encouragement updated successfully
+          type: string
+      required:
+        - message
+      type: object
     UpdatePostDocument:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdatePostDocument.json'
+            - https://example.com/schemas/UpdatePostDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1386,7 +1879,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdatePostOutputBody.json'
+            - https://example.com/schemas/UpdatePostOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1403,7 +1896,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateProfileDocument.json'
+            - https://example.com/schemas/UpdateProfileDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1420,7 +1913,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateProfileOutputBody.json'
+            - https://example.com/schemas/UpdateProfileOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1437,7 +1930,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdatePushTokenOutputBody.json'
+            - https://example.com/schemas/UpdatePushTokenOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1454,7 +1947,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdatePushTokenRequest.json'
+            - https://example.com/schemas/UpdatePushTokenRequest.json
           format: uri
           readOnly: true
           type: string
@@ -1469,16 +1962,16 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateTaskChecklistDocument.json'
+            - https://example.com/schemas/UpdateTaskChecklistDocument.json
           format: uri
           readOnly: true
           type: string
         checklist:
           items:
-            $ref: '#/components/schemas/ChecklistItem'
+            $ref: "#/components/schemas/ChecklistItem"
           type:
             - array
-            - 'null'
+            - "null"
       required:
         - checklist
       type: object
@@ -1488,7 +1981,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateTaskChecklistOutputBody.json'
+            - https://example.com/schemas/UpdateTaskChecklistOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1505,7 +1998,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateTaskDocument.json'
+            - https://example.com/schemas/UpdateTaskDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1513,10 +2006,10 @@ components:
           type: boolean
         checklist:
           items:
-            $ref: '#/components/schemas/ChecklistItem'
+            $ref: "#/components/schemas/ChecklistItem"
           type:
             - array
-            - 'null'
+            - "null"
         content:
           type: string
         notes:
@@ -1527,7 +2020,7 @@ components:
         public:
           type: boolean
         recurDetails:
-          $ref: '#/components/schemas/RecurDetails'
+          $ref: "#/components/schemas/RecurDetails"
         recurring:
           type: boolean
         value:
@@ -1548,7 +2041,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateTaskNotesDocument.json'
+            - https://example.com/schemas/UpdateTaskNotesDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1563,7 +2056,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateTaskNotesOutputBody.json'
+            - https://example.com/schemas/UpdateTaskNotesOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1580,7 +2073,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/UpdateTaskOutputBody.json'
+            - https://example.com/schemas/UpdateTaskOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1612,7 +2105,7 @@ components:
         profile_picture:
           description: Profile picture URL
           examples:
-            - 'https://example.com/avatar.jpg'
+            - https://example.com/avatar.jpg
           type: string
       required:
         - _id
@@ -1626,7 +2119,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/WaitlistDocument.json'
+            - https://example.com/schemas/WaitlistDocument.json
           format: uri
           readOnly: true
           type: string
@@ -1648,7 +2141,7 @@ components:
         timestamp:
           description: Entry creation timestamp
           examples:
-            - '2023-01-01T00:00:00Z'
+            - "2023-01-01T00:00:00Z"
           format: date-time
           type: string
       required:
@@ -1663,7 +2156,7 @@ components:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - 'https://example.com/schemas/WelcomeOutputBody.json'
+            - https://example.com/schemas/WelcomeOutputBody.json
           format: uri
           readOnly: true
           type: string
@@ -1679,10 +2172,10 @@ components:
       properties:
         categories:
           items:
-            $ref: '#/components/schemas/CategoryDocument'
+            $ref: "#/components/schemas/CategoryDocument"
           type:
             - array
-            - 'null'
+            - "null"
         name:
           type: string
       required:
@@ -1700,21 +2193,21 @@ paths:
       description: Retrieve all activity records
       operationId: get-activities
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/ActivityDocument'
+                  $ref: "#/components/schemas/ActivityDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all activities
       tags:
@@ -1726,25 +2219,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateActivityParams'
+              $ref: "#/components/schemas/CreateActivityParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityDocument'
+                $ref: "#/components/schemas/ActivityDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new activity
       tags:
         - activities
-  '/v1/activity/{id}':
+  /v1/activity/{id}:
     delete:
       description: Delete an activity record
       operationId: delete-activity
@@ -1758,17 +2251,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteActivityOutputBody'
+                $ref: "#/components/schemas/DeleteActivityOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete activity
       tags:
@@ -1786,17 +2279,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityDocument'
+                $ref: "#/components/schemas/ActivityDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get activity by ID
       tags:
@@ -1817,24 +2310,81 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateActivityDocument'
+              $ref: "#/components/schemas/UpdateActivityDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateActivityOutputBody'
+                $ref: "#/components/schemas/UpdateActivityOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update activity
       tags:
         - activities
+  /v1/assets/upload:
+    post:
+      description: Create a presigned URL to upload an asset to S3
+      operationId: create-presigned-url
+      parameters:
+        - example: image/jpeg
+          explode: false
+          in: query
+          name: fileType
+          required: true
+          schema:
+            examples:
+              - image/jpeg
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: {}
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create presigned URL for asset upload
+      tags:
+        - assets
+  /v1/assets/{key}/url:
+    get:
+      description: Get a presigned URL to download an asset from S3
+      operationId: get-presigned-url
+      parameters:
+        - example: profile-pictures/user123.jpg
+          in: path
+          name: key
+          required: true
+          schema:
+            examples:
+              - profile-pictures/user123.jpg
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: {}
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get presigned URL for asset download
+      tags:
+        - assets
   /v1/auth/login:
     post:
       description: Authenticate user with email and password
@@ -1843,14 +2393,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SafeUser'
+                $ref: "#/components/schemas/SafeUser"
           description: OK
           headers:
             access_token:
@@ -1863,7 +2413,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: User login
       tags:
@@ -1876,14 +2426,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequestApple'
+              $ref: "#/components/schemas/LoginRequestApple"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SafeUser'
+                $ref: "#/components/schemas/SafeUser"
           description: OK
           headers:
             access_token:
@@ -1896,7 +2446,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Login with Apple
       tags:
@@ -1912,17 +2462,17 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogoutOutputBody'
+                $ref: "#/components/schemas/LogoutOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: User logout
       tags:
@@ -1935,14 +2485,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: "#/components/schemas/RegisterRequest"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegisterOutputBody'
+                $ref: "#/components/schemas/RegisterOutputBody"
           description: OK
           headers:
             access_token:
@@ -1955,7 +2505,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: User registration
       tags:
@@ -1968,14 +2518,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequestApple'
+              $ref: "#/components/schemas/RegisterRequestApple"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegisterOutputBody'
+                $ref: "#/components/schemas/RegisterOutputBody"
           description: OK
           headers:
             access_token:
@@ -1988,7 +2538,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Register with Apple
       tags:
@@ -1998,26 +2548,59 @@ paths:
       description: Retrieve all blueprints
       operationId: get-blueprints
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/BlueprintDocument'
+                  $ref: "#/components/schemas/BlueprintDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all blueprints
       tags:
         - blueprints
-  '/v1/blueprints/{id}':
+  /v1/blueprints/search:
+    get:
+      description: Search for blueprints by name, description, tags, or owner handle
+      operationId: search-blueprints
+      parameters:
+        - example: morning routine
+          explode: false
+          in: query
+          name: query
+          schema:
+            examples:
+              - morning routine
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/BlueprintDocument"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Search blueprints
+      tags:
+        - blueprints
+  /v1/blueprints/{id}:
     get:
       description: Retrieve a specific blueprint by its ID
       operationId: get-blueprint
@@ -2031,17 +2614,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlueprintDocument'
+                $ref: "#/components/schemas/BlueprintDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get blueprint by ID
       tags:
@@ -2051,26 +2634,26 @@ paths:
       description: Retrieve all categories
       operationId: get-categories
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/CategoryDocument'
+                  $ref: "#/components/schemas/CategoryDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all categories
       tags:
         - categories
-  '/v1/categories/{id}':
+  /v1/categories/{id}:
     get:
       description: Retrieve a specific category by its ID
       operationId: get-category
@@ -2084,17 +2667,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CategoryDocument'
+                $ref: "#/components/schemas/CategoryDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get category by ID
       tags:
@@ -2104,17 +2687,17 @@ paths:
       description: Returns the health status of the API
       operationId: get-health
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthOutputBody'
+                $ref: "#/components/schemas/HealthOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Health check endpoint
       tags:
@@ -2124,26 +2707,26 @@ paths:
       description: Retrieve all user profiles
       operationId: get-profiles
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/ProfileDocument'
+                  $ref: "#/components/schemas/ProfileDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all profiles
       tags:
         - profiles
-  '/v1/profiles/email/{email}':
+  /v1/profiles/email/{email}:
     get:
       description: Retrieve a user profile by email address
       operationId: get-profile-by-email
@@ -2157,46 +2740,46 @@ paths:
               - user@example.com
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileDocument'
+                $ref: "#/components/schemas/ProfileDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get profile by email
       tags:
         - profiles
-  '/v1/profiles/phone/{phone}':
+  /v1/profiles/phone/{phone}:
     get:
       description: Retrieve a user profile by phone number
       operationId: get-profile-by-phone
       parameters:
-        - example: '+1234567890'
+        - example: "+1234567890"
           in: path
           name: phone
           required: true
           schema:
             examples:
-              - '+1234567890'
+              - "+1234567890"
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileDocument'
+                $ref: "#/components/schemas/ProfileDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get profile by phone
       tags:
@@ -2215,26 +2798,26 @@ paths:
               - john
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/ProfileDocument'
+                  $ref: "#/components/schemas/ProfileDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Search profiles
       tags:
         - profiles
-  '/v1/profiles/{id}':
+  /v1/profiles/{id}:
     delete:
       description: Delete a user profile
       operationId: delete-profile
@@ -2248,17 +2831,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteProfileOutputBody'
+                $ref: "#/components/schemas/DeleteProfileOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete profile
       tags:
@@ -2276,17 +2859,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileDocument'
+                $ref: "#/components/schemas/ProfileDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get profile by ID
       tags:
@@ -2307,20 +2890,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProfileDocument'
+              $ref: "#/components/schemas/UpdateProfileDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateProfileOutputBody'
+                $ref: "#/components/schemas/UpdateProfileOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update profile
       tags:
@@ -2330,26 +2913,26 @@ paths:
       description: Retrieve all task records
       operationId: get-tasks
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/TaskDocument'
+                  $ref: "#/components/schemas/TaskDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all tasks
       tags:
         - tasks
-  '/v1/tasks/active/{id}':
+  /v1/tasks/active/{id}:
     get:
       description: Retrieve all active tasks for a user
       operationId: get-active-tasks
@@ -2363,26 +2946,26 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/TaskDocument'
+                  $ref: "#/components/schemas/TaskDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get active tasks
       tags:
         - tasks
-  '/v1/tasks/{id}':
+  /v1/tasks/{id}:
     get:
       description: Retrieve a specific task by its ID
       operationId: get-task
@@ -2401,21 +2984,112 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskDocument'
+                $ref: "#/components/schemas/TaskDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get task by ID
       tags:
         - tasks
+  /v1/uploads/{resource_type}/{resource_id}/confirm:
+    post:
+      description: Confirm that an image has been successfully uploaded and update the resource
+      operationId: confirm-image-upload
+      parameters:
+        - example: profile
+          in: path
+          name: resource_type
+          required: true
+          schema:
+            examples:
+              - profile
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: resource_id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmImageUploadInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfirmImageUploadOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Confirm image upload
+      tags:
+        - uploads
+        - images
+  /v1/uploads/{resource_type}/{resource_id}/url:
+    get:
+      description: Generate a presigned URL for uploading images to Digital Ocean Spaces
+      operationId: generate-image-upload-url
+      parameters:
+        - example: profile
+          in: path
+          name: resource_type
+          required: true
+          schema:
+            examples:
+              - profile
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: resource_id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+        - example: image/jpeg
+          explode: false
+          in: query
+          name: file_type
+          required: true
+          schema:
+            examples:
+              - image/jpeg
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateImageUploadURLOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Generate presigned URL for image upload
+      tags:
+        - uploads
+        - images
   /v1/user:
     get:
       description: Test endpoint for authenticated users
@@ -2427,17 +3101,17 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TestOutputBody'
+                $ref: "#/components/schemas/TestOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Test authentication
       tags:
@@ -2453,17 +3127,17 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TestOutputBody'
+                $ref: "#/components/schemas/TestOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Test authentication
       tags:
@@ -2491,25 +3165,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateBlueprintParams'
+              $ref: "#/components/schemas/CreateBlueprintParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlueprintDocument'
+                $ref: "#/components/schemas/BlueprintDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new blueprint
       tags:
         - blueprints
-  '/v1/user/blueprints/{id}':
+  /v1/user/blueprints/{id}:
     delete:
       description: Delete a blueprint for the authenticated user
       operationId: delete-blueprint
@@ -2537,17 +3211,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteBlueprintOutputBody'
+                $ref: "#/components/schemas/DeleteBlueprintOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete blueprint
       tags:
@@ -2582,25 +3256,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateBlueprintDocument'
+              $ref: "#/components/schemas/UpdateBlueprintDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateBlueprintOutputBody'
+                $ref: "#/components/schemas/UpdateBlueprintOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update blueprint
       tags:
         - blueprints
-  '/v1/user/blueprints/{id}/subscribe':
+  /v1/user/blueprints/{id}/subscribe:
     patch:
       description: Subscribe to a blueprint
       operationId: subscribe-to-blueprint
@@ -2628,22 +3302,22 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SubscribeToBlueprintOutputBody'
+                $ref: "#/components/schemas/SubscribeToBlueprintOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Subscribe to blueprint
       tags:
         - blueprints
-  '/v1/user/blueprints/{id}/unsubscribe':
+  /v1/user/blueprints/{id}/unsubscribe:
     patch:
       description: Unsubscribe from a blueprint
       operationId: unsubscribe-from-blueprint
@@ -2671,17 +3345,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnsubscribeFromBlueprintOutputBody'
+                $ref: "#/components/schemas/UnsubscribeFromBlueprintOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Unsubscribe from blueprint
       tags:
@@ -2700,25 +3374,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCategoryParams'
+              $ref: "#/components/schemas/CreateCategoryParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CategoryDocument'
+                $ref: "#/components/schemas/CategoryDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new category
       tags:
         - categories
-  '/v1/user/categories/workspace/{name}':
+  /v1/user/categories/workspace/{name}:
     delete:
       description: Delete a workspace and all its categories
       operationId: delete-workspace
@@ -2737,22 +3411,22 @@ paths:
               - workspace1
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteWorkspaceOutputBody'
+                $ref: "#/components/schemas/DeleteWorkspaceOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete workspace
       tags:
         - categories
-  '/v1/user/categories/{id}':
+  /v1/user/categories/{id}:
     delete:
       description: Delete a category for the authenticated user
       operationId: delete-category
@@ -2771,17 +3445,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteCategoryOutputBody'
+                $ref: "#/components/schemas/DeleteCategoryOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete category
       tags:
@@ -2799,21 +3473,21 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/WorkspaceResult'
+                  $ref: "#/components/schemas/WorkspaceResult"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get categories by user ID
       tags:
@@ -2839,24 +3513,271 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateCategoryDocument'
+              $ref: "#/components/schemas/UpdateCategoryDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CategoryDocument'
+                $ref: "#/components/schemas/CategoryDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update category
       tags:
         - categories
+  /v1/user/congratulations:
+    get:
+      description: Retrieve all congratulations received by the authenticated user
+      operationId: get-congratulations
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/CongratulationDocument"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get congratulations
+      tags:
+        - congratulations
+    post:
+      description: Create a new congratulation message for another user
+      operationId: create-congratulation
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCongratulationParams"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CongratulationDocument"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create a new congratulation
+      tags:
+        - congratulations
+  /v1/user/congratulations/mark-read:
+    patch:
+      description: Mark multiple congratulations as read
+      operationId: mark-congratulations-read
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarkCongratulationsReadOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Mark congratulations as read
+      tags:
+        - congratulations
+  /v1/user/congratulations/{id}:
+    delete:
+      description: Delete a congratulation message
+      operationId: delete-congratulation
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteCongratulationOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete congratulation
+      tags:
+        - congratulations
+    get:
+      description: Retrieve a specific congratulation by its ID
+      operationId: get-congratulation
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CongratulationDocument"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get congratulation by ID
+      tags:
+        - congratulations
+    patch:
+      description: Update a congratulation message
+      operationId: update-congratulation
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCongratulationDocument"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateCongratulationOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update congratulation
+      tags:
+        - congratulations
   /v1/user/connections:
     get:
       description: Retrieve all connection requests
@@ -2877,21 +3798,21 @@ paths:
             description: Refresh token for authentication
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/ConnectionDocument'
+                  $ref: "#/components/schemas/ConnectionDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all connections
       tags:
@@ -2918,20 +3839,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateConnectionParams'
+              $ref: "#/components/schemas/CreateConnectionParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectionDocument'
+                $ref: "#/components/schemas/ConnectionDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new connection
       tags:
@@ -2956,26 +3877,26 @@ paths:
             description: Refresh token for authentication
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/ConnectionDocument'
+                  $ref: "#/components/schemas/ConnectionDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get connections by receiver
       tags:
         - connections
-  '/v1/user/connections/requested/{id}':
+  /v1/user/connections/requested/{id}:
     get:
       description: Get all connections where the specified user is the requester
       operationId: get-connections-by-requester
@@ -3003,26 +3924,26 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/ConnectionDocument'
+                  $ref: "#/components/schemas/ConnectionDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get connections by requester
       tags:
         - connections
-  '/v1/user/connections/{id}':
+  /v1/user/connections/{id}:
     delete:
       description: Delete/deny a connection request
       operationId: delete-connection
@@ -3050,17 +3971,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteConnectionOutputBody'
+                $ref: "#/components/schemas/DeleteConnectionOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete connection
       tags:
@@ -3092,17 +4013,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectionDocument'
+                $ref: "#/components/schemas/ConnectionDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get connection by ID
       tags:
@@ -3137,24 +4058,271 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateConnectionDocument'
+              $ref: "#/components/schemas/UpdateConnectionDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateConnectionOutputBody'
+                $ref: "#/components/schemas/UpdateConnectionOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update connection
       tags:
         - connections
+  /v1/user/encouragements:
+    get:
+      description: Retrieve all encouragements received by the authenticated user
+      operationId: get-encouragements
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/EncouragementDocument"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get encouragements
+      tags:
+        - encouragements
+    post:
+      description: Create a new encouragement message for another user
+      operationId: create-encouragement
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEncouragementParams"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EncouragementDocument"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create a new encouragement
+      tags:
+        - encouragements
+  /v1/user/encouragements/mark-read:
+    patch:
+      description: Mark multiple encouragements as read
+      operationId: mark-encouragements-read
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarkEncouragementsReadOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Mark encouragements as read
+      tags:
+        - encouragements
+  /v1/user/encouragements/{id}:
+    delete:
+      description: Delete an encouragement message
+      operationId: delete-encouragement
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteEncouragementOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Delete encouragement
+      tags:
+        - encouragements
+    get:
+      description: Retrieve a specific encouragement by its ID
+      operationId: get-encouragement
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EncouragementDocument"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get encouragement by ID
+      tags:
+        - encouragements
+    patch:
+      description: Update an encouragement message
+      operationId: update-encouragement
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEncouragementDocument"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateEncouragementOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Update encouragement
+      tags:
+        - encouragements
   /v1/user/login:
     post:
       description: Authenticate user with existing token
@@ -3166,11 +4334,11 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SafeUser'
+                $ref: "#/components/schemas/SafeUser"
           description: OK
           headers:
             access_token:
@@ -3183,7 +4351,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Login with token
       tags:
@@ -3199,21 +4367,21 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/PostDocument'
+                  $ref: "#/components/schemas/PostDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all posts
       tags:
@@ -3231,25 +4399,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePostParams'
+              $ref: "#/components/schemas/CreatePostParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PostDocument'
+                $ref: "#/components/schemas/PostDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new post
       tags:
         - posts
-  '/v1/user/posts/{id}':
+  /v1/user/posts/{id}:
     delete:
       description: Delete an existing post
       operationId: delete-post
@@ -3268,17 +4436,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeletePostOutputBody'
+                $ref: "#/components/schemas/DeletePostOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete post
       tags:
@@ -3301,17 +4469,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PostDocument'
+                $ref: "#/components/schemas/PostDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get post by ID
       tags:
@@ -3337,20 +4505,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatePostDocument'
+              $ref: "#/components/schemas/UpdatePostDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdatePostOutputBody'
+                $ref: "#/components/schemas/UpdatePostOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update post
       tags:
@@ -3369,20 +4537,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatePushTokenRequest'
+              $ref: "#/components/schemas/UpdatePushTokenRequest"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdatePushTokenOutputBody'
+                $ref: "#/components/schemas/UpdatePushTokenOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update push token
       tags:
@@ -3411,36 +4579,36 @@ paths:
             examples:
               - timestamp
             type: string
-        - example: '-1'
+        - example: "-1"
           explode: false
           in: query
           name: sortDir
           schema:
-            default: '-1'
+            default: "-1"
             examples:
-              - '-1'
+              - "-1"
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/TaskDocument'
+                  $ref: "#/components/schemas/TaskDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get tasks by user
       tags:
         - tasks
-  '/v1/user/tasks/active/{category}/{id}':
+  /v1/user/tasks/active/{category}/{id}:
     post:
       description: Change the active status of a task
       operationId: activate-task
@@ -3466,31 +4634,31 @@ paths:
             examples:
               - 507f1f77bcf86cd799439011
             type: string
-        - example: 'true'
+        - example: "true"
           explode: false
           in: query
           name: active
           schema:
             examples:
-              - 'true'
+              - "true"
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivateTaskOutputBody'
+                $ref: "#/components/schemas/ActivateTaskOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Activate/deactivate task
       tags:
         - tasks
-  '/v1/user/tasks/complete/{category}/{id}':
+  /v1/user/tasks/complete/{category}/{id}:
     post:
       description: Mark a task as completed
       operationId: complete-task
@@ -3520,22 +4688,52 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompleteTaskDocument'
+              $ref: "#/components/schemas/CompleteTaskDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CompleteTaskOutputBody'
+                $ref: "#/components/schemas/CompleteTaskOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Complete task
+      tags:
+        - tasks
+  /v1/user/tasks/completed:
+    get:
+      description: Retrieve all completed tasks for the logged in user
+      operationId: get-completed-tasks
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/TaskDocument"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get completed tasks
       tags:
         - tasks
   /v1/user/tasks/template/old:
@@ -3543,21 +4741,21 @@ paths:
       description: Get all tasks with start times older than one day
       operationId: get-tasks-with-old-start-times
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/TemplateTaskDocument'
+                  $ref: "#/components/schemas/TemplateTaskDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get tasks with old start times
       tags:
@@ -3567,26 +4765,59 @@ paths:
       description: Get all recurring tasks that have past their deadlines
       operationId: get-recurring-tasks-with-past-deadlines
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/TemplateTaskDocument'
+                  $ref: "#/components/schemas/TemplateTaskDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get recurring tasks with past deadlines
       tags:
         - tasks
-  '/v1/user/tasks/template/{id}':
+  /v1/user/tasks/template/{id}:
+    get:
+      description: Retrieve a template by its ID
+      operationId: get-template-by-id
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: id
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateTaskDocument"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get template by ID
+      tags:
+        - tasks
     post:
       description: Create a new task based on a template
       operationId: create-task-from-template
@@ -3600,22 +4831,22 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskDocument'
+                $ref: "#/components/schemas/TaskDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create task from template
       tags:
         - tasks
-  '/v1/user/tasks/{category}':
+  /v1/user/tasks/{category}:
     post:
       description: Create a new task in a specific category
       operationId: create-task
@@ -3637,25 +4868,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTaskParams'
+              $ref: "#/components/schemas/CreateTaskParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskDocument'
+                $ref: "#/components/schemas/TaskDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new task
       tags:
         - tasks
-  '/v1/user/tasks/{category}/{id}':
+  /v1/user/tasks/{category}/{id}:
     delete:
       description: Delete a task record
       operationId: delete-task
@@ -3682,17 +4913,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteTaskOutputBody'
+                $ref: "#/components/schemas/DeleteTaskOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete task
       tags:
@@ -3726,25 +4957,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTaskDocument'
+              $ref: "#/components/schemas/UpdateTaskDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateTaskOutputBody'
+                $ref: "#/components/schemas/UpdateTaskOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update task
       tags:
         - tasks
-  '/v1/user/tasks/{category}/{id}/checklist':
+  /v1/user/tasks/{category}/{id}/checklist:
     post:
       description: Update the checklist field of a task
       operationId: update-task-checklist
@@ -3774,25 +5005,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTaskChecklistDocument'
+              $ref: "#/components/schemas/UpdateTaskChecklistDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateTaskChecklistOutputBody'
+                $ref: "#/components/schemas/UpdateTaskChecklistOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update task checklist
       tags:
         - tasks
-  '/v1/user/tasks/{category}/{id}/notes':
+  /v1/user/tasks/{category}/{id}/notes:
     post:
       description: Update the notes field of a task
       operationId: update-task-notes
@@ -3822,20 +5053,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTaskNotesDocument'
+              $ref: "#/components/schemas/UpdateTaskNotesDocument"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateTaskNotesOutputBody'
+                $ref: "#/components/schemas/UpdateTaskNotesOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Update task notes
       tags:
@@ -3860,26 +5091,26 @@ paths:
             description: Refresh token for authentication
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/WaitlistDocument'
+                  $ref: "#/components/schemas/WaitlistDocument"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get all waitlist entries
       tags:
         - waitlist
-  '/v1/user/waitlist/{id}':
+  /v1/user/waitlist/{id}:
     delete:
       description: Remove a waitlist entry by its ID
       operationId: delete-waitlist
@@ -3907,17 +5138,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeleteWaitlistOutputBody'
+                $ref: "#/components/schemas/DeleteWaitlistOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete waitlist entry
       tags:
@@ -3949,17 +5180,17 @@ paths:
               - 507f1f77bcf86cd799439011
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WaitlistDocument'
+                $ref: "#/components/schemas/WaitlistDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get waitlist entry by ID
       tags:
@@ -3975,21 +5206,21 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/WorkspaceResult'
+                  $ref: "#/components/schemas/WorkspaceResult"
                 type:
                   - array
-                  - 'null'
+                  - "null"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get user workspaces
       tags:
@@ -4002,20 +5233,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateWaitlistParams'
+              $ref: "#/components/schemas/CreateWaitlistParams"
         required: true
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WaitlistDocument'
+                $ref: "#/components/schemas/WaitlistDocument"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Create a new waitlist entry
       tags:
@@ -4025,17 +5256,17 @@ paths:
       description: Returns a welcome message
       operationId: get-welcome
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WelcomeOutputBody'
+                $ref: "#/components/schemas/WelcomeOutputBody"
           description: OK
         default:
           content:
             application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorModel'
+                $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Welcome endpoint
       tags:

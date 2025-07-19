@@ -56,6 +56,46 @@ export interface paths {
         patch: operations["update-activity"];
         trace?: never;
     };
+    "/v1/assets/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create presigned URL for asset upload
+         * @description Create a presigned URL to upload an asset to S3
+         */
+        post: operations["create-presigned-url"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assets/{key}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get presigned URL for asset download
+         * @description Get a presigned URL to download an asset from S3
+         */
+        get: operations["get-presigned-url"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -168,6 +208,26 @@ export interface paths {
          * @description Retrieve all blueprints
          */
         get: operations["get-blueprints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blueprints/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search blueprints
+         * @description Search for blueprints by name, description, tags, or owner handle
+         */
+        get: operations["search-blueprints"];
         put?: never;
         post?: never;
         delete?: never;
@@ -424,6 +484,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/uploads/{resource_type}/{resource_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm image upload
+         * @description Confirm that an image has been successfully uploaded and update the resource
+         */
+        post: operations["confirm-image-upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/uploads/{resource_type}/{resource_id}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Generate presigned URL for image upload
+         * @description Generate a presigned URL for uploading images to Digital Ocean Spaces
+         */
+        get: operations["generate-image-upload-url"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user": {
         parameters: {
             query?: never;
@@ -616,6 +716,78 @@ export interface paths {
         patch: operations["update-category"];
         trace?: never;
     };
+    "/v1/user/congratulations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get congratulations
+         * @description Retrieve all congratulations received by the authenticated user
+         */
+        get: operations["get-congratulations"];
+        put?: never;
+        /**
+         * Create a new congratulation
+         * @description Create a new congratulation message for another user
+         */
+        post: operations["create-congratulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/congratulations/mark-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark congratulations as read
+         * @description Mark multiple congratulations as read
+         */
+        patch: operations["mark-congratulations-read"];
+        trace?: never;
+    };
+    "/v1/user/congratulations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get congratulation by ID
+         * @description Retrieve a specific congratulation by its ID
+         */
+        get: operations["get-congratulation"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete congratulation
+         * @description Delete a congratulation message
+         */
+        delete: operations["delete-congratulation"];
+        options?: never;
+        head?: never;
+        /**
+         * Update congratulation
+         * @description Update a congratulation message
+         */
+        patch: operations["update-congratulation"];
+        trace?: never;
+    };
     "/v1/user/connections": {
         parameters: {
             query?: never;
@@ -706,6 +878,78 @@ export interface paths {
          * @description Update a connection request
          */
         patch: operations["update-connection"];
+        trace?: never;
+    };
+    "/v1/user/encouragements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get encouragements
+         * @description Retrieve all encouragements received by the authenticated user
+         */
+        get: operations["get-encouragements"];
+        put?: never;
+        /**
+         * Create a new encouragement
+         * @description Create a new encouragement message for another user
+         */
+        post: operations["create-encouragement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/encouragements/mark-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark encouragements as read
+         * @description Mark multiple encouragements as read
+         */
+        patch: operations["mark-encouragements-read"];
+        trace?: never;
+    };
+    "/v1/user/encouragements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get encouragement by ID
+         * @description Retrieve a specific encouragement by its ID
+         */
+        get: operations["get-encouragement"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete encouragement
+         * @description Delete an encouragement message
+         */
+        delete: operations["delete-encouragement"];
+        options?: never;
+        head?: never;
+        /**
+         * Update encouragement
+         * @description Update an encouragement message
+         */
+        patch: operations["update-encouragement"];
         trace?: never;
     };
     "/v1/user/login": {
@@ -860,6 +1104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/completed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get completed tasks
+         * @description Retrieve all completed tasks for the logged in user
+         */
+        get: operations["get-completed-tasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/template/old": {
         parameters: {
             query?: never;
@@ -907,7 +1171,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get template by ID
+         * @description Retrieve a template by its ID
+         */
+        get: operations["get-template-by-id"];
         put?: never;
         /**
          * Create task from template
@@ -1202,6 +1470,56 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        ConfirmImageUploadInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            public_url: string;
+        };
+        ConfirmImageUploadOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        CongratulationDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description Category name */
+            categoryName: string;
+            /** @description Unique identifier for the congratulation */
+            id: string;
+            /** @description Congratulation message */
+            message: string;
+            /** @description Whether the congratulation has been read */
+            read: boolean;
+            /** @description Receiver user ID */
+            receiver: string;
+            /** @description Sender information */
+            sender: components["schemas"]["CongratulationSender"];
+            /** @description Task name */
+            taskName: string;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            timestamp: string;
+        };
+        CongratulationSender: {
+            /** @description Sender's user ID */
+            id: string;
+            /** @description Sender's name */
+            name: string;
+            /** @description Sender's profile picture URL */
+            picture: string;
+        };
         ConnectionDocument: {
             /**
              * Format: uri
@@ -1266,6 +1584,21 @@ export interface components {
             name?: string;
             workspaceName?: string;
         };
+        CreateCongratulationParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description Category name */
+            categoryName: string;
+            /** @description Congratulation message */
+            message: string;
+            /** @description Receiver user ID */
+            receiver: string;
+            /** @description Task name */
+            taskName: string;
+        };
         CreateConnectionParams: {
             /**
              * Format: uri
@@ -1276,6 +1609,21 @@ export interface components {
             reciever: string;
             /** @description Connection requester information */
             requester: components["schemas"]["ConnectionUser"];
+        };
+        CreateEncouragementParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description Category name */
+            categoryName: string;
+            /** @description Encouragement message */
+            message: string;
+            /** @description Receiver user ID */
+            receiver: string;
+            /** @description Task name */
+            taskName: string;
         };
         CreatePostParams: {
             /**
@@ -1348,7 +1696,23 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        DeleteCongratulationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         DeleteConnectionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        DeleteEncouragementOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -1397,6 +1761,40 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        EncouragementDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description Category name */
+            categoryName: string;
+            /** @description Unique identifier for the encouragement */
+            id: string;
+            /** @description Encouragement message */
+            message: string;
+            /** @description Whether the encouragement has been read */
+            read: boolean;
+            /** @description Receiver user ID */
+            receiver: string;
+            /** @description Sender information */
+            sender: components["schemas"]["EncouragementSender"];
+            /** @description Task name */
+            taskName: string;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            timestamp: string;
+        };
+        EncouragementSender: {
+            /** @description Sender's user ID */
+            id: string;
+            /** @description Sender's name */
+            name: string;
+            /** @description Sender's profile picture URL */
+            picture: string;
+        };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
             location?: string;
@@ -1434,6 +1832,17 @@ export interface components {
              */
             type: string;
         };
+        GenerateImageUploadURLOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            key: string;
+            message: string;
+            public_url: string;
+            upload_url: string;
+        };
         HealthOutputBody: {
             /**
              * Format: uri
@@ -1465,6 +1874,32 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
+            message: string;
+        };
+        MarkCongratulationsReadOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Number of congratulations marked as read
+             */
+            count: number;
+            message: string;
+        };
+        MarkEncouragementsReadOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Number of encouragements marked as read
+             */
+            count: number;
             message: string;
         };
         PostDocument: {
@@ -1530,6 +1965,7 @@ export interface components {
             email: string;
         };
         Reminder: {
+            afterDeadline: boolean;
             afterStart: boolean;
             beforeDeadline: boolean;
             beforeStart: boolean;
@@ -1598,6 +2034,11 @@ export interface components {
             value: number;
         };
         TemplateTaskDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
             categoryID: string;
             checklist?: components["schemas"]["ChecklistItem"][] | null;
             content: string;
@@ -1699,6 +2140,34 @@ export interface components {
             readonly $schema?: string;
             name?: string;
         };
+        UpdateCongratulationDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description New category name */
+            categoryName?: string;
+            /** @description New message */
+            message?: string;
+            /** @description Read status */
+            read?: boolean;
+            /** @description New task name */
+            taskName?: string;
+            /**
+             * Format: date-time
+             * @description Update timestamp
+             */
+            timestamp?: string;
+        };
+        UpdateCongratulationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         UpdateConnectionDocument: {
             /**
              * Format: uri
@@ -1707,6 +2176,34 @@ export interface components {
             readonly $schema?: string;
         };
         UpdateConnectionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateEncouragementDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description New category name */
+            categoryName?: string;
+            /** @description New message */
+            message?: string;
+            /** @description Read status */
+            read?: boolean;
+            /** @description New task name */
+            taskName?: string;
+            /**
+             * Format: date-time
+             * @description Update timestamp
+             */
+            timestamp?: string;
+        };
+        UpdateEncouragementOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -2035,6 +2532,70 @@ export interface operations {
             };
         };
     };
+    "create-presigned-url": {
+        parameters: {
+            query: {
+                /** @example image/jpeg */
+                fileType: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-presigned-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example profile-pictures/user123.jpg */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -2209,6 +2770,38 @@ export interface operations {
     "get-blueprints": {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "search-blueprints": {
+        parameters: {
+            query?: {
+                /** @example morning routine */
+                query?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2677,6 +3270,81 @@ export interface operations {
             };
         };
     };
+    "confirm-image-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example profile */
+                resource_type: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmImageUploadInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmImageUploadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "generate-image-upload-url": {
+        parameters: {
+            query: {
+                /** @example image/jpeg */
+                file_type: string;
+            };
+            header?: never;
+            path: {
+                /** @example profile */
+                resource_type: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateImageUploadURLOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "auth-test": {
         parameters: {
             query?: never;
@@ -3102,6 +3770,227 @@ export interface operations {
             };
         };
     };
+    "get-congratulations": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CongratulationDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-congratulation": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCongratulationParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CongratulationDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "mark-congratulations-read": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkCongratulationsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-congratulation": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CongratulationDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-congratulation": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteCongratulationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-congratulation": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCongratulationDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateCongratulationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-connections": {
         parameters: {
             query?: never;
@@ -3347,6 +4236,227 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateConnectionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-encouragements": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncouragementDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-encouragement": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEncouragementParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncouragementDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "mark-encouragements-read": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkEncouragementsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-encouragement": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncouragementDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-encouragement": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteEncouragementOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-encouragement": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEncouragementDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateEncouragementOutputBody"];
                 };
             };
             /** @description Error */
@@ -3716,6 +4826,37 @@ export interface operations {
             };
         };
     };
+    "get-completed-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-tasks-with-old-start-times": {
         parameters: {
             query?: never;
@@ -3761,6 +4902,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TemplateTaskDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-template-by-id": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateTaskDocument"];
                 };
             };
             /** @description Error */
