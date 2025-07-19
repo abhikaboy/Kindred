@@ -31,24 +31,29 @@ export default function TabLayout() {
                 headerTitleStyle: {
                     fontFamily: "Outfit",
                 },
-                tabBarActiveBackgroundColor: ThemedColor.lightened + "a0",
-                tabBarButton: HapticTab,
+                tabBarActiveBackgroundColor: ThemedColor.tertiary + "80",
                 tabBarBackground: TabBarBackground,
+                animation: "fade",
+                tabBarVariant: "uikit",
+                tabBarPosition: "bottom",
+                tabBarItemStyle: {
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                },
                 tabBarStyle: Platform.select({
                     ios: {
                         borderTopWidth: 1,
                         borderColor: ThemedColor.tertiary,
                         position: "absolute",
                         marginBottom: 32,
-                        marginHorizontal: "5%",
+                        marginHorizontal: "3%",
                         paddingBottom: 0,
-                        height: 80,
-                        paddingTop: 10,
                         borderRadius: 30,
-                        width: "90%",
+                        width: "94%",
                         overflow: "hidden",
-                        alignItems: "center",
                         borderWidth: 1,
+                        alignItems: "center",
                     },
                     android: {
                         height: 80,
@@ -56,13 +61,7 @@ export default function TabLayout() {
                         borderRadius: 500,
                         width: "90%",
                         overflow: "hidden",
-                    },
-                    default: {
-                        height: 80,
-                        paddingTop: 0,
-                        borderRadius: 90,
-                        width: "90%",
-                        overflow: "hidden",
+                        alignItems: "center",
                     },
                 }),
             }}>
@@ -72,7 +71,7 @@ export default function TabLayout() {
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
                     tabBarBadge: 1,
-                    href: "/",
+                    tabBarButton: HapticTab,
                 }}
             />
             <Tabs.Screen
@@ -80,7 +79,7 @@ export default function TabLayout() {
                 options={{
                     title: "Feed",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
-                    href: "/feed",
+                    tabBarButton: HapticTab,
                 }}
             />
             <Tabs.Screen
@@ -88,7 +87,7 @@ export default function TabLayout() {
                 options={{
                     title: "Search",
                     tabBarIcon: ({ color }) => <Octicons name="search" size={24} color={color} />,
-                    href: "/search",
+                    tabBarButton: HapticTab,
                 }}
             />
             <Tabs.Screen
@@ -96,7 +95,7 @@ export default function TabLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color }) => <Octicons name="person" size={24} color={color} />,
-                    href: "/profile",
+                    tabBarButton: HapticTab,
                 }}
             />
         </Tabs>

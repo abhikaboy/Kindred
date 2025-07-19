@@ -221,6 +221,7 @@ export const Drawer = ({ close }) => {
                     <DrawerItem
                         onPress={() => {
                             setSelected(workspace.name);
+                            router.navigate("/(logged-in)/(tabs)/(task)/");
                             close();
                         }}
                         onLongPress={() => {
