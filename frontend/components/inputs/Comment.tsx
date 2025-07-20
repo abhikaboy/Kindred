@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     View,
     StyleSheet,
@@ -8,6 +8,8 @@ import {
     Dimensions,
     Animated,
     TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    Platform,
 } from "react-native";
 import Modal from "react-native-modal";
 import UserInfoRowComment from "../UserInfo/UsereInfoRowComment";
@@ -39,6 +41,16 @@ export type PopupProp = {
 const Comment = ({ comments, ref, onClose }: PopupProp) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
+    const [commentText, setCommentText] = useState("");
+
+    const handleSubmitComment = () => {
+        if (commentText.trim()) {
+            // Here you would typically make an API call to submit the comment
+            console.log("Submitting comment:", commentText);
+            setCommentText("");
+            // You could also call onClose() here if you want to close the modal after submitting
+        }
+    };
 
     return (
         <BottomSheetView style={styles.modalContainer}>
@@ -65,18 +77,14 @@ const Comment = ({ comments, ref, onClose }: PopupProp) => {
                     ))}
                 </ScrollView>
 
-                <View
-                    style={{
-                        flexDirection: "row",
-                        justifyContent: "center",
-                        gap: 10,
-                    }}>
-                    <CommentInput placeHolder="Leave a comment" />
-                    <SendButton
-                        onSend={() => {
-                            onClose();
-                        }}
+                <View style={styles.inputContainer}>
+                    <CommentInput
+                        placeHolder="Leave a comment"
+                        onChangeText={setCommentText}
+                        onSubmit={handleSubmitComment}
+                        value={commentText}
                     />
+                    <SendButton onSend={handleSubmitComment} />
                 </View>
             </View>
         </BottomSheetView>
@@ -113,9 +121,9 @@ const stylesheet = (ThemedColor: any) =>
             alignItems: "center",
         },
         commentsContainer: {
-            maxHeight: Dimensions.get("window").height * 0.7,
+            maxHeight: Dimensions.get("window").height * 0.6,
             width: "100%",
-            marginBottom: 30,
+            marginBottom: 20,
         },
         comments: {
             marginTop: 23,
@@ -124,6 +132,14 @@ const stylesheet = (ThemedColor: any) =>
         },
         contentContainer: {
             paddingHorizontal: Dimensions.get("window").width * 0.04,
+        },
+        inputContainer: {
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 10,
+            paddingHorizontal: 16,
+            paddingBottom: Platform.OS === "ios" ? 20 : 10,
         },
     });
 

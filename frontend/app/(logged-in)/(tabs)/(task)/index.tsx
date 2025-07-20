@@ -114,6 +114,25 @@ const Home = (props: Props) => {
                                         </View>
                                     </BasicCard>
                                 </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}>
+                                    <BasicCard>
+                                        <View
+                                            style={{
+                                                width: 12,
+                                                height: 12,
+                                                backgroundColor: "#FFD700",
+                                                borderRadius: 12,
+                                                position: "absolute",
+                                                right: 0,
+                                            }}
+                                        />
+                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                            <ThemedText type="default">Congratulations</ThemedText>
+                                            <ThemedText type="default">1</ThemedText>
+                                        </View>
+                                    </BasicCard>
+                                </TouchableOpacity>
                                 <DashboardCards drawerRef={drawerRef} />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView horizontal>

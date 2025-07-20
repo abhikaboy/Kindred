@@ -5,11 +5,11 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
-import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
+import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
 
-interface Encouragement {
+interface Congratulation {
     id: string;
     sender: {
         name: string;
@@ -23,39 +23,39 @@ interface Encouragement {
     read: boolean;
 }
 
-export default function Encouragements() {
+export default function Congratulations() {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const [encouragements, setEncouragements] = useState<Encouragement[]>([]);
+    const [congratulations, setCongratulations] = useState<Congratulation[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchEncouragements();
+        fetchCongratulations();
     }, []);
 
-    const fetchEncouragements = async () => {
+    const fetchCongratulations = async () => {
         try {
             setLoading(true);
-            const data = await getEncouragementsAPI();
-            setEncouragements(data);
+            const data = await getCongratulationsAPI();
+            setCongratulations(data);
 
-            // Mark all encouragements as read
+            // Mark all congratulations as read
             if (data.length > 0) {
                 try {
-                    // Get IDs of unread encouragements
-                    const unreadIds = data.filter((enc) => !enc.read).map((enc) => enc.id);
+                    // Get IDs of unread congratulations
+                    const unreadIds = data.filter((con) => !con.read).map((con) => con.id);
 
                     if (unreadIds.length > 0) {
-                        await markEncouragementsReadAPI(unreadIds);
+                        await markCongratulationsReadAPI(unreadIds);
                         // Update local state to mark all as read
-                        setEncouragements((prev) => prev.map((enc) => ({ ...enc, read: true })));
+                        setCongratulations((prev) => prev.map((con) => ({ ...con, read: true })));
                     }
                 } catch (error) {
-                    console.error("Error marking encouragements as read:", error);
+                    console.error("Error marking congratulations as read:", error);
                 }
             }
         } catch (error) {
-            console.error("Error fetching encouragements:", error);
+            console.error("Error fetching congratulations:", error);
         } finally {
             setLoading(false);
         }
@@ -81,7 +81,7 @@ export default function Encouragements() {
                     </ThemedText>
                 </TouchableOpacity>
                 <ThemedText type="fancyFrauncesHeading" style={styles.title}>
-                    Encouragements
+                    Congratulations
                 </ThemedText>
             </View>
 
@@ -92,58 +92,58 @@ export default function Encouragements() {
                 showsVerticalScrollIndicator={false}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
-                        <ThemedText type="default">Loading encouragements...</ThemedText>
+                        <ThemedText type="default">Loading congratulations...</ThemedText>
                     </View>
-                ) : encouragements.length === 0 ? (
+                ) : congratulations.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <ThemedText type="subtitle" style={styles.emptyText}>
-                            No encouragements yet
+                            No congratulations yet
                         </ThemedText>
                         <ThemedText type="lightBody" style={styles.emptySubtext}>
-                            When friends encourage you on tasks, they'll appear here
+                            When friends congratulate you on tasks, they'll appear here
                         </ThemedText>
                     </View>
                 ) : (
-                    <View style={styles.encouragementsList}>
-                        {encouragements.map((encouragement) => (
-                            <View key={encouragement.id} style={styles.encouragementItem}>
+                    <View style={styles.congratulationsList}>
+                        {congratulations.map((congratulation) => (
+                            <View key={congratulation.id} style={styles.congratulationItem}>
                                 {/* User Avatar and Info */}
                                 <View style={styles.userSection}>
                                     <Image
-                                        source={{ uri: encouragement.sender.picture }}
+                                        source={{ uri: congratulation.sender.picture }}
                                         style={styles.userAvatar}
                                         defaultSource={require("@/assets/images/head.png")}
                                     />
                                     <View style={styles.userInfo}>
                                         <ThemedText type="default" style={styles.userName}>
-                                            {encouragement.sender.name}
+                                            {congratulation.sender.name}
                                         </ThemedText>
                                         <ThemedText type="caption" style={styles.timeText}>
-                                            {formatTime(encouragement.timestamp)}
+                                            {formatTime(congratulation.timestamp)}
                                         </ThemedText>
                                     </View>
                                 </View>
 
-                                {/* Encouragement Card */}
-                                <View style={styles.encouragementCard}>
+                                {/* Congratulation Card */}
+                                <View style={styles.congratulationCard}>
                                     {/* Unread Indicator */}
-                                    {!encouragement.read && <View style={styles.unreadDot} />}
+                                    {!congratulation.read && <View style={styles.unreadDot} />}
 
                                     {/* Task Info */}
                                     <View style={styles.taskInfo}>
                                         <ThemedText type="default" style={styles.categoryText}>
-                                            {encouragement.categoryName}
+                                            {congratulation.categoryName}
                                         </ThemedText>
                                         <View style={styles.dot} />
                                         <ThemedText type="default" style={styles.taskName}>
-                                            {encouragement.taskName}
+                                            {congratulation.taskName}
                                         </ThemedText>
                                     </View>
 
                                     {/* Message */}
                                     <View style={styles.messageContainer}>
                                         <ThemedText type="lightBody" style={styles.messageText}>
-                                            {encouragement.message}
+                                            {congratulation.message}
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -156,7 +156,7 @@ export default function Encouragements() {
     );
 }
 
-const createStyles = (ThemedColor: any, insets: any) =>
+const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
@@ -187,7 +187,8 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         scrollContent: {
             paddingHorizontal: HORIZONTAL_PADDING,
-            paddingVertical: insets.bottom,
+            paddingTop: 20,
+            paddingBottom: insets.bottom + 20,
         },
         loadingContainer: {
             flex: 1,
@@ -200,98 +201,92 @@ const createStyles = (ThemedColor: any, insets: any) =>
             justifyContent: "center",
             alignItems: "center",
             paddingTop: 100,
-            gap: 8,
         },
         emptyText: {
+            fontSize: 20,
             color: ThemedColor.text,
-            textAlign: "center",
+            marginBottom: 8,
         },
         emptySubtext: {
+            fontSize: 16,
             color: ThemedColor.caption,
             textAlign: "center",
+            lineHeight: 24,
         },
-        encouragementsList: {
+        congratulationsList: {
             gap: 16,
         },
-        encouragementItem: {
-            flexDirection: "row",
-            gap: 24,
-            alignItems: "flex-start",
+        congratulationItem: {
+            gap: 12,
         },
         userSection: {
+            flexDirection: "row",
             alignItems: "center",
-            gap: 8,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
+            gap: 12,
         },
         userAvatar: {
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: ThemedColor.tertiary,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
         },
         userInfo: {
-            alignItems: "center",
+            flex: 1,
         },
         userName: {
+            fontSize: 16,
             color: ThemedColor.text,
-            fontSize: 14,
-            textAlign: "center",
+            fontWeight: "600",
         },
         timeText: {
+            fontSize: 14,
             color: ThemedColor.caption,
-            fontSize: 10,
-            textAlign: "center",
+            marginTop: 2,
         },
-        encouragementCard: {
-            flex: 1,
+        congratulationCard: {
             backgroundColor: ThemedColor.lightened,
             borderRadius: 12,
             padding: 16,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary,
+            position: "relative",
+        },
+        unreadDot: {
+            position: "absolute",
+            top: 12,
+            right: 12,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: ThemedColor.error,
         },
         taskInfo: {
             flexDirection: "row",
             alignItems: "center",
-            gap: 8,
-            marginBottom: 12,
+            marginBottom: 8,
         },
         categoryText: {
-            color: ThemedColor.primary,
-            fontSize: 16,
+            fontSize: 14,
+            color: ThemedColor.text,
+            fontWeight: "500",
         },
         dot: {
             width: 4,
             height: 4,
             borderRadius: 2,
             backgroundColor: ThemedColor.caption,
+            marginHorizontal: 8,
         },
         taskName: {
+            fontSize: 14,
             color: ThemedColor.text,
-            fontSize: 16,
+            fontWeight: "500",
         },
         messageContainer: {
             marginTop: 4,
         },
         messageText: {
-            color: ThemedColor.text,
             fontSize: 16,
+            color: ThemedColor.text,
             lineHeight: 24,
-        },
-        unreadDot: {
-            position: "absolute",
-            top: 0,
-            right: 0,
-            width: 12,
-            height: 12,
-            borderRadius: 12,
-            backgroundColor: ThemedColor.error,
         },
     });

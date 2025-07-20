@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
+import CongratulateModal from "../modals/CongratulateModal";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -30,11 +31,17 @@ interface Props {
     priority: Priority;
     redirect?: boolean;
     encourage?: boolean;
+    congratulate?: boolean;
     id: string;
     categoryId: string;
     task?: Task;
     height?: number;
     encouragementConfig?: {
+        userHandle?: string;
+        receiverId: string;
+        categoryName: string;
+    };
+    congratulationConfig?: {
         userHandle?: string;
         receiverId: string;
         categoryName: string;
@@ -49,13 +56,16 @@ const TaskCard = ({
     id,
     categoryId,
     encourage = false,
+    congratulate = false,
     task,
     height = Dimensions.get("window").height * 0.07,
     encouragementConfig,
+    congratulationConfig,
 }: Props) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
     const [showEncourageModal, setShowEncourageModal] = useState(false);
+    const [showCongratulateModal, setShowCongratulateModal] = useState(false);
     const ThemedColor = useThemeColor();
     const { setTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
@@ -112,6 +122,15 @@ const TaskCard = ({
             console.log("Encourage button pressed, showing modal");
             setShowEncourageModal(true);
         }
+        if (congratulate) {
+            if (!congratulationConfig?.receiverId || congratulationConfig.receiverId.trim() === "") {
+                console.error("Cannot show congratulate modal: missing receiverId");
+                Alert.alert("Error", "Unable to send congratulation at this time. Please try again later.");
+                return;
+            }
+            console.log("Congratulate button pressed, showing modal");
+            setShowCongratulateModal(true);
+        }
         if (task) {
             setTask(task);
             debouncedRedirect();
@@ -136,7 +155,7 @@ const TaskCard = ({
                         minHeight: height,
                     },
                 ]}
-                disabled={!redirect && !encourage}
+                disabled={!redirect && !encourage && !congratulate}
                 onPress={handlePress}
                 onLongPress={handleLongPress}>
                 <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />
@@ -168,6 +187,14 @@ const TaskCard = ({
                                 />
                             </Svg>
                         </ConditionalView>
+                        <ConditionalView condition={congratulate}>
+                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <Path
+                                    d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"
+                                    fill="#FFD700"
+                                />
+                            </Svg>
+                        </ConditionalView>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -184,6 +211,20 @@ const TaskCard = ({
                     categoryId,
                 }}
                 encouragementConfig={encouragementConfig}
+            />
+
+            {/* Congratulate Modal */}
+            <CongratulateModal
+                visible={showCongratulateModal}
+                setVisible={setShowCongratulateModal}
+                task={{
+                    id,
+                    content,
+                    value,
+                    priority,
+                    categoryId,
+                }}
+                congratulationConfig={congratulationConfig}
             />
         </>
     );

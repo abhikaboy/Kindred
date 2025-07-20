@@ -24,11 +24,6 @@ export default function Profile() {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
-    console.log("Profile component - user:", user);
-    console.log("Profile component - user?._id:", user?._id);
-    console.log("Profile component - user?.handle:", user?.handle);
-    console.log("Profile component - user?.display_name:", user?.display_name);
-
     const [activeTab, setActiveTab] = useState(0);
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -40,7 +35,16 @@ export default function Profile() {
         () => ({
             activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
             todayTasks: user?._id
-                ? [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }]
+                ? [
+                      { id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true },
+                      {
+                          id: "today-2",
+                          content: "complete project",
+                          value: 15,
+                          priority: 2 as const,
+                          congratulate: true,
+                      },
+                  ]
                 : [],
             completedTasks: [
                 { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
@@ -49,9 +53,6 @@ export default function Profile() {
         }),
         [user?._id]
     );
-
-    console.log("Profile component - mockTasks:", mockTasks);
-    console.log("Profile component - todayTasks length:", mockTasks.todayTasks.length);
 
     return (
         <Animated.ScrollView
@@ -82,6 +83,15 @@ export default function Profile() {
                     <TaskList
                         {...mockTasks}
                         encouragementConfig={
+                            user?._id
+                                ? {
+                                      userHandle: user?.handle,
+                                      receiverId: user._id,
+                                      categoryName: "Profile Tasks",
+                                  }
+                                : undefined
+                        }
+                        congratulationConfig={
                             user?._id
                                 ? {
                                       userHandle: user?.handle,
