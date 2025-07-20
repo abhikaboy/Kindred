@@ -1,10 +1,11 @@
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
 import { createConnectionAPI, deleteConnectionAPI } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
+import * as Haptics from "expo-haptics";
 
 type Props = {
     profile: Profile; // Profile with relationship information
@@ -60,6 +61,9 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
     };
 
     const handleFollowPress = async () => {
+        if (Platform.OS === "ios") {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
         if (!profile.id || !user?._id || isLoading) return;
 
         setIsLoading(true);

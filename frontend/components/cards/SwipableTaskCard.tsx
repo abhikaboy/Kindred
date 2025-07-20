@@ -7,7 +7,7 @@ import TaskCard from "./TaskCard";
 import { Task } from "@/api/types";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
-import { Dimensions, StyleSheet, TouchableOpacity } from "react-native";
+import { Dimensions, Platform, StyleSheet, TouchableOpacity } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
@@ -15,6 +15,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
+import * as Haptics from "expo-haptics";
 type Props = {
     redirect?: boolean;
     categoryId: string;
@@ -67,6 +68,10 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
             setShowConfetti(true);
+
+            if (Platform.OS === "ios") {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
 
             showToastable({
                 title: "Task completed!",

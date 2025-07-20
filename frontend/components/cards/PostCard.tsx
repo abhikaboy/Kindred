@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
+import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions, Platform } from "react-native";
 import { ThemedText } from "../ThemedText";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
@@ -10,6 +10,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import Svg, { Path } from "react-native-svg";
+import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -31,6 +33,7 @@ type Props = {
     icon: string;
     name: string;
     username: string;
+    userId: string;
     caption: string;
     time: number;
     priority: string;
@@ -48,6 +51,7 @@ const PostCard = ({
     icon,
     name,
     username,
+    userId,
     caption,
     time,
     priority,
@@ -65,7 +69,6 @@ const PostCard = ({
     const allReactions = [...reactions, ...newReactions];
     const [modalIndex, setModalIndex] = useState(0);
 
-    const userId = "67ba5abb616b5e6544e0137b";
     const ThemedColor = useThemeColor();
 
     const handleClose = () => {
@@ -90,6 +93,11 @@ const PostCard = ({
     }, []);
 
     const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
+        // Add haptic feedback for reactions
+        if (Platform.OS === "ios") {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+
         setReactions((prevReactions) => {
             const existingReaction = prevReactions?.find((r) => r.emoji === emoji);
             const idsSet = new Set(existingReaction?.ids);
@@ -143,7 +151,20 @@ const PostCard = ({
                 {/* Header with user info */}
                 <View style={styles.header}>
                     <View style={styles.userInfo}>
-                        <Image source={{ uri: icon }} style={styles.userIcon} />
+                        <TouchableOpacity
+                            activeOpacity={0.4}
+                            onPress={async () => {
+                                try {
+                                    if (Platform.OS === "ios") {
+                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    }
+                                } catch (error) {
+                                    console.log("Haptic error:", error);
+                                }
+                                router.push(`/account/${userId}`);
+                            }}>
+                            <Image source={{ uri: icon }} style={styles.userIcon} />
+                        </TouchableOpacity>
                         <View style={styles.userDetails}>
                             <ThemedText type="default" style={styles.userName}>
                                 {name}
@@ -323,9 +344,9 @@ const stylesheet = (ThemedColor: any) =>
             flex: 1,
         },
         userIcon: {
-            width: 35,
-            height: 35,
-            borderRadius: 17.5,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
         },
         userDetails: {
             flex: 1,
@@ -342,10 +363,10 @@ const stylesheet = (ThemedColor: any) =>
             color: ThemedColor.caption,
         },
         timeText: {
-            fontSize: 11,
-            fontWeight: "300",
+            fontSize: 12,
+            fontWeight: "400",
             color: ThemedColor.caption,
-            width: 37,
+            width: 48,
         },
         imageContainer: {
             width: "100%",

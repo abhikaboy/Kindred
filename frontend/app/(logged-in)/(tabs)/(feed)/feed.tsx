@@ -142,6 +142,7 @@ export default function Feed() {
                         icon={Icons.luffy}
                         name={"Abhik Ray"}
                         username={"beak"}
+                        userId={"67ba5abb616b5e6544e0137b"}
                         caption={"Lowkey just finished jamming on my guitar, learned a few new songs too"}
                         time={2}
                         priority={"high"}
@@ -191,6 +192,7 @@ export default function Feed() {
                         icon={Icons.coffee}
                         name={"Coffee Lover"}
                         username={"coffeeaddict"}
+                        userId={"67ba5abb616b5e6544e0137c"}
                         caption={"Just finished my morning routine and feeling great! Ready to tackle the day ahead."}
                         time={0.5}
                         priority={"medium"}
@@ -227,6 +229,7 @@ export default function Feed() {
                         icon={Icons.lokye}
                         name={"Lok Ye"}
                         username={"lokye"}
+                        userId={"67ba5abb616b5e6544e0137d"}
                         caption={
                             "Just completed my workout session! Feeling energized and ready to crush the rest of the day. Consistency is key! 💪"
                         }
@@ -278,6 +281,7 @@ export default function Feed() {
                         icon={Icons.latte}
                         name={"Study Buddy"}
                         username={"studybuddy"}
+                        userId={"67ba5abb616b5e6544e0137e"}
                         caption={
                             "Finally finished that research paper! 6 hours of focused work and it's finally done. Time for a well-deserved break."
                         }
@@ -319,6 +323,7 @@ export default function Feed() {
                         icon={Icons.coffee}
                         name={"Chef Sarah"}
                         username={"chefsarah"}
+                        userId={"67ba5abb616b5e6544e0137f"}
                         caption={
                             "Made homemade pasta from scratch today! The process was therapeutic and the result was delicious. Cooking is my happy place 🍝"
                         }
@@ -378,6 +383,7 @@ export default function Feed() {
                         icon={Icons.luffy}
                         name={"Bookworm"}
                         username={"bookworm"}
+                        userId={"67ba5abb616b5e6544e0140"}
                         caption={
                             "Just finished 'The Midnight Library' by Matt Haig. What a beautiful exploration of life's infinite possibilities. Highly recommend for anyone going through a rough patch."
                         }
@@ -416,6 +422,7 @@ export default function Feed() {
                         icon={Icons.lokye}
                         name={"Artistic Soul"}
                         username={"artisticsoul"}
+                        userId={"67ba5abb616b5e6544e0141"}
                         caption={
                             "Spent the afternoon painting and it was exactly what I needed. Art has this incredible way of helping me process emotions. Here's what came out of today's session."
                         }
