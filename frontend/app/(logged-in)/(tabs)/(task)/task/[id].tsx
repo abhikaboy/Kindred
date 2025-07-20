@@ -28,8 +28,12 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI } from "@/api/task";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
-import { RecurDetails, TemplateTaskDocument } from "@/api/generated/types";
+import { RecurDetails } from "@/api/types";
 import Feather from "@expo/vector-icons/Feather";
+import PagerView from "react-native-pager-view";
+import type { components } from "@/api/generated/types";
+
+type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -44,6 +48,7 @@ export default function Task() {
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
     const [localNotes, setLocalNotes] = useState("");
+    const [isHeaderSticky, setIsHeaderSticky] = useState(false);
 
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
@@ -51,6 +56,8 @@ export default function Task() {
 
     // Add a ref to track mounted state
     const isMounted = useRef(true);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const pagerViewRef = useRef<PagerView>(null);
 
     const safeAsync = useSafeAsync();
 
@@ -198,214 +205,289 @@ export default function Task() {
         }
     }, 2000);
 
+    const handleScroll = (event: any) => {
+        const scrollY = event.nativeEvent.contentOffset.y;
+        // Adjust this threshold based on when you want the header to become sticky
+        const stickyThreshold = 120; // Adjust this value as needed
+        setIsHeaderSticky(scrollY > stickyThreshold);
+    };
+
+    const handleTabChange = (index: number) => {
+        setActiveTab(index);
+        pagerViewRef.current?.setPage(index);
+    };
+
     return (
         <ThemedView
             style={{
                 flex: 1,
                 paddingHorizontal: HORIZONTAL_PADDING,
-                gap: 16,
                 position: "relative",
                 paddingTop: Dimensions.get("screen").height * 0.07,
             }}>
-            <TouchableOpacity
-                onPress={() => router.back()}
-                style={{
-                    zIndex: 1000,
-                    paddingVertical: 16,
-                    left: 0,
-                }}>
-                <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
-            </TouchableOpacity>
-            <View
-                style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    justifyContent: "space-between",
-                }}>
-                <ThemedText type="title" style={{ flexWrap: "wrap", width: "80%" }}>
-                    {name}
-                    {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
-                </ThemedText>
-                <TouchableOpacity
-                    onPress={() => {
-                        // open some modal to edit the task
+            {/* Sticky Header - Only shows when scrolled */}
+            <ConditionalView condition={isHeaderSticky}>
+                <View
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 1000,
+                        backgroundColor: ThemedColor.background,
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        paddingTop: Dimensions.get("screen").height * 0.07,
+                        paddingBottom: 16,
+                        borderBottomWidth: 1,
+                        borderBottomColor: ThemedColor.lightened,
                     }}>
-                    <Feather name="edit" size={24} color={ThemedColor.text} />
+                    <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} />
+                </View>
+            </ConditionalView>
+
+            {/* Header Section - Always visible */}
+            <View style={{ paddingBottom: 16 }}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={{
+                        zIndex: 1000,
+                        paddingVertical: 16,
+                        left: 0,
+                    }}>
+                    <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                        justifyContent: "space-between",
+                    }}>
+                    <ThemedText type="title" style={{ flexWrap: "wrap", width: "80%" }}>
+                        {name}
+                        {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
+                    </ThemedText>
+                    <TouchableOpacity
+                        onPress={() => {
+                            // open some modal to edit the task
+                        }}>
+                        <Feather name="edit" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                </View>
+                <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} />
             </View>
-            <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={setActiveTab} />
-            <ConditionalView condition={activeTab === 0}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
-                    <ScrollView contentContainerStyle={{ gap: 20, paddingBottom: 50 }}>
-                        <DataCard title="Notes" key="notes">
-                            <TextInput
-                                value={localNotes}
-                                onChangeText={(text) => {
-                                    // Update local state immediately for UI responsiveness
-                                    setLocalNotes(text);
-                                    // Debounced API call
-                                    updateNotes(text);
-                                }}
-                                placeholder="Tap to add notes"
+
+            {/* PagerView Content */}
+            <PagerView
+                ref={pagerViewRef}
+                style={{ flex: 1 }}
+                initialPage={activeTab}
+                onPageSelected={(e) => setActiveTab(e.nativeEvent.position)}
+                scrollEnabled={true}>
+                {/* Details Tab */}
+                <View key="0" style={{ flex: 1 }}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 50 }}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}>
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === "ios" ? "padding" : "height"}
+                            style={{ flex: 1 }}
+                            keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
+                            <View style={{ gap: 20 }}>
+                                <DataCard title="Notes" key="notes">
+                                    <TextInput
+                                        value={localNotes}
+                                        onChangeText={(text) => {
+                                            // Update local state immediately for UI responsiveness
+                                            setLocalNotes(text);
+                                            // Debounced API call
+                                            updateNotes(text);
+                                        }}
+                                        placeholder="Tap to add notes"
+                                        style={{
+                                            backgroundColor: ThemedColor.lightened,
+                                            paddingVertical: 8,
+                                            fontSize: 16,
+                                            color: ThemedColor.text,
+                                            fontFamily: "OutfitLight",
+                                        }}
+                                    />
+                                </DataCard>
+                                <DataCard title="Checklist" key="checklist">
+                                    <Checklist
+                                        initialChecklist={
+                                            task?.checklist?.map((item, index) => ({
+                                                id: item.id,
+                                                content: item.content,
+                                                completed: item.completed,
+                                                order: index, // Add order based on array index
+                                            })) || []
+                                        }
+                                        categoryId={categoryId as string}
+                                        taskId={id as string}
+                                        autoSave={true}
+                                        onChecklistChange={(checklist) => {
+                                            // Update local task state for immediate UI feedback
+                                            if (task) {
+                                                task.checklist = checklist.map((item) => ({
+                                                    id: item.id || "",
+                                                    content: item.content,
+                                                    completed: item.completed,
+                                                    order: item.order,
+                                                }));
+                                            }
+                                        }}
+                                    />
+                                </DataCard>
+                                <ConditionalView condition={task?.startDate != null} key="startDate">
+                                    <DataCard title="Start Date">
+                                        <View
+                                            style={{
+                                                flexDirection: "row",
+                                                justifyContent: "space-between",
+                                            }}>
+                                            <ThemedText type="lightBody">
+                                                {new Date(task?.startDate).toLocaleDateString()}
+                                            </ThemedText>
+                                            <ThemedText type="lightBody">
+                                                {task?.startTime
+                                                    ? new Date(task?.startTime).toLocaleTimeString()
+                                                    : "No Start Time"}
+                                            </ThemedText>
+                                        </View>
+                                    </DataCard>
+                                </ConditionalView>
+                                <ConditionalView condition={task?.deadline != null} key="deadline">
+                                    <DataCard title="Deadline">
+                                        <View
+                                            style={{
+                                                flexDirection: "row",
+                                                justifyContent: "space-between",
+                                            }}>
+                                            <ThemedText type="lightBody">
+                                                {new Date(task?.deadline).toLocaleDateString()}
+                                            </ThemedText>
+                                            <ThemedText type="lightBody">
+                                                {task?.deadline
+                                                    ? new Date(task?.deadline).toLocaleTimeString()
+                                                    : "No Deadline Time"}
+                                            </ThemedText>
+                                        </View>
+                                    </DataCard>
+                                </ConditionalView>
+                                <ConditionalView condition={recurDetails != null} key="recurring">
+                                    <DataCard title="Recurring">
+                                        <View style={{ flexDirection: "column", gap: 8 }}>
+                                            <ThemedText type="lightBody">
+                                                {DetailsToString(
+                                                    recurDetails,
+                                                    template?.recurFrequency,
+                                                    template?.recurType
+                                                )}
+                                            </ThemedText>
+                                            <ThemedText type="lightBody">
+                                                {template?.recurType === "OCCURRENCE"
+                                                    ? "Repeating Start Date"
+                                                    : "Repeating Deadline"}
+                                            </ThemedText>
+                                        </View>
+                                    </DataCard>
+                                </ConditionalView>
+                                <ConditionalView condition={task?.reminders != null} key="reminders">
+                                    <DataCard title="Reminders">
+                                        {task?.reminders?.map((reminder) => (
+                                            <View key={reminder.triggerTime.toString()}>
+                                                <ThemedText type="lightBody">
+                                                    {new Date(reminder.triggerTime).toLocaleString()}
+                                                </ThemedText>
+                                            </View>
+                                        ))}
+                                    </DataCard>
+                                </ConditionalView>
+                            </View>
+                        </KeyboardAvoidingView>
+                    </ScrollView>
+                </View>
+
+                {/* Timer Tab */}
+                <View key="1" style={{ flex: 1 }}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 50 }}
+                        scrollEventThrottle={16}>
+                        <TouchableOpacity
+                            style={{
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 16,
+                                marginTop: Dimensions.get("screen").height * 0.05,
+                            }}
+                            onPress={toggleTimer}>
+                            <View
                                 style={{
-                                    backgroundColor: ThemedColor.lightened,
-                                    paddingVertical: 8,
-                                    fontSize: 16,
-                                    color: ThemedColor.text,
-                                    fontFamily: "OutfitLight",
-                                }}
-                            />
-                        </DataCard>
-                        <DataCard title="Checklist" key="checklist">
-                            <Checklist
-                                initialChecklist={
-                                    task?.checklist?.map((item, index) => ({
-                                        id: item.id,
-                                        content: item.content,
-                                        completed: item.completed,
-                                        order: index, // Add order based on array index
-                                    })) || []
-                                }
-                                categoryId={categoryId as string}
-                                taskId={id as string}
-                                autoSave={true}
-                                onChecklistChange={(checklist) => {
-                                    // Update local task state for immediate UI feedback
-                                    if (task) {
-                                        task.checklist = checklist.map((item) => ({
-                                            id: item.id || "",
-                                            content: item.content,
-                                            completed: item.completed,
-                                            order: item.order,
-                                        }));
-                                    }
-                                }}
-                            />
-                        </DataCard>
-                        <ConditionalView condition={task?.startDate != null} key="startDate">
-                            <DataCard title="Start Date">
+                                    borderWidth: 16,
+                                    borderColor: isRunning ? "#CBFFDD" : "#FFB8B8",
+                                    borderRadius: 2000,
+                                    width: Dimensions.get("screen").width * 0.8,
+                                    height: Dimensions.get("screen").width * 0.8,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}>
                                 <View
                                     style={{
-                                        flexDirection: "row",
-                                        justifyContent: "space-between",
+                                        display: "flex",
+                                        width: Dimensions.get("screen").width * 0.8,
+                                        height: Dimensions.get("screen").width * 0.8,
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        borderColor: isRunning ? "#00C49F" : "#FF5C5F",
+                                        borderWidth: 6,
+                                        borderRadius: 2000,
                                     }}>
-                                    <ThemedText type="lightBody">
-                                        {new Date(task?.startDate).toLocaleDateString()}
-                                    </ThemedText>
-                                    <ThemedText type="lightBody">
-                                        {task?.startTime
-                                            ? new Date(task?.startTime).toLocaleTimeString()
-                                            : "No Start Time"}
+                                    <ThemedText type="heading">
+                                        {formatElapsedTime(new Date().getTime() - baseTime.getTime())}
                                     </ThemedText>
                                 </View>
-                            </DataCard>
+                            </View>
+                        </TouchableOpacity>
+                        <ConditionalView condition={!isRunning}>
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    width: "100%",
+                                    marginTop: 24,
+                                }}>
+                                <ThemedText type="lightBody">Tap the stopwatch to begin</ThemedText>
+                            </View>
                         </ConditionalView>
-                        <ConditionalView condition={task?.deadline != null} key="deadline">
-                            <DataCard title="Deadline">
-                                <View
-                                    style={{
-                                        flexDirection: "row",
-                                        justifyContent: "space-between",
-                                    }}>
-                                    <ThemedText type="lightBody">
-                                        {new Date(task?.deadline).toLocaleDateString()}
-                                    </ThemedText>
-                                    <ThemedText type="lightBody">
-                                        {task?.deadline
-                                            ? new Date(task?.deadline).toLocaleTimeString()
-                                            : "No Deadline Time"}
-                                    </ThemedText>
-                                </View>
-                            </DataCard>
-                        </ConditionalView>
-                        <ConditionalView condition={recurDetails != null} key="recurring">
-                            <DataCard title="Recurring">
-                                <View style={{ flexDirection: "column", gap: 8 }}>
-                                    <ThemedText type="lightBody">
-                                        {DetailsToString(recurDetails, template?.recurFrequency, template?.recurType)}
-                                    </ThemedText>
-                                    <ThemedText type="lightBody">
-                                        {template?.recurType === "OCCURRENCE"
-                                            ? "Repeating Start Date"
-                                            : "Repeating Deadline"}
-                                    </ThemedText>
-                                </View>
-                            </DataCard>
-                        </ConditionalView>
-                        <ConditionalView condition={task?.reminders != null} key="reminders">
-                            <DataCard title="Reminders">
-                                {task?.reminders?.map((reminder) => (
-                                    <View key={reminder.triggerTime.toString()}>
-                                        <ThemedText type="lightBody">
-                                            {new Date(reminder.triggerTime).toLocaleString()}
-                                        </ThemedText>
-                                    </View>
-                                ))}
-                            </DataCard>
+                        <ConditionalView condition={isRunning}>
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    width: "100%",
+                                    marginTop: 24,
+                                }}>
+                                {/* <TouchableOpacity onPress={() => pauseTimer()}>
+                                    <MaterialIcons name="pause" size={48} color={ThemedColor.text} />
+                                </TouchableOpacity> */}
+                                <TouchableOpacity onPress={() => restartTimer(id)}>
+                                    <MaterialIcons name="restart-alt" size={48} color={ThemedColor.text} />
+                                </TouchableOpacity>
+                                {/* <TouchableOpacity onPress={() => stopTimer()}>
+                                    <MaterialIcons name="stop" size={48} color={ThemedColor.text} />
+                                </TouchableOpacity> */}
+                            </View>
                         </ConditionalView>
                     </ScrollView>
-                </KeyboardAvoidingView>
-            </ConditionalView>
-            <ConditionalView condition={activeTab === 1}>
-                <TouchableOpacity
-                    style={{
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 16,
-                        marginTop: Dimensions.get("screen").height * 0.05,
-                    }}
-                    onPress={toggleTimer}>
-                    <View
-                        style={{
-                            borderWidth: 16,
-                            borderColor: isRunning ? "#CBFFDD" : "#FFB8B8",
-                            borderRadius: 2000,
-                            width: Dimensions.get("screen").width * 0.8,
-                            height: Dimensions.get("screen").width * 0.8,
-                            justifyContent: "center",
-                            alignItems: "center",
-                        }}>
-                        <View
-                            style={{
-                                display: "flex",
-                                width: Dimensions.get("screen").width * 0.8,
-                                height: Dimensions.get("screen").width * 0.8,
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderColor: isRunning ? "#00C49F" : "#FF5C5F",
-                                borderWidth: 6,
-                                borderRadius: 2000,
-                            }}>
-                            <ThemedText type="heading">
-                                {formatElapsedTime(new Date().getTime() - baseTime.getTime())}
-                            </ThemedText>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-                <ConditionalView condition={!isRunning}>
-                    <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", marginTop: 24 }}>
-                        <ThemedText type="lightBody">Tap the stopwatch to begin</ThemedText>
-                    </View>
-                </ConditionalView>
-                <ConditionalView condition={isRunning}>
-                    <View style={{ flexDirection: "row", justifyContent: "center", width: "100%", marginTop: 24 }}>
-                        {/* <TouchableOpacity onPress={() => pauseTimer()}>
-                            <MaterialIcons name="pause" size={48} color={ThemedColor.text} />
-                        </TouchableOpacity> */}
-                        <TouchableOpacity onPress={() => restartTimer(id)}>
-                            <MaterialIcons name="restart-alt" size={48} color={ThemedColor.text} />
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity onPress={() => stopTimer()}>
-                            <MaterialIcons name="stop" size={48} color={ThemedColor.text} />
-                        </TouchableOpacity> */}
-                    </View>
-                </ConditionalView>
-            </ConditionalView>
+                </View>
+            </PagerView>
         </ThemedView>
     );
 }
