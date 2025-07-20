@@ -95,12 +95,25 @@ const Home = (props: Props) => {
 
                         <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }}>
                             <MotiView style={{ gap: 16, marginTop: 24 }}>
-                                <BasicCard>
-                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                        <ThemedText type="default">Encouragements</ThemedText>
-                                        <ThemedText type="default">2</ThemedText>
-                                    </View>
-                                </BasicCard>
+                                <TouchableOpacity
+                                    onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
+                                    <BasicCard>
+                                        <View
+                                            style={{
+                                                width: 12,
+                                                height: 12,
+                                                backgroundColor: ThemedColor.error,
+                                                borderRadius: 12,
+                                                position: "absolute",
+                                                right: 0,
+                                            }}
+                                        />
+                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                            <ThemedText type="default">Encouragements</ThemedText>
+                                            <ThemedText type="default">2</ThemedText>
+                                        </View>
+                                    </BasicCard>
+                                </TouchableOpacity>
                                 <DashboardCards drawerRef={drawerRef} />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView horizontal>

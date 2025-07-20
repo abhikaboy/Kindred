@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { SlackReaction } from "../cards/PostCard";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {
     postId: number;
@@ -13,6 +14,7 @@ type Props = {
 
 const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
     const userId = "67ba5abb616b5e6544e0137b";
+    const ThemedColor = useThemeColor();
 
     const getHasReacted = (reaction: SlackReaction, userId: string) => {
         if (!reaction || !reaction.ids) return false;
@@ -26,6 +28,8 @@ const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
         return null;
     }
 
+    const styles = stylesheet(ThemedColor);
+
     return (
         <TouchableOpacity
             onPress={() => {
@@ -37,42 +41,50 @@ const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
                     onRemoveReaction(reaction?.emoji, reaction?.count, [...reaction?.ids, userId]);
                 }
             }}
-            style={{
-                flexDirection: "row",
-                backgroundColor: hasReacted ? "#543596" : "#321E5D",
-                borderStyle: "solid",
-                borderColor: hasReacted ? "#854dff" : "#321E5D",
-                borderWidth: 1.4,
-                borderRadius: 12,
-                paddingHorizontal: 9,
-                paddingVertical: 5,
-                gap: 6,
-                alignSelf: "flex-start",
-            }}>
-            <View style={{ flexDirection: "row", gap: 6 }}>
-                <ThemedText style={[styles.text, styles.textFlexBox]} type="default">
-                    {reaction?.emoji}
-                </ThemedText>
-                <ThemedText style={[styles.text, styles.textFlexBox]} type="default">
-                    {reaction?.count}
-                </ThemedText>
+            style={[
+                styles.pill,
+                {
+                    backgroundColor: hasReacted ? "#543596" : "#3f1d4c",
+                    borderColor: hasReacted ? "#854dff" : "#3f1d4c",
+                },
+            ]}>
+            <View style={styles.pillContent}>
+                <ThemedText style={styles.emoji}>{reaction?.emoji}</ThemedText>
+                <ThemedText style={styles.count}>{reaction?.count}</ThemedText>
             </View>
         </TouchableOpacity>
     );
 };
 
-const styles = StyleSheet.create({
-    textFlexBox: {
-        height: 23,
-        justifyContent: "center",
-        alignItems: "center",
-        display: "flex",
-        textAlign: "center",
-    },
-    text: {
-        fontSize: 16,
-        color: "#FFFFFF",
-    },
-});
+const stylesheet = (ThemedColor: any) =>
+    StyleSheet.create({
+        pill: {
+            flexDirection: "row",
+            borderStyle: "solid",
+            borderWidth: 1.4,
+            borderRadius: 23,
+            paddingHorizontal: 9,
+            paddingVertical: 4,
+            alignSelf: "flex-start",
+        },
+        pillContent: {
+            flexDirection: "row",
+            gap: 6,
+            alignItems: "center",
+        },
+        emoji: {
+            fontSize: 20,
+            color: ThemedColor.buttonText,
+            textAlign: "center",
+            lineHeight: 21,
+        },
+        count: {
+            fontSize: 15,
+            color: ThemedColor.buttonText,
+            textAlign: "center",
+            lineHeight: 21,
+            minWidth: 6,
+        },
+    });
 
 export default ReactPills;

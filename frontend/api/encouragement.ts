@@ -1,6 +1,8 @@
 import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import * as SecureStore from "expo-secure-store";
+import { useRequest } from "@/hooks/useRequest";
 
 // Extract the type definitions from the generated types
 type EncouragementDocument = components["schemas"]["EncouragementDocument"];
@@ -48,17 +50,17 @@ export const getEncouragementsAPI = async (): Promise<EncouragementDocument[]> =
  * Mark multiple encouragements as read
  * API: Makes PATCH request to mark encouragements as read
  * Frontend: Used when user views their encouragements
+ * @param ids - Array of encouragement IDs to mark as read
  */
-export const markEncouragementsReadAPI = async (): Promise<{ count: number; message: string }> => {
-    const { data, error } = await client.PATCH("/v1/user/encouragements/mark-read", {
-        params: withAuthHeaders(),
+export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count: number; message: string }> => {
+    const { request } = useRequest();
+
+    // Use direct request since OpenAPI spec is missing request body definition
+    const response = await request("PATCH", "/user/encouragements/mark-read", {
+        body: { id: ids },
     });
 
-    if (error) {
-        throw new Error(`Failed to mark encouragements as read: ${JSON.stringify(error)}`);
-    }
-
-    return data;
+    return response;
 };
 
 /**

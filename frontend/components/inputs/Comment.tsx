@@ -37,6 +37,9 @@ export type PopupProp = {
 };
 
 const Comment = ({ comments, ref, onClose }: PopupProp) => {
+    const ThemedColor = useThemeColor();
+    const styles = stylesheet(ThemedColor);
+
     return (
         <BottomSheetView style={styles.modalContainer}>
             <View style={styles.modalContent}>
@@ -79,49 +82,49 @@ const Comment = ({ comments, ref, onClose }: PopupProp) => {
         </BottomSheetView>
     );
 };
-let ThemedColor = useThemeColor();
 
-const styles = StyleSheet.create({
-    modalContainer: {
-        flex: 1,
-        backgroundColor: ThemedColor.background,
-    },
-    modalContent: {
-        width: "100%",
-        backgroundColor: ThemedColor.background,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingBottom: 32,
-        elevation: 5,
-    },
-    header: {
-        alignItems: "center",
-        marginBottom: 10,
-    },
-    line: {
-        borderBottomWidth: 1,
-        borderBottomColor: "white",
-        width: 50,
-        marginTop: 21,
-        marginBottom: 10,
-    },
-    commentsTitle: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    commentsContainer: {
-        maxHeight: Dimensions.get("window").height * 0.7,
-        width: "100%",
-        marginBottom: 30,
-    },
-    comments: {
-        marginTop: 23,
-        flexWrap: "wrap",
-        flexShrink: 1,
-    },
-    contentContainer: {
-        paddingHorizontal: Dimensions.get("window").width * 0.04,
-    },
-});
+const stylesheet = (ThemedColor: any) =>
+    StyleSheet.create({
+        modalContainer: {
+            flex: 1,
+            backgroundColor: ThemedColor.background,
+        },
+        modalContent: {
+            width: "100%",
+            backgroundColor: ThemedColor.background,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingBottom: 32,
+            elevation: 5,
+        },
+        header: {
+            alignItems: "center",
+            marginBottom: 10,
+        },
+        line: {
+            borderBottomWidth: 1,
+            borderBottomColor: "white",
+            width: 50,
+            marginTop: 21,
+            marginBottom: 10,
+        },
+        commentsTitle: {
+            flexDirection: "row",
+            alignItems: "center",
+        },
+        commentsContainer: {
+            maxHeight: Dimensions.get("window").height * 0.7,
+            width: "100%",
+            marginBottom: 30,
+        },
+        comments: {
+            marginTop: 23,
+            flexWrap: "wrap",
+            flexShrink: 1,
+        },
+        contentContainer: {
+            paddingHorizontal: Dimensions.get("window").width * 0.04,
+        },
+    });
 
 export default Comment;

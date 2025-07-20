@@ -16,6 +16,7 @@ import Animated, {
     useSharedValue,
 } from "react-native-reanimated";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import * as Haptics from "expo-haptics";
 type Props = {
     options?: Option[];
     selected: Option;
@@ -117,6 +118,7 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width, ghost }: P
                                     if (item.special) onSpecial();
                                     expanded.value = false;
                                     setExpandedState(false);
+                                    Haptics.selectionAsync();
                                 }}
                                 style={{
                                     backgroundColor: ThemedColor.background,

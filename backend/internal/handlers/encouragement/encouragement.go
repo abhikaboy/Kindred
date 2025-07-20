@@ -154,13 +154,19 @@ func (h *Handler) MarkEncouragementsReadHuma(ctx context.Context, input *MarkEnc
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	if len(input.ID) == 0 {
+	// Add explicit validation
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	if len(input.Body.ID) == 0 {
 		return nil, huma.Error400BadRequest("No IDs provided", fmt.Errorf("id array cannot be empty"))
 	}
 
 	// Convert string IDs to ObjectIDs
-	objectIDs := make([]primitive.ObjectID, len(input.ID))
-	for i, idStr := range input.ID {
+	objectIDs := make([]primitive.ObjectID, len(input.Body.ID))
+	for i, idStr := range input.Body.ID {
 		id, err := primitive.ObjectIDFromHex(idStr)
 		if err != nil {
 			return nil, huma.Error400BadRequest("Invalid ID format", fmt.Errorf("invalid ID at index %d: %s", i, idStr))
