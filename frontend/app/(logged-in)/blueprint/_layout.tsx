@@ -12,6 +12,7 @@ import StepProgress from "@/components/blueprint/StepTracker";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createBlueprintToBackend } from "@/api/blueprint";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import BlueprintIntroBottomSheet from "@/components/modals/BlueprintIntroBottomSheet";
 
 export type BlueprintData = {
     blueprintName: string;
@@ -45,6 +46,7 @@ const BlueprintCreationLayout = () => {
     });
 
     const [isCreating, setIsCreating] = useState(false);
+    const [showBlueprintIntro, setShowBlueprintIntro] = useState(false);
 
     const router = useRouter();
     const ThemedColor = useThemeColor();
@@ -96,6 +98,21 @@ const BlueprintCreationLayout = () => {
         } else {
             router.back();
         }
+    };
+
+    // Show blueprint intro on first step load
+    React.useEffect(() => {
+        if (currentStep === 1) {
+            const timer = setTimeout(() => {
+                setShowBlueprintIntro(true);
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [currentStep]);
+
+    const handleBuildBlueprint = () => {
+        setShowBlueprintIntro(false);
     };
 
     const renderStepContent = () => {
@@ -155,6 +172,13 @@ const BlueprintCreationLayout = () => {
                     disabled={!isStepValid() || isCreating}
                 />
             </View>
+
+            {/* Blueprint Intro Bottom Sheet */}
+            <BlueprintIntroBottomSheet
+                isVisible={showBlueprintIntro}
+                onClose={() => setShowBlueprintIntro(false)}
+                onBuildBlueprint={handleBuildBlueprint}
+            />
         </ThemedView>
     );
 };

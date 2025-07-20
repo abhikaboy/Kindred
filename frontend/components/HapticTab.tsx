@@ -33,7 +33,6 @@ export function HapticTab(props: BottomTabBarButtonProps & { isSelected?: boolea
                 justifyContent: "center",
                 position: "relative",
             }}>
-            {/* Purple dot under selected tab - positioned absolutely */}
             {isSelected && (
                 <View
                     style={{
@@ -49,11 +48,10 @@ export function HapticTab(props: BottomTabBarButtonProps & { isSelected?: boolea
                 />
             )}
 
-            {/* Icon */}
             <View
                 style={{
                     alignItems: "center",
-                    zIndex: 2, // Ensure icon is above the dot
+                    zIndex: 2,
                 }}>
                 {props.children}
             </View>

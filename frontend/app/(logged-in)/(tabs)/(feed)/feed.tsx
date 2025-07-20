@@ -16,6 +16,7 @@ import {
     Image,
     Animated,
     RefreshControl,
+    FlatList,
 } from "react-native";
 import { getPostsAPI } from "@/api/post";
 import { showToast } from "@/utils/showToast";
@@ -205,6 +206,17 @@ const mockPosts = [
     },
 ];
 
+// Mock data for subscribed blueprints
+const mockSubscribedBlueprints = [
+    { name: "Fitness Blueprint", id: "blueprint_fitness_001" },
+    { name: "Study Blueprint", id: "blueprint_study_002" },
+    { name: "Cooking Blueprint", id: "blueprint_cooking_003" },
+    { name: "Music Blueprint", id: "blueprint_music_004" },
+];
+
+// Mock user ID - in real app this would come from auth context
+const mockUserId = "67ba5abb616b5e6544e0137b";
+
 export default function Feed() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -215,6 +227,16 @@ export default function Feed() {
     const [posts, setPosts] = useState(mockPosts);
     const [loading, setLoading] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+    // Feed switching state
+    const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
+        name: "Friends",
+        id: mockUserId,
+    });
+    const [availableFeeds, setAvailableFeeds] = useState([
+        { name: "Friends", id: mockUserId },
+        ...mockSubscribedBlueprints,
+    ]);
 
     const scrollY = useRef(new Animated.Value(0)).current;
     const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -240,38 +262,44 @@ export default function Feed() {
         }
     }, [loading, loadingRotation]);
 
-    const fetchPosts = useCallback(async () => {
-        setLoading(true);
-        try {
-            const fetchedPosts = await getPostsAPI();
-            // Transform API data to match PostCard props format
-            // This would need to be adjusted based on actual API response structure
-            const postsToUse = (fetchedPosts as any) || [];
+    const fetchPosts = useCallback(
+        async (feedId?: string) => {
+            setLoading(true);
+            try {
+                // In a real app, you would pass the feedId to the API
+                // const fetchedPosts = await getPostsAPI(feedId);
+                console.log(`Fetching posts for feed: ${feedId || currentFeed.id}`);
 
-            // If API returns empty posts or no posts, use mock data
-            if (!postsToUse || postsToUse.length === 0) {
-                console.log("API returned empty posts, using mock data");
+                // For now, we'll use mock data for all feeds
+                // In the real implementation, you would:
+                // - If feedId === userId: fetch posts from friends
+                // - If feedId is a blueprint id: fetch posts from that blueprint
+                const postsToUse = mockPosts;
+
+                if (!postsToUse || postsToUse.length === 0) {
+                    console.log("API returned empty posts, using mock data");
+                    setPosts(mockPosts);
+                } else {
+                    setPosts(postsToUse);
+                }
+
+                setLastUpdated(new Date());
+            } catch (error) {
+                console.error("Error fetching posts:", error);
+                showToast("Failed to load posts", "danger");
                 setPosts(mockPosts);
-            } else {
-                setPosts(postsToUse);
+            } finally {
+                setLoading(false);
             }
-
-            setLastUpdated(new Date());
-        } catch (error) {
-            console.error("Error fetching posts:", error);
-            showToast("Failed to load posts", "danger");
-            // Keep using mock data as fallback
-            setPosts(mockPosts);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+        },
+        [currentFeed.id]
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
 
         try {
-            await fetchPosts();
+            await fetchPosts(currentFeed.id);
             showToast("Feed refreshed successfully", "success");
         } catch (error) {
             console.error("Error refreshing feed:", error);
@@ -279,12 +307,17 @@ export default function Feed() {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchPosts]);
+    }, [fetchPosts, currentFeed.id]);
 
-    // Load posts on component mount
+    // Load posts on component mount and when feed changes
     useEffect(() => {
-        fetchPosts();
-    }, [fetchPosts]);
+        fetchPosts(currentFeed.id);
+    }, [fetchPosts, currentFeed.id]);
+
+    const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
+        setCurrentFeed(feed);
+        // Posts will be fetched automatically via useEffect
+    }, []);
 
     const animateHeader = useCallback(
         (show: boolean) => {
@@ -333,6 +366,19 @@ export default function Feed() {
         [scrollY, showAnimatedHeader, animateHeader]
     );
 
+    const renderFeedTab = ({ item }: { item: { name: string; id: string } }) => {
+        const isActive = currentFeed.id === item.id;
+
+        return (
+            <TouchableOpacity
+                style={[styles.feedTab, isActive && styles.feedTabActive]}
+                onPress={() => handleFeedChange(item)}
+                activeOpacity={0.8}>
+                <ThemedText style={[styles.feedTabText, isActive && styles.feedTabTextActive]}>{item.name}</ThemedText>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <Animated.View
@@ -348,16 +394,30 @@ export default function Feed() {
                         opacity: headerOpacity,
                     },
                 ]}>
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                        router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                    }}>
+                <View>
                     <View style={styles.headerContainer}>
                         <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
-                        <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                router.push("/(logged-in)/(tabs)/(feed)/Notifications");
+                            }}>
+                            <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                        </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
+
+                    {/* Feed Tabs */}
+                    <View style={styles.feedTabsContainer}>
+                        <FlatList
+                            data={availableFeeds}
+                            renderItem={renderFeedTab}
+                            keyExtractor={(item) => item.id}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.feedTabsContent}
+                        />
+                    </View>
+                </View>
             </Animated.View>
 
             <Animated.ScrollView
@@ -395,16 +455,30 @@ export default function Feed() {
                             ],
                         },
                     ]}>
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => {
-                            router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                        }}>
+                    <View>
                         <View style={styles.headerContainer}>
                             <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
-                            <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() => {
+                                    router.push("/(logged-in)/(tabs)/(feed)/Notifications");
+                                }}>
+                                <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                            </TouchableOpacity>
                         </View>
-                    </TouchableOpacity>
+
+                        {/* Feed Tabs */}
+                        <View style={styles.feedTabsContainer}>
+                            <FlatList
+                                data={availableFeeds}
+                                renderItem={renderFeedTab}
+                                keyExtractor={(item) => item.id}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.feedTabsContent}
+                            />
+                        </View>
+                    </View>
                 </Animated.View>
 
                 <View style={styles.contentContainer}>
@@ -500,12 +574,46 @@ const stylesheet = (ThemedColor: any) =>
             paddingHorizontal: HORIZONTAL_PADDING,
             paddingBottom: 8,
         },
+        feedTabsContainer: {
+            paddingBottom: 8,
+            paddingTop: 8,
+        },
+        feedTabsContent: {
+            paddingHorizontal: 8,
+        },
+        feedTab: {
+            backgroundColor: ThemedColor.background,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 8,
+            marginRight: 8,
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 1,
+            },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+        },
+        feedTabActive: {
+            backgroundColor: ThemedColor.primary,
+        },
+        feedTabText: {
+            fontSize: 16,
+            fontWeight: "400",
+            color: ThemedColor.text,
+            letterSpacing: -0.16,
+        },
+        feedTabTextActive: {
+            color: "#ffffff",
+        },
         headerTitle: {
             fontSize: 18,
             fontWeight: "600",
         },
         contentContainer: {
-            marginTop: 60,
+            marginTop: 100,
             paddingBottom: HORIZONTAL_PADDING,
         },
         loadingContainer: {
