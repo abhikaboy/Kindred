@@ -9,6 +9,7 @@ interface Task {
     value: number;
     priority: 1 | 2 | 3;
     encourage?: boolean;
+    congratulate?: boolean;
 }
 
 interface TaskListProps {
@@ -20,9 +21,20 @@ interface TaskListProps {
         receiverId: string;
         categoryName: string;
     };
+    congratulationConfig?: {
+        userHandle?: string;
+        receiverId: string;
+        categoryName: string;
+    };
 }
 
-export default function TaskList({ activeTasks, todayTasks, completedTasks, encouragementConfig }: TaskListProps) {
+export default function TaskList({
+    activeTasks,
+    todayTasks,
+    completedTasks,
+    encouragementConfig,
+    congratulationConfig,
+}: TaskListProps) {
     return (
         <>
             <View style={styles.taskSection}>
@@ -49,7 +61,9 @@ export default function TaskList({ activeTasks, todayTasks, completedTasks, enco
                         id={task.id}
                         categoryId="profile"
                         encourage={task.encourage}
+                        congratulate={task.congratulate}
                         encouragementConfig={encouragementConfig}
+                        congratulationConfig={congratulationConfig}
                     />
                 ))}
             </View>

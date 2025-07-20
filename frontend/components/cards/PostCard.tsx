@@ -1,5 +1,14 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Modal, Image, TouchableOpacity, View, StyleSheet, Dimensions, Platform } from "react-native";
+import {
+    Modal,
+    Image,
+    TouchableOpacity,
+    View,
+    StyleSheet,
+    Dimensions,
+    Platform,
+    KeyboardAvoidingView,
+} from "react-native";
 import { ThemedText } from "../ThemedText";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
@@ -12,6 +21,8 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import CongratulateModal from "../modals/CongratulateModal";
+import { useAuth } from "@/hooks/useAuth";
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -68,8 +79,10 @@ const PostCard = ({
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
     const allReactions = [...reactions, ...newReactions];
     const [modalIndex, setModalIndex] = useState(0);
+    const [congratulateModalVisible, setCongratulateModalVisible] = useState(false);
 
     const ThemedColor = useThemeColor();
+    const { user } = useAuth();
 
     const handleClose = () => {
         bottomSheetModalRef.current?.dismiss();
@@ -102,7 +115,7 @@ const PostCard = ({
             const existingReaction = prevReactions?.find((r) => r.emoji === emoji);
             const idsSet = new Set(existingReaction?.ids);
 
-            if (idsSet.has(userId) && add) {
+            if (idsSet.has(user?._id || "") && add) {
                 return prevReactions;
             }
 
@@ -113,14 +126,14 @@ const PostCard = ({
                             ? {
                                   ...r,
                                   count: add ? r.count + 1 : Math.max(0, r.count - 1),
-                                  ids: add ? [...r.ids, ...ids] : r.ids.filter((id) => !ids.includes(id)),
+                                  ids: add ? [...r.ids, user?._id || ""] : r.ids.filter((id) => id !== user?._id),
                               }
                             : r
                     )
                     .filter((r) => r.count > 0);
             } else if (add) {
                 if (!existingReaction) {
-                    return [...prevReactions, { emoji, count, ids }];
+                    return [...prevReactions, { emoji, count: 1, ids: [user?._id || ""] }];
                 }
             }
 
@@ -143,180 +156,238 @@ const PostCard = ({
         }
     };
 
+    const handleCongratulatePress = async () => {
+        if (!user?._id) {
+            // User is not authenticated, could show a login prompt here
+            console.log("User not authenticated");
+            return;
+        }
+
+        if (user._id === userId) {
+            // User is trying to congratulate themselves
+            console.log("Cannot congratulate yourself");
+            return;
+        }
+
+        try {
+            if (Platform.OS === "ios") {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+        } catch (error) {
+            console.log("Haptic error:", error);
+        }
+        setCongratulateModalVisible(true);
+    };
+
     const styles = stylesheet(ThemedColor);
 
     return (
-        <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
-            <View style={styles.content}>
-                {/* Header with user info */}
-                <View style={styles.header}>
-                    <View style={styles.userInfo}>
-                        <TouchableOpacity
-                            activeOpacity={0.4}
-                            onPress={async () => {
-                                try {
-                                    if (Platform.OS === "ios") {
-                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+            <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
+                <View style={styles.content}>
+                    {/* Header with user info */}
+                    <View style={styles.header}>
+                        <View style={styles.userInfo}>
+                            <TouchableOpacity
+                                activeOpacity={0.4}
+                                onPress={async () => {
+                                    try {
+                                        if (Platform.OS === "ios") {
+                                            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        }
+                                    } catch (error) {
+                                        console.log("Haptic error:", error);
                                     }
-                                } catch (error) {
-                                    console.log("Haptic error:", error);
-                                }
-                                router.push(`/account/${userId}`);
-                            }}>
-                            <Image source={{ uri: icon }} style={styles.userIcon} />
-                        </TouchableOpacity>
-                        <View style={styles.userDetails}>
-                            <ThemedText type="default" style={styles.userName}>
-                                {name}
-                            </ThemedText>
-                            <ThemedText type="caption" style={styles.username}>
-                                @{username}
-                            </ThemedText>
-                        </View>
-                    </View>
-                    <ThemedText type="caption" style={styles.timeText}>
-                        {formatTime(time)}
-                    </ThemedText>
-                </View>
-
-                {/* Image section - only render if images exist */}
-                {images && images.length > 0 && (
-                    <View style={styles.imageContainer}>
-                        {images.length === 1 ? (
-                            <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                <Image source={{ uri: images[0] }} style={styles.image} />
+                                    router.push(`/account/${userId}`);
+                                }}>
+                                <Image source={{ uri: icon }} style={styles.userIcon} />
                             </TouchableOpacity>
-                        ) : (
-                            <Carousel
-                                loop
-                                width={Dimensions.get("window").width}
-                                height={Dimensions.get("window").width}
-                                style={styles.carousel}
-                                snapEnabled={true}
-                                pagingEnabled={true}
-                                autoPlayInterval={2000}
-                                data={images}
-                                renderItem={({ item, index }) => (
-                                    <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
-                                        <Image source={{ uri: item }} style={styles.image} />
-                                    </TouchableOpacity>
-                                )}
-                            />
-                        )}
-                    </View>
-                )}
-
-                {/* Category and task section */}
-                {(category || taskName) && (
-                    <View style={styles.categorySection}>
-                        <View style={styles.categoryRow}>
-                            {category && (
-                                <>
-                                    <ThemedText style={[styles.categoryText, { color: ThemedColor.primary }]}>
-                                        {category}
-                                    </ThemedText>
-                                    <View style={[styles.dot, { backgroundColor: ThemedColor.primary }]} />
-                                </>
-                            )}
-                            {taskName && (
-                                <ThemedText style={[styles.categoryText, { color: ThemedColor.text }]}>
-                                    {taskName}
+                            <View style={styles.userDetails}>
+                                <ThemedText type="default" style={styles.userName}>
+                                    {name}
                                 </ThemedText>
+                                <ThemedText type="caption" style={styles.username}>
+                                    @{username}
+                                </ThemedText>
+                            </View>
+                        </View>
+                        <ThemedText type="caption" style={styles.timeText}>
+                            {formatTime(time)}
+                        </ThemedText>
+                    </View>
+
+                    {/* Image section - only render if images exist */}
+                    {images && images.length > 0 && (
+                        <View style={styles.imageContainer}>
+                            {images.length === 1 ? (
+                                <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
+                                    <Image source={{ uri: images[0] }} style={styles.image} />
+                                </TouchableOpacity>
+                            ) : (
+                                <Carousel
+                                    loop
+                                    width={Dimensions.get("window").width}
+                                    height={Dimensions.get("window").width}
+                                    style={styles.carousel}
+                                    snapEnabled={true}
+                                    pagingEnabled={true}
+                                    autoPlayInterval={2000}
+                                    data={images}
+                                    renderItem={({ item, index }) => (
+                                        <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
+                                            <Image source={{ uri: item }} style={styles.image} />
+                                        </TouchableOpacity>
+                                    )}
+                                />
                             )}
                         </View>
-                        <TouchableOpacity style={styles.congratulateButton}>
-                            <SparkleIcon size={24} color={ThemedColor.text} />
-                            <ThemedText style={[styles.congratulateText, { color: ThemedColor.text }]}>
-                                Congratulate
+                    )}
+
+                    {/* Category and task section */}
+                    {(category || taskName) && (
+                        <View style={styles.categorySection}>
+                            <View style={styles.categoryRow}>
+                                {category && (
+                                    <>
+                                        <ThemedText style={[styles.categoryText, { color: ThemedColor.primary }]}>
+                                            {category}
+                                        </ThemedText>
+                                        <View style={[styles.dot, { backgroundColor: ThemedColor.primary }]} />
+                                    </>
+                                )}
+                                {taskName && (
+                                    <ThemedText style={[styles.categoryText, { color: ThemedColor.text }]}>
+                                        {taskName}
+                                    </ThemedText>
+                                )}
+                            </View>
+                            <TouchableOpacity
+                                style={[
+                                    styles.congratulateButton,
+                                    (!user?._id || user?._id === userId) && { opacity: 0.5 },
+                                ]}
+                                onPress={handleCongratulatePress}
+                                disabled={!user?._id || user?._id === userId}>
+                                <SparkleIcon size={24} color={ThemedColor.text} />
+                                <ThemedText style={[styles.congratulateText, { color: ThemedColor.text }]}>
+                                    {!user?._id
+                                        ? "Login to Congratulate"
+                                        : user?._id === userId
+                                          ? "Your Post"
+                                          : "Congratulate"}
+                                </ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Caption and reactions */}
+                    <View style={styles.captionSection}>
+                        <ThemedText type="default" style={[styles.caption, { color: ThemedColor.text }]}>
+                            {caption}
+                        </ThemedText>
+
+                        <View style={styles.reactionsRow}>
+                            {allReactions.map((react, index) => (
+                                <ReactPills
+                                    key={index}
+                                    reaction={react}
+                                    postId={0}
+                                    onAddReaction={() => handleReaction(react, true)}
+                                    onRemoveReaction={() => handleReaction(react, false)}
+                                />
+                            ))}
+                            <ReactionAction
+                                onAddReaction={(emoji) =>
+                                    handleReaction({ emoji: emoji, count: 1, ids: [user?._id || ""] }, true)
+                                }
+                                postId={0}
+                            />
+                        </View>
+
+                        <TouchableOpacity onPress={handleOpenComments} style={styles.commentButton}>
+                            <ThemedText style={styles.commentText}>
+                                💬{" "}
+                                <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
+                                    Leave a comment
+                                </ThemedText>
                             </ThemedText>
                         </TouchableOpacity>
                     </View>
+                </View>
+
+                {/* Image modal */}
+                {modalVisible && (
+                    <Modal
+                        visible={modalVisible}
+                        transparent={true}
+                        animationType="slide"
+                        onRequestClose={() => setModalVisible(false)}>
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            style={styles.modalContainer}
+                            onPress={() => setModalVisible(false)}>
+                            <View style={styles.modalContent}>
+                                <Image source={{ uri: images[modalIndex] }} style={styles.popupImage} />
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
                 )}
 
-                {/* Caption and reactions */}
-                <View style={styles.captionSection}>
-                    <ThemedText type="default" style={[styles.caption, { color: ThemedColor.text }]}>
-                        {caption}
-                    </ThemedText>
+                {/* Comments bottom sheet */}
+                <BottomSheetModal
+                    ref={bottomSheetModalRef}
+                    onChange={handleSheetChanges}
+                    enableDynamicSizing={true}
+                    enablePanDownToClose={true}
+                    enableDismissOnClose={true}
+                    enableHandlePanningGesture={true}
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    android_keyboardInputMode="adjustResize"
+                    handleStyle={{
+                        backgroundColor: ThemedColor.background,
+                        borderTopLeftRadius: 24,
+                        borderTopRightRadius: 24,
+                    }}
+                    handleIndicatorStyle={{
+                        backgroundColor: ThemedColor.text,
+                        width: 48,
+                        height: 3,
+                        borderRadius: 10,
+                        marginVertical: 12,
+                    }}
+                    backgroundStyle={{
+                        borderTopLeftRadius: 32,
+                        borderTopRightRadius: 32,
+                    }}
+                    backdropComponent={renderBackdrop}
+                    style={{
+                        backgroundColor: ThemedColor.background,
+                        borderTopLeftRadius: 24,
+                        borderTopRightRadius: 24,
+                    }}>
+                    <Comment comments={comments} ref={bottomSheetModalRef} onClose={handleClose} />
+                </BottomSheetModal>
 
-                    <View style={styles.reactionsRow}>
-                        {allReactions.map((react, index) => (
-                            <ReactPills
-                                key={index}
-                                reaction={react}
-                                postId={0}
-                                onAddReaction={() => handleReaction(react, true)}
-                                onRemoveReaction={() => handleReaction(react, false)}
-                            />
-                        ))}
-                        <ReactionAction
-                            onAddReaction={(emoji) => handleReaction({ emoji: emoji, count: 1, ids: [userId] }, true)}
-                            postId={0}
-                        />
-                    </View>
-
-                    <TouchableOpacity onPress={handleOpenComments} style={styles.commentButton}>
-                        <ThemedText style={styles.commentText}>
-                            💬{" "}
-                            <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
-                                Leave a comment
-                            </ThemedText>
-                        </ThemedText>
-                    </TouchableOpacity>
-                </View>
+                {/* Congratulate Modal */}
+                <CongratulateModal
+                    visible={congratulateModalVisible}
+                    setVisible={setCongratulateModalVisible}
+                    task={{
+                        id: "", // We don't have task ID in PostCard props, but it's not required for congratulation
+                        content: taskName || caption || "Completed Task",
+                        value: points || 0,
+                        priority: priority === "high" ? 3 : priority === "medium" ? 2 : 1,
+                        categoryId: "",
+                    }}
+                    congratulationConfig={{
+                        userHandle: username,
+                        receiverId: userId,
+                        categoryName: category || "General",
+                    }}
+                />
             </View>
-
-            {/* Image modal */}
-            {modalVisible && (
-                <Modal
-                    visible={modalVisible}
-                    transparent={true}
-                    animationType="slide"
-                    onRequestClose={() => setModalVisible(false)}>
-                    <TouchableOpacity
-                        activeOpacity={1}
-                        style={styles.modalContainer}
-                        onPress={() => setModalVisible(false)}>
-                        <View style={styles.modalContent}>
-                            <Image source={{ uri: images[modalIndex] }} style={styles.popupImage} />
-                        </View>
-                    </TouchableOpacity>
-                </Modal>
-            )}
-
-            {/* Comments bottom sheet */}
-            <BottomSheetModal
-                ref={bottomSheetModalRef}
-                onChange={handleSheetChanges}
-                enableDynamicSizing={true}
-                handleStyle={{
-                    backgroundColor: ThemedColor.background,
-                    borderTopLeftRadius: 24,
-                    borderTopRightRadius: 24,
-                }}
-                handleIndicatorStyle={{
-                    backgroundColor: ThemedColor.text,
-                    width: 48,
-                    height: 3,
-                    borderRadius: 10,
-                    marginVertical: 12,
-                }}
-                backgroundStyle={{
-                    borderTopLeftRadius: 32,
-                    borderTopRightRadius: 32,
-                }}
-                backdropComponent={renderBackdrop}
-                enablePanDownToClose={true}
-                enableDismissOnClose={true}
-                enableHandlePanningGesture={true}
-                style={{
-                    backgroundColor: ThemedColor.background,
-                    borderTopLeftRadius: 24,
-                    borderTopRightRadius: 24,
-                }}>
-                <Comment comments={comments} ref={bottomSheetModalRef} onClose={handleClose} />
-            </BottomSheetModal>
-        </View>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -326,6 +397,7 @@ const stylesheet = (ThemedColor: any) =>
             flex: 1,
             borderBottomWidth: 1.5,
             borderBottomColor: ThemedColor.tertiary,
+            paddingVertical: 8,
         },
         content: {
             paddingVertical: 12,

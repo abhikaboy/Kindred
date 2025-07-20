@@ -5,11 +5,205 @@ import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { StyleSheet, View, Dimensions, TouchableOpacity, ScrollView, Image, Animated } from "react-native";
+import {
+    StyleSheet,
+    View,
+    Dimensions,
+    TouchableOpacity,
+    ScrollView,
+    Image,
+    Animated,
+    RefreshControl,
+} from "react-native";
+import { getPostsAPI } from "@/api/post";
+import { showToast } from "@/utils/showToast";
 
 const HORIZONTAL_PADDING = 16;
+
+// Mock data for fallback when API is not available
+const mockPosts = [
+    {
+        icon: Icons.luffy,
+        name: "Abhik Ray",
+        username: "beak",
+        userId: "67ba5abb616b5e6544e0137b",
+        caption: "Lowkey just finished jamming on my guitar, learned a few new songs too",
+        time: 2,
+        priority: "high",
+        points: 10,
+        timeTaken: 2,
+        category: "Music",
+        taskName: "Daily Practice",
+        reactions: [
+            { emoji: "🔥", count: 4, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "💸", count: 3, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "😃", count: 1, ids: ["67ba5abb616b5e6544e0137b"] },
+        ],
+        comments: [
+            {
+                userId: 1,
+                icon: Icons.luffy,
+                name: "luffy",
+                username: "theLuffiestOfThemAll",
+                time: 1708800000,
+                content: "This is such a great post! Thanks for sharing.",
+            },
+            {
+                userId: 2,
+                icon: Icons.coffee,
+                name: "Coffeeeeee",
+                username: "coffee",
+                time: 3,
+                content: "blah blah latte i hate lattes",
+            },
+        ],
+        images: [Icons.latte, Icons.coffee, Icons.lokye, Icons.luffy],
+    },
+    {
+        icon: Icons.coffee,
+        name: "Coffee Lover",
+        username: "coffeeaddict",
+        userId: "67ba5abb616b5e6544e0137c",
+        caption: "Just finished my morning routine and feeling great! Ready to tackle the day ahead.",
+        time: 0.5,
+        priority: "medium",
+        points: 5,
+        timeTaken: 1,
+        category: "Wellness",
+        taskName: "Morning Routine",
+        reactions: [
+            { emoji: "☕", count: 2, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "💪", count: 1, ids: ["67ba5abb616b5e6544e0137b"] },
+        ],
+        comments: [
+            {
+                userId: 1,
+                icon: Icons.luffy,
+                name: "luffy",
+                username: "theLuffiestOfThemAll",
+                time: 1708800000,
+                content: "Great way to start the day!",
+            },
+        ],
+        images: [],
+    },
+    {
+        icon: Icons.lokye,
+        name: "Lok Ye",
+        username: "lokye",
+        userId: "67ba5abb616b5e6544e0137d",
+        caption:
+            "Just completed my workout session! Feeling energized and ready to crush the rest of the day. Consistency is key! 💪",
+        time: 1.5,
+        priority: "high",
+        points: 15,
+        timeTaken: 1.5,
+        category: "Fitness",
+        taskName: "Gym Session",
+        reactions: [
+            { emoji: "💪", count: 8, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "🔥", count: 5, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "👏", count: 3, ids: ["67ba5abb616b5e6544e0137b"] },
+        ],
+        comments: [
+            {
+                userId: 1,
+                icon: Icons.luffy,
+                name: "luffy",
+                username: "theLuffiestOfThemAll",
+                time: 1708800000,
+                content: "Keep up the great work!",
+            },
+            {
+                userId: 2,
+                icon: Icons.coffee,
+                name: "Coffeeeeee",
+                username: "coffee",
+                time: 3,
+                content: "Inspiring! What's your routine?",
+            },
+        ],
+        images: [Icons.luffy],
+    },
+    {
+        icon: Icons.latte,
+        name: "Study Buddy",
+        username: "studybuddy",
+        userId: "67ba5abb616b5e6544e0137e",
+        caption:
+            "Finally finished that research paper! 6 hours of focused work and it's finally done. Time for a well-deserved break.",
+        time: 4,
+        priority: "medium",
+        points: 20,
+        timeTaken: 6,
+        category: "Study",
+        taskName: "Research Paper",
+        reactions: [
+            { emoji: "📚", count: 6, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "🎉", count: 4, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "💯", count: 2, ids: ["67ba5abb616b5e6544e0137b"] },
+        ],
+        comments: [
+            {
+                userId: 1,
+                icon: Icons.luffy,
+                name: "luffy",
+                username: "theLuffiestOfThemAll",
+                time: 1708800000,
+                content: "Congrats on finishing!",
+            },
+        ],
+        images: [],
+    },
+    {
+        icon: Icons.coffee,
+        name: "Chef Sarah",
+        username: "chefsarah",
+        userId: "67ba5abb616b5e6544e0137f",
+        caption:
+            "Made homemade pasta from scratch today! The process was therapeutic and the result was delicious. Cooking is my happy place 🍝",
+        time: 3.5,
+        priority: "low",
+        points: 12,
+        timeTaken: 2.5,
+        category: "Cooking",
+        taskName: "Homemade Pasta",
+        reactions: [
+            { emoji: "🍝", count: 7, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "👨‍🍳", count: 3, ids: ["67ba5abb616b5e6544e0137b"] },
+            { emoji: "😋", count: 5, ids: ["67ba5abb616b5e6544e0137b"] },
+        ],
+        comments: [
+            {
+                userId: 1,
+                icon: Icons.luffy,
+                name: "luffy",
+                username: "theLuffiestOfThemAll",
+                time: 1708800000,
+                content: "Looks amazing! Recipe?",
+            },
+            {
+                userId: 2,
+                icon: Icons.coffee,
+                name: "Coffeeeeee",
+                username: "coffee",
+                time: 3,
+                content: "I need to try this!",
+            },
+            {
+                userId: 3,
+                icon: Icons.lokye,
+                name: "Lok Ye",
+                username: "lokye",
+                time: 2,
+                content: "Beautiful presentation!",
+            },
+        ],
+        images: [Icons.latte, Icons.coffee, Icons.lokye],
+    },
+];
 
 export default function Feed() {
     const router = useRouter();
@@ -17,14 +211,80 @@ export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [posts, setPosts] = useState(mockPosts);
+    const [loading, setLoading] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
     const scrollY = useRef(new Animated.Value(0)).current;
     const headerOpacity = useRef(new Animated.Value(0)).current;
     const headerTranslateY = useRef(new Animated.Value(-100)).current;
+    const loadingRotation = useRef(new Animated.Value(0)).current;
     const lastScrollY = useRef(0);
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
+
+    // Start loading animation when loading state changes
+    useEffect(() => {
+        if (loading) {
+            Animated.loop(
+                Animated.timing(loadingRotation, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true,
+                })
+            ).start();
+        } else {
+            loadingRotation.setValue(0);
+        }
+    }, [loading, loadingRotation]);
+
+    const fetchPosts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const fetchedPosts = await getPostsAPI();
+            // Transform API data to match PostCard props format
+            // This would need to be adjusted based on actual API response structure
+            const postsToUse = (fetchedPosts as any) || [];
+
+            // If API returns empty posts or no posts, use mock data
+            if (!postsToUse || postsToUse.length === 0) {
+                console.log("API returned empty posts, using mock data");
+                setPosts(mockPosts);
+            } else {
+                setPosts(postsToUse);
+            }
+
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error("Error fetching posts:", error);
+            showToast("Failed to load posts", "danger");
+            // Keep using mock data as fallback
+            setPosts(mockPosts);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+
+        try {
+            await fetchPosts();
+            showToast("Feed refreshed successfully", "success");
+        } catch (error) {
+            console.error("Error refreshing feed:", error);
+            showToast("Failed to refresh feed", "danger");
+        } finally {
+            setRefreshing(false);
+        }
+    }, [fetchPosts]);
+
+    // Load posts on component mount
+    useEffect(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
     const animateHeader = useCallback(
         (show: boolean) => {
@@ -104,7 +364,17 @@ export default function Feed() {
                 style={{ flex: 1, paddingTop: insets.top }}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}>
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[ThemedColor.primary]}
+                        tintColor={ThemedColor.primary}
+                        title="Pull to refresh"
+                        titleColor={ThemedColor.text}
+                    />
+                }>
                 <Animated.View
                     style={[
                         styles.staticHeader,
@@ -138,337 +408,59 @@ export default function Feed() {
                 </Animated.View>
 
                 <View style={styles.contentContainer}>
-                    <PostCard
-                        icon={Icons.luffy}
-                        name={"Abhik Ray"}
-                        username={"beak"}
-                        userId={"67ba5abb616b5e6544e0137b"}
-                        caption={"Lowkey just finished jamming on my guitar, learned a few new songs too"}
-                        time={2}
-                        priority={"high"}
-                        points={10}
-                        timeTaken={2}
-                        category={"Music"}
-                        taskName={"Daily Practice"}
-                        reactions={[
-                            {
-                                emoji: "🔥",
-                                count: 4,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "💸",
-                                count: 3,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "😃",
-                                count: 1,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "This is such a great post! Thanks for sharing.",
-                            },
-                            {
-                                userId: 2,
-                                icon: Icons.coffee,
-                                name: "Coffeeeeee",
-                                username: "coffee",
-                                time: 3,
-                                content: "blah blah latte i hate lattes",
-                            },
-                        ]}
-                        images={[Icons.latte, Icons.coffee, Icons.lokye, Icons.luffy]}
-                    />
-
-                    <PostCard
-                        icon={Icons.coffee}
-                        name={"Coffee Lover"}
-                        username={"coffeeaddict"}
-                        userId={"67ba5abb616b5e6544e0137c"}
-                        caption={"Just finished my morning routine and feeling great! Ready to tackle the day ahead."}
-                        time={0.5}
-                        priority={"medium"}
-                        points={5}
-                        timeTaken={1}
-                        category={"Wellness"}
-                        taskName={"Morning Routine"}
-                        reactions={[
-                            {
-                                emoji: "☕",
-                                count: 2,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "💪",
-                                count: 1,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "Great way to start the day!",
-                            },
-                        ]}
-                        images={[]}
-                    />
-
-                    <PostCard
-                        icon={Icons.lokye}
-                        name={"Lok Ye"}
-                        username={"lokye"}
-                        userId={"67ba5abb616b5e6544e0137d"}
-                        caption={
-                            "Just completed my workout session! Feeling energized and ready to crush the rest of the day. Consistency is key! 💪"
-                        }
-                        time={1.5}
-                        priority={"high"}
-                        points={15}
-                        timeTaken={1.5}
-                        category={"Fitness"}
-                        taskName={"Gym Session"}
-                        reactions={[
-                            {
-                                emoji: "💪",
-                                count: 8,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "🔥",
-                                count: 5,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "👏",
-                                count: 3,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "Keep up the great work!",
-                            },
-                            {
-                                userId: 2,
-                                icon: Icons.coffee,
-                                name: "Coffeeeeee",
-                                username: "coffee",
-                                time: 3,
-                                content: "Inspiring! What's your routine?",
-                            },
-                        ]}
-                        images={[Icons.luffy]}
-                    />
-
-                    <PostCard
-                        icon={Icons.latte}
-                        name={"Study Buddy"}
-                        username={"studybuddy"}
-                        userId={"67ba5abb616b5e6544e0137e"}
-                        caption={
-                            "Finally finished that research paper! 6 hours of focused work and it's finally done. Time for a well-deserved break."
-                        }
-                        time={4}
-                        priority={"medium"}
-                        points={20}
-                        timeTaken={6}
-                        reactions={[
-                            {
-                                emoji: "📚",
-                                count: 6,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "🎉",
-                                count: 4,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "💯",
-                                count: 2,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "Congrats on finishing!",
-                            },
-                        ]}
-                        images={[]}
-                    />
-
-                    <PostCard
-                        icon={Icons.coffee}
-                        name={"Chef Sarah"}
-                        username={"chefsarah"}
-                        userId={"67ba5abb616b5e6544e0137f"}
-                        caption={
-                            "Made homemade pasta from scratch today! The process was therapeutic and the result was delicious. Cooking is my happy place 🍝"
-                        }
-                        time={3.5}
-                        priority={"low"}
-                        points={12}
-                        timeTaken={2.5}
-                        category={"Cooking"}
-                        taskName={"Homemade Pasta"}
-                        reactions={[
-                            {
-                                emoji: "🍝",
-                                count: 7,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "👨‍🍳",
-                                count: 3,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "😋",
-                                count: 5,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "Looks amazing! Recipe?",
-                            },
-                            {
-                                userId: 2,
-                                icon: Icons.coffee,
-                                name: "Coffeeeeee",
-                                username: "coffee",
-                                time: 3,
-                                content: "I need to try this!",
-                            },
-                            {
-                                userId: 3,
-                                icon: Icons.lokye,
-                                name: "Lok Ye",
-                                username: "lokye",
-                                time: 2,
-                                content: "Beautiful presentation!",
-                            },
-                        ]}
-                        images={[Icons.latte, Icons.coffee, Icons.lokye]}
-                    />
-
-                    <PostCard
-                        icon={Icons.luffy}
-                        name={"Bookworm"}
-                        username={"bookworm"}
-                        userId={"67ba5abb616b5e6544e0140"}
-                        caption={
-                            "Just finished 'The Midnight Library' by Matt Haig. What a beautiful exploration of life's infinite possibilities. Highly recommend for anyone going through a rough patch."
-                        }
-                        time={6}
-                        priority={"low"}
-                        points={8}
-                        timeTaken={4}
-                        category={"Reading"}
-                        taskName={"Book Club Pick"}
-                        reactions={[
-                            {
-                                emoji: "📖",
-                                count: 3,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "❤️",
-                                count: 2,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "Adding to my reading list!",
-                            },
-                        ]}
-                        images={[]}
-                    />
-
-                    <PostCard
-                        icon={Icons.lokye}
-                        name={"Artistic Soul"}
-                        username={"artisticsoul"}
-                        userId={"67ba5abb616b5e6544e0141"}
-                        caption={
-                            "Spent the afternoon painting and it was exactly what I needed. Art has this incredible way of helping me process emotions. Here's what came out of today's session."
-                        }
-                        time={0.8}
-                        priority={"medium"}
-                        points={18}
-                        timeTaken={3}
-                        category={"Art"}
-                        taskName={"Creative Expression"}
-                        reactions={[
-                            {
-                                emoji: "🎨",
-                                count: 9,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "✨",
-                                count: 4,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                            {
-                                emoji: "👏",
-                                count: 2,
-                                ids: ["67ba5abb616b5e6544e0137b"],
-                            },
-                        ]}
-                        comments={[
-                            {
-                                userId: 1,
-                                icon: Icons.luffy,
-                                name: "luffy",
-                                username: "theLuffiestOfThemAll",
-                                time: 1708800000,
-                                content: "This is beautiful!",
-                            },
-                            {
-                                userId: 2,
-                                icon: Icons.coffee,
-                                name: "Coffeeeeee",
-                                username: "coffee",
-                                time: 3,
-                                content: "Love the colors!",
-                            },
-                        ]}
-                        images={[Icons.coffee]}
-                    />
+                    {loading ? (
+                        <View style={styles.loadingContainer}>
+                            <Animated.View
+                                style={[
+                                    styles.loadingIcon,
+                                    {
+                                        transform: [
+                                            {
+                                                rotate: loadingRotation.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ["0deg", "360deg"],
+                                                }),
+                                            },
+                                        ],
+                                    },
+                                ]}>
+                                <Ionicons name="refresh" size={30} color={ThemedColor.primary} />
+                            </Animated.View>
+                            <ThemedText style={[styles.loadingText, { color: ThemedColor.text }]}>
+                                Loading posts...
+                            </ThemedText>
+                        </View>
+                    ) : posts.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="newspaper-outline" size={50} color={ThemedColor.caption} />
+                            <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
+                                No posts yet
+                            </ThemedText>
+                            <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
+                                Pull down to refresh
+                            </ThemedText>
+                        </View>
+                    ) : (
+                        posts.map((post, index) => (
+                            <PostCard
+                                key={index}
+                                icon={post.icon}
+                                name={post.name}
+                                username={post.username}
+                                userId={post.userId}
+                                caption={post.caption}
+                                time={post.time}
+                                priority={post.priority}
+                                points={post.points}
+                                timeTaken={post.timeTaken}
+                                category={post.category}
+                                taskName={post.taskName}
+                                reactions={post.reactions}
+                                comments={post.comments}
+                                images={post.images}
+                            />
+                        ))
+                    )}
                 </View>
             </Animated.ScrollView>
         </View>
@@ -515,5 +507,33 @@ const stylesheet = (ThemedColor: any) =>
         contentContainer: {
             marginTop: 60,
             paddingBottom: HORIZONTAL_PADDING,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingVertical: 20,
+        },
+        loadingIcon: {
+            transform: [{ rotate: "0deg" }],
+        },
+        loadingText: {
+            marginTop: 10,
+            fontSize: 16,
+        },
+        emptyContainer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingVertical: 20,
+        },
+        emptyText: {
+            fontSize: 20,
+            fontWeight: "bold",
+            marginTop: 10,
+        },
+        emptySubtext: {
+            fontSize: 14,
+            marginTop: 5,
         },
     });
