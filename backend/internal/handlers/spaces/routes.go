@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/danielgtaylor/huma/v2"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Service struct {
@@ -74,7 +75,7 @@ func NewPresigner() *s3.PresignClient {
 	return s3.NewPresignClient(s3Client)
 }
 
-func Routes(api huma.API, presigner *s3.PresignClient) {
+func Routes(api huma.API, presigner *s3.PresignClient, collections map[string]*mongo.Collection) {
 	cfg, err := internalConfig.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
@@ -82,8 +83,9 @@ func Routes(api huma.API, presigner *s3.PresignClient) {
 
 	service := newService(presigner)
 	handler := &Handler{
-		service: service,
-		config:  cfg,
+		service:     service,
+		config:      cfg,
+		collections: collections,
 	}
 
 	RegisterS3BucketOperations(api, handler)

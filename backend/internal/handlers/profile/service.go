@@ -3,16 +3,19 @@ package Profile
 import (
 	"context"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	Connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// newService receives the map of collections and picks out Jobs
-func newService(collections map[string]*mongo.Collection) *Service {
+// NewService receives the map of collections and picks out Jobs
+func NewService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Profiles: collections["users"],
+		Profiles:    collections["users"],
+		Connections: collections["friend-requests"],
 	}
 }
 
@@ -202,4 +205,74 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 
 	_, err := s.Profiles.UpdateOne(ctx, filter, update)
 	return err
+}
+
+// CheckRelationship determines the relationship status between two users
+func (s *Service) CheckRelationship(authenticatedUserID, targetUserID primitive.ObjectID) (*RelationshipInfo, error) {
+	ctx := context.Background()
+
+	// If viewing own profile
+	if authenticatedUserID == targetUserID {
+		return &RelationshipInfo{
+			Status: RelationshipSelf,
+		}, nil
+	}
+
+	// Check if users are friends (connected)
+	var user auth.User
+	err := s.Profiles.FindOne(ctx, bson.M{"_id": authenticatedUserID}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if target user is in friends list
+	for _, friendID := range user.Friends {
+		if friendID == targetUserID {
+			return &RelationshipInfo{
+				Status: RelationshipConnected,
+			}, nil
+		}
+	}
+
+	// Check for pending connection requests
+	// Check if authenticated user has sent a request to target user
+	sentRequest := s.Connections.FindOne(ctx, bson.M{
+		"requester._id": authenticatedUserID,
+		"reciever":      targetUserID,
+	})
+
+	if sentRequest.Err() == nil {
+		// Request exists
+		var connection Connection.ConnectionDocumentInternal
+		if err := sentRequest.Decode(&connection); err == nil {
+			requestID := connection.ID.Hex()
+			return &RelationshipInfo{
+				Status:    RelationshipRequested,
+				RequestID: &requestID,
+			}, nil
+		}
+	}
+
+	// Check if authenticated user has received a request from target user
+	receivedRequest := s.Connections.FindOne(ctx, bson.M{
+		"requester._id": targetUserID,
+		"reciever":      authenticatedUserID,
+	})
+
+	if receivedRequest.Err() == nil {
+		// Request exists
+		var connection Connection.ConnectionDocumentInternal
+		if err := receivedRequest.Decode(&connection); err == nil {
+			requestID := connection.ID.Hex()
+			return &RelationshipInfo{
+				Status:    RelationshipReceived,
+				RequestID: &requestID,
+			}, nil
+		}
+	}
+
+	// No relationship exists
+	return &RelationshipInfo{
+		Status: RelationshipNone,
+	}, nil
 }

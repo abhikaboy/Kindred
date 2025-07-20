@@ -67,7 +67,9 @@ type GetProfileByPhoneOutput struct {
 
 // Search Profiles
 type SearchProfilesInput struct {
-	Query string `query:"query" example:"john"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Query         string `query:"query" example:"john"`
 }
 
 type SearchProfilesOutput struct {
@@ -149,11 +151,11 @@ func RegisterSearchProfilesOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "search-profiles",
 		Method:      http.MethodGet,
-		Path:        "/v1/profiles/search",
+		Path:        "/v1/user/profiles/search",
 		Summary:     "Search profiles",
 		Description: "Search for user profiles by query string",
 		Tags:        []string{"profiles"},
-	}, handler.SearchProfiles)
+	}, handler.SearchProfilesHuma)
 }
 
 // Note: Profile picture upload operations moved to centralized upload service

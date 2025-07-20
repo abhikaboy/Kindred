@@ -3,6 +3,7 @@ package Profile
 import (
 	"context"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -112,6 +113,12 @@ func (h *Handler) GetProfilesHuma(ctx context.Context, input *GetProfilesInput) 
 }
 
 func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*GetProfileOutput, error) {
+	// Extract user_id from context for authorization
+	authenticatedUserID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid ID format", err)
@@ -121,6 +128,25 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 	if err != nil {
 		return nil, huma.Error404NotFound("Profile not found", err)
 	}
+
+	// Convert authenticated user ID to ObjectID
+	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid authenticated user ID", err)
+	}
+
+	// Check relationship between authenticated user and profile being viewed
+	relationship, err := h.service.CheckRelationship(authUserID, id)
+	if err != nil {
+		// Log the error but don't fail the request - relationship info is optional
+		// You might want to add proper logging here
+		relationship = &RelationshipInfo{
+			Status: RelationshipNone,
+		}
+	}
+
+	// Add relationship information to the profile
+	profile.Relationship = relationship
 
 	resp := &GetProfileOutput{Body: *profile}
 	return resp, nil
@@ -177,9 +203,19 @@ func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileBy
 }
 
 func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
-	var profiles []ProfileDocument
-	var err error
+	// Extract user_id from context for authorization
+	authenticatedUserID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
 
+	// Convert authenticated user ID to ObjectID
+	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid authenticated user ID", err)
+	}
+
+	var profiles []ProfileDocument
 	if input.Query == "" {
 		profiles, err = h.service.GetAllProfiles()
 	} else {
@@ -188,6 +224,18 @@ func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesI
 
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
+	}
+
+	// Add relationship information to each profile
+	for i := range profiles {
+		relationship, err := h.service.CheckRelationship(authUserID, profiles[i].ID)
+		if err != nil {
+			// Log the error but don't fail the request - relationship info is optional
+			relationship = &RelationshipInfo{
+				Status: RelationshipNone,
+			}
+		}
+		profiles[i].Relationship = relationship
 	}
 
 	resp := &SearchProfilesOutput{Body: profiles}
