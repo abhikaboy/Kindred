@@ -1,26 +1,31 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Dimensions } from "react-native";
+import React from "react";
+import { View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import Octicons from "@expo/vector-icons/Octicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import Octicons from "@expo/vector-icons/Octicons";
 
 interface StatItemProps {
-    icon?: React.ReactNode;
+    icon: React.ReactNode;
     label: string;
     value: number;
 }
 
 function StatItem({ icon, label, value }: StatItemProps) {
     const ThemedColor = useThemeColor();
-    const screenWidth = Dimensions.get("window").width;
-    const minCardWidth = screenWidth * 0.3;
 
     return (
-        <View style={[styles.statItem, { backgroundColor: ThemedColor.lightened, minWidth: minCardWidth }]}>
-            {icon && <View style={styles.iconContainer}>{icon}</View>}
+        <View
+            style={[
+                styles.statItem,
+                {
+                    backgroundColor: ThemedColor.lightened,
+                    shadowColor: ThemedColor.text,
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                },
+            ]}>
+            <View style={styles.iconContainer}>{icon}</View>
             <View style={styles.textContainer}>
                 <ThemedText type="default" style={[styles.statValue, { color: ThemedColor.text }]}>
                     {value}
@@ -44,53 +49,55 @@ const iconSize = 24;
 
 export default function TodayStats({ tasks, points, streak, posts }: TodayStatsProps) {
     const ThemedColor = useThemeColor();
+
     return (
-        <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContainer}
-            style={styles.statsCard}>
-            <StatItem
-                icon={<FontAwesome6 name="check" size={iconSize} color={ThemedColor.primary} />}
-                label="Completed Tasks"
-                value={tasks}
-            />
-            <StatItem
-                icon={<FontAwesome6 size={iconSize} color={ThemedColor.primary} name="coins" />}
-                label="Total Points"
-                value={points}
-            />
-            <StatItem
-                icon={<Octicons name="flame" size={iconSize} color={ThemedColor.primary} />}
-                label="Streak"
-                value={streak}
-            />
-            <StatItem
-                icon={<FontAwesome6 name="camera-retro" size={iconSize} color={ThemedColor.primary} />}
-                label="Total Posts"
-                value={posts}
-            />
-        </ScrollView>
+        <View style={styles.container}>
+            <View style={styles.gridContainer}>
+                <StatItem
+                    icon={<Octicons name="flame" size={iconSize} color={ThemedColor.primary} />}
+                    label="Streak"
+                    value={streak}
+                />
+                <StatItem
+                    icon={<Octicons name="device-camera" size={iconSize} color={ThemedColor.primary} />}
+                    label="Posts"
+                    value={posts}
+                />
+                <StatItem
+                    icon={<Octicons name="credit-card" size={iconSize} color={ThemedColor.primary} />}
+                    label="Total Points"
+                    value={points}
+                />
+                <StatItem
+                    icon={<Octicons name="check-circle" size={iconSize} color={ThemedColor.primary} />}
+                    label="Tasks Done"
+                    value={tasks}
+                />
+            </View>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    statsCard: {
+    container: {
         width: "100%",
     },
-    scrollContainer: {
-        gap: 8,
+    gridContainer: {
+        display: "flex",
         flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+        height: 175,
     },
     statItem: {
-        flexDirection: "column",
-        alignItems: "flex-start",
-        justifyContent: "flex-end",
+        flexDirection: "row",
+        alignItems: "flex-end",
+        justifyContent: "flex-start",
         padding: 16,
         borderRadius: 12,
         gap: 12,
-        height: Dimensions.get("window").height * 0.225,
-        minWidth: Dimensions.get("window").width * 0.4,
+        width: "48%",
+        height: 70.5,
     },
     iconContainer: {
         width: 32,
@@ -99,8 +106,8 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     textContainer: {
+        flex: 1,
         flexDirection: "column",
-        alignItems: "flex-start",
         justifyContent: "center",
         gap: 0,
     },

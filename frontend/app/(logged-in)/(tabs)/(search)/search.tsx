@@ -1,4 +1,14 @@
-import { Dimensions, StyleSheet, ScrollView, View, Text, Pressable, Keyboard, FlatList } from "react-native";
+import {
+    Dimensions,
+    StyleSheet,
+    ScrollView,
+    View,
+    Text,
+    Pressable,
+    Keyboard,
+    FlatList,
+    RefreshControl,
+} from "react-native";
 import React, { useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -25,6 +35,7 @@ const Search = (props: Props) => {
     const [focused, setFocused] = React.useState(false);
     const [searchResults, setSearchResults] = React.useState<BlueprintDocument[]>([]);
     const [isSearching, setIsSearching] = React.useState(false);
+    const [refreshing, setRefreshing] = React.useState(false);
     const ThemedColor = useThemeColor();
 
     const opacity = useSharedValue(1);
@@ -83,6 +94,22 @@ const Search = (props: Props) => {
     useEffect(() => {
         opacity.value = withTiming(focused ? 0.05 : 1);
     }, [focused]);
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        try {
+            const data = await getBlueprintsToBackend();
+            setBlueprints(data);
+            // Clear search results when refreshing
+            setSearchResults([]);
+            setSearched(false);
+            setSearchTerm("");
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setRefreshing(false);
+        }
+    }, []);
 
     type Blueprint = {
         id: string;
@@ -158,7 +185,16 @@ const Search = (props: Props) => {
                 />
             </View>
 
-            <ScrollView style={{ paddingVertical: Dimensions.get("screen").height * 0.03 }}>
+            <ScrollView
+                style={{ paddingVertical: Dimensions.get("screen").height * 0.03 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={ThemedColor.text}
+                        colors={[ThemedColor.text]}
+                    />
+                }>
                 <Pressable style={{ gap: 16 }} onPress={() => Keyboard.dismiss()}>
                     <FlatList
                         data={blueprints}

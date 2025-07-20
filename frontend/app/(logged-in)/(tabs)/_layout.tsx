@@ -11,6 +11,36 @@ import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
+import { useNavigationState } from "@react-navigation/native";
+
+// Custom tab button components
+const TasksTabButton = (props: any) => {
+    const navigationState = useNavigationState((state) => state);
+    const currentIndex = navigationState?.index || 0;
+    const isSelected = currentIndex === 0; // Tasks is the first tab
+    return <HapticTab {...props} isSelected={isSelected} />;
+};
+
+const FeedTabButton = (props: any) => {
+    const navigationState = useNavigationState((state) => state);
+    const currentIndex = navigationState?.index || 0;
+    const isSelected = currentIndex === 1; // Feed is the second tab
+    return <HapticTab {...props} isSelected={isSelected} />;
+};
+
+const SearchTabButton = (props: any) => {
+    const navigationState = useNavigationState((state) => state);
+    const currentIndex = navigationState?.index || 0;
+    const isSelected = currentIndex === 2; // Search is the third tab
+    return <HapticTab {...props} isSelected={isSelected} />;
+};
+
+const ProfileTabButton = (props: any) => {
+    const navigationState = useNavigationState((state) => state);
+    const currentIndex = navigationState?.index || 0;
+    const isSelected = currentIndex === 3; // Profile is the fourth tab
+    return <HapticTab {...props} isSelected={isSelected} />;
+};
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -77,13 +107,14 @@ export default function TabLayout() {
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: ThemedColor.text,
+                tabBarActiveTintColor: "#854DFF", // Purple color for selected state
+                tabBarInactiveTintColor: ThemedColor.text, // Default text color for inactive state
+                tabBarShowLabel: false, // Hide default labels
                 headerShown: false,
                 tabBarHideOnKeyboard: true,
                 headerTitleStyle: {
                     fontFamily: "Outfit",
                 },
-                tabBarActiveBackgroundColor: ThemedColor.tertiary + "80",
                 tabBarBackground: TabBarBackground,
                 animation: "fade",
                 tabBarVariant: "uikit",
@@ -91,7 +122,7 @@ export default function TabLayout() {
                 tabBarItemStyle: {
                     flex: 1,
                     alignItems: "center",
-                    justifyContent: "center",
+                    justifyContent: "flex-start", // Keep this for top alignment
                 },
                 tabBarStyle: {
                     ...Platform.select({
@@ -99,15 +130,13 @@ export default function TabLayout() {
                             borderTopWidth: 1,
                             borderColor: ThemedColor.tertiary,
                             position: "absolute",
-                            marginBottom: 32,
-                            marginHorizontal: "3%",
-                            paddingBottom: 0,
+                            paddingTop: 16,
+                            height: 96,
+                            paddingBottom: 64,
                             borderRadius: 30,
-                            width: "94%",
+                            width: "100%",
                             overflow: "hidden",
                             borderWidth: 1,
-                            alignItems: "center",
-                            boxShadow: ThemedColor.shadowSmall,
                         },
                         android: {
                             height: 80,
@@ -129,7 +158,8 @@ export default function TabLayout() {
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
                     tabBarBadge: 1,
-                    tabBarButton: HapticTab,
+                    tabBarButton: TasksTabButton,
+                    tabBarAccessibilityLabel: "Tasks",
                 }}
             />
             <Tabs.Screen
@@ -137,7 +167,8 @@ export default function TabLayout() {
                 options={{
                     title: "Feed",
                     tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
-                    tabBarButton: HapticTab,
+                    tabBarButton: FeedTabButton,
+                    tabBarAccessibilityLabel: "Feed",
                 }}
             />
             <Tabs.Screen
@@ -145,7 +176,8 @@ export default function TabLayout() {
                 options={{
                     title: "Search",
                     tabBarIcon: ({ color }) => <Octicons name="search" size={24} color={color} />,
-                    tabBarButton: HapticTab,
+                    tabBarButton: SearchTabButton,
+                    tabBarAccessibilityLabel: "Search",
                 }}
             />
             <Tabs.Screen
@@ -153,7 +185,8 @@ export default function TabLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color }) => <Octicons name="person" size={24} color={color} />,
-                    tabBarButton: HapticTab,
+                    tabBarButton: ProfileTabButton,
+                    tabBarAccessibilityLabel: "Profile",
                 }}
             />
         </Tabs>

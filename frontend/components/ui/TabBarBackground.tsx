@@ -16,7 +16,7 @@ const TabBarBackground = () => {
     return (
         <View
             style={{
-                backgroundColor: ThemedColor.background,
+                backgroundColor: ThemedColor.primary + "20",
                 // Make sure this matches your theme background
             }}
         />
