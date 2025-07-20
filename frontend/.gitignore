@@ -40,3 +40,5 @@ yarn-error.*
 
 # environment variables
 .env
+
+.env.local

@@ -26,6 +26,8 @@ import DashboardCards from "@/components/dashboard/DashboardCards";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import * as Sentry from "@sentry/react-native";
 
 type Props = {};
 
@@ -134,6 +136,12 @@ const Home = (props: Props) => {
                                     </BasicCard>
                                 </TouchableOpacity>
                                 <DashboardCards drawerRef={drawerRef} />
+                                <PrimaryButton
+                                    title="Try!"
+                                    onPress={() => {
+                                        Sentry.captureException(new Error("First error"));
+                                    }}
+                                />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView horizontal>
                                     <ConditionalView condition={workspaces.length > 0} key="workspaces-container">

@@ -128,6 +128,12 @@ func (h *Handler) ConfirmImageUpload(ctx context.Context, input *ConfirmImageUpl
 			return nil, huma.Error500InternalServerError("Failed to update profile picture", err)
 		}
 		
+	case "blueprint":
+		// For blueprint images, we just confirm the upload without updating the database
+		// The blueprint will be updated when the blueprint is created/updated
+		// This allows for temporary IDs during blueprint creation
+		break
+		
 	case "post":
 		// TODO: Import post service and update post image
 		// postService.UpdatePostImage(input.ResourceID, input.Body.PublicURL)
