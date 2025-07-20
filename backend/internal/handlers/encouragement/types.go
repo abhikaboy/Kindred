@@ -70,9 +70,11 @@ type DeleteEncouragementOutput struct {
 
 // Mark Encouragements as Read
 type MarkEncouragementsReadInput struct {
-	Authorization string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	ID            []string `json:"id" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of encouragement IDs to mark as read" validate:"required"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          struct {
+		ID []string `json:"id" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of encouragement IDs to mark as read"`
+	} `json:"body"`
 }
 
 type MarkEncouragementsReadOutput struct {
