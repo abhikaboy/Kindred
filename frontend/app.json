@@ -1,81 +1,93 @@
 {
-    "expo": {
-        "name": "Kindred",
-        "slug": "Kindred",
-        "version": "0.0.1",
-        "orientation": "portrait",
-        "icon": "./assets/icon.png",
-        "scheme": "kindred",
-        "userInterfaceStyle": "automatic",
-        "newArchEnabled": true,
-        "platforms": ["ios", "android", "web"],
-        "ios": {
-            "supportsTablet": true,
-            "infoPlist": {
-                "NSLocationWhenInUseUsageDescription": "We use your location to look up nearby restaurants and addresses.",
-                "ITSAppUsesNonExemptEncryption": false,
-                "NSAppTransportSecurity": {
-                    "NSAllowsArbitraryLoads": true,
-                    "NSExceptionDomains": {
-                        "157.230.81.185": {
-                            "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
-                        }
-                    }
-                },
-                "NSContactsUsageDescription": "To find who else is on Kindred to connect with them!",
-                "NSCameraUsageDescription": "This app needs access to camera to take photos for your profile and posts.",
-                "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select photos for your profile and posts.",
-                "NSPhotoLibraryAddUsageDescription": "This app needs access to save photos to your photo library."
-            },
-            "entitlements": {
-                "aps-environment": "development"
-            },
-            "usesAppleSignIn": true,
-            "bundleIdentifier": "com.kindred.kindredtsl",
-            "buildNumber": "26"
-        },
-        "android": {
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/icon.png",
-                "backgroundColor": "#ffffff"
+  "expo": {
+    "name": "Kindred",
+    "slug": "Kindred",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "kindred",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We use your location to look up nearby restaurants and addresses.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "157.230.81.185": {
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
             }
+          }
         },
-        "web": {
-            "bundler": "metro",
-            "output": "static",
-            "favicon": "./assets/favicon.png"
-        },
-        "plugins": [
-            "expo-apple-authentication",
-            "expo-router",
-            "expo-notifications",
-            [
-                "expo-splash-screen",
-                {
-                    "image": "./assets/splash-icon.png",
-                    "imageWidth": 100,
-                    "dark": {
-                        "image": "./assets/splash-icon.png",
-                        "backgroundColor": "#13121F"
-                    },
-                    "resizeMode": "contain",
-                    "backgroundColor": "#ffffff"
-                }
-            ],
-            "expo-secure-store",
-            "expo-font",
-            "expo-web-browser"
-        ],
-        "experiments": {
-            "typedRoutes": true
-        },
-        "extra": {
-            "router": {
-                "origin": false
-            },
-            "eas": {
-                "projectId": "f64f0563-7cb2-45c4-b928-800e53bc5e10"
-            }
+        "NSContactsUsageDescription": "To find who else is on Kindred to connect with them!",
+        "NSCameraUsageDescription": "This app needs access to camera to take photos for your profile and posts.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select photos for your profile and posts.",
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to save photos to your photo library."
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.kindred.kindredtsl",
+      "buildNumber": "26"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-apple-authentication",
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 100,
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#13121F"
+          },
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
         }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      "expo-web-browser",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "kindred-gy"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "f64f0563-7cb2-45c4-b928-800e53bc5e10"
+      }
     }
+  }
 }

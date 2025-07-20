@@ -23,15 +23,15 @@ type Props = {
     categoryName?: string;
 };
 
-const ThemedColor = useThemeColor();
+export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName }: Props) {
+    const { removeFromCategory, setShowConfetti } = useTasks();
+    const ThemedColor = useThemeColor();
 
-/* 
+    /* 
   Mark as completed function
 
 */
 
-export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName }: Props) {
-    const { removeFromCategory, setShowConfetti } = useTasks();
     const deleteTask = async (categoryId: string, taskId: string) => {
         try {
             const res = await removeFromCategoryAPI(categoryId, taskId);
@@ -141,6 +141,7 @@ function LeftAction(
 ) {
     let width = Dimensions.get("window").width;
     const [isCompleting, setIsCompleting] = React.useState(false);
+    const ThemedColor = useThemeColor();
 
     // Use useAnimatedReaction to watch the drag value
     useAnimatedReaction(
@@ -187,6 +188,8 @@ function LeftAction(
 const RIGHT_ACTION_WIDTH = 75;
 
 function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, callback: () => void) {
+    const ThemedColor = useThemeColor();
+
     const styleAnimation = useAnimatedStyle(() => {
         return {
             transform: [{ translateX: drag.value + RIGHT_ACTION_WIDTH }],
@@ -221,6 +224,5 @@ const styles = StyleSheet.create({
         width: Dimensions.get("window").width,
         borderTopLeftRadius: 16,
         borderBottomLeftRadius: 16,
-        backgroundColor: ThemedColor.success,
     },
 });
