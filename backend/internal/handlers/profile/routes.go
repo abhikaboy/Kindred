@@ -10,7 +10,7 @@ Router maps endpoints to handlers
 */
 func Routes(api huma.API, collections map[string]*mongo.Collection) {
 	// Initialize service
-	service := newService(collections)
+	service := NewService(collections)
 
 	// Create handler
 	handler := Handler{
@@ -23,11 +23,11 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 // RegisterProfileOperations registers all profile operations with Huma
 func RegisterProfileOperations(api huma.API, handler *Handler) {
 	RegisterGetProfilesOperation(api, handler)
+	RegisterSearchProfilesOperation(api, handler)
+	RegisterGetProfileByEmailOperation(api, handler)
+	RegisterGetProfileByPhoneOperation(api, handler)
 	RegisterGetProfileOperation(api, handler)
 	RegisterUpdateProfileOperation(api, handler)
 	RegisterDeleteProfileOperation(api, handler)
-	RegisterGetProfileByEmailOperation(api, handler)
-	RegisterGetProfileByPhoneOperation(api, handler)
-	RegisterSearchProfilesOperation(api, handler)
 	// Note: Profile picture upload operations moved to /v1/uploads endpoints
 }

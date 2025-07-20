@@ -96,7 +96,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	task.Routes(api, collections)
 	connection.Routes(api, collections)
 	post.Routes(api, collections)
-	spaces.Routes(api, presigner)
+	spaces.Routes(api, presigner, collections)
 
 	// Register waitlist and blueprint routes
 	Waitlist.Routes(api, collections)

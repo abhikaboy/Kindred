@@ -5,7 +5,10 @@ import (
 	"fmt"
 
 	"github.com/abhikaboy/Kindred/internal/config"
+	Profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	"github.com/danielgtaylor/huma/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type GetParams struct {
@@ -19,8 +22,9 @@ type PostParams struct {
 }
 
 type Handler struct {
-	service *Service
-	config  config.Config
+	service     *Service
+	config      config.Config
+	collections map[string]*mongo.Collection
 }
 
 func (h *Handler) GetPresignedUrlHuma(ctx context.Context, input *GetPresignedUrlInput) (*GetPresignedUrlOutput, error) {
@@ -110,15 +114,20 @@ func (h *Handler) GenerateImageUploadURL(ctx context.Context, input *GenerateIma
 }
 
 func (h *Handler) ConfirmImageUpload(ctx context.Context, input *ConfirmImageUploadInput) (*ConfirmImageUploadOutput, error) {
-	// For now, this is a placeholder that confirms the upload
-	// In a real implementation, you'd need to import and call the appropriate service
-	// based on the ResourceType to update the database record
-
 	switch input.ResourceType {
 	case "profile":
-		// TODO: Import profile service and update profile picture
-		// profileService.UpdateProfilePicture(input.ResourceID, input.Body.PublicURL)
-		break
+		// Convert string ID to ObjectID
+		objectID, err := primitive.ObjectIDFromHex(input.ResourceID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("Invalid profile ID format", err)
+		}
+
+		// Update profile picture in database
+		err = h.updateProfilePicture(objectID, input.Body.PublicURL)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Failed to update profile picture", err)
+		}
+		
 	case "post":
 		// TODO: Import post service and update post image
 		// postService.UpdatePostImage(input.ResourceID, input.Body.PublicURL)
@@ -131,4 +140,11 @@ func (h *Handler) ConfirmImageUpload(ctx context.Context, input *ConfirmImageUpl
 	resp.Body.Message = fmt.Sprintf("Image upload confirmed for %s %s", input.ResourceType, input.ResourceID)
 
 	return resp, nil
+}
+
+// updateProfilePicture updates the profile picture for a user
+func (h *Handler) updateProfilePicture(userID primitive.ObjectID, pictureURL string) error {
+	// Create profile service with the collections from the handler
+	profileService := Profile.NewService(h.collections)
+	return profileService.UpdateProfilePicture(userID, pictureURL)
 }
