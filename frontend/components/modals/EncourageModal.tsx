@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity, Dimensions, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -33,7 +33,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const [encouragementMessage, setEncouragementMessage] = useState("");
     const [encouragementsLeft, setEncouragementsLeft] = useState(2);
 
-    console.log("EncourageModal render - visible:", visible, "task:", task);
+    const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
 
     // Generate the storage key for today's date
     const getStorageKey = () => {
@@ -188,78 +188,80 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingTop: 18,
-        paddingBottom: 32,
-    },
-    taskCardContainer: {
-        marginBottom: 16,
-        width: "100%",
-    },
-    taskCard: {
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        minHeight: 55,
-        justifyContent: "center",
-    },
-    taskCardContent: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    taskText: {
-        flex: 1,
-        textAlign: "left",
-    },
-    taskCardRight: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-    },
-    taskValue: {
-        fontSize: 12,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: "600",
-        textAlign: "center",
-        marginBottom: 24,
-    },
-    description: {
-        fontSize: 16,
-        textAlign: "center",
-        marginBottom: 24,
-        lineHeight: 24,
-    },
-    inputContainer: {
-        marginBottom: 24,
-        minHeight: 80,
-    },
-    textInput: {
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "400",
-        minHeight: 80,
-        textAlignVertical: "top",
-    },
-    buttonContainer: {
-        gap: 12,
-        alignItems: "center",
-    },
-    sendButton: {
-        width: "100%",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-    },
-    counter: {
-        fontSize: 12,
-        textAlign: "center",
-    },
-});
+const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            paddingTop: 18,
+            paddingBottom: 32,
+        },
+        taskCardContainer: {
+            marginBottom: 16,
+            width: "100%",
+        },
+        taskCard: {
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderRadius: 16,
+            borderWidth: 1,
+            minHeight: 55,
+            justifyContent: "center",
+            boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
+        },
+        taskCardContent: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+        },
+        taskText: {
+            flex: 1,
+            textAlign: "left",
+        },
+        taskCardRight: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+        },
+        taskValue: {
+            fontSize: 12,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: "600",
+            textAlign: "center",
+            marginBottom: 24,
+        },
+        description: {
+            fontSize: 16,
+            textAlign: "center",
+            marginBottom: 24,
+            lineHeight: 24,
+        },
+        inputContainer: {
+            marginBottom: 24,
+            minHeight: 80,
+        },
+        textInput: {
+            padding: 16,
+            borderRadius: 12,
+            borderWidth: 1,
+            fontSize: 16,
+            fontFamily: "Outfit",
+            fontWeight: "400",
+            minHeight: 80,
+            textAlignVertical: "top",
+        },
+        buttonContainer: {
+            gap: 12,
+            alignItems: "center",
+        },
+        sendButton: {
+            width: "100%",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+        },
+        counter: {
+            fontSize: 12,
+            textAlign: "center",
+        },
+    });

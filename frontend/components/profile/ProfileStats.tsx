@@ -3,19 +3,27 @@ import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import FollowButton from "@/components/inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Profile, RelationshipStatus } from "@/api/types";
 
 interface ProfileStatsProps {
     friendsCount: number;
     profileUserId?: string; // ID of the profile being viewed
+    profile?: Profile; // Profile with relationship information
+    onRelationshipChange?: (newStatus: RelationshipStatus) => void; // Callback for relationship changes
 }
 
-export default function ProfileStats({ friendsCount, profileUserId }: ProfileStatsProps) {
+export default function ProfileStats({
+    friendsCount,
+    profileUserId,
+    profile,
+    onRelationshipChange,
+}: ProfileStatsProps) {
     const ThemedColor = useThemeColor();
 
     return (
         <View style={styles.statsContainer}>
             <View style={{ width: "50%" }}>
-                <FollowButton connectionType="none" followeeid={profileUserId} />
+                {profile && <FollowButton profile={profile} onRelationshipChange={onRelationshipChange} />}
             </View>
             <View
                 style={{

@@ -3,13 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
 import { createConnectionAPI, deleteConnectionAPI } from "@/api/connection";
-import { getProfile } from "@/api/profile";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
 
 type Props = {
     profile: Profile; // Profile with relationship information
-    onRelationshipChange?: (newStatus: RelationshipStatus) => void; // Callback for relationship changes
+    onRelationshipChange?: (newStatus: RelationshipStatus, requestId?: string) => void; // Callback for relationship changes
 };
 
 export default function FollowButton({ profile, onRelationshipChange }: Props) {
@@ -17,8 +16,20 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
+    console.log("FollowButton - profile:", profile);
+    console.log("FollowButton - user:", user);
+
+    // Don't render if profile is not loaded yet
+    if (!profile) {
+        console.log("FollowButton - profile is null, not rendering");
+        return null;
+    }
+
     // Get relationship status from profile
     const relationship = profile.relationship?.status || "none";
+    console.log("FollowButton - relationship:", relationship);
+    console.log("FollowButton - profile.relationship:", profile.relationship);
+    console.log("FollowButton - final relationship status:", relationship);
 
     const relationshipMapping = {
         none: {
@@ -70,7 +81,8 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                     };
 
                     const newConnection = await createConnectionAPI(connectionData);
-                    onRelationshipChange?.("requested");
+                    // Pass the request_id from the API response
+                    onRelationshipChange?.("requested", newConnection?.id);
                     showToast("Follow request sent!", "success");
                     break;
 
@@ -80,6 +92,9 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                         await deleteConnectionAPI(profile.relationship.request_id);
                         onRelationshipChange?.("none");
                         showToast("Follow request cancelled", "info");
+                    } else {
+                        console.error("No request_id found for cancellation");
+                        showToast("Unable to cancel request", "danger");
                     }
                     break;
 
@@ -104,10 +119,13 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
         }
     };
 
-    // Don't show button for self profile or if no relationship info
-    if (relationship === "self" || !profile.relationship) {
+    // Don't show button for self profile
+    if (relationship === "self") {
+        console.log("FollowButton - not showing button for self profile");
         return null;
     }
+
+    console.log("FollowButton - rendering button with relationship:", relationship);
 
     return (
         <TouchableOpacity

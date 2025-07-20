@@ -19,6 +19,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import DefaultModal from "@/components/modals/DefaultModal";
 import ReorderCategories from "@/components/modals/ReorderCategories";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDrawer } from "@/contexts/drawerContext";
 
 type Props = {};
 
@@ -34,6 +35,7 @@ const Workspace = (props: Props) => {
 
     const drawerRef = useRef<DrawerLayout>(null);
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
+    const { setIsDrawerOpen } = useDrawer();
 
     return (
         <DrawerLayout
@@ -43,7 +45,9 @@ const Workspace = (props: Props) => {
             drawerWidth={Dimensions.get("screen").width * 0.75}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
-            drawerType="front">
+            drawerType="front"
+            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerClose={() => setIsDrawerOpen(false)}>
             <ConditionalView condition={showConfetti}>
                 <View
                     style={{
