@@ -6,7 +6,11 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useTasks } from "@/contexts/tasksContext";
-type Props = {};
+import { DrawerLayout } from "react-native-gesture-handler";
+
+type Props = {
+    drawerRef?: React.RefObject<DrawerLayout>;
+};
 
 const DashboardCards = (props: Props) => {
     const ThemedColor = useThemeColor();
@@ -73,7 +77,7 @@ const DashboardCards = (props: Props) => {
                         </Svg>
                     }
                     onPress={() => {
-                        router.push("/(logged-in)/(tabs)/(task)/workspaces");
+                        props.drawerRef?.current?.openDrawer();
                     }}
                 />
             </View>

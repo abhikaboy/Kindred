@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Dimensions, Platform, TouchableOpacity, View } from "react-native";
+import { Dimensions, Platform, TouchableOpacity, View, Animated } from "react-native";
 import { usePathname } from "expo-router";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -10,6 +10,7 @@ import { useColorScheme } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useDrawer } from "@/contexts/drawerContext";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -18,11 +19,16 @@ export const unstable_settings = {
 export default function TabLayout() {
     let ThemedColor = useThemeColor();
     const pathname = usePathname();
+    const { isDrawerOpen } = useDrawer();
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
     };
+
+    // Create animated value for tab bar visibility
+    const tabBarOpacity = React.useRef(new Animated.Value(1)).current;
+    const tabBarTranslateY = React.useRef(new Animated.Value(0)).current;
 
     // Define screens where you want to hide the tab bar
     const hideTabBarScreens = [
@@ -31,7 +37,42 @@ export default function TabLayout() {
         // Add other screen paths where you want to hide tabs
     ];
 
-    const shouldHideTabBar = hideTabBarScreens.some((screen) => pathname.startsWith(screen));
+    const shouldHideTabBar = hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen;
+
+    // Animate tab bar visibility
+    useEffect(() => {
+        const animationDuration = 300; // 300ms for smooth animation
+
+        if (shouldHideTabBar) {
+            // Animate out
+            Animated.parallel([
+                Animated.timing(tabBarOpacity, {
+                    toValue: 0,
+                    duration: animationDuration,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(tabBarTranslateY, {
+                    toValue: 100, // Move down to hide
+                    duration: animationDuration,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            // Animate in
+            Animated.parallel([
+                Animated.timing(tabBarOpacity, {
+                    toValue: 1,
+                    duration: animationDuration,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(tabBarTranslateY, {
+                    toValue: 0, // Move back to original position
+                    duration: animationDuration,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }
+    }, [shouldHideTabBar, tabBarOpacity, tabBarTranslateY]);
 
     return (
         <Tabs
@@ -52,35 +93,34 @@ export default function TabLayout() {
                     alignItems: "center",
                     justifyContent: "center",
                 },
-                tabBarStyle: shouldHideTabBar
-                    ? { display: "none" }
-                    : Platform.select({
-                          ios: {
-                              borderTopWidth: 1,
-                              borderColor: ThemedColor.tertiary,
-                              position: "absolute",
-                              marginBottom: 32,
-                              marginHorizontal: "3%",
-                              paddingBottom: 0,
-                              borderRadius: 30,
-                              width: "94%",
-                              overflow: "hidden",
-                              borderWidth: 1,
-                              alignItems: "center",
-                              boxShadow: ThemedColor.shadowSmall,
-                          },
-                          android: {
-                              height: 80,
-                              paddingTop: 0,
-                              borderRadius: 500,
-                              width: "90%",
-                              overflow: "hidden",
-                              alignItems: "center",
-                              boxShadow: ThemedColor.shadowSmall,
-                          },
-                      }),
-                cardStyle: {
-                    backgroundColor: ThemedColor.background, // Use theme background
+                tabBarStyle: {
+                    ...Platform.select({
+                        ios: {
+                            borderTopWidth: 1,
+                            borderColor: ThemedColor.tertiary,
+                            position: "absolute",
+                            marginBottom: 32,
+                            marginHorizontal: "3%",
+                            paddingBottom: 0,
+                            borderRadius: 30,
+                            width: "94%",
+                            overflow: "hidden",
+                            borderWidth: 1,
+                            alignItems: "center",
+                            boxShadow: ThemedColor.shadowSmall,
+                        },
+                        android: {
+                            height: 80,
+                            paddingTop: 0,
+                            borderRadius: 500,
+                            width: "90%",
+                            overflow: "hidden",
+                            alignItems: "center",
+                            boxShadow: ThemedColor.shadowSmall,
+                        },
+                    }),
+                    opacity: tabBarOpacity,
+                    transform: [{ translateY: tabBarTranslateY }],
                 },
             }}>
             <Tabs.Screen

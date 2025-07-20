@@ -1,7 +1,7 @@
 import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity, ActivityIndicator } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
@@ -42,30 +42,44 @@ export default function Profile() {
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
 
-    const mockTasks = {
-        activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
-        todayTasks: [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }],
-        completedTasks: [
-            { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
-            { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
-        ],
-    };
-
     const { data: profile, isLoading } = useQuery<Profile>({
         queryKey: ["profile", id],
         queryFn: () => getProfile(id as string),
         enabled: !!id,
     });
 
+    console.log("Account Profile component - profile:", profile);
+    console.log("Account Profile component - profile?.id:", profile?.id);
+    console.log("Account Profile component - isLoading:", isLoading);
+    console.log("Account Profile component - id from params:", id);
+    console.log("Account Profile component - profile?.relationship:", profile?.relationship);
+
+    // Only show encourage tasks when profile data is loaded
+    const mockTasks = useMemo(() => {
+        const tasks = {
+            activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
+            todayTasks: profile?.id
+                ? [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }]
+                : [],
+            completedTasks: [
+                { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
+                { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
+            ],
+        };
+        console.log("Account Profile component - mockTasks:", tasks);
+        console.log("Account Profile component - todayTasks length:", tasks.todayTasks.length);
+        return tasks;
+    }, [profile]);
+
     // Handle relationship changes
-    const handleRelationshipChange = (newStatus: RelationshipStatus) => {
+    const handleRelationshipChange = (newStatus: RelationshipStatus, requestId?: string) => {
         if (profile) {
             // Update the profile data in the cache
             queryClient.setQueryData(["profile", id], {
                 ...profile,
                 relationship: {
-                    ...profile.relationship,
                     status: newStatus,
+                    request_id: requestId,
                 },
             });
         }
@@ -90,15 +104,13 @@ export default function Profile() {
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>
-                    <ProfileStats friendsCount={profile?.friends?.length || 0} profileUserId={profile?.id} />
+                    <ProfileStats
+                        friendsCount={profile?.friends?.length || 0}
+                        profileUserId={profile?.id}
+                        profile={profile}
+                        onRelationshipChange={handleRelationshipChange}
+                    />
                 </View>
-
-                {/* Follow Button */}
-                {profile && (
-                    <View style={styles.followButtonContainer}>
-                        <FollowButton profile={profile} onRelationshipChange={handleRelationshipChange} />
-                    </View>
-                )}
 
                 <TodayStats tasks={2} points={12} streak={242} posts={4} />
 
@@ -109,11 +121,15 @@ export default function Profile() {
                 <ConditionalView condition={activeTab == 0}>
                     <TaskList
                         {...mockTasks}
-                        encouragementConfig={{
-                            userHandle: profile?.handle,
-                            receiverId: profile?.id || "",
-                            categoryName: "Profile Tasks",
-                        }}
+                        encouragementConfig={
+                            profile?.id
+                                ? {
+                                      userHandle: profile?.handle,
+                                      receiverId: profile.id,
+                                      categoryName: "Profile Tasks",
+                                  }
+                                : undefined
+                        }
                     />
                 </ConditionalView>
 

@@ -9,11 +9,13 @@ import { DrawerLayout } from "react-native-gesture-handler";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useDrawer } from "@/contexts/drawerContext";
 
 const Today = () => {
     const ThemedColor = useThemeColor();
     const { startTodayTasks, dueTodayTasks } = useTasks();
     const drawerRef = useRef(null);
+    const { setIsDrawerOpen } = useDrawer();
 
     return (
         <DrawerLayout
@@ -23,7 +25,9 @@ const Today = () => {
             drawerWidth={Dimensions.get("screen").width * 0.75}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
-            drawerType="front">
+            drawerType="front"
+            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerClose={() => setIsDrawerOpen(false)}>
             <ThemedView style={styles.container}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />

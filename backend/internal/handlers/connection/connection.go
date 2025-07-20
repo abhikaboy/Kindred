@@ -22,7 +22,7 @@ func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnect
 	}
 
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	authenticatedUserID, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
@@ -33,9 +33,15 @@ func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnect
 		return nil, huma.Error400BadRequest("Invalid receiver ID format", err)
 	}
 
-	// Convert requester to internal type
+	// Convert authenticated user ID to ObjectID
+	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid authenticated user ID format", err)
+	}
+
+	// Convert requester to internal type using the actual authenticated user's ID
 	requesterInternal := ConnectionUserInternal{
-		ID:      primitive.NewObjectID(), // This should come from the actual user data
+		ID:      authUserID, // Use the actual authenticated user's ID
 		Picture: input.Body.Requester.Picture,
 		Name:    input.Body.Requester.Name,
 		Handle:  input.Body.Requester.Handle,

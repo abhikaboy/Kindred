@@ -1,5 +1,5 @@
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
 import { ThemedView } from "@/components/ThemedView";
@@ -12,6 +12,8 @@ import PagerView from "react-native-pager-view";
 import { useTasks } from "@/contexts/tasksContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDrawer } from "@/contexts/drawerContext";
+import { isSameDay, startOfDay, endOfDay } from "date-fns";
 
 type Props = {};
 
@@ -76,6 +78,35 @@ const Daily = (props: Props) => {
         }
     }, [centerDate]);
 
+    const { allTasks } = useTasks();
+    const { setIsDrawerOpen } = useDrawer();
+
+    // Filter tasks based on selected date
+    const tasksForSelectedDate = useMemo(() => {
+        const selectedDateStart = startOfDay(selectedDate);
+        const selectedDateEnd = endOfDay(selectedDate);
+
+        return allTasks.filter((task) => {
+            // Check if task starts on the selected date
+            if (task.startDate) {
+                const taskStartDate = new Date(task.startDate);
+                if (isSameDay(taskStartDate, selectedDate)) {
+                    return true;
+                }
+            }
+
+            // Check if task is due on the selected date
+            if (task.deadline) {
+                const taskDeadline = new Date(task.deadline);
+                if (isSameDay(taskDeadline, selectedDate)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }, [allTasks, selectedDate]);
+
     // Helper to render a page of dates
     const renderDatePage = (dates: Date[]) => (
         <View style={{ flex: 1 }}>
@@ -103,8 +134,6 @@ const Daily = (props: Props) => {
         </View>
     );
 
-    const { startTodayTasks, dueTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
-
     return (
         <DrawerLayout
             ref={drawerRef}
@@ -113,7 +142,9 @@ const Daily = (props: Props) => {
             drawerWidth={Dimensions.get("screen").width * 0.75}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
-            drawerType="front">
+            drawerType="front"
+            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerClose={() => setIsDrawerOpen(false)}>
             <View style={[styles.container, { flex: 1, paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
@@ -143,20 +174,28 @@ const Daily = (props: Props) => {
                 </View>
                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 24, paddingBottom: 50 }}>
                     <View style={{ gap: 8 }}>
-                        <ThemedText type="subtitle">To-Do</ThemedText>
-                        {startTodayTasks.map((task) => (
-                            <SwipableTaskCard
-                                key={task.id + task.content}
-                                redirect={true}
-                                categoryId={task.categoryID}
-                                task={task}
-                            />
-                        ))}
-                    </View>
-                    <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">
-                            Due on {selectedDate.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+                            Tasks for{" "}
+                            {selectedDate.toLocaleDateString("en-US", {
+                                weekday: "long",
+                                month: "long",
+                                day: "numeric",
+                            })}
                         </ThemedText>
+                        {tasksForSelectedDate.length > 0 ? (
+                            tasksForSelectedDate.map((task) => (
+                                <SwipableTaskCard
+                                    key={task.id + task.content}
+                                    redirect={true}
+                                    categoryId={task.categoryID}
+                                    task={task}
+                                />
+                            ))
+                        ) : (
+                            <ThemedText type="lightBody" style={{ textAlign: "center", marginTop: 20 }}>
+                                No tasks for this date
+                            </ThemedText>
+                        )}
                     </View>
                     <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">Workspaces</ThemedText>

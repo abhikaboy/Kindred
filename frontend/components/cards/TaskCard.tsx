@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
+import { TouchableOpacity, View, StyleSheet, Dimensions, Alert } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -104,6 +104,11 @@ const TaskCard = ({
 
     const handlePress = () => {
         if (encourage) {
+            if (!encouragementConfig?.receiverId || encouragementConfig.receiverId.trim() === "") {
+                console.error("Cannot show encourage modal: missing receiverId");
+                Alert.alert("Error", "Unable to send encouragement at this time. Please try again later.");
+                return;
+            }
             console.log("Encourage button pressed, showing modal");
             setShowEncourageModal(true);
         }

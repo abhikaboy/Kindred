@@ -1,7 +1,7 @@
 import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
@@ -24,20 +24,34 @@ export default function Profile() {
     const { user } = useAuth();
     let ThemedColor = useThemeColor();
 
+    console.log("Profile component - user:", user);
+    console.log("Profile component - user?._id:", user?._id);
+    console.log("Profile component - user?.handle:", user?.handle);
+    console.log("Profile component - user?.display_name:", user?.display_name);
+
     const [activeTab, setActiveTab] = useState(0);
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
 
-    const mockTasks = {
-        activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
-        todayTasks: [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }],
-        completedTasks: [
-            { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
-            { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
-        ],
-    };
+    // Use useMemo to recalculate mockTasks when user changes
+    const mockTasks = useMemo(
+        () => ({
+            activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
+            todayTasks: user?._id
+                ? [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }]
+                : [],
+            completedTasks: [
+                { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
+                { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
+            ],
+        }),
+        [user?._id]
+    );
+
+    console.log("Profile component - mockTasks:", mockTasks);
+    console.log("Profile component - todayTasks length:", mockTasks.todayTasks.length);
 
     return (
         <Animated.ScrollView
@@ -60,18 +74,22 @@ export default function Profile() {
 
                 <TodayStats tasks={2} points={12} streak={242} posts={4} />
 
-                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={user?.id} />
+                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={user?._id} />
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <ConditionalView condition={activeTab == 0}>
                     <TaskList
                         {...mockTasks}
-                        encouragementConfig={{
-                            userHandle: user?.handle,
-                            receiverId: user?.id || "",
-                            categoryName: "Profile Tasks",
-                        }}
+                        encouragementConfig={
+                            user?._id
+                                ? {
+                                      userHandle: user?.handle,
+                                      receiverId: user._id,
+                                      categoryName: "Profile Tasks",
+                                  }
+                                : undefined
+                        }
                     />
                 </ConditionalView>
 

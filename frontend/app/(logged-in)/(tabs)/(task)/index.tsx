@@ -25,6 +25,7 @@ import DashboardCards from "@/components/dashboard/DashboardCards";
 // import Sparkle from "@/assets/icons/sparkle.svg";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useDrawer } from "@/contexts/drawerContext";
 
 type Props = {};
 
@@ -39,6 +40,7 @@ const Home = (props: Props) => {
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
+    const { setIsDrawerOpen } = useDrawer();
 
     useEffect(() => {
         if (!user || !workspaces) return;
@@ -76,7 +78,9 @@ const Home = (props: Props) => {
             drawerWidth={Dimensions.get("screen").width * 0.75}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
-            drawerType="front">
+            drawerType="front"
+            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerClose={() => setIsDrawerOpen(false)}>
             <CreateModal visible={creating} setVisible={setCreating} />
             <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
@@ -97,7 +101,7 @@ const Home = (props: Props) => {
                                         <ThemedText type="default">2</ThemedText>
                                     </View>
                                 </BasicCard>
-                                <DashboardCards />
+                                <DashboardCards drawerRef={drawerRef} />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView horizontal>
                                     <ConditionalView condition={workspaces.length > 0} key="workspaces-container">

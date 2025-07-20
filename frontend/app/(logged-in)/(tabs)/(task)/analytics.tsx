@@ -11,6 +11,7 @@ import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
 import { useTasks } from "@/contexts/tasksContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
+import { useDrawer } from "@/contexts/drawerContext";
 
 type Props = {};
 
@@ -102,6 +103,7 @@ const Daily = (props: Props) => {
     );
 
     const { startTodayTasks, dueTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
+    const { setIsDrawerOpen } = useDrawer();
 
     return (
         <DrawerLayout
@@ -111,7 +113,9 @@ const Daily = (props: Props) => {
             drawerWidth={Dimensions.get("screen").width * 0.75}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
-            drawerType="front">
+            drawerType="front"
+            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerClose={() => setIsDrawerOpen(false)}>
             <View style={[styles.container, { flex: 1 }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />

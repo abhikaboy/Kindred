@@ -19,6 +19,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
+import { DrawerProvider } from "@/contexts/drawerContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -105,21 +106,23 @@ export default function RootLayout() {
                     <TasksProvider>
                         <TaskCreationProvider>
                             <BlueprintCreationProvider>
-                                <GestureHandlerRootView style={{ flex: 1 }}>
-                                    <BottomSheetModalProvider>
-                                        <Toastable
-                                            statusMap={{
-                                                success: ThemedColor.success,
-                                                danger: ThemedColor.danger,
-                                                warning: ThemedColor.warning,
-                                                info: ThemedColor.primary,
-                                            }}
-                                            offset={top}
-                                        />
-                                        <Slot />
-                                        <StatusBar style="light" />
-                                    </BottomSheetModalProvider>
-                                </GestureHandlerRootView>
+                                <DrawerProvider>
+                                    <GestureHandlerRootView style={{ flex: 1 }}>
+                                        <BottomSheetModalProvider>
+                                            <Toastable
+                                                statusMap={{
+                                                    success: ThemedColor.success,
+                                                    danger: ThemedColor.danger,
+                                                    warning: ThemedColor.warning,
+                                                    info: ThemedColor.primary,
+                                                }}
+                                                offset={top}
+                                            />
+                                            <Slot />
+                                            <StatusBar style="light" />
+                                        </BottomSheetModalProvider>
+                                    </GestureHandlerRootView>
+                                </DrawerProvider>
                             </BlueprintCreationProvider>
                         </TaskCreationProvider>
                     </TasksProvider>

@@ -1915,6 +1915,11 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        RelationshipInfo: {
+            /** @enum {string} */
+            status: "none" | "requested" | "received" | "connected" | "self";
+            request_id?: string;
+        };
         ProfileDocument: {
             /**
              * Format: uri
@@ -1926,6 +1931,7 @@ export interface components {
             handle: string;
             id: string;
             profile_picture: string | null;
+            relationship?: components["schemas"]["RelationshipInfo"];
             /** Format: int64 */
             tasks_complete: number;
         };
