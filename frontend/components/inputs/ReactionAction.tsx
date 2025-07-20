@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, Text, StyleSheet, Dimensions } from "react-native";
 import EmojiSelectorClass from "./EmojiSelectorClass";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 type ReactionActionProps = {
     postId: number;
@@ -9,6 +10,8 @@ type ReactionActionProps = {
 
 const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
     const [showEmojiSelector, setShowEmojiSelector] = useState(false);
+    const ThemedColor = useThemeColor();
+    const styles = stylesheet(ThemedColor);
 
     return (
         <View>
@@ -26,23 +29,28 @@ const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
     );
 };
 
-const styles = StyleSheet.create({
-    reactionButton: {
-        flexDirection: "row",
-        backgroundColor: "#321E5D",
-        borderStyle: "solid",
-        borderColor: "#321E5D",
-        borderWidth: 1.4,
-        borderRadius: 23,
-        paddingHorizontal: 18,
-        paddingVertical: 6,
-        gap: 6,
-        alignSelf: "flex-start",
-    },
-    reactionButtonText: {
-        color: "white",
-        fontSize: 18,
-    },
-});
+const stylesheet = (ThemedColor: any) =>
+    StyleSheet.create({
+        reactionButton: {
+            flexDirection: "row",
+            backgroundColor: "#3f1d4c",
+            borderStyle: "solid",
+            borderColor: "#3f1d4c",
+            borderWidth: 1.4,
+            borderRadius: 23,
+            paddingHorizontal: 9,
+            paddingVertical: 4,
+            alignSelf: "flex-start",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: 31,
+            minHeight: 29,
+        },
+        reactionButtonText: {
+            color: ThemedColor.buttonText,
+            fontSize: 20,
+            fontWeight: "300",
+        },
+    });
 
 export default ReactionAction;
