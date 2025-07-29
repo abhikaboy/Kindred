@@ -198,6 +198,16 @@ export const Drawer = ({ close }) => {
                     onLongPress={() => {}}
                 />
                 <DrawerItem
+                    title="Calendar"
+                    selected={selected}
+                    onPress={() => {
+                        setSelected("Calendar");
+                        router.navigate("/(logged-in)/(tabs)/(task)/calendar");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
                     title="Analytics"
                     selected={selected}
                     onPress={() => {
