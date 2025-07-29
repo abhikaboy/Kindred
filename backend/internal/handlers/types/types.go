@@ -139,10 +139,19 @@ type SafeUser struct {
 	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 }
 type ActivityDocument struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Field1    string             `bson:"field1" json:"field1"`
-	Picture   *string            `bson:"picture" json:"picture"`
-	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+	ID          primitive.ObjectID `bson:"_id" json:"_id"`
+	User        primitive.ObjectID `bson:"user" json:"user"`
+	Year        int                `bson:"year" json:"year"`
+	Month       int                `bson:"month" json:"month"`
+	Days        []ActivityDay      `bson:"days" json:"days"`
+	TotalCount  int                `bson:"totalCount" json:"totalCount"`
+	LastUpdated time.Time          `bson:"lastUpdated" json:"lastUpdated"`
+}
+
+type ActivityDay struct {
+	Day   int `bson:"day" json:"day"`
+	Count int `bson:"count" json:"count"`
+	Level int `bson:"level" json:"level"`
 }
 
 type UserExtendedReference struct {
