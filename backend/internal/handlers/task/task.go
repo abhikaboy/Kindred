@@ -248,6 +248,15 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 		return nil, huma.Error500InternalServerError("Failed to complete task", err)
 	}
 
+	// Delete the task from the tasks collection
+	err = h.DeleteTask(ctx, &DeleteTaskInput{
+		ID:      input.ID,
+		Category: input.Category,
+	})
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to delete task", err)
+	}
+
 	resp := &CompleteTaskOutput{}
 	resp.Body.Message = "Task completed successfully"
 	return resp, nil

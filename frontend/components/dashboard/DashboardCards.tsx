@@ -5,7 +5,6 @@ import Svg, { Path } from "react-native-svg";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useTasks } from "@/contexts/tasksContext";
 import { DrawerLayout } from "react-native-gesture-handler";
 
 type Props = {
@@ -14,7 +13,6 @@ type Props = {
 
 const DashboardCards = (props: Props) => {
     const ThemedColor = useThemeColor();
-    const { setSelected } = useTasks();
     return (
         <View style={{ flexDirection: "column", gap: 16, width: "100%" }}>
             <View style={{ flexDirection: "row", gap: 16, width: "100%" }}>
@@ -29,8 +27,10 @@ const DashboardCards = (props: Props) => {
                         </Svg>
                     }
                     onPress={() => {
-                        setSelected("Daily");
-                        router.push("/(logged-in)/(tabs)/(task)/daily");
+                        router.push({
+                            pathname: "/(logged-in)/(tabs)/(task)/daily",
+                            params: { workspace: "Daily" }
+                        });
                     }}
                 />
                 <DashboardCard
@@ -44,8 +44,10 @@ const DashboardCards = (props: Props) => {
                         </Svg>
                     }
                     onPress={() => {
-                        setSelected("Analytics");
-                        router.push("/(logged-in)/(tabs)/(task)/analytics");
+                        router.push({
+                            pathname: "/(logged-in)/(tabs)/(task)/analytics",
+                            params: { workspace: "Analytics" }
+                        });
                     }}
                 />
             </View>
@@ -62,8 +64,10 @@ const DashboardCards = (props: Props) => {
                         </Svg>
                     }
                     onPress={() => {
-                        setSelected("Calendar");
-                        router.push("/(logged-in)/(tabs)/(task)/calendar");
+                        router.push({
+                            pathname: "/(logged-in)/(tabs)/(task)/calendar",
+                            params: { workspace: "Calendar" }
+                        });
                     }}
                 />
                 <DashboardCard

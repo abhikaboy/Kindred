@@ -46,6 +46,7 @@ const CreateModal = (props: Props) => {
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
 
+
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
     const bottomAnchorRef = useRef<View>(null);
@@ -134,6 +135,8 @@ const CreateModal = (props: Props) => {
         }
     }, [props.visible]);
 
+
+
     // Custom backdrop component
     const renderBackdrop = useCallback(
         (backdropProps) => (
@@ -154,7 +157,6 @@ const CreateModal = (props: Props) => {
                         <Standard
                             hide={() => props.setVisible(false)}
                             goTo={goToScreen}
-                            bottomAnchorRef={bottomAnchorRef}
                         />
                     </Animated.View>
                 );

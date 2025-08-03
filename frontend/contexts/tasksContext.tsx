@@ -21,6 +21,8 @@ type TaskContextType = {
     addWorkspace: (name: string, category: Categories) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
+    removeWorkspace: (name: string) => void;
+    restoreWorkspace: (workspace: Workspace) => void;
     fetchingWorkspaces: boolean;
 
     setCreateCategory: (Option: Option) => void;
@@ -188,6 +190,38 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setWorkSpaces(workspacesCopy);
     };
 
+    /**
+     * Removes a workspace from the workspaces list locally
+     * @param name - The name of the workspace to remove
+     */
+    const removeWorkspace = (name: string) => {
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy = workspacesCopy.filter((workspace) => workspace.name !== name);
+        setWorkSpaces(workspacesCopy);
+        
+        // If the deleted workspace was selected, select the first available workspace
+        if (selected === name && workspacesCopy.length > 0) {
+            setSelected(workspacesCopy[0].name);
+        } else if (selected === name && workspacesCopy.length === 0) {
+            setSelected("");
+        }
+    };
+
+    /**
+     * Restores a workspace to the workspaces list (for rollback after failed API calls)
+     * @param workspace - The workspace to restore
+     */
+    const restoreWorkspace = (workspace: Workspace) => {
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy.push(workspace);
+        setWorkSpaces(workspacesCopy);
+        
+        // If no workspace is currently selected, select the restored one
+        if (selected === "") {
+            setSelected(workspace.name);
+        }
+    };
+
     const doesWorkspaceExist = (name: string) => {
         for (const workspace of workspaces) {
             if (workspace.name === name) return true;
@@ -220,6 +254,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 addWorkspace,
                 removeFromCategory,
                 removeFromWorkspace,
+                removeWorkspace,
+                restoreWorkspace,
                 setCreateCategory,
                 selectedCategory,
                 showConfetti,
