@@ -249,8 +249,8 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 	}
 
 	// Delete the task from the tasks collection
-	err = h.DeleteTask(ctx, &DeleteTaskInput{
-		ID:      input.ID,
+	_, err = h.DeleteTask(ctx, &DeleteTaskInput{
+		ID:       input.ID,
 		Category: input.Category,
 	})
 	if err != nil {
