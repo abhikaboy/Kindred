@@ -51,6 +51,7 @@ const NewCategory = ({ goToStandard }: Props) => {
                     if (name.length > 0) {
                         const success = await createCategory();
                         if (success) {
+                            // set the selected category to the new category
                             goToStandard();
                         }
                     }
