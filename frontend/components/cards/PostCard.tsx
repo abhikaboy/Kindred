@@ -47,13 +47,13 @@ type Props = {
     userId: string;
     caption: string;
     time: number;
-    priority: string;
-    points: number;
-    timeTaken: number;
-    reactions: SlackReaction[];
-    images: string[];
+    priority?: string;
+    points?: number;
+    timeTaken?: number;
+    reactions?: SlackReaction[];
+    images?: string[];
     id?: string;
-    comments: CommentProps[];
+    comments?: CommentProps[];
     category?: string;
     taskName?: string;
 };
@@ -68,22 +68,22 @@ const PostCard = ({
     priority,
     points,
     timeTaken,
-    reactions: initialReactions,
+    reactions,
     images,
     comments,
     category,
     taskName,
+    id,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
-    const [reactions, setReactions] = useState<SlackReaction[]>(initialReactions);
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
     const allReactions = [...reactions, ...newReactions];
     const [modalIndex, setModalIndex] = useState(0);
     const [congratulateModalVisible, setCongratulateModalVisible] = useState(false);
+    const [currentComments, setCurrentComments] = useState(comments || []);
 
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
-
     const handleClose = () => {
         bottomSheetModalRef.current?.dismiss();
         console.log("handleClose");
@@ -105,13 +105,19 @@ const PostCard = ({
         console.log("handleSheetChanges", index);
     }, []);
 
+    const handleCommentAdded = (newComment: any) => {
+        console.log("📝 New comment added:", newComment);
+        // Add the new comment to current comments
+        setCurrentComments((prevComments) => [...(prevComments || []), newComment]);
+    };
+
     const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
         // Add haptic feedback for reactions
         if (Platform.OS === "ios") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
 
-        setReactions((prevReactions) => {
+        setNewReactions((prevReactions) => {
             const existingReaction = prevReactions?.find((r) => r.emoji === emoji);
             const idsSet = new Set(existingReaction?.ids);
 
@@ -207,7 +213,7 @@ const PostCard = ({
                                     {name}
                                 </ThemedText>
                                 <ThemedText type="caption" style={styles.username}>
-                                    @{username}
+                                    {username}
                                 </ThemedText>
                             </View>
                         </View>
@@ -366,7 +372,13 @@ const PostCard = ({
                         borderTopLeftRadius: 24,
                         borderTopRightRadius: 24,
                     }}>
-                    <Comment comments={comments} ref={bottomSheetModalRef} onClose={handleClose} />
+                    <Comment
+                        comments={currentComments}
+                        postId={id}
+                        ref={bottomSheetModalRef}
+                        onClose={handleClose}
+                        onCommentAdded={handleCommentAdded}
+                    />
                 </BottomSheetModal>
 
                 {/* Congratulate Modal */}

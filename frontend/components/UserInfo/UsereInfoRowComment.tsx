@@ -12,31 +12,64 @@ type Props = {
     time?: number;
 };
 
-const UserInfoRowComment = ({ name, content, icon, time }: Props) => (
-    <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
-        <View style={styles.row}>
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-                <View style={{ paddingTop: 8 }}>
-                    <PreviewIcon size={"smallMedium"} icon={icon}></PreviewIcon>
-                </View>
-                <View style={{ gap: 2, flex: 1 }}>
-                    <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
-                        <ThemedText type="caption" style={{ color: "white" }}>
-                            {name}
-                        </ThemedText>
-                        <ThemedText type="caption">{time}hr</ThemedText>
+const UserInfoRowComment = ({ name, content, icon, time }: Props) => {
+    const ThemedColor = useThemeColor();
+    
+    return (
+        <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
+            <View style={styles.row}>
+                <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+                    <View style={{ paddingTop: 8 }}>
+                        <PreviewIcon size={"smallMedium"} icon={icon} />
                     </View>
-                    <ThemedText style={styles.commentText} type={"default"}>
-                        {content}
-                    </ThemedText>
-                    <TouchableOpacity>
-                        <ThemedText type="caption">Reply</ThemedText>
-                    </TouchableOpacity>
+                    <View style={{ gap: 2, flex: 1 }}>
+                        <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
+                            <ThemedText 
+                                type="caption" 
+                                style={{ 
+                                    color: ThemedColor.text,
+                                }}
+                            >
+                                {name || "Unknown User"}
+                            </ThemedText>
+                            {time !== undefined && (
+                                <ThemedText 
+                                    type="caption" 
+                                    style={{ 
+                                        color: ThemedColor.caption
+                                    }}
+                                >
+                                    {time < 1 ? `${Math.round(time * 60)}m ago` : `${Math.round(time)}h ago`}
+                                </ThemedText>
+                            )}
+                        </View>
+                        <ThemedText 
+                            style={[
+                                styles.commentText, 
+                                { 
+                                    color: ThemedColor.text
+                                }
+                            ]} 
+                            type={"default"}
+                        >
+                            {content || "No content"}
+                        </ThemedText>
+                        <TouchableOpacity>
+                            <ThemedText 
+                                type="caption" 
+                                style={{ 
+                                    color: ThemedColor.caption
+                                }}
+                            >
+                                Reply
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </View>
-    </View>
-);
+    );
+};
 
 export default UserInfoRowComment;
 
@@ -52,5 +85,6 @@ const styles = StyleSheet.create({
         flexWrap: "wrap",
         width: "100%",
         flexShrink: 1,
+        lineHeight: 20,
     },
 });

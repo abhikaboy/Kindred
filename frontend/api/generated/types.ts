@@ -376,26 +376,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/profiles/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search profiles
-         * @description Search for user profiles by query string
-         */
-        get: operations["search-profiles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/profiles/{id}": {
         parameters: {
             query?: never;
@@ -1024,6 +1004,66 @@ export interface paths {
         patch: operations["update-post"];
         trace?: never;
     };
+    "/v1/user/posts/{postId}/comment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add comment to post
+         * @description Add a comment to an existing post
+         */
+        post: operations["add-comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/posts/{postId}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * React to a post
+         * @description Adds a reaction to a post
+         */
+        post: operations["add-reaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/profiles/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search profiles
+         * @description Search for user profiles by query string
+         */
+        get: operations["search-profiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/pushtoken": {
         parameters: {
             query?: never;
@@ -1356,6 +1396,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/{userId}/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User's posts
+         * @description Get posts of a user
+         */
+        get: operations["get-user-posts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/welcome": {
         parameters: {
             query?: never;
@@ -1400,6 +1460,40 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        AddCommentOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            comment: components["schemas"]["CommentDocument"];
+            message: string;
+        };
+        AddCommentParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            content: string;
+            parentId?: string;
+        };
+        AddReactionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        AddReactionParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            emoji: string;
+        };
         BlueprintDocument: {
             /**
              * Format: uri
@@ -1433,6 +1527,9 @@ export interface components {
              */
             timestamp: string;
         };
+        BlueprintReference: {
+            id: string;
+        };
         CategoryDocument: {
             /**
              * Format: uri
@@ -1447,11 +1544,31 @@ export interface components {
             user: string;
             workspaceName: string;
         };
+        CategoryExtendedReference: {
+            id: string;
+            name: string;
+        };
         ChecklistItem: {
             completed: boolean;
             content: string;
             /** Format: int64 */
             order: number;
+        };
+        CommentDocument: {
+            content: string;
+            id: string;
+            mention?: string;
+            metadata: components["schemas"]["CommentMetadata"];
+            parentId?: string;
+            user: components["schemas"]["UserExtendedReference"];
+            userId: string;
+        };
+        CommentMetadata: {
+            /** Format: date-time */
+            createdAt: string;
+            isDeleted: boolean;
+            /** Format: date-time */
+            lastEdited: string;
         };
         CompleteTaskDocument: {
             /**
@@ -1631,9 +1748,11 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            field1: string;
-            field2: string;
-            picture: string | null;
+            blueprintId?: string;
+            caption: string;
+            images: string[] | null;
+            isPublic: boolean;
+            task?: components["schemas"]["PostTaskExtendedReference"];
         };
         CreateTaskParams: {
             /**
@@ -1889,6 +2008,15 @@ export interface components {
             count: number;
             message: string;
         };
+        MarkEncouragementsReadInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description List of encouragement IDs to mark as read */
+            id: string[] | null;
+        };
         MarkEncouragementsReadOutputBody: {
             /**
              * Format: uri
@@ -1908,17 +2036,51 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            field1: string;
-            field2: string;
-            id: string;
-            picture: string | null;
-            /** Format: date-time */
-            timestamp: string;
+            _id: string;
+            blueprint?: components["schemas"]["BlueprintReference"];
+            caption: string;
+            category?: components["schemas"]["CategoryExtendedReference"];
+            comments: components["schemas"]["CommentDocument"][] | null;
+            images: string[] | null;
+            metadata: components["schemas"]["PostMetadata"];
+            reactions: {
+                [key: string]: string[] | null;
+            };
+            task?: components["schemas"]["PostTaskExtendedReference"];
+            user: components["schemas"]["UserExtendedReferenceInternal"];
         };
-        RelationshipInfo: {
-            /** @enum {string} */
-            status: "none" | "requested" | "received" | "connected" | "self";
-            request_id?: string;
+        PostDocumentAPI: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            _id: string;
+            blueprint?: components["schemas"]["BlueprintReference"];
+            caption: string;
+            category?: components["schemas"]["CategoryExtendedReference"];
+            comments: components["schemas"]["CommentDocument"][] | null;
+            images: string[] | null;
+            metadata: components["schemas"]["PostMetadata"];
+            reactions: {
+                [key: string]: string[] | null;
+            };
+            task?: components["schemas"]["PostTaskExtendedReference"];
+            user: components["schemas"]["UserExtendedReference"];
+        };
+        PostMetadata: {
+            /** Format: date-time */
+            createdAt: string;
+            isDeleted: boolean;
+            isEdited: boolean;
+            isPublic: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PostTaskExtendedReference: {
+            category: components["schemas"]["CategoryExtendedReference"];
+            content: string;
+            id: string;
         };
         ProfileDocument: {
             /**
@@ -1969,6 +2131,10 @@ export interface components {
             readonly $schema?: string;
             apple_id: string;
             email: string;
+        };
+        RelationshipInfo: {
+            request_id?: string;
+            status: string;
         };
         Reminder: {
             afterDeadline: boolean;
@@ -2217,16 +2383,6 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
-        UpdatePostDocument: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            field1?: string;
-            field2?: string;
-            picture?: string;
-        };
         UpdatePostOutputBody: {
             /**
              * Format: uri
@@ -2234,6 +2390,15 @@ export interface components {
              */
             readonly $schema?: string;
             message: string;
+        };
+        UpdatePostParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            caption?: string;
+            isPublic?: boolean;
         };
         UpdateProfileDocument: {
             /**
@@ -2336,6 +2501,12 @@ export interface components {
             handle: string;
             /** @description Profile picture URL */
             profile_picture: string;
+        };
+        UserExtendedReferenceInternal: {
+            DisplayName: string;
+            Handle: string;
+            ID: string;
+            ProfilePicture: string;
         };
         WaitlistDocument: {
             /**
@@ -3036,38 +3207,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "search-profiles": {
-        parameters: {
-            query?: {
-                /** @example john */
-                query?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileDocument"][] | null;
                 };
             };
             /** @description Error */
@@ -4339,7 +4478,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkEncouragementsReadInputBody"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -4526,7 +4669,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostDocument"][] | null;
+                    "application/json": components["schemas"]["PostDocumentAPI"][] | null;
                 };
             };
             /** @description Error */
@@ -4561,7 +4704,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostDocument"];
+                    "application/json": components["schemas"]["PostDocumentAPI"];
                 };
             };
             /** @description Error */
@@ -4657,7 +4800,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdatePostDocument"];
+                "application/json": components["schemas"]["UpdatePostParams"];
             };
         };
         responses: {
@@ -4668,6 +4811,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdatePostOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "add-comment": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                postId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCommentParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddCommentOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "add-reaction": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                postId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddReactionParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddReactionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "search-profiles": {
+        parameters: {
+            query?: {
+                /** @example john */
+                query?: string;
+            };
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDocument"][] | null;
                 };
             };
             /** @description Error */
@@ -5340,6 +5596,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaitlistDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-posts": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostDocument"][] | null;
                 };
             };
             /** @description Error */

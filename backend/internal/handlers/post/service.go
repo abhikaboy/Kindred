@@ -3,8 +3,9 @@ package Post
 import (
 	"context"
 	"log/slog"
+	"time"
 
-	"github.com/abhikaboy/Kindred/xutils"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,20 +14,29 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Posts: collections["posts"],
+		Posts:      collections["posts"],
+		Users:      collections["users"],
+		Blueprints: collections["blueprints"],
+		Categories: collections["categories"],
 	}
 }
 
 // GetAllPosts fetches all Post documents from MongoDB
-func (s *Service) GetAllPosts() ([]PostDocument, error) {
+func (s *Service) GetAllPosts() ([]types.PostDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Posts.Find(ctx, bson.M{})
+
+	filter := bson.M{
+		"metadata.isDeleted": false,
+		"metadata.isPublic":  false,
+	}
+
+	cursor, err := s.Posts.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	var results []PostDocument
+	var results []types.PostDocument
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -35,11 +45,13 @@ func (s *Service) GetAllPosts() ([]PostDocument, error) {
 }
 
 // GetPostByID returns a single Post document by its ObjectID
-func (s *Service) GetPostByID(id primitive.ObjectID) (*PostDocument, error) {
+func (s *Service) GetPostByID(id primitive.ObjectID) (*types.PostDocument, error) {
 	ctx := context.Background()
-	filter := bson.M{"_id": id}
-
-	var Post PostDocument
+	filter := bson.M{
+		"_id":                id,
+		"metadata.isDeleted": false,
+	}
+	var Post types.PostDocument
 	err := s.Posts.FindOne(ctx, filter).Decode(&Post)
 
 	if err == mongo.ErrNoDocuments {
@@ -54,8 +66,9 @@ func (s *Service) GetPostByID(id primitive.ObjectID) (*PostDocument, error) {
 }
 
 // InsertPost adds a new Post document
-func (s *Service) CreatePost(r *PostDocument) (*PostDocument, error) {
+func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, error) {
 	ctx := context.Background()
+
 	// Insert the document into the collection
 
 	result, err := s.Posts.InsertOne(ctx, r)
@@ -72,18 +85,25 @@ func (s *Service) CreatePost(r *PostDocument) (*PostDocument, error) {
 }
 
 // UpdatePartialPost updates only specified fields of a Post document by ObjectID.
-func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostDocument) error {
+func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostParams) error {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
-	updateFields, err := xutils.ToDoc(updated)
-	if err != nil {
-		return err
+	updateDoc := bson.M{
+		"$set": bson.M{
+			"metadata.updatedAt": time.Now(),
+			"metadata.isEdited":  true,
+		},
+	}
+	if updated.Caption != nil {
+		updateDoc["$set"].(bson.M)["caption"] = *updated.Caption
 	}
 
-	update := bson.M{"$set": updateFields}
+	if updated.IsPublic != nil {
+		updateDoc["$set"].(bson.M)["metadata.isPublic"] = *updated.IsPublic
+	}
 
-	_, err = s.Posts.UpdateOne(ctx, filter, update)
+	_, err := s.Posts.UpdateOne(ctx, filter, updateDoc)
 	return err
 }
 
@@ -94,5 +114,72 @@ func (s *Service) DeletePost(id primitive.ObjectID) error {
 	filter := bson.M{"_id": id}
 
 	_, err := s.Posts.DeleteOne(ctx, filter)
+	return err
+}
+
+// GetUserPosts fetches posts for a specific user
+func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument, error) {
+	ctx := context.Background()
+
+	filter := bson.M{
+		"user._id":             userID.Hex(),
+		"metadata.isDeleted": false,
+	}
+
+	cursor, err := s.Posts.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []types.PostDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDocument) error {
+	ctx := context.Background()
+
+	comment.ID = primitive.NewObjectID()
+	comment.Metadata = types.NewCommentMetadata()
+
+	filter := bson.M{"_id": postID, "metadata.isDeleted": false}
+	update := bson.M{
+		"$push": bson.M{
+			"comments": comment,
+		},
+		"$set": bson.M{
+			"metadata.updatedAt": time.Now(),
+			"metadata.isEdited":  true,
+		},
+	}
+
+	_, err := s.Posts.UpdateOne(ctx, filter, update)
+	return err
+}
+
+func (s *Service) AddReaction(r *types.ReactDocument) error {
+	ctx := context.Background()
+
+	field := "reactions." + r.Emoji
+	filter := bson.M{
+		"_id":                r.PostID,
+		"metadata.isDeleted": false,
+	}
+
+	update := bson.M{
+		"$addToSet": bson.M{
+			field: r.UserID,
+		},
+		"$set": bson.M{
+			"metadata.updatedAt": time.Now(),
+			"metadata.isEdited":  true,
+		},
+	}
+
+	_, err := s.Posts.UpdateOne(ctx, filter, update)
 	return err
 }

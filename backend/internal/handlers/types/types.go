@@ -145,6 +145,121 @@ type ActivityDocument struct {
 	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
 }
 
+type PostDocument struct {
+	ID   primitive.ObjectID            `bson:"_id" json:"_id"`
+	User UserExtendedReferenceInternal `bson:"user" json:"user"`
+
+	Images  []string `bson:"images" json:"images"`
+	Caption string   `bson:"caption" json:"caption"`
+
+	Category  *CategoryExtendedReference `bson:"category,omitempty" json:"category,omitempty"`
+	Task      *PostTaskExtendedReference `bson:"task,omitempty" json:"task,omitempty"`
+	Blueprint *BlueprintReference        `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
+
+	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
+	Comments  []CommentDocument               `bson:"comments" json:"comments"`
+
+	Metadata PostMetadata `bson:"metadata" json:"metadata"`
+}
+
+type CommentDocument struct {
+	ID       primitive.ObjectID    `bson:"_id" json:"id"`
+	UserID   primitive.ObjectID    `bson:"userId" json:"userId"`
+	User     UserExtendedReference `bson:"user" json:"user"`
+	Mention  primitive.ObjectID    `bson:"mention,omitempty" json:"mention,omitempty"`
+	Content  string                `bson:"content" json:"content"`
+	ParentID *primitive.ObjectID   `bson:"parentId,omitempty" json:"parentId,omitempty"`
+
+	Metadata CommentMetadata `bson:"metadata" json:"metadata"`
+}
+
+type CommentMetadata struct {
+	CreatedAt  time.Time `bson:"createdAt" json:"createdAt"`
+	IsDeleted  bool      `bson:"isDeleted" json:"isDeleted"`
+	LastEdited time.Time `bson:"lastEdited" json:"lastEdited"`
+}
+
+type ReactDocument struct {
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	UserID    primitive.ObjectID `bson:"userId" json:"userId"`
+	PostID    primitive.ObjectID `bson:"postId" json:"postId"`
+	Emoji     string             `bson:"type" json:"type"`
+	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+}
+
+type BlueprintReference struct {
+	ID primitive.ObjectID `bson:"id" json:"id"`
+}
+
+func NewBlueprintReference(blueprintID primitive.ObjectID) *BlueprintReference {
+	return &BlueprintReference{
+		ID: blueprintID,
+	}
+}
+
+type PostMetadata struct {
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
+	IsPublic  bool      `bson:"isPublic" json:"isPublic"`
+	IsDeleted bool      `bson:"isDeleted" json:"isDeleted"`
+	IsEdited  bool      `bson:"isEdited" json:"isEdited"`
+}
+type CategoryExtendedReference struct {
+	ID   primitive.ObjectID `bson:"id" json:"id"`
+	Name string             `bson:"name" json:"name"`
+}
+
+type TaskExtendedReference struct {
+	ID      primitive.ObjectID `bson:"id" json:"id"`
+	Content string             `bson:"content" json:"content"`
+}
+
+type PostTaskExtendedReference struct {
+	ID       primitive.ObjectID        `bson:"id" json:"id"`
+	Content  string                    `bson:"content" json:"content"`
+	Category CategoryExtendedReference `bson:"category" json:"category"`
+}
+
+func (c *CategoryDocument) ToReference() *CategoryExtendedReference {
+	return &CategoryExtendedReference{
+		ID:   c.ID,
+		Name: c.Name,
+	}
+}
+
+func (t *TaskDocument) ToReference() *TaskExtendedReference {
+	return &TaskExtendedReference{
+		ID:      t.ID,
+		Content: t.Content,
+	}
+}
+
+func (t *TaskDocument) ToPostReference(category *CategoryDocument) *PostTaskExtendedReference {
+	return &PostTaskExtendedReference{
+		ID:       t.ID,
+		Content:  t.Content,
+		Category: *category.ToReference(),
+	}
+}
+
+func NewPostMetadata() PostMetadata {
+	now := time.Now()
+	return PostMetadata{
+		CreatedAt: now,
+		UpdatedAt: now,
+		IsPublic:  false,
+		IsDeleted: false,
+		IsEdited:  false,
+	}
+}
+
+func NewCommentMetadata() CommentMetadata {
+	return CommentMetadata{
+		CreatedAt: time.Now(),
+		IsDeleted: false,
+	}
+}
+
 type UserExtendedReference struct {
 	ID             string `bson:"_id" json:"_id" example:"507f1f77bcf86cd799439011" doc:"User ID"`
 	DisplayName    string `bson:"display_name" json:"display_name" example:"John Doe" doc:"User display name"`
@@ -167,5 +282,35 @@ func (u *UserExtendedReferenceInternal) ToAPI() *UserExtendedReference {
 		DisplayName:    u.DisplayName,
 		Handle:         u.Handle,
 		ProfilePicture: u.ProfilePicture,
+	}
+}
+
+type PostDocumentAPI struct {
+	ID   primitive.ObjectID    `json:"_id"`
+	User UserExtendedReference `json:"user"`
+
+	Images    []string                   `json:"images"`
+	Caption   string                     `json:"caption"`
+	Category  *CategoryExtendedReference `bson:"category,omitempty" json:"category,omitempty"`
+	Task      *PostTaskExtendedReference `bson:"task,omitempty" json:"task,omitempty"`
+	Blueprint *BlueprintReference        `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
+
+	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
+	Comments  []CommentDocument               `bson:"comments" json:"comments"`
+
+	Metadata PostMetadata `bson:"metadata" json:"metadata"`
+}
+
+func (p *PostDocument) ToAPI() *PostDocumentAPI {
+	return &PostDocumentAPI{
+		ID:   p.ID,
+		User: *p.User.ToAPI(), Images: p.Images,
+		Caption:   p.Caption,
+		Category:  p.Category,
+		Task:      p.Task,
+		Blueprint: p.Blueprint,
+		Reactions: p.Reactions,
+		Comments:  p.Comments,
+		Metadata:  p.Metadata,
 	}
 }

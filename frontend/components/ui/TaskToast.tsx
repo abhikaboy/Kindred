@@ -18,7 +18,17 @@ import { useRouter } from "expo-router";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-export default function TaskToast(props: ToastableBodyParams) {
+interface TaskToastProps extends ToastableBodyParams {
+    taskData?: {
+        id: string;
+        name: string;
+        category: string;
+        categoryName: string;
+        points?: number;
+        public?: boolean;
+    };
+}
+export default function TaskToast(props: TaskToastProps) {
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
@@ -88,6 +98,26 @@ export default function TaskToast(props: ToastableBodyParams) {
 
     const router = useRouter();
 
+    const handleNavigateToCamera = () => {
+        const taskInfo = props.taskData
+            ? {
+                  id: props.taskData.id,
+                  name: props.taskData.name,
+                  category: props.taskData.category,
+                  categoryName: props.taskData.categoryName,
+                  points: props.taskData.points,
+                  public: props.taskData.public,
+              }
+            : null;
+        router.push({
+            pathname: "/posting/cameraview",
+            params: taskInfo
+                ? {
+                      taskInfo: JSON.stringify(taskInfo),
+                  }
+                : {},
+        });
+    };
     return (
         <PanGestureHandler onGestureEvent={gestureHandler} enabled={true}>
             <Reanimated.View style={[animatedStyle]}>
@@ -111,7 +141,7 @@ export default function TaskToast(props: ToastableBodyParams) {
                             <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
                             <ThemedText>{props.message}</ThemedText>
                         </View>
-                        <TouchableOpacity onPress={() => router.push("/posting")}>
+                        <TouchableOpacity onPress={handleNavigateToCamera}>
                             <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
                         </TouchableOpacity>
                     </View>

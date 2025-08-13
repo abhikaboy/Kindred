@@ -47,6 +47,8 @@ const Standard = ({ hide, goTo }: Props) => {
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const createPost = async () => {
+        console.log("🔍 CLIENT BASE URL:", process.env.EXPO_PUBLIC_URL);
+        console.log("🔍 ABOUT TO CALL:", `${process.env.EXPO_PUBLIC_URL}/v1/user/posts`);
         if (categories.length === 0) return;
         let postBody: CreateTaskParams = {
             content: taskName,

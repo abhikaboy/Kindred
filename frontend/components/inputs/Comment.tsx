@@ -22,33 +22,57 @@ import { useAnimatedGestureHandler, useAnimatedStyle, withSpring } from "react-n
 import { useSharedValue } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import BottomSheet, { BottomSheetView, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { addComment } from "@/api/post";
+import { showToast } from "@/utils/showToast";
 
 export type CommentProps = {
-    userId: number;
-    icon: string;
-    name: string;
-    username: string;
-    time: number;
+    id: string;
+    userId: string;
+    user: {
+        _id: string;
+        display_name: string;
+        handle: string;
+        profile_picture: string;
+    };
     content: string;
+    parentId?: string;
+    mention?: string;
+    metadata: {
+        createdAt: string;
+        isDeleted: boolean;
+        lastEdited: string;
+    };
 };
 
 export type PopupProp = {
-    comments: CommentProps[];
+    comments: CommentProps[] | any[];
+    postId?: string;
     ref: React.RefObject<BottomSheetModal>;
     onClose: () => void;
+    onCommentAdded?: (comment: CommentProps) => void;
 };
 
-const Comment = ({ comments, ref, onClose }: PopupProp) => {
+const Comment = ({ comments, postId, ref, onClose, onCommentAdded }: PopupProp) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const [commentText, setCommentText] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const isAPIComment = (comment: any) => comment && comment.user && comment.metadata;
 
-    const handleSubmitComment = () => {
-        if (commentText.trim()) {
-            // Here you would typically make an API call to submit the comment
-            console.log("Submitting comment:", commentText);
+    const handleSubmitComment = async () => {
+        setIsSubmitting(true);
+
+        try {
+            const newComment = await addComment(postId, commentText.trim());
             setCommentText("");
-            // You could also call onClose() here if you want to close the modal after submitting
+
+            if (onCommentAdded) {
+                onCommentAdded(newComment);
+            }
+        } catch (error) {
+            console.error("Failed to submit comment:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -57,24 +81,49 @@ const Comment = ({ comments, ref, onClose }: PopupProp) => {
             <View style={styles.modalContent}>
                 <View style={styles.header}>
                     <ThemedText style={styles.commentsTitle} type="default">
-                        Comments
+                        Comments ({comments?.length || 0})
                     </ThemedText>
                 </View>
+
                 <ScrollView
                     style={styles.commentsContainer}
                     contentContainerStyle={styles.contentContainer}
                     showsVerticalScrollIndicator={true}
                     indicatorStyle="black">
-                    {comments?.map((comment, index) => (
-                        <View key={index} style={styles.comments}>
-                            <UserInfoRowComment
-                                key={index}
-                                name={comment.name}
-                                content={comment.content}
-                                icon={comment.icon}
-                            />
+                    {!comments || comments.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
+                                No comments yet. Be the first to comment!
+                            </ThemedText>
                         </View>
-                    ))}
+                    ) : (
+                        comments.map((comment, index) => {
+                            console.log(
+                                isAPIComment(comment) ? "API format" : "Legacy format"
+                            );
+
+                            return (
+                                <View key={comment.id || index} style={styles.comments}>
+                                    <UserInfoRowComment
+                                        name={isAPIComment(comment) ? comment.user?.display_name : comment.name}
+                                        content={comment.content}
+                                        icon={isAPIComment(comment) ? comment.user?.profile_picture : comment.icon}
+                                        time={
+                                            isAPIComment(comment)
+                                                ? comment.metadata?.createdAt
+                                                    ? Math.abs(
+                                                          new Date().getTime() -
+                                                              new Date(comment.metadata.createdAt).getTime()
+                                                      ) / 36e5
+                                                    : 0
+                                                : comment.time
+                                        }
+                                        id={comment.id}
+                                    />
+                                </View>
+                            );
+                        })
+                    )}
                 </ScrollView>
 
                 <View style={styles.inputContainer}>
@@ -140,6 +189,14 @@ const stylesheet = (ThemedColor: any) =>
             gap: 10,
             paddingHorizontal: 16,
             paddingBottom: Platform.OS === "ios" ? 20 : 10,
+        },
+        emptyContainer: {
+            padding: 20,
+            alignItems: "center",
+        },
+        emptyText: {
+            fontSize: 16,
+            textAlign: "center",
         },
     });
 

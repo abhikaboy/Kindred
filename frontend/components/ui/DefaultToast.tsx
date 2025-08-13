@@ -121,7 +121,9 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
                             padding: 16,
                             backgroundColor: ThemedColor.lightened,
                         }}>
-                        <ThemedText style={{ textAlign: "center" }}>{message}</ThemedText>
+                        <ThemedText style={{ textAlign: "center", color: statusMapping[status].color }}>
+                            {message}
+                        </ThemedText>
                     </View>
                 </View>
             </Reanimated.View>

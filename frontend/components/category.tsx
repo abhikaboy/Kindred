@@ -31,7 +31,13 @@ export const Category: React.FC<CategoryProps> = ({ id, name, tasks, onLongPress
                 <AntDesign name="plus" size={16} color={ThemedColor.caption} />
             </TouchableOpacity>
             {tasks.map((task) => (
-                <SwipableTaskCard key={task.id + task.content} redirect={true} categoryId={id} task={task} />
+                <SwipableTaskCard
+                    key={task.id + task.content}
+                    redirect={true}
+                    categoryId={id}
+                    categoryName={name}
+                    task={task}
+                />
             ))}
         </View>
     );

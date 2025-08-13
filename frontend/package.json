@@ -9,7 +9,7 @@
         "test": "jest test",
         "lint": "expo lint",
         "format": "prettier --write .",
-        "generate-types": "openapi-typescript api/api-spec.yaml -o api/generated/types.ts",
+        "generate-types": "openapi-typescript http://127.0.0.1:8080/openapi.json -o api/generated/types.ts",
         "generate-types:watch": "openapi-typescript api/api-spec.yaml -o api/generated/types.ts --watch"
     },
     "jest": {
