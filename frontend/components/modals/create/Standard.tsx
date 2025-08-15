@@ -1,5 +1,5 @@
 import { Dimensions, Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ThemedInput from "../../inputs/ThemedInput";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
@@ -15,18 +15,23 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import Feather from "@expo/vector-icons/Feather";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import { CreateTaskParams } from "@/api/task";
+import type { components } from "@/api/generated/types";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { updateTaskAPI } from "@/api/task";
+
+type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
 type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
+    edit?: boolean;
+    categoryId?: string; // Category ID for editing tasks
 };
 
-const Standard = ({ hide, goTo }: Props) => {
+const Standard = ({ hide, goTo, edit = false, categoryId }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
-    const { categories, addToCategory, selectedCategory, setCreateCategory } = useTasks();
+    const { categories, addToCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const {
         taskName,
         setTaskName,
@@ -44,8 +49,67 @@ const Standard = ({ hide, goTo }: Props) => {
         reminders,
         isPublic,
         resetTaskCreation,
+        setPriority,
+        setValue,
+        setRecurring,
+        setRecurFrequency,
+        setRecurDetails,
+        setDeadline,
+        setStartTime,
+        setStartDate,
+        setReminders,
+        setIsPublic,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
+
+    // Set the selected category when in edit mode
+    useEffect(() => {
+        console.log("Category selection useEffect triggered:", { edit, categoryId, categories: !!categories });
+        console.log("Categories length:", categories?.length);
+        
+        if (edit && categoryId && categories && categories.length > 0) {
+            console.log("Available categories:", categories.map(c => ({ id: c.id, name: c.name })));
+            
+            // Add a small delay to ensure everything is loaded
+            const timer = setTimeout(() => {
+                const taskCategory = categories.find(cat => cat.id === categoryId);
+                console.log("Found task category:", taskCategory);
+                
+                if (taskCategory) {
+                    console.log("Setting category to:", { label: taskCategory.name, id: taskCategory.id });
+                    setCreateCategory({ 
+                        label: taskCategory.name, 
+                        id: taskCategory.id, 
+                        special: false 
+                    });
+                } else {
+                    console.log("No matching category found for categoryId:", categoryId);
+                    console.log("Available category IDs:", categories.map(c => c.id));
+                    
+                    // As a last resort, set the first available category
+                    if (categories.length > 0) {
+                        const firstCategory = categories[0];
+                        console.log("Setting to first available category:", { label: firstCategory.name, id: firstCategory.id });
+                        setCreateCategory({ 
+                            label: firstCategory.name, 
+                            id: firstCategory.id, 
+                            special: false 
+                        });
+                    }
+                }
+            }, 100);
+            
+            return () => clearTimeout(timer);
+        } else {
+            console.log("Missing required data:", { 
+                edit, 
+                hasCategoryId: !!categoryId, 
+                hasCategories: !!categories, 
+                categoriesLength: categories?.length 
+            });
+        }
+    }, [edit, categoryId, categories]);
+
     const createPost = async () => {
         if (categories.length === 0) return;
         let postBody: CreateTaskParams = {
@@ -60,7 +124,10 @@ const Standard = ({ hide, goTo }: Props) => {
             startDate: startDate?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
-            reminders: reminders,
+            reminders: reminders.map(reminder => ({
+                ...reminder,
+                triggerTime: reminder.triggerTime.toISOString()
+            })),
         };
         if (recurring) {
             postBody.recurFrequency = recurFrequency;
@@ -70,6 +137,39 @@ const Standard = ({ hide, goTo }: Props) => {
         const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody);
 
         addToCategory(selectedCategory.id, response);
+        resetTaskCreation();
+    };
+
+    const updatePost = async () => {
+        if (!task) return;
+        
+        const updateData: components["schemas"]["UpdateTaskDocument"] = {
+            content: taskName,
+            priority: priority,
+            value: value,
+            recurring: recurring,
+            public: isPublic,
+            active: task.active || false,
+            recurDetails: recurring ? recurDetails as RecurDetails : {
+                every: 1,
+                daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+                behavior: "ROLLING",
+            },
+            startDate: startDate?.toISOString(),
+            startTime: startTime?.toISOString(),
+            deadline: deadline?.toISOString(),
+            reminders: reminders.map(reminder => ({
+                ...reminder,
+                triggerTime: reminder.triggerTime.toISOString()
+            })),
+            notes: task.notes || "",
+            checklist: task.checklist || [],
+        };
+
+        // Use the selected category from the dropdown, or fall back to the original task category
+        const targetCategoryId = selectedCategory?.id || task.categoryID;
+        
+        await updateTaskAPI(targetCategoryId, task.id, updateData);
         resetTaskCreation();
     };
 
@@ -131,10 +231,14 @@ const Standard = ({ hide, goTo }: Props) => {
                         borderColor: ThemedColor.tertiary,
                     }}
                     onPress={() => {
-                        createPost();
+                        if (edit) {
+                            updatePost();
+                        } else {
+                            createPost();
+                        }
                         hide();
                     }}>
-                    <ThemedText type="caption">Create</ThemedText>
+                    <ThemedText type="caption">{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
             </View>
             <ThemedInput

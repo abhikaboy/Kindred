@@ -2302,6 +2302,11 @@ export interface components {
             recurring: boolean;
             /** Format: double */
             value: number;
+            // Add the new fields for updating task properties
+            deadline?: string | null; // ISO date string
+            startTime?: string | null; // ISO date string
+            startDate?: string | null; // ISO date string
+            reminders?: components["schemas"]["Reminder"][] | null;
         };
         UpdateTaskNotesDocument: {
             /**

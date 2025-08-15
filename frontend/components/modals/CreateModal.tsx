@@ -25,6 +25,7 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
+    categoryId?: string; // Category ID for editing tasks
     focused?: string;
     setFocused?: (focused: string) => void;
 };
@@ -147,6 +148,8 @@ const CreateModal = (props: Props) => {
                         <Standard
                             hide={() => props.setVisible(false)}
                             goTo={goToScreen}
+                            edit={props.edit}
+                            categoryId={props.categoryId}
                         />
                     </Animated.View>
                 );

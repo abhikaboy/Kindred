@@ -1,4 +1,4 @@
-import { StyleSheet, Text, Touchable, View } from "react-native";
+import { StyleSheet, Text, Touchable, View, DimensionValue } from "react-native";
 import React, { Dispatch, SetStateAction, useEffect } from "react";
 import { MultipleSelectList, SelectList } from "react-native-dropdown-select-list";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -17,16 +17,24 @@ import Animated, {
 } from "react-native-reanimated";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import * as Haptics from "expo-haptics";
+
+type Option = {
+    label: string;
+    id: string;
+    special?: boolean;
+};
+
 type Props = {
     options?: Option[];
+    footerOptions?: Option[]; // New optional footer options
     selected: Option;
     setSelected: Dispatch<SetStateAction<Option>>;
     onSpecial: () => void;
-    width?: string;
+    width?: DimensionValue;
     ghost?: boolean;
 };
 
-const Dropdown = ({ options, selected, setSelected, onSpecial, width, ghost }: Props) => {
+const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, width, ghost }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
     const reducedMotion = useReducedMotion();
@@ -102,17 +110,18 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width, ghost }: P
                     entering={reducedMotion ? null : FadeInUp}
                     exiting={reducedMotion ? null : FadeOut}
                     style={{
-                        borderWidth: 1,
+                        borderWidth: 0.5,
                         borderColor: ThemedColor.tertiary,
                         borderTopWidth: 0,
                         borderBottomLeftRadius: 12,
                         backgroundColor: ThemedColor.background,
                         borderBottomRightRadius: 12,
                     }}>
+                    {/* Main options */}
                     {options.map((item, index) => {
                         return (
                             <AnimatedTouchableOpacity
-                                key={index}
+                                key={`main-${index}`}
                                 onPress={() => {
                                     setSelected(item);
                                     if (item.special) onSpecial();
@@ -132,6 +141,40 @@ const Dropdown = ({ options, selected, setSelected, onSpecial, width, ghost }: P
                             </AnimatedTouchableOpacity>
                         );
                     })}
+                    
+                    <View style={{
+                        borderColor: ThemedColor.tertiary,
+                        borderTopWidth: 1,
+                        borderBottomLeftRadius: 12,
+                        backgroundColor: ThemedColor.background,
+                        borderBottomRightRadius: 12,
+                        paddingVertical: 4,
+                    }}>
+
+                    {footerOptions && footerOptions.map((item, index) => {
+                        return (
+                            <AnimatedTouchableOpacity
+                            key={`footer-${index}`}
+                            onPress={() => {
+                                setSelected(item);
+                                if (item.special) onSpecial();
+                                expanded.value = false;
+                                setExpandedState(false);
+                                Haptics.selectionAsync();
+                            }}
+                            style={{
+                                backgroundColor: ThemedColor.background,
+                                padding: 8,
+                                paddingHorizontal: HORIZONTAL_PADDING,
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                borderRadius: 12,
+                                }}>
+                                <ThemedText type="lightBody">{item.label}</ThemedText>
+                            </AnimatedTouchableOpacity>
+                        );
+                    })}
+                    </View>
                 </Animated.View>
             )}
         </Animated.View>

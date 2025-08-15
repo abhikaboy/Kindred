@@ -181,20 +181,44 @@ func (s *Service) UpdatePartialTask(
 		},
 	}
 
+	// Build the update fields dynamically
+	updateFields := bson.D{
+		{Key: "tasks.$[t].priority", Value: updated.Priority},
+		{Key: "tasks.$[t].lastEdited", Value: xutils.NowUTC()},
+		{Key: "tasks.$[t].content", Value: updated.Content},
+		{Key: "tasks.$[t].value", Value: updated.Value},
+		{Key: "tasks.$[t].recurring", Value: updated.Recurring},
+		{Key: "tasks.$[t].recurDetails", Value: updated.RecurDetails},
+		{Key: "tasks.$[t].public", Value: updated.Public},
+		{Key: "tasks.$[t].active", Value: updated.Active},
+	}
+
+	// Add the new fields conditionally
+	if updated.Deadline != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].deadline", Value: updated.Deadline})
+	}
+	if updated.StartTime != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].startTime", Value: updated.StartTime})
+	}
+	if updated.StartDate != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].startDate", Value: updated.StartDate})
+	}
+	if updated.Reminders != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].reminders", Value: updated.Reminders})
+	}
+	if updated.Notes != "" {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].notes", Value: updated.Notes})
+	}
+	if updated.Checklist != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].checklist", Value: updated.Checklist})
+	}
+
 	_, err := s.Tasks.UpdateOne(ctx,
 		bson.M{
 			"_id": categoryId,
 		},
 		bson.D{{
-			Key: "$set", Value: bson.D{
-				{Key: "tasks.$[t].priority", Value: updated.Priority},
-				{Key: "tasks.$[t].lastEdited", Value: xutils.NowUTC()},
-				{Key: "tasks.$[t].content", Value: updated.Content},
-				{Key: "tasks.$[t].value", Value: updated.Value},
-				{Key: "tasks.$[t].recurring", Value: updated.Recurring},
-				{Key: "tasks.$[t].recurDetails", Value: updated.RecurDetails},
-				{Key: "tasks.$[t].public", Value: updated.Public},
-				{Key: "tasks.$[t].active", Value: updated.Active}},
+			Key: "$set", Value: updateFields,
 		}},
 		&options,
 	)

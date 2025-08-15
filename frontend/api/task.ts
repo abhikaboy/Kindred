@@ -174,3 +174,26 @@ export const getTemplateByIDAPI = async (id: string): Promise<TemplateTaskDocume
 
     return data;
 };
+
+/**
+ * Update a task with full task data
+ * API: Makes PATCH request to update the task
+ * Frontend: The task is updated in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param updateData - The task data to update
+ */
+export const updateTaskAPI = async (
+    categoryId: string,
+    taskId: string,
+    updateData: components["schemas"]["UpdateTaskDocument"]
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/tasks/{category}/{id}", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: updateData,
+    });
+
+    if (error) {
+        throw new Error(`Failed to update task: ${JSON.stringify(error)}`);
+    }
+};

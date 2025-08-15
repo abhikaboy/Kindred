@@ -48,6 +48,12 @@ type UpdateTaskDocument struct {
 	Public       bool          `bson:"public" json:"public"`
 	Active       bool          `bson:"active" json:"active"`
 
+	// Add the new fields for updating task properties
+	Deadline  *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"`
+	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
+
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 }
