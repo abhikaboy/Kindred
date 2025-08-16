@@ -22,6 +22,9 @@ type ProfileDocument struct {
 	DisplayName    string               `bson:"display_name" json:"display_name"`
 	Handle         string               `bson:"handle" json:"handle"`
 	TasksComplete  int                  `bson:"tasks_complete" json:"tasks_complete"`
+	Streak         int                  `bson:"streak" json:"streak"`
+	Points         int                  `bson:"points" json:"points"`               // Stored field in users collection
+	PostsMade      int                  `bson:"posts_made" json:"posts_made"`      // Stored field in users collection
 	Friends        []primitive.ObjectID `bson:"friends" json:"friends"`
 	// Relationship information - only included when viewing another user's profile
 	Relationship *RelationshipInfo `bson:"-" json:"relationship,omitempty"`

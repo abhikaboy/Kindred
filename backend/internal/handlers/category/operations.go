@@ -60,7 +60,9 @@ type UpdateCategoryInput struct {
 }
 
 type UpdateCategoryOutput struct {
-	Body CategoryDocument `json:"body"`
+	Body struct {
+		Message string `json:"message" example:"Category updated successfully"`
+	}
 }
 
 // Delete Category

@@ -96,7 +96,7 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 	if user.Password != password {
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
-	return nil, nil, &user, nil
+	return &user.ID, &user.Count, &user, nil
 }
 
 func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64, *User, error) {

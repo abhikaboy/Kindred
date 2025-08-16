@@ -15,6 +15,7 @@ type CreatePostParams struct {
 
 type PostDocument struct {
 	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	UserID    primitive.ObjectID `bson:"user_id" json:"user_id"`
 	Field1    string             `bson:"field1" json:"field1"`
 	Field2    Enumeration        `bson:"field2" json:"field2"`
 	Picture   *string            `bson:"picture" json:"picture"`

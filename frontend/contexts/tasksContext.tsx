@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
-import { renameWorkspace as renameWorkspaceAPI } from "@/api/category";
+import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI } from "@/api/category";
 import { isFuture, isPast, isToday } from "date-fns";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
@@ -25,6 +25,7 @@ type TaskContextType = {
     removeWorkspace: (name: string) => void;
     restoreWorkspace: (workspace: Workspace) => void;
     renameWorkspace: (oldName: string, newName: string) => Promise<void>;
+    renameCategory: (categoryId: string, newName: string) => Promise<void>;
     fetchingWorkspaces: boolean;
 
     setCreateCategory: (Option: Option) => void;
@@ -294,6 +295,57 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    /**
+     * Renames a category by updating it on the server and locally
+     * @param categoryId - The ID of the category to rename
+     * @param newName - The new name for the category
+     */
+    const renameCategory = async (categoryId: string, newName: string) => {
+        // Store the original category data for potential rollback
+        let originalCategory: Categories | null = null;
+        let workspaceIndex = -1;
+        let categoryIndex = -1;
+        
+        // Find the category and store its original state
+        for (let i = 0; i < workspaces.length; i++) {
+            const catIndex = workspaces[i].categories.findIndex(c => c.id === categoryId);
+            if (catIndex !== -1) {
+                workspaceIndex = i;
+                categoryIndex = catIndex;
+                originalCategory = { ...workspaces[i].categories[catIndex] };
+                break;
+            }
+        }
+        
+        if (!originalCategory) {
+            throw new Error("Category not found");
+        }
+        
+        // Optimistic update - immediately update the UI
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy[workspaceIndex].categories[categoryIndex].name = newName;
+        setWorkSpaces(workspacesCopy);
+        
+        try {
+            // Call the API to rename the category
+            await renameCategoryAPI(categoryId, newName);
+            
+            // Refresh workspaces to ensure consistency
+            await fetchWorkspaces();
+        } catch (error) {
+            console.error("Error renaming category:", error);
+            
+            // Rollback the optimistic update on error
+            if (originalCategory && workspaceIndex !== -1 && categoryIndex !== -1) {
+                let workspacesCopy = workspaces.slice();
+                workspacesCopy[workspaceIndex].categories[categoryIndex].name = originalCategory.name;
+                setWorkSpaces(workspacesCopy);
+            }
+            
+            throw error;
+        }
+    };
+
     useEffect(() => {
         if (workspaces.length === 0) return;
         const selectedWorkspace = getWorkspace(selected);
@@ -323,6 +375,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 removeWorkspace,
                 restoreWorkspace,
                 renameWorkspace,
+                renameCategory,
                 setCreateCategory,
                 selectedCategory,
                 showConfetti,

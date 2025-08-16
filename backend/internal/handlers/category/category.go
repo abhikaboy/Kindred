@@ -93,12 +93,26 @@ func (h *Handler) UpdatePartialCategory(ctx context.Context, input *UpdateCatego
 		return nil, huma.Error400BadRequest("Invalid ID format for CategoryId", err)
 	}
 
-	results, err := h.service.UpdatePartialCategory(id, input.Body)
+	// Extract user_id from context (set by auth middleware)
+	user_id_str, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	_, err = h.service.UpdatePartialCategory(id, input.Body, user_id)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to update category", err)
 	}
 
-	return &UpdateCategoryOutput{Body: *results}, nil
+	// Return a simple success response
+	resp := &UpdateCategoryOutput{}
+	resp.Body.Message = "Category updated successfully"
+	return resp, nil
 }
 
 func (h *Handler) DeleteCategory(ctx context.Context, input *DeleteCategoryInput) (*DeleteCategoryOutput, error) {

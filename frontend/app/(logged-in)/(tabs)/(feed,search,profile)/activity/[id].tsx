@@ -137,9 +137,31 @@ const Activity = (props: Props) => {
                                     <ThemedText type="subtitle">{monthName}</ThemedText>
                                     <View>
                                         <View style={styles.activityPointsContainer}>
-                                            {monthlyLevels.map((level, dayIndex) => (
-                                                <ActivityPoint key={dayIndex} level={level} />
-                                            ))}
+                                            {monthlyLevels.map((level, dayIndex) => {
+                                                // Check if this day is in the future or is today
+                                                const dayNumber = dayIndex + 1;
+                                                const currentDate = new Date();
+                                                const currentYear = currentDate.getFullYear();
+                                                const currentMonth = currentDate.getMonth() + 1;
+                                                const currentDay = currentDate.getDate();
+                                                
+                                                const isFuture = year > currentYear || 
+                                                               (year === currentYear && monthNumber > currentMonth) ||
+                                                               (year === currentYear && monthNumber === currentMonth && dayNumber > currentDay);
+                                                
+                                                const isToday = year === currentYear && 
+                                                              monthNumber === currentMonth && 
+                                                              dayNumber === currentDay;
+                                                
+                                                return (
+                                                    <ActivityPoint 
+                                                        key={dayIndex} 
+                                                        level={level} 
+                                                        isFuture={isFuture}
+                                                        isToday={isToday}
+                                                    />
+                                                );
+                                            })}
                                         </View>
                                     </View>
                                 </View>
