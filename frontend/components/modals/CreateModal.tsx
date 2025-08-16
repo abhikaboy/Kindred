@@ -25,6 +25,7 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
+    screen?: Screen;
     categoryId?: string; // Category ID for editing tasks
     focused?: string;
     setFocused?: (focused: string) => void;
@@ -43,7 +44,7 @@ export enum Screen {
 }
 
 const CreateModal = (props: Props) => {
-    const [screen, setScreen] = useState(Screen.STANDARD);
+    const [screen, setScreen] = useState(props.screen || Screen.STANDARD);
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
 

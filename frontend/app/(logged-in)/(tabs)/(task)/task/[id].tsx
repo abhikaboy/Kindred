@@ -33,7 +33,8 @@ import { RecurDetails } from "@/api/types";
 import Feather from "@expo/vector-icons/Feather";
 import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
-import CreateModal from "@/components/modals/CreateModal";
+import CreateModal, { Screen } from "@/components/modals/CreateModal";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -393,6 +394,18 @@ export default function Task() {
                                         </View>
                                     </DataCard>
                                 </ConditionalView>
+                                <ConditionalView condition={task?.deadline == null} key="deadline-2">
+                                    <PrimaryButton
+                                        title="Set Deadline"
+                                        outline
+                                        style={{
+                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                        }}
+                                        onPress={() => {
+                                            setShowEditModal(true);
+                                        }}
+                                    />
+                                </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
                                     <DataCard title="Recurring">
                                         <View style={{ flexDirection: "column", gap: 8 }}>
@@ -504,12 +517,12 @@ export default function Task() {
                 </View>
             </PagerView>
             
-            {/* Edit Modal */}
             <CreateModal
                 visible={showEditModal}
                 setVisible={setShowEditModal}
                 edit={true}
                 categoryId={categoryId as string}
+                screen={Screen.DEADLINE}
             />
         </ThemedView>
     );

@@ -135,3 +135,17 @@ export const deleteWorkspace = async (workspaceName: string): Promise<void> => {
         throw new Error(`Failed to delete workspace: ${JSON.stringify(error)}`);
     }
 };
+
+/**
+ * Rename workspace (type-safe)
+ */
+export const renameWorkspace = async (oldWorkspaceName: string, newWorkspaceName: string): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/categories/workspace/{oldName}", {
+        params: withAuthHeaders({ path: { oldName: oldWorkspaceName } }),
+        body: { newName: newWorkspaceName },
+    });
+
+    if (error) {
+        throw new Error(`Failed to rename workspace: ${JSON.stringify(error)}`);
+    }
+};

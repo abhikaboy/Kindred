@@ -25,10 +25,11 @@ type Props = {
     hide: () => void;
     goTo: (screen: Screen) => void;
     edit?: boolean;
+    screen?: Screen;
     categoryId?: string; // Category ID for editing tasks
 };
 
-const Standard = ({ hide, goTo, edit = false, categoryId }: Props) => {
+const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, selectedCategory, setCreateCategory, task } = useTasks();
@@ -61,6 +62,12 @@ const Standard = ({ hide, goTo, edit = false, categoryId }: Props) => {
         setIsPublic,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
+
+    useEffect(() => {
+        if (screen && edit) {
+            goTo(screen);
+        }
+    }, [screen]);
 
     // Set the selected category when in edit mode
     useEffect(() => {
@@ -227,8 +234,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId }: Props) => {
                         padding: 12,
                         alignItems: "center",
                         justifyContent: "center",
-                        borderWidth: 1,
-                        borderColor: ThemedColor.tertiary,
+                        borderWidth: 0,
+                        borderColor: ThemedColor.text,
                     }}
                     onPress={() => {
                         if (edit) {
@@ -238,7 +245,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId }: Props) => {
                         }
                         hide();
                     }}>
-                    <ThemedText type="caption">{edit ? "Update" : "Create"}</ThemedText>
+                    <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
             </View>
             <ThemedInput

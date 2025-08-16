@@ -28,6 +28,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import * as Sentry from "@sentry/react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Octicons from "@expo/vector-icons/Octicons";
 
 type Props = {};
 
@@ -95,7 +97,7 @@ const Home = (props: Props) => {
                             Welcome {user?.display_name}! ☀️
                         </ThemedText>
 
-                        <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }}>
+                        <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>
                             <MotiView style={{ gap: 16, marginTop: 24 }}>
                                 <TouchableOpacity
                                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
@@ -143,11 +145,14 @@ const Home = (props: Props) => {
                                     }}
                                 />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
-                                <ScrollView horizontal>
+                                <ScrollView 
+                                    horizontal={false}
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingBottom: 108 }}>
                                     <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
-                                        <MotiView style={{ flexDirection: "row", gap: 8 }}>
+                                        <View style={styles.workspacesGrid}>
                                             <Skeleton.Group key="workspaces-skeleton" show={fetchingWorkspaces}>
-                                                {workspaces.map((workspace) => (
+                                                {workspaces.slice(0, 6).map((workspace, index) => (
                                                     <Skeleton
                                                         key={workspace.name}
                                                         colors={[ThemedColor.lightened, ThemedColor.lightened + "50"]}>
@@ -156,26 +161,35 @@ const Home = (props: Props) => {
                                                             onPress={() => {
                                                                 setSelected(workspace.name);
                                                             }}
-                                                            style={{
-                                                                padding: 16,
-                                                                borderRadius: 12,
-                                                                backgroundColor: ThemedColor.lightened,
-                                                                boxShadow: ThemedColor.shadowSmall,
-                                                            }}>
-                                                            <ThemedText type="lightBody">{workspace.name}</ThemedText>
+                                                            style={[
+                                                                styles.workspaceCard,
+                                                                {
+                                                                    backgroundColor: ThemedColor.lightened,
+                                                                    borderColor: "#ffffff08",
+                                                                    boxShadow: ThemedColor.shadowSmall,
+                                                                }
+                                                            ]}>
+                                                            <View style={styles.workspaceCardContent}>
+                                                                <Feather name="feather" size={24} color={ThemedColor.text} />
+                                                                <View style={styles.workspaceCardText}>
+                                                                    <ThemedText type="default">{workspace.name}</ThemedText>
+                                                                    <ThemedText type="defaultSemiBold">{"→"}</ThemedText>
+                                                                </View>
+                                                            </View>
                                                         </TouchableOpacity>
                                                     </Skeleton>
                                                 ))}
                                             </Skeleton.Group>
-                                        </MotiView>
+                                        </View>
                                     </ConditionalView>
                                     <TouchableOpacity
                                         onPress={() => setCreating(true)}
-                                        style={{
-                                            padding: 16,
-                                            borderRadius: 12,
-                                            backgroundColor: ThemedColor.lightened,
-                                        }}>
+                                        style={[
+                                            styles.createWorkspaceCard,
+                                            {
+                                                backgroundColor: ThemedColor.lightened,
+                                            }
+                                        ]}>
                                         <ThemedText type="lightBody">+ Create Workspace</ThemedText>
                                     </TouchableOpacity>
                                 </ScrollView>
@@ -222,5 +236,38 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: "600",
+    },
+    workspacesGrid: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+        justifyContent: "space-between",
+        width: "100%",
+    },
+    workspaceCard: {
+        borderRadius: 12,
+        padding: 16,
+        aspectRatio: 1.36,
+        justifyContent: "flex-end",
+        width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2) / 2.1,
+        borderWidth: 1,
+    },
+    workspaceCardContent: {
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 8,
+        width: "100%",
+    },
+    workspaceCardText: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "100%",
+    },
+    createWorkspaceCard: {
+        padding: 16,
+        borderRadius: 12,
+        width: "100%",
+        alignItems: "center",
+        marginTop: 12,
     },
 });

@@ -10,11 +10,15 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
 import { useTasks } from "@/contexts/tasksContext";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { isSameDay, startOfDay, endOfDay } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
+import CreateModal, { Screen } from "@/components/modals/CreateModal";
+
+import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 
 type Props = {};
 
@@ -35,6 +39,12 @@ const Daily = (props: Props) => {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const { setSelected } = useTasks();
+    const { loadTaskData } = useTaskCreation();
+    
+    // State for scheduling modal
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
+    const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
     
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
@@ -118,6 +128,14 @@ const Daily = (props: Props) => {
         });
     }, [allTasks, selectedDate]);
 
+    // Filter unscheduled tasks (tasks without start date or deadline)
+    const unscheduledTasks = useMemo(() => {
+        return allTasks.filter((task) => {
+            // Task is unscheduled if it has no start date AND no deadline
+            return !task.startDate && !task.deadline;
+        });
+    }, [allTasks]);
+
     // Helper to render a page of dates
     const renderDatePage = (dates: Date[]) => (
         <View style={{ flex: 1 }}>
@@ -144,6 +162,14 @@ const Daily = (props: Props) => {
             </View>
         </View>
     );
+
+    // Function to handle quick scheduling of a task
+    const handleQuickSchedule = (task: any, type: 'deadline' | 'startDate') => {
+        setSelectedTaskForScheduling(task);
+        setSchedulingType(type);
+        loadTaskData(task);
+        setShowScheduleModal(true);
+    };
 
     return (
         <DrawerLayout
@@ -183,7 +209,9 @@ const Daily = (props: Props) => {
                         </View>
                     </PagerView>
                 </View>
-                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 24, paddingBottom: 50 }}>
+                <ScrollView style={{ flex: 1 }}
+                    showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ gap: 24, paddingBottom: 128 }}>
                     <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">
                             Tasks for{" "}
@@ -208,11 +236,25 @@ const Daily = (props: Props) => {
                             </ThemedText>
                         )}
                     </View>
-                    <View style={{ gap: 8 }}>
-                        <ThemedText type="subtitle">Workspaces</ThemedText>
-                    </View>
+                    <UnscheduledTasksSection
+                        tasks={unscheduledTasks}
+                        title="Unscheduled Tasks"
+                        description="These are tasks that don't have a start date or deadline. Swipe right to schedule for this day."
+                        showScheduling={true}
+                        onScheduleTask={handleQuickSchedule}
+                        emptyMessage="No unscheduled tasks"
+                    />
                 </ScrollView>
             </View>
+            
+            {/* Quick Schedule Modal */}
+            <CreateModal
+                visible={showScheduleModal}
+                setVisible={setShowScheduleModal}
+                edit={true}
+                categoryId={selectedTaskForScheduling?.categoryID || ""}
+                screen={schedulingType === 'deadline' ? Screen.DEADLINE : Screen.STARTDATE}
+            />
         </DrawerLayout>
     );
 };

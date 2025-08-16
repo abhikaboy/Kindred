@@ -36,6 +36,7 @@ interface Props {
     categoryId: string;
     task?: Task;
     height?: number;
+    showRedOutline?: boolean; // Add red outline when categoryId is not configured
     encouragementConfig?: {
         userHandle?: string;
         receiverId: string;
@@ -59,6 +60,7 @@ const TaskCard = ({
     congratulate = false,
     task,
     height = Dimensions.get("window").height * 0.07,
+    showRedOutline = false,
     encouragementConfig,
     congratulationConfig,
 }: Props) => {
@@ -151,7 +153,7 @@ const TaskCard = ({
                     {
                         backgroundColor: ThemedColor.lightened,
                         borderWidth: 1,
-                        borderColor: ThemedColor.tertiary,
+                        borderColor: showRedOutline ? ThemedColor.error : ThemedColor.tertiary,
                         minHeight: height,
                     },
                 ]}
