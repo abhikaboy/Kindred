@@ -3,6 +3,7 @@ package encouragement
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -56,6 +57,10 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 
 	encouragement, err := h.service.CreateEncouragement(&internalDoc)
 	if err != nil {
+		// Check if error is related to insufficient balance
+		if strings.Contains(err.Error(), "insufficient encouragement balance") {
+			return nil, huma.Error400BadRequest("Insufficient encouragement balance", err)
+		}
 		return nil, huma.Error500InternalServerError("Failed to create encouragement", err)
 	}
 
