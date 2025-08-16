@@ -101,9 +101,8 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 }
 
 // UpdatePartialCategory updates only specified fields of a Category document by ObjectID.
-func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCategoryDocument) (*CategoryDocument, error) {
+func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCategoryDocument, user primitive.ObjectID) (*CategoryDocument, error) {
 	ctx := context.Background()
-	// filter := bson.M{"_id": id}
 
 	updateFields, err := xutils.ToDoc(updated)
 	if err != nil {
@@ -112,21 +111,33 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 
 	fmt.Println(updateFields)
 
-	_, err = s.Categories.UpdateOne(ctx,
-		bson.M{
-			"_id": id,
-		},
-		bson.D{{Key: "$set", Value: bson.D{
-			{Key: "name", Value: updated.Name},
-			{Key: "lastEdited", Value: xutils.NowUTC()},
-		}}},
-	)
+	// Update with user ownership validation
+	filter := bson.M{"_id": id, "user": user}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "name", Value: updated.Name},
+		{Key: "lastEdited", Value: xutils.NowUTC()},
+	}}}
+
+	result, err := s.Categories.UpdateOne(ctx, filter, update)
 	if err != nil {
-		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", slog.String("error", err.Error()))
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", 
+			slog.String("categoryID", id.Hex()),
+			slog.String("error", err.Error()))
 		return nil, err
 	}
 
-	return nil, err
+	if result.MatchedCount == 0 {
+		slog.LogAttrs(ctx, slog.LevelError, "Category not found or user doesn't own it", 
+			slog.String("categoryID", id.Hex()),
+			slog.String("userID", user.Hex()))
+		return nil, fmt.Errorf("category not found or access denied")
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Category updated successfully", 
+		slog.String("categoryID", id.Hex()),
+		slog.String("newName", updated.Name))
+
+	return nil, nil
 }
 
 // DeleteCategory removes a Category document by ObjectID.

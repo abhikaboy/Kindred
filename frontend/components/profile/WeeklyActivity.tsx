@@ -55,18 +55,40 @@ export default function WeeklyActivity({ userid, displayName }: WeeklyActivityPr
                 {loading ? (
                     // Show loading state with empty activity points
                     Array.from({ length: 8 }, (_, index) => (
-                        <ActivityPoint key={index} level={0} />
+                        <ActivityPoint key={index} level={0} isFuture={false} isToday={false} />
                     ))
                 ) : error ? (
                     // Show error state with empty activity points
                     Array.from({ length: 8 }, (_, index) => (
-                        <ActivityPoint key={index} level={0} />
+                        <ActivityPoint key={index} level={0} isFuture={false} isToday={false} />
                     ))
                 ) : (
                     // Show actual activity data
-                    activityLevels.map((level, index) => (
-                        <ActivityPoint key={index} level={level} />
-                    ))
+                    activityLevels.map((level, index) => {
+                        // Calculate which day this represents (going backwards from today)
+                        // index 0 = 7 days ago, index 7 = today
+                        const daysFromToday = 7 - index;
+                        const targetDate = new Date();
+                        targetDate.setDate(targetDate.getDate() - daysFromToday);
+                        
+                        const currentDate = new Date();
+                        const isFuture = targetDate > currentDate;
+                        
+                        // Check if this is today (normalize time to compare dates only)
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        targetDate.setHours(0, 0, 0, 0);
+                        const isToday = targetDate.getTime() === today.getTime();
+                        
+                        return (
+                            <ActivityPoint 
+                                key={index} 
+                                level={level} 
+                                isFuture={isFuture}
+                                isToday={isToday}
+                            />
+                        );
+                    })
                 )}
             </View>
         </TouchableOpacity>
@@ -79,7 +101,7 @@ const styles = StyleSheet.create({
     },
     activityContainer: {
         display: "flex",
-        flexDirection: "row",
+        flexDirection: "row-reverse",
         gap: "auto",
         width: "100%",
         justifyContent: "space-between",

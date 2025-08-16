@@ -156,6 +156,70 @@ components:
         - subscribersCount
         - timestamp
       type: object
+    BlueprintDocumentWithoutSubscribers:
+      additionalProperties: false
+      properties:
+        banner:
+          description: Banner image URL
+          examples:
+            - https://example.com/banner.jpg
+          type: string
+        description:
+          description: Description of the blueprint
+          examples:
+            - A comprehensive morning routine
+          type: string
+        duration:
+          description: Expected duration
+          examples:
+            - 30m
+          type: string
+        id:
+          description: Unique identifier for the blueprint
+          examples:
+            - 507f1f77bcf86cd799439011
+          type: string
+        name:
+          description: Name of the blueprint
+          examples:
+            - Morning Routine
+          type: string
+        owner:
+          $ref: "#/components/schemas/UserExtendedReference"
+          description: Owner information
+        subscribersCount:
+          description: Number of subscribers
+          examples:
+            - 42
+          format: int64
+          type: integer
+        tags:
+          description: Tags associated with the blueprint
+          examples:
+            - - productivity
+              - morning
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        timestamp:
+          description: Creation timestamp
+          examples:
+            - "2023-01-01T00:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - banner
+        - name
+        - tags
+        - description
+        - duration
+        - owner
+        - subscribersCount
+        - timestamp
+      type: object
     CategoryDocument:
       additionalProperties: false
       properties:
@@ -1194,8 +1258,11 @@ components:
         timestamp:
           format: date-time
           type: string
+        user_id:
+          type: string
       required:
         - id
+        - user_id
         - field1
         - field2
         - picture
@@ -1223,12 +1290,21 @@ components:
           type: string
         id:
           type: string
+        points:
+          format: int64
+          type: integer
+        posts_made:
+          format: int64
+          type: integer
         profile_picture:
           type:
             - string
             - "null"
         relationship:
           $ref: "#/components/schemas/RelationshipInfo"
+        streak:
+          format: int64
+          type: integer
         tasks_complete:
           format: int64
           type: integer
@@ -1238,6 +1314,9 @@ components:
         - display_name
         - handle
         - tasks_complete
+        - streak
+        - points
+        - posts_made
         - friends
       type: object
     RecurDetails:
@@ -1369,6 +1448,40 @@ components:
         - beforeDeadline
         - afterDeadline
       type: object
+    RenameCategoryInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/RenameCategoryInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        newName:
+          examples:
+            - New Category Name
+          type: string
+      required:
+        - newName
+      type: object
+    RenameCategoryOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/RenameCategoryOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Category renamed successfully
+          type: string
+      required:
+        - message
+      type: object
     RenameWorkspaceInputBody:
       additionalProperties: false
       properties:
@@ -1421,8 +1534,14 @@ components:
           type:
             - array
             - "null"
+        congratulations:
+          format: int64
+          type: integer
         display_name:
           type: string
+        encouragements:
+          format: int64
+          type: integer
         friends:
           items:
             type: string
@@ -1431,6 +1550,12 @@ components:
             - "null"
         handle:
           type: string
+        points:
+          format: int64
+          type: integer
+        posts_made:
+          format: int64
+          type: integer
         profile_picture:
           type: string
         recent_activity:
@@ -1439,6 +1564,11 @@ components:
           type:
             - array
             - "null"
+        streak:
+          format: int64
+          type: integer
+        streakEligible:
+          type: boolean
         tasks_complete:
           format: double
           type: number
@@ -1451,6 +1581,12 @@ components:
         - friends
         - tasks_complete
         - recent_activity
+        - encouragements
+        - congratulations
+        - streak
+        - streakEligible
+        - points
+        - posts_made
       type: object
     SubscribeToBlueprintOutputBody:
       additionalProperties: false
@@ -3235,6 +3371,45 @@ paths:
       summary: Create a new blueprint
       tags:
         - blueprints
+  /v1/user/blueprints/subscribed:
+    get:
+      description: Retrieve all blueprints that the authenticated user is subscribed to
+      operationId: get-user-subscribed-blueprints
+      parameters:
+        - description: Bearer token for authentication
+          in: header
+          name: Authorization
+          required: true
+          schema:
+            description: Bearer token for authentication
+            type: string
+        - description: Refresh token for authentication
+          in: header
+          name: refresh_token
+          required: true
+          schema:
+            description: Refresh token for authentication
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/BlueprintDocumentWithoutSubscribers"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get user's subscribed blueprints
+      tags:
+        - blueprints
   /v1/user/blueprints/{id}:
     delete:
       description: Delete a blueprint for the authenticated user
@@ -3585,8 +3760,8 @@ paths:
       tags:
         - categories
     patch:
-      description: Update a category for the authenticated user
-      operationId: update-category
+      description: Rename a specific category by its ID
+      operationId: rename-category
       parameters:
         - in: header
           name: Authorization
@@ -3605,14 +3780,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateCategoryDocument"
+              $ref: "#/components/schemas/RenameCategoryInputBody"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CategoryDocument"
+                $ref: "#/components/schemas/RenameCategoryOutputBody"
           description: OK
         default:
           content:
@@ -3620,7 +3795,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
-      summary: Update category
+      summary: Rename category
       tags:
         - categories
   /v1/user/congratulations:

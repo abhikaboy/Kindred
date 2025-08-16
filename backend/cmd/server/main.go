@@ -20,8 +20,10 @@ import (
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
 	"github.com/abhikaboy/Kindred/internal/twillio"
 	"github.com/abhikaboy/Kindred/internal/xslog"
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
+	"gopkg.in/yaml.v3"
 )
 
 func main() {
@@ -32,6 +34,8 @@ func run(stderr io.Writer, args []string) {
 	cmd := flag.NewFlagSet("", flag.ExitOnError)
 	verboseFlag := cmd.Bool("v", false, "")
 	logLevelFlag := cmd.String("log-level", slog.LevelDebug.String(), "")
+	generateOpenAPIFlag := cmd.Bool("generate-openapi", false, "Generate OpenAPI spec and exit")
+	openAPIOutputFlag := cmd.String("openapi-output", "api-spec.yaml", "Output file for OpenAPI spec")
 	if err := cmd.Parse(args); err != nil {
 		fmt.Fprint(stderr, err)
 		os.Exit(1)
@@ -73,8 +77,17 @@ func run(stderr io.Writer, args []string) {
 	twillio.InitSendGrid(config.Twillio.SG_Token)
 
 	// API Server Setup
-	_, fiberApp := server.New(db.Collections, db.Stream)
+	api, fiberApp := server.New(db.Collections, db.Stream)
 	fmt.Printf("After New")
+
+	// Handle OpenAPI generation if flag is set
+	if *generateOpenAPIFlag {
+		if err := generateOpenAPISpec(api, *openAPIOutputFlag); err != nil {
+			fatal(ctx, "Failed to generate OpenAPI spec", err)
+		}
+		fmt.Printf("OpenAPI spec generated successfully: %s\n", *openAPIOutputFlag)
+		os.Exit(0)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Hour)
 	go func() {
@@ -178,5 +191,24 @@ func killProcessOnPort(port int) error {
 		return fmt.Errorf("failed to kill process: %w", err)
 	}
 
+	return nil
+}
+
+// generateOpenAPISpec generates the OpenAPI specification and saves it to a file
+func generateOpenAPISpec(api huma.API, outputPath string) error {
+	// Get the OpenAPI spec from Huma
+	spec := api.OpenAPI()
+	
+	// Marshal to YAML
+	yamlData, err := yaml.Marshal(spec)
+	if err != nil {
+		return fmt.Errorf("failed to marshal OpenAPI spec to YAML: %w", err)
+	}
+	
+	// Write to file
+	if err := os.WriteFile(outputPath, yamlData, 0644); err != nil {
+		return fmt.Errorf("failed to write OpenAPI spec to file: %w", err)
+	}
+	
 	return nil
 }

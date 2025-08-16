@@ -99,7 +99,7 @@
             exec = ''
               cd "$DEVENV_ROOT"/frontend
               prettier . --write
-              ${pkgs.bun}/bin/npm run lint
+              bun run lint
             '';
           };
           "frontend-run" = {
@@ -128,6 +128,34 @@
             exec = ''
               cd "$DEVENV_ROOT"/cli
               python3 main.py
+            '';
+        };
+        "generate-api-types" = {
+            description = "Generate OpenAPI spec and TypeScript types from backend.";
+            exec = ''
+              cd "$DEVENV_ROOT"
+              echo "🚀 Generating OpenAPI spec and frontend types..."
+              
+              # Build backend temporarily
+              echo "==> Building backend..."
+              cd backend
+              go build -o /tmp/kindred-openapi ./cmd/server
+              
+              # Generate OpenAPI spec
+              echo "==> Generating OpenAPI spec..."
+              /tmp/kindred-openapi --generate-openapi --openapi-output="../frontend/api/api-spec.yaml"
+              
+              # Generate TypeScript types
+              echo "==> Generating TypeScript types..."
+              cd ../frontend
+              if ! bun run generate-types; then
+                echo "⚠️ bun run generate-types failed, using openapi-typescript directly..."
+                bunx openapi-typescript api/api-spec.yaml -o api/generated/types.ts
+              fi
+              
+              # Cleanup
+              rm -f /tmp/kindred-openapi
+              echo "✅ API types generation completed!"
             '';
         };
     };

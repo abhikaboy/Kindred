@@ -22,13 +22,19 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 	}
 
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	userIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
 	doc := PostDocument{
 		ID:        primitive.NewObjectID(),
+		UserID:    userID,
 		Field1:    input.Body.Field1,
 		Field2:    input.Body.Field2,
 		Picture:   input.Body.Picture,

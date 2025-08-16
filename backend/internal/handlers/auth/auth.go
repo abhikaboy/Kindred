@@ -47,6 +47,8 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 		Congratulations: user.Congratulations,
 		Streak:          user.Streak,
 		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
 	}
 
 	return resp, nil
@@ -66,20 +68,7 @@ func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenI
 	}
 
 	resp := &LoginOutput{}
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-	}
+	resp.Body = *user
 	return resp, nil
 }
 
@@ -148,6 +137,8 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		Congratulations: 2,
 		Streak:          0,
 		StreakEligible:  true,
+		Points:          0,
+		PostsMade:       0,
 
 		AppleID:  aaid.(string),
 		GoogleID: googleid.(string),
@@ -198,6 +189,10 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 		RecentActivity:  user.RecentActivity,
 		Encouragements:  user.Encouragements,
 		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
 	}
 
 	return resp, nil

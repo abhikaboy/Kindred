@@ -5,9 +5,11 @@ import { ThemedText } from "../ThemedText";
 
 type Props = {
     level: number;
+    isFuture?: boolean;
+    isToday?: boolean;
 };
 
-const ActivityPoint = ({ level }: Props) => {
+const ActivityPoint = ({ level, isFuture = false, isToday = false }: Props) => {
     let ThemedColor = useThemeColor();
     const LEVELS = { 
         0: ThemedColor.lightened, // No activity - use lightened background color
@@ -27,8 +29,9 @@ const ActivityPoint = ({ level }: Props) => {
                     borderRadius: 5,
                     backgroundColor: LEVELS[level] || LEVELS[0], // Default to level 0 if level is not found
                     justifyContent: "center",
-                    borderWidth: level === 0 ? 1 : 0, // Add border for level 0 to make it visible
-                    borderColor: ThemedColor.text + "05", // Subtle border color
+                    borderWidth: isToday ? 2 : (level === 0 ? 1 : 0), // Primary border for today, subtle border for level 0
+                    borderColor: isToday ? ThemedColor.primary : ThemedColor.text + "05", // Primary color for today, subtle for level 0
+                    opacity: isFuture ? 0.25 : 1, // 25% opacity for future days
                 }}>
                 {display && level > 0 && (
                     <ThemedText

@@ -612,6 +612,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/blueprints/subscribed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user's subscribed blueprints
+         * @description Retrieve all blueprints that the authenticated user is subscribed to
+         */
+        get: operations["get-user-subscribed-blueprints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/blueprints/{id}": {
         parameters: {
             query?: never;
@@ -758,10 +778,10 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update category
-         * @description Update a category for the authenticated user
+         * Rename category
+         * @description Rename a specific category by its ID
          */
-        patch: operations["update-category"];
+        patch: operations["rename-category"];
         trace?: never;
     };
     "/v1/user/congratulations": {
@@ -1515,6 +1535,32 @@ export interface components {
              */
             timestamp: string;
         };
+        BlueprintDocumentWithoutSubscribers: {
+            /** @description Banner image URL */
+            banner: string;
+            /** @description Description of the blueprint */
+            description: string;
+            /** @description Expected duration */
+            duration: string;
+            /** @description Unique identifier for the blueprint */
+            id: string;
+            /** @description Name of the blueprint */
+            name: string;
+            /** @description Owner information */
+            owner: components["schemas"]["UserExtendedReference"];
+            /**
+             * Format: int64
+             * @description Number of subscribers
+             */
+            subscribersCount: number;
+            /** @description Tags associated with the blueprint */
+            tags: string[] | null;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            timestamp: string;
+        };
         CategoryDocument: {
             /**
              * Format: uri
@@ -1987,6 +2033,7 @@ export interface components {
             picture: string | null;
             /** Format: date-time */
             timestamp: string;
+            user_id: string;
         };
         ProfileDocument: {
             /**
@@ -1998,8 +2045,14 @@ export interface components {
             friends: string[] | null;
             handle: string;
             id: string;
+            /** Format: int64 */
+            points: number;
+            /** Format: int64 */
+            posts_made: number;
             profile_picture: string | null;
             relationship?: components["schemas"]["RelationshipInfo"];
+            /** Format: int64 */
+            streak: number;
             /** Format: int64 */
             tasks_complete: number;
         };
@@ -2052,6 +2105,22 @@ export interface components {
             triggerTime: string;
             type: string;
         };
+        RenameCategoryInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            newName: string;
+        };
+        RenameCategoryOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         RenameWorkspaceInputBody: {
             /**
              * Format: uri
@@ -2076,11 +2145,22 @@ export interface components {
             readonly $schema?: string;
             _id: string;
             categories: components["schemas"]["CategoryDocument"][] | null;
+            /** Format: int64 */
+            congratulations: number;
             display_name: string;
+            /** Format: int64 */
+            encouragements: number;
             friends: string[] | null;
             handle: string;
+            /** Format: int64 */
+            points: number;
+            /** Format: int64 */
+            posts_made: number;
             profile_picture: string;
             recent_activity: components["schemas"]["ActivityDocument"][] | null;
+            /** Format: int64 */
+            streak: number;
+            streakEligible: boolean;
             /** Format: double */
             tasks_complete: number;
         };
@@ -3502,6 +3582,40 @@ export interface operations {
             };
         };
     };
+    "get-user-subscribed-blueprints": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "delete-blueprint": {
         parameters: {
             query?: never;
@@ -3827,7 +3941,7 @@ export interface operations {
             };
         };
     };
-    "update-category": {
+    "rename-category": {
         parameters: {
             query?: never;
             header: {
@@ -3841,7 +3955,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateCategoryDocument"];
+                "application/json": components["schemas"]["RenameCategoryInputBody"];
             };
         };
         responses: {
@@ -3851,7 +3965,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CategoryDocument"];
+                    "application/json": components["schemas"]["RenameCategoryOutputBody"];
                 };
             };
             /** @description Error */

@@ -130,6 +130,8 @@ type User struct {
 	Congratulations int    `bson:"congratulations" json:"congratulations"`
 	Streak          int    `bson:"streak" json:"streak"`
 	StreakEligible  bool   `bson:"streakEligible" json:"streakEligible"`
+	Points          int    `bson:"points" json:"points"`
+	PostsMade       int    `bson:"posts_made" json:"posts_made"`
 }
 
 type SafeUser struct {
@@ -145,6 +147,8 @@ type SafeUser struct {
 	Congratulations int                  `bson:"congratulations" json:"congratulations"`
 	Streak          int                  `bson:"streak" json:"streak"`
 	StreakEligible  bool                 `bson:"streakEligible" json:"streakEligible"`
+	Points          int                  `bson:"points" json:"points"`
+	PostsMade       int                  `bson:"posts_made" json:"posts_made"`
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`
