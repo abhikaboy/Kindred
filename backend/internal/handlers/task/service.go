@@ -239,7 +239,11 @@ func (s *Service) CompleteTask(
 
 	ctx := context.Background()
 	pipeline := getTasksByUserPipeline(userId)
-	pipeline = append(pipeline, bson.D{
+	pipeline = append(pipeline, 
+		bson.D{
+			{Key: "$match", Value: bson.M{"_id": id}},
+		},
+		bson.D{
 		{Key: "$set", Value: bson.M{
 			"active":        false,
 			"timeTaken":     completed.TimeTaken,
@@ -258,7 +262,7 @@ func (s *Service) CompleteTask(
 			{Key: "$merge", Value: bson.M{
 				"into":           "completed-tasks",
 				"on":             "_id",
-				"whenMatched":    "replace",
+				"whenMatched":    "keepExisting",
 				"whenNotMatched": "insert",
 			}},
 		},
@@ -299,6 +303,7 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 		},
 		bson.M{
 			"$inc": bson.M{"tasks_complete": 1},
+			"$set": bson.M{"last_completed": xutils.NowUTC()},
 		},
 	)
 

@@ -123,20 +123,24 @@ type User struct {
 	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 	PushToken      string               `bson:"push_token" json:"push_token"`
 
-	DisplayName    string `bson:"display_name" json:"display_name"`
-	Handle         string `bson:"handle" json:"handle"`
-	ProfilePicture string `bson:"profile_picture" json:"profile_picture"`
+	DisplayName     string `bson:"display_name" json:"display_name"`
+	Handle          string `bson:"handle" json:"handle"`
+	ProfilePicture  string `bson:"profile_picture" json:"profile_picture"`
+	Encouragements  int    `bson:"encouragements" json:"encouragements"`
+	Congratulations int    `bson:"congratulations" json:"congratulations"`
 }
 
 type SafeUser struct {
-	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
-	DisplayName    string               `bson:"display_name" json:"display_name"`
-	Handle         string               `bson:"handle" json:"handle"`
-	ProfilePicture string               `bson:"profile_picture" json:"profile_picture"`
-	Categories     []CategoryDocument   `bson:"categories" json:"categories"`
-	Friends        []primitive.ObjectID `bson:"friends" json:"friends"`
-	TasksComplete  float64              `bson:"tasks_complete" json:"tasks_complete"`
-	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+	ID              primitive.ObjectID   `bson:"_id" json:"_id"`
+	DisplayName     string               `bson:"display_name" json:"display_name"`
+	Handle          string               `bson:"handle" json:"handle"`
+	ProfilePicture  string               `bson:"profile_picture" json:"profile_picture"`
+	Categories      []CategoryDocument   `bson:"categories" json:"categories"`
+	Friends         []primitive.ObjectID `bson:"friends" json:"friends"`
+	TasksComplete   float64              `bson:"tasks_complete" json:"tasks_complete"`
+	RecentActivity  []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+	Encouragements  int                  `bson:"encouragements" json:"encouragements"`
+	Congratulations int                  `bson:"congratulations" json:"congratulations"`
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`

@@ -97,6 +97,16 @@ type SearchBlueprintsInput struct {
 type SearchBlueprintsOutput struct {
 	Body []BlueprintDocument `json:"body"`
 }
+
+// Get User Subscribed Blueprints
+type GetUserSubscribedBlueprintsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
+
+type GetUserSubscribedBlueprintsOutput struct {
+	Body []BlueprintDocumentWithoutSubscribers `json:"body"`
+}
 type CreateBlueprintParams struct {
 	Banner      string   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
 	Name        string   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`
@@ -113,6 +123,19 @@ type BlueprintDocument struct {
 	Description      string                       `bson:"description" json:"description" example:"A comprehensive morning routine" doc:"Description of the blueprint"`
 	Duration         string                       `bson:"duration" json:"duration" example:"30m" doc:"Expected duration"`
 	Subscribers      []string                     `bson:"subscribers" json:"subscribers" example:"[\"507f1f77bcf86cd799439012\"]" doc:"List of subscriber user IDs"`
+	Owner            *types.UserExtendedReference `bson:"owner" json:"owner" doc:"Owner information"`
+	SubscribersCount int64                        `bson:"subscribersCount" json:"subscribersCount" example:"42" doc:"Number of subscribers"`
+	Timestamp        time.Time                    `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Creation timestamp"`
+}
+
+// BlueprintDocumentWithoutSubscribers is the same as BlueprintDocument but without the Subscribers field
+type BlueprintDocumentWithoutSubscribers struct {
+	ID               string                       `bson:"_id,omitempty" json:"id" example:"507f1f77bcf86cd799439011" doc:"Unique identifier for the blueprint"`
+	Banner           string                       `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL"`
+	Name             string                       `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`
+	Tags             []string                     `bson:"tags" json:"tags" example:"[\"productivity\",\"morning\"]" doc:"Tags associated with the blueprint"`
+	Description      string                       `bson:"description" json:"description" example:"A comprehensive morning routine" doc:"Description of the blueprint"`
+	Duration         string                       `bson:"duration" json:"duration" example:"30m" doc:"Expected duration"`
 	Owner            *types.UserExtendedReference `bson:"owner" json:"owner" doc:"Owner information"`
 	SubscribersCount int64                        `bson:"subscribersCount" json:"subscribersCount" example:"42" doc:"Number of subscribers"`
 	Timestamp        time.Time                    `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Creation timestamp"`
@@ -162,6 +185,26 @@ func (b *BlueprintDocumentInternal) ToAPI() *BlueprintDocument {
 		Description:      b.Description,
 		Duration:         b.Duration,
 		Subscribers:      subscribers,
+		Owner:            owner,
+		SubscribersCount: b.SubscribersCount,
+		Timestamp:        b.Timestamp,
+	}
+}
+
+// ToAPIWithoutSubscribers converts to API format but omits the subscribers field
+func (b *BlueprintDocumentInternal) ToAPIWithoutSubscribers() *BlueprintDocumentWithoutSubscribers {
+	var owner *types.UserExtendedReference
+	if b.Owner != nil {
+		owner = b.Owner.ToAPI()
+	}
+
+	return &BlueprintDocumentWithoutSubscribers{
+		ID:               b.ID.Hex(),
+		Banner:           b.Banner,
+		Name:             b.Name,
+		Tags:             b.Tags,
+		Description:      b.Description,
+		Duration:         b.Duration,
 		Owner:            owner,
 		SubscribersCount: b.SubscribersCount,
 		Timestamp:        b.Timestamp,
