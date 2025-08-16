@@ -151,7 +151,7 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
             <Reanimated.View style={animatedStyle as any}>
                 <View style={styles.container}>
                     <View style={styles.toastBody}>
-                        {message}
+                        <ThemedText type="defaultSemiBold" style={{textAlign: "center"}}>{message}</ThemedText>
                     </View>
                 </View>
             </Reanimated.View>
