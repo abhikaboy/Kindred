@@ -102,13 +102,13 @@ func (s *Service) GetRecentActivity(userID primitive.ObjectID) ([]ActivityDocume
 	// Get current date
 	now := xutils.NowUTC()
 	currentYear := now.Year()
-	currentMonth := int(now.Month()) - 1 // Convert to 0-indexed (January = 0, February = 1, etc.)
+	currentMonth := int(now.Month())  // Convert to 0-indexed (January = 0, February = 1, etc.)
 	currentDay := now.Day()
 	
 	// Calculate the start date (8 days ago)
 	startDate := now.AddDate(0, 0, -7) // 7 days back to get 8 days total
 	startYear := startDate.Year()
-	startMonth := int(startDate.Month()) - 1 // Convert to 0-indexed
+	startMonth := int(startDate.Month())  // Convert to 0-indexed
 	startDay := startDate.Day()
 	
 	// Log the date range we're looking for
