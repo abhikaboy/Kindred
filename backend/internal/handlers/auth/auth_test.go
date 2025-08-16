@@ -81,6 +81,10 @@ func createTestUser() *User {
 		RecentActivity: []types.ActivityDocument{},
 		Count:          0,
 		TokenUsed:      false,
+		Encouragements:  2,
+		Congratulations: 2,
+		Streak:          0,
+		StreakEligible:  true,
 		AppleID:        "",
 		GoogleID:       "",
 	}
@@ -98,6 +102,10 @@ func createTestSafeUser() *SafeUser {
 		Friends:        []primitive.ObjectID{},
 		TasksComplete:  0,
 		RecentActivity: []types.ActivityDocument{},
+		Encouragements:  2,
+		Congratulations: 2,
+		Streak:          0,
+		StreakEligible:  true,
 	}
 }
 

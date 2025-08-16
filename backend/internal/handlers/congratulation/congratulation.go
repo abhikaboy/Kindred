@@ -3,6 +3,7 @@ package congratulation
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -56,6 +57,10 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 
 	congratulation, err := h.service.CreateCongratulation(&internalDoc)
 	if err != nil {
+		// Check if error is related to insufficient balance
+		if strings.Contains(err.Error(), "insufficient congratulation balance") {
+			return nil, huma.Error400BadRequest("Insufficient congratulation balance", err)
+		}
 		return nil, huma.Error500InternalServerError("Failed to create congratulation", err)
 	}
 

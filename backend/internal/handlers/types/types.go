@@ -128,6 +128,8 @@ type User struct {
 	ProfilePicture  string `bson:"profile_picture" json:"profile_picture"`
 	Encouragements  int    `bson:"encouragements" json:"encouragements"`
 	Congratulations int    `bson:"congratulations" json:"congratulations"`
+	Streak          int    `bson:"streak" json:"streak"`
+	StreakEligible  bool   `bson:"streakEligible" json:"streakEligible"`
 }
 
 type SafeUser struct {
@@ -141,6 +143,8 @@ type SafeUser struct {
 	RecentActivity  []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 	Encouragements  int                  `bson:"encouragements" json:"encouragements"`
 	Congratulations int                  `bson:"congratulations" json:"congratulations"`
+	Streak          int                  `bson:"streak" json:"streak"`
+	StreakEligible  bool                 `bson:"streakEligible" json:"streakEligible"`
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`

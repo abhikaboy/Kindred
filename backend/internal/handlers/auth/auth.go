@@ -45,6 +45,8 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 		RecentActivity:  user.RecentActivity,
 		Encouragements:  user.Encouragements,
 		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
 	}
 
 	return resp, nil
@@ -75,6 +77,8 @@ func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenI
 		RecentActivity:  user.RecentActivity,
 		Encouragements:  user.Encouragements,
 		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
 	}
 	return resp, nil
 }
@@ -142,6 +146,8 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		ProfilePicture:  "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
 		Encouragements:  2,
 		Congratulations: 2,
+		Streak:          0,
+		StreakEligible:  true,
 
 		AppleID:  aaid.(string),
 		GoogleID: googleid.(string),
