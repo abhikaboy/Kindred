@@ -75,6 +75,28 @@ func (s *Service) GetActivityByUserAndPeriod(userID primitive.ObjectID, year int
 	return &activity, nil
 }
 
+// GetActivityByUserAndYear returns all activities for a specific user and year
+func (s *Service) GetActivityByUserAndYear(userID primitive.ObjectID, year int) ([]ActivityDocument, error) {
+	ctx := context.Background()
+	filter := bson.M{
+		"user": userID,
+		"year": year,
+	}
+
+	cursor, err := s.Activitys.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var activities []ActivityDocument
+	if err := cursor.All(ctx, &activities); err != nil {
+		return nil, err
+	}
+
+	return activities, nil
+}
+
 // GetRecentActivity returns the user's activity for the last 8 days
 func (s *Service) GetRecentActivity(userID primitive.ObjectID) ([]ActivityDocument, error) {
 	// Get current date

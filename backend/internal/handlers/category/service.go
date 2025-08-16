@@ -145,6 +145,35 @@ func (s *Service) DeleteWorkspace(workspaceName string, user primitive.ObjectID)
 	return err
 }
 
+// RenameWorkspace renames a workspace by updating all categories that belong to it
+func (s *Service) RenameWorkspace(oldWorkspaceName string, newWorkspaceName string, user primitive.ObjectID) error {
+	ctx := context.Background()
+
+	filter := bson.M{"workspaceName": oldWorkspaceName, "user": user}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "workspaceName", Value: newWorkspaceName},
+			{Key: "lastEdited", Value: xutils.NowUTC()},
+		}},
+	}
+
+	result, err := s.Categories.UpdateMany(ctx, filter, update)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to rename workspace", 
+			slog.String("oldName", oldWorkspaceName),
+			slog.String("newName", newWorkspaceName),
+			slog.String("error", err.Error()))
+		return err
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace renamed successfully", 
+		slog.String("oldName", oldWorkspaceName),
+		slog.String("newName", newWorkspaceName),
+		slog.Int64("categoriesUpdated", result.ModifiedCount))
+
+	return nil
+}
+
 func (s *Service) GetWorkspaces(userId primitive.ObjectID) ([]WorkspaceResult, error) {
 	ctx := context.Background()
 

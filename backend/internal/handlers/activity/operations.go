@@ -45,6 +45,16 @@ type GetRecentActivityOutput struct {
 	Body []ActivityDocument `json:"body"`
 }
 
+// Get Activity by User and Year
+type GetActivityByUserAndYearInput struct {
+	UserID string `path:"userID" example:"507f1f77bcf86cd799439011"`
+	Year   int    `query:"year" example:"2024"`
+}
+
+type GetActivityByUserAndYearOutput struct {
+	Body []ActivityDocument `json:"body"`
+}
+
 // Operation registrations
 
 func RegisterGetActivitiesOperation(api huma.API, handler *Handler) {
@@ -78,6 +88,17 @@ func RegisterGetActivityByUserAndPeriodOperation(api huma.API, handler *Handler)
 		Description: "Retrieve activity for a specific user, year, and month",
 		Tags:        []string{"activities"},
 	}, handler.GetActivityByUserAndPeriod)
+}
+
+func RegisterGetActivityByUserAndYearOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-activity-by-user-and-year",
+		Method:      http.MethodGet,
+		Path:        "/v1/activity/user/{userID}/year",
+		Summary:     "Get activity by user and year",
+		Description: "Retrieve all activity for a specific user and year",
+		Tags:        []string{"activities"},
+	}, handler.GetActivityByUserAndYear)
 }
 
 func RegisterGetRecentActivityOperation(api huma.API, handler *Handler) {

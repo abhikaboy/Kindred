@@ -26,4 +26,5 @@ func RegisterCategoryOperations(api huma.API, handler *Handler) {
 	RegisterUpdateCategoryOperation(api, handler)
 	RegisterDeleteCategoryOperation(api, handler)
 	RegisterDeleteWorkspaceOperation(api, handler)
+	RegisterRenameWorkspaceOperation(api, handler)
 }

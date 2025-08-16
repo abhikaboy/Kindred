@@ -145,17 +145,18 @@ const BlueprintCreationLayout = () => {
 
     return (
         <ThemedView style={styles.container}>
-            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
-            </TouchableOpacity>
-
             <View style={styles.header}>
-                <ThemedText type="fancyFrauncesHeading">New Blueprint</ThemedText>
+                {/* <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                    <ThemedText type="subtitle_subtle">Back</ThemedText>
+                </TouchableOpacity> */}
+                <ThemedText type="fancyFrauncesHeading" style={{fontSize: 28, paddingVertical: 12}}>New Blueprint</ThemedText>
             </View>
 
             <View style={styles.progressContainer}>
                 <StepProgress steps={steps} currentStep={currentStep} />
             </View>
+
+            <View style={{flex: 1, backgroundColor: ThemedColor.background, borderRadius: 24, marginTop: 24,boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 0.2)"}}>
 
             <ScrollView
                 style={styles.scrollView}
@@ -167,13 +168,18 @@ const BlueprintCreationLayout = () => {
 
             <View style={styles.continueButtonContainer}>
                 <PrimaryButton
+                    title="Back"
+                    onPress={handleBack}
+                    ghost
+                    />
+                <PrimaryButton
                     title={currentStep === 3 ? "Create Blueprint" : "Continue"}
                     onPress={handleNext}
                     disabled={!isStepValid() || isCreating}
-                />
+                    />
             </View>
+                    </View>
 
-            {/* Blueprint Intro Bottom Sheet */}
             <BlueprintIntroBottomSheet
                 isVisible={showBlueprintIntro}
                 onClose={() => setShowBlueprintIntro(false)}
@@ -187,17 +193,20 @@ const createStyles = (ThemedColor: any, insets: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: ThemedColor.background,
+            backgroundColor: ThemedColor.lightened,
             paddingTop: insets.top,
         },
         header: {
             flexDirection: "row",
+            justifyContent: "center",
             alignItems: "center",
             paddingHorizontal: 20,
             paddingBottom: 24,
         },
         backButton: {
-            padding: 20,
+            position: "absolute",
+            left: 20,
+            bottom: 16,
         },
         progressContainer: {
             paddingLeft: 20,
@@ -213,7 +222,8 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         continueButtonContainer: {
             paddingHorizontal: 20,
-            paddingBottom: insets.bottom,
+            gap: 12,
+            paddingBottom: insets.bottom + 24,
         },
         continueButton: {
             paddingVertical: 16,

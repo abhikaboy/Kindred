@@ -20,5 +20,6 @@ func RegisterActivityOperations(api huma.API, handler *Handler) {
 	RegisterGetActivitiesOperation(api, handler)
 	RegisterGetActivityOperation(api, handler)
 	RegisterGetActivityByUserAndPeriodOperation(api, handler)
+	RegisterGetActivityByUserAndYearOperation(api, handler)
 	RegisterGetRecentActivityOperation(api, handler)
 }

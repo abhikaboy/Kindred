@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
-import { renameWorkspace } from "@/api/category";
+import { renameWorkspace as renameWorkspaceAPI } from "@/api/category";
 import { isFuture, isPast, isToday } from "date-fns";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
@@ -172,11 +172,24 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param taskId
      */
     const removeFromCategory = async (categoryId: string, taskId: string) => {
+        // Update categories state
         let categoriesCopy = categories.slice();
-        categoriesCopy.find((category) => category.id === categoryId).tasks = categoriesCopy
-            .find((category) => category.id === categoryId)
-            .tasks.filter((task) => task.id !== taskId);
-        setCategories(categoriesCopy);
+        const category = categoriesCopy.find((category) => category.id === categoryId);
+        if (category) {
+            category.tasks = category.tasks.filter((task) => task.id !== taskId);
+            setCategories(categoriesCopy);
+        }
+
+        // Update workspaces state to ensure task is removed from all views
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy.forEach((workspace) => {
+            workspace.categories.forEach((category) => {
+                if (category.id === categoryId) {
+                    category.tasks = category.tasks.filter((task) => task.id !== taskId);
+                }
+            });
+        });
+        setWorkSpaces(workspacesCopy);
     };
 
     /**
@@ -255,7 +268,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         
         try {
             // Call the API to rename the workspace
-            await renameWorkspace(oldName, newName);
+            await renameWorkspaceAPI(oldName, newName);
             
             // Refresh workspaces to ensure consistency
             await fetchWorkspaces();

@@ -191,6 +191,7 @@ const stylesheet = (ThemedColor: any) =>
             },
             shadowOpacity: 0.25,
             shadowRadius: 4,
+            marginBottom: 48,
             elevation: 4,
         },
     });
