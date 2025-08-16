@@ -153,6 +153,33 @@ func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInp
 	return resp, nil
 }
 
+func (h *Handler) RenameWorkspace(ctx context.Context, input *RenameWorkspaceInput) (*RenameWorkspaceOutput, error) {
+	oldWorkspaceName := input.OldName
+	newWorkspaceName := input.Body.NewName
+
+	// Extract user_id from context (set by auth middleware)
+	user_id_str, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	slog.Info("Renaming workspace from " + oldWorkspaceName + " to " + newWorkspaceName)
+
+	err = h.service.RenameWorkspace(oldWorkspaceName, newWorkspaceName, user_id)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to rename workspace", err)
+	}
+
+	resp := &RenameWorkspaceOutput{}
+	resp.Body.Message = "Workspace renamed successfully"
+	return resp, nil
+}
+
 func (h *Handler) GetWorkspaces(ctx context.Context, input *GetWorkspacesInput) (*GetWorkspacesOutput, error) {
 	// Extract user_id from context (set by auth middleware)
 	user_id_str, err := auth.RequireAuth(ctx)

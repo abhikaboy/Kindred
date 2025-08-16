@@ -1369,6 +1369,40 @@ components:
         - beforeDeadline
         - afterDeadline
       type: object
+    RenameWorkspaceInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/RenameWorkspaceInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        newName:
+          examples:
+            - new-workspace
+          type: string
+      required:
+        - newName
+      type: object
+    RenameWorkspaceOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - https://example.com/schemas/RenameWorkspaceOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        message:
+          examples:
+            - Workspace renamed successfully
+          type: string
+      required:
+        - message
+      type: object
     SafeUser:
       additionalProperties: false
       properties:
@@ -2297,6 +2331,48 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get recent activity
+      tags:
+        - activities
+  /v1/activity/user/{userID}/year:
+    get:
+      description: Retrieve all activity for a specific user and year
+      operationId: get-activity-by-user-and-year
+      parameters:
+        - example: 507f1f77bcf86cd799439011
+          in: path
+          name: userID
+          required: true
+          schema:
+            examples:
+              - 507f1f77bcf86cd799439011
+            type: string
+        - example: 2024
+          explode: false
+          in: query
+          name: year
+          schema:
+            examples:
+              - 2024
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ActivityDocument"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get activity by user and year
       tags:
         - activities
   /v1/activity/{id}:
@@ -3400,6 +3476,46 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Delete workspace
+      tags:
+        - categories
+  /v1/user/categories/workspace/{oldName}:
+    patch:
+      description: Rename a workspace by updating all its categories
+      operationId: rename-workspace
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+        - example: old-workspace
+          in: path
+          name: oldName
+          required: true
+          schema:
+            examples:
+              - old-workspace
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameWorkspaceInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenameWorkspaceOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Rename workspace
       tags:
         - categories
   /v1/user/categories/{id}:

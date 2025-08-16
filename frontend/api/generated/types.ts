@@ -64,6 +64,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/activity/user/{userID}/year": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get activity by user and year
+         * @description Retrieve all activity for a specific user and year
+         */
+        get: operations["get-activity-by-user-and-year"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/activity/{id}": {
         parameters: {
             query?: never;
@@ -694,6 +714,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/user/categories/workspace/{oldName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename workspace
+         * @description Rename a workspace by updating all its categories
+         */
+        patch: operations["rename-workspace"];
         trace?: never;
     };
     "/v1/user/categories/{id}": {
@@ -2012,6 +2052,22 @@ export interface components {
             triggerTime: string;
             type: string;
         };
+        RenameWorkspaceInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            newName: string;
+        };
+        RenameWorkspaceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         SafeUser: {
             /**
              * Format: uri
@@ -2466,6 +2522,41 @@ export interface operations {
     "get-recent-activity": {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-activity-by-user-and-year": {
+        parameters: {
+            query?: {
+                /** @example 2024 */
+                year?: number;
+            };
             header?: never;
             path: {
                 /** @example 507f1f77bcf86cd799439011 */
@@ -3619,6 +3710,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeleteWorkspaceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "rename-workspace": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example old-workspace */
+                oldName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameWorkspaceInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenameWorkspaceOutputBody"];
                 };
             };
             /** @description Error */

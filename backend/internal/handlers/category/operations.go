@@ -87,6 +87,21 @@ type DeleteWorkspaceOutput struct {
 	}
 }
 
+// Rename Workspace
+type RenameWorkspaceInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	OldName       string `path:"oldName" example:"old-workspace"`
+	Body          struct {
+		NewName string `json:"newName" example:"new-workspace"`
+	}
+}
+
+type RenameWorkspaceOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Workspace renamed successfully"`
+	}
+}
+
 // Operation registrations
 
 func RegisterCreateCategoryOperation(api huma.API, handler *Handler) {
@@ -175,4 +190,15 @@ func RegisterDeleteWorkspaceOperation(api huma.API, handler *Handler) {
 		Description: "Delete a workspace and all its categories",
 		Tags:        []string{"categories"},
 	}, handler.DeleteWorkspace)
+}
+
+func RegisterRenameWorkspaceOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "rename-workspace",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/categories/workspace/{oldName}",
+		Summary:     "Rename workspace",
+		Description: "Rename a workspace by updating all its categories",
+		Tags:        []string{"categories"},
+	}, handler.RenameWorkspace)
 }

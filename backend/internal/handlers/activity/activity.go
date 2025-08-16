@@ -69,6 +69,20 @@ func (h *Handler) GetActivityByUserAndPeriod(ctx context.Context, input *GetActi
 	return &GetActivityByUserAndPeriodOutput{Body: *activity}, nil
 }
 
+func (h *Handler) GetActivityByUserAndYear(ctx context.Context, input *GetActivityByUserAndYearInput) (*GetActivityByUserAndYearOutput, error) {
+	userID, err := primitive.ObjectIDFromHex(input.UserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	activities, err := h.service.GetActivityByUserAndYear(userID, input.Year)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch activities", err)
+	}
+
+	return &GetActivityByUserAndYearOutput{Body: activities}, nil
+}
+
 func (h *Handler) GetRecentActivity(ctx context.Context, input *GetRecentActivityInput) (*GetRecentActivityOutput, error) {
 	userID, err := primitive.ObjectIDFromHex(input.UserID)
 	if err != nil {
