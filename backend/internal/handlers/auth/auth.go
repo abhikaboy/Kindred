@@ -35,14 +35,16 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 	resp.AccessToken = access
 	resp.RefreshToken = refresh
 	resp.Body = types.SafeUser{
-		ID:             user.ID,
-		DisplayName:    user.DisplayName,
-		Handle:         user.Handle,
-		ProfilePicture: user.ProfilePicture,
-		Categories:     user.Categories,
-		Friends:        user.Friends,
-		TasksComplete:  user.TasksComplete,
-		RecentActivity: user.RecentActivity,
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
 	}
 
 	return resp, nil
@@ -63,14 +65,16 @@ func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenI
 
 	resp := &LoginOutput{}
 	resp.Body = types.SafeUser{
-		ID:             user.ID,
-		DisplayName:    user.DisplayName,
-		Handle:         user.Handle,
-		ProfilePicture: user.ProfilePicture,
-		Categories:     user.Categories,
-		Friends:        user.Friends,
-		TasksComplete:  user.TasksComplete,
-		RecentActivity: user.RecentActivity,
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
 	}
 	return resp, nil
 }
@@ -133,9 +137,11 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		TasksComplete:  0,
 		RecentActivity: make([]types.ActivityDocument, 0),
 
-		DisplayName:    "Default Username",
-		Handle:         "@default",
-		ProfilePicture: "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
+		DisplayName:     "Default Username",
+		Handle:          "@default",
+		ProfilePicture:  "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
+		Encouragements:  2,
+		Congratulations: 2,
 
 		AppleID:  aaid.(string),
 		GoogleID: googleid.(string),
@@ -176,14 +182,16 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 	resp.AccessToken = access
 	resp.RefreshToken = refresh
 	resp.Body = types.SafeUser{
-		ID:             user.ID,
-		DisplayName:    user.DisplayName,
-		Handle:         user.Handle,
-		ProfilePicture: user.ProfilePicture,
-		Categories:     user.Categories,
-		Friends:        user.Friends,
-		TasksComplete:  user.TasksComplete,
-		RecentActivity: user.RecentActivity,
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
 	}
 
 	return resp, nil

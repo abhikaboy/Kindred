@@ -96,6 +96,17 @@ func RegisterSearchBlueprintsOperation(api huma.API, handler *Handler) {
 	}, handler.SearchBlueprintsHuma)
 }
 
+func RegisterGetUserSubscribedBlueprintsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-subscribed-blueprints",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/blueprints/subscribed",
+		Summary:     "Get user's subscribed blueprints",
+		Description: "Retrieve all blueprints that the authenticated user is subscribed to",
+		Tags:        []string{"blueprints"},
+	}, handler.GetUserSubscribedBlueprintsHuma)
+}
+
 // Register all blueprint operations
 func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSearchBlueprintsOperation(api, handler)
@@ -106,4 +117,5 @@ func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterDeleteBlueprintOperation(api, handler)
 	RegisterSubscribeToBlueprintOperation(api, handler)
 	RegisterUnsubscribeFromBlueprintOperation(api, handler)
+	RegisterGetUserSubscribedBlueprintsOperation(api, handler)
 }
