@@ -18,6 +18,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useTasks } from "@/contexts/tasksContext";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -32,6 +33,8 @@ import { RecurDetails } from "@/api/types";
 import Feather from "@expo/vector-icons/Feather";
 import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
+import CreateModal, { Screen } from "@/components/modals/CreateModal";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -44,11 +47,13 @@ export default function Task() {
     const { name, id, categoryId } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
     const { task } = useTasks();
+    const { loadTaskData } = useTaskCreation();
     const [isRunning, setIsRunning] = useState(false);
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
     const [localNotes, setLocalNotes] = useState("");
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
@@ -60,6 +65,12 @@ export default function Task() {
     const pagerViewRef = useRef<PagerView>(null);
 
     const safeAsync = useSafeAsync();
+
+    // Function to refresh task data after edit
+    const refreshTaskData = () => {
+        // This will trigger a re-render with updated task data
+        // The task context should automatically update when the task is modified
+    };
 
     useEffect(() => {
         return () => {
@@ -269,7 +280,12 @@ export default function Task() {
                     </ThemedText>
                     <TouchableOpacity
                         onPress={() => {
-                            // open some modal to edit the task
+                            // Load task data into the context and open edit modal
+                            if (task) {
+                                console.log("task", task);
+                                loadTaskData(task);
+                                setShowEditModal(true);
+                            }
                         }}>
                         <Feather name="edit" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
@@ -377,6 +393,18 @@ export default function Task() {
                                             </ThemedText>
                                         </View>
                                     </DataCard>
+                                </ConditionalView>
+                                <ConditionalView condition={task?.deadline == null} key="deadline-2">
+                                    <PrimaryButton
+                                        title="Set Deadline"
+                                        outline
+                                        style={{
+                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                        }}
+                                        onPress={() => {
+                                            setShowEditModal(true);
+                                        }}
+                                    />
                                 </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
                                     <DataCard title="Recurring">
@@ -488,6 +516,14 @@ export default function Task() {
                     </ScrollView>
                 </View>
             </PagerView>
+            
+            <CreateModal
+                visible={showEditModal}
+                setVisible={setShowEditModal}
+                edit={true}
+                categoryId={categoryId as string}
+                screen={Screen.DEADLINE}
+            />
         </ThemedView>
     );
 }
@@ -539,9 +575,11 @@ function DetailsToString(details: RecurDetails, frequency: string, type: string)
             // special case for weekdays, weekends
             let lastPart = caseMap.has(JSON.stringify(details.daysOfWeek))
                 ? caseMap.get(JSON.stringify(details.daysOfWeek))
-                : arrayToDays(details.daysOfWeek);
+                : arrayToDays(details.daysOfWeek || []);
             return `Every${details.every > 1 ? details.every : ""} week${details.every > 1 ? "s" : ""} on ${lastPart}`;
         case "monthly":
-            return `${frequency} ${type} ${details.recurDay} ${details.recurMonth} ${details.recurYear}`;
+            return `${frequency} ${type} - ${details?.behavior} behavior`;
+        default:
+            return `${frequency} - ${details?.behavior} behavior`;
     }
 }

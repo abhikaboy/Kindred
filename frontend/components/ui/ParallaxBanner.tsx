@@ -2,6 +2,7 @@ import { StyleSheet, Dimensions, View } from "react-native";
 import Animated, { interpolate, useAnimatedStyle, useScrollViewOffset, AnimatedRef } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
+import { Image } from "expo-image";
 
 interface ParallaxBannerProps {
     scrollRef: AnimatedRef<Animated.ScrollView>;
@@ -35,6 +36,7 @@ export default function ParallaxBanner({
         };
     });
 
+
     return (
         <Animated.View style={[headerAnimatedStyle]}>
             <LinearGradient
@@ -45,7 +47,11 @@ export default function ParallaxBanner({
                 colors={[backgroundColor + "40", backgroundColor + "40"]}
                 style={[styles.headerImage, styles.gradientOverlay]}
             />
-            <Animated.Image src={backgroundImage} style={[styles.headerImage]} />
+            <Image
+                source={backgroundImage}
+                cachePolicy="memory-disk"
+                style={[styles.headerImage]}
+            />
         </Animated.View>
     );
 }

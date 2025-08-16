@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
+import { renameWorkspace } from "@/api/category";
 import { isFuture, isPast, isToday } from "date-fns";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
@@ -23,6 +24,7 @@ type TaskContextType = {
     removeFromWorkspace: (name: string, categoryId: string) => void;
     removeWorkspace: (name: string) => void;
     restoreWorkspace: (workspace: Workspace) => void;
+    renameWorkspace: (oldName: string, newName: string) => Promise<void>;
     fetchingWorkspaces: boolean;
 
     setCreateCategory: (Option: Option) => void;
@@ -229,6 +231,56 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         return false;
     };
 
+    /**
+     * Renames a workspace by updating all its categories on the server and locally
+     * @param oldName - The current name of the workspace
+     * @param newName - The new name for the workspace
+     */
+    const renameWorkspace = async (oldName: string, newName: string) => {
+        // Store the workspace data for potential rollback
+        const workspaceToRename = getWorkspace(oldName);
+        
+        // Optimistic update - immediately update the UI
+        let workspacesCopy = workspaces.slice();
+        const workspaceIndex = workspacesCopy.findIndex(w => w.name === oldName);
+        if (workspaceIndex !== -1) {
+            workspacesCopy[workspaceIndex].name = newName;
+            setWorkSpaces(workspacesCopy);
+            
+            // If the renamed workspace was selected, update the selection
+            if (selected === oldName) {
+                setSelected(newName);
+            }
+        }
+        
+        try {
+            // Call the API to rename the workspace
+            await renameWorkspace(oldName, newName);
+            
+            // Refresh workspaces to ensure consistency
+            await fetchWorkspaces();
+        } catch (error) {
+            console.error("Error renaming workspace:", error);
+            
+            // Rollback the optimistic update on error
+            if (workspaceToRename) {
+                let workspacesCopy = workspaces.slice();
+                const workspaceIndex = workspacesCopy.findIndex(w => w.name === newName);
+                if (workspaceIndex !== -1) {
+                    workspacesCopy[workspaceIndex].name = oldName;
+                    setWorkSpaces(workspacesCopy);
+                    
+                    // Restore the original selection if it was changed
+                    if (selected === newName) {
+                        setSelected(oldName);
+                    }
+                }
+            }
+            
+            throw error;
+        }
+    };
+
     useEffect(() => {
         if (workspaces.length === 0) return;
         const selectedWorkspace = getWorkspace(selected);
@@ -257,6 +309,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 removeFromWorkspace,
                 removeWorkspace,
                 restoreWorkspace,
+                renameWorkspace,
                 setCreateCategory,
                 selectedCategory,
                 showConfetti,

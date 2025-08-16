@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, Text, View, ScrollView, TouchableOpacity } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import ActivityPoint from "@/components/profile/ActivityPoint";
@@ -7,6 +7,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams, router } from "expo-router";
+import { activityAPI, getMonthlyActivityLevels, ActivityDocument } from "@/api/activity";
+
 type Props = {};
 
 const month_to_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -29,8 +32,38 @@ const Activity = (props: Props) => {
     const ThemedColor = useThemeColor();
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
+    const [activities, setActivities] = useState<ActivityDocument[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const insets = useSafeAreaInsets();
-    const styles = stylesheet(ThemedColor);
+    const params = useLocalSearchParams();
+    const userId = params.id as string;
+    const displayName = params.displayName as string;
+    const styles = stylesheet(ThemedColor, insets);
+
+    useEffect(() => {
+        const fetchActivityData = async () => {
+            if (!userId) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const yearActivities = await activityAPI.getAllUserActivity(userId, year);
+                setActivities(yearActivities);
+            } catch (err) {
+                console.error('Failed to fetch activity data:', err);
+                setError('Failed to load activity data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchActivityData();
+    }, [userId, year]);
 
     const setYearWithinBounds = (year: number) => {
         if (year < 2024) {
@@ -43,14 +76,25 @@ const Activity = (props: Props) => {
     };
 
     return (
-        <ThemedView style={{ paddingTop: insets.top }}>
-            <ScrollView contentContainerStyle={styles.scrollViewContent} style={styles.scrollView}>
-                <ThemedText type="title" style={styles.title}>
-                    Activity
+        <ThemedView style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <ThemedText type="default" style={styles.backArrow}>
+                        ←
+                    </ThemedText>
+                </TouchableOpacity>
+                <ThemedText type="fancyFrauncesHeading" style={styles.title}>
+                    {displayName ? `${displayName}'s Activity` : 'Activity'}
                 </ThemedText>
-                <ThemedText type="lightBody" style={styles.subtitle}>
-                    Showing Coffee's activity for this year
-                </ThemedText>
+            </View>
+
+            {/* Content */}
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}>
+                
 
                 <View style={styles.yearSelector}>
                     <TouchableOpacity onPress={() => setYearWithinBounds(year - 1)}>
@@ -64,20 +108,45 @@ const Activity = (props: Props) => {
                         <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
-                <View style={styles.dataContainer}>
-                    {month_names.map((month, index) => (
-                        <View style={styles.monthContainer}>
-                            <ThemedText type="subtitle">{month}</ThemedText>
-                            <View>
-                                <View style={styles.activityPointsContainer}>
-                                    {new Array(month_to_days[index]).fill(0).map((item, index) => (
-                                        <ActivityPoint key={index} level={Math.floor(Math.random() * 4) + 1} />
-                                    ))}
+                
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ThemedText type="lightBody">Loading activity data...</ThemedText>
+                    </View>
+                ) : error ? (
+                    <View style={styles.errorContainer}>
+                        <ThemedText type="lightBody" style={styles.errorText}>{error}</ThemedText>
+                    </View>
+                ) : (
+                    <View style={styles.dataContainer}>
+                        {month_names.map((monthName, index) => {
+                            const monthNumber = index + 1;
+                            const currentDate = new Date();
+                            const currentYear = currentDate.getFullYear();
+                            const currentMonth = currentDate.getMonth() + 1; // 1-indexed
+                            
+                            // Skip future months
+                            if (year > currentYear || (year === currentYear && monthNumber > currentMonth)) {
+                                return null;
+                            }
+                            
+                            const monthlyLevels = getMonthlyActivityLevels(activities, year, monthNumber);
+                            
+                            return (
+                                <View key={monthName} style={styles.monthContainer}>
+                                    <ThemedText type="subtitle">{monthName}</ThemedText>
+                                    <View>
+                                        <View style={styles.activityPointsContainer}>
+                                            {monthlyLevels.map((level, dayIndex) => (
+                                                <ActivityPoint key={dayIndex} level={level} />
+                                            ))}
+                                        </View>
+                                    </View>
                                 </View>
-                            </View>
-                        </View>
-                    ))}
-                </View>
+                            );
+                        })}
+                    </View>
+                )}
             </ScrollView>
         </ThemedView>
     );
@@ -85,19 +154,40 @@ const Activity = (props: Props) => {
 
 export default Activity;
 
-const stylesheet = (ThemedColor: any) =>
+const stylesheet = (ThemedColor: any, insets: any) =>
     StyleSheet.create({
-        scrollViewContent: {
-            gap: 16,
+        container: {
+            flex: 1,
+            backgroundColor: ThemedColor.background,
+        },
+        header: {
+            flexDirection: "row",
+            alignItems: "center",
+            paddingTop: insets.top + 10,
+            paddingBottom: 20,
             paddingHorizontal: HORIZONTAL_PADDING,
+            borderBottomWidth: 1,
+            borderBottomColor: ThemedColor.tertiary,
+        },
+        backButton: {
+            marginRight: 16,
+        },
+        backArrow: {
+            fontSize: 24,
+            color: ThemedColor.text,
+        },
+        title: {
+            fontSize: 24,
+            color: ThemedColor.text,
         },
         scrollView: {
             flex: 1,
-            flexDirection: "column",
         },
-        title: {
-            textAlign: "center",
-            fontWeight: "bold",
+        scrollContent: {
+            paddingHorizontal: HORIZONTAL_PADDING,
+            paddingTop: 20,
+            paddingBottom: insets.bottom + 20,
+            gap: 16,
         },
         subtitle: {
             textAlign: "center",
@@ -133,5 +223,16 @@ const stylesheet = (ThemedColor: any) =>
             gap: 16,
             width: "100%",
             alignItems: "center",
+        },
+        loadingContainer: {
+            alignItems: "center",
+            paddingVertical: 40,
+        },
+        errorContainer: {
+            alignItems: "center",
+            paddingVertical: 40,
+        },
+        errorText: {
+            color: "red",
         },
     });

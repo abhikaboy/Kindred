@@ -17,11 +17,47 @@ export interface paths {
          */
         get: operations["get-activities"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/activity/user/{userID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
-         * Create a new activity
-         * @description Create a new activity record
+         * Get activity by user and period
+         * @description Retrieve activity for a specific user, year, and month
          */
-        post: operations["create-activity"];
+        get: operations["get-activity-by-user-and-period"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/activity/user/{userID}/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get recent activity
+         * @description Retrieve the user's activity for the last 8 days
+         */
+        get: operations["get-recent-activity"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -42,18 +78,10 @@ export interface paths {
         get: operations["get-activity"];
         put?: never;
         post?: never;
-        /**
-         * Delete activity
-         * @description Delete an activity record
-         */
-        delete: operations["delete-activity"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Update activity
-         * @description Update an activity record
-         */
-        patch: operations["update-activity"];
+        patch?: never;
         trace?: never;
     };
     "/v1/assets/upload": {
@@ -368,26 +396,6 @@ export interface paths {
          * @description Retrieve a user profile by phone number
          */
         get: operations["get-profile-by-phone"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/profiles/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search profiles
-         * @description Search for user profiles by query string
-         */
-        get: operations["search-profiles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1024,6 +1032,26 @@ export interface paths {
         patch: operations["update-post"];
         trace?: never;
     };
+    "/v1/user/profiles/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search profiles
+         * @description Search for user profiles by query string
+         */
+        get: operations["search-profiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/pushtoken": {
         parameters: {
             query?: never;
@@ -1388,17 +1416,31 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        ActivityDay: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            day: number;
+            /** Format: int64 */
+            level: number;
+        };
         ActivityDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            field1: string;
-            id: string;
-            picture: string | null;
+            _id: string;
+            days: components["schemas"]["ActivityDay"][] | null;
             /** Format: date-time */
-            timestamp: string;
+            lastUpdated: string;
+            /** Format: int64 */
+            month: number;
+            /** Format: int64 */
+            totalCount: number;
+            user: string;
+            /** Format: int64 */
+            year: number;
         };
         BlueprintDocument: {
             /**
@@ -1548,16 +1590,6 @@ export interface components {
             /** @description Profile picture URL */
             picture: string | null;
         };
-        CreateActivityParams: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            field1: string;
-            field2: string;
-            picture: string | null;
-        };
         CreateBlueprintParams: {
             /**
              * Format: uri
@@ -1671,14 +1703,6 @@ export interface components {
             email: string;
             /** @description User full name */
             name: string;
-        };
-        DeleteActivityOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            message: string;
         };
         DeleteBlueprintOutputBody: {
             /**
@@ -1889,6 +1913,15 @@ export interface components {
             count: number;
             message: string;
         };
+        MarkEncouragementsReadInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description List of encouragement IDs to mark as read */
+            id: string[] | null;
+        };
         MarkEncouragementsReadOutputBody: {
             /**
              * Format: uri
@@ -1914,11 +1947,6 @@ export interface components {
             picture: string | null;
             /** Format: date-time */
             timestamp: string;
-        };
-        RelationshipInfo: {
-            /** @enum {string} */
-            status: "none" | "requested" | "received" | "connected" | "self";
-            request_id?: string;
         };
         ProfileDocument: {
             /**
@@ -1969,6 +1997,10 @@ export interface components {
             readonly $schema?: string;
             apple_id: string;
             email: string;
+        };
+        RelationshipInfo: {
+            request_id?: string;
+            status: string;
         };
         Reminder: {
             afterDeadline: boolean;
@@ -2081,24 +2113,6 @@ export interface components {
             message: string;
         };
         UnsubscribeFromBlueprintOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            message: string;
-        };
-        UpdateActivityDocument: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            field1?: string;
-            field2?: string;
-            picture?: string;
-        };
-        UpdateActivityOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -2294,12 +2308,19 @@ export interface components {
             active: boolean;
             checklist?: components["schemas"]["ChecklistItem"][] | null;
             content: string;
+            /** Format: date-time */
+            deadline?: string;
             notes?: string;
             /** Format: int64 */
             priority: number;
             public: boolean;
             recurDetails: components["schemas"]["RecurDetails"];
             recurring: boolean;
+            reminders?: components["schemas"]["Reminder"][] | null;
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            startTime?: string;
             /** Format: double */
             value: number;
         };
@@ -2405,18 +2426,22 @@ export interface operations {
             };
         };
     };
-    "create-activity": {
+    "get-activity-by-user-and-period": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @example 2024 */
+                year?: number;
+                /** @example 12 */
+                month?: number;
+            };
             header?: never;
-            path?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userID: string;
+            };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateActivityParams"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -2425,6 +2450,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-recent-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityDocument"][] | null;
                 };
             };
             /** @description Error */
@@ -2440,7 +2497,10 @@ export interface operations {
     };
     "get-activity": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @example 2024 */
+                year?: number;
+            };
             header?: never;
             path: {
                 /** @example 507f1f77bcf86cd799439011 */
@@ -2457,74 +2517,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "delete-activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteActivityOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "update-activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateActivityDocument"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateActivityOutputBody"];
                 };
             };
             /** @description Error */
@@ -3036,38 +3028,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "search-profiles": {
-        parameters: {
-            query?: {
-                /** @example john */
-                query?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileDocument"][] | null;
                 };
             };
             /** @description Error */
@@ -4339,7 +4299,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkEncouragementsReadInputBody"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -4668,6 +4632,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdatePostOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "search-profiles": {
+        parameters: {
+            query?: {
+                /** @example john */
+                query?: string;
+            };
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDocument"][] | null;
                 };
             };
             /** @description Error */

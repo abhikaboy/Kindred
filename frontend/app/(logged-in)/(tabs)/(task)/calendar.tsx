@@ -15,6 +15,7 @@ import { isSameDay, startOfDay, endOfDay, format, addDays, startOfWeek, endOfWee
 import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
 import { router, useLocalSearchParams } from "expo-router";
+import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 
 type Props = {};
 
@@ -368,21 +369,14 @@ const Calendar = (props: Props) => {
                     </View>
 
                     {/* No Time Set Section */}
-                    {tasksWithoutTime.length > 0 && (
-                        <View style={styles.section}>
-                            <ThemedText type="subtitle" style={styles.sectionTitle}>
-                                No Time Set
-                            </ThemedText>
-                            {tasksWithoutTime.map((task) => (
-                                <SwipableTaskCard
-                                    key={task.id}
-                                    redirect={true}
-                                    categoryId={task.categoryID}
-                                    task={task}
-                                />
-                            ))}
-                        </View>
-                    )}
+                    <UnscheduledTasksSection
+                        tasks={tasksWithoutTime}
+                        title="Unscheduled Tasks"
+                        description="These are tasks that don't have a start date or deadline. Swipe right to schedule for this day."
+                        showScheduling={true}
+                        onScheduleTask={() => {}}
+                        emptyMessage="No unscheduled tasks"
+                    />
 
                     {/* Workspaces Section */}
                     <View style={styles.section}>
@@ -419,6 +413,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         gap: 24,
+        paddingBottom: 128,
     },
     scheduleSection: {
         marginBottom: 24,
@@ -473,3 +468,4 @@ const styles = StyleSheet.create({
         letterSpacing: -1,
     },
 });
+

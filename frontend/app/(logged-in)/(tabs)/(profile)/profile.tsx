@@ -73,9 +73,9 @@ export default function Profile() {
                     <ProfileEdit friendsCount={user?.friends.length || 0} />
                 </View>
 
-                <TodayStats tasks={2} points={12} streak={242} posts={4} />
+                <TodayStats userId={user?._id} />
 
-                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={user?._id} />
+                <WeeklyActivity userid={user?._id} displayName={user?.display_name} />
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 

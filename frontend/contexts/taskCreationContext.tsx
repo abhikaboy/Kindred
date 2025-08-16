@@ -5,6 +5,7 @@ type TaskCreationContextType = {
     taskName: string;
     setTaskName: (name: string) => void;
     resetTaskCreation: () => void;
+    loadTaskData: (taskData: any) => void; // Function to load task data for editing
     showAdvanced: boolean;
     setShowAdvanced: (show: boolean) => void;
     suggestion: string;
@@ -157,12 +158,45 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setShowAdvanced(false);
     };
 
+    const loadTaskData = (taskData: any) => {
+        setTaskName(taskData.content || "");
+        setPriority(taskData.priority || 1);
+        setValue(taskData.value || 3);
+        setRecurring(taskData.recurring || false);
+        setRecurFrequency(taskData.recurFrequency || "");
+        
+        // Handle recurDetails with proper defaults
+        if (taskData.recurDetails) {
+            setRecurDetails({
+                every: taskData.recurDetails.every || 1,
+                daysOfWeek: taskData.recurDetails.daysOfWeek || [0, 0, 0, 0, 0, 0, 0],
+                behavior: (taskData.recurDetails?.behavior as "BUILDUP" | "ROLLING") || "ROLLING",
+            });
+        } else {
+            setRecurDetails({
+                every: 1,
+                daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+                behavior: "ROLLING",
+            });
+        }
+        
+        setDeadline(taskData.deadline ? new Date(taskData.deadline) : null);
+        setStartTime(taskData.startTime ? new Date(taskData.startTime) : null);
+        setStartDate(taskData.startDate ? new Date(taskData.startDate) : null);
+        setReminders(taskData.reminders?.map(reminder => ({
+            ...reminder,
+            triggerTime: new Date(reminder.triggerTime)
+        })) || []);
+        setIsPublic(taskData.public || false);
+    };
+
     return (
         <TaskCreationContext.Provider
             value={{
                 taskName,
                 setTaskName,
                 resetTaskCreation,
+                loadTaskData,
                 showAdvanced,
                 setShowAdvanced,
                 suggestion,
