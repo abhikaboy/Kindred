@@ -53,21 +53,18 @@ export const activityAPI = {
   // Get all activities for a user (for the activity page)
   async getAllUserActivity(userId: string, year: number): Promise<ActivityDocument[]> {
     try {
-      // Create an array of promises for all months
-      const monthPromises = Array.from({ length: 12 }, (_, index) => {
-        const month = index + 1;
-        return this.getActivityByUserAndPeriod(userId, year, month)
-          .catch(error => {
-            console.warn(`Failed to fetch activity for ${year}-${month}:`, error);
-            return null; // Return null for failed requests
-          });
+      const { data, error } = await client.GET('/v1/activity/user/{userID}/year', {
+        params: withAuthHeaders({ 
+          path: { userID: userId },
+          query: { year }
+        })
       });
       
-      // Execute all requests concurrently
-      const results = await Promise.all(monthPromises);
+      if (error) {
+        throw new Error(`Failed to fetch yearly activity: ${JSON.stringify(error)}`);
+      }
       
-      // Filter out null results (failed requests)
-      return results.filter((activity): activity is ActivityDocument => activity !== null);
+      return data || [];
     } catch (error) {
       console.error('Error fetching all user activity:', error);
       throw error;

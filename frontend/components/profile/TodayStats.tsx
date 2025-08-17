@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import React from "react";
+import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Octicons from "@expo/vector-icons/Octicons";
-import { getTodayCompletedTasksCount, getTotalPointsFromCompletedTasks } from "@/api/task";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { getProfile } from "@/api/profile";
 
 interface StatItemProps {
     icon: React.ReactNode;
@@ -50,46 +51,27 @@ const iconSize = 24;
 export default function TodayStats({ userId }: TodayStatsProps) {
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
-    const [stats, setStats] = useState({
-        tasks: 0,
-        points: 0,
-        streak: 0, // TODO: Implement streak calculation
-        posts: 0,  // TODO: Implement posts count
-    });
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            if (!userId && !user?._id) {
-                setLoading(false);
-                return;
-            }
+    // Fetch profile data if viewing another user's profile
+    const { data: profile, isLoading: profileLoading } = useQuery({
+        queryKey: ["profile", userId],
+        queryFn: () => getProfile(userId!),
+        enabled: !!userId && userId !== user?._id,
+    }) as any; // Type assertion until profile types are aligned
 
-            try {
-                setLoading(true);
-                
-                // Fetch today's completed tasks count
-                const todayTasks = await getTodayCompletedTasksCount();
-                
-                // Fetch total points from completed tasks
-                const totalPoints = await getTotalPointsFromCompletedTasks();
-                
-                setStats({
-                    tasks: todayTasks,
-                    points: Math.round(totalPoints), // Round to nearest integer
-                    streak: 0, // TODO: Implement streak calculation from activity data
-                    posts: 0,  // TODO: Implement posts count from posts API
-                });
-            } catch (error) {
-                console.error('Error fetching today stats:', error);
-                // Keep default values on error
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Determine which user's stats to show
+    const targetUser = userId && userId !== user?._id ? profile : user;
 
-        fetchStats();
-    }, [userId, user?._id]);
+    // Use stats directly from the user profile (no separate API calls needed)
+    const stats = {
+        streak: targetUser?.streak || 0,
+        posts: targetUser?.posts_made || 0,
+        points: targetUser?.points || 0,
+        tasks: targetUser?.tasks_complete || 0,
+    };
+
+    // Loading state based on whether user data is available
+    const loading = userId && userId !== user?._id ? profileLoading : !user;
 
     return (
         <View style={styles.container}>
@@ -101,21 +83,21 @@ export default function TodayStats({ userId }: TodayStatsProps) {
                     loading={loading}
                 />
                 <StatItem
+                    icon={<Octicons name="check-circle" size={iconSize} color={ThemedColor.primary} />}
+                    label="Tasks Complete"
+                    value={stats.tasks}
+                    loading={loading}
+                />
+                <StatItem
                     icon={<Octicons name="device-camera" size={iconSize} color={ThemedColor.primary} />}
-                    label="Posts"
+                    label="Posts Made"
                     value={stats.posts}
                     loading={loading}
                 />
                 <StatItem
                     icon={<Octicons name="credit-card" size={iconSize} color={ThemedColor.primary} />}
-                    label="Total Points"
+                    label="Points"
                     value={stats.points}
-                    loading={loading}
-                />
-                <StatItem
-                    icon={<Octicons name="check-circle" size={iconSize} color={ThemedColor.primary} />}
-                    label="Tasks Done"
-                    value={stats.tasks}
                     loading={loading}
                 />
             </View>

@@ -3,6 +3,7 @@ package Category
 import (
 	"context"
 	"log/slog"
+	"net/url"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
@@ -142,7 +143,11 @@ func (h *Handler) DeleteCategory(ctx context.Context, input *DeleteCategoryInput
 }
 
 func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInput) (*DeleteWorkspaceOutput, error) {
-	workspaceName := input.Name
+	// URL decode the workspace name since it comes from the path parameter
+	workspaceName, err := url.QueryUnescape(input.Name)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid workspace name encoding", err)
+	}
 
 	// Extract user_id from context (set by auth middleware)
 	user_id_str, err := auth.RequireAuth(ctx)
@@ -168,7 +173,11 @@ func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInp
 }
 
 func (h *Handler) RenameWorkspace(ctx context.Context, input *RenameWorkspaceInput) (*RenameWorkspaceOutput, error) {
-	oldWorkspaceName := input.OldName
+	// URL decode the old workspace name since it comes from the path parameter
+	oldWorkspaceName, err := url.QueryUnescape(input.OldName)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid workspace name encoding", err)
+	}
 	newWorkspaceName := input.Body.NewName
 
 	// Extract user_id from context (set by auth middleware)

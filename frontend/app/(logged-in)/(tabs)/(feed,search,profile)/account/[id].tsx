@@ -42,11 +42,11 @@ export default function Profile() {
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
 
-    const { data: profile, isLoading } = useQuery<Profile>({
+    const { data: profile, isLoading } = useQuery({
         queryKey: ["profile", id],
         queryFn: () => getProfile(id as string),
         enabled: !!id,
-    });
+    }) as any; // Type assertion until profile types are aligned
 
     console.log("Account Profile component - profile:", profile);
     console.log("Account Profile component - profile?.id:", profile?.id);
@@ -112,9 +112,9 @@ export default function Profile() {
                     />
                 </View>
 
-                <TodayStats tasks={2} points={12} streak={242} posts={4} />
+                <TodayStats userId={profile?.id} />
 
-                <WeeklyActivity activityLevels={[4, 4, 4, 3, 2, 1, 4, 2]} userid={profile?.id} />
+                <WeeklyActivity userid={profile?.id} />
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
