@@ -13,7 +13,7 @@ const ActivityPoint = ({ level, isFuture = false, isToday = false }: Props) => {
     let ThemedColor = useThemeColor();
     const LEVELS = { 
         0: ThemedColor.lightened, // No activity - use lightened background color
-        1: ThemedColor.tertiary, 
+        1: "#E2FFE8", 
         2: "#aff0c6", 
         3: "#5CFF95", 
         4: "#069A3A" 

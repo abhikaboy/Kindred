@@ -11,9 +11,6 @@ interface TaskSectionProps {
     title?: string;
     description?: string;
     emptyMessage?: string;
-    // SwipableTaskCard props
-    useSwipable?: boolean;
-    onCompleteTask?: (task: Task) => void;
     // SchedulableTaskCard props
     useSchedulable?: boolean;
     onScheduleTask?: (task: Task, type: 'deadline' | 'startDate') => void;
@@ -25,8 +22,6 @@ export default function TaskSection({
     title = "Tasks",
     description,
     emptyMessage = "No tasks",
-    useSwipable = false,
-    onCompleteTask,
     useSchedulable = false,
     onScheduleTask,
     schedulingType = 'deadline'
@@ -63,19 +58,12 @@ export default function TaskSection({
             )}
             {tasks.map((task) => (
                 <View key={task.id + task.content} style={styles.taskContainer}>
-                    {useSwipable && onCompleteTask ? (
+                    {useSchedulable ? (
                         <SchedulableTaskCard
                             redirect={true}
                             categoryId={task.categoryID || ""}
                             task={task}
-                            onRightSwipe={() => onCompleteTask(task)}
-                        />
-                    ) : useSchedulable && onScheduleTask ? (
-                        <SchedulableTaskCard
-                            redirect={true}
-                            categoryId={task.categoryID || ""}
-                            task={task}
-                            onRightSwipe={() => onScheduleTask(task, schedulingType)}
+                            onRightSwipe={() => onScheduleTask!(task, schedulingType)}
                         />
                     ) : (
                         <SwipableTaskCard
