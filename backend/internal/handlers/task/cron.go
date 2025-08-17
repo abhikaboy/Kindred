@@ -20,7 +20,6 @@ func Cron(collections map[string]*mongo.Collection) {
 
 	c := cron.New()
 	id, err := c.AddFunc("@every 1m", func() {
-		slog.Info("Cron job started")
 		tasks := make([]TemplateTaskDocument, 0)
 		recurringTasks, err := service.GetTasksWithStartTimesOlderThanOneDay()
 		if err != nil {
@@ -34,7 +33,6 @@ func Cron(collections map[string]*mongo.Collection) {
 		}
 		tasks = append(tasks, recurringTasks...)
 
-		slog.Info("Tasks to process", "count", len(tasks))
 		for _, task := range tasks {
 			// TOOD: Optimize to take the template itself rather than the ID
 			newTask, err := service.CreateTaskFromTemplate(task.ID)
@@ -59,7 +57,16 @@ func Cron(collections map[string]*mongo.Collection) {
 
 		fmt.Println(reminder_result)
 
-		slog.Info("Cron job finished")
+		/* Checkins */
+
+		checkin_result, err := handler.HandleCheckin()
+		if err != nil {
+			slog.Error("Error handling checkin", "error", fiber.Map{
+				"error": err.Error(),
+			})
+		}
+		fmt.Println(checkin_result)
+
 	})
 	if err != nil {
 		slog.Error("Error adding cron job", "error", err)

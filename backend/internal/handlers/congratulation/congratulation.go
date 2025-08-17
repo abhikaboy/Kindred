@@ -159,6 +159,12 @@ func (h *Handler) MarkCongratulationsReadHuma(ctx context.Context, input *MarkCo
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
+	// Add explicit validation
+	errs := xvalidator.Validator.Validate(input)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
 	if len(input.ID) == 0 {
 		return nil, huma.Error400BadRequest("No IDs provided", fmt.Errorf("id array cannot be empty"))
 	}
@@ -182,4 +188,4 @@ func (h *Handler) MarkCongratulationsReadHuma(ctx context.Context, input *MarkCo
 	resp.Body.Message = "Congratulations marked as read successfully"
 	resp.Body.Count = int(count)
 	return resp, nil
-} 
+}

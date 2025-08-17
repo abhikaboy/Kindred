@@ -11,8 +11,8 @@ import (
 
 // Create Encouragement
 type CreateEncouragementInput struct {
-	Authorization string                   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Authorization string                    `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                    `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	Body          CreateEncouragementParams `json:"body"`
 }
 
@@ -43,9 +43,9 @@ type GetEncouragementOutput struct {
 
 // Update Encouragement
 type UpdateEncouragementInput struct {
-	Authorization string                    `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                    `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	ID            string                    `path:"id" example:"507f1f77bcf86cd799439011"`
+	Authorization string                      `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                      `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                      `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateEncouragementDocument `json:"body"`
 }
 
@@ -70,11 +70,9 @@ type DeleteEncouragementOutput struct {
 
 // Mark Encouragements as Read
 type MarkEncouragementsReadInput struct {
-	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	Body          struct {
-		ID []string `json:"id" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of encouragement IDs to mark as read"`
-	} `json:"body"`
+	Authorization string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            []string `json:"id" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of encouragement IDs to mark as read"`
 }
 
 type MarkEncouragementsReadOutput struct {
@@ -167,4 +165,4 @@ Database layer of the application
 type Service struct {
 	Encouragements *mongo.Collection
 	Users          *mongo.Collection
-} 
+}
