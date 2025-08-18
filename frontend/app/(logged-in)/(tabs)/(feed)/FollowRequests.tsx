@@ -16,6 +16,7 @@ type FollowRequestProps = {
     username: string;
     icon: string;
     userId: string;
+    connectionID: string;
 };
 
 const follow_requests: FollowRequestProps[] = [
@@ -24,36 +25,42 @@ const follow_requests: FollowRequestProps[] = [
         username: "kingofpirates",
         icon: Icons.luffy,
         userId: "user123",
+        connectionID: "connection123",
     },
     {
         name: "Coffee Lover",
         username: "coffeecoder",
         icon: Icons.coffee,
         userId: "user456",
+        connectionID: "connection456",
     },
     {
         name: "Latte Artist",
         username: "latteart",
         icon: Icons.latte,
         userId: "user789",
+        connectionID: "connection789",
     },
     {
         name: "Monkey D. Luffy",
         username: "kingofpirates",
         icon: Icons.luffy,
         userId: "user123",
+        connectionID: "connection123",
     },
     {
         name: "Coffee Lover",
         username: "coffeecoder",
         icon: Icons.coffee,
         userId: "user456",
+        connectionID: "connection456",
     },
     {
         name: "Latte Artist",
         username: "latteart",
         icon: Icons.latte,
         userId: "user789",
+        connectionID: "connection789",
     },
 ];
 
@@ -88,6 +95,7 @@ const FollowRequests = () => {
                                     icon={request.icon}
                                     username={request.username}
                                     userId={request.userId}
+                                    connectionID={request.connectionID}
                                 />
                             </View>
                         ))}

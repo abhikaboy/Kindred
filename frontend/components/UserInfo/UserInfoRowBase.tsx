@@ -28,7 +28,7 @@ const UserInfoRowBase = ({ name, username, right, icon, large, id }: Props) => (
                         </ThemedText>
                     </View>
                     <ThemedText numberOfLines={1} ellipsizeMode="tail" type={"caption"}>
-                        @{username}
+                        {username}
                     </ThemedText>
                 </View>
             </View>

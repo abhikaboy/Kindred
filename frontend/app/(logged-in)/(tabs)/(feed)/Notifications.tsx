@@ -38,6 +38,7 @@ type FollowRequestProps = {
     username: string;
     icon: string;
     userId: string;
+    connectionID: string;
 };
 
 type CombinedNotification =
@@ -111,33 +112,38 @@ const FollowRequestsSection = ({ styles }: { styles: any }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchFollowRequests = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                const connections = await getConnectionsByReceiverAPI();
-                
-                // Transform API response to match FollowRequestProps interface
-                const transformedRequests: FollowRequestProps[] = connections.map((connection) => ({
-                    name: connection.requester.name,
-                    username: connection.requester.handle,
-                    icon: connection.requester.picture || Icons.coffee, // fallback icon
-                    userId: connection.requester._id,
-                }));
-                
-                setRequests(transformedRequests);
-            } catch (err) {
-                console.error('Failed to fetch follow requests:', err);
-                setError('Failed to load follow requests');
-                showToast('Failed to load follow requests', 'danger');
-                setRequests([]); // Set empty array on error
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchFollowRequests = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const connections = await getConnectionsByReceiverAPI();
+            
+            // Transform API response to match FollowRequestProps interface
+            const transformedRequests: FollowRequestProps[] = connections.map((connection) => ({
+                name: connection.requester.name,
+                username: connection.requester.handle,
+                icon: connection.requester.picture || Icons.coffee, // fallback icon
+                userId: connection.requester._id,
+                connectionID: connection.id,
+            }));
+            
+            setRequests(transformedRequests);
+        } catch (err) {
+            console.error('Failed to fetch follow requests:', err);
+            setError('Failed to load follow requests');
+            showToast('Failed to load follow requests', 'danger');
+            setRequests([]); // Set empty array on error
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const removeRequest = (connectionID: string) => {
+        setRequests(prev => prev.filter(request => request.connectionID !== connectionID));
+    };
+
+    useEffect(() => {
         fetchFollowRequests();
     }, []);
 
@@ -158,12 +164,14 @@ const FollowRequestsSection = ({ styles }: { styles: any }) => {
                 )}
             </View>
             {requests.slice(0, 4).map((request, index) => (
-                <View style={styles.listItem} key={`follow-${request.userId}-${index}`}>
+                <View style={styles.listItem} key={`follow-${request.connectionID}`}>
                     <UserInfoFollowRequest
                         name={request.name}
                         icon={request.icon}
                         username={request.username}
                         userId={request.userId}
+                        connectionID={request.connectionID}
+                        onRequestHandled={() => removeRequest(request.connectionID)}
                     />
                 </View>
             ))}

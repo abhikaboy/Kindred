@@ -88,6 +88,32 @@ type DeleteConnectionOutput struct {
 	}
 }
 
+// Accept Connection Request
+type AcceptConnectionInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type AcceptConnectionOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Connection request accepted successfully"`
+	}
+}
+
+// Get Relationship Status
+type GetRelationshipInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	UserID        string `path:"user_id" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetRelationshipOutput struct {
+	Body struct {
+		Relationship string `json:"relationship" example:"friends" doc:"Relationship status between users"`
+	}
+}
+
 // Operation registrations
 
 func RegisterCreateConnectionOperation(api huma.API, handler *Handler) {
@@ -167,6 +193,17 @@ func RegisterDeleteConnectionOperation(api huma.API, handler *Handler) {
 	}, handler.DeleteConnectionHuma)
 }
 
+func RegisterAcceptConnectionOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "accept-connection",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/connections/{id}/accept",
+		Summary:     "Accept connection request",
+		Description: "Accept a friend connection request",
+		Tags:        []string{"connections"},
+	}, handler.AcceptConnectionHuma)
+}
+
 // Register all connection operations
 func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterCreateConnectionOperation(api, handler)
@@ -176,4 +213,5 @@ func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterGetConnectionOperation(api, handler)
 	RegisterUpdateConnectionOperation(api, handler)
 	RegisterDeleteConnectionOperation(api, handler)
+	RegisterAcceptConnectionOperation(api, handler)
 }

@@ -136,3 +136,21 @@ export const updateConnectionAPI = async (
 
     return data;
 };
+
+/**
+ * Accept a connection request
+ * API: Makes POST request to accept a connection request
+ * Frontend: Used to accept friend connection requests
+ * @param connectionId - The ID of the connection request to accept
+ */
+export const acceptConnectionAPI = async (connectionId: string): Promise<components["schemas"]["AcceptConnectionOutputBody"]> => {
+    const { data, error } = await client.POST("/v1/user/connections/{id}/accept", {
+        params: withAuthHeaders({ path: { id: connectionId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to accept connection: ${JSON.stringify(error)}`);
+    }
+
+    return data;
+};
