@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -9,6 +9,8 @@ import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNo
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
+import { getConnectionsByReceiverAPI } from "@/api/connection";
+import { showToast } from "@/utils/showToast";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -104,8 +106,46 @@ const NotificationSection = ({
 };
 
 // Extract FollowRequestsSection component
-const FollowRequestsSection = ({ requests, styles }: { requests: FollowRequestProps[]; styles: any }) => {
-    if (requests.length === 0) return null;
+const FollowRequestsSection = ({ styles }: { styles: any }) => {
+    const [requests, setRequests] = useState<FollowRequestProps[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchFollowRequests = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const connections = await getConnectionsByReceiverAPI();
+                
+                // Transform API response to match FollowRequestProps interface
+                const transformedRequests: FollowRequestProps[] = connections.map((connection) => ({
+                    name: connection.requester.name,
+                    username: connection.requester.handle,
+                    icon: connection.requester.picture || Icons.coffee, // fallback icon
+                    userId: connection.requester._id,
+                }));
+                
+                setRequests(transformedRequests);
+            } catch (err) {
+                console.error('Failed to fetch follow requests:', err);
+                setError('Failed to load follow requests');
+                showToast('Failed to load follow requests', 'danger');
+                setRequests([]); // Set empty array on error
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFollowRequests();
+    }, []);
+
+    // Don't render anything while loading
+    if (loading) return null;
+    
+    // Don't render if there's an error or no requests
+    if (error || requests.length === 0) return null;
 
     return (
         <View style={styles.section}>
@@ -118,7 +158,7 @@ const FollowRequestsSection = ({ requests, styles }: { requests: FollowRequestPr
                 )}
             </View>
             {requests.slice(0, 4).map((request, index) => (
-                <View style={styles.listItem} key={`follow-${index}`}>
+                <View style={styles.listItem} key={`follow-${request.userId}-${index}`}>
                     <UserInfoFollowRequest
                         name={request.name}
                         icon={request.icon}
@@ -145,44 +185,7 @@ const Notifications = () => {
     const isThisMonth = (time: number) => time >= now - ONE_MONTH && time < now - ONE_WEEK;
     const isOlder = (time: number) => time < now - ONE_MONTH;
 
-    const follow_requests: FollowRequestProps[] = [
-        {
-            name: "Monkey D. Luffy",
-            username: "kingofpirates",
-            icon: Icons.luffy,
-            userId: "user123",
-        },
-        {
-            name: "Coffee Lover",
-            username: "coffeecoder",
-            icon: Icons.coffee,
-            userId: "user456",
-        },
-        {
-            name: "Latte Artist",
-            username: "latteart",
-            icon: Icons.latte,
-            userId: "user789",
-        },
-        {
-            name: "Monkey D. Luffy",
-            username: "kingofpirates",
-            icon: Icons.luffy,
-            userId: "user123",
-        },
-        {
-            name: "Coffee Lover",
-            username: "coffeecoder",
-            icon: Icons.coffee,
-            userId: "user456",
-        },
-        {
-            name: "Latte Artist",
-            username: "latteart",
-            icon: Icons.latte,
-            userId: "user789",
-        },
-    ];
+    // Note: follow_requests are now handled within FollowRequestsSection component
 
     const comment_notifications: CommentNotificationProps[] = [
         {
@@ -277,7 +280,7 @@ const Notifications = () => {
                 <ThemedText type="subtitle">Notifications</ThemedText>
             </View>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
-                <FollowRequestsSection requests={follow_requests} styles={styles} />
+                <FollowRequestsSection styles={styles} />
                 <NotificationSection title="Today" notifications={todayNotifications} styles={styles} />
                 <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} />
                 <NotificationSection title="This Month" notifications={thisMonthNotifications} styles={styles} />
