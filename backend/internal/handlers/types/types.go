@@ -66,6 +66,11 @@ type Reminder struct {
 	BeforeStart    bool      `bson:"beforeStart" json:"beforeStart"`
 	BeforeDeadline bool      `bson:"beforeDeadline" json:"beforeDeadline"`
 	AfterDeadline  bool      `bson:"afterDeadline" json:"afterDeadline"`
+
+	// Enhanced reminder features
+	CustomMessage *string `bson:"customMessage,omitempty" json:"customMessage,omitempty"`
+	Sound         *string `bson:"sound,omitempty" json:"sound,omitempty"`
+	Vibration     bool    `bson:"vibration" json:"vibration"`
 }
 
 type TemplateTaskDocument struct {

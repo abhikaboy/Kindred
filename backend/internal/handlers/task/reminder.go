@@ -17,21 +17,27 @@ func (h *Handler) HandleReminder() (fiber.Map, error) {
 	successful_updates := make([]TaskID, 0)
 	failed_updates := make([]TaskID, 0)
 	for _, task := range tasks {
-		err = h.service.SendReminder(task.UserID, task.Reminders[0], task.ID, task.Content)
-		if err != nil {
-			failed_updates = append(failed_updates, TaskID{
-				TaskID:     task.ID,
-				CategoryID: task.CategoryID,
-				UserID:     task.UserID,
-			})
-			continue
+		// Process ALL past due reminders for this task, not just the first one
+		for _, reminder := range task.Reminders {
+			// Only process reminders that are due and not sent
+			if !reminder.Sent && reminder.TriggerTime.Before(xutils.NowUTC()) {
+				err = h.service.SendReminder(task.UserID, reminder, &task)
+				if err != nil {
+					failed_updates = append(failed_updates, TaskID{
+						TaskID:     task.ID,
+						CategoryID: task.CategoryID,
+						UserID:     task.UserID,
+					})
+					continue
+				}
+				// Mark this specific reminder as successful
+				successful_updates = append(successful_updates, TaskID{
+					TaskID:     task.ID,
+					CategoryID: task.CategoryID,
+					UserID:     task.UserID,
+				})
+			}
 		}
-		// change the sent field to true
-		successful_updates = append(successful_updates, TaskID{
-			TaskID:     task.ID,
-			CategoryID: task.CategoryID,
-			UserID:     task.UserID,
-		})
 	}
 
 	for _, update := range successful_updates {

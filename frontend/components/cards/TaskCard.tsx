@@ -208,10 +208,9 @@ const TaskCard = ({
                                 <View style={styles.overdueContainer}>
                                     {overdueDuration && (
                                         <ThemedText type="caption" style={[styles.overdueText, { color: ThemedColor.error }]}>
-                                            {overdueDuration}
+                                            Due {overdueDuration} ago
                                         </ThemedText>
                                     )}
-                                    <AntDesign name="warning" size={20} color={ThemedColor.error} />
                                 </View>
                             </ConditionalView>
                             
