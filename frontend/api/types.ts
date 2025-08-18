@@ -26,6 +26,11 @@ export interface Reminder {
     beforeStart: boolean;
     beforeDeadline: boolean;
     afterDeadline?: boolean;
+    
+    // Enhanced reminder features
+    customMessage?: string;
+    sound?: string;
+    vibration?: boolean;
 }
 
 export interface ChecklistItem {

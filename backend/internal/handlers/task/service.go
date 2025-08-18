@@ -239,19 +239,19 @@ func (s *Service) CompleteTask(
 
 	ctx := context.Background()
 	pipeline := getTasksByUserPipeline(userId)
-	pipeline = append(pipeline, 
+	pipeline = append(pipeline,
 		bson.D{
 			{Key: "$match", Value: bson.M{"_id": id}},
 		},
 		bson.D{
-		{Key: "$set", Value: bson.M{
-			"active":        false,
-			"timeTaken":     completed.TimeTaken,
-			"timeCompleted": xutils.NowUTC(),
-			"category":      categoryId,
-			"user":          userId,
-		}},
-	},
+			{Key: "$set", Value: bson.M{
+				"active":        false,
+				"timeTaken":     completed.TimeTaken,
+				"timeCompleted": xutils.NowUTC(),
+				"category":      categoryId,
+				"user":          userId,
+			}},
+		},
 		bson.D{
 			{Key: "$unset", Value: bson.A{
 				"recurDetails",
@@ -752,7 +752,7 @@ func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 	return results, nil
 }
 
-func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, taskID primitive.ObjectID, taskName string) error {
+func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, task *TaskDocument) error {
 	ctx := context.Background()
 	// lookup the user
 	var user types.User
@@ -763,17 +763,115 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 
 	fmt.Println("Sending reminder to user", user.PushToken)
 
-	// send the reminder to the user
+	// Generate descriptive reminder message
+	message := s.generateReminderMessage(reminder, task)
 
+	// send the reminder to the user
 	err = xutils.SendNotification(xutils.Notification{
 		Token:   user.PushToken,
-		Message: "Reminder to: " + taskName,
+		Message: message,
 		Data: map[string]string{
-			"taskId": taskID.Hex(),
+			"taskId": task.ID.Hex(),
 		},
 	})
 
 	return err
+}
+
+// generateReminderMessage creates a descriptive reminder message based on timing and task details
+func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument) string {
+	now := time.Now()
+	taskName := task.Content
+
+	// Use custom message if provided
+	if reminder.CustomMessage != nil && *reminder.CustomMessage != "" {
+		return *reminder.CustomMessage + ": " + taskName
+	}
+
+	// Calculate time differences
+	var timeDiff time.Duration
+	var baseMessage string
+
+	// Before/After Start logic
+	if reminder.BeforeStart && task.StartTime != nil {
+		timeDiff = task.StartTime.Sub(now)
+		if timeDiff > 0 {
+			baseMessage = formatTimeMessage("starts in", timeDiff, taskName)
+		} else {
+			baseMessage = "Starting now: " + taskName
+		}
+	} else if reminder.AfterStart && task.StartTime != nil {
+		timeDiff = now.Sub(*task.StartTime)
+		if timeDiff > 0 {
+			baseMessage = formatOverdueMessage("started", timeDiff, taskName)
+		} else {
+			baseMessage = "Starting: " + taskName
+		}
+	}
+
+	// Before/After Deadline logic
+	if reminder.BeforeDeadline && task.Deadline != nil {
+		timeDiff = task.Deadline.Sub(now)
+		if timeDiff > 0 {
+			baseMessage = formatTimeMessage("due in", timeDiff, taskName)
+		} else {
+			baseMessage = "Due now: " + taskName
+		}
+	} else if reminder.AfterDeadline && task.Deadline != nil {
+		timeDiff = now.Sub(*task.Deadline)
+		if timeDiff > 0 {
+			baseMessage = formatOverdueMessage("was due", timeDiff, taskName)
+		} else {
+			baseMessage = "Due: " + taskName
+		}
+	}
+
+	// Fallback if no specific timing
+	if baseMessage == "" {
+		baseMessage = "Reminder: " + taskName
+	}
+
+	return baseMessage
+}
+
+// formatTimeMessage formats future time messages like "starts in 15 minutes"
+func formatTimeMessage(action string, duration time.Duration, taskName string) string {
+	timeStr := formatDuration(duration)
+	return fmt.Sprintf("Task %s %s: %s", action, timeStr, taskName)
+}
+
+// formatOverdueMessage formats past time messages like "started 5 minutes ago"
+func formatOverdueMessage(pastAction string, duration time.Duration, taskName string) string {
+	timeStr := formatDuration(duration)
+	if pastAction == "was due" {
+		return fmt.Sprintf("Overdue: %s (%s %s ago)", taskName, pastAction, timeStr)
+	}
+	return fmt.Sprintf("Task %s %s ago: %s", pastAction, timeStr, taskName)
+}
+
+// formatDuration converts duration to human-readable format
+func formatDuration(d time.Duration) string {
+	if d < time.Minute {
+		return "now"
+	} else if d < time.Hour {
+		minutes := int(d.Minutes())
+		if minutes == 1 {
+			return "1 minute"
+		}
+		return fmt.Sprintf("%d minutes", minutes)
+	} else if d < 24*time.Hour {
+		hours := int(d.Hours())
+		if hours == 1 {
+			return "1 hour"
+		}
+		return fmt.Sprintf("%d hours", hours)
+	} else {
+		days := int(d.Hours() / 24)
+		if days == 1 {
+			return "1 day"
+		}
+		return fmt.Sprintf("%d days", days)
+	}
 }
 
 func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID) error {
