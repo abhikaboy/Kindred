@@ -8,6 +8,7 @@ const withAuthHeaders = (params: any = {}) => ({
 });
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
+type BlueprintDocumentWithoutSubscribers = components["schemas"]["BlueprintDocumentWithoutSubscribers"];
 type CreateBlueprintParams = components["schemas"]["CreateBlueprintParams"];
 type UpdateBlueprintDocument = components["schemas"]["UpdateBlueprintDocument"];
 type UpdateBlueprintOutputBody = components["schemas"]["UpdateBlueprintOutputBody"];
@@ -215,6 +216,21 @@ export const updateBlueprint = async (
     }
 }
 
+/**
+ * Get user's subscribed blueprints
+ * @returns 
+ */
+export const getUserSubscribedBlueprints = async (): Promise<BlueprintDocumentWithoutSubscribers[]> => {
+    const {data, error} = await client.GET("/v1/user/blueprints/subscribed", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get user's subscribed blueprints: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+}
 
 /**
  * Delete Blueprint 
@@ -297,7 +313,7 @@ export const unSubscribeToBlueprint = async (blueprintId: string): Promise<Unsub
  * @returns 
  */
 export const searchBlueprints = async (query: string): Promise<BlueprintDocument[]> => {
-    const { data, error } = await client.GET("/v1/blueprints/search/", {
+    const { data, error } = await client.GET("/v1/blueprints/search", {
         params: withAuthHeaders({ 
             query: { query : query },
         }),

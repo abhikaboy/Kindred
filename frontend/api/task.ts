@@ -253,3 +253,77 @@ export const getTotalPointsFromCompletedTasks = async (): Promise<number> => {
         return 0;
     }
 };
+
+/**
+ * Update task deadline using specialized endpoint
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param deadline - The new deadline date (or null to remove)
+ */
+export const updateTaskDeadlineAPI = async (
+    categoryId: string, 
+    taskId: string, 
+    deadline: Date | null
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/category/{category}/task/{id}/deadline", {
+        params: withAuthHeaders({ 
+            path: { category: categoryId, id: taskId } 
+        }),
+        body: { deadline: deadline?.toISOString() || null },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update task deadline: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Update task start date/time using specialized endpoint
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param startDate - The new start date (or null to remove)
+ * @param startTime - The new start time (or null to remove)
+ */
+export const updateTaskStartAPI = async (
+    categoryId: string,
+    taskId: string,
+    startDate: Date | null,
+    startTime?: Date | null
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/category/{category}/task/{id}/start", {
+        params: withAuthHeaders({ 
+            path: { category: categoryId, id: taskId } 
+        }),
+        body: { 
+            startDate: startDate?.toISOString() || null,
+            startTime: startTime?.toISOString() || null
+        },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update task start date/time: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Update task reminders using specialized endpoint
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param reminders - Array of reminder objects
+ */
+export const updateTaskRemindersAPI = async (
+    categoryId: string,
+    taskId: string,
+    reminders: any[]
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/category/{category}/task/{id}/reminders", {
+        params: withAuthHeaders({ 
+            path: { category: categoryId, id: taskId } 
+        }),
+        body: { reminders },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update task reminders: ${JSON.stringify(error)}`);
+    }
+};

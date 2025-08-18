@@ -12,9 +12,10 @@ import SuggestedTag from "@/components/inputs/SuggestedTag";
 
 type Props = {
     goToStandard: () => void;
+    onSubmit?: (startDate: Date | null, startTime?: Date | null) => void;
 };
 
-const StartDate = ({ goToStandard }: Props) => {
+const StartDate = ({ goToStandard, onSubmit }: Props) => {
     const ThemedColor = useThemeColor();
     const { startDate, setStartDate } = useTaskCreation();
     return (
@@ -58,7 +59,16 @@ const StartDate = ({ goToStandard }: Props) => {
                 />
             </View>
             <ThemedCalendar dateReciever={setStartDate} />
-            <PrimaryButton onPress={() => goToStandard()} title="Set Start Date" />
+            <PrimaryButton 
+                onPress={() => {
+                    if (onSubmit) {
+                        onSubmit(startDate);
+                    } else {
+                        goToStandard();
+                    }
+                }} 
+                title="Set Start Date" 
+            />
         </View>
     );
 };

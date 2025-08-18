@@ -8,6 +8,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
 import CreateModal from "@/components/modals/CreateModal";
+import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ConditionalView from "@/components/ui/ConditionalView";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -41,6 +42,7 @@ const Home = (props: Props) => {
     const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks, fetchingWorkspaces } = useTasks();
     const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
     const [creating, setCreating] = useState(false);
+    const [creatingWorkspace, setCreatingWorkspace] = useState(false);
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -85,7 +87,11 @@ const Home = (props: Props) => {
             drawerType="front"
             onDrawerOpen={() => setIsDrawerOpen(true)}
             onDrawerClose={() => setIsDrawerOpen(false)}>
+                
             <CreateModal visible={creating} setVisible={setCreating} />
+            <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
+            
+            
             <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
@@ -183,7 +189,7 @@ const Home = (props: Props) => {
                                         </View>
                                     </ConditionalView>
                                     <TouchableOpacity
-                                        onPress={() => setCreating(true)}
+                                        onPress={() => setCreatingWorkspace(true)}
                                         style={[
                                             styles.createWorkspaceCard,
                                             {

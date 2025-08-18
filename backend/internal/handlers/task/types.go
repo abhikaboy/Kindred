@@ -49,9 +49,9 @@ type UpdateTaskDocument struct {
 	Active       bool          `bson:"active" json:"active"`
 
 	// Add the new fields for updating task properties
-	Deadline  *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
-	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
-	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"`
+	Deadline  *time.Time  `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime *time.Time  `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate *time.Time  `bson:"startDate,omitempty" json:"startDate,omitempty"`
 	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
 
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
@@ -81,6 +81,20 @@ type UpdateTaskNotesDocument struct {
 
 type UpdateTaskChecklistDocument struct {
 	Checklist []ChecklistItem `bson:"checklist" json:"checklist"`
+}
+
+// Specialized update documents for targeted operations
+type UpdateTaskDeadlineDocument struct {
+	Deadline *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
+}
+
+type UpdateTaskStartDocument struct {
+	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"`
+	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
+}
+
+type UpdateTaskReminderDocument struct {
+	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
 /*

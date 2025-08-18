@@ -35,6 +35,7 @@ import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -54,6 +55,7 @@ export default function Task() {
     const [localNotes, setLocalNotes] = useState("");
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeadlineModal, setShowDeadlineModal] = useState(false);
 
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
@@ -70,6 +72,13 @@ export default function Task() {
     const refreshTaskData = () => {
         // This will trigger a re-render with updated task data
         // The task context should automatically update when the task is modified
+    };
+
+    // Handle deadline update
+    const handleDeadlineUpdate = (deadline: Date | null) => {
+        console.log("Deadline updated:", deadline);
+        // The task context should automatically update when the task is modified
+        // You can add additional logic here if needed
     };
 
     useEffect(() => {
@@ -382,15 +391,27 @@ export default function Task() {
                                             style={{
                                                 flexDirection: "row",
                                                 justifyContent: "space-between",
+                                                alignItems: "center",
                                             }}>
-                                            <ThemedText type="lightBody">
-                                                {new Date(task?.deadline).toLocaleDateString()}
-                                            </ThemedText>
-                                            <ThemedText type="lightBody">
-                                                {task?.deadline
-                                                    ? new Date(task?.deadline).toLocaleTimeString()
-                                                    : "No Deadline Time"}
-                                            </ThemedText>
+                                            <View style={{ flexDirection: "column" }}>
+                                                <ThemedText type="lightBody">
+                                                    {new Date(task?.deadline).toLocaleDateString()}
+                                                </ThemedText>
+                                                <ThemedText type="lightBody">
+                                                    {task?.deadline
+                                                        ? new Date(task?.deadline).toLocaleTimeString()
+                                                        : "No Deadline Time"}
+                                                </ThemedText>
+                                            </View>
+                                            <TouchableOpacity
+                                                onPress={() => setShowDeadlineModal(true)}
+                                                style={{
+                                                    padding: 8,
+                                                    borderRadius: 4,
+                                                    backgroundColor: ThemedColor.lightened,
+                                                }}>
+                                                <Feather name="edit-2" size={16} color={ThemedColor.text} />
+                                            </TouchableOpacity>
                                         </View>
                                     </DataCard>
                                 </ConditionalView>
@@ -402,7 +423,7 @@ export default function Task() {
                                             boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
                                         }}
                                         onPress={() => {
-                                            setShowEditModal(true);
+                                            setShowDeadlineModal(true);
                                         }}
                                     />
                                 </ConditionalView>
@@ -523,6 +544,14 @@ export default function Task() {
                 edit={true}
                 categoryId={categoryId as string}
                 screen={Screen.DEADLINE}
+            />
+            
+            <DeadlineBottomSheetModal
+                visible={showDeadlineModal}
+                setVisible={setShowDeadlineModal}
+                taskId={id as string}
+                categoryId={categoryId as string}
+                onDeadlineUpdate={handleDeadlineUpdate}
             />
         </ThemedView>
     );

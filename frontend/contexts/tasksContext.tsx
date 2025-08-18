@@ -2,10 +2,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
 import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
-import { Task, Workspace, Categories } from "../api/types";
+import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI } from "@/api/category";
 import { isFuture, isPast, isToday } from "date-fns";
+import { getUserSubscribedBlueprints } from "@/api/blueprint";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 
@@ -126,7 +127,19 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setFetchingWorkspaces(true);
         console.log("fetching workspaces via API");
         const data = await fetchUserWorkspaces(user._id);
-        setWorkSpaces(data);
+        const subscribedBlueprints = await getUserSubscribedBlueprints();
+        console.log("subscribedBlueprints", subscribedBlueprints);
+        const blueprintWorkspaces : BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
+            return {
+                name: `[${blueprint.owner.display_name}] ${blueprint.name}`,
+                categories: [],
+                blueprintDetails: blueprint,
+                isBlueprint: true
+            }
+        });
+        console.log("blueprintWorkspaces", blueprintWorkspaces);
+
+        setWorkSpaces([...data, ...blueprintWorkspaces]);
         setFetchingWorkspaces(false);
     };
 
@@ -136,7 +149,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param category
      */
     const addWorkspace = async (name: string, category: Categories) => {
-        const newWorkspace = { name: name, categories: [category] };
+        const newWorkspace = { name: name, categories: [category], isBlueprint: false };
         await createWorkspace(name);
         let workspacesCopy = workspaces.slice();
         workspacesCopy.push(newWorkspace);

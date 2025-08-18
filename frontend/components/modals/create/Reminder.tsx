@@ -17,6 +17,7 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
     goToStandard: () => void;
+    onSubmit?: (reminders: any[]) => void;
 };
 
 const RelativeReminderOptions = ({
@@ -232,7 +233,7 @@ const AbsoluteReminderOptions = ({
     );
 };
 
-const Reminder = ({ goToStandard }: Props) => {
+const Reminder = ({ goToStandard, onSubmit }: Props) => {
     const ThemedColor = useThemeColor();
     const { startTime, startDate, deadline, setReminders } = useTaskCreation();
 
@@ -348,8 +349,12 @@ const Reminder = ({ goToStandard }: Props) => {
                         );
                         if (reminder) {
                             console.log(reminder);
-                            goToStandard();
-                            setReminders([reminder]);
+                            if (onSubmit) {
+                                onSubmit([reminder]);
+                            } else {
+                                goToStandard();
+                                setReminders([reminder]);
+                            }
                         }
                     }}
                     style={{ width: "100%", marginBottom: 32 }}
@@ -405,6 +410,7 @@ const ProduceReminder = (
         beforeStart,
         beforeDeadline,
         afterDeadline,
+        vibration: true,
     };
 };
 

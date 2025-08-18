@@ -495,3 +495,104 @@ func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTask
 
 	return &GetCompletedTasksOutput{Body: tasks}, nil
 }
+
+// Specialized update handlers
+
+// UpdateTaskDeadline updates the deadline field of a task
+func (h *Handler) UpdateTaskDeadline(ctx context.Context, input *UpdateTaskDeadlineInput) (*UpdateTaskDeadlineOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	err = h.service.UpdateTaskDeadline(id, categoryID, userObjID, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task deadline", err)
+	}
+
+	resp := &UpdateTaskDeadlineOutput{}
+	resp.Body.Message = "Task deadline updated successfully"
+	return resp, nil
+}
+
+// UpdateTaskStart updates the start date and time fields of a task
+func (h *Handler) UpdateTaskStart(ctx context.Context, input *UpdateTaskStartInput) (*UpdateTaskStartOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	err = h.service.UpdateTaskStart(id, categoryID, userObjID, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task start date/time", err)
+	}
+
+	resp := &UpdateTaskStartOutput{}
+	resp.Body.Message = "Task start date/time updated successfully"
+	return resp, nil
+}
+
+// UpdateTaskReminders updates the reminders field of a task
+func (h *Handler) UpdateTaskReminders(ctx context.Context, input *UpdateTaskReminderInput) (*UpdateTaskReminderOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	err = h.service.UpdateTaskReminders(id, categoryID, userObjID, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update task reminders", err)
+	}
+
+	resp := &UpdateTaskReminderOutput{}
+	resp.Body.Message = "Task reminders updated successfully"
+	return resp, nil
+}
