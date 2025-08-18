@@ -111,7 +111,7 @@ func (h *Handler) GetConnectionsByReceiverHuma(ctx context.Context, input *GetCo
 
 	connections, err := h.service.GetByReciever(id)
 	if err != nil {
-		return nil, huma.Error404NotFound("No connections found", err)
+		return nil, huma.Error500InternalServerError("Failed to get connections", err)
 	}
 
 	return &GetConnectionsByReceiverOutput{Body: connections}, nil
@@ -131,7 +131,7 @@ func (h *Handler) GetConnectionsByRequesterHuma(ctx context.Context, input *GetC
 
 	connections, err := h.service.GetByRequester(id)
 	if err != nil {
-		return nil, huma.Error404NotFound("No connections found", err)
+		return nil, huma.Error500InternalServerError("Failed to get connections", err)
 	}
 
 	return &GetConnectionsByRequesterOutput{Body: connections}, nil

@@ -48,6 +48,9 @@ func (s *Service) GetByReciever(id primitive.ObjectID) ([]ConnectionDocument, er
 		return nil, err
 	}
 	defer cursor.Close(ctx)
+	if cursor.RemainingBatchLength() == 0 {
+		return []ConnectionDocument{}, nil
+	}
 
 	var internalResults []ConnectionDocumentInternal
 	if err := cursor.All(ctx, &internalResults); err != nil {
@@ -71,6 +74,9 @@ func (s *Service) GetByRequester(id primitive.ObjectID) ([]ConnectionDocument, e
 		return nil, err
 	}
 	defer cursor.Close(ctx)
+	if cursor.RemainingBatchLength() == 0 {
+		return []ConnectionDocument{}, nil
+	}
 
 	var internalResults []ConnectionDocumentInternal
 	if err := cursor.All(ctx, &internalResults); err != nil {
