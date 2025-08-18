@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Dimensions, Alert } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, StyleSheet, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import Octicons from "@expo/vector-icons/Octicons";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createCongratulationAPI } from "@/api/congratulation";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CongratulateModalProps {
     visible: boolean;
@@ -30,58 +28,22 @@ interface CongratulateModalProps {
 
 export default function CongratulateModal({ visible, setVisible, task, congratulationConfig }: CongratulateModalProps) {
     const ThemedColor = useThemeColor();
+    const { user, updateUser } = useAuth();
     const [congratulationMessage, setCongratulationMessage] = useState("");
-    const [congratulationsLeft, setCongratulationsLeft] = useState(2);
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
 
-    // Generate the storage key for today's date
-    const getStorageKey = () => {
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, "0");
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const year = today.getFullYear();
-        return `${day}-${month}-${year}-CON`;
-    };
-
-    // Load congratulations left from storage
-    const loadCongratulationsLeft = async () => {
-        try {
-            const key = getStorageKey();
-            const stored = await AsyncStorage.getItem(key);
-            if (stored !== null) {
-                const count = parseInt(stored, 10);
-                setCongratulationsLeft(count);
-            } else {
-                // If no stored value, default to 2
-                setCongratulationsLeft(2);
-            }
-        } catch (error) {
-            console.error("Error loading congratulations left:", error);
-            setCongratulationsLeft(2);
-        }
-    };
-
-    // Save congratulations left to storage
-    const saveCongratulationsLeft = async (count: number) => {
-        try {
-            const key = getStorageKey();
-            await AsyncStorage.setItem(key, count.toString());
-        } catch (error) {
-            console.error("Error saving congratulations left:", error);
-        }
-    };
-
-    // Load congratulations when modal becomes visible
-    useEffect(() => {
-        if (visible) {
-            loadCongratulationsLeft();
-        }
-    }, [visible]);
+    // Get congratulations left from user data
+    const congratulationsLeft = user?.congratulations || 0;
 
     const handleSendCongratulation = async () => {
         if (!congratulationConfig?.receiverId || !task || !congratulationConfig?.categoryName) {
             Alert.alert("Error", "Missing required information to send congratulation");
+            return;
+        }
+
+        if (congratulationsLeft <= 0) {
+            Alert.alert("Error", "You have no congratulations left today");
             return;
         }
 
@@ -97,12 +59,9 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             // Make the API call
             await createCongratulationAPI(congratulationData);
 
-            // Update congratulations left
+            // Update user's congratulation count locally
             const newCount = Math.max(0, congratulationsLeft - 1);
-            setCongratulationsLeft(newCount);
-
-            // Save to storage
-            await saveCongratulationsLeft(newCount);
+            updateUser({ congratulations: newCount });
 
             // Clear message and close modal
             setCongratulationMessage("");

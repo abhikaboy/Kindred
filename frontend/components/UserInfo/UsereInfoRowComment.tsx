@@ -1,7 +1,6 @@
 import React from "react";
 import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import PreviewIcon from "../profile/PreviewIcon";
 
 type Props = {
@@ -21,7 +20,7 @@ const UserInfoRowComment = ({ name, content, icon, time }: Props) => (
                 </View>
                 <View style={{ gap: 2, flex: 1 }}>
                     <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
-                        <ThemedText type="caption" style={{ color: "white" }}>
+                        <ThemedText type="caption">
                             {name}
                         </ThemedText>
                         <ThemedText type="caption">{time}hr</ThemedText>
