@@ -164,3 +164,14 @@ func RequireAuth(ctx context.Context) (string, error) {
 	slog.Info("✅ REQUIRE AUTH: User authenticated", "user_id", userID)
 	return userID, nil
 }
+
+// OptionalAuth is a helper function that checks if a user is authenticated but doesn't fail if not
+func OptionalAuth(ctx context.Context) (string, bool) {
+	userID, ok := GetUserIDFromContext(ctx)
+	if ok {
+		slog.Info("✅ OPTIONAL AUTH: User authenticated", "user_id", userID)
+	} else {
+		slog.Info("ℹ️ OPTIONAL AUTH: User not authenticated, proceeding without auth")
+	}
+	return userID, ok
+}
