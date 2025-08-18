@@ -43,7 +43,6 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 		}
 
 		accessToken := parts[1]
-		xlog.AuthSuccess(fmt.Sprintf("Bearer token extracted (length: %d)", len(accessToken)))
 
 		// Try to validate access token first
 		xlog.ValidationLog("Attempting to validate access token...")
@@ -86,8 +85,6 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 				})
 			}
 
-			xlog.AuthSuccess("New tokens generated successfully")
-
 			// Mark refresh token as used
 			if err := service.UseToken(userID); err != nil {
 				xlog.AuthError(fmt.Sprintf("Failed to mark token as used: %v", err))
@@ -100,16 +97,11 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			// Set new tokens in response headers
 			c.Set("access_token", newAccess)
 			c.Set("refresh_token", newRefresh)
-			xlog.AuthSuccess("New tokens set in response headers")
 		} else {
-			xlog.AuthSuccess(fmt.Sprintf("Access token validation successful (user: %s, count: %.0f)",
-				userID, count))
 		}
 
 		// Add user ID to Fiber context locals
 		c.Locals(UserIDContextKey, userID)
-
-		xlog.CompletionLog(fmt.Sprintf("Authentication complete, proceeding to handler (user: %s)", userID))
 
 		// Continue to next handler
 		return c.Next()
@@ -126,8 +118,6 @@ func validateRefreshTokenFiber(service *Service, refreshToken string) (float64, 
 		slog.Error("❌ REFRESH TOKEN FIBER: Token validation failed", "error", err.Error())
 		return 0, fmt.Errorf("refresh token invalid: %v", err)
 	}
-
-	slog.Info("✅ REFRESH TOKEN FIBER: Token structure valid", "user_id", userID, "count", count)
 
 	// Check if the refresh token is unused
 	id, err := primitive.ObjectIDFromHex(userID)
@@ -147,7 +137,6 @@ func validateRefreshTokenFiber(service *Service, refreshToken string) (float64, 
 		return 0, fmt.Errorf("refresh token has already been used")
 	}
 
-	slog.Info("✅ REFRESH TOKEN FIBER: Validation complete", "user_id", userID, "count", count)
 	return count, nil
 }
 
@@ -164,7 +153,6 @@ func RequireAuthFiber(c *fiber.Ctx) (string, error) {
 		slog.Error("❌ REQUIRE AUTH FIBER: User not found in context")
 		return "", fmt.Errorf("user not authenticated")
 	}
-	slog.Info("✅ REQUIRE AUTH FIBER: User authenticated", "user_id", userID)
 	return userID, nil
 }
 

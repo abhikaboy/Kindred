@@ -153,8 +153,7 @@ function LeftAction(
 
             if (opacity <= 0 && !isCompleting) {
                 runOnJS(setIsCompleting)(true);
-                runOnJS(markAsCompleted)(categoryId, id);
-                runOnJS(setIsCompleting)(false);
+                runOnJS(markAsCompleted)(categoryId, id); // runs only once
             }
         }
     );
