@@ -17,8 +17,6 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 	service := newService(collections, cfg)
 
 	return func(c *fiber.Ctx) error {
-		xlog.AuthLog(fmt.Sprintf("Starting authentication process for %s %s from %s",
-			c.Method(), c.Path(), c.IP()))
 
 		// Extract Authorization header
 		authHeader := c.Get("Authorization")
@@ -29,7 +27,6 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 				"status": 401,
 			})
 		}
-		xlog.AuthSuccess(fmt.Sprintf("Authorization header found (length: %d)", len(authHeader)))
 
 		// Parse Bearer token
 		parts := strings.Split(authHeader, " ")
@@ -46,7 +43,7 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 
 		// Try to validate access token first
 		xlog.ValidationLog("Attempting to validate access token...")
-		userID, count, err := service.ValidateToken(accessToken)
+		userID, _, err := service.ValidateToken(accessToken)
 		if err != nil {
 			xlog.AuthError(fmt.Sprintf("Access token validation failed: %v", err))
 
