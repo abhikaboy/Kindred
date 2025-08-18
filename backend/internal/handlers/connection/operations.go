@@ -170,10 +170,10 @@ func RegisterDeleteConnectionOperation(api huma.API, handler *Handler) {
 // Register all connection operations
 func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterCreateConnectionOperation(api, handler)
-	RegisterGetConnectionsOperation(api, handler)
-	RegisterGetConnectionOperation(api, handler)
 	RegisterGetConnectionsByReceiverOperation(api, handler)
 	RegisterGetConnectionsByRequesterOperation(api, handler)
+	RegisterGetConnectionsOperation(api, handler)
+	RegisterGetConnectionOperation(api, handler)
 	RegisterUpdateConnectionOperation(api, handler)
 	RegisterDeleteConnectionOperation(api, handler)
 }
