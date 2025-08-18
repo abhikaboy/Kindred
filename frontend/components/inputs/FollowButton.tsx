@@ -28,9 +28,6 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
 
     // Get relationship status from profile
     const relationship = profile.relationship?.status || "none";
-    console.log("FollowButton - relationship:", relationship);
-    console.log("FollowButton - profile.relationship:", profile.relationship);
-    console.log("FollowButton - final relationship status:", relationship);
 
     const relationshipMapping = {
         none: {
@@ -73,15 +70,9 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
 
             switch (currentMapping.action) {
                 case "follow":
-                    // Create connection request
+                    // Create connection request (new API expects receiver_id only)
                     const connectionData = {
-                        reciever: profile.id,
-                        requester: {
-                            _id: user._id,
-                            handle: user.handle || user.display_name || "",
-                            name: user.display_name || user.name || "",
-                            picture: user.profile_picture || null,
-                        },
+                        receiver_id: profile.id,
                     };
 
                     const newConnection = await createConnectionAPI(connectionData);

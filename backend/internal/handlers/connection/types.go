@@ -32,38 +32,88 @@ func (u *ConnectionUserInternal) ToAPI() *ConnectionUser {
 	}
 }
 
+// New relationship-based types
+type RelationshipStatus string
+
+const (
+	StatusFriends RelationshipStatus = "friends"
+	StatusPending RelationshipStatus = "pending"
+	StatusBlocked RelationshipStatus = "blocked"
+)
+
+type RelationshipType string
+
+const (
+	RelationshipNone            RelationshipType = "none"
+	RelationshipFriends         RelationshipType = "friends"
+	RelationshipRequestSent     RelationshipType = "request_sent"
+	RelationshipRequestReceived RelationshipType = "request_received"
+	RelationshipBlocked         RelationshipType = "blocked"
+)
+
 type CreateConnectionParams struct {
-	Requester ConnectionUser `validate:"required" json:"requester" doc:"Connection requester information"`
-	Reciever  string         `validate:"required" json:"reciever" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID"`
+	ReceiverID string `validate:"required" json:"receiver_id" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID"`
 }
 
 type ConnectionDocument struct {
-	ID        string         `bson:"_id,omitempty" json:"id" example:"507f1f77bcf86cd799439011" doc:"Connection ID"`
-	Requester ConnectionUser `validate:"required" json:"requester" doc:"Connection requester information"`
-	Reciever  string         `validate:"required" json:"reciever" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID"`
-	Timestamp time.Time      `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Connection timestamp"`
+	ID         string             `bson:"_id,omitempty" json:"id" example:"507f1f77bcf86cd799439011" doc:"Relationship ID"`
+	Users      []string           `json:"users" doc:"Array of user IDs (always sorted)"`
+	Status     RelationshipStatus `json:"status" doc:"Relationship status"`
+	Requester  ConnectionUser     `json:"requester" doc:"Connection requester information"`
+	ReceiverID string             `json:"receiver_id" doc:"Receiver user ID"`
+	CreatedAt  time.Time          `json:"created_at" doc:"When relationship was created"`
+	AcceptedAt *time.Time         `json:"accepted_at,omitempty" doc:"When friendship was confirmed"`
 }
 
 // Internal version for MongoDB operations
 type ConnectionDocumentInternal struct {
-	ID        primitive.ObjectID     `bson:"_id,omitempty"`
-	Requester ConnectionUserInternal `bson:"requester"`
-	Reciever  primitive.ObjectID     `bson:"reciever"`
-	Timestamp time.Time              `bson:"timestamp"`
+	ID         primitive.ObjectID     `bson:"_id,omitempty"`
+	Users      []primitive.ObjectID   `bson:"users"` // Always sorted
+	Status     RelationshipStatus     `bson:"status"`
+	Requester  ConnectionUserInternal `bson:"requester"`
+	ReceiverID primitive.ObjectID     `bson:"receiver_id"`
+	CreatedAt  time.Time              `bson:"created_at"`
+	AcceptedAt *time.Time             `bson:"accepted_at,omitempty"`
 }
 
 // Helper function to convert from internal to API type
 func (c *ConnectionDocumentInternal) ToAPI() *ConnectionDocument {
-	return &ConnectionDocument{
-		ID:        c.ID.Hex(),
-		Requester: *c.Requester.ToAPI(),
-		Reciever:  c.Reciever.Hex(),
-		Timestamp: c.Timestamp,
+	users := make([]string, len(c.Users))
+	for i, userID := range c.Users {
+		users[i] = userID.Hex()
 	}
+
+	doc := &ConnectionDocument{
+		ID:         c.ID.Hex(),
+		Users:      users,
+		Status:     c.Status,
+		Requester:  *c.Requester.ToAPI(),
+		ReceiverID: c.ReceiverID.Hex(),
+		CreatedAt:  c.CreatedAt,
+		AcceptedAt: c.AcceptedAt,
+	}
+
+	return doc
 }
 
 type UpdateConnectionDocument struct {
-	// idk what goes here
+	Status     *RelationshipStatus `json:"status,omitempty"`
+	AcceptedAt *time.Time          `json:"accepted_at,omitempty"`
+}
+
+// Helper functions for sorting user IDs
+func SortUserIDs(userA, userB primitive.ObjectID) []primitive.ObjectID {
+	if userA.Hex() < userB.Hex() {
+		return []primitive.ObjectID{userA, userB}
+	}
+	return []primitive.ObjectID{userB, userA}
+}
+
+func SortUserIDStrings(userA, userB string) []string {
+	if userA < userB {
+		return []string{userA, userB}
+	}
+	return []string{userB, userA}
 }
 
 /*
