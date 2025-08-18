@@ -79,14 +79,14 @@ func (h *Handler) GetConnectionsHuma(ctx context.Context, input *GetConnectionsI
 
 func (h *Handler) GetConnectionHuma(ctx context.Context, input *GetConnectionInput) (*GetConnectionOutput, error) {
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	id, err := primitive.ObjectIDFromHex(input.ID)
+	id, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
+		return nil, huma.Error400BadRequest("Invalid ID", err)
 	}
 
 	Connection, err := h.service.GetConnectionByID(id)
