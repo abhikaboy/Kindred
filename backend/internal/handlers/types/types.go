@@ -66,6 +66,11 @@ type Reminder struct {
 	BeforeStart    bool      `bson:"beforeStart" json:"beforeStart"`
 	BeforeDeadline bool      `bson:"beforeDeadline" json:"beforeDeadline"`
 	AfterDeadline  bool      `bson:"afterDeadline" json:"afterDeadline"`
+
+	// Enhanced reminder features
+	CustomMessage *string `bson:"customMessage,omitempty" json:"customMessage,omitempty"`
+	Sound         *string `bson:"sound,omitempty" json:"sound,omitempty"`
+	Vibration     bool    `bson:"vibration" json:"vibration"`
 }
 
 type TemplateTaskDocument struct {
@@ -123,26 +128,47 @@ type User struct {
 	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 	PushToken      string               `bson:"push_token" json:"push_token"`
 
-	DisplayName    string `bson:"display_name" json:"display_name"`
-	Handle         string `bson:"handle" json:"handle"`
-	ProfilePicture string `bson:"profile_picture" json:"profile_picture"`
+	DisplayName     string `bson:"display_name" json:"display_name"`
+	Handle          string `bson:"handle" json:"handle"`
+	ProfilePicture  string `bson:"profile_picture" json:"profile_picture"`
+	Encouragements  int    `bson:"encouragements" json:"encouragements"`
+	Congratulations int    `bson:"congratulations" json:"congratulations"`
+	Streak          int    `bson:"streak" json:"streak"`
+	StreakEligible  bool   `bson:"streakEligible" json:"streakEligible"`
+	Points          int    `bson:"points" json:"points"`
+	PostsMade       int    `bson:"posts_made" json:"posts_made"`
 }
 
 type SafeUser struct {
-	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
-	DisplayName    string               `bson:"display_name" json:"display_name"`
-	Handle         string               `bson:"handle" json:"handle"`
-	ProfilePicture string               `bson:"profile_picture" json:"profile_picture"`
-	Categories     []CategoryDocument   `bson:"categories" json:"categories"`
-	Friends        []primitive.ObjectID `bson:"friends" json:"friends"`
-	TasksComplete  float64              `bson:"tasks_complete" json:"tasks_complete"`
-	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+	ID              primitive.ObjectID   `bson:"_id" json:"_id"`
+	DisplayName     string               `bson:"display_name" json:"display_name"`
+	Handle          string               `bson:"handle" json:"handle"`
+	ProfilePicture  string               `bson:"profile_picture" json:"profile_picture"`
+	Categories      []CategoryDocument   `bson:"categories" json:"categories"`
+	Friends         []primitive.ObjectID `bson:"friends" json:"friends"`
+	TasksComplete   float64              `bson:"tasks_complete" json:"tasks_complete"`
+	RecentActivity  []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+	Encouragements  int                  `bson:"encouragements" json:"encouragements"`
+	Congratulations int                  `bson:"congratulations" json:"congratulations"`
+	Streak          int                  `bson:"streak" json:"streak"`
+	StreakEligible  bool                 `bson:"streakEligible" json:"streakEligible"`
+	Points          int                  `bson:"points" json:"points"`
+	PostsMade       int                  `bson:"posts_made" json:"posts_made"`
 }
 type ActivityDocument struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Field1    string             `bson:"field1" json:"field1"`
-	Picture   *string            `bson:"picture" json:"picture"`
-	Timestamp time.Time          `bson:"timestamp" json:"timestamp"`
+	ID          primitive.ObjectID `bson:"_id" json:"_id"`
+	User        primitive.ObjectID `bson:"user" json:"user"`
+	Year        int                `bson:"year" json:"year"`
+	Month       int                `bson:"month" json:"month"`
+	Days        []ActivityDay      `bson:"days" json:"days"`
+	TotalCount  int                `bson:"totalCount" json:"totalCount"`
+	LastUpdated time.Time          `bson:"lastUpdated" json:"lastUpdated"`
+}
+
+type ActivityDay struct {
+	Day   int `bson:"day" json:"day"`
+	Count int `bson:"count" json:"count"`
+	Level int `bson:"level" json:"level"`
 }
 
 type PostDocument struct {

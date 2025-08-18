@@ -163,6 +163,7 @@ func (s *Service) SearchProfiles(query string) ([]ProfileDocument, error) {
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
+
 	return results, nil
 }
 

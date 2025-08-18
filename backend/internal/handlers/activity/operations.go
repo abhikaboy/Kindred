@@ -8,15 +8,6 @@ import (
 
 // Input/Output types for activity operations
 
-// Create Activity
-type CreateActivityInput struct {
-	Body CreateActivityParams `json:"body"`
-}
-
-type CreateActivityOutput struct {
-	Body ActivityDocument `json:"body"`
-}
-
 // Get Activities (all)
 type GetActivitiesInput struct{}
 
@@ -26,48 +17,45 @@ type GetActivitiesOutput struct {
 
 // Get Activity by ID
 type GetActivityInput struct {
-	ID string `path:"id" example:"507f1f77bcf86cd799439011"`
+	ID    string `path:"id" example:"507f1f77bcf86cd799439011"`
+	Year  int    `query:"year" example:"2024"`
 }
 
 type GetActivityOutput struct {
 	Body ActivityDocument `json:"body"`
 }
 
-// Update Activity
-type UpdateActivityInput struct {
-	ID   string                 `path:"id" example:"507f1f77bcf86cd799439011"`
-	Body UpdateActivityDocument `json:"body"`
+// Get Activity by User and Period
+type GetActivityByUserAndPeriodInput struct {
+	UserID string `path:"userID" example:"507f1f77bcf86cd799439011"`
+	Year   int    `query:"year" example:"2024"`
+	Month  int    `query:"month" example:"12"`
 }
 
-type UpdateActivityOutput struct {
-	Body struct {
-		Message string `json:"message" example:"Activity updated successfully"`
-	}
+type GetActivityByUserAndPeriodOutput struct {
+	Body ActivityDocument `json:"body"`
 }
 
-// Delete Activity
-type DeleteActivityInput struct {
-	ID string `path:"id" example:"507f1f77bcf86cd799439011"`
+// Get Recent Activity
+type GetRecentActivityInput struct {
+	UserID string `path:"userID" example:"507f1f77bcf86cd799439011"`
 }
 
-type DeleteActivityOutput struct {
-	Body struct {
-		Message string `json:"message" example:"Activity deleted successfully"`
-	}
+type GetRecentActivityOutput struct {
+	Body []ActivityDocument `json:"body"`
+}
+
+// Get Activity by User and Year
+type GetActivityByUserAndYearInput struct {
+	UserID string `path:"userID" example:"507f1f77bcf86cd799439011"`
+	Year   int    `query:"year" example:"2024"`
+}
+
+type GetActivityByUserAndYearOutput struct {
+	Body []ActivityDocument `json:"body"`
 }
 
 // Operation registrations
-
-func RegisterCreateActivityOperation(api huma.API, handler *Handler) {
-	huma.Register(api, huma.Operation{
-		OperationID: "create-activity",
-		Method:      http.MethodPost,
-		Path:        "/v1/activity",
-		Summary:     "Create a new activity",
-		Description: "Create a new activity record",
-		Tags:        []string{"activities"},
-	}, handler.CreateActivity)
-}
 
 func RegisterGetActivitiesOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
@@ -91,24 +79,35 @@ func RegisterGetActivityOperation(api huma.API, handler *Handler) {
 	}, handler.GetActivity)
 }
 
-func RegisterUpdateActivityOperation(api huma.API, handler *Handler) {
+func RegisterGetActivityByUserAndPeriodOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
-		OperationID: "update-activity",
-		Method:      http.MethodPatch,
-		Path:        "/v1/activity/{id}",
-		Summary:     "Update activity",
-		Description: "Update an activity record",
+		OperationID: "get-activity-by-user-and-period",
+		Method:      http.MethodGet,
+		Path:        "/v1/activity/user/{userID}",
+		Summary:     "Get activity by user and period",
+		Description: "Retrieve activity for a specific user, year, and month",
 		Tags:        []string{"activities"},
-	}, handler.UpdatePartialActivity)
+	}, handler.GetActivityByUserAndPeriod)
 }
 
-func RegisterDeleteActivityOperation(api huma.API, handler *Handler) {
+func RegisterGetActivityByUserAndYearOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
-		OperationID: "delete-activity",
-		Method:      http.MethodDelete,
-		Path:        "/v1/activity/{id}",
-		Summary:     "Delete activity",
-		Description: "Delete an activity record",
+		OperationID: "get-activity-by-user-and-year",
+		Method:      http.MethodGet,
+		Path:        "/v1/activity/user/{userID}/year",
+		Summary:     "Get activity by user and year",
+		Description: "Retrieve all activity for a specific user and year",
 		Tags:        []string{"activities"},
-	}, handler.DeleteActivity)
+	}, handler.GetActivityByUserAndYear)
+}
+
+func RegisterGetRecentActivityOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-recent-activity",
+		Method:      http.MethodGet,
+		Path:        "/v1/activity/user/{userID}/recent",
+		Summary:     "Get recent activity",
+		Description: "Retrieve the user's activity for the last 8 days",
+		Tags:        []string{"activities"},
+	}, handler.GetRecentActivity)
 }

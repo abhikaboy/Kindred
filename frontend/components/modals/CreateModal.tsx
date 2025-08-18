@@ -25,6 +25,8 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
+    screen?: Screen;
+    categoryId?: string; // Category ID for editing tasks
     focused?: string;
     setFocused?: (focused: string) => void;
 };
@@ -42,25 +44,16 @@ export enum Screen {
 }
 
 const CreateModal = (props: Props) => {
-    const [screen, setScreen] = useState(Screen.STANDARD);
+    const [screen, setScreen] = useState(props.screen || Screen.STANDARD);
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
 
+
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-    const bottomAnchorRef = useRef<View>(null);
-    const [bottomAnchorHeight, setBottomAnchorHeight] = useState(0);
-
-    useEffect(() => {
-        if (bottomAnchorRef.current) {
-            bottomAnchorRef.current.measure((x, y, width, height, pageX, pageY) => {
-                setBottomAnchorHeight(height);
-            });
-        }
-    }, [bottomAnchorRef.current]);
 
     // Define snap points - we'll use percentages for flexibility
-    const snapPoints = useMemo(() => [screen === Screen.STANDARD ? "100%" : "70%", "90%"], [screen]);
+    const snapPoints = useMemo(() => ["25%", "90%"], [screen]);
 
     const gestureHandler = useAnimatedGestureHandler({
         onStart: (_, ctx: any) => {
@@ -134,10 +127,12 @@ const CreateModal = (props: Props) => {
         }
     }, [props.visible]);
 
+
+
     // Custom backdrop component
     const renderBackdrop = useCallback(
         (backdropProps) => (
-            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={1} opacity={0.5} />
         ),
         []
     );
@@ -154,7 +149,8 @@ const CreateModal = (props: Props) => {
                         <Standard
                             hide={() => props.setVisible(false)}
                             goTo={goToScreen}
-                            bottomAnchorRef={bottomAnchorRef}
+                            edit={props.edit}
+                            categoryId={props.categoryId}
                         />
                     </Animated.View>
                 );
@@ -208,7 +204,8 @@ const CreateModal = (props: Props) => {
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
-            index={0}
+            index={1}
+            enableDynamicSizing={true}
             snapPoints={snapPoints}
             onChange={handleSheetChanges}
             backdropComponent={renderBackdrop}
@@ -230,6 +227,7 @@ const styles = StyleSheet.create({
         padding: 24,
         gap: 8,
         width: "100%",
+        minHeight: Dimensions.get('window').height * 0.8, // Ensure minimum height to force 90% expansion
     },
 });
 

@@ -118,7 +118,7 @@ const Edit = () => {
                 Alert.alert("Success", "Profile updated successfully!");
                 router.back();
             } else {
-                Alert.alert("No Changes", "No changes were made to save.");
+                router.back();
             }
         } catch (error) {
             console.error("Save failed:", error);

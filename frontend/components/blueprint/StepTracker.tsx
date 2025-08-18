@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
@@ -57,16 +57,16 @@ const StepProgress = ({ steps, currentStep, onStepPress }: Props) => {
                                     state === "inactive" && styles.stepNumberInactive,
                                 ]}
                             >
-                                {step.number}
+                                {/* {step.number} */}
                             </ThemedText>
                         )}
                     </View>
-                    {!isLast && (
+                    {/* {!isLast && (
                         <View style={[
                             styles.connectingLine,
                             lineActive && styles.connectingLineActive,
                         ]} />
-                    )}
+                    )} */}
                 </View>
                 <ThemedText 
                     type="subtitle" 
@@ -94,28 +94,22 @@ const StepProgress = ({ steps, currentStep, onStepPress }: Props) => {
 const createStyles = (ThemedColor: any) => StyleSheet.create({
     stepsRow: {
         flexDirection: "row",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        position: "relative",
     },
     stepContainer: {
         flex: 1,
-        alignItems: "baseline",
+        alignItems: "center",
         position: "relative",
         width: "100%"
     },
     stepWrapper: {
-        flexDirection: "row",
-        alignItems: "baseline",
         width: "100%",
-        position: "relative",
-        marginBottom: 12,
-        justifyContent: "flex-start",
+        alignItems: "center",
+        marginBottom: 8,
     },
     stepCircle: {
-        width: 36,
-        height: 36,
-        borderRadius: 12,
+        width: 24,
+        height: 24,
+        borderRadius: 8,
         justifyContent: "center",
         alignItems: "center",
         zIndex: 2,
@@ -142,7 +136,7 @@ const createStyles = (ThemedColor: any) => StyleSheet.create({
     connectingLine: {
         position: "absolute",
         left: 25, 
-        right: -25,
+        right: -35,
         height: 2,
         backgroundColor: ThemedColor.tertiary,
         top: 17, 

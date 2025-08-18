@@ -12,6 +12,7 @@ import PagerView from "react-native-pager-view";
 import { useTasks } from "@/contexts/tasksContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useDrawer } from "@/contexts/drawerContext";
+import { useLocalSearchParams } from "expo-router";
 
 type Props = {};
 
@@ -29,6 +30,9 @@ const Daily = (props: Props) => {
     const drawerRef = useRef(null);
     const pagerRef = useRef<PagerView>(null);
     const ThemedColor = useThemeColor();
+    const params = useLocalSearchParams();
+    const { setSelected } = useTasks();
+    
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
         const d = new Date();
@@ -74,6 +78,13 @@ const Daily = (props: Props) => {
             pagerRef.current.setPageWithoutAnimation(1);
         }
     }, [centerDate]);
+
+    // Set selected workspace based on route parameters
+    useEffect(() => {
+        if (params.workspace && typeof params.workspace === 'string') {
+            setSelected(params.workspace);
+        }
+    }, [params.workspace, setSelected]);
 
     // Helper to render a page of dates
     const renderDatePage = (dates: Date[]) => (

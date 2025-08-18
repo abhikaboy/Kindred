@@ -14,6 +14,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
+import { isAfter, formatDistanceToNow, parseISO } from "date-fns";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -36,6 +37,7 @@ interface Props {
     categoryId: string;
     task?: Task;
     height?: number;
+    showRedOutline?: boolean; // Add red outline when categoryId is not configured
     encouragementConfig?: {
         userHandle?: string;
         receiverId: string;
@@ -59,6 +61,7 @@ const TaskCard = ({
     congratulate = false,
     task,
     height = Dimensions.get("window").height * 0.07,
+    showRedOutline = false,
     encouragementConfig,
     congratulationConfig,
 }: Props) => {
@@ -77,7 +80,7 @@ const TaskCard = ({
             pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
             params: { name: content, id: id, categoryId: categoryId },
         });
-    }, 100);
+    }, 200);
 
     useEffect(() => {
         return () => {
@@ -98,6 +101,30 @@ const TaskCard = ({
         // };
         // checkTimerState();
     }, [id]);
+
+    // Check if task is overdue
+    const isOverdue = useMemo(() => {
+        if (!task?.deadline) return false;
+        try {
+            const deadlineDate = parseISO(task.deadline);
+            return isAfter(new Date(), deadlineDate);
+        } catch (error) {
+            console.error("Error parsing deadline:", error);
+            return false;
+        }
+    }, [task?.deadline]);
+
+    // Calculate overdue duration
+    const overdueDuration = useMemo(() => {
+        if (!isOverdue || !task?.deadline) return "";
+        try {
+            const deadlineDate = parseISO(task.deadline);
+            return formatDistanceToNow(deadlineDate, { addSuffix: false });
+        } catch (error) {
+            console.error("Error calculating overdue duration:", error);
+            return "";
+        }
+    }, [isOverdue, task?.deadline]);
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
@@ -151,7 +178,7 @@ const TaskCard = ({
                     {
                         backgroundColor: ThemedColor.lightened,
                         borderWidth: 1,
-                        borderColor: ThemedColor.tertiary,
+                        borderColor: showRedOutline ? ThemedColor.error : ThemedColor.tertiary,
                         minHeight: height,
                     },
                 ]}
@@ -175,9 +202,24 @@ const TaskCard = ({
                             {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             {value}
                         </ThemedText> */}
-                            <View
-                                style={[styles.circle, { backgroundColor: getPriorityColor(PRIORITY_MAP[priority]) }]}
-                            />
+                            
+                            {/* Show warning icon and overdue duration if task is overdue */}
+                            <ConditionalView condition={isOverdue}>
+                                <View style={styles.overdueContainer}>
+                                    {overdueDuration && (
+                                        <ThemedText type="caption" style={[styles.overdueText, { color: ThemedColor.error }]}>
+                                            Due {overdueDuration} ago
+                                        </ThemedText>
+                                    )}
+                                </View>
+                            </ConditionalView>
+                            
+                            {/* Show priority dot only if not overdue */}
+                            <ConditionalView condition={!isOverdue}>
+                                <View
+                                    style={[styles.circle, { backgroundColor: getPriorityColor(PRIORITY_MAP[priority]) }]}
+                                />
+                            </ConditionalView>
                         </ConditionalView>
                         <ConditionalView condition={encourage}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -253,5 +295,12 @@ const styles = StyleSheet.create({
     },
     content: {
         textAlign: "left",
+    },
+    overdueContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
+    overdueText: {
     },
 });

@@ -17,9 +17,9 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 
 // RegisterActivityOperations registers all activity operations with Huma
 func RegisterActivityOperations(api huma.API, handler *Handler) {
-	RegisterCreateActivityOperation(api, handler)
 	RegisterGetActivitiesOperation(api, handler)
 	RegisterGetActivityOperation(api, handler)
-	RegisterUpdateActivityOperation(api, handler)
-	RegisterDeleteActivityOperation(api, handler)
+	RegisterGetActivityByUserAndPeriodOperation(api, handler)
+	RegisterGetActivityByUserAndYearOperation(api, handler)
+	RegisterGetRecentActivityOperation(api, handler)
 }

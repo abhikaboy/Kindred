@@ -55,7 +55,7 @@ export const deleteCategory = async (categoryId: string): Promise<void> => {
 export const updateCategory = async (categoryId: string, updateData: UpdateCategoryDocument): Promise<void> => {
     const { error } = await client.PATCH("/v1/user/categories/{id}", {
         params: withAuthHeaders({ path: { id: categoryId } }),
-        body: updateData,
+        body: updateData as any, // Type assertion until OpenAPI types are regenerated
     });
 
     if (error) {
@@ -134,4 +134,25 @@ export const deleteWorkspace = async (workspaceName: string): Promise<void> => {
     if (error) {
         throw new Error(`Failed to delete workspace: ${JSON.stringify(error)}`);
     }
+};
+
+/**
+ * Rename workspace (type-safe)
+ */
+export const renameWorkspace = async (oldWorkspaceName: string, newWorkspaceName: string): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/categories/workspace/{oldName}", {
+        params: withAuthHeaders({ path: { oldName: oldWorkspaceName } }),
+        body: { newName: newWorkspaceName },
+    });
+
+    if (error) {
+        throw new Error(`Failed to rename workspace: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Rename category (using update operation)
+ */
+export const renameCategory = async (categoryId: string, newCategoryName: string): Promise<void> => {
+    return updateCategory(categoryId, { name: newCategoryName });
 };

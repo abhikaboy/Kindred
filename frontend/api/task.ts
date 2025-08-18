@@ -174,3 +174,82 @@ export const getTemplateByIDAPI = async (id: string): Promise<TemplateTaskDocume
 
     return data;
 };
+
+/**
+ * Update a task with full task data
+ * API: Makes PATCH request to update the task
+ * Frontend: The task is updated in TaskContext
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param updateData - The task data to update
+ */
+export const updateTaskAPI = async (
+    categoryId: string,
+    taskId: string,
+    updateData: components["schemas"]["UpdateTaskDocument"]
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/tasks/{category}/{id}", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: updateData,
+    });
+
+    if (error) {
+        throw new Error(`Failed to update task: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Get completed tasks
+ * API: Makes GET request to retrieve completed tasks
+ * Frontend: Used to get statistics for TodayStats component
+ */
+export const getCompletedTasksAPI = async (): Promise<TaskDocument[]> => {
+    const { data, error } = await client.GET("/v1/user/tasks/completed", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get completed tasks: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
+
+/**
+ * Get today's completed tasks count
+ * Helper function to get the count of tasks completed today
+ */
+export const getTodayCompletedTasksCount = async (): Promise<number> => {
+    try {
+        const completedTasks = await getCompletedTasksAPI();
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        const todayCompletedTasks = completedTasks.filter(task => {
+            if (task.timeCompleted) {
+                const completedDate = new Date(task.timeCompleted);
+                return completedDate >= todayStart;
+            }
+            return false;
+        });
+        
+        return todayCompletedTasks.length;
+    } catch (error) {
+        console.error('Error getting today completed tasks count:', error);
+        return 0;
+    }
+};
+
+/**
+ * Get total points from completed tasks
+ * Helper function to calculate total points from completed tasks
+ */
+export const getTotalPointsFromCompletedTasks = async (): Promise<number> => {
+    try {
+        const completedTasks = await getCompletedTasksAPI();
+        return completedTasks.reduce((total, task) => total + (task.value || 0), 0);
+    } catch (error) {
+        console.error('Error getting total points from completed tasks:', error);
+        return 0;
+    }
+};

@@ -91,6 +91,16 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	
 	ctx := context.Background()
 
+	// Check if sender has enough congratulations
+	balance, err := s.GetUserBalance(r.Sender.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user balance: %w", err)
+	}
+	
+	if balance <= 0 {
+		return nil, fmt.Errorf("insufficient congratulation balance: user has %d congratulations remaining", balance)
+	}
+
 	congratulation := CongratulationDocumentInternal{
 		ID:           primitive.NewObjectID(),
 		Sender:       r.Sender,
@@ -102,11 +112,18 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		Read:         false, // Default to unread
 	}
 
-	slog.Info("Creating congratulation", "sender_id", r.Sender.ID, "receiver_id", r.Receiver)
+	slog.Info("Creating congratulation", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)
 	
 	result, err := s.Congratulations.InsertOne(ctx, congratulation)
 	if err != nil {
 		return nil, err
+	}
+
+	// Decrement user's congratulation balance
+	err = s.DecrementUserBalance(r.Sender.ID)
+	if err != nil {
+		// Log error but don't fail the operation since congratulation was already created
+		slog.Error("Failed to decrement user balance after creating congratulation", "error", err, "sender_id", r.Sender.ID)
 	}
 
 	// Cast the inserted ID to ObjectID and update the internal document
@@ -167,6 +184,41 @@ func (s *Service) MarkCongratulationsAsRead(ids []primitive.ObjectID) (int64, er
 	}
 
 	return result.ModifiedCount, nil
+}
+
+// GetUserBalance fetches the congratulation balance for a specific user
+func (s *Service) GetUserBalance(userID primitive.ObjectID) (int, error) {
+	if s.Users == nil {
+		return 0, fmt.Errorf("users collection not available")
+	}
+	
+	ctx := context.Background()
+	filter := bson.M{"_id": userID}
+	
+	var user struct {
+		Congratulations int `bson:"congratulations"`
+	}
+	
+	err := s.Users.FindOne(ctx, filter, nil).Decode(&user)
+	if err != nil {
+		return 0, err
+	}
+	
+	return user.Congratulations, nil
+}
+
+// DecrementUserBalance decrements the congratulation balance for a specific user
+func (s *Service) DecrementUserBalance(userID primitive.ObjectID) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+	
+	ctx := context.Background()
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$inc": bson.M{"congratulations": -1}}
+	
+	_, err := s.Users.UpdateOne(ctx, filter, update)
+	return err
 }
 
 // GetSenderInfo fetches sender information from the users collection

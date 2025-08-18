@@ -207,3 +207,28 @@ func (s *Service) SearchBlueprints(query string) ([]BlueprintDocument, error) {
 
 	return results, nil
 }
+
+// GetUserSubscribedBlueprints fetches all blueprints that a user is subscribed to
+func (s *Service) GetUserSubscribedBlueprints(userID primitive.ObjectID) ([]BlueprintDocumentWithoutSubscribers, error) {
+	ctx := context.Background()
+	filter := bson.M{"subscribers": userID}
+	
+	cursor, err := s.Blueprints.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var internalResults []BlueprintDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
+		return nil, err
+	}
+
+	// Convert internal documents to API documents without subscribers field
+	results := make([]BlueprintDocumentWithoutSubscribers, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPIWithoutSubscribers()
+	}
+
+	return results, nil
+}

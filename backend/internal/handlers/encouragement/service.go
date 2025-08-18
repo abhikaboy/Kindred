@@ -91,6 +91,16 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	
 	ctx := context.Background()
 
+	// Check if sender has enough encouragements
+	balance, err := s.GetUserBalance(r.Sender.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user balance: %w", err)
+	}
+	
+	if balance <= 0 {
+		return nil, fmt.Errorf("insufficient encouragement balance: user has %d encouragements remaining", balance)
+	}
+
 	encouragement := EncouragementDocumentInternal{
 		ID:           primitive.NewObjectID(),
 		Sender:       r.Sender,
@@ -102,11 +112,18 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 		Read:         false, // Default to unread
 	}
 
-	slog.Info("Creating encouragement", "sender_id", r.Sender.ID, "receiver_id", r.Receiver)
+	slog.Info("Creating encouragement", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)
 	
 	result, err := s.Encouragements.InsertOne(ctx, encouragement)
 	if err != nil {
 		return nil, err
+	}
+
+	// Decrement user's encouragement balance
+	err = s.DecrementUserBalance(r.Sender.ID)
+	if err != nil {
+		// Log error but don't fail the operation since encouragement was already created
+		slog.Error("Failed to decrement user balance after creating encouragement", "error", err, "sender_id", r.Sender.ID)
 	}
 
 	// Cast the inserted ID to ObjectID and update the internal document
@@ -167,6 +184,41 @@ func (s *Service) MarkEncouragementsAsRead(ids []primitive.ObjectID) (int64, err
 	}
 
 	return result.ModifiedCount, nil
+}
+
+// GetUserBalance fetches the encouragement balance for a specific user
+func (s *Service) GetUserBalance(userID primitive.ObjectID) (int, error) {
+	if s.Users == nil {
+		return 0, fmt.Errorf("users collection not available")
+	}
+	
+	ctx := context.Background()
+	filter := bson.M{"_id": userID}
+	
+	var user struct {
+		Encouragements int `bson:"encouragements"`
+	}
+	
+	err := s.Users.FindOne(ctx, filter, nil).Decode(&user)
+	if err != nil {
+		return 0, err
+	}
+	
+	return user.Encouragements, nil
+}
+
+// DecrementUserBalance decrements the encouragement balance for a specific user
+func (s *Service) DecrementUserBalance(userID primitive.ObjectID) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+	
+	ctx := context.Background()
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$inc": bson.M{"encouragements": -1}}
+	
+	_, err := s.Users.UpdateOne(ctx, filter, update)
+	return err
 }
 
 // GetSenderInfo fetches sender information from the users collection

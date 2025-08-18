@@ -193,3 +193,23 @@ func (h *Handler) SearchBlueprintsHuma(ctx context.Context, input *SearchBluepri
 	}
 	return &SearchBlueprintsOutput{Body: blueprints}, nil
 }
+
+func (h *Handler) GetUserSubscribedBlueprintsHuma(ctx context.Context, input *GetUserSubscribedBlueprintsInput) (*GetUserSubscribedBlueprintsOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	blueprints, err := h.service.GetUserSubscribedBlueprints(userID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get subscribed blueprints", err)
+	}
+
+	return &GetUserSubscribedBlueprintsOutput{Body: blueprints}, nil
+}

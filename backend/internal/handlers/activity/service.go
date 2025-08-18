@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -53,46 +54,207 @@ func (s *Service) GetActivityByID(id primitive.ObjectID) (*ActivityDocument, err
 	return &Activity, nil
 }
 
-// InsertActivity adds a new Activity document
-func (s *Service) CreateActivity(r *ActivityDocument) (*ActivityDocument, error) {
+// GetActivityByUserAndPeriod returns activity for a specific user, year, and month
+func (s *Service) GetActivityByUserAndPeriod(userID primitive.ObjectID, year int, month int) (*ActivityDocument, error) {
 	ctx := context.Background()
-	// Insert the document into the collection
+	filter := bson.M{
+		"user":  userID,
+		"year":  year,
+		"month": month,
+	}
 
-	result, err := s.Activitys.InsertOne(ctx, r)
-	if err != nil {
+	var activity ActivityDocument
+	err := s.Activitys.FindOne(ctx, filter).Decode(&activity)
+
+	if err == mongo.ErrNoDocuments {
+		return nil, mongo.ErrNoDocuments
+	} else if err != nil {
 		return nil, err
 	}
 
-	// Cast the inserted ID to ObjectID
-	id := result.InsertedID.(primitive.ObjectID)
-	r.ID = id
-	slog.LogAttrs(ctx, slog.LevelInfo, "Activity inserted", slog.String("id", id.Hex()))
-
-	return r, nil
+	return &activity, nil
 }
 
-// UpdatePartialActivity updates only specified fields of a Activity document by ObjectID.
-func (s *Service) UpdatePartialActivity(id primitive.ObjectID, updated UpdateActivityDocument) error {
+// GetActivityByUserAndYear returns all activities for a specific user and year
+func (s *Service) GetActivityByUserAndYear(userID primitive.ObjectID, year int) ([]ActivityDocument, error) {
 	ctx := context.Background()
-	filter := bson.M{"_id": id}
-
-	updateFields, err := xutils.ToDoc(updated)
-	if err != nil {
-		return err
+	filter := bson.M{
+		"user": userID,
+		"year": year,
 	}
 
-	update := bson.M{"$set": updateFields}
+	cursor, err := s.Activitys.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
 
-	_, err = s.Activitys.UpdateOne(ctx, filter, update)
-	return err
+	var activities []ActivityDocument
+	if err := cursor.All(ctx, &activities); err != nil {
+		return nil, err
+	}
+
+	return activities, nil
 }
 
-// DeleteActivity removes a Activity document by ObjectID.
-func (s *Service) DeleteActivity(id primitive.ObjectID) error {
+// GetRecentActivity returns the user's activity for the last 8 days
+func (s *Service) GetRecentActivity(userID primitive.ObjectID) ([]ActivityDocument, error) {
+	// Get current date
+	now := xutils.NowUTC()
+	currentYear := now.Year()
+	currentMonth := int(now.Month())  // Convert to 0-indexed (January = 0, February = 1, etc.)
+	currentDay := now.Day()
+	
+	// Calculate the start date (8 days ago)
+	startDate := now.AddDate(0, 0, -7) // 7 days back to get 8 days total
+	startYear := startDate.Year()
+	startMonth := int(startDate.Month())  // Convert to 0-indexed
+	startDay := startDate.Day()
+	
+	// Log the date range we're looking for
+	slog.LogAttrs(context.Background(), slog.LevelInfo, "GetRecentActivity called", 
+		slog.String("userID", userID.Hex()),
+		slog.Int("currentYear", currentYear),
+		slog.Int("currentMonth", currentMonth),
+		slog.Int("currentDay", currentDay),
+		slog.Int("startYear", startYear),
+		slog.Int("startMonth", startMonth),
+		slog.Int("startDay", startDay),
+	)
+	
+	// For debugging - let's first try to get ALL activities for this user
 	ctx := context.Background()
-
-	filter := bson.M{"_id": id}
-
-	_, err := s.Activitys.DeleteOne(ctx, filter)
-	return err
+	filter := bson.M{"user": userID}
+	cursor, err := s.Activitys.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	
+	var allUserActivities []ActivityDocument
+	if err := cursor.All(ctx, &allUserActivities); err != nil {
+		return nil, err
+	}
+	
+	// If no activities found for user, return empty slice
+	if len(allUserActivities) == 0 {
+		slog.LogAttrs(context.Background(), slog.LevelInfo, "No activities found for user", 
+			slog.String("userID", userID.Hex()),
+		)
+		return []ActivityDocument{}, nil
+	}
+	
+	// Log what activities were found
+	slog.LogAttrs(context.Background(), slog.LevelInfo, "Found activities for user", 
+		slog.String("userID", userID.Hex()),
+		slog.Int("activityCount", len(allUserActivities)),
+	)
+	
+	// Log details of each activity found
+	for i, activity := range allUserActivities {
+		slog.LogAttrs(context.Background(), slog.LevelInfo, "Activity details", 
+			slog.Int("index", i),
+			slog.Int("year", activity.Year),
+			slog.Int("month", activity.Month),
+			slog.Int("dayCount", len(activity.Days)),
+		)
+	}
+	
+	var activities []ActivityDocument
+	
+	// If start and current are in the same month
+	if startYear == currentYear && startMonth == currentMonth {
+		slog.LogAttrs(context.Background(), slog.LevelInfo, "Same month logic", 
+			slog.Int("currentYear", currentYear),
+			slog.Int("currentMonth", currentMonth),
+		)
+		
+		// Find activity for current month
+		var currentActivity *ActivityDocument
+		for i := range allUserActivities {
+			if allUserActivities[i].Year == currentYear && allUserActivities[i].Month == currentMonth {
+				currentActivity = &allUserActivities[i]
+				slog.LogAttrs(context.Background(), slog.LevelInfo, "Found current month activity", 
+					slog.Int("totalDays", len(currentActivity.Days)),
+				)
+				break
+			}
+		}
+		
+		if currentActivity != nil {
+			// Filter days to only include the last 8 days
+			var filteredDays []types.ActivityDay
+			for _, day := range currentActivity.Days {
+				slog.LogAttrs(context.Background(), slog.LevelInfo, "Checking day", 
+					slog.Int("day", day.Day),
+					slog.Int("startDay", startDay),
+					slog.Int("currentDay", currentDay),
+					slog.Bool("inRange", day.Day >= startDay && day.Day <= currentDay),
+				)
+				if day.Day >= startDay && day.Day <= currentDay {
+					filteredDays = append(filteredDays, day)
+				}
+			}
+			slog.LogAttrs(context.Background(), slog.LevelInfo, "Filtering complete", 
+				slog.Int("originalDays", len(currentActivity.Days)),
+				slog.Int("filteredDays", len(filteredDays)),
+			)
+			if len(filteredDays) > 0 {
+				currentActivity.Days = filteredDays
+				activities = append(activities, *currentActivity)
+			}
+		} else {
+			slog.LogAttrs(context.Background(), slog.LevelInfo, "No current month activity found")
+		}
+	} else {
+		// Activity spans across months, need to get both months
+		
+		// Find activity for start month
+		var startActivity *ActivityDocument
+		for i := range allUserActivities {
+			if allUserActivities[i].Year == startYear && allUserActivities[i].Month == startMonth {
+				startActivity = &allUserActivities[i]
+				break
+			}
+		}
+		
+		if startActivity != nil {
+			// Filter days to only include days from start date onwards
+			var filteredDays []types.ActivityDay
+			for _, day := range startActivity.Days {
+				if day.Day >= startDay {
+					filteredDays = append(filteredDays, day)
+				}
+			}
+			if len(filteredDays) > 0 {
+				startActivity.Days = filteredDays
+				activities = append(activities, *startActivity)
+			}
+		}
+		
+		// Find activity for current month
+		var currentActivity *ActivityDocument
+		for i := range allUserActivities {
+			if allUserActivities[i].Year == currentYear && allUserActivities[i].Month == currentMonth {
+				currentActivity = &allUserActivities[i]
+				break
+			}
+		}
+		
+		if currentActivity != nil {
+			// Filter days to only include days up to current day
+			var filteredDays []types.ActivityDay
+			for _, day := range currentActivity.Days {
+				if day.Day <= currentDay {
+					filteredDays = append(filteredDays, day)
+				}
+			}
+			if len(filteredDays) > 0 {
+				currentActivity.Days = filteredDays
+				activities = append(activities, *currentActivity)
+			}
+		}
+	}
+	
+	return activities, nil
 }

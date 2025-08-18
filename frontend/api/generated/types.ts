@@ -17,11 +17,67 @@ export interface paths {
          */
         get: operations["get-activities"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/activity/user/{userID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
-         * Create a new activity
-         * @description Create a new activity record
+         * Get activity by user and period
+         * @description Retrieve activity for a specific user, year, and month
          */
-        post: operations["create-activity"];
+        get: operations["get-activity-by-user-and-period"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/activity/user/{userID}/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get recent activity
+         * @description Retrieve the user's activity for the last 8 days
+         */
+        get: operations["get-recent-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/activity/user/{userID}/year": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get activity by user and year
+         * @description Retrieve all activity for a specific user and year
+         */
+        get: operations["get-activity-by-user-and-year"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -42,18 +98,10 @@ export interface paths {
         get: operations["get-activity"];
         put?: never;
         post?: never;
-        /**
-         * Delete activity
-         * @description Delete an activity record
-         */
-        delete: operations["delete-activity"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Update activity
-         * @description Update an activity record
-         */
-        patch: operations["update-activity"];
+        patch?: never;
         trace?: never;
     };
     "/v1/assets/upload": {
@@ -564,6 +612,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/blueprints/subscribed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user's subscribed blueprints
+         * @description Retrieve all blueprints that the authenticated user is subscribed to
+         */
+        get: operations["get-user-subscribed-blueprints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/blueprints/{id}": {
         parameters: {
             query?: never;
@@ -668,6 +736,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/categories/workspace/{oldName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename workspace
+         * @description Rename a workspace by updating all its categories
+         */
+        patch: operations["rename-workspace"];
+        trace?: never;
+    };
     "/v1/user/categories/{id}": {
         parameters: {
             query?: never;
@@ -690,10 +778,10 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update category
-         * @description Update a category for the authenticated user
+         * Rename category
+         * @description Rename a specific category by its ID
          */
-        patch: operations["update-category"];
+        patch: operations["rename-category"];
         trace?: never;
     };
     "/v1/user/congratulations": {
@@ -1448,17 +1536,31 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        ActivityDay: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            day: number;
+            /** Format: int64 */
+            level: number;
+        };
         ActivityDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            field1: string;
-            id: string;
-            picture: string | null;
+            _id: string;
+            days: components["schemas"]["ActivityDay"][] | null;
             /** Format: date-time */
-            timestamp: string;
+            lastUpdated: string;
+            /** Format: int64 */
+            month: number;
+            /** Format: int64 */
+            totalCount: number;
+            user: string;
+            /** Format: int64 */
+            year: number;
         };
         AddCommentOutputBody: {
             /**
@@ -1529,6 +1631,33 @@ export interface components {
         };
         BlueprintReference: {
             id: string;
+        }
+        
+        BlueprintDocumentWithoutSubscribers: {
+            /** @description Banner image URL */
+            banner: string;
+            /** @description Description of the blueprint */
+            description: string;
+            /** @description Expected duration */
+            duration: string;
+            /** @description Unique identifier for the blueprint */
+            id: string;
+            /** @description Name of the blueprint */
+            name: string;
+            /** @description Owner information */
+            owner: components["schemas"]["UserExtendedReference"];
+            /**
+             * Format: int64
+             * @description Number of subscribers
+             */
+            subscribersCount: number;
+            /** @description Tags associated with the blueprint */
+            tags: string[] | null;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            timestamp: string;
         };
         CategoryDocument: {
             /**
@@ -1665,16 +1794,6 @@ export interface components {
             /** @description Profile picture URL */
             picture: string | null;
         };
-        CreateActivityParams: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            field1: string;
-            field2: string;
-            picture: string | null;
-        };
         CreateBlueprintParams: {
             /**
              * Format: uri
@@ -1790,14 +1909,6 @@ export interface components {
             email: string;
             /** @description User full name */
             name: string;
-        };
-        DeleteActivityOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            message: string;
         };
         DeleteBlueprintOutputBody: {
             /**
@@ -2092,8 +2203,14 @@ export interface components {
             friends: string[] | null;
             handle: string;
             id: string;
+            /** Format: int64 */
+            points: number;
+            /** Format: int64 */
+            posts_made: number;
             profile_picture: string | null;
             relationship?: components["schemas"]["RelationshipInfo"];
+            /** Format: int64 */
+            streak: number;
             /** Format: int64 */
             tasks_complete: number;
         };
@@ -2146,6 +2263,38 @@ export interface components {
             triggerTime: string;
             type: string;
         };
+        RenameCategoryInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            newName: string;
+        };
+        RenameCategoryOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        RenameWorkspaceInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            newName: string;
+        };
+        RenameWorkspaceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         SafeUser: {
             /**
              * Format: uri
@@ -2154,11 +2303,22 @@ export interface components {
             readonly $schema?: string;
             _id: string;
             categories: components["schemas"]["CategoryDocument"][] | null;
+            /** Format: int64 */
+            congratulations: number;
             display_name: string;
+            /** Format: int64 */
+            encouragements: number;
             friends: string[] | null;
             handle: string;
+            /** Format: int64 */
+            points: number;
+            /** Format: int64 */
+            posts_made: number;
             profile_picture: string;
             recent_activity: components["schemas"]["ActivityDocument"][] | null;
+            /** Format: int64 */
+            streak: number;
+            streakEligible: boolean;
             /** Format: double */
             tasks_complete: number;
         };
@@ -2247,24 +2407,6 @@ export interface components {
             message: string;
         };
         UnsubscribeFromBlueprintOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            message: string;
-        };
-        UpdateActivityDocument: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            field1?: string;
-            field2?: string;
-            picture?: string;
-        };
-        UpdateActivityOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -2459,12 +2601,19 @@ export interface components {
             active: boolean;
             checklist?: components["schemas"]["ChecklistItem"][] | null;
             content: string;
+            /** Format: date-time */
+            deadline?: string;
             notes?: string;
             /** Format: int64 */
             priority: number;
             public: boolean;
             recurDetails: components["schemas"]["RecurDetails"];
             recurring: boolean;
+            reminders?: components["schemas"]["Reminder"][] | null;
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            startTime?: string;
             /** Format: double */
             value: number;
         };
@@ -2576,18 +2725,22 @@ export interface operations {
             };
         };
     };
-    "create-activity": {
+    "get-activity-by-user-and-period": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @example 2024 */
+                year?: number;
+                /** @example 12 */
+                month?: number;
+            };
             header?: never;
-            path?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userID: string;
+            };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateActivityParams"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -2596,6 +2749,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-recent-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityDocument"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-activity-by-user-and-year": {
+        parameters: {
+            query?: {
+                /** @example 2024 */
+                year?: number;
+            };
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityDocument"][] | null;
                 };
             };
             /** @description Error */
@@ -2611,7 +2831,10 @@ export interface operations {
     };
     "get-activity": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @example 2024 */
+                year?: number;
+            };
             header?: never;
             path: {
                 /** @example 507f1f77bcf86cd799439011 */
@@ -2628,74 +2851,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "delete-activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteActivityOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "update-activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateActivityDocument"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateActivityOutputBody"];
                 };
             };
             /** @description Error */
@@ -3590,6 +3745,40 @@ export interface operations {
             };
         };
     };
+    "get-user-subscribed-blueprints": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][] | null;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "delete-blueprint": {
         parameters: {
             query?: never;
@@ -3811,6 +4000,44 @@ export interface operations {
             };
         };
     };
+    "rename-workspace": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example old-workspace */
+                oldName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameWorkspaceInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenameWorkspaceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-categories-by-user": {
         parameters: {
             query?: never;
@@ -3877,7 +4104,7 @@ export interface operations {
             };
         };
     };
-    "update-category": {
+    "rename-category": {
         parameters: {
             query?: never;
             header: {
@@ -3891,7 +4118,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateCategoryDocument"];
+                "application/json": components["schemas"]["RenameCategoryInputBody"];
             };
         };
         responses: {
@@ -3901,7 +4128,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CategoryDocument"];
+                    "application/json": components["schemas"]["RenameCategoryOutputBody"];
                 };
             };
             /** @description Error */

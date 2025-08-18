@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Dimensions } from "react-native";
+import { View, Text, Dimensions, StyleSheet } from "react-native";
 import { ToastableBodyParams, hideToastable } from "react-native-toastable";
 import { ThemedText } from "../ThemedText";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -22,7 +22,7 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
     const translateY = useSharedValue(0);
     const opacity = useSharedValue(1);
 
-    const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
+    const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, { startX: number; startY: number }>({
         onStart: (_, context) => {
             context.startX = translateX.value;
             context.startY = translateY.value;
@@ -76,7 +76,10 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
 
     const animatedStyle = useAnimatedStyle(() => {
         return {
-            transform: [{ translateX: translateX.value }, { translateY: translateY.value }],
+            transform: [
+                { translateX: translateX.value },
+                { translateY: translateY.value }
+            ],
             opacity: opacity.value,
         };
     });
@@ -101,29 +104,54 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
     };
 
     // Reset values on component mount
-    translateX.value = 0;
-    translateY.value = 0;
-    opacity.value = 1;
+    React.useEffect(() => {
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
+    }, []);
+
+    const styles = StyleSheet.create({
+        container: {
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 20,
+        },
+        toastBody: {
+            minWidth: screenWidth * 0.8,
+            maxWidth: screenWidth * 0.9,
+            alignItems: "center",
+            borderRadius: 12,
+            borderBottomWidth: 3,
+            borderColor: statusMapping[status]?.color || ThemedColor.primary,
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            backgroundColor: ThemedColor.lightened,
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 3,
+            },
+            shadowOpacity: 0.3,
+            shadowRadius: 6,
+            elevation: 8, // For Android shadow
+        },
+        iconContainer: {
+            marginBottom: 8,
+        },
+        messageText: {
+            textAlign: "center",
+            fontSize: 16,
+            lineHeight: 22,
+            flexWrap: "wrap",
+        },
+    });
 
     return (
         <PanGestureHandler onGestureEvent={gestureHandler} enabled={true}>
-            <Reanimated.View style={[animatedStyle]}>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                    <View
-                        style={{
-                            width: "70%",
-                            alignItems: "center",
-                            gap: 2,
-                            borderRadius: 8,
-                            borderBottomWidth: 3,
-                            boxShadow: "0 6px 12px 0 #00000080",
-                            borderColor: statusMapping[status].color,
-                            padding: 16,
-                            backgroundColor: ThemedColor.lightened,
-                        }}>
-                        <ThemedText style={{ textAlign: "center", color: statusMapping[status].color }}>
-                            {message}
-                        </ThemedText>
+            <Reanimated.View style={animatedStyle as any}>
+                <View style={styles.container}>
+                    <View style={styles.toastBody}>
+                        <ThemedText type="defaultSemiBold" style={{textAlign: "center"}}>{message}</ThemedText>
                     </View>
                 </View>
             </Reanimated.View>

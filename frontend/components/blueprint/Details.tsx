@@ -3,10 +3,29 @@ import { View, StyleSheet, Image, TouchableOpacity, Alert, Dimensions } from "re
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedInput from "@/components/inputs/ThemedInput";
+import Dropdown from "@/components/inputs/Dropdown";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
 import * as ImagePicker from "expo-image-picker";
 import { uploadBlueprintBanner, getMimeTypeFromUri } from "@/api/upload";
 import { Ionicons } from "@expo/vector-icons";
+
+// Common habit categories
+const HABIT_CATEGORIES = [
+    { label: "Health & Fitness", id: "health_fitness" },
+    { label: "Productivity", id: "productivity" },
+    { label: "Learning & Education", id: "learning_education" },
+    { label: "Professional Development", id: "professional" },
+    { label: "Household & Organization", id: "household" },
+    { label: "Mental Wellness", id: "mental_wellness" },
+    { label: "Relationships & Social", id: "relationships" },
+    { label: "Creativity & Hobbies", id: "creativity" },
+    { label: "Financial Management", id: "financial" },
+    { label: "Self-Care & Personal", id: "self_care" },
+];
+
+const FOOTER_OPTIONS = [
+    { label: "+ Custom Category", id: "custom", special: true },
+];
 
 type Props = {
     data: BlueprintData;
@@ -18,13 +37,44 @@ const Details = ({ data, onUpdate }: Props) => {
     const styles = createStyles(ThemedColor);
     const [isUploading, setIsUploading] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+    const [showCustomCategory, setShowCustomCategory] = useState(false);
+    
+    // Initialize selected category
+    const [selectedCategory, setSelectedCategory] = useState(() => {
+        if (data.category) {
+            // Find existing category in predefined list
+            const existingCategory = HABIT_CATEGORIES.find(cat => 
+                cat.label === data.category || cat.id === data.category
+            );
+            if (existingCategory) {
+                return existingCategory;
+            }
+            // If it's a custom category, show it
+            return { label: data.category, id: "custom_existing" };
+        }
+        return { label: "", id: "" };
+    });
 
     const handleDurationChange = (duration: string) => {
         onUpdate({ duration });
     };
 
-    const handleCategoryChange = (category: string) => {
-        onUpdate({ category });
+    const handleCategoryChange = (category: { label: string; id: string; special?: boolean }) => {
+        setSelectedCategory(category);
+        
+        if (category.special && category.id === "custom") {
+            // Show custom input
+            setShowCustomCategory(true);
+            return;
+        }
+        
+        // Update with predefined category
+        onUpdate({ category: category.label });
+    };
+
+    const handleCustomCategoryChange = (customCategory: string) => {
+        onUpdate({ category: customCategory });
+        setSelectedCategory({ label: customCategory, id: "custom_existing" });
     };
 
     const pickImage = async () => {
@@ -103,11 +153,33 @@ const Details = ({ data, onUpdate }: Props) => {
                 <ThemedText type="lightBody" style={styles.fieldLabel}>
                     Category
                 </ThemedText>
-                <ThemedInput
-                    value={data.category}
-                    setValue={handleCategoryChange}
-                    placeHolder="Enter a category of blueprint"
-                />
+                {showCustomCategory ? (
+                    <View style={styles.customCategoryContainer}>
+                        <ThemedInput
+                            value={data.category}
+                            setValue={handleCustomCategoryChange}
+                            placeHolder="Enter custom category"
+                            autofocus={true}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setShowCustomCategory(false)}
+                            style={styles.backButton}
+                        >
+                            <ThemedText type="lightBody" style={styles.backButtonText}>
+                                ← Back to Categories
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <Dropdown
+                        options={HABIT_CATEGORIES}
+                        footerOptions={FOOTER_OPTIONS}
+                        selected={selectedCategory}
+                        setSelected={handleCategoryChange}
+                        onSpecial={() => setShowCustomCategory(true)}
+                        width="100%"
+                    />
+                )}
             </View>
 
             <View style={styles.fieldContainer}>
@@ -164,6 +236,16 @@ const createStyles = (ThemedColor: any) =>
             fontSize: 16,
             fontWeight: "500",
             color: ThemedColor.text,
+        },
+        customCategoryContainer: {
+            gap: 12,
+        },
+        backButton: {
+            alignSelf: "flex-start",
+        },
+        backButtonText: {
+            color: ThemedColor.primary,
+            fontSize: 14,
         },
         uploadButton: {
             height: 120,

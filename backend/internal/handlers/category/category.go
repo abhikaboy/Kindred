@@ -3,6 +3,7 @@ package Category
 import (
 	"context"
 	"log/slog"
+	"net/url"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
@@ -93,12 +94,26 @@ func (h *Handler) UpdatePartialCategory(ctx context.Context, input *UpdateCatego
 		return nil, huma.Error400BadRequest("Invalid ID format for CategoryId", err)
 	}
 
-	results, err := h.service.UpdatePartialCategory(id, input.Body)
+	// Extract user_id from context (set by auth middleware)
+	user_id_str, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	_, err = h.service.UpdatePartialCategory(id, input.Body, user_id)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to update category", err)
 	}
 
-	return &UpdateCategoryOutput{Body: *results}, nil
+	// Return a simple success response
+	resp := &UpdateCategoryOutput{}
+	resp.Body.Message = "Category updated successfully"
+	return resp, nil
 }
 
 func (h *Handler) DeleteCategory(ctx context.Context, input *DeleteCategoryInput) (*DeleteCategoryOutput, error) {
@@ -128,7 +143,11 @@ func (h *Handler) DeleteCategory(ctx context.Context, input *DeleteCategoryInput
 }
 
 func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInput) (*DeleteWorkspaceOutput, error) {
-	workspaceName := input.Name
+	// URL decode the workspace name since it comes from the path parameter
+	workspaceName, err := url.QueryUnescape(input.Name)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid workspace name encoding", err)
+	}
 
 	// Extract user_id from context (set by auth middleware)
 	user_id_str, err := auth.RequireAuth(ctx)
@@ -150,6 +169,37 @@ func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInp
 
 	resp := &DeleteWorkspaceOutput{}
 	resp.Body.Message = "Workspace deleted successfully"
+	return resp, nil
+}
+
+func (h *Handler) RenameWorkspace(ctx context.Context, input *RenameWorkspaceInput) (*RenameWorkspaceOutput, error) {
+	// URL decode the old workspace name since it comes from the path parameter
+	oldWorkspaceName, err := url.QueryUnescape(input.OldName)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid workspace name encoding", err)
+	}
+	newWorkspaceName := input.Body.NewName
+
+	// Extract user_id from context (set by auth middleware)
+	user_id_str, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	slog.Info("Renaming workspace from " + oldWorkspaceName + " to " + newWorkspaceName)
+
+	err = h.service.RenameWorkspace(oldWorkspaceName, newWorkspaceName, user_id)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to rename workspace", err)
+	}
+
+	resp := &RenameWorkspaceOutput{}
+	resp.Body.Message = "Workspace renamed successfully"
 	return resp, nil
 }
 

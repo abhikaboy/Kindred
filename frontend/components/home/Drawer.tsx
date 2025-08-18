@@ -191,8 +191,16 @@ export const Drawer = ({ close }) => {
                     title="Daily"
                     selected={selected}
                     onPress={() => {
-                        setSelected("Daily");
                         router.navigate("/(logged-in)/(tabs)/(task)/daily");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
+                    title="Calendar"
+                    selected={selected}
+                    onPress={() => {
+                        router.navigate("/(logged-in)/(tabs)/(task)/calendar");
                         close();
                     }}
                     onLongPress={() => {}}
@@ -201,7 +209,6 @@ export const Drawer = ({ close }) => {
                     title="Analytics"
                     selected={selected}
                     onPress={() => {
-                        setSelected("Analytics");
                         router.navigate("/(logged-in)/(tabs)/(task)/analytics");
                         close();
                     }}

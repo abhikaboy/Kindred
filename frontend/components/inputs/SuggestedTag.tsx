@@ -22,7 +22,9 @@ const SuggestedTag = ({ tag, onPress, caption }: Props) => {
                 paddingHorizontal: 12,
                 gap: 0,
                 borderRadius: 12,
-                backgroundColor: ThemedColor.tertiary,
+                backgroundColor: ThemedColor.lightened + "80",
+                borderColor: ThemedColor.tertiary,
+                borderWidth: 1,
             }}>
             <ThemedText type="defaultSemiBold">{tag}</ThemedText>
             {caption && (

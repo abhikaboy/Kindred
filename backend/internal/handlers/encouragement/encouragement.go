@@ -3,6 +3,7 @@ package encouragement
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -56,6 +57,10 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 
 	encouragement, err := h.service.CreateEncouragement(&internalDoc)
 	if err != nil {
+		// Check if error is related to insufficient balance
+		if strings.Contains(err.Error(), "insufficient encouragement balance") {
+			return nil, huma.Error400BadRequest("Insufficient encouragement balance", err)
+		}
 		return nil, huma.Error500InternalServerError("Failed to create encouragement", err)
 	}
 
@@ -155,18 +160,18 @@ func (h *Handler) MarkEncouragementsReadHuma(ctx context.Context, input *MarkEnc
 	}
 
 	// Add explicit validation
-	errs := xvalidator.Validator.Validate(input.Body)
+	errs := xvalidator.Validator.Validate(input)
 	if len(errs) > 0 {
 		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	if len(input.Body.ID) == 0 {
+	if len(input.ID) == 0 {
 		return nil, huma.Error400BadRequest("No IDs provided", fmt.Errorf("id array cannot be empty"))
 	}
 
 	// Convert string IDs to ObjectIDs
-	objectIDs := make([]primitive.ObjectID, len(input.Body.ID))
-	for i, idStr := range input.Body.ID {
+	objectIDs := make([]primitive.ObjectID, len(input.ID))
+	for i, idStr := range input.ID {
 		id, err := primitive.ObjectIDFromHex(idStr)
 		if err != nil {
 			return nil, huma.Error400BadRequest("Invalid ID format", fmt.Errorf("invalid ID at index %d: %s", i, idStr))
@@ -183,4 +188,4 @@ func (h *Handler) MarkEncouragementsReadHuma(ctx context.Context, input *MarkEnc
 	resp.Body.Message = "Encouragements marked as read successfully"
 	resp.Body.Count = int(count)
 	return resp, nil
-} 
+}

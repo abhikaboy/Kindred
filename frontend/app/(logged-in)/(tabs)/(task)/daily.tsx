@@ -10,10 +10,15 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
 import { useTasks } from "@/contexts/tasksContext";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { isSameDay, startOfDay, endOfDay } from "date-fns";
+import { useLocalSearchParams } from "expo-router";
+import CreateModal, { Screen } from "@/components/modals/CreateModal";
+
+import TaskSection from "@/components/task/TaskSection";
 
 type Props = {};
 
@@ -32,6 +37,15 @@ const Daily = (props: Props) => {
     const pagerRef = useRef<PagerView>(null);
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams();
+    const { setSelected } = useTasks();
+    const { loadTaskData } = useTaskCreation();
+    
+    // State for scheduling modal
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
+    const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
+    
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
         const d = new Date();
@@ -78,6 +92,13 @@ const Daily = (props: Props) => {
         }
     }, [centerDate]);
 
+    // Set selected workspace based on route parameters
+    useEffect(() => {
+        if (params.workspace && typeof params.workspace === 'string') {
+            setSelected(params.workspace);
+        }
+    }, [params.workspace, setSelected]);
+
     const { allTasks } = useTasks();
     const { setIsDrawerOpen } = useDrawer();
 
@@ -107,6 +128,53 @@ const Daily = (props: Props) => {
         });
     }, [allTasks, selectedDate]);
 
+    // Filter unscheduled tasks (tasks without start date or deadline)
+    const unscheduledTasks = useMemo(() => {
+        return allTasks.filter((task) => {
+            // Task is unscheduled if it has no start date AND no deadline
+            return !task.startDate && !task.deadline;
+        });
+    }, [allTasks]);
+
+    // Filter past tasks (tasks with start date older than today and no deadline)
+    const pastTasks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return allTasks.filter((task) => {
+            // Task has a start date that's in the past
+            if (!task.startDate) return false;
+            
+            const taskStartDate = new Date(task.startDate);
+            taskStartDate.setHours(0, 0, 0, 0);
+            
+            // Start date is older than today
+            const isPastStart = taskStartDate < today;
+            
+            // Task has no deadline (or deadline is also in the past, but we'll handle that separately)
+            const hasNoDeadline = !task.deadline;
+            
+            return isPastStart && hasNoDeadline;
+        });
+    }, [allTasks]);
+
+    // Filter overdue tasks (tasks with past deadline)
+    const overdueTasks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return allTasks.filter((task) => {
+            // Task must have a deadline
+            if (!task.deadline) return false;
+            
+            const taskDeadline = new Date(task.deadline);
+            taskDeadline.setHours(0, 0, 0, 0);
+            
+            // Deadline is in the past
+            return taskDeadline < today;
+        });
+    }, [allTasks]);
+
     // Helper to render a page of dates
     const renderDatePage = (dates: Date[]) => (
         <View style={{ flex: 1 }}>
@@ -134,6 +202,31 @@ const Daily = (props: Props) => {
         </View>
     );
 
+    // Function to handle quick scheduling of a task
+    const handleQuickSchedule = (task: any, type: 'deadline' | 'startDate') => {
+        setSelectedTaskForScheduling(task);
+        setSchedulingType(type);
+        loadTaskData(task);
+        setShowScheduleModal(true);
+    };
+
+    // Function to handle task completion
+    const handleCompleteTask = async (task: any) => {
+        try {
+            // Import the markAsCompletedAPI function
+            const { markAsCompletedAPI } = await import("@/api/task");
+            await markAsCompletedAPI(task.categoryID, task.id, {
+                timeCompleted: new Date().toISOString(),
+                timeTaken: new Date().toISOString(),
+            });
+            
+            // The task will be automatically removed from the list due to context updates
+            console.log("Task completed successfully");
+        } catch (error) {
+            console.error("Error completing task:", error);
+        }
+    };
+
     return (
         <DrawerLayout
             ref={drawerRef}
@@ -145,7 +238,13 @@ const Daily = (props: Props) => {
             drawerType="front"
             onDrawerOpen={() => setIsDrawerOpen(true)}
             onDrawerClose={() => setIsDrawerOpen(false)}>
+                
             <View style={[styles.container, { flex: 1, paddingTop: insets.top }]}>
+
+                <ScrollView style={{ flex: 1 }}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 24, paddingBottom: 128 }}>
+                <View style={{ flex: 1 }}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
@@ -172,7 +271,7 @@ const Daily = (props: Props) => {
                         </View>
                     </PagerView>
                 </View>
-                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 24, paddingBottom: 50 }}>
+                </View>
                     <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">
                             Tasks for{" "}
@@ -197,11 +296,39 @@ const Daily = (props: Props) => {
                             </ThemedText>
                         )}
                     </View>
-                    <View style={{ gap: 8 }}>
-                        <ThemedText type="subtitle">Workspaces</ThemedText>
-                    </View>
+
+                    <TaskSection
+                        tasks={overdueTasks}
+                        title="Overdue Tasks"
+                        description=""
+                        emptyMessage="No overdue tasks"
+                    />
+                    <TaskSection
+                        tasks={pastTasks}
+                        title="Past Tasks"
+                        description="These tasks started in the past but have no deadline."
+                        emptyMessage="No past tasks"
+                    />
+                    <TaskSection
+                        tasks={unscheduledTasks}
+                        title="Unscheduled Tasks"
+                        description="These are tasks that don't have a start date or deadline. Swipe right to schedule for this day."
+                        useSchedulable={true}
+                        onScheduleTask={handleQuickSchedule}
+                        emptyMessage="No unscheduled tasks"
+                        schedulingType="deadline"
+                    />
                 </ScrollView>
             </View>
+            
+            {/* Quick Schedule Modal */}
+            <CreateModal
+                visible={showScheduleModal}
+                setVisible={setShowScheduleModal}
+                edit={true}
+                categoryId={selectedTaskForScheduling?.categoryID || ""}
+                screen={schedulingType === 'deadline' ? Screen.DEADLINE : Screen.STARTDATE}
+            />
         </DrawerLayout>
     );
 };
