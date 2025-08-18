@@ -111,32 +111,11 @@ const Search = (props: Props) => {
         }
     }, []);
 
-    type Blueprint = {
-        id: string;
-        previewImage: string;
-        userImage: string;
-        workspaceName: string;
-        username: string;
-        name: string;
-        time: string;
-        subscriberCount: number;
-        description: string;
-        tags: string[];
-    };
+
 
     const renderBlueprint = ({ item }: { item: BlueprintDocument }) => (
         <BlueprintCard
-            previewImage={item.banner}
-            workspaceName={item.name}
-            username={item.owner?.handle || ""}
-            name={item.owner?.display_name || ""}
-            time={new Date(item.timestamp).toLocaleDateString()}
-            subscriberCount={item.subscribersCount}
-            description={item.description}
-            tags={item.tags}
-            id={item.id}
-            userImage={item.owner?.profile_picture || ""}
-            subscribers={item.subscribers}
+            {...item}
         />
     );
 
@@ -237,17 +216,7 @@ const Search = (props: Props) => {
                                             searchResults.map((blueprint) => (
                                                 <View key={blueprint.id} style={{ marginBottom: 16 }}>
                                                     <BlueprintCard
-                                                        previewImage={blueprint.banner}
-                                                        workspaceName={blueprint.name}
-                                                        username={blueprint.owner?.handle || ""}
-                                                        name={blueprint.owner?.display_name || ""}
-                                                        time={new Date(blueprint.timestamp).toLocaleDateString()}
-                                                        subscriberCount={blueprint.subscribersCount}
-                                                        description={blueprint.description}
-                                                        tags={blueprint.tags}
-                                                        id={blueprint.id}
-                                                        userImage={blueprint.owner?.profile_picture || ""}
-                                                        subscribers={blueprint.subscribers}
+                                                        {...blueprint}
                                                         large={true}
                                                     />
                                                 </View>

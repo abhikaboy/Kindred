@@ -100,7 +100,7 @@ func RegisterGetProfileOperation(api huma.API, handler *Handler) {
 		Summary:     "Get profile by ID",
 		Description: "Retrieve a specific user profile by its ID",
 		Tags:        []string{"profiles"},
-	}, handler.GetProfile)
+	}, handler.GetProfileHuma)
 }
 
 func RegisterUpdateProfileOperation(api huma.API, handler *Handler) {

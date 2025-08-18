@@ -114,10 +114,12 @@ const FollowRequestsSection = ({ styles }: { styles: any }) => {
 
     const fetchFollowRequests = async () => {
         try {
+            console.log("FollowRequestsSection - fetching follow requests");
             setLoading(true);
             setError(null);
             
             const connections = await getConnectionsByReceiverAPI();
+            console.log("FollowRequestsSection - received connections:", Array.isArray(connections) ? connections.length : connections);
             
             // Transform API response to match FollowRequestProps interface
             const transformedRequests: FollowRequestProps[] = connections.map((connection) => ({
@@ -144,6 +146,7 @@ const FollowRequestsSection = ({ styles }: { styles: any }) => {
     };
 
     useEffect(() => {
+        console.log("FollowRequestsSection - mount: running fetchFollowRequests");
         fetchFollowRequests();
     }, []);
 

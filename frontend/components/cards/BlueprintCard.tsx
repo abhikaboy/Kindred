@@ -7,36 +7,26 @@ import PrimaryButton from "../inputs/PrimaryButton";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
 import { useBlueprints } from "@/contexts/blueprintContext";
+import type { components } from "@/api/generated/types";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
-interface Props {
-    id: string;
-    previewImage: string;
-    userImage: string;
-    workspaceName: string;
-    username: string;
-    name: string;
-    time: string;
-    subscriberCount: number;
-    description: string;
-    tags: string[];
-    subscribers?: string[];
+type BlueprintDocument = components["schemas"]["BlueprintDocument"];
+
+interface Props extends BlueprintDocument {
     large?: boolean;
 }
 
 const BlueprintCard = ({
     id,
-    previewImage,
-    userImage,
-    workspaceName,
-    username,
+    banner,
     name,
-    time,
-    subscriberCount,
+    duration,
+    subscribersCount,
     description,
     tags,
     subscribers = [],
+    owner,
     large = false,
 }: Props) => {
     const ThemedColor = useThemeColor();
@@ -47,27 +37,26 @@ const BlueprintCard = ({
 
     const isSubscribed = getIsSubscribed(id, subscribers);
     const isLoading = getIsLoading(id);
-    const currentSubscriberCount = getSubscriberCount(id, subscriberCount);
+    const currentSubscriberCount = getSubscriberCount(id, subscribersCount);
 
     const handlePress = () => {
         setSelectedBlueprint({
             id,
-            previewImage,
-            userImage,
-            workspaceName,
-            username,
+            banner,
             name,
-            time,
-            subscriberCount: currentSubscriberCount,
+            duration,
+            subscribersCount: currentSubscriberCount,
             description,
             tags,
             subscribers,
+            owner,
+            timestamp: new Date().toISOString(), // Add required timestamp
         });
         router.push({
             pathname: "/(logged-in)/(tabs)/(search)/blueprint/[id]",
             params: {
                 id: id,
-                name: workspaceName,
+                name: name,
             },
         });
     };
@@ -80,7 +69,7 @@ const BlueprintCard = ({
         <View style={styles.container}>
             <TouchableOpacity onPress={handlePress}>
                 <Image
-                    source={previewImage ? { uri: previewImage } : blueprintImage}
+                    source={banner ? { uri: banner } : blueprintImage}
                     style={{
                         width: "100%",
                         height: 135,
@@ -89,11 +78,11 @@ const BlueprintCard = ({
                     }}
                 />
                 <View style={styles.informationContainer}>
-                    <ThemedText type="subtitle">{workspaceName}</ThemedText>
+                    <ThemedText type="subtitle">{name}</ThemedText>
 
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                         <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
-                        <ThemedText type="smallerDefault">{time}</ThemedText>
+                        <ThemedText type="smallerDefault">{duration}</ThemedText>
                     </View>
 
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
