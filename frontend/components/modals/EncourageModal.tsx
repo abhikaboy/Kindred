@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Dimensions, Alert } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, StyleSheet, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import Octicons from "@expo/vector-icons/Octicons";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createEncouragementAPI } from "@/api/encouragement";
+import { useAuth } from "@/hooks/useAuth";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -30,58 +28,22 @@ interface EncourageModalProps {
 
 export default function EncourageModal({ visible, setVisible, task, encouragementConfig }: EncourageModalProps) {
     const ThemedColor = useThemeColor();
+    const { user, updateUser } = useAuth();
     const [encouragementMessage, setEncouragementMessage] = useState("");
-    const [encouragementsLeft, setEncouragementsLeft] = useState(2);
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
 
-    // Generate the storage key for today's date
-    const getStorageKey = () => {
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, "0");
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const year = today.getFullYear();
-        return `${day}-${month}-${year}-ENC`;
-    };
-
-    // Load encouragements left from storage
-    const loadEncouragementsLeft = async () => {
-        try {
-            const key = getStorageKey();
-            const stored = await AsyncStorage.getItem(key);
-            if (stored !== null) {
-                const count = parseInt(stored, 10);
-                setEncouragementsLeft(count);
-            } else {
-                // If no stored value, default to 2
-                setEncouragementsLeft(2);
-            }
-        } catch (error) {
-            console.error("Error loading encouragements left:", error);
-            setEncouragementsLeft(2);
-        }
-    };
-
-    // Save encouragements left to storage
-    const saveEncouragementsLeft = async (count: number) => {
-        try {
-            const key = getStorageKey();
-            await AsyncStorage.setItem(key, count.toString());
-        } catch (error) {
-            console.error("Error saving encouragements left:", error);
-        }
-    };
-
-    // Load encouragements when modal becomes visible
-    useEffect(() => {
-        if (visible) {
-            loadEncouragementsLeft();
-        }
-    }, [visible]);
+    // Get encouragements left from user data
+    const encouragementsLeft = user?.encouragements || 0;
 
     const handleSendEncouragement = async () => {
         if (!encouragementConfig?.receiverId || !task || !encouragementConfig?.categoryName) {
             Alert.alert("Error", "Missing required information to send encouragement");
+            return;
+        }
+
+        if (encouragementsLeft <= 0) {
+            Alert.alert("Error", "You have no encouragements left today");
             return;
         }
 
@@ -97,12 +59,9 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             // Make the API call
             await createEncouragementAPI(encouragementData);
 
-            // Update encouragements left
+            // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);
-            setEncouragementsLeft(newCount);
-
-            // Save to storage
-            await saveEncouragementsLeft(newCount);
+            updateUser({ encouragements: newCount });
 
             // Clear message and close modal
             setEncouragementMessage("");
