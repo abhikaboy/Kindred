@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, ScrollView, Image, Dimensions } from "react-native";
+import { View, StyleSheet, ScrollView, Image, Dimensions, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,7 +9,6 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import PreviewIcon from "@/components/profile/PreviewIcon";
-import { PanGestureHandler, State } from "react-native-gesture-handler";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
@@ -31,15 +30,15 @@ export default function BlueprintDetailScreen() {
 
     const isSubscribed = getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []);
     const isLoading = getIsLoading(selectedBlueprint.id);
-    const currentSubscriberCount = getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscriberCount);
+    const currentSubscriberCount = getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscribersCount);
 
     const onSubscribePress = async () => {
         await handleSubscribe(selectedBlueprint.id, selectedBlueprint.subscribers || []);
     };
 
     const getImageSource = () => {
-        if (selectedBlueprint.previewImage && selectedBlueprint.previewImage.trim() !== "") {
-            return { uri: selectedBlueprint.previewImage };
+        if (selectedBlueprint.banner && selectedBlueprint.banner.trim() !== "") {
+            return { uri: selectedBlueprint.banner };
         }
         return blueprintImage;
     };
@@ -50,14 +49,16 @@ export default function BlueprintDetailScreen() {
             headerImage={<Image source={getImageSource()} style={styles.headerImage} />}>
             <View style={styles.informationContainer}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <TouchableOpacity onPress={() => router.push(`/account/${selectedBlueprint.owner?._id}`)}>
                     <View style={{ flexDirection: "row", gap: 14 }}>
-                        <PreviewIcon icon={selectedBlueprint.userImage} size={"medium"}></PreviewIcon>
+                        <PreviewIcon icon={selectedBlueprint.owner?.profile_picture || ""} size={"medium"}></PreviewIcon>
 
                         <View style={{ flexDirection: "column" }}>
-                            <ThemedText type="default">{selectedBlueprint.name}</ThemedText>
-                            <ThemedText type="caption">{selectedBlueprint.username}</ThemedText>
+                            <ThemedText type="default">{selectedBlueprint.owner?.display_name || "Unknown"}</ThemedText>
+                            <ThemedText type="caption">{selectedBlueprint.owner?.handle || ""}</ThemedText>
                         </View>
                     </View>
+                    </TouchableOpacity>
 
                     <PrimaryButton
                         style={{ height: 38, width: 100, paddingVertical: 10, paddingHorizontal: 10 }}
@@ -68,12 +69,12 @@ export default function BlueprintDetailScreen() {
                     />
                 </View>
 
-                <ThemedText type="subtitle">{selectedBlueprint.workspaceName}</ThemedText>
+                <ThemedText type="subtitle">{selectedBlueprint.name}</ThemedText>
                 <ThemedText type="default">{selectedBlueprint.description}</ThemedText>
 
                 <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                     <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
-                    <ThemedText type="smallerDefault">{selectedBlueprint.time}</ThemedText>
+                    <ThemedText type="smallerDefault">{selectedBlueprint.duration}</ThemedText>
                 </View>
 
                 <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>

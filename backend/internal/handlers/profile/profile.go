@@ -21,20 +21,6 @@ func (h *Handler) GetProfiles(ctx context.Context, input *GetProfilesInput) (*Ge
 	return &GetProfilesOutput{Body: profiles}, nil
 }
 
-func (h *Handler) GetProfile(ctx context.Context, input *GetProfileInput) (*GetProfileOutput, error) {
-	id, err := primitive.ObjectIDFromHex(input.ID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
-	}
-
-	profile, err := h.service.GetProfileByID(id)
-	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
-	}
-
-	return &GetProfileOutput{Body: *profile}, nil
-}
-
 func (h *Handler) UpdatePartialProfile(ctx context.Context, input *UpdateProfileInput) (*UpdateProfileOutput, error) {
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
