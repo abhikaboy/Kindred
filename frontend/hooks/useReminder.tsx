@@ -14,7 +14,7 @@ export type Reminder = {
     // Enhanced reminder features
     customMessage?: string;
     sound?: string;
-    vibration?: boolean;
+    vibration: boolean;
 };
 
 // Returns a reminder 1 hour before the deadline
@@ -31,6 +31,7 @@ export function useReminder() {
             beforeStart: false,
             beforeDeadline: true,
             afterDeadline: false,
+            vibration: true,
         };
     }, []);
 
@@ -49,6 +50,7 @@ export function useReminder() {
             beforeStart: false,
             beforeDeadline: false,
             afterDeadline: false,
+            vibration: true,
         };
     }, []);
 
@@ -69,6 +71,7 @@ export function useReminder() {
             beforeStart: true,
             beforeDeadline: false,
             afterDeadline: false,
+            vibration: true,
         };
     }, []);
 

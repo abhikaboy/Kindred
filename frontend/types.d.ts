@@ -25,6 +25,7 @@ type Reminder = {
     beforeStart: boolean;
     beforeDeadline: boolean;
     afterDeadline: boolean;
+    vibration: boolean;
 };
 
 // Types for nested structures

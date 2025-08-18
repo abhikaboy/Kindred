@@ -172,6 +172,50 @@ type UpdateTaskChecklistOutput struct {
 	}
 }
 
+// Specialized endpoint inputs/outputs
+
+// Update Task Deadline
+type UpdateTaskDeadlineInput struct {
+	Authorization string                     `header:"Authorization" required:"true"`
+	Category      string                     `path:"category" example:"507f1f77bcf86cd799439011"`
+	ID            string                     `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateTaskDeadlineDocument `json:"body"`
+}
+
+type UpdateTaskDeadlineOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Task deadline updated successfully"`
+	}
+}
+
+// Update Task Start Date/Time
+type UpdateTaskStartInput struct {
+	Authorization string                  `header:"Authorization" required:"true"`
+	Category      string                  `path:"category" example:"507f1f77bcf86cd799439011"`
+	ID            string                  `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateTaskStartDocument `json:"body"`
+}
+
+type UpdateTaskStartOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Task start date/time updated successfully"`
+	}
+}
+
+// Update Task Reminders
+type UpdateTaskReminderInput struct {
+	Authorization string                     `header:"Authorization" required:"true"`
+	Category      string                     `path:"category" example:"507f1f77bcf86cd799439011"`
+	ID            string                     `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateTaskReminderDocument `json:"body"`
+}
+
+type UpdateTaskReminderOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Task reminders updated successfully"`
+	}
+}
+
 // Get Completed Tasks
 // Input for fetching completed tasks for a user
 // Output is a list of TaskDocument
@@ -360,4 +404,39 @@ func RegisterGetCompletedTasksOperation(api huma.API, handler *Handler) {
 		Description: "Retrieve all completed tasks for the logged in user",
 		Tags:        []string{"tasks"},
 	}, handler.GetCompletedTasks)
+}
+
+// Specialized endpoint registrations
+
+func RegisterUpdateTaskDeadlineOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-task-deadline",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/category/{category}/task/{id}/deadline",
+		Summary:     "Update task deadline",
+		Description: "Update the deadline for a specific task",
+		Tags:        []string{"tasks"},
+	}, handler.UpdateTaskDeadline)
+}
+
+func RegisterUpdateTaskStartOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-task-start",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/category/{category}/task/{id}/start",
+		Summary:     "Update task start date/time",
+		Description: "Update the start date and time for a specific task",
+		Tags:        []string{"tasks"},
+	}, handler.UpdateTaskStart)
+}
+
+func RegisterUpdateTaskReminderOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-task-reminder",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/category/{category}/task/{id}/reminders",
+		Summary:     "Update task reminders",
+		Description: "Update the reminders for a specific task",
+		Tags:        []string{"tasks"},
+	}, handler.UpdateTaskReminders)
 }

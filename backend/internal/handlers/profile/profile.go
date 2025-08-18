@@ -2,6 +2,7 @@ package Profile
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/danielgtaylor/huma/v2"
@@ -125,6 +126,7 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 			// Check relationship between authenticated user and profile being viewed
 			relationship, err = h.service.CheckRelationship(authUserID, id)
 			if err != nil {
+				slog.Error("Error checking relationship", "error", err.Error())
 				// Log the error but don't fail the request - relationship info is optional
 				relationship = &RelationshipInfo{
 					Status: RelationshipNone,

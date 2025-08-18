@@ -13,9 +13,10 @@ import SuggestedTag from "@/components/inputs/SuggestedTag";
 
 type Props = {
     goToStandard: () => void;
+    onSubmit?: (deadline: Date | null) => void;
 };
 
-const Deadline = ({ goToStandard }: Props) => {
+const Deadline = ({ goToStandard, onSubmit }: Props) => {
     const ThemedColor = useThemeColor();
 
     const [time, setTime] = useState<Date | null>(null);
@@ -124,7 +125,13 @@ const Deadline = ({ goToStandard }: Props) => {
             />
 
             <PrimaryButton
-                onPress={goToStandard}
+                onPress={() => {
+                    if (onSubmit) {
+                        onSubmit(deadline);
+                    } else {
+                        goToStandard();
+                    }
+                }}
                 title={
                     deadline
                         ? "Set Deadline: " + deadline.toLocaleDateString() + " at " + deadline.toLocaleTimeString()

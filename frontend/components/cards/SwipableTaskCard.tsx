@@ -7,7 +7,7 @@ import TaskCard from "./TaskCard";
 import { Task } from "@/api/types";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
-import { Dimensions, Platform, StyleSheet, TouchableOpacity } from "react-native";
+import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
@@ -16,6 +16,9 @@ import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
+import Octicons from "@expo/vector-icons/Octicons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
 type Props = {
     redirect?: boolean;
     categoryId: string;
@@ -117,7 +120,34 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                 }
                 rightThreshold={100}
                 overshootRight={true}
-                renderRightActions={(prog, drag) => RightAction(prog, drag, () => deleteTask(categoryId, task.id))}>
+                renderRightActions={(prog, drag) => (
+                    <View style={{ flexDirection: "row" }}>
+                        {RightAction(
+                            prog,
+                            drag,
+                            () => console.log("pressed"),
+                            3,
+                            <Ionicons name="alarm-outline" size={32} color="white" style={styles.rightAction} />,
+                            ThemedColor.primary
+                        )}
+                        {RightAction(
+                            prog,
+                            drag,
+                            () => console.log("pressed"),
+                            3,
+                            <Feather name="flag" size={24} color="white" style={styles.rightAction} />,
+                            ThemedColor.primary
+                        )}
+                        {RightAction(
+                            prog,
+                            drag,
+                            () => deleteTask(categoryId, task.id),
+                            3,
+                            <Octicons name="trash" size={24} color="white" style={styles.rightAction} />,
+                            ThemedColor.error
+                        )}
+                    </View>
+                )}>
                 <TaskCard
                     content={task.content}
                     value={task.value}
@@ -186,24 +216,26 @@ function LeftAction(
 
 const RIGHT_ACTION_WIDTH = 75;
 
-function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, callback: () => void) {
+function RightAction(
+    prog: SharedValue<number>,
+    drag: SharedValue<number>,
+    callback: () => void,
+    index: number,
+    icon: React.ReactNode,
+    color: string
+) {
     const ThemedColor = useThemeColor();
 
     const styleAnimation = useAnimatedStyle(() => {
         return {
-            transform: [{ translateX: drag.value + RIGHT_ACTION_WIDTH }],
+            transform: [{ translateX: drag.value + RIGHT_ACTION_WIDTH * index }],
         };
     });
 
     return (
         <Reanimated.View
-            style={[
-                styleAnimation,
-                { backgroundColor: ThemedColor.error, justifyContent: "center", alignItems: "center" },
-            ]}>
-            <TouchableOpacity onPress={() => callback()}>
-                <Entypo name="cross" size={24} color="white" style={styles.rightAction} />
-            </TouchableOpacity>
+            style={[styleAnimation, { backgroundColor: color, justifyContent: "center", alignItems: "center" }]}>
+            <TouchableOpacity onPress={() => callback()}>{icon}</TouchableOpacity>
         </Reanimated.View>
     );
 }

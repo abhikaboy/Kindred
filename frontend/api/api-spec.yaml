@@ -1387,6 +1387,150 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/category/{category}/task/{id}/deadline:
+        patch:
+            tags:
+                - tasks
+            summary: Update task deadline
+            description: Update the deadline for a specific task
+            operationId: update-task-deadline
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTaskDeadlineDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTaskDeadlineOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/category/{category}/task/{id}/reminders:
+        patch:
+            tags:
+                - tasks
+            summary: Update task reminders
+            description: Update the reminders for a specific task
+            operationId: update-task-reminder
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTaskReminderDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTaskReminderOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/category/{category}/task/{id}/start:
+        patch:
+            tags:
+                - tasks
+            summary: Update task start date/time
+            description: Update the start date and time for a specific task
+            operationId: update-task-start
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTaskStartDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTaskStartOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/congratulations:
         get:
             tags:
@@ -5311,6 +5455,37 @@ components:
                         - Task checklist updated successfully
             required:
                 - message
+        UpdateTaskDeadlineDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskDeadlineDocument.json
+                    readOnly: true
+                deadline:
+                    type: string
+                    format: date-time
+        UpdateTaskDeadlineOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskDeadlineOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task deadline updated successfully
+            required:
+                - message
         UpdateTaskDocument:
             type: object
             additionalProperties: false
@@ -5412,6 +5587,72 @@ components:
                     type: string
                     examples:
                         - Task updated successfully
+            required:
+                - message
+        UpdateTaskReminderDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskReminderDocument.json
+                    readOnly: true
+                reminders:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Reminder'
+        UpdateTaskReminderOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskReminderOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task reminders updated successfully
+            required:
+                - message
+        UpdateTaskStartDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskStartDocument.json
+                    readOnly: true
+                startDate:
+                    type: string
+                    format: date-time
+                startTime:
+                    type: string
+                    format: date-time
+        UpdateTaskStartOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskStartOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task start date/time updated successfully
             required:
                 - message
         UserExtendedReference:

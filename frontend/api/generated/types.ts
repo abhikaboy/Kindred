@@ -780,6 +780,66 @@ export interface paths {
         patch: operations["rename-workspace"];
         trace?: never;
     };
+    "/v1/user/category/{category}/task/{id}/deadline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update task deadline
+         * @description Update the deadline for a specific task
+         */
+        patch: operations["update-task-deadline"];
+        trace?: never;
+    };
+    "/v1/user/category/{category}/task/{id}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update task reminders
+         * @description Update the reminders for a specific task
+         */
+        patch: operations["update-task-reminder"];
+        trace?: never;
+    };
+    "/v1/user/category/{category}/task/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update task start date/time
+         * @description Update the start date and time for a specific task
+         */
+        patch: operations["update-task-start"];
+        trace?: never;
+    };
     "/v1/user/congratulations": {
         parameters: {
             query?: never;
@@ -2475,6 +2535,23 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        UpdateTaskDeadlineDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            deadline?: string;
+        };
+        UpdateTaskDeadlineOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         UpdateTaskDocument: {
             /**
              * Format: uri
@@ -2517,6 +2594,41 @@ export interface components {
             message: string;
         };
         UpdateTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateTaskReminderDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            reminders?: components["schemas"]["Reminder"][];
+        };
+        UpdateTaskReminderOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateTaskStartDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            startTime?: string;
+        };
+        UpdateTaskStartOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -3974,6 +4086,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RenameWorkspaceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-deadline": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskDeadlineDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskDeadlineOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-reminder": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskReminderDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskReminderOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-start": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskStartDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskStartOutputBody"];
                 };
             };
             /** @description Error */

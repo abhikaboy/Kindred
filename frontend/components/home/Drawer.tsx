@@ -4,10 +4,9 @@ import { View, TouchableOpacity, ScrollView, Keyboard, Platform, Image } from "r
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
 import { Dimensions, StyleSheet } from "react-native";
-import NewWorkspace from "../modals/create/NewWorkspace";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import EditWorkspace from "../modals/edit/EditWorkspace";
+import CreateWorkspaceBottomSheetModal from "../modals/CreateWorkspaceBottomSheetModal";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -20,82 +19,7 @@ export const Drawer = ({ close }) => {
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
 
-    // References for bottom sheet modals
-    const createWorkspaceSheetRef = useRef<BottomSheetModal>(null);
-    const editWorkspaceSheetRef = useRef<BottomSheetModal>(null);
 
-    // Define multiple snap points
-    const snapPoints = useMemo(() => ["70%"], []);
-
-    // Listen for keyboard events
-    useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-            () => {
-                // Move to taller snap point when keyboard appears
-                createWorkspaceSheetRef.current?.snapToIndex(1);
-            }
-        );
-
-        const keyboardDidHideListener = Keyboard.addListener(
-            Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-            () => {
-                // Move back to shorter snap point when keyboard hides
-                createWorkspaceSheetRef.current?.snapToIndex(0);
-            }
-        );
-
-        return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
-        };
-    }, []);
-
-    // Handle visibility changes for create workspace modal
-    React.useEffect(() => {
-        if (creating) {
-            createWorkspaceSheetRef.current?.present();
-        } else {
-            createWorkspaceSheetRef.current?.dismiss();
-        }
-    }, [creating]);
-
-    // Handle visibility changes for edit workspace modal
-    React.useEffect(() => {
-        if (editing) {
-            editWorkspaceSheetRef.current?.present();
-        } else {
-            editWorkspaceSheetRef.current?.dismiss();
-        }
-    }, [editing]);
-
-    // Handle sheet changes for create workspace modal
-    const handleCreateSheetChanges = useCallback(
-        (index: number) => {
-            if (index === -1 && creating) {
-                setCreating(false);
-            }
-        },
-        [creating]
-    );
-
-    // Handle sheet changes for edit workspace modal
-    const handleEditSheetChanges = useCallback(
-        (index: number) => {
-            if (index === -1 && editing) {
-                setEditing(false);
-            }
-        },
-        [editing]
-    );
-
-    // Custom backdrop component
-    const renderBackdrop = useCallback(
-        (backdropProps) => (
-            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.8} />
-        ),
-        []
-    );
     const handleCreateBlueprint = () => {
         close();
         router.push("/blueprint/create");
@@ -104,27 +28,7 @@ export const Drawer = ({ close }) => {
     return (
         <View style={styles(ThemedColor).drawerContainer}>
             {/* CreateWorkspace Bottom Sheet Modal */}
-            <BottomSheetModal
-                ref={createWorkspaceSheetRef}
-                index={0}
-                snapPoints={snapPoints}
-                onChange={handleCreateSheetChanges}
-                backdropComponent={renderBackdrop}
-                handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
-                backgroundStyle={{ backgroundColor: ThemedColor.background }}
-                enablePanDownToClose={true}>
-                <BottomSheetView
-                    style={{
-                        paddingHorizontal: 20,
-                    }}>
-                    <NewWorkspace
-                        hide={() => {
-                            setCreating(false);
-                            createWorkspaceSheetRef.current.dismiss();
-                        }}
-                    />
-                </BottomSheetView>
-            </BottomSheetModal>
+            <CreateWorkspaceBottomSheetModal visible={creating} setVisible={setCreating} />
 
             <EditWorkspace editing={editing} setEditing={setEditing} id={focusedWorkspace} />
 
@@ -224,7 +128,7 @@ export const Drawer = ({ close }) => {
                     <Ionicons name="person" size={16} color={ThemedColor.caption} />
                     <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
                 </View>
-                {workspaces.map((workspace) => (
+                {workspaces.filter((workspace) => !workspace.isBlueprint).map((workspace) => (
                     <DrawerItem
                         onPress={() => {
                             setSelected(workspace.name);
@@ -255,6 +159,22 @@ export const Drawer = ({ close }) => {
                         <AntDesign name="question" size={20} color={ThemedColor.caption} />
                     </View>
                 </TouchableOpacity>
+                {workspaces.filter((workspace) => workspace.isBlueprint).map((workspace) => (
+                            <DrawerItem
+                                title={workspace.name}
+                                selected={selected}
+                                onPress={() => {
+                                    setSelected(workspace.name);
+                                    router.navigate("/(logged-in)/(tabs)/(task)");
+                                    close();
+                                }}
+                                onLongPress={() => {
+                                    setFocusedWorkspace(workspace.name);
+                                    setEditing(true);
+                                }}
+                                key={workspace.name}
+                            />
+                        ))}
                 <TouchableOpacity
                     style={{
                         paddingVertical: 12,
