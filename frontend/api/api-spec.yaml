@@ -573,34 +573,6 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
     /v1/profiles/{id}:
-        get:
-            tags:
-                - profiles
-            summary: Get profile by ID
-            description: Retrieve a specific user profile by its ID
-            operationId: get-profile
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                    examples:
-                        - 507f1f77bcf86cd799439011
-                  example: 507f1f77bcf86cd799439011
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProfileDocument'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
         delete:
             tags:
                 - profiles
@@ -2432,6 +2404,35 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdatePostOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/profiles/{id}:
+        get:
+            tags:
+                - profiles
+            summary: Get profile by ID
+            description: Retrieve a specific user profile by its ID
+            operationId: get-profile
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ProfileDocument'
                 default:
                     description: Error
                     content:

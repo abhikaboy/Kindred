@@ -10,7 +10,7 @@ type UpdateProfileDocument = components["schemas"]["UpdateProfileDocument"];
  * Get a profile by id
  */
 export const getProfile = async (id: string): Promise<ProfileDocument> => {
-    const { data, error } = await client.GET("/v1/profiles/{id}", {
+    const { data, error } = await client.GET("/v1/user/profiles/{id}", {
         params: withAuthHeaders({ path: { id } }),
     });
 
@@ -70,7 +70,7 @@ export const getProfileByPhone = async (phone: string): Promise<ProfileDocument>
  * Search profiles (type-safe)
  */
 export const searchProfiles = async (query?: string): Promise<ProfileDocument[]> => {
-    const { data, error } = await client.GET("/v1/profiles/search", {
+    const { data, error } = await client.GET("/v1/user/profiles/search", {
         params: withAuthHeaders({ query: query ? { query } : {} }),
     });
 

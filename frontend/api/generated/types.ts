@@ -391,11 +391,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get profile by ID
-         * @description Retrieve a specific user profile by its ID
-         */
-        get: operations["get-profile"];
+        get?: never;
         put?: never;
         post?: never;
         /**
@@ -1110,6 +1106,26 @@ export interface paths {
          * @description Update an existing post
          */
         patch: operations["update-post"];
+        trace?: never;
+    };
+    "/v1/user/profiles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get profile by ID
+         * @description Retrieve a specific user profile by its ID
+         */
+        get: operations["get-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/profiles/search": {
@@ -3172,38 +3188,6 @@ export interface operations {
             };
         };
     };
-    "get-profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     "delete-profile": {
         parameters: {
             query?: never;
@@ -4932,6 +4916,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdatePostOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDocument"];
                 };
             };
             /** @description Error */
