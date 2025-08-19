@@ -101,6 +101,18 @@ type AddCommentOutput struct {
 	} `json:"body"`
 }
 
+type DeleteCommentInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	PostID    string `path:"postId" doc:"Post ID"`
+	CommentID string `path:"commentId" doc:"Comment ID"`
+}
+
+type DeleteCommentOutput struct {
+	Body struct {
+		Message string `json:"message"`
+	}
+}
+
 type AddReactionInput struct {
 	Authorization string            `header:"Authorization" required:"true"`
 	PostID        string            `path:"postId" example:"507f1f77bcf86cd799439011"`
@@ -113,8 +125,9 @@ type AddReactionParams struct {
 
 type AddReactionOutput struct {
 	Body struct {
-		Message string `json:"message"`
-	}
+		Message string `json:"message" example:"Reaction added successfully"`
+		Added   bool   `json:"added" example:"true"`
+	} `json:"body"`
 }
 
 type Enumeration string

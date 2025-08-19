@@ -41,7 +41,7 @@ type PostData = {
             name: string;
         };
     };
-    reactions: { [emoji: string]: string[] } | null; // Backend structure: {"👍": ["userId1", "userId2"]}
+    reactions: { [emoji: string]: string[] } | {};
     comments: any[] | null;
     metadata: {
         createdAt: string;
@@ -63,6 +63,7 @@ export default function Feed() {
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
     // Feed switching state
     const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
@@ -78,6 +79,23 @@ export default function Feed() {
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
+
+    const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
+        setPosts((prevPosts) => prevPosts.map((post) => (post._id === postId ? { ...post, ...updatedPost } : post)));
+    }, []);
+
+    const refreshSinglePost = useCallback(
+        async (postId: string) => {
+            try {
+                const { getPostById } = await import("@/api/post");
+                const updatedPost = await getPostById(postId);
+                updatePostInFeed(postId, updatedPost);
+            } catch (error) {
+                console.error("Failed to refresh post:", error);
+            }
+        },
+        [updatePostInFeed]
+    );
 
     // Start loading animation when loading state changes
     useEffect(() => {
@@ -124,6 +142,12 @@ export default function Feed() {
             setLoading(false);
         }
     }, []);
+
+    const sortedPosts = posts.sort((a, b) => {
+        const dateA = new Date(a.metadata?.createdAt || 0);
+        const dateB = new Date(b.metadata?.createdAt || 0);
+        return dateB.getTime() - dateA.getTime(); 
+    });
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -353,7 +377,7 @@ export default function Feed() {
                             </ThemedText>
                         </View>
                     ) : (
-                        posts.map((post, index) => (
+                        sortedPosts.map((post, index) => (
                             <PostCard
                                 key={post._id || index}
                                 icon={post.user?.profile_picture || ""}
@@ -383,6 +407,7 @@ export default function Feed() {
                                 }
                                 comments={post.comments || []}
                                 images={post.images || []}
+                                onReactionUpdate={() => refreshSinglePost(post._id)}
                                 id={post._id}
                             />
                         ))
@@ -466,7 +491,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         contentContainer: {
             marginTop: 100,
-            paddingBottom: HORIZONTAL_PADDING,
+            paddingBottom: 150,
         },
         loadingContainer: {
             flex: 1,

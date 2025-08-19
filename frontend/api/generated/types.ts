@@ -2151,11 +2151,11 @@ export interface components {
             blueprint?: components["schemas"]["BlueprintReference"];
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
-            comments: components["schemas"]["CommentDocument"][] | null;
+            comments: components["schemas"]["CommentDocument"][] | {};
             images: string[] | null;
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
-                [key: string]: string[] | null;
+                [key: string]: string[] | {};
             };
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReferenceInternal"];
@@ -2170,11 +2170,11 @@ export interface components {
             blueprint?: components["schemas"]["BlueprintReference"];
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
-            comments: components["schemas"]["CommentDocument"][] | null;
+            comments: components["schemas"]["CommentDocument"][] | {};
             images: string[] | null;
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
-                [key: string]: string[] | null;
+                [key: string]: string[] | {};
             };
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];

@@ -9,6 +9,7 @@ type Props = {
     placeHolder?: string;
     width?: number;
     value?: string;
+    autoFocus?: boolean;
 };
 
 const CommentInput = (props: Props) => {
@@ -32,6 +33,7 @@ const CommentInput = (props: Props) => {
     return (
         <View>
             <BottomSheetTextInput
+                autoFocus={props.autoFocus}
                 placeholder={props.placeHolder || "Leave a comment"}
                 onSubmitEditing={props?.onSubmit}
                 onChangeText={handleChangeText}

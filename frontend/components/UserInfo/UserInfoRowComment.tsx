@@ -10,10 +10,17 @@ type Props = {
     icon: string;
     id?: string;
     time?: number;
+    onReply?: (commentId: string, userName: string) => void; 
 };
 
-const UserInfoRowComment = ({ name, content, icon, time }: Props) => {
+const UserInfoRowComment = ({ name, content, icon, time, id, onReply }: Props) => {
     const ThemedColor = useThemeColor();
+    
+    const handleReply = () => {
+        if (onReply && id) {
+            onReply(id, name);
+        }
+    };
     
     return (
         <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
@@ -52,9 +59,9 @@ const UserInfoRowComment = ({ name, content, icon, time }: Props) => {
                             ]} 
                             type={"default"}
                         >
-                            {content || "No content"}
+                            {content}
                         </ThemedText>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={handleReply}>
                             <ThemedText 
                                 type="caption" 
                                 style={{ 

@@ -8,55 +8,40 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     postId: number;
     reaction: SlackReaction;
-    onAddReaction: (emoji: string, count: number, ids: string[]) => void;
-    onRemoveReaction: (emoji: string, count: number, ids: string[]) => void;
+    isHighlighted?: boolean;
+    onPress: () => void;
 };
 
-const ReactPills = ({ reaction, onAddReaction, onRemoveReaction }: Props) => {
-    const userId = "67ba5abb616b5e6544e0137b";
+const ReactPills = ({ reaction, isHighlighted = false, onPress }: Props) => {
     const ThemedColor = useThemeColor();
-
-    const getHasReacted = (reaction: SlackReaction, userId: string) => {
-        if (!reaction || !reaction.ids) return false;
-        const idsSet = new Set(reaction.ids ?? []);
-        return idsSet.has(userId);
-    };
-
-    const [hasReacted, setHasReacted] = useState(getHasReacted(reaction, userId));
-
-    if (reaction?.count === 0 && !hasReacted) {
-        return null;
-    }
-
-    const styles = stylesheet(ThemedColor);
+    const styles = stylesheet(ThemedColor, isHighlighted);
 
     return (
         <TouchableOpacity
-            onPress={() => {
-                setHasReacted(!hasReacted);
-                if (!hasReacted) {
-                    onAddReaction(reaction?.emoji, reaction?.count, [...reaction?.ids, userId]);
-                }
-                if (hasReacted) {
-                    onRemoveReaction(reaction?.emoji, reaction?.count, [...reaction?.ids, userId]);
-                }
-            }}
+            onPress={onPress}
             style={[
                 styles.pill,
                 {
-                    backgroundColor: hasReacted ? "#543596" : "#3f1d4c",
-                    borderColor: hasReacted ? "#854dff" : "#3f1d4c",
+                    backgroundColor: isHighlighted ? "#543596" : "#3f1d4c",
+                    borderColor: isHighlighted ? "#854dff" : "#3f1d4c",
                 },
-            ]}>
+            ]}
+            activeOpacity={0.7}>
             <View style={styles.pillContent}>
-                <ThemedText style={styles.emoji}>{reaction?.emoji}</ThemedText>
-                <ThemedText style={styles.count}>{reaction?.count}</ThemedText>
+                <ThemedText style={[styles.emoji, { color: isHighlighted ? "#ffffff" : ThemedColor.buttonText }]}>
+                    {reaction?.emoji}
+                </ThemedText>
+                {reaction?.count > 0 && (
+                    <ThemedText style={[styles.count, { color: isHighlighted ? "#ffffff" : ThemedColor.buttonText }]}>
+                        {reaction.count}
+                    </ThemedText>
+                )}
             </View>
         </TouchableOpacity>
     );
 };
 
-const stylesheet = (ThemedColor: any) =>
+const stylesheet = (ThemedColor: any, isHighlighted: boolean) =>
     StyleSheet.create({
         pill: {
             flexDirection: "row",
@@ -66,24 +51,25 @@ const stylesheet = (ThemedColor: any) =>
             paddingHorizontal: 9,
             paddingVertical: 4,
             alignSelf: "flex-start",
+            opacity: 1,
         },
         pillContent: {
             flexDirection: "row",
             gap: 6,
             alignItems: "center",
+            justifyContent: "center",
         },
         emoji: {
             fontSize: 20,
-            color: ThemedColor.buttonText,
             textAlign: "center",
-            lineHeight: 21,
+            lineHeight: 27,
         },
         count: {
             fontSize: 15,
-            color: ThemedColor.buttonText,
             textAlign: "center",
             lineHeight: 21,
             minWidth: 6,
+            fontWeight: "600",
         },
     });
 

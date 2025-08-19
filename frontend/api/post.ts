@@ -8,7 +8,7 @@ const createLocalPostsClient = () => {
     // For iOS Simulator, use your computer's IP instead of 127.0.0.1
     // To find your IP: run `ipconfig getifaddr en0` (Mac) or `hostname -I` (Linux)
     const localUrl = __DEV__ ? 
-        "http://192.168.0.16:8080" : // Replace with your actual IP address
+        "http://192.168.0.22:8080" : // Replace with your actual IP address
         "http://127.0.0.1:8080";
         
     console.log("🔧 LOCAL POSTS CLIENT: Using URL:", localUrl);
@@ -216,4 +216,107 @@ export const addComment = async (
     }
     
     throw new Error("Invalid API response structure");
+};
+
+
+/**
+ * toggle reaction
+ * @param postId 
+ * @param emoji 
+ * @returns 
+ */
+// Add this to your @/api/post.ts file with extra debugging:
+
+export const toggleReaction = async (
+    postId: string, 
+    emoji: string
+): Promise<{ added: boolean; message: string }> => {
+  
+    // Validate inputs
+    if (!postId) {
+        throw new Error("PostId is required");
+    }
+    
+    if (!emoji || typeof emoji !== 'string') {
+        throw new Error("Emoji is required and must be a string");
+    }
+    
+    const cleanPostId = postId.trim();
+    const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdRegex.test(cleanPostId)) {
+        throw new Error(`Invalid post ID format: ${cleanPostId}`);
+    }
+        
+    try {
+        const { data, error } = await localPostsClient.POST("/v1/user/posts/{postId}/reaction", {
+            params: { path: { postId: cleanPostId } }, 
+            body: { 
+                emoji: emoji.trim()
+            },
+        });
+        
+        
+        if (error) {
+            throw new Error(`Failed to toggle reaction: ${JSON.stringify(error)}`);
+        }
+        if (data && typeof data === 'object') {            
+            if ('added' in data && 'message' in data) {
+                const result = data as { added: boolean; message: string };
+                return result;
+            } else {
+            }
+        }
+    } catch (networkError) {
+        throw networkError;
+    }
+};
+
+/**
+ * Helper function 
+ * @param postId 
+ * @param emoji 
+ * @returns 
+ */
+export const addReaction = async (postId: string, emoji: string) => {
+    return await toggleReaction(postId, emoji);
+};
+
+/**
+ * Delete Post
+ * @param postId 
+ */
+export const deletePost = async (postId: string) => {
+    const { data, error } = await localPostsClient.DELETE("/v1/user/posts/{id}", {
+        params: withAuthHeaders({ path: { id: postId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to delete post: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Delete Comment
+ * @param postId 
+ */
+export const deleteComment = async (postId: string, commentId: string) => {
+    try {
+        const { data, error } = await localPostsClient.DELETE("/v1/user/posts/{postId}/comment/{commentId}", {
+            params: withAuthHeaders({ 
+                path: { 
+                    postId: postId,
+                    commentId: commentId 
+                } 
+            }),
+        });
+
+        if (error) {
+            throw new Error(`Failed to delete comment: ${JSON.stringify(error)}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        throw error;
+    }
 };

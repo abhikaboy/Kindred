@@ -74,6 +74,17 @@ func RegisterAddCommentOperation(api huma.API, handler *Handler) {
 	}, handler.AddCommentHuma)
 }
 
+func RegisterDeleteCommentOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "delete-comment",
+		Method:      http.MethodDelete,
+		Path:        "/v1/user/posts/{postId}/comment/{commentId}",
+		Summary:     "Delete comment from post",
+		Description: "Delete comment from an existing post",
+		Tags:        []string{"posts"},
+	}, handler.DeleteCommentHuma)
+}
+
 func RegisterGetUserPosts(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user-posts",
@@ -85,7 +96,7 @@ func RegisterGetUserPosts(api huma.API, handler *Handler) {
 	}, handler.GetUserPostsHuma)
 }
 
-func RegisterAddReaction(api huma.API, handler *Handler) {
+func RegisterToggleReaction(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "add-reaction",
 		Method:      http.MethodPost,
@@ -93,8 +104,10 @@ func RegisterAddReaction(api huma.API, handler *Handler) {
 		Summary:     "React to a post",
 		Description: "Adds a reaction to a post",
 		Tags:        []string{"posts"},
-	}, handler.AddReactionHuma)
+	}, handler.ToggleReactionHuma)
 }
+
+
 
 // Register all post operations
 func RegisterPostOperations(api huma.API, handler *Handler) {
@@ -105,5 +118,6 @@ func RegisterPostOperations(api huma.API, handler *Handler) {
 	RegisterUpdatePostOperation(api, handler)
 	RegisterDeletePostOperation(api, handler)
 	RegisterAddCommentOperation(api, handler)
-	RegisterAddReaction(api, handler)
+	RegisterToggleReaction(api, handler)
+	RegisterDeleteCommentOperation(api, handler)
 }

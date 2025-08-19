@@ -122,7 +122,7 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 	ctx := context.Background()
 
 	filter := bson.M{
-		"user._id":             userID.Hex(),
+		"user._id":           userID.Hex(),
 		"metadata.isDeleted": false,
 	}
 
@@ -161,25 +161,66 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 	return err
 }
 
-func (s *Service) AddReaction(r *types.ReactDocument) error {
-	ctx := context.Background()
+func (s *Service) ToggleReaction(r *types.ReactDocument) (bool, error) {
+    ctx := context.Background()
+    field := "reactions." + r.Emoji
 
-	field := "reactions." + r.Emoji
-	filter := bson.M{
-		"_id":                r.PostID,
-		"metadata.isDeleted": false,
-	}
+    // Get current state
+    var post types.PostDocument
+    err := s.Posts.FindOne(ctx, bson.M{"_id": r.PostID}).Decode(&post)
+    if err != nil {
+        return false, err
+    }
 
-	update := bson.M{
-		"$addToSet": bson.M{
-			field: r.UserID,
-		},
-		"$set": bson.M{
-			"metadata.updatedAt": time.Now(),
-			"metadata.isEdited":  true,
-		},
-	}
+    currentReactions := post.Reactions[r.Emoji]
+    userExists := false
+    for _, id := range currentReactions {
+        if id == r.UserID {
+            userExists = true
+            break
+        }
+    }
 
-	_, err := s.Posts.UpdateOne(ctx, filter, update)
-	return err
+    var update bson.M
+    if userExists {
+        // Remove user
+        if len(currentReactions) == 1 {
+            update = bson.M{
+                "$unset": bson.M{field: ""},
+                "$set": bson.M{
+                    "metadata.updatedAt": time.Now(),
+                    "metadata.isEdited":  true,
+                },
+            }
+        } else {
+            // Remove just this user
+            update = bson.M{
+                "$pull": bson.M{field: r.UserID},
+                "$set": bson.M{
+                    "metadata.updatedAt": time.Now(),
+                    "metadata.isEdited":  true,
+                },
+            }
+        }
+    } else {
+        // Add user
+        update = bson.M{
+            "$addToSet": bson.M{field: r.UserID},
+            "$set": bson.M{
+                "metadata.updatedAt": time.Now(),
+                "metadata.isEdited":  true,
+            },
+        }
+    }
+
+    _, err = s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, update)
+    if err != nil {
+        return false, err
+    }
+
+    return !userExists, err
+}
+
+func (s *Service) DeleteComment(postID primitive.ObjectID, commentID primitive.ObjectID) error {
+	return s.DeleteCommentCascade(postID, commentID)
 }
