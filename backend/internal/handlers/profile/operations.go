@@ -96,11 +96,11 @@ func RegisterGetProfileOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-profile",
 		Method:      http.MethodGet,
-		Path:        "/v1/profiles/{id}",
+		Path:        "/v1/user/profiles/{id}",
 		Summary:     "Get profile by ID",
 		Description: "Retrieve a specific user profile by its ID",
 		Tags:        []string{"profiles"},
-	}, handler.GetProfile)
+	}, handler.GetProfileHuma)
 }
 
 func RegisterUpdateProfileOperation(api huma.API, handler *Handler) {

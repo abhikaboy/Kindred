@@ -941,3 +941,81 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID) ([]TaskDocument, 
 	}
 	return results, nil
 }
+
+// Specialized update methods for targeted operations
+
+// UpdateTaskDeadline updates only the deadline field of a task
+func (s *Service) UpdateTaskDeadline(id primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID, update UpdateTaskDeadlineDocument) error {
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryID, userID); err != nil {
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
+	}
+
+	updateFields := bson.M{
+		"tasks.$[t].deadline":   update.Deadline,
+		"tasks.$[t].lastEdited": xutils.NowUTC(),
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$set": updateFields},
+		getTaskArrayFilterOptions(id),
+	)
+
+	return handleMongoError(ctx, "update task deadline", err)
+}
+
+// UpdateTaskStart updates the start date and time fields of a task
+func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID, update UpdateTaskStartDocument) error {
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryID, userID); err != nil {
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
+	}
+
+	updateFields := bson.M{
+		"tasks.$[t].lastEdited": xutils.NowUTC(),
+	}
+
+	// Only update fields that are provided
+	if update.StartDate != nil {
+		updateFields["tasks.$[t].startDate"] = update.StartDate
+	}
+	if update.StartTime != nil {
+		updateFields["tasks.$[t].startTime"] = update.StartTime
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$set": updateFields},
+		getTaskArrayFilterOptions(id),
+	)
+
+	return handleMongoError(ctx, "update task start date/time", err)
+}
+
+// UpdateTaskReminders updates the reminders field of a task
+func (s *Service) UpdateTaskReminders(id primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID, update UpdateTaskReminderDocument) error {
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryID, userID); err != nil {
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
+	}
+
+	updateFields := bson.M{
+		"tasks.$[t].reminders":  update.Reminders,
+		"tasks.$[t].lastEdited": xutils.NowUTC(),
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$set": updateFields},
+		getTaskArrayFilterOptions(id),
+	)
+
+	return handleMongoError(ctx, "update task reminders", err)
+}

@@ -1,3 +1,5 @@
+import { components } from "./generated/types";
+
 export type RequestFunction = (method: string, url: string, body?: any) => Promise<any>;
 
 export interface LoginResponse {
@@ -79,9 +81,16 @@ export interface Categories {
     tasks: Task[];
 }
 
+
 export interface Workspace {
     name: string;
     categories: Categories[];
+    isBlueprint: boolean;
+}
+
+export interface BlueprintWorkspace extends Workspace {
+    blueprintDetails: components["schemas"]["BlueprintDocumentWithoutSubscribers"];
+    isBlueprint: true;
 }
 
 export interface User {

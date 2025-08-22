@@ -52,6 +52,7 @@ const NewWorkspace = ({ hide }: Props) => {
             </View>
             <View style={{ gap: 12 }}>
                 <ThemedInput
+                    useBottomSheetInput={true}
                     autofocus
                     placeHolder="Enter the Workspace Name"
                     onSubmit={() => {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
-	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -28,33 +27,19 @@ func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnect
 	}
 
 	// Convert receiver ID from string to ObjectID
-	receiverID, err := primitive.ObjectIDFromHex(input.Body.Reciever)
+	receiverID, err := primitive.ObjectIDFromHex(input.Body.ReceiverID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid receiver ID format", err)
 	}
 
 	// Convert authenticated user ID to ObjectID
-	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+	requesterID, err := primitive.ObjectIDFromHex(authenticatedUserID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid authenticated user ID format", err)
 	}
 
-	// Convert requester to internal type using the actual authenticated user's ID
-	requesterInternal := ConnectionUserInternal{
-		ID:      authUserID, // Use the actual authenticated user's ID
-		Picture: input.Body.Requester.Picture,
-		Name:    input.Body.Requester.Name,
-		Handle:  input.Body.Requester.Handle,
-	}
-
-	internalDoc := ConnectionDocumentInternal{
-		ID:        primitive.NewObjectID(),
-		Requester: requesterInternal,
-		Reciever:  receiverID,
-		Timestamp: xutils.NowUTC(),
-	}
-
-	connection, err := h.service.CreateConnection(&internalDoc)
+	// Create connection request - service will fetch requester details
+	connection, err := h.service.CreateConnectionRequest(requesterID, receiverID)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to create connection", err)
 	}
@@ -79,14 +64,14 @@ func (h *Handler) GetConnectionsHuma(ctx context.Context, input *GetConnectionsI
 
 func (h *Handler) GetConnectionHuma(ctx context.Context, input *GetConnectionInput) (*GetConnectionOutput, error) {
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	id, err := primitive.ObjectIDFromHex(input.ID)
+	id, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
+		return nil, huma.Error400BadRequest("Invalid ID", err)
 	}
 
 	Connection, err := h.service.GetConnectionByID(id)
@@ -109,9 +94,9 @@ func (h *Handler) GetConnectionsByReceiverHuma(ctx context.Context, input *GetCo
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	connections, err := h.service.GetByReciever(id)
+	connections, err := h.service.GetPendingRequestsByReceiver(id)
 	if err != nil {
-		return nil, huma.Error404NotFound("No connections found", err)
+		return nil, huma.Error500InternalServerError("Failed to get connections", err)
 	}
 
 	return &GetConnectionsByReceiverOutput{Body: connections}, nil
@@ -131,7 +116,7 @@ func (h *Handler) GetConnectionsByRequesterHuma(ctx context.Context, input *GetC
 
 	connections, err := h.service.GetByRequester(id)
 	if err != nil {
-		return nil, huma.Error404NotFound("No connections found", err)
+		return nil, huma.Error500InternalServerError("Failed to get connections", err)
 	}
 
 	return &GetConnectionsByRequesterOutput{Body: connections}, nil
@@ -176,5 +161,34 @@ func (h *Handler) DeleteConnectionHuma(ctx context.Context, input *DeleteConnect
 
 	resp := &DeleteConnectionOutput{}
 	resp.Body.Message = "Connection deleted successfully"
+	return resp, nil
+}
+
+func (h *Handler) AcceptConnectionHuma(ctx context.Context, input *AcceptConnectionInput) (*AcceptConnectionOutput, error) {
+	// Extract user_id from context for authorization
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	// Convert user_id to ObjectID
+	userID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Convert connection ID to ObjectID
+	connectionID, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid connection ID format", err)
+	}
+
+	// Accept the connection request
+	if err := h.service.AcceptConnection(connectionID, userID); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to accept connection", err)
+	}
+
+	resp := &AcceptConnectionOutput{}
+	resp.Body.Message = "Connection request accepted successfully"
 	return resp, nil
 }

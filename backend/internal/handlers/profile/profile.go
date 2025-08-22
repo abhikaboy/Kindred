@@ -2,6 +2,7 @@ package Profile
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/danielgtaylor/huma/v2"
@@ -19,20 +20,6 @@ func (h *Handler) GetProfiles(ctx context.Context, input *GetProfilesInput) (*Ge
 	}
 
 	return &GetProfilesOutput{Body: profiles}, nil
-}
-
-func (h *Handler) GetProfile(ctx context.Context, input *GetProfileInput) (*GetProfileOutput, error) {
-	id, err := primitive.ObjectIDFromHex(input.ID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
-	}
-
-	profile, err := h.service.GetProfileByID(id)
-	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
-	}
-
-	return &GetProfileOutput{Body: *profile}, nil
 }
 
 func (h *Handler) UpdatePartialProfile(ctx context.Context, input *UpdateProfileInput) (*UpdateProfileOutput, error) {
@@ -113,12 +100,6 @@ func (h *Handler) GetProfilesHuma(ctx context.Context, input *GetProfilesInput) 
 }
 
 func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*GetProfileOutput, error) {
-	// Extract user_id from context for authorization
-	authenticatedUserID, err := auth.RequireAuth(ctx)
-	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
-	}
-
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid ID format", err)
@@ -129,17 +110,31 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 		return nil, huma.Error404NotFound("Profile not found", err)
 	}
 
-	// Convert authenticated user ID to ObjectID
-	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid authenticated user ID", err)
-	}
+	// Try to get authenticated user ID - if not present, continue without relationship check
+	authenticatedUserID, isAuthenticated := auth.OptionalAuth(ctx)
 
-	// Check relationship between authenticated user and profile being viewed
-	relationship, err := h.service.CheckRelationship(authUserID, id)
-	if err != nil {
-		// Log the error but don't fail the request - relationship info is optional
-		// You might want to add proper logging here
+	var relationship *RelationshipInfo
+	if isAuthenticated {
+		// Convert authenticated user ID to ObjectID
+		authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+		if err != nil {
+			// If auth user ID is invalid, treat as unauthenticated
+			relationship = &RelationshipInfo{
+				Status: RelationshipNone,
+			}
+		} else {
+			// Check relationship between authenticated user and profile being viewed
+			relationship, err = h.service.CheckRelationship(authUserID, id)
+			if err != nil {
+				slog.Error("Error checking relationship", "error", err.Error())
+				// Log the error but don't fail the request - relationship info is optional
+				relationship = &RelationshipInfo{
+					Status: RelationshipNone,
+				}
+			}
+		}
+	} else {
+		// User is not authenticated - set relationship to none
 		relationship = &RelationshipInfo{
 			Status: RelationshipNone,
 		}

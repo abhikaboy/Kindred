@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/config"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -149,9 +150,19 @@ func validateRefreshToken(service *Service, refreshToken string) (float64, error
 }
 
 // GetUserIDFromContext extracts the user ID from the request context
+// This function bridges Huma context to Fiber context when needed
 func GetUserIDFromContext(ctx context.Context) (string, bool) {
-	userID, ok := ctx.Value(UserIDContextKey).(string)
-	return userID, ok
+	// Try to get user ID from the standard context first (set by middleware)
+	if userID, ok := ctx.Value(UserIDContextKey).(string); ok {
+		return userID, true
+	}
+
+	// If that doesn't work, check if we can find the Fiber context
+	if fiberCtx, ok := ctx.Value("fiber_ctx").(*fiber.Ctx); ok {
+		return GetUserIDFromFiberContext(fiberCtx)
+	}
+
+	return "", false
 }
 
 // RequireAuth is a helper function that can be used to check if a user is authenticated
@@ -163,4 +174,15 @@ func RequireAuth(ctx context.Context) (string, error) {
 	}
 	slog.Info("✅ REQUIRE AUTH: User authenticated", "user_id", userID)
 	return userID, nil
+}
+
+// OptionalAuth is a helper function that checks if a user is authenticated but doesn't fail if not
+func OptionalAuth(ctx context.Context) (string, bool) {
+	userID, ok := GetUserIDFromContext(ctx)
+	if ok {
+		slog.Info("✅ OPTIONAL AUTH: User authenticated", "user_id", userID)
+	} else {
+		slog.Info("ℹ️ OPTIONAL AUTH: User not authenticated, proceeding without auth")
+	}
+	return userID, ok
 }

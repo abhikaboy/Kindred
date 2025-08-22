@@ -1,24 +1,13 @@
 import React, { createContext, useContext, useState } from "react";
 import { subscribeToBlueprintToBackend, unsubscribeToBlueprintToBackend } from "@/api/blueprint";
 import { useAuth } from "@/hooks/useAuth";
+import type { components } from "@/api/generated/types";
 
-export interface Blueprint {
-    id: string;
-    previewImage: string;
-    userImage: string;
-    workspaceName: string;
-    username: string;
-    name: string;
-    time: string;
-    subscriberCount: number;
-    description: string;
-    tags: string[];
-    subscribers?: string[];
-}
+type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 
 type BlueprintContextType = {
-    selectedBlueprint: Blueprint | null;
-    setSelectedBlueprint: (blueprint: Blueprint) => void;
+    selectedBlueprint: BlueprintDocument | null;
+    setSelectedBlueprint: (blueprint: BlueprintDocument) => void;
     getIsSubscribed: (id: string, subscribers: string[]) => boolean;
     getIsLoading: (id: string) => boolean;
     getSubscriberCount: (id: string, originalCount: number) => number;
@@ -28,16 +17,16 @@ type BlueprintContextType = {
 const BlueprintCreationContext = createContext<BlueprintContextType | undefined>(undefined);
 
 export const BlueprintCreationProvider = ({ children }: { children: React.ReactNode }) => {
-    const [selectedBlueprint, setSelectedBlueprintState] = useState<Blueprint | null>(null);
+    const [selectedBlueprint, setSelectedBlueprintState] = useState<BlueprintDocument | null>(null);
     const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
     const { user } = useAuth();
     const [subscriberCounts, setSubscriberCounts] = useState<Record<string, number>>({});
 
-    const setSelectedBlueprint = (blueprint: Blueprint) => {
+    const setSelectedBlueprint = (blueprint: BlueprintDocument) => {
         setSelectedBlueprintState(blueprint);
         setSubscriberCounts((prev) => ({
             ...prev,
-            [blueprint.id]: blueprint.subscriberCount,
+            [blueprint.id]: blueprint.subscribersCount,
         }));
     };
 
@@ -77,7 +66,7 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
                 if (selectedBlueprint && selectedBlueprint.id === id) {
                     setSelectedBlueprintState({
                         ...selectedBlueprint,
-                        subscriberCount: Math.max(0, selectedBlueprint.subscriberCount - 1),
+                        subscribersCount: Math.max(0, selectedBlueprint.subscribersCount - 1),
                     });
                 }
 
@@ -92,7 +81,7 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
                 if (selectedBlueprint && selectedBlueprint.id === id) {
                     setSelectedBlueprintState({
                         ...selectedBlueprint,
-                        subscriberCount: selectedBlueprint.subscriberCount + 1,
+                        subscribersCount: selectedBlueprint.subscribersCount + 1,
                     });
                 }
                 return true;

@@ -24,6 +24,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/activity/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get activity by ID
+         * @description Retrieve a specific activity by its ID
+         */
+        get: operations["get-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/activity/user/{userID}": {
         parameters: {
             query?: never;
@@ -84,7 +104,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/activity/{id}": {
+    "/v1/assets/{key}/url": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,10 +112,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get activity by ID
-         * @description Retrieve a specific activity by its ID
+         * Get presigned URL for asset download
+         * @description Get a presigned URL to download an asset from S3
          */
-        get: operations["get-activity"];
+        get: operations["get-presigned-url"];
         put?: never;
         post?: never;
         delete?: never;
@@ -118,26 +138,6 @@ export interface paths {
          * @description Create a presigned URL to upload an asset to S3
          */
         post: operations["create-presigned-url"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/assets/{key}/url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get presigned URL for asset download
-         * @description Get a presigned URL to download an asset from S3
-         */
-        get: operations["get-presigned-url"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -264,26 +264,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/blueprints/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search blueprints
-         * @description Search for blueprints by name, description, tags, or owner handle
-         */
-        get: operations["search-blueprints"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/blueprints/{id}": {
         parameters: {
             query?: never;
@@ -296,6 +276,26 @@ export interface paths {
          * @description Retrieve a specific blueprint by its ID
          */
         get: operations["get-blueprint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blueprints/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search blueprints
+         * @description Search for blueprints by name, description, tags, or owner handle
+         */
+        get: operations["search-blueprints"];
         put?: never;
         post?: never;
         delete?: never;
@@ -384,6 +384,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profiles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete profile
+         * @description Delete a user profile
+         */
+        delete: operations["delete-profile"];
+        options?: never;
+        head?: never;
+        /**
+         * Update profile
+         * @description Update a user profile
+         */
+        patch: operations["update-profile"];
+        trace?: never;
+    };
     "/v1/profiles/email/{email}": {
         parameters: {
             query?: never;
@@ -424,34 +448,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/profiles/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get profile by ID
-         * @description Retrieve a specific user profile by its ID
-         */
-        get: operations["get-profile"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete profile
-         * @description Delete a user profile
-         */
-        delete: operations["delete-profile"];
-        options?: never;
-        head?: never;
-        /**
-         * Update profile
-         * @description Update a user profile
-         */
-        patch: operations["update-profile"];
-        trace?: never;
-    };
     "/v1/tasks/": {
         parameters: {
             query?: never;
@@ -472,26 +468,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tasks/active/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get active tasks
-         * @description Retrieve all active tasks for a user
-         */
-        get: operations["get-active-tasks"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/tasks/{id}": {
         parameters: {
             query?: never;
@@ -504,6 +480,26 @@ export interface paths {
          * @description Retrieve a specific task by its ID
          */
         get: operations["get-task"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tasks/active/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get active tasks
+         * @description Retrieve all active tasks for a user
+         */
+        get: operations["get-active-tasks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -612,26 +608,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/user/blueprints/subscribed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get user's subscribed blueprints
-         * @description Retrieve all blueprints that the authenticated user is subscribed to
-         */
-        get: operations["get-user-subscribed-blueprints"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/user/blueprints/{id}": {
         parameters: {
             query?: never;
@@ -696,6 +672,26 @@ export interface paths {
         patch: operations["unsubscribe-from-blueprint"];
         trace?: never;
     };
+    "/v1/user/blueprints/subscribed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user's subscribed blueprints
+         * @description Retrieve all blueprints that the authenticated user is subscribed to
+         */
+        get: operations["get-user-subscribed-blueprints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/categories": {
         parameters: {
             query?: never;
@@ -714,6 +710,34 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/user/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get categories by user ID
+         * @description Retrieve all categories for a specific user
+         */
+        get: operations["get-categories-by-user"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete category
+         * @description Delete a category for the authenticated user
+         */
+        delete: operations["delete-category"];
+        options?: never;
+        head?: never;
+        /**
+         * Update category
+         * @description Update a category for the authenticated user
+         */
+        patch: operations["update-category"];
         trace?: never;
     };
     "/v1/user/categories/workspace/{name}": {
@@ -756,32 +780,64 @@ export interface paths {
         patch: operations["rename-workspace"];
         trace?: never;
     };
-    "/v1/user/categories/{id}": {
+    "/v1/user/category/{category}/task/{id}/deadline": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get categories by user ID
-         * @description Retrieve all categories for a specific user
-         */
-        get: operations["get-categories-by-user"];
+        get?: never;
         put?: never;
         post?: never;
-        /**
-         * Delete category
-         * @description Delete a category for the authenticated user
-         */
-        delete: operations["delete-category"];
+        delete?: never;
         options?: never;
         head?: never;
         /**
-         * Update category
-         * @description Update a category for the authenticated user
+         * Update task deadline
+         * @description Update the deadline for a specific task
          */
-        patch: operations["update-category"];
+        patch: operations["update-task-deadline"];
+        trace?: never;
+    };
+    "/v1/user/category/{category}/task/{id}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update task reminders
+         * @description Update the reminders for a specific task
+         */
+        patch: operations["update-task-reminder"];
+        trace?: never;
+    };
+    "/v1/user/category/{category}/task/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update task start date/time
+         * @description Update the start date and time for a specific task
+         */
+        patch: operations["update-task-start"];
         trace?: never;
     };
     "/v1/user/congratulations": {
@@ -806,26 +862,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/v1/user/congratulations/mark-read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Mark congratulations as read
-         * @description Mark multiple congratulations as read
-         */
-        patch: operations["mark-congratulations-read"];
         trace?: never;
     };
     "/v1/user/congratulations/{id}": {
@@ -856,6 +892,26 @@ export interface paths {
         patch: operations["update-congratulation"];
         trace?: never;
     };
+    "/v1/user/congratulations/mark-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark congratulations as read
+         * @description Mark multiple congratulations as read
+         */
+        patch: operations["mark-congratulations-read"];
+        trace?: never;
+    };
     "/v1/user/connections": {
         parameters: {
             query?: never;
@@ -874,6 +930,54 @@ export interface paths {
          * @description Create a new friend connection request
          */
         post: operations["create-connection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/connections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get connection by ID
+         * @description Retrieve a specific connection by its ID
+         */
+        get: operations["get-connection"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete connection
+         * @description Delete/deny a connection request
+         */
+        delete: operations["delete-connection"];
+        options?: never;
+        head?: never;
+        /**
+         * Update connection
+         * @description Update a connection request
+         */
+        patch: operations["update-connection"];
+        trace?: never;
+    };
+    "/v1/user/connections/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept connection request
+         * @description Accept a friend connection request
+         */
+        post: operations["accept-connection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -920,34 +1024,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/user/connections/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get connection by ID
-         * @description Retrieve a specific connection by its ID
-         */
-        get: operations["get-connection"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete connection
-         * @description Delete/deny a connection request
-         */
-        delete: operations["delete-connection"];
-        options?: never;
-        head?: never;
-        /**
-         * Update connection
-         * @description Update a connection request
-         */
-        patch: operations["update-connection"];
-        trace?: never;
-    };
     "/v1/user/encouragements": {
         parameters: {
             query?: never;
@@ -970,26 +1046,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/v1/user/encouragements/mark-read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Mark encouragements as read
-         * @description Mark multiple encouragements as read
-         */
-        patch: operations["mark-encouragements-read"];
         trace?: never;
     };
     "/v1/user/encouragements/{id}": {
@@ -1018,6 +1074,26 @@ export interface paths {
          * @description Update an encouragement message
          */
         patch: operations["update-encouragement"];
+        trace?: never;
+    };
+    "/v1/user/encouragements/mark-read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark encouragements as read
+         * @description Mark multiple encouragements as read
+         */
+        patch: operations["mark-encouragements-read"];
         trace?: never;
     };
     "/v1/user/login": {
@@ -1136,6 +1212,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/profiles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get profile by ID
+         * @description Retrieve a specific user profile by its ID
+         */
+        get: operations["get-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/profiles/search": {
         parameters: {
             query?: never;
@@ -1190,130 +1286,6 @@ export interface paths {
         get: operations["get-tasks-by-user"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tasks/active/{category}/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activate/deactivate task
-         * @description Change the active status of a task
-         */
-        post: operations["activate-task"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tasks/complete/{category}/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Complete task
-         * @description Mark a task as completed
-         */
-        post: operations["complete-task"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tasks/completed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get completed tasks
-         * @description Retrieve all completed tasks for the logged in user
-         */
-        get: operations["get-completed-tasks"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tasks/template/old": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get tasks with old start times
-         * @description Get all tasks with start times older than one day
-         */
-        get: operations["get-tasks-with-old-start-times"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tasks/template/pastDeadline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get recurring tasks with past deadlines
-         * @description Get all recurring tasks that have past their deadlines
-         */
-        get: operations["get-recurring-tasks-with-past-deadlines"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tasks/template/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get template by ID
-         * @description Retrieve a template by its ID
-         */
-        get: operations["get-template-by-id"];
-        put?: never;
-        /**
-         * Create task from template
-         * @description Create a new task based on a template
-         */
-        post: operations["create-task-from-template"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1398,6 +1370,130 @@ export interface paths {
          * @description Update the notes field of a task
          */
         post: operations["update-task-notes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/active/{category}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate/deactivate task
+         * @description Change the active status of a task
+         */
+        post: operations["activate-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/complete/{category}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete task
+         * @description Mark a task as completed
+         */
+        post: operations["complete-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/completed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get completed tasks
+         * @description Retrieve all completed tasks for the logged in user
+         */
+        get: operations["get-completed-tasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/template/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get template by ID
+         * @description Retrieve a template by its ID
+         */
+        get: operations["get-template-by-id"];
+        put?: never;
+        /**
+         * Create task from template
+         * @description Create a new task based on a template
+         */
+        post: operations["create-task-from-template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/template/old": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get tasks with old start times
+         * @description Get all tasks with start times older than one day
+         */
+        get: operations["get-tasks-with-old-start-times"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/template/pastDeadline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get recurring tasks with past deadlines
+         * @description Get all recurring tasks that have past their deadlines
+         */
+        get: operations["get-recurring-tasks-with-past-deadlines"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1532,6 +1628,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptConnectionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         ActivateTaskOutputBody: {
             /**
              * Format: uri
@@ -1555,7 +1659,7 @@ export interface components {
              */
             readonly $schema?: string;
             _id: string;
-            days: components["schemas"]["ActivityDay"][] | null;
+            days: components["schemas"]["ActivityDay"][];
             /** Format: date-time */
             lastUpdated: string;
             /** Format: int64 */
@@ -1620,14 +1724,14 @@ export interface components {
             /** @description Owner information */
             owner: components["schemas"]["UserExtendedReference"];
             /** @description List of subscriber user IDs */
-            subscribers: string[] | null;
+            subscribers: string[];
             /**
              * Format: int64
              * @description Number of subscribers
              */
             subscribersCount: number;
             /** @description Tags associated with the blueprint */
-            tags: string[] | null;
+            tags: string[];
             /**
              * Format: date-time
              * @description Creation timestamp
@@ -1653,7 +1757,7 @@ export interface components {
              */
             subscribersCount: number;
             /** @description Tags associated with the blueprint */
-            tags: string[] | null;
+            tags: string[];
             /**
              * Format: date-time
              * @description Creation timestamp
@@ -1673,7 +1777,7 @@ export interface components {
             /** Format: date-time */
             lastEdited: string;
             name: string;
-            tasks: components["schemas"]["TaskDocument"][] | null;
+            tasks: components["schemas"]["TaskDocument"][];
             user: string;
             workspaceName: string;
         };
@@ -1781,17 +1885,26 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            /** @description Connection ID */
-            id: string;
-            /** @description Receiver user ID */
-            reciever: string;
-            /** @description Connection requester information */
-            requester: components["schemas"]["ConnectionUser"];
             /**
              * Format: date-time
-             * @description Connection timestamp
+             * @description When friendship was confirmed
              */
-            timestamp: string;
+            accepted_at?: string;
+            /**
+             * Format: date-time
+             * @description When relationship was created
+             */
+            created_at: string;
+            /** @description Relationship ID */
+            id: string;
+            /** @description Receiver user ID */
+            receiver_id: string;
+            /** @description Connection requester information */
+            requester: components["schemas"]["ConnectionUser"];
+            /** @description Relationship status */
+            status: string;
+            /** @description Array of user IDs (always sorted) */
+            users: string[];
         };
         ConnectionUser: {
             /** @description User ID */
@@ -1801,7 +1914,7 @@ export interface components {
             /** @description User name */
             name: string;
             /** @description Profile picture URL */
-            picture: string | null;
+            picture: string;
         };
         CreateBlueprintParams: {
             /**
@@ -1818,7 +1931,7 @@ export interface components {
             /** @description Name of the blueprint */
             name: string;
             /** @description Tags associated with the blueprint */
-            tags: string[] | null;
+            tags: string[];
         };
         CreateCategoryParams: {
             /**
@@ -1851,9 +1964,7 @@ export interface components {
              */
             readonly $schema?: string;
             /** @description Receiver user ID */
-            reciever: string;
-            /** @description Connection requester information */
-            requester: components["schemas"]["ConnectionUser"];
+            receiver_id: string;
         };
         CreateEncouragementParams: {
             /**
@@ -1889,7 +2000,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            checklist?: components["schemas"]["ChecklistItem"][] | null;
+            checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
             deadline?: string;
@@ -1900,7 +2011,7 @@ export interface components {
             recurDetails?: components["schemas"]["RecurDetails"];
             recurFrequency?: string;
             recurring: boolean;
-            reminders?: components["schemas"]["Reminder"][] | null;
+            reminders?: components["schemas"]["Reminder"][];
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -2059,7 +2170,7 @@ export interface components {
             /** @description A human-readable explanation specific to this occurrence of the problem. */
             detail?: string;
             /** @description Optional list of individual error details */
-            errors?: components["schemas"]["ErrorDetail"][] | null;
+            errors?: components["schemas"]["ErrorDetail"][];
             /**
              * Format: uri
              * @description A URI reference that identifies the specific occurrence of the problem.
@@ -2216,14 +2327,14 @@ export interface components {
              */
             readonly $schema?: string;
             display_name: string;
-            friends: string[] | null;
+            friends: string[];
             handle: string;
             id: string;
             /** Format: int64 */
             points: number;
             /** Format: int64 */
             posts_made: number;
-            profile_picture: string | null;
+            profile_picture: string;
             relationship?: components["schemas"]["RelationshipInfo"];
             /** Format: int64 */
             streak: number;
@@ -2232,12 +2343,12 @@ export interface components {
         };
         RecurDetails: {
             behavior?: string;
-            daysOfMonth?: number[] | null;
-            daysOfWeek?: number[] | null;
+            daysOfMonth?: number[];
+            daysOfWeek?: number[];
             /** Format: int64 */
             every?: number;
-            months?: number[] | null;
-            reminders?: (string | null)[] | null;
+            months?: number[];
+            reminders?: string[];
         };
         RegisterOutputBody: {
             /**
@@ -2305,20 +2416,20 @@ export interface components {
              */
             readonly $schema?: string;
             _id: string;
-            categories: components["schemas"]["CategoryDocument"][] | null;
+            categories: components["schemas"]["CategoryDocument"][];
             /** Format: int64 */
             congratulations: number;
             display_name: string;
             /** Format: int64 */
             encouragements: number;
-            friends: string[] | null;
+            friends: string[];
             handle: string;
             /** Format: int64 */
             points: number;
             /** Format: int64 */
             posts_made: number;
             profile_picture: string;
-            recent_activity: components["schemas"]["ActivityDocument"][] | null;
+            recent_activity: components["schemas"]["ActivityDocument"][];
             /** Format: int64 */
             streak: number;
             streakEligible: boolean;
@@ -2341,7 +2452,7 @@ export interface components {
             readonly $schema?: string;
             active: boolean;
             categoryID?: string;
-            checklist?: components["schemas"]["ChecklistItem"][] | null;
+            checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
             deadline?: string;
@@ -2356,9 +2467,9 @@ export interface components {
             recurFrequency?: string;
             recurType?: string;
             recurring: boolean;
-            reminders?: components["schemas"]["Reminder"][] | null;
+            reminders?: components["schemas"]["Reminder"][];
             /** Format: date-time */
-            startDate: string | null;
+            startDate: string;
             /** Format: date-time */
             startTime?: string;
             templateID?: string;
@@ -2375,7 +2486,7 @@ export interface components {
              */
             readonly $schema?: string;
             categoryID: string;
-            checklist?: components["schemas"]["ChecklistItem"][] | null;
+            checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
             deadline?: string;
@@ -2383,9 +2494,9 @@ export interface components {
             /** Format: date-time */
             lastEdited: string;
             /** Format: date-time */
-            lastGenerated: string | null;
+            lastGenerated: string;
             /** Format: date-time */
-            nextGenerated: string | null;
+            nextGenerated: string;
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -2393,7 +2504,7 @@ export interface components {
             recurDetails: components["schemas"]["RecurDetails"];
             recurFrequency?: string;
             recurType: string;
-            reminders?: components["schemas"]["Reminder"][] | null;
+            reminders?: components["schemas"]["Reminder"][];
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -2499,6 +2610,9 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
+            /** Format: date-time */
+            accepted_at?: string;
+            status?: string;
         };
         UpdateConnectionOutputBody: {
             /**
@@ -2593,9 +2707,26 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            checklist: components["schemas"]["ChecklistItem"][] | null;
+            checklist: components["schemas"]["ChecklistItem"][];
         };
         UpdateTaskChecklistOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateTaskDeadlineDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            deadline?: string;
+        };
+        UpdateTaskDeadlineOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -2610,7 +2741,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
-            checklist?: components["schemas"]["ChecklistItem"][] | null;
+            checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
             deadline?: string;
@@ -2620,7 +2751,7 @@ export interface components {
             public: boolean;
             recurDetails: components["schemas"]["RecurDetails"];
             recurring: boolean;
-            reminders?: components["schemas"]["Reminder"][] | null;
+            reminders?: components["schemas"]["Reminder"][];
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -2645,6 +2776,41 @@ export interface components {
             message: string;
         };
         UpdateTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateTaskReminderDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            reminders?: components["schemas"]["Reminder"][];
+        };
+        UpdateTaskReminderOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateTaskStartDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            startTime?: string;
+        };
+        UpdateTaskStartOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -2695,7 +2861,7 @@ export interface components {
             message: string;
         };
         WorkspaceResult: {
-            categories: components["schemas"]["CategoryDocument"][] | null;
+            categories: components["schemas"]["CategoryDocument"][];
             name: string;
         };
     };
@@ -2722,7 +2888,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActivityDocument"][] | null;
+                    "application/json": components["schemas"]["ActivityDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-activity": {
+        parameters: {
+            query?: {
+                /** @example 2024 */
+                year?: number;
+            };
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityDocument"];
                 };
             };
             /** @description Error */
@@ -2791,7 +2992,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActivityDocument"][] | null;
+                    "application/json": components["schemas"]["ActivityDocument"][];
                 };
             };
             /** @description Error */
@@ -2826,7 +3027,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActivityDocument"][] | null;
+                    "application/json": components["schemas"]["ActivityDocument"][];
                 };
             };
             /** @description Error */
@@ -2840,49 +3041,14 @@ export interface operations {
             };
         };
     };
-    "get-activity": {
+    "get-presigned-url": {
         parameters: {
-            query?: {
-                /** @example 2024 */
-                year?: number;
-            };
+            query?: never;
             header?: never;
             path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
+                /** @example profile-pictures/user123.jpg */
+                key: string;
             };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActivityDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "create-presigned-url": {
-        parameters: {
-            query: {
-                /** @example image/jpeg */
-                fileType: string;
-            };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -2907,14 +3073,14 @@ export interface operations {
             };
         };
     };
-    "get-presigned-url": {
+    "create-presigned-url": {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example profile-pictures/user123.jpg */
-                key: string;
+            query: {
+                /** @example image/jpeg */
+                fileType: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -3125,39 +3291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BlueprintDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "search-blueprints": {
-        parameters: {
-            query?: {
-                /** @example morning routine */
-                query?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlueprintDocument"][] | null;
+                    "application/json": components["schemas"]["BlueprintDocument"][];
                 };
             };
             /** @description Error */
@@ -3203,6 +3337,38 @@ export interface operations {
             };
         };
     };
+    "search-blueprints": {
+        parameters: {
+            query?: {
+                /** @example morning routine */
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-categories": {
         parameters: {
             query?: never;
@@ -3218,7 +3384,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CategoryDocument"][] | null;
+                    "application/json": components["schemas"]["CategoryDocument"][];
                 };
             };
             /** @description Error */
@@ -3308,103 +3474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProfileDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-profile-by-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example user@example.com */
-                email: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-profile-by-phone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example +1234567890 */
-                phone: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileDocument"];
+                    "application/json": components["schemas"]["ProfileDocument"][];
                 };
             };
             /** @description Error */
@@ -3486,6 +3556,70 @@ export interface operations {
             };
         };
     };
+    "get-profile-by-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example user@example.com */
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-profile-by-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example +1234567890 */
+                phone: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-tasks": {
         parameters: {
             query?: never;
@@ -3501,39 +3635,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TaskDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-active-tasks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskDocument"][] | null;
+                    "application/json": components["schemas"]["TaskDocument"][];
                 };
             };
             /** @description Error */
@@ -3568,6 +3670,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-active-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"][];
                 };
             };
             /** @description Error */
@@ -3756,40 +3890,6 @@ export interface operations {
             };
         };
     };
-    "get-user-subscribed-blueprints": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Bearer token for authentication */
-                Authorization: string;
-                /** @description Refresh token for authentication */
-                refresh_token: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     "delete-blueprint": {
         parameters: {
             query?: never;
@@ -3942,6 +4042,40 @@ export interface operations {
             };
         };
     };
+    "get-user-subscribed-blueprints": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "create-category": {
         parameters: {
             query?: never;
@@ -3977,78 +4111,6 @@ export interface operations {
             };
         };
     };
-    "delete-workspace": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path: {
-                /** @example workspace1 */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeleteWorkspaceOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "rename-workspace": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path: {
-                /** @example old-workspace */
-                oldName: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RenameWorkspaceInputBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RenameWorkspaceOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     "get-categories-by-user": {
         parameters: {
             query?: never;
@@ -4067,7 +4129,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceResult"][] | null;
+                    "application/json": components["schemas"]["WorkspaceResult"][];
                 };
             };
             /** @description Error */
@@ -4153,6 +4215,198 @@ export interface operations {
             };
         };
     };
+    "delete-workspace": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example workspace1 */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteWorkspaceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "rename-workspace": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example old-workspace */
+                oldName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameWorkspaceInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenameWorkspaceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-deadline": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskDeadlineDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskDeadlineOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-reminder": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskReminderDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskReminderOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-start": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskStartDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskStartOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-congratulations": {
         parameters: {
             query?: never;
@@ -4173,7 +4427,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CongratulationDocument"][] | null;
+                    "application/json": components["schemas"]["CongratulationDocument"][];
                 };
             };
             /** @description Error */
@@ -4212,40 +4466,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CongratulationDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "mark-congratulations-read": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Bearer token for authentication */
-                Authorization: string;
-                /** @description Refresh token for authentication */
-                refresh_token: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MarkCongratulationsReadOutputBody"];
                 };
             };
             /** @description Error */
@@ -4374,6 +4594,40 @@ export interface operations {
             };
         };
     };
+    "mark-congratulations-read": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkCongratulationsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-connections": {
         parameters: {
             query?: never;
@@ -4394,7 +4648,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionDocument"][] | null;
+                    "application/json": components["schemas"]["ConnectionDocument"][];
                 };
             };
             /** @description Error */
@@ -4433,77 +4687,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-connections-by-receiver": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Bearer token for authentication */
-                Authorization: string;
-                /** @description Refresh token for authentication */
-                refresh_token: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-connections-by-requester": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Bearer token for authentication */
-                Authorization: string;
-                /** @description Refresh token for authentication */
-                refresh_token: string;
-            };
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConnectionDocument"][] | null;
                 };
             };
             /** @description Error */
@@ -4632,6 +4815,114 @@ export interface operations {
             };
         };
     };
+    "accept-connection": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptConnectionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-connections-by-receiver": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-connections-by-requester": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-encouragements": {
         parameters: {
             query?: never;
@@ -4652,7 +4943,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EncouragementDocument"][] | null;
+                    "application/json": components["schemas"]["EncouragementDocument"][];
                 };
             };
             /** @description Error */
@@ -4691,40 +4982,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EncouragementDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "mark-encouragements-read": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Bearer token for authentication */
-                Authorization: string;
-                /** @description Refresh token for authentication */
-                refresh_token: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MarkEncouragementsReadOutputBody"];
                 };
             };
             /** @description Error */
@@ -4840,6 +5097,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateEncouragementOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "mark-encouragements-read": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkEncouragementsReadOutputBody"];
                 };
             };
             /** @description Error */
@@ -5058,7 +5349,7 @@ export interface operations {
             };
         };
     };
-    "add-comment": {
+"add-comment": {
         parameters: {
             query?: never;
             header: {
@@ -5193,7 +5484,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProfileDocument"][] | null;
+                    "application/json": components["schemas"]["ProfileDocument"][];
                 };
             };
             /** @description Error */
@@ -5265,241 +5556,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TaskDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "activate-task": {
-        parameters: {
-            query?: {
-                /** @example true */
-                active?: string;
-            };
-            header: {
-                Authorization: string;
-            };
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-                /** @example 507f1f77bcf86cd799439011 */
-                category: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActivateTaskOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "complete-task": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-                /** @example 507f1f77bcf86cd799439011 */
-                category: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CompleteTaskDocument"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompleteTaskOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-completed-tasks": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-tasks-with-old-start-times": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemplateTaskDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-recurring-tasks-with-past-deadlines": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemplateTaskDocument"][] | null;
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-template-by-id": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemplateTaskDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "create-task-from-template": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskDocument"];
+                    "application/json": components["schemas"]["TaskDocument"][];
                 };
             };
             /** @description Error */
@@ -5707,6 +5764,240 @@ export interface operations {
             };
         };
     };
+    "activate-task": {
+        parameters: {
+            query?: {
+                /** @example true */
+                active?: string;
+            };
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivateTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "complete-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteTaskDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompleteTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-completed-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-template-by-id": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateTaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-task-from-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-tasks-with-old-start-times": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateTaskDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-recurring-tasks-with-past-deadlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateTaskDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-waitlists": {
         parameters: {
             query?: never;
@@ -5727,7 +6018,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WaitlistDocument"][] | null;
+                    "application/json": components["schemas"]["WaitlistDocument"][];
                 };
             };
             /** @description Error */
@@ -5832,7 +6123,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceResult"][] | null;
+                    "application/json": components["schemas"]["WorkspaceResult"][];
                 };
             };
             /** @description Error */

@@ -3,7 +3,6 @@ package Profile
 import (
 	"context"
 
-	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	Connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -208,72 +207,53 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 	return err
 }
 
-// CheckRelationship determines the relationship status between two users
-func (s *Service) CheckRelationship(authenticatedUserID, targetUserID primitive.ObjectID) (*RelationshipInfo, error) {
+func (s *Service) CheckRelationship(userAID, userBID primitive.ObjectID) (*RelationshipInfo, error) {
 	ctx := context.Background()
 
-	// If viewing own profile
-	if authenticatedUserID == targetUserID {
-		return &RelationshipInfo{
-			Status: RelationshipSelf,
-		}, nil
+	// Check for self connection first
+	if userAID == userBID {
+		return &RelationshipInfo{Status: RelationshipSelf}, nil
 	}
 
-	// Check if users are friends (connected)
-	var user auth.User
-	err := s.Profiles.FindOne(ctx, bson.M{"_id": authenticatedUserID}).Decode(&user)
+	// Sort IDs to match how they're stored
+	sortedIDs := Connection.SortUserIDs(userAID, userBID)
+
+	var relationship Connection.ConnectionDocumentInternal
+	err := s.Connections.FindOne(ctx, bson.M{"users": sortedIDs}).Decode(&relationship)
+
 	if err != nil {
-		return nil, err
-	}
-
-	// Check if target user is in friends list
-	for _, friendID := range user.Friends {
-		if friendID == targetUserID {
-			return &RelationshipInfo{
-				Status: RelationshipConnected,
-			}, nil
+		if err == mongo.ErrNoDocuments {
+			return &RelationshipInfo{Status: RelationshipNone}, nil
 		}
+		return &RelationshipInfo{Status: RelationshipNone}, err
 	}
 
-	// Check for pending connection requests
-	// Check if authenticated user has sent a request to target user
-	sentRequest := s.Connections.FindOne(ctx, bson.M{
-		"requester._id": authenticatedUserID,
-		"reciever":      targetUserID,
-	})
+	// Convert connection relationship to profile relationship info
+	return s.convertConnectionToRelationshipInfo(relationship, userAID), nil
+}
 
-	if sentRequest.Err() == nil {
-		// Request exists
-		var connection Connection.ConnectionDocumentInternal
-		if err := sentRequest.Decode(&connection); err == nil {
-			requestID := connection.ID.Hex()
+// convertConnectionToRelationshipInfo converts a Connection.ConnectionDocumentInternal to RelationshipInfo
+func (s *Service) convertConnectionToRelationshipInfo(relationship Connection.ConnectionDocumentInternal, userAID primitive.ObjectID) *RelationshipInfo {
+	switch relationship.Status {
+	case Connection.StatusFriends:
+		return &RelationshipInfo{Status: RelationshipConnected}
+	case Connection.StatusBlocked:
+		return &RelationshipInfo{Status: RelationshipNone} // Treat blocked as none for now
+	case Connection.StatusPending:
+		// Check who is the requester to determine the relationship type
+		if relationship.Requester.ID == userAID {
+			requestID := relationship.ID.Hex()
 			return &RelationshipInfo{
 				Status:    RelationshipRequested,
 				RequestID: &requestID,
-			}, nil
+			}
 		}
-	}
-
-	// Check if authenticated user has received a request from target user
-	receivedRequest := s.Connections.FindOne(ctx, bson.M{
-		"requester._id": targetUserID,
-		"reciever":      authenticatedUserID,
-	})
-
-	if receivedRequest.Err() == nil {
-		// Request exists
-		var connection Connection.ConnectionDocumentInternal
-		if err := receivedRequest.Decode(&connection); err == nil {
-			requestID := connection.ID.Hex()
-			return &RelationshipInfo{
-				Status:    RelationshipReceived,
-				RequestID: &requestID,
-			}, nil
+		requestID := relationship.ID.Hex()
+		return &RelationshipInfo{
+			Status:    RelationshipReceived,
+			RequestID: &requestID,
 		}
+	default:
+		return &RelationshipInfo{Status: RelationshipNone}
 	}
-
-	// No relationship exists
-	return &RelationshipInfo{
-		Status: RelationshipNone,
-	}, nil
 }

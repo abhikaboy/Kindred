@@ -2,7 +2,9 @@ package Connection
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -43,11 +45,14 @@ func (s *Service) GetAllConnections() ([]ConnectionDocument, error) {
 // GetByReciever fetches all Connection documents from MongoDB by receiver ID
 func (s *Service) GetByReciever(id primitive.ObjectID) ([]ConnectionDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Connections.Find(ctx, bson.M{"reciever": id})
+	cursor, err := s.Connections.Find(ctx, bson.M{"receiver_id": id})
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
+	if cursor.RemainingBatchLength() == 0 {
+		return []ConnectionDocument{}, nil
+	}
 
 	var internalResults []ConnectionDocumentInternal
 	if err := cursor.All(ctx, &internalResults); err != nil {
@@ -71,6 +76,9 @@ func (s *Service) GetByRequester(id primitive.ObjectID) ([]ConnectionDocument, e
 		return nil, err
 	}
 	defer cursor.Close(ctx)
+	if cursor.RemainingBatchLength() == 0 {
+		return []ConnectionDocument{}, nil
+	}
 
 	var internalResults []ConnectionDocumentInternal
 	if err := cursor.All(ctx, &internalResults); err != nil {
@@ -147,4 +155,231 @@ func (s *Service) DeleteConnection(id primitive.ObjectID) error {
 
 	_, err := s.Connections.DeleteOne(ctx, filter)
 	return err
+}
+
+// AcceptConnection accepts a connection request and updates the relationship status
+func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) error {
+	ctx := context.Background()
+
+	// First, find the connection document to validate
+	var connection ConnectionDocumentInternal
+	err := s.Connections.FindOne(ctx, bson.M{"_id": connectionID}).Decode(&connection)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("connection request not found")
+		}
+		return err
+	}
+
+	// Verify the relationship is pending
+	if connection.Status != StatusPending {
+		return fmt.Errorf("connection request is not pending (status: %s)", connection.Status)
+	}
+
+	// Verify that the authenticated user is the receiver (not the requester)
+	if connection.Requester.ID == userID {
+		return fmt.Errorf("unauthorized: cannot accept your own connection request")
+	}
+
+	// Verify that the authenticated user is the receiver
+	if connection.ReceiverID != userID {
+		return fmt.Errorf("unauthorized: only the receiver can accept the connection request")
+	}
+
+	// Verify that the user is one of the participants
+	isParticipant := false
+	for _, participantID := range connection.Users {
+		if participantID == userID {
+			isParticipant = true
+			break
+		}
+	}
+	if !isParticipant {
+		return fmt.Errorf("unauthorized: only participants can accept the connection request")
+	}
+
+	// Update the relationship to "friends" status with accepted timestamp
+	now := time.Now()
+	updateFilter := bson.M{
+		"_id":    connectionID,
+		"status": StatusPending, // Ensure it's still pending
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status":      StatusFriends,
+			"accepted_at": now,
+		},
+	}
+
+	result, err := s.Connections.UpdateOne(ctx, updateFilter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update relationship status: %v", err)
+	}
+
+	// Check if anything was actually updated
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("connection request not found or already processed")
+	}
+
+	// Get the users collection and add each user to the other's friends list
+	usersCollection := s.Connections.Database().Collection("users")
+
+	// Get the other user's ID (the requester)
+	var otherUserID primitive.ObjectID
+	for _, participantID := range connection.Users {
+		if participantID != userID {
+			otherUserID = participantID
+			break
+		}
+	}
+
+	// Add each user to the other's friends list
+	_, err = usersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": userID},
+		bson.M{"$addToSet": bson.M{"friends": otherUserID}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to add friend to user's friends list: %v", err)
+	}
+
+	_, err = usersCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": otherUserID},
+		bson.M{"$addToSet": bson.M{"friends": userID}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to add user to friend's friends list: %v", err)
+	}
+
+	return nil
+}
+
+// GetRelationship returns the relationship status between two users
+func (s *Service) GetRelationship(userAID, userBID primitive.ObjectID) (RelationshipType, error) {
+	ctx := context.Background()
+
+	// Sort IDs to match how they're stored
+	sortedIDs := SortUserIDs(userAID, userBID)
+
+	var relationship ConnectionDocumentInternal
+	err := s.Connections.FindOne(ctx, bson.M{"users": sortedIDs}).Decode(&relationship)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return RelationshipNone, nil
+		}
+		return RelationshipNone, err
+	}
+
+	switch relationship.Status {
+	case StatusFriends:
+		return RelationshipFriends, nil
+	case StatusBlocked:
+		return RelationshipBlocked, nil
+	case StatusPending:
+		// Check who is the requester to determine the relationship type
+		if relationship.Requester.ID == userAID {
+			return RelationshipRequestSent, nil
+		}
+		return RelationshipRequestReceived, nil
+	default:
+		return RelationshipNone, nil
+	}
+}
+
+// CreateConnectionRequest creates a new pending connection request
+func (s *Service) CreateConnectionRequest(requesterID, receiverID primitive.ObjectID) (*ConnectionDocument, error) {
+	ctx := context.Background()
+
+	// Sort IDs for consistent storage
+	sortedIDs := SortUserIDs(requesterID, receiverID)
+
+	// Check if relationship already exists
+	existing, err := s.GetRelationship(requesterID, receiverID)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing != RelationshipNone {
+		return nil, fmt.Errorf("relationship already exists: %s", existing)
+	}
+
+	// Fetch requester details from users collection
+	usersCollection := s.Connections.Database().Collection("users")
+	var requesterUser struct {
+		ID             primitive.ObjectID `bson:"_id"`
+		Name           string             `bson:"display_name"`
+		Handle         string             `bson:"handle"`
+		ProfilePicture *string            `bson:"profile_picture"`
+	}
+
+	err = usersCollection.FindOne(ctx, bson.M{"_id": requesterID}).Decode(&requesterUser)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("requester user not found")
+		}
+		return nil, fmt.Errorf("failed to fetch requester details: %v", err)
+	}
+
+	// Create ConnectionUserInternal from fetched data
+	requester := ConnectionUserInternal{
+		ID:      requesterUser.ID,
+		Name:    requesterUser.Name,
+		Handle:  requesterUser.Handle,
+		Picture: requesterUser.ProfilePicture,
+	}
+
+	// Create new relationship document
+	relationship := &ConnectionDocumentInternal{
+		ID:         primitive.NewObjectID(),
+		Users:      sortedIDs,
+		Status:     StatusPending,
+		Requester:  requester,
+		ReceiverID: receiverID,
+		CreatedAt:  time.Now(),
+		AcceptedAt: nil,
+	}
+
+	_, err = s.Connections.InsertOne(ctx, relationship)
+	if err != nil {
+		return nil, err
+	}
+
+	return relationship.ToAPI(), nil
+}
+
+// GetPendingRequestsByReceiver gets all pending connection requests where the user is the receiver
+func (s *Service) GetPendingRequestsByReceiver(userID primitive.ObjectID) ([]ConnectionDocument, error) {
+	ctx := context.Background()
+
+	// Find all pending relationships where the user is the receiver
+	filter := bson.M{
+		"receiver_id": userID,
+		"status":      StatusPending,
+	}
+
+	cursor, err := s.Connections.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if cursor.RemainingBatchLength() == 0 {
+		return []ConnectionDocument{}, nil
+	}
+
+	var internalResults []ConnectionDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
+		return nil, err
+	}
+
+	// Convert to API documents
+	results := make([]ConnectionDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
+	}
+
+	return results, nil
 }
