@@ -6,62 +6,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-// Input/Output types for post operations
-
-// Create Post
-type CreatePostInput struct {
-	Authorization string           `header:"Authorization" required:"true"`
-	Body          CreatePostParams `json:"body"`
-}
-
-type CreatePostOutput struct {
-	Body PostDocument `json:"body"`
-}
-
-// Get Posts (all)
-type GetPostsInput struct {
-	Authorization string `header:"Authorization" required:"true"`
-}
-
-type GetPostsOutput struct {
-	Body []PostDocument `json:"body"`
-}
-
-// Get Post by ID
-type GetPostInput struct {
-	Authorization string `header:"Authorization" required:"true"`
-	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
-}
-
-type GetPostOutput struct {
-	Body PostDocument `json:"body"`
-}
-
-// Update Post
-type UpdatePostInput struct {
-	Authorization string             `header:"Authorization" required:"true"`
-	ID            string             `path:"id" example:"507f1f77bcf86cd799439011"`
-	Body          UpdatePostDocument `json:"body"`
-}
-
-type UpdatePostOutput struct {
-	Body struct {
-		Message string `json:"message" example:"Post updated successfully"`
-	}
-}
-
-// Delete Post
-type DeletePostInput struct {
-	Authorization string `header:"Authorization" required:"true"`
-	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
-}
-
-type DeletePostOutput struct {
-	Body struct {
-		Message string `json:"message" example:"Post deleted successfully"`
-	}
-}
-
 // Operation registrations
 
 func RegisterCreatePostOperation(api huma.API, handler *Handler) {
@@ -119,11 +63,59 @@ func RegisterDeletePostOperation(api huma.API, handler *Handler) {
 	}, handler.DeletePostHuma)
 }
 
+func RegisterAddCommentOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "add-comment",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/posts/{postId}/comment",
+		Summary:     "Add comment to post",
+		Description: "Add a comment to an existing post",
+		Tags:        []string{"posts"},
+	}, handler.AddCommentHuma)
+}
+
+func RegisterDeleteCommentOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "delete-comment",
+		Method:      http.MethodDelete,
+		Path:        "/v1/user/posts/{postId}/comment/{commentId}",
+		Summary:     "Delete comment from post",
+		Description: "Delete comment from an existing post",
+		Tags:        []string{"posts"},
+	}, handler.DeleteCommentHuma)
+}
+
+func RegisterGetUserPosts(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-posts",
+		Method:      http.MethodGet,
+		Path:        "/v1/{userId}/posts",
+		Summary:     "Get User's posts",
+		Description: "Get posts of a user",
+		Tags:        []string{"posts"},
+	}, handler.GetUserPostsHuma)
+}
+
+func RegisterToggleReaction(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "add-reaction",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/posts/{postId}/reaction",
+		Summary:     "React to a post",
+		Description: "Adds a reaction to a post",
+		Tags:        []string{"posts"},
+	}, handler.ToggleReactionHuma)
+}
+
 // Register all post operations
 func RegisterPostOperations(api huma.API, handler *Handler) {
 	RegisterCreatePostOperation(api, handler)
 	RegisterGetPostsOperation(api, handler)
 	RegisterGetPostOperation(api, handler)
+	RegisterGetUserPosts(api, handler)
 	RegisterUpdatePostOperation(api, handler)
 	RegisterDeletePostOperation(api, handler)
+	RegisterAddCommentOperation(api, handler)
+	RegisterToggleReaction(api, handler)
+	RegisterDeleteCommentOperation(api, handler)
 }

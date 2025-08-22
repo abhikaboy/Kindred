@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     Modal,
     Image,
@@ -23,6 +23,7 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
+import { toggleReaction } from "@/api/post";
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -47,15 +48,16 @@ type Props = {
     userId: string;
     caption: string;
     time: number;
-    priority: string;
-    points: number;
-    timeTaken: number;
-    reactions: SlackReaction[];
-    images: string[];
+    priority?: string;
+    points?: number;
+    timeTaken?: number;
+    reactions?: SlackReaction[];
+    images?: string[];
     id?: string;
-    comments: CommentProps[];
+    comments?: CommentProps[];
     category?: string;
     taskName?: string;
+    onReactionUpdate?: () => void;
 };
 
 const PostCard = ({
@@ -68,22 +70,53 @@ const PostCard = ({
     priority,
     points,
     timeTaken,
-    reactions: initialReactions,
+    reactions = [],
     images,
     comments,
     category,
     taskName,
+    id,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
-    const [reactions, setReactions] = useState<SlackReaction[]>(initialReactions);
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
-    const allReactions = [...reactions, ...newReactions];
     const [modalIndex, setModalIndex] = useState(0);
     const [congratulateModalVisible, setCongratulateModalVisible] = useState(false);
+    const [currentComments, setCurrentComments] = useState(comments || []);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
+
+    useEffect(() => {
+        setLocalReactions(reactions);
+    }, [reactions]);
+
+    const mergeReactions = (): SlackReaction[] => {
+        const safeReactions = Array.isArray(reactions) ? reactions : [];
+        const reactionMap = new Map<string, SlackReaction>();
+
+        safeReactions.forEach((reaction) => {
+            reactionMap.set(reaction.emoji, { ...reaction });
+        });
+
+        newReactions.forEach((newReaction) => {
+            const existing = reactionMap.get(newReaction.emoji);
+            if (existing) {
+                const combinedIds = [...new Set([...existing.ids, ...newReaction.ids])];
+                reactionMap.set(newReaction.emoji, {
+                    emoji: newReaction.emoji,
+                    count: combinedIds.length,
+                    ids: combinedIds,
+                });
+            } else {
+                reactionMap.set(newReaction.emoji, { ...newReaction });
+            }
+        });
+        return Array.from(reactionMap.values()).filter((reaction) => reaction.count > 0);
+    };
+
+    const allReactions = mergeReactions();
 
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
-
     const handleClose = () => {
         bottomSheetModalRef.current?.dismiss();
         console.log("handleClose");
@@ -105,42 +138,72 @@ const PostCard = ({
         console.log("handleSheetChanges", index);
     }, []);
 
-    const handleReaction = ({ emoji, count, ids }: SlackReaction, add: boolean) => {
-        // Add haptic feedback for reactions
+    const handleCommentAdded = (newComment: any) => {
+        setCurrentComments((prevComments) => [...(prevComments || []), newComment]);
+    };
+
+    const hasUserReacted = (emoji: string): boolean => {
+        const reaction = localReactions.find((r) => r.emoji === emoji);
+        return reaction ? reaction.ids.includes(user?._id || "") : false;
+    };
+
+    const handleReaction = async (emoji: string) => {
+        if (!user?._id || !id) {
+            return;
+        }
+
         if (Platform.OS === "ios") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
 
-        setReactions((prevReactions) => {
-            const existingReaction = prevReactions?.find((r) => r.emoji === emoji);
-            const idsSet = new Set(existingReaction?.ids);
+        try {
+            const response = await toggleReaction(id, emoji);
+            const wasAdded = response.added;
 
-            if (idsSet.has(user?._id || "") && add) {
-                return prevReactions;
-            }
+            setLocalReactions((prevReactions) => {
+                const reactionIndex = prevReactions.findIndex((r) => r.emoji === emoji);
 
-            if (existingReaction) {
-                return prevReactions
-                    .map((r) =>
-                        r.emoji === emoji
-                            ? {
-                                  ...r,
-                                  count: add ? r.count + 1 : Math.max(0, r.count - 1),
-                                  ids: add ? [...r.ids, user?._id || ""] : r.ids.filter((id) => id !== user?._id),
-                              }
-                            : r
-                    )
-                    .filter((r) => r.count > 0);
-            } else if (add) {
-                if (!existingReaction) {
-                    return [...prevReactions, { emoji, count: 1, ids: [user?._id || ""] }];
+                if (reactionIndex >= 0) {
+                    const existingReaction = prevReactions[reactionIndex];
+                    const userIds = new Set(existingReaction.ids);
+
+                    if (wasAdded) {
+                        userIds.add(user._id);
+                    } else {
+                        userIds.delete(user._id);
+                    }
+
+                    const updatedReaction = {
+                        emoji,
+                        count: userIds.size,
+                        ids: Array.from(userIds),
+                    };
+
+                    if (updatedReaction.count === 0) {
+                        return prevReactions.filter((_, index) => index !== reactionIndex);
+                    } else {
+                        return prevReactions.map((reaction, index) =>
+                            index === reactionIndex ? updatedReaction : reaction
+                        );
+                    }
+                } else {
+                    if (wasAdded) {
+                        return [
+                            ...prevReactions,
+                            {
+                                emoji,
+                                count: 1,
+                                ids: [user._id],
+                            },
+                        ];
+                    }
+                    return prevReactions;
                 }
-            }
-
-            return prevReactions;
-        });
+            });
+        } catch (error) {
+            console.error("Failed to toggle reaction:", error);
+        }
     };
-
     const openModal = (imageIndex) => {
         setModalVisible(true);
         setModalIndex(imageIndex);
@@ -185,64 +248,88 @@ const PostCard = ({
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
                 <View style={styles.content}>
-                    {/* Header with user info */}
                     <View style={styles.header}>
-                        <View style={styles.userInfo}>
-                            <TouchableOpacity
-                                activeOpacity={0.4}
-                                onPress={async () => {
-                                    try {
-                                        if (Platform.OS === "ios") {
-                                            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                        }
-                                    } catch (error) {
-                                        console.log("Haptic error:", error);
+                        <TouchableOpacity
+                            style={styles.userInfo}
+                            activeOpacity={0.4}
+                            onPress={async () => {
+                                try {
+                                    if (Platform.OS === "ios") {
+                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     }
-                                    router.push(`/account/${userId}`);
-                                }}>
-                                <Image source={{ uri: icon }} style={styles.userIcon} />
-                            </TouchableOpacity>
+                                } catch (error) {
+                                    console.log("Haptic error:", error);
+                                }
+                                console.log("Navigating to user:", userId);
+                                router.push(`/account/${userId}`);
+                            }}>
+                            <Image source={{ uri: icon }} style={styles.userIcon} />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
                                 </ThemedText>
                                 <ThemedText type="caption" style={styles.username}>
-                                    @{username}
+                                    {username}
                                 </ThemedText>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                         <ThemedText type="caption" style={styles.timeText}>
                             {formatTime(time)}
                         </ThemedText>
                     </View>
-
-                    {/* Image section - only render if images exist */}
                     {images && images.length > 0 && (
                         <View style={styles.imageContainer}>
                             {images.length === 1 ? (
+                                // Single image - no counter needed
                                 <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
                                     <Image source={{ uri: images[0] }} style={styles.image} />
                                 </TouchableOpacity>
                             ) : (
-                                <Carousel
-                                    loop
-                                    width={Dimensions.get("window").width}
-                                    height={Dimensions.get("window").width}
-                                    style={styles.carousel}
-                                    snapEnabled={true}
-                                    pagingEnabled={true}
-                                    autoPlayInterval={2000}
-                                    data={images}
-                                    renderItem={({ item, index }) => (
-                                        <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
-                                            <Image source={{ uri: item }} style={styles.image} />
-                                        </TouchableOpacity>
-                                    )}
-                                />
+                                <View style={styles.carouselContainer}>
+                                    <Carousel
+                                        loop={false}
+                                        width={Dimensions.get("window").width}
+                                        height={Dimensions.get("window").width}
+                                        style={styles.carousel}
+                                        snapEnabled={true}
+                                        pagingEnabled={true}
+                                        data={images}
+                                        onSnapToItem={(index) => setCurrentImageIndex(index)}
+                                        renderItem={({ item, index }) => (
+                                            <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
+                                                <Image source={{ uri: item }} style={styles.image} />
+                                            </TouchableOpacity>
+                                        )}
+                                    />
+
+                                    <View style={styles.imageCounter}>
+                                        <View style={styles.imageCounterBackground}>
+                                            <ThemedText style={styles.imageCounterText}>
+                                                {currentImageIndex + 1}/{images.length}
+                                            </ThemedText>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.dotIndicators}>
+                                        {images.map((_, index) => (
+                                            <View
+                                                key={index}
+                                                style={[
+                                                    styles.dot,
+                                                    {
+                                                        backgroundColor:
+                                                            index === currentImageIndex
+                                                                ? ThemedColor.primary
+                                                                : ThemedColor.tertiary,
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
                             )}
                         </View>
                     )}
-
                     {/* Category and task section */}
                     {(category || taskName) && (
                         <View style={styles.categorySection}>
@@ -279,7 +366,6 @@ const PostCard = ({
                             </TouchableOpacity>
                         </View>
                     )}
-
                     {/* Caption and reactions */}
                     <View style={styles.captionSection}>
                         <ThemedText type="default" style={[styles.caption, { color: ThemedColor.text }]}>
@@ -287,28 +373,25 @@ const PostCard = ({
                         </ThemedText>
 
                         <View style={styles.reactionsRow}>
-                            {allReactions.map((react, index) => (
+                            {localReactions.map((react, index) => (
                                 <ReactPills
-                                    key={index}
+                                    key={`${react.emoji}-${index}`}
                                     reaction={react}
                                     postId={0}
-                                    onAddReaction={() => handleReaction(react, true)}
-                                    onRemoveReaction={() => handleReaction(react, false)}
+                                    isHighlighted={hasUserReacted(react.emoji)}
+                                    onPress={() => handleReaction(react.emoji)}
                                 />
                             ))}
-                            <ReactionAction
-                                onAddReaction={(emoji) =>
-                                    handleReaction({ emoji: emoji, count: 1, ids: [user?._id || ""] }, true)
-                                }
-                                postId={0}
-                            />
+                            <ReactionAction onAddReaction={(emoji) => handleReaction(emoji)} postId={0} />
                         </View>
 
                         <TouchableOpacity onPress={handleOpenComments} style={styles.commentButton}>
                             <ThemedText style={styles.commentText}>
                                 💬{" "}
                                 <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
-                                    Leave a comment
+                                    {currentComments.length === 0
+                                        ? "Leave a comment"
+                                        : `View ${currentComments.length} comment${currentComments.length === 1 ? "" : "s"}`}{" "}
                                 </ThemedText>
                             </ThemedText>
                         </TouchableOpacity>
@@ -366,7 +449,15 @@ const PostCard = ({
                         borderTopLeftRadius: 24,
                         borderTopRightRadius: 24,
                     }}>
-                    <Comment comments={comments} ref={bottomSheetModalRef} onClose={handleClose} />
+                    <Comment
+                        comments={currentComments}
+                        postId={id}
+                        ref={bottomSheetModalRef}
+                        onClose={handleClose}
+                        onCommentAdded={handleCommentAdded}
+                        currentUserId={user?._id}
+                        postOwnerId={userId}
+                    />
                 </BottomSheetModal>
 
                 {/* Congratulate Modal */}
@@ -440,19 +531,6 @@ const stylesheet = (ThemedColor: any) =>
             color: ThemedColor.caption,
             width: 48,
         },
-        imageContainer: {
-            width: "100%",
-            marginBottom: 18,
-        },
-        carousel: {
-            width: Dimensions.get("window").width,
-            height: Dimensions.get("window").width,
-        },
-        image: {
-            width: Dimensions.get("window").width,
-            height: Dimensions.get("window").width,
-            resizeMode: "cover",
-        },
         categorySection: {
             flexDirection: "row",
             alignItems: "center",
@@ -469,11 +547,6 @@ const stylesheet = (ThemedColor: any) =>
             fontSize: 16,
             fontWeight: "400",
             letterSpacing: -0.16,
-        },
-        dot: {
-            width: 4,
-            height: 4,
-            borderRadius: 2,
         },
         congratulateButton: {
             flexDirection: "row",
@@ -524,6 +597,57 @@ const stylesheet = (ThemedColor: any) =>
             height: Dimensions.get("window").width * 0.9,
             resizeMode: "contain",
         },
-    });
 
+        imageContainer: {
+            width: "100%",
+            marginBottom: 18,
+        },
+        carouselContainer: {
+            position: "relative",
+        },
+        carousel: {
+            width: Dimensions.get("window").width,
+            height: Dimensions.get("window").width,
+        },
+        image: {
+            width: Dimensions.get("window").width,
+            height: Dimensions.get("window").width,
+            resizeMode: "cover",
+        },
+        imageCounter: {
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 10,
+        },
+        imageCounterBackground: {
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            borderRadius: 12,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+        },
+        imageCounterText: {
+            color: "#ffffff",
+            fontSize: 12,
+            fontWeight: "600",
+            textAlign: "center",
+        },
+
+        dotIndicators: {
+            position: "absolute",
+            bottom: 12,
+            left: 0,
+            right: 0,
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 6,
+        },
+        dot: {
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            opacity: 0.8,
+        },
+    });
 export default PostCard;

@@ -54,6 +54,7 @@ export default function Profile() {
         [user?._id]
     );
 
+
     return (
         <Animated.ScrollView
             ref={scrollRef}
@@ -104,7 +105,7 @@ export default function Profile() {
                 </ConditionalView>
 
                 <ConditionalView condition={activeTab == 1}>
-                    <ProfileGallery images={new Array(28).fill("https://picsum.photos/200")} />
+                    <ProfileGallery userId={user?._id} />
                 </ConditionalView>
             </View>
         </Animated.ScrollView>

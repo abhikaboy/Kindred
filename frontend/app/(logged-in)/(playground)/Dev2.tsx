@@ -12,7 +12,7 @@ import FollowButton from "@/components/inputs/FollowButton";
 import UserInfoRowFollow from "@/components/UserInfo/UserInfoRowFollow";
 import Entypo from "@expo/vector-icons/Entypo";
 import UserInfoRowTimed from "@/components/UserInfo/UserInfoRowTimed";
-import UserInfoRowComment from "@/components/UserInfo/UsereInfoRowComment";
+import UserInfoRowComment from "@/components/UserInfo/UserInfoRowComment";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";

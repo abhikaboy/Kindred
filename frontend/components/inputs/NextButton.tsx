@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     onPress?: () => void;
+    text: string; 
 };
 
 export default function NextButton({ onPress }: Props) {

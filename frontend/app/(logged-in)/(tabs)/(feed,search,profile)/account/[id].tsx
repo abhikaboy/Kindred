@@ -26,6 +26,8 @@ import { type Profile, type RelationshipStatus } from "@/api/types";
 export default function Profile() {
     const { id } = useLocalSearchParams();
     const queryClient = useQueryClient();
+    const { user } = useAuth();
+
     const fallback_profile = {
         id: "67ef139d4931ee7a9fb630fc",
         display_name: "Coffee!~",
@@ -84,7 +86,7 @@ export default function Profile() {
             });
         }
     };
-
+    const galleryUserId = (id as string) || user?._id;
     if (isLoading) {
         return <ActivityIndicator />;
     }
@@ -134,7 +136,7 @@ export default function Profile() {
                 </ConditionalView>
 
                 <ConditionalView condition={activeTab == 1}>
-                    <ProfileGallery images={new Array(28).fill("https://picsum.photos/200")} />
+                    <ProfileGallery userId={galleryUserId} />
                 </ConditionalView>
             </View>
         </Animated.ScrollView>

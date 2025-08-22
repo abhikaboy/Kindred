@@ -118,6 +118,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
     }, [edit, categoryId, categories]);
 
     const createPost = async () => {
+        console.log("🔍 CLIENT BASE URL:", process.env.EXPO_PUBLIC_URL);
+        console.log("🔍 ABOUT TO CALL:", `${process.env.EXPO_PUBLIC_URL}/v1/user/posts`);
         if (categories.length === 0) return;
         let postBody: CreateTaskParams = {
             content: taskName,

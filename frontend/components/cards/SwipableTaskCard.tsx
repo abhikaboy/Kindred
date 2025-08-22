@@ -27,8 +27,24 @@ type Props = {
 };
 
 export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName }: Props) {
-    const { removeFromCategory, setShowConfetti } = useTasks();
+    const { removeFromCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
+    console.log("🔍 CATEGORY DEBUG:");
+    console.log("  - categoryId:", categoryId);
+    console.log("  - categoryName prop:", categoryName);
+    console.log(
+        "  - available categories:",
+        categories?.map((c) => ({ id: c.id, name: c.name }))
+    );
+    console.log(
+        "  - lookup result:",
+        categories?.find((cat) => cat.id === categoryId)
+    );
+
+    const finalCategoryName =
+        categoryName || categories?.find((cat) => cat.id === categoryId)?.name || "Unknown Category";
+
+    console.log("  - finalCategoryName:", finalCategoryName);
 
     /* 
   Mark as completed function
@@ -59,6 +75,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
             });
         }
     };
+
     const markAsCompleted = async (categoryId: string, taskId: string) => {
         try {
             const res = await markAsCompletedAPI(categoryId, taskId, {
@@ -76,18 +93,31 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
 
-            showToastable({
-                title: "Task completed!",
-                status: "success",
-                position: "top",
-                message: "Congrats! Click here to post and document your task!",
-                onPress: () => {
-                    console.log("pressed");
-                },
-                swipeDirection: "up",
-                duration: 5500,
-                renderContent: (props) => <TaskToast message={props.message} />,
-            });
+            const taskData = {
+                id: task.id,
+                name: task.content,
+                category: categoryId,
+                categoryName: finalCategoryName,
+                points: task.value,
+                public: task.public,
+            };
+            console.log("🔍 FINAL CATEGORY NAME BEING USED:", finalCategoryName);
+            console.log("🔍 TASK DATA BEING SENT TO TOAST:", JSON.stringify(taskData, null, 2));
+
+            if (task.public) {
+                showToastable({
+                    title: "Task completed!",
+                    status: "success",
+                    position: "top",
+                    message: "Congrats! Click here to post and document your task!",
+                    onPress: () => {
+                        console.log("pressed");
+                    },
+                    swipeDirection: "up",
+                    duration: 5500,
+                    renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
+                });
+            }
 
             setTimeout(() => {
                 setShowConfetti(false);

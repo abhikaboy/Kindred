@@ -18,204 +18,39 @@ import {
     RefreshControl,
     FlatList,
 } from "react-native";
-import { getPostsAPI } from "@/api/post";
+import { getAllPosts } from "@/api/post";
 import { showToast } from "@/utils/showToast";
 
 const HORIZONTAL_PADDING = 16;
 
-// Mock data for fallback when API is not available
-const mockPosts = [
-    {
-        icon: Icons.luffy,
-        name: "Abhik Ray",
-        username: "beak",
-        userId: "67ba5abb616b5e6544e0137b",
-        caption: "Lowkey just finished jamming on my guitar, learned a few new songs too",
-        time: 2,
-        priority: "high",
-        points: 10,
-        timeTaken: 2,
-        category: "Music",
-        taskName: "Daily Practice",
-        reactions: [
-            { emoji: "🔥", count: 4, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "💸", count: 3, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "😃", count: 1, ids: ["67ba5abb616b5e6544e0137b"] },
-        ],
-        comments: [
-            {
-                userId: 1,
-                icon: Icons.luffy,
-                name: "luffy",
-                username: "theLuffiestOfThemAll",
-                time: 1708800000,
-                content: "This is such a great post! Thanks for sharing.",
-            },
-            {
-                userId: 2,
-                icon: Icons.coffee,
-                name: "Coffeeeeee",
-                username: "coffee",
-                time: 3,
-                content: "blah blah latte i hate lattes",
-            },
-        ],
-        images: [Icons.latte, Icons.coffee, Icons.lokye, Icons.luffy],
-    },
-    {
-        icon: Icons.coffee,
-        name: "Coffee Lover",
-        username: "coffeeaddict",
-        userId: "67ba5abb616b5e6544e0137c",
-        caption: "Just finished my morning routine and feeling great! Ready to tackle the day ahead.",
-        time: 0.5,
-        priority: "medium",
-        points: 5,
-        timeTaken: 1,
-        category: "Wellness",
-        taskName: "Morning Routine",
-        reactions: [
-            { emoji: "☕", count: 2, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "💪", count: 1, ids: ["67ba5abb616b5e6544e0137b"] },
-        ],
-        comments: [
-            {
-                userId: 1,
-                icon: Icons.luffy,
-                name: "luffy",
-                username: "theLuffiestOfThemAll",
-                time: 1708800000,
-                content: "Great way to start the day!",
-            },
-        ],
-        images: [],
-    },
-    {
-        icon: Icons.lokye,
-        name: "Lok Ye",
-        username: "lokye",
-        userId: "67ba5abb616b5e6544e0137d",
-        caption:
-            "Just completed my workout session! Feeling energized and ready to crush the rest of the day. Consistency is key! 💪",
-        time: 1.5,
-        priority: "high",
-        points: 15,
-        timeTaken: 1.5,
-        category: "Fitness",
-        taskName: "Gym Session",
-        reactions: [
-            { emoji: "💪", count: 8, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "🔥", count: 5, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "👏", count: 3, ids: ["67ba5abb616b5e6544e0137b"] },
-        ],
-        comments: [
-            {
-                userId: 1,
-                icon: Icons.luffy,
-                name: "luffy",
-                username: "theLuffiestOfThemAll",
-                time: 1708800000,
-                content: "Keep up the great work!",
-            },
-            {
-                userId: 2,
-                icon: Icons.coffee,
-                name: "Coffeeeeee",
-                username: "coffee",
-                time: 3,
-                content: "Inspiring! What's your routine?",
-            },
-        ],
-        images: [Icons.luffy],
-    },
-    {
-        icon: Icons.latte,
-        name: "Study Buddy",
-        username: "studybuddy",
-        userId: "67ba5abb616b5e6544e0137e",
-        caption:
-            "Finally finished that research paper! 6 hours of focused work and it's finally done. Time for a well-deserved break.",
-        time: 4,
-        priority: "medium",
-        points: 20,
-        timeTaken: 6,
-        category: "Study",
-        taskName: "Research Paper",
-        reactions: [
-            { emoji: "📚", count: 6, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "🎉", count: 4, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "💯", count: 2, ids: ["67ba5abb616b5e6544e0137b"] },
-        ],
-        comments: [
-            {
-                userId: 1,
-                icon: Icons.luffy,
-                name: "luffy",
-                username: "theLuffiestOfThemAll",
-                time: 1708800000,
-                content: "Congrats on finishing!",
-            },
-        ],
-        images: [],
-    },
-    {
-        icon: Icons.coffee,
-        name: "Chef Sarah",
-        username: "chefsarah",
-        userId: "67ba5abb616b5e6544e0137f",
-        caption:
-            "Made homemade pasta from scratch today! The process was therapeutic and the result was delicious. Cooking is my happy place 🍝",
-        time: 3.5,
-        priority: "low",
-        points: 12,
-        timeTaken: 2.5,
-        category: "Cooking",
-        taskName: "Homemade Pasta",
-        reactions: [
-            { emoji: "🍝", count: 7, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "👨‍🍳", count: 3, ids: ["67ba5abb616b5e6544e0137b"] },
-            { emoji: "😋", count: 5, ids: ["67ba5abb616b5e6544e0137b"] },
-        ],
-        comments: [
-            {
-                userId: 1,
-                icon: Icons.luffy,
-                name: "luffy",
-                username: "theLuffiestOfThemAll",
-                time: 1708800000,
-                content: "Looks amazing! Recipe?",
-            },
-            {
-                userId: 2,
-                icon: Icons.coffee,
-                name: "Coffeeeeee",
-                username: "coffee",
-                time: 3,
-                content: "I need to try this!",
-            },
-            {
-                userId: 3,
-                icon: Icons.lokye,
-                name: "Lok Ye",
-                username: "lokye",
-                time: 2,
-                content: "Beautiful presentation!",
-            },
-        ],
-        images: [Icons.latte, Icons.coffee, Icons.lokye],
-    },
-];
-
-// Mock data for subscribed blueprints
-const mockSubscribedBlueprints = [
-    { name: "Fitness Blueprint", id: "blueprint_fitness_001" },
-    { name: "Study Blueprint", id: "blueprint_study_002" },
-    { name: "Cooking Blueprint", id: "blueprint_cooking_003" },
-    { name: "Music Blueprint", id: "blueprint_music_004" },
-];
-
-// Mock user ID - in real app this would come from auth context
-const mockUserId = "67ba5abb616b5e6544e0137b";
+type PostData = {
+    _id: string;
+    user: {
+        _id: string;
+        display_name: string;
+        handle: string;
+        profile_picture: string;
+    };
+    images: string[];
+    caption: string;
+    task?: {
+        id: string;
+        content: string;
+        category: {
+            id: string;
+            name: string;
+        };
+    };
+    reactions: { [emoji: string]: string[] } | {};
+    comments: any[] | null;
+    metadata: {
+        createdAt: string;
+        updatedAt: string;
+        isPublic: boolean;
+        isDeleted: boolean;
+        isEdited: boolean;
+    };
+};
 
 export default function Feed() {
     const router = useRouter();
@@ -224,20 +59,18 @@ export default function Feed() {
     const styles = stylesheet(ThemedColor);
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [posts, setPosts] = useState(mockPosts);
-    const [loading, setLoading] = useState(false);
+    const [posts, setPosts] = useState<PostData[]>([]);
+    const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
     // Feed switching state
     const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
-        name: "Friends",
-        id: mockUserId,
+        name: "All Posts",
+        id: "all",
     });
-    const [availableFeeds, setAvailableFeeds] = useState([
-        { name: "Friends", id: mockUserId },
-        ...mockSubscribedBlueprints,
-    ]);
-
+    const [availableFeeds, setAvailableFeeds] = useState([{ name: "All Posts", id: "all" }]);
     const scrollY = useRef(new Animated.Value(0)).current;
     const headerOpacity = useRef(new Animated.Value(0)).current;
     const headerTranslateY = useRef(new Animated.Value(-100)).current;
@@ -246,6 +79,23 @@ export default function Feed() {
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
+
+    const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
+        setPosts((prevPosts) => prevPosts.map((post) => (post._id === postId ? { ...post, ...updatedPost } : post)));
+    }, []);
+
+    const refreshSinglePost = useCallback(
+        async (postId: string) => {
+            try {
+                const { getPostById } = await import("@/api/post");
+                const updatedPost = await getPostById(postId);
+                updatePostInFeed(postId, updatedPost);
+            } catch (error) {
+                console.error("Failed to refresh post:", error);
+            }
+        },
+        [updatePostInFeed]
+    );
 
     // Start loading animation when loading state changes
     useEffect(() => {
@@ -262,42 +112,45 @@ export default function Feed() {
         }
     }, [loading, loadingRotation]);
 
-    const fetchPosts = useCallback(
-        async (feedId?: string) => {
-            setLoading(true);
-            try {
-                // In a real app, you would pass the feedId to the API
-                // const fetchedPosts = await getPostsAPI(feedId);
-                console.log(`Fetching posts for feed: ${feedId || currentFeed.id}`);
-
-                // For now, we'll use mock data for all feeds
-                // In the real implementation, you would:
-                // - If feedId === userId: fetch posts from friends
-                // - If feedId is a blueprint id: fetch posts from that blueprint
-                const postsToUse = mockPosts;
-
-                if (!postsToUse || postsToUse.length === 0) {
-                    console.log("API returned empty posts, using mock data");
-                    setPosts(mockPosts);
-                } else {
-                    setPosts(postsToUse);
-                }
-
-                setLastUpdated(new Date());
-            } catch (error) {
-                console.error("Error fetching posts:", error);
-                showToast("Failed to load posts", "danger");
-                setPosts(mockPosts);
-            } finally {
-                setLoading(false);
+    const fetchPosts = useCallback(async (feedId?: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const fetchedPosts = await getAllPosts();
+            if (!fetchedPosts) {
+                throw new Error("No data received from API");
             }
-        },
-        [currentFeed.id]
-    );
+            if (!Array.isArray(fetchedPosts)) {
+                throw new Error("API response is not an array");
+            }
+
+            setPosts(fetchedPosts);
+            setLastUpdated(new Date());
+            console.log(`Successfully fetched ${fetchedPosts.length} posts`);
+
+            // Debug: Log the structure of the first post
+            if (fetchedPosts.length > 0) {
+                console.log("Sample post structure:", JSON.stringify(fetchedPosts[0], null, 2));
+            }
+        } catch (error) {
+            console.error("Error fetching posts:", error);
+            const errorMessage = error.message || "Failed to load posts";
+            setError(errorMessage);
+            showToast("Failed to load posts", "danger");
+            setPosts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const sortedPosts = posts.sort((a, b) => {
+        const dateA = new Date(a.metadata?.createdAt || 0);
+        const dateB = new Date(b.metadata?.createdAt || 0);
+        return dateB.getTime() - dateA.getTime(); 
+    });
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-
         try {
             await fetchPosts(currentFeed.id);
             showToast("Feed refreshed successfully", "success");
@@ -312,11 +165,10 @@ export default function Feed() {
     // Load posts on component mount and when feed changes
     useEffect(() => {
         fetchPosts(currentFeed.id);
-    }, [fetchPosts, currentFeed.id]);
+    }, [currentFeed.id, fetchPosts]);
 
     const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
         setCurrentFeed(feed);
-        // Posts will be fetched automatically via useEffect
     }, []);
 
     const animateHeader = useCallback(
@@ -406,7 +258,6 @@ export default function Feed() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Feed Tabs */}
                     <View style={styles.feedTabsContainer}>
                         <FlatList
                             data={availableFeeds}
@@ -467,7 +318,6 @@ export default function Feed() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Feed Tabs */}
                         <View style={styles.feedTabsContainer}>
                             <FlatList
                                 data={availableFeeds}
@@ -504,6 +354,18 @@ export default function Feed() {
                                 Loading posts...
                             </ThemedText>
                         </View>
+                    ) : error ? (
+                        <View style={styles.errorContainer}>
+                            <Ionicons name="alert-circle-outline" size={50} color={ThemedColor.danger || "#ff4444"} />
+                            <ThemedText style={[styles.errorText, { color: ThemedColor.danger || "#ff4444" }]}>
+                                {error || "Something went wrong"}
+                            </ThemedText>
+                            <TouchableOpacity
+                                style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
+                                onPress={() => fetchPosts(currentFeed.id)}>
+                                <ThemedText style={styles.retryButtonText}>Try Again</ThemedText>
+                            </TouchableOpacity>
+                        </View>
                     ) : posts.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <Ionicons name="newspaper-outline" size={50} color={ThemedColor.caption} />
@@ -515,23 +377,38 @@ export default function Feed() {
                             </ThemedText>
                         </View>
                     ) : (
-                        posts.map((post, index) => (
+                        sortedPosts.map((post, index) => (
                             <PostCard
-                                key={index}
-                                icon={post.icon}
-                                name={post.name}
-                                username={post.username}
-                                userId={post.userId}
-                                caption={post.caption}
-                                time={post.time}
-                                priority={post.priority}
-                                points={post.points}
-                                timeTaken={post.timeTaken}
-                                category={post.category}
-                                taskName={post.taskName}
-                                reactions={post.reactions}
-                                comments={post.comments}
-                                images={post.images}
+                                key={post._id || index}
+                                icon={post.user?.profile_picture || ""}
+                                name={post.user?.display_name || "Unknown"}
+                                username={post.user?.handle || "unknown"}
+                                userId={post.user?._id || ""}
+                                caption={post.caption || ""}
+                                time={
+                                    post.metadata?.createdAt
+                                        ? Math.abs(new Date().getTime() - new Date(post.metadata.createdAt).getTime()) /
+                                          36e5
+                                        : 0
+                                }
+                                priority="low"
+                                points={0}
+                                timeTaken={0}
+                                category={post.task?.category?.name}
+                                taskName={post.task?.content}
+                                reactions={
+                                    post.reactions
+                                        ? Object.entries(post.reactions).map(([emoji, userIds]) => ({
+                                              emoji,
+                                              count: userIds.length,
+                                              ids: userIds,
+                                          }))
+                                        : []
+                                }
+                                comments={post.comments || []}
+                                images={post.images || []}
+                                onReactionUpdate={() => refreshSinglePost(post._id)}
+                                id={post._id}
                             />
                         ))
                     )}
@@ -614,7 +491,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         contentContainer: {
             marginTop: 100,
-            paddingBottom: HORIZONTAL_PADDING,
+            paddingBottom: 150,
         },
         loadingContainer: {
             flex: 1,
@@ -643,5 +520,28 @@ const stylesheet = (ThemedColor: any) =>
         emptySubtext: {
             fontSize: 14,
             marginTop: 5,
+        },
+        errorContainer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingVertical: 20,
+        },
+        errorText: {
+            fontSize: 18,
+            fontWeight: "bold",
+            marginTop: 10,
+            textAlign: "center",
+        },
+        retryButton: {
+            marginTop: 15,
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 8,
+        },
+        retryButtonText: {
+            color: "#ffffff",
+            fontSize: 16,
+            fontWeight: "600",
         },
     });
