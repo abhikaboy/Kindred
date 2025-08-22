@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { getAllPosts } from "@/api/post";
 import { showToast } from "@/utils/showToast";
+import NotificationBadge from "@/components/NotificationBadge";
 
 const HORIZONTAL_PADDING = 16;
 
@@ -253,8 +254,12 @@ export default function Feed() {
                             activeOpacity={0.8}
                             onPress={() => {
                                 router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                            }}>
+                            }}
+                            style={{ position: 'relative' }}>
                             <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                            <View style={{ position: 'absolute', top: -8, right: -8 }}>
+                                <NotificationBadge />
+                            </View>
                         </TouchableOpacity>
                     </View>
 
@@ -313,8 +318,12 @@ export default function Feed() {
                                 activeOpacity={0.8}
                                 onPress={() => {
                                     router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                                }}>
+                                }}
+                                style={{ position: 'relative' }}>
                                 <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                                <View style={{ position: 'absolute', top: -8, right: -8 }}>
+                                    <NotificationBadge />
+                                </View>
                             </TouchableOpacity>
                         </View>
 

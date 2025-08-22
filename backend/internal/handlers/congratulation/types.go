@@ -3,6 +3,7 @@ package congratulation
 import (
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -11,8 +12,8 @@ import (
 
 // Create Congratulation
 type CreateCongratulationInput struct {
-	Authorization string                    `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                    `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Authorization string                     `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                     `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	Body          CreateCongratulationParams `json:"body"`
 }
 
@@ -43,9 +44,9 @@ type GetCongratulationOutput struct {
 
 // Update Congratulation
 type UpdateCongratulationInput struct {
-	Authorization string                     `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                     `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	ID            string                     `path:"id" example:"507f1f77bcf86cd799439011"`
+	Authorization string                       `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                       `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                       `path:"id" example:"507f1f77bcf86cd799439011"`
 	Body          UpdateCongratulationDocument `json:"body"`
 }
 
@@ -163,6 +164,7 @@ Database layer of the application
 */
 
 type Service struct {
-	Congratulations *mongo.Collection
-	Users           *mongo.Collection
-} 
+	Congratulations     *mongo.Collection
+	Users               *mongo.Collection
+	NotificationService *notifications.Service
+}

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,7 @@ import (
 func newService(collections map[string]*mongo.Collection) *Service {
 	congratulations := collections["congratulations"]
 	users := collections["users"]
-	
+
 	// Log if collections are not found
 	if congratulations == nil {
 		slog.Error("Congratulations collection not found in database")
@@ -25,10 +26,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	if users == nil {
 		slog.Error("Users collection not found in database")
 	}
-	
+
 	return &Service{
-		Congratulations: congratulations,
-		Users:           users,
+		Congratulations:     congratulations,
+		Users:               users,
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 
@@ -37,10 +39,10 @@ func (s *Service) GetAllCongratulations(receiverID primitive.ObjectID) ([]Congra
 	if s.Congratulations == nil {
 		return nil, fmt.Errorf("congratulations collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"receiver": receiverID}
-	
+
 	cursor, err := s.Congratulations.Find(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -66,7 +68,7 @@ func (s *Service) GetCongratulationByID(id primitive.ObjectID) (*CongratulationD
 	if s.Congratulations == nil {
 		return nil, fmt.Errorf("congratulations collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
@@ -89,7 +91,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	if s.Congratulations == nil {
 		return nil, fmt.Errorf("congratulations collection not available")
 	}
-	
+
 	ctx := context.Background()
 
 	// Check if sender has enough congratulations
@@ -97,7 +99,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user balance: %w", err)
 	}
-	
+
 	if balance <= 0 {
 		return nil, fmt.Errorf("insufficient congratulation balance: user has %d congratulations remaining", balance)
 	}
@@ -114,7 +116,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	}
 
 	slog.Info("Creating congratulation", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)
-	
+
 	result, err := s.Congratulations.InsertOne(ctx, congratulation)
 	if err != nil {
 		return nil, err
@@ -132,11 +134,19 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	congratulation.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Congratulation inserted", slog.String("id", id.Hex()))
 
-	// Send notification to receiver
+	// Send push notification to receiver
 	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
+	}
+
+	// Create notification in the database
+	notificationContent := fmt.Sprintf("%s has sent you a congratulation on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
+	err = s.NotificationService.CreateNotification(r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id)
+	if err != nil {
+		// Log error but don't fail the operation since congratulation was already created
+		slog.Error("Failed to create congratulation notification in database", "error", err, "receiver_id", r.Receiver)
 	}
 
 	return congratulation.ToAPI(), nil
@@ -147,7 +157,7 @@ func (s *Service) UpdatePartialCongratulation(id primitive.ObjectID, updated Upd
 	if s.Congratulations == nil {
 		return fmt.Errorf("congratulations collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
@@ -167,7 +177,7 @@ func (s *Service) DeleteCongratulation(id primitive.ObjectID) error {
 	if s.Congratulations == nil {
 		return fmt.Errorf("congratulations collection not available")
 	}
-	
+
 	ctx := context.Background()
 
 	filter := bson.M{"_id": id}
@@ -181,7 +191,7 @@ func (s *Service) MarkCongratulationsAsRead(ids []primitive.ObjectID) (int64, er
 	if s.Congratulations == nil {
 		return 0, fmt.Errorf("congratulations collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": bson.M{"$in": ids}}
 	update := bson.M{"$set": bson.M{"read": true}}
@@ -199,19 +209,19 @@ func (s *Service) GetUserBalance(userID primitive.ObjectID) (int, error) {
 	if s.Users == nil {
 		return 0, fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": userID}
-	
+
 	var user struct {
 		Congratulations int `bson:"congratulations"`
 	}
-	
+
 	err := s.Users.FindOne(ctx, filter, nil).Decode(&user)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return user.Congratulations, nil
 }
 
@@ -220,11 +230,11 @@ func (s *Service) DecrementUserBalance(userID primitive.ObjectID) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": userID}
 	update := bson.M{"$inc": bson.M{"congratulations": -1}}
-	
+
 	_, err := s.Users.UpdateOne(ctx, filter, update)
 	return err
 }
@@ -234,9 +244,9 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*CongratulationSen
 	if s.Users == nil {
 		return nil, fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
-	
+
 	cursor, err := s.Users.Aggregate(ctx, []bson.M{
 		{
 			"$match": bson.M{"_id": senderID},
@@ -278,23 +288,23 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Get receiver's push token
 	var receiver types.User
 	err := s.Users.FindOne(ctx, bson.M{"_id": receiverID}).Decode(&receiver)
 	if err != nil {
 		return fmt.Errorf("failed to get receiver user: %w", err)
 	}
-	
+
 	if receiver.PushToken == "" {
 		slog.Warn("Receiver has no push token", "receiver_id", receiverID)
 		return nil // Not an error, just no notification sent
 	}
-	
+
 	message := fmt.Sprintf("%s has sent you a congratulation on %s \"%s\"", senderName, taskName, congratulationText)
-	
+
 	notification := xutils.Notification{
 		Token:   receiver.PushToken,
 		Title:   "New Congratulation!",
@@ -306,6 +316,6 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 			"message_text": congratulationText,
 		},
 	}
-	
+
 	return xutils.SendNotification(notification)
-} 
+}

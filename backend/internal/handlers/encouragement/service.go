@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,8 +28,9 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 
 	return &Service{
-		Encouragements: encouragements,
-		Users:          users,
+		Encouragements:      encouragements,
+		Users:               users,
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 
@@ -123,7 +125,6 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	// Decrement user's encouragement balance
 	err = s.DecrementUserBalance(r.Sender.ID)
 	if err != nil {
-		// Log error but don't fail the operation since encouragement was already created
 		slog.Error("Failed to decrement user balance after creating encouragement", "error", err, "sender_id", r.Sender.ID)
 	}
 
@@ -132,11 +133,19 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	encouragement.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", id.Hex()))
 
-	// Send notification to receiver
+	// Send push notification to receiver
 	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message)
 	if err != nil {
 		// Log error but don't fail the operation since encouragement was already created
 		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
+	}
+
+	// Create notification in the database
+	notificationContent := fmt.Sprintf("%s has sent you an encouragement on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
+	err = s.NotificationService.CreateNotification(r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, id)
+	if err != nil {
+		// Log error but don't fail the operation since encouragement was already created
+		slog.Error("Failed to create encouragement notification in database", "error", err, "receiver_id", r.Receiver)
 	}
 
 	return encouragement.ToAPI(), nil
