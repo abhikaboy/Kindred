@@ -778,10 +778,10 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Rename category
-         * @description Rename a specific category by its ID
+         * Update category
+         * @description Update a category for the authenticated user
          */
-        patch: operations["rename-category"];
+        patch: operations["update-category"];
         trace?: never;
     };
     "/v1/user/congratulations": {
@@ -1106,7 +1106,11 @@ export interface paths {
          * @description Add a comment to an existing post
          */
         post: operations["add-comment"];
-        delete?: never;
+        /**
+         * Delete comment from post
+         * @description Delete comment from an existing post
+         */
+        delete: operations["delete-comment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1568,7 +1572,7 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
-            comment: components["schemas"]["CommentDocument"];
+            comment: components["schemas"]["CommentDocumentAPI"];
             message: string;
         };
         AddCommentParams: {
@@ -1586,6 +1590,7 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
+            added: boolean;
             message: string;
         };
         AddReactionParams: {
@@ -1629,10 +1634,6 @@ export interface components {
              */
             timestamp: string;
         };
-        BlueprintReference: {
-            id: string;
-        }
-        
         BlueprintDocumentWithoutSubscribers: {
             /** @description Banner image URL */
             banner: string;
@@ -1658,6 +1659,9 @@ export interface components {
              * @description Creation timestamp
              */
             timestamp: string;
+        };
+        BlueprintReference: {
+            id: string;
         };
         CategoryDocument: {
             /**
@@ -1686,11 +1690,16 @@ export interface components {
         CommentDocument: {
             content: string;
             id: string;
-            mention?: string;
+            metadata: components["schemas"]["CommentMetadata"];
+            parentId?: string;
+            user: components["schemas"]["UserExtendedReferenceInternal"];
+        };
+        CommentDocumentAPI: {
+            content: string;
+            id: string;
             metadata: components["schemas"]["CommentMetadata"];
             parentId?: string;
             user: components["schemas"]["UserExtendedReference"];
-            userId: string;
         };
         CommentMetadata: {
             /** Format: date-time */
@@ -1926,6 +1935,14 @@ export interface components {
             readonly $schema?: string;
             message: string;
         };
+        DeleteCommentOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
         DeleteCongratulationOutputBody: {
             /**
              * Format: uri
@@ -2073,6 +2090,14 @@ export interface components {
             public_url: string;
             upload_url: string;
         };
+        GetPostsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            posts: components["schemas"]["PostDocumentAPI"][] | null;
+        };
         HealthOutputBody: {
             /**
              * Format: uri
@@ -2119,15 +2144,6 @@ export interface components {
             count: number;
             message: string;
         };
-        MarkEncouragementsReadInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            /** @description List of encouragement IDs to mark as read */
-            id: string[] | null;
-        };
         MarkEncouragementsReadOutputBody: {
             /**
              * Format: uri
@@ -2151,11 +2167,11 @@ export interface components {
             blueprint?: components["schemas"]["BlueprintReference"];
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
-            comments: components["schemas"]["CommentDocument"][] | {};
+            comments: components["schemas"]["CommentDocument"][] | null;
             images: string[] | null;
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
-                [key: string]: string[] | {};
+                [key: string]: string[] | null;
             };
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReferenceInternal"];
@@ -2170,11 +2186,11 @@ export interface components {
             blueprint?: components["schemas"]["BlueprintReference"];
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
-            comments: components["schemas"]["CommentDocument"][] | {};
+            comments: components["schemas"]["CommentDocumentAPI"][] | null;
             images: string[] | null;
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
-                [key: string]: string[] | {};
+                [key: string]: string[] | null;
             };
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
@@ -2258,26 +2274,13 @@ export interface components {
             afterStart: boolean;
             beforeDeadline: boolean;
             beforeStart: boolean;
+            customMessage?: string;
             sent: boolean;
+            sound?: string;
             /** Format: date-time */
             triggerTime: string;
             type: string;
-        };
-        RenameCategoryInputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            newName: string;
-        };
-        RenameCategoryOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            message: string;
+            vibration: boolean;
         };
         RenameWorkspaceInputBody: {
             /**
@@ -2453,6 +2456,14 @@ export interface components {
              */
             readonly $schema?: string;
             name?: string;
+        };
+        UpdateCategoryOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
         };
         UpdateCongratulationDocument: {
             /**
@@ -4104,7 +4115,7 @@ export interface operations {
             };
         };
     };
-    "rename-category": {
+    "update-category": {
         parameters: {
             query?: never;
             header: {
@@ -4118,7 +4129,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RenameCategoryInputBody"];
+                "application/json": components["schemas"]["UpdateCategoryDocument"];
             };
         };
         responses: {
@@ -4128,7 +4139,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RenameCategoryOutputBody"];
+                    "application/json": components["schemas"]["UpdateCategoryOutputBody"];
                 };
             };
             /** @description Error */
@@ -4705,11 +4716,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MarkEncouragementsReadInputBody"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -4896,7 +4903,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostDocumentAPI"][] | null;
+                    "application/json": components["schemas"]["GetPostsOutputBody"];
                 };
             };
             /** @description Error */
@@ -5076,6 +5083,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddCommentOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-comment": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @description Post ID */
+                postId: string;
+                /** @description Comment ID */
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteCommentOutputBody"];
                 };
             };
             /** @description Error */

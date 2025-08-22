@@ -4,12 +4,10 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Dimensions,
     Platform,
     Alert,
     Keyboard,
     KeyboardAvoidingView,
-    TextInput,
 } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
 import { ThemedText } from "../ThemedText";
@@ -22,7 +20,6 @@ import { showToast } from "@/utils/showToast";
 
 export type CommentProps = {
     id: string;
-    userId: string;
     user: {
         _id: string;
         display_name: string;
@@ -31,7 +28,6 @@ export type CommentProps = {
     };
     content: string;
     parentId?: string;
-    mention?: string;
     metadata: {
         createdAt: string;
         isDeleted: boolean;
@@ -40,7 +36,7 @@ export type CommentProps = {
 };
 
 export type PopupProp = {
-    comments: CommentProps[] | any[];
+    comments: CommentProps[];
     postId?: string;
     ref: React.RefObject<BottomSheetModal>;
     onClose: () => void;
@@ -50,57 +46,101 @@ export type PopupProp = {
     postOwnerId?: string;
 };
 
-const Comment = ({
-    comments,
-    postId,
-    ref,
-    onClose,
-    onCommentAdded,
-    onCommentDeleted,
-    currentUserId,
-    postOwnerId,
-}: PopupProp) => {
+const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUserId, postOwnerId }: PopupProp) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
+
     const [commentText, setCommentText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [replyingTo, setReplyingTo] = useState<{ id: string; name: string } | null>(null);
     const [localComments, setLocalComments] = useState<CommentProps[]>(comments || []);
-    const inputRef = useRef<TextInput>(null);
     const [autoFocusInput, setAutoFocusInput] = useState(false);
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [deletingComments, setDeletingComments] = useState<Set<string>>(new Set());
 
-    const isAPIComment = (comment: any) => comment && comment.user && comment.metadata;
-
+    // only update if comments changed
     useEffect(() => {
         setLocalComments(comments || []);
     }, [comments]);
+
+    // gets keyboard height when keyboard is being used
     useEffect(() => {
-        const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates.height));
-        const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
+        const showSub = Keyboard.addListener("keyboardDidShow", (e) => {});
+        const hideSub = Keyboard.addListener("keyboardDidHide", () => {});
         return () => {
             showSub.remove();
             hideSub.remove();
         };
     }, []);
-    const sortedComments = [...localComments].sort((a, b) => {
-        if (a.parentId && b.parentId) {
-            if (a.parentId === b.parentId) {
-                return new Date(a.metadata?.createdAt || 0).getTime() - new Date(b.metadata?.createdAt || 0).getTime();
-            }
-            return a.parentId.localeCompare(b.parentId);
-        }
-        return new Date(a.metadata?.createdAt || 0).getTime() - new Date(b.metadata?.createdAt || 0).getTime();
-    });
 
+    // sort comments where its reverse chronological for replies + parents separately
+    const sortCommentsHierarchically = (comments) => {
+        // separate parent comments from replies
+        const parentComments = comments.filter((comment) => !comment.parentId);
+        const replies = comments.filter((comment) => comment.parentId);
+
+        // sort parent comments in reverse chronological order
+        const sortedParents = parentComments.sort((a, b) => {
+            const timeA = new Date(a.metadata.createdAt).getTime();
+            const timeB = new Date(b.metadata.createdAt).getTime();
+            return timeB - timeA;
+        });
+
+        // create a map of replies grouped by their parent ID
+        const repliesByParent = replies.reduce((acc, reply) => {
+            if (!acc[reply.parentId]) {
+                acc[reply.parentId] = [];
+            }
+            acc[reply.parentId].push(reply);
+            return acc;
+        }, {});
+
+        // sort replies within each parent group
+        Object.keys(repliesByParent).forEach((parentId) => {
+            repliesByParent[parentId].sort((a, b) => {
+                const timeA = new Date(a.metadata.createdAt).getTime();
+                const timeB = new Date(b.metadata.createdAt).getTime();
+                return timeB - timeA;
+            });
+        });
+
+        // build the result
+        const result = [];
+        sortedParents.forEach((parent) => {
+            result.push(parent);
+            if (repliesByParent[parent.id]) {
+                result.push(...repliesByParent[parent.id]);
+            }
+        });
+
+        return result;
+    };
+
+    // get the sorted comments
+    const sortedComments = sortCommentsHierarchically(
+        localComments.filter((comment) => !deletingComments.has(comment.id))
+    );
+
+    // gets the time to show in how long ago a comment was made
+    const getTimeAgo = (createdAt: string): number => {
+        return Math.abs(new Date().getTime() - new Date(createdAt).getTime()) / 36e5;
+    };
+
+    // permission check
+    const canDeleteComment = (commentUserId: string): boolean => {
+        if (!currentUserId) return false;
+        return currentUserId === commentUserId || currentUserId === postOwnerId;
+    };
+
+    // handles the submitting comment
     const handleSubmitComment = async () => {
         if (!commentText.trim()) return;
-
         setIsSubmitting(true);
 
         try {
             const parentId = replyingTo?.id;
             let finalCommentText = commentText.trim();
+
+            // adds mention if needed
             if (replyingTo && !finalCommentText.includes(`@${replyingTo.name}`)) {
                 finalCommentText = `@${replyingTo.name} ${finalCommentText}`;
             }
@@ -122,36 +162,21 @@ const Comment = ({
         }
     };
 
+    // handles replying
     const handleReply = (commentId: string, userName: string) => {
         setReplyingTo({ id: commentId, name: userName });
         setCommentText(`@${userName} `);
         setAutoFocusInput(true);
     };
 
+    // handle deleting
     const handleDeleteComment = (commentId: string, commentUserId: string) => {
-        const canDelete = currentUserId === commentUserId || currentUserId === postOwnerId;
-
-        if (!canDelete) {
+        if (!canDeleteComment(commentUserId)) {
             showToast("You can only delete your own comments", "danger");
             return;
         }
 
-        const findCommentsToDelete = (targetId: string): string[] => {
-            const toDelete = [targetId];
-            const findChildren = (parentId: string) => {
-                localComments.forEach((comment) => {
-                    if (comment.parentId === parentId) {
-                        toDelete.push(comment.id);
-                        findChildren(comment.id);
-                    }
-                });
-            };
-            findChildren(targetId);
-            return toDelete;
-        };
-
-        const commentsToDelete = findCommentsToDelete(commentId);
-
+        // second alert
         Alert.alert("Delete Comment", "Are you sure you want to delete this comment?", [
             {
                 text: "Cancel",
@@ -161,34 +186,52 @@ const Comment = ({
                 text: "Delete",
                 style: "destructive",
                 onPress: async () => {
+                    setDeletingComments((prev) => new Set([...prev, commentId]));
+
                     try {
                         await deleteComment(postId, commentId);
-                        showToast(
-                            commentsToDelete.length > 1
-                                ? `Comment and ${commentsToDelete.length - 1} replies deleted successfully`
-                                : "Comment deleted successfully",
-                            "success"
-                        );
 
-                        setLocalComments((prev) => prev.filter((c) => !commentsToDelete.includes(c.id)));
+                        // remove from the local state
+                        setLocalComments((prev) => prev.filter((c) => c.id !== commentId));
 
+                        // notify the parent
                         if (onCommentDeleted) {
-                            commentsToDelete.forEach((id) => onCommentDeleted(id));
+                            onCommentDeleted(commentId);
                         }
+
+                        showToast("Comment deleted successfully", "success");
                     } catch (error) {
                         console.error("Failed to delete comment:", error);
-                        showToast("Failed to delete comment", "danger");
+
+                        if (error.message && error.message.includes("Comment not found")) {
+                            setLocalComments((prev) => prev.filter((c) => c.id !== commentId));
+                            if (onCommentDeleted) {
+                                onCommentDeleted(commentId);
+                            }
+
+                            showToast("Comment deleted", "success");
+                        } else {
+                            setDeletingComments((prev) => {
+                                const newSet = new Set(prev);
+                                newSet.delete(commentId);
+                                return newSet;
+                            });
+
+                            showToast("Failed to delete comment", "danger");
+                        }
                     }
                 },
             },
         ]);
     };
 
+    // handles the long press on a comment
     const handleLongPress = (commentId: string, commentUserId: string) => {
-        const canDelete = currentUserId === commentUserId || currentUserId === postOwnerId;
+        if (!canDeleteComment(commentUserId)) {
+            return;
+        }
 
-        if (!canDelete) return;
-
+        // first alert
         Alert.alert("Comment Options", "", [
             {
                 text: "Delete Comment",
@@ -205,12 +248,9 @@ const Comment = ({
     return (
         <BottomSheetView style={styles.modalContainer}>
             <View style={styles.container}>
-                {/* Header */}
                 <View style={styles.header}>
-                    <ThemedText style={styles.commentsTitle}>Comments ({localComments?.length || 0})</ThemedText>
+                    <ThemedText style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
                 </View>
-
-                {/* Comments List */}
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.contentContainer}
@@ -223,39 +263,42 @@ const Comment = ({
                             </ThemedText>
                         </View>
                     ) : (
-                        sortedComments.map((comment, index) => (
-                            <TouchableOpacity
-                                key={comment.id || index}
-                                style={[styles.commentItem, comment.parentId && styles.replyComment]}
-                                onLongPress={() => handleLongPress(comment.id, comment.user?._id)}
-                                delayLongPress={500}
-                                activeOpacity={0.7}>
-                                <UserInfoRowComment
-                                    name={comment.user?.display_name}
-                                    content={comment.content}
-                                    icon={comment.user?.profile_picture}
-                                    time={
-                                        isAPIComment(comment)
-                                            ? comment.metadata?.createdAt
-                                                ? Math.abs(
-                                                      new Date().getTime() -
-                                                          new Date(comment.metadata.createdAt).getTime()
-                                                  ) / 36e5
-                                                : 0
-                                            : comment.time
+                        sortedComments.map((comment, index) => {
+                            const canDelete = canDeleteComment(comment.user._id);
+                            const isDeleting = deletingComments.has(comment.id);
+
+                            return (
+                                <TouchableOpacity
+                                    key={comment.id}
+                                    style={[
+                                        styles.commentItem,
+                                        comment.parentId && styles.replyComment,
+                                        isDeleting && styles.deletingComment,
+                                    ]}
+                                    onLongPress={
+                                        canDelete && !isDeleting
+                                            ? () => handleLongPress(comment.id, comment.user._id)
+                                            : undefined
                                     }
-                                    id={comment.id}
-                                    onReply={handleReply}
-                                />
-                            </TouchableOpacity>
-                        ))
+                                    delayLongPress={500}
+                                    activeOpacity={isDeleting ? 1 : 0.7}>
+                                    <UserInfoRowComment
+                                        name={comment.user.display_name}
+                                        content={comment.content}
+                                        icon={comment.user.profile_picture}
+                                        time={getTimeAgo(comment.metadata.createdAt)}
+                                        id={comment.id}
+                                        onReply={!isDeleting ? handleReply : undefined}
+                                    />
+                                    {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}
+                                </TouchableOpacity>
+                            );
+                        })
                     )}
                 </ScrollView>
-
-                {/* Input Section */}
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "undefined"}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0} // adjust if needed
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
                     style={{ flexDirection: "column", justifyContent: "flex-end" }}>
                     <View style={styles.inputContainer}>
                         <View style={styles.inputRow}>
@@ -313,31 +356,21 @@ const stylesheet = (ThemedColor: any) =>
             borderLeftWidth: 2,
             borderLeftColor: ThemedColor.tertiary,
         },
+        deletingComment: {
+            opacity: 0.5,
+        },
+        deletingText: {
+            fontSize: 12,
+            color: ThemedColor.caption,
+            fontStyle: "italic",
+            marginTop: 4,
+        },
         inputContainer: {
             paddingVertical: 12,
             paddingHorizontal: 4,
             borderTopWidth: 1,
             borderTopColor: ThemedColor.tertiary,
             backgroundColor: ThemedColor.background,
-        },
-        replyIndicator: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            backgroundColor: ThemedColor.lightened,
-            borderRadius: 8,
-            marginBottom: 8,
-        },
-        replyText: {
-            fontSize: 14,
-            color: ThemedColor.caption,
-        },
-        cancelReply: {
-            fontSize: 16,
-            color: ThemedColor.caption,
-            fontWeight: "bold",
         },
         inputRow: {
             flexDirection: "row",

@@ -3,7 +3,6 @@ package Post
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -78,19 +77,21 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 }
 
 func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetPostsOutput, error) {
-	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
-	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
-	}
-
 	posts, err := h.service.GetAllPosts()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to get posts", err)
 	}
 
-	return &GetPostsOutput{Body: convertPostsToAPI(posts)}, nil
+	var apiPosts []types.PostDocumentAPI
+	for i, post := range posts {
+		fmt.Printf("🔄 DEBUG: Converting post %d (ID: %s)\n", i, post.ID.Hex())
+		apiPosts = append(apiPosts, *post.ToAPI())
+	}
 
+	output := &GetPostsOutput{}
+	output.Body.Posts = apiPosts
+
+	return output, nil
 }
 
 func convertPostsToAPI(posts []types.PostDocument) []types.PostDocumentAPI {
@@ -118,7 +119,7 @@ func (h *Handler) GetPostHuma(ctx context.Context, input *GetPostInput) (*GetPos
 		return nil, huma.Error404NotFound("Post not found", err)
 	}
 
-	return &GetPostOutput{Body: *post}, nil
+	return &GetPostOutput{Body: *post.ToAPI()}, nil
 }
 
 func (h *Handler) GetUserPostsHuma(ctx context.Context, input *GetUserPostsInput) (*GetUserPostsOutput, error) {
@@ -238,10 +239,9 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 	}
 
 	doc := types.CommentDocument{
-		ID:     primitive.NewObjectID(),
-		UserID: userObjID,
-		User: types.UserExtendedReference{
-			ID:             user.ID.Hex(),
+		ID: primitive.NewObjectID(),
+		User: &types.UserExtendedReferenceInternal{
+			ID:             user.ID,
 			DisplayName:    user.DisplayName,
 			Handle:         user.Handle,
 			ProfilePicture: user.ProfilePicture,
@@ -264,7 +264,7 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 
 	output := &AddCommentOutput{}
 	output.Body.Message = "Comment added successfully"
-	output.Body.Comment = doc
+	output.Body.Comment = *doc.ToAPI()
 	return output, nil
 }
 
@@ -310,9 +310,7 @@ func (h *Handler) ToggleReactionHuma(ctx context.Context, input *AddReactionInpu
 	return response, nil
 
 }
-
 func (h *Handler) DeleteCommentHuma(ctx context.Context, input *DeleteCommentInput) (*DeleteCommentOutput, error) {
-	// Extract user_id from context for authorization
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
@@ -336,105 +334,63 @@ func (h *Handler) DeleteCommentHuma(ctx context.Context, input *DeleteCommentInp
 	// Get the post to check if comment exists and verify ownership
 	post, err := h.service.GetPostByID(postID)
 	if err != nil {
+		fmt.Printf("🔍 DELETE COMMENT DEBUG: Post not found - %s\n", postID.Hex())
 		return nil, huma.Error404NotFound("Post not found", err)
 	}
 
-	// Find the comment and check ownership
-	var commentFound bool
-	var commentOwnerID primitive.ObjectID
+	// DEBUG: Add detailed logging
+	fmt.Printf("🔍 DELETE COMMENT DEBUG:\n")
+	fmt.Printf("  - user_id (string): %s\n", user_id)
+	fmt.Printf("  - userObjID: %s\n", userObjID.Hex())
+	fmt.Printf("  - post.User.ID: %s (type: %T)\n", post.User.ID.Hex(), post.User.ID)
+	fmt.Printf("  - postID: %s\n", postID.Hex())
+	fmt.Printf("  - commentID we're looking for: %s\n", commentID.Hex())
+	fmt.Printf("  - post owner match: %v\n", post.User.ID == userObjID)
+	fmt.Printf("  - total comments in post: %d\n", len(post.Comments))
 
+	// List all comments in the post
+	fmt.Printf("  - all comments in post:\n")
+	for i, comment := range post.Comments {
+		fmt.Printf("    [%d] ID: %s, User: %s, Content: %s\n",
+			i, comment.ID.Hex(), comment.User.ID.Hex(), comment.Content)
+	}
+
+	// Simple ownership check - just find the comment and verify user can delete
+	var canDelete bool
+	var foundComment *types.CommentDocument
 	for _, comment := range post.Comments {
 		if comment.ID == commentID {
-			commentFound = true
-			commentOwnerID = comment.UserID
+			foundComment = &comment
+			// DEBUG: Add comment-specific logging
+			fmt.Printf("  - FOUND COMMENT!\n")
+			fmt.Printf("  - comment.User.ID: %s (type: %T)\n", comment.User.ID.Hex(), comment.User.ID)
+			fmt.Printf("  - comment owner match: %v\n", comment.User.ID == userObjID)
+
+			// User can delete if they own the comment OR own the post
+			canDelete = comment.User.ID == userObjID || post.User.ID == userObjID
+			fmt.Printf("  - canDelete: %v\n", canDelete)
 			break
 		}
 	}
 
-	if !commentFound {
+	if foundComment == nil {
+		fmt.Printf("  - ERROR: Comment %s not found in post %s\n", commentID.Hex(), postID.Hex())
 		return nil, huma.Error404NotFound("Comment not found")
 	}
 
-	// Check if user owns the comment OR owns the post (post owners can delete any comment)
-	if commentOwnerID != userObjID && post.User.ID != userObjID {
+	if !canDelete {
+		fmt.Printf("  - ERROR: Permission denied\n")
 		return nil, huma.Error403Forbidden("You can only delete your own comments or comments on your posts")
 	}
 
+	// Simple delete - just remove this one comment
 	if err := h.service.DeleteComment(postID, commentID); err != nil {
+		fmt.Printf("  - ERROR: Delete service failed: %v\n", err)
 		return nil, huma.Error500InternalServerError("Failed to delete comment", err)
 	}
 
+	fmt.Printf("  - SUCCESS: Comment deleted\n")
 	resp := &DeleteCommentOutput{}
 	resp.Body.Message = "Comment deleted successfully"
 	return resp, nil
-}
-
-func (s *Service) DeleteCommentCascade(postID primitive.ObjectID, commentID primitive.ObjectID) error {
-	ctx := context.Background()
-
-	commentsToDelete := s.findCommentsToDelete(postID, commentID)
-
-	filter := bson.M{
-		"_id":                postID,
-		"metadata.isDeleted": false,
-	}
-
-	update := bson.M{
-		"$pull": bson.M{
-			"comments": bson.M{
-				"_id": bson.M{"$in": commentsToDelete},
-			},
-		},
-		"$set": bson.M{
-			"metadata.updatedAt": time.Now(),
-			"metadata.isEdited":  true,
-		},
-	}
-
-	result, err := s.Posts.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return fmt.Errorf("database error during cascading comment deletion: %w", err)
-	}
-
-	if result.ModifiedCount == 0 {
-		return fmt.Errorf("comment not found or post has been deleted")
-	}
-
-	return nil
-}
-
-func (s *Service) findCommentsToDelete(postID primitive.ObjectID, commentID primitive.ObjectID) []primitive.ObjectID {
-	ctx := context.Background()
-
-	var post types.PostDocument
-	err := s.Posts.FindOne(ctx, bson.M{"_id": postID}).Decode(&post)
-	if err != nil {
-		return []primitive.ObjectID{commentID}
-	}
-
-	childrenMap := make(map[primitive.ObjectID][]primitive.ObjectID)
-
-	for _, comment := range post.Comments {
-		if comment.ParentID != nil {
-			parentID := *comment.ParentID
-			childrenMap[parentID] = append(childrenMap[parentID], comment.ID)
-		}
-	}
-
-	var toDelete []primitive.ObjectID
-	var collectChildren func(primitive.ObjectID)
-
-	collectChildren = func(id primitive.ObjectID) {
-		toDelete = append(toDelete, id)
-
-		if children, exists := childrenMap[id]; exists {
-			for _, childID := range children {
-				collectChildren(childID)
-			}
-		}
-	}
-
-	collectChildren(commentID)
-
-	return toDelete
 }

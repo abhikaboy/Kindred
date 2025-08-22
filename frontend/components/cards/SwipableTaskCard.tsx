@@ -101,18 +101,20 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
             console.log("🔍 FINAL CATEGORY NAME BEING USED:", finalCategoryName);
             console.log("🔍 TASK DATA BEING SENT TO TOAST:", JSON.stringify(taskData, null, 2));
 
-            showToastable({
-                title: "Task completed!",
-                status: "success",
-                position: "top",
-                message: "Congrats! Click here to post and document your task!",
-                onPress: () => {
-                    console.log("pressed");
-                },
-                swipeDirection: "up",
-                duration: 5500,
-                renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
-            });
+            if (task.public) {
+                showToastable({
+                    title: "Task completed!",
+                    status: "success",
+                    position: "top",
+                    message: "Congrats! Click here to post and document your task!",
+                    onPress: () => {
+                        console.log("pressed");
+                    },
+                    swipeDirection: "up",
+                    duration: 5500,
+                    renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
+                });
+            }
 
             setTimeout(() => {
                 setShowConfetti(false);

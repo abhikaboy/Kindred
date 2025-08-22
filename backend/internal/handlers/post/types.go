@@ -29,7 +29,9 @@ type GetPostsInput struct {
 }
 
 type GetPostsOutput struct {
-	Body []types.PostDocumentAPI `json:"body"`
+	Body struct {
+		Posts []types.PostDocumentAPI `json:"posts"`
+	} `json:"body"`
 }
 
 // Get Post by ID
@@ -39,7 +41,7 @@ type GetPostInput struct {
 }
 
 type GetPostOutput struct {
-	Body types.PostDocument `json:"body"`
+	Body types.PostDocumentAPI `json:"body"`
 }
 
 // Get User's posts
@@ -96,15 +98,15 @@ type AddCommentParams struct {
 
 type AddCommentOutput struct {
 	Body struct {
-		Message string                `json:"message" example:"Comment added successfully"`
-		Comment types.CommentDocument `json:"comment"`
+		Message string                   `json:"message" example:"Comment added successfully"`
+		Comment types.CommentDocumentAPI `json:"comment"`
 	} `json:"body"`
 }
 
 type DeleteCommentInput struct {
 	Authorization string `header:"Authorization" required:"true"`
-	PostID    string `path:"postId" doc:"Post ID"`
-	CommentID string `path:"commentId" doc:"Comment ID"`
+	PostID        string `path:"postId" doc:"Post ID"`
+	CommentID     string `path:"commentId" doc:"Comment ID"`
 }
 
 type DeleteCommentOutput struct {
@@ -129,14 +131,6 @@ type AddReactionOutput struct {
 		Added   bool   `json:"added" example:"true"`
 	} `json:"body"`
 }
-
-type Enumeration string
-
-const (
-	Option1 Enumeration = "Option1"
-	Option2 Enumeration = "Option2"
-	Option3 Enumeration = "Option3"
-)
 
 /*
 Post Service to be used by Post Handler to interact with the

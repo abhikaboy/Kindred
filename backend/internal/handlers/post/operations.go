@@ -107,8 +107,6 @@ func RegisterToggleReaction(api huma.API, handler *Handler) {
 	}, handler.ToggleReactionHuma)
 }
 
-
-
 // Register all post operations
 func RegisterPostOperations(api huma.API, handler *Handler) {
 	RegisterCreatePostOperation(api, handler)

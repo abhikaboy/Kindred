@@ -248,23 +248,22 @@ const PostCard = ({
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
                 <View style={styles.content}>
-                    {/* Header with user info */}
                     <View style={styles.header}>
-                        <View style={styles.userInfo}>
-                            <TouchableOpacity
-                                activeOpacity={0.4}
-                                onPress={async () => {
-                                    try {
-                                        if (Platform.OS === "ios") {
-                                            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                        }
-                                    } catch (error) {
-                                        console.log("Haptic error:", error);
+                        <TouchableOpacity
+                            style={styles.userInfo}
+                            activeOpacity={0.4}
+                            onPress={async () => {
+                                try {
+                                    if (Platform.OS === "ios") {
+                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     }
-                                    router.push(`/account/${userId}`);
-                                }}>
-                                <Image source={{ uri: icon }} style={styles.userIcon} />
-                            </TouchableOpacity>
+                                } catch (error) {
+                                    console.log("Haptic error:", error);
+                                }
+                                console.log("Navigating to user:", userId);
+                                router.push(`/account/${userId}`);
+                            }}>
+                            <Image source={{ uri: icon }} style={styles.userIcon} />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
@@ -273,12 +272,11 @@ const PostCard = ({
                                     {username}
                                 </ThemedText>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                         <ThemedText type="caption" style={styles.timeText}>
                             {formatTime(time)}
                         </ThemedText>
                     </View>
-
                     {images && images.length > 0 && (
                         <View style={styles.imageContainer}>
                             {images.length === 1 ? (
@@ -332,7 +330,6 @@ const PostCard = ({
                             )}
                         </View>
                     )}
-
                     {/* Category and task section */}
                     {(category || taskName) && (
                         <View style={styles.categorySection}>
@@ -369,7 +366,6 @@ const PostCard = ({
                             </TouchableOpacity>
                         </View>
                     )}
-
                     {/* Caption and reactions */}
                     <View style={styles.captionSection}>
                         <ThemedText type="default" style={[styles.caption, { color: ThemedColor.text }]}>
@@ -393,7 +389,9 @@ const PostCard = ({
                             <ThemedText style={styles.commentText}>
                                 💬{" "}
                                 <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
-                                    Leave a comment
+                                    {currentComments.length === 0
+                                        ? "Leave a comment"
+                                        : `View ${currentComments.length} comment${currentComments.length === 1 ? "" : "s"}`}{" "}
                                 </ThemedText>
                             </ThemedText>
                         </TouchableOpacity>
@@ -457,6 +455,8 @@ const PostCard = ({
                         ref={bottomSheetModalRef}
                         onClose={handleClose}
                         onCommentAdded={handleCommentAdded}
+                        currentUserId={user?._id}
+                        postOwnerId={userId}
                     />
                 </BottomSheetModal>
 

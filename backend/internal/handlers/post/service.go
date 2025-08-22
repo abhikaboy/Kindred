@@ -2,7 +2,7 @@ package Post
 
 import (
 	"context"
-	"log/slog"
+	"fmt"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -27,7 +27,7 @@ func (s *Service) GetAllPosts() ([]types.PostDocument, error) {
 
 	filter := bson.M{
 		"metadata.isDeleted": false,
-		"metadata.isPublic":  false,
+		"metadata.isPublic":  true,
 	}
 
 	cursor, err := s.Posts.Find(ctx, filter)
@@ -79,8 +79,6 @@ func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, error)
 	// Cast the inserted ID to ObjectID
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
-	slog.LogAttrs(ctx, slog.LevelInfo, "Post inserted", slog.String("id", id.Hex()))
-
 	return r, nil
 }
 
@@ -143,7 +141,6 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDocument) error {
 	ctx := context.Background()
 
-	comment.ID = primitive.NewObjectID()
 	comment.Metadata = types.NewCommentMetadata()
 
 	filter := bson.M{"_id": postID, "metadata.isDeleted": false}
@@ -162,65 +159,99 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 }
 
 func (s *Service) ToggleReaction(r *types.ReactDocument) (bool, error) {
-    ctx := context.Background()
-    field := "reactions." + r.Emoji
+	ctx := context.Background()
+	field := "reactions." + r.Emoji
 
-    // Get current state
-    var post types.PostDocument
-    err := s.Posts.FindOne(ctx, bson.M{"_id": r.PostID}).Decode(&post)
-    if err != nil {
-        return false, err
-    }
+	// Get current state
+	var post types.PostDocument
+	err := s.Posts.FindOne(ctx, bson.M{"_id": r.PostID}).Decode(&post)
+	if err != nil {
+		return false, err
+	}
 
-    currentReactions := post.Reactions[r.Emoji]
-    userExists := false
-    for _, id := range currentReactions {
-        if id == r.UserID {
-            userExists = true
-            break
-        }
-    }
+	currentReactions := post.Reactions[r.Emoji]
+	userExists := false
+	for _, id := range currentReactions {
+		if id == r.UserID {
+			userExists = true
+			break
+		}
+	}
 
-    var update bson.M
-    if userExists {
-        // Remove user
-        if len(currentReactions) == 1 {
-            update = bson.M{
-                "$unset": bson.M{field: ""},
-                "$set": bson.M{
-                    "metadata.updatedAt": time.Now(),
-                    "metadata.isEdited":  true,
-                },
-            }
-        } else {
-            // Remove just this user
-            update = bson.M{
-                "$pull": bson.M{field: r.UserID},
-                "$set": bson.M{
-                    "metadata.updatedAt": time.Now(),
-                    "metadata.isEdited":  true,
-                },
-            }
-        }
-    } else {
-        // Add user
-        update = bson.M{
-            "$addToSet": bson.M{field: r.UserID},
-            "$set": bson.M{
-                "metadata.updatedAt": time.Now(),
-                "metadata.isEdited":  true,
-            },
-        }
-    }
+	var update bson.M
+	if userExists {
+		// Remove user
+		if len(currentReactions) == 1 {
+			update = bson.M{
+				"$unset": bson.M{field: ""},
+				"$set": bson.M{
+					"metadata.updatedAt": time.Now(),
+					"metadata.isEdited":  true,
+				},
+			}
+		} else {
+			// Remove just this user
+			update = bson.M{
+				"$pull": bson.M{field: r.UserID},
+				"$set": bson.M{
+					"metadata.updatedAt": time.Now(),
+					"metadata.isEdited":  true,
+				},
+			}
+		}
+	} else {
+		// Add user
+		update = bson.M{
+			"$addToSet": bson.M{field: r.UserID},
+			"$set": bson.M{
+				"metadata.updatedAt": time.Now(),
+				"metadata.isEdited":  true,
+			},
+		}
+	}
 
-    _, err = s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, update)
-    if err != nil {
-        return false, err
-    }
+	_, err = s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, update)
+	if err != nil {
+		return false, err
+	}
 
-    return !userExists, err
+	return !userExists, err
 }
 
+// Replace your existing DeleteComment method in service.go with this:
+
 func (s *Service) DeleteComment(postID primitive.ObjectID, commentID primitive.ObjectID) error {
-	return s.DeleteCommentCascade(postID, commentID)
+	ctx := context.Background()
+
+	filter := bson.M{
+		"_id":                postID,
+		"metadata.isDeleted": false,
+	}
+
+	// Delete the comment and all replies that have this comment as parentId
+	update := bson.M{
+		"$pull": bson.M{
+			"comments": bson.M{
+				"$or": []bson.M{
+					{"_id": commentID},      // Delete the comment itself
+					{"parentId": commentID}, // Delete all replies to this comment
+				},
+			},
+		},
+		"$set": bson.M{
+			"metadata.updatedAt": time.Now(),
+			"metadata.isEdited":  true,
+		},
+	}
+
+	result, err := s.Posts.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to delete comment and replies: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("comment not found or post has been deleted")
+	}
+
+	return nil
 }

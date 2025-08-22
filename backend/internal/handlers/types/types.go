@@ -189,14 +189,35 @@ type PostDocument struct {
 }
 
 type CommentDocument struct {
-	ID       primitive.ObjectID    `bson:"_id" json:"id"`
-	UserID   primitive.ObjectID    `bson:"userId" json:"userId"`
-	User     UserExtendedReference `bson:"user" json:"user"`
-	Mention  primitive.ObjectID    `bson:"mention,omitempty" json:"mention,omitempty"`
-	Content  string                `bson:"content" json:"content"`
-	ParentID *primitive.ObjectID   `bson:"parentId,omitempty" json:"parentId,omitempty"`
+	ID       primitive.ObjectID             `bson:"_id" json:"id"`
+	User     *UserExtendedReferenceInternal `bson:"user" json:"user"`
+	Content  string                         `bson:"content" json:"content"`
+	ParentID *primitive.ObjectID            `bson:"parentId,omitempty" json:"parentId,omitempty"`
+	Metadata CommentMetadata                `bson:"metadata" json:"metadata"`
+}
 
-	Metadata CommentMetadata `bson:"metadata" json:"metadata"`
+type CommentDocumentAPI struct {
+	ID       primitive.ObjectID     `json:"id"`
+	User     *UserExtendedReference `json:"user"`
+	Content  string                 `json:"content"`
+	ParentID *string                `json:"parentId,omitempty"`
+	Metadata CommentMetadata        `json:"metadata"`
+}
+
+func (c *CommentDocument) ToAPI() *CommentDocumentAPI {
+	api := &CommentDocumentAPI{
+		ID:       c.ID,
+		User:     c.User.ToAPI(),
+		Content:  c.Content,
+		Metadata: c.Metadata,
+	}
+
+	if c.ParentID != nil {
+		parentIDStr := c.ParentID.Hex()
+		api.ParentID = &parentIDStr
+	}
+
+	return api
 }
 
 type CommentMetadata struct {
@@ -282,6 +303,7 @@ func NewPostMetadata() PostMetadata {
 func NewCommentMetadata() CommentMetadata {
 	return CommentMetadata{
 		CreatedAt: time.Now(),
+		LastEdited: time.Now(), 
 		IsDeleted: false,
 	}
 }
@@ -317,26 +339,41 @@ type PostDocumentAPI struct {
 
 	Images    []string                   `json:"images"`
 	Caption   string                     `json:"caption"`
-	Category  *CategoryExtendedReference `bson:"category,omitempty" json:"category,omitempty"`
-	Task      *PostTaskExtendedReference `bson:"task,omitempty" json:"task,omitempty"`
-	Blueprint *BlueprintReference        `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
+	Category  *CategoryExtendedReference `json:"category,omitempty"`
+	Task      *PostTaskExtendedReference `json:"task,omitempty"`
+	Blueprint *BlueprintReference        `json:"blueprint,omitempty"`
 
-	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
-	Comments  []CommentDocument               `bson:"comments" json:"comments"`
+	Reactions map[string][]string  `json:"reactions"`
+	Comments  []CommentDocumentAPI `json:"comments"`
 
-	Metadata PostMetadata `bson:"metadata" json:"metadata"`
+	Metadata PostMetadata `json:"metadata"`
 }
 
 func (p *PostDocument) ToAPI() *PostDocumentAPI {
+	var apiComments []CommentDocumentAPI
+	for _, comment := range p.Comments {
+		apiComments = append(apiComments, *comment.ToAPI())
+	}
+
+	apiReactions := make(map[string][]string)
+	for emoji, userIDs := range p.Reactions {
+		var stringIDs []string
+		for _, userID := range userIDs {
+			stringIDs = append(stringIDs, userID.Hex())
+		}
+		apiReactions[emoji] = stringIDs
+	}
+
 	return &PostDocumentAPI{
-		ID:   p.ID,
-		User: *p.User.ToAPI(), Images: p.Images,
+		ID:        p.ID,
+		User:      *p.User.ToAPI(),
+		Images:    p.Images,
 		Caption:   p.Caption,
 		Category:  p.Category,
 		Task:      p.Task,
 		Blueprint: p.Blueprint,
-		Reactions: p.Reactions,
-		Comments:  p.Comments,
+		Reactions: apiReactions,
+		Comments:  apiComments,
 		Metadata:  p.Metadata,
 	}
 }

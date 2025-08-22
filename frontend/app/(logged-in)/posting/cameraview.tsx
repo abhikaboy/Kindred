@@ -84,6 +84,16 @@ export default function Posting() {
         });
     };
 
+    const skipPhotos = () => {
+        router.push({
+            pathname: "/posting/caption",
+            params: {
+                photos: JSON.stringify([]),
+                taskInfo: taskInfo ? JSON.stringify(taskInfo) : null,
+            },
+        });
+    };
+
     const renderPhotoThumbnail = ({ item, index }: { item: string; index: number }) => (
         <TouchableOpacity
             onPress={() => {
@@ -355,7 +365,7 @@ export default function Posting() {
                                         ghost
                                         textStyle={{ color: ThemedColor.text }}
                                         title="Skip"
-                                        onPress={() => router.push("/posting/caption")}
+                                        onPress={skipPhotos}
                                         style={{ flex: photos.length > 0 ? 0 : 1 }}
                                     />
                                 </View>

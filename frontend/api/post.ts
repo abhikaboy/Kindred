@@ -8,7 +8,7 @@ const createLocalPostsClient = () => {
     // For iOS Simulator, use your computer's IP instead of 127.0.0.1
     // To find your IP: run `ipconfig getifaddr en0` (Mac) or `hostname -I` (Linux)
     const localUrl = __DEV__ ? 
-        "http://192.168.0.22:8080" : // Replace with your actual IP address
+        "http://192.168.0.200:8080" : // Replace with your actual IP address
         "http://127.0.0.1:8080";
         
     console.log("🔧 LOCAL POSTS CLIENT: Using URL:", localUrl);
@@ -154,8 +154,7 @@ export const getAllPosts = async (): Promise<PostDocument[]> => {
     if (error) {
         throw new Error(`Failed to get posts: ${JSON.stringify(error)}`);
     }
-
-    return data || [];
+    return data?.body?.posts || data?.posts || [];
 };
 
 /**
@@ -302,12 +301,12 @@ export const deletePost = async (postId: string) => {
 export const deleteComment = async (postId: string, commentId: string) => {
     try {
         const { data, error } = await localPostsClient.DELETE("/v1/user/posts/{postId}/comment/{commentId}", {
-            params: withAuthHeaders({ 
+            params: { 
                 path: { 
                     postId: postId,
                     commentId: commentId 
                 } 
-            }),
+            },
         });
 
         if (error) {
@@ -316,7 +315,8 @@ export const deleteComment = async (postId: string, commentId: string) => {
 
         return data;
     } catch (error) {
-        console.error('Error deleting comment:', error);
+        console.error("Error deleting comment:", error);
         throw error;
     }
 };
+
