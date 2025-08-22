@@ -1,27 +1,33 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { getAllPosts } from "@/api/post";
+import { View, Image, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
+import { deletePost, getAllPosts } from "@/api/post";
 import { router } from "expo-router";
+import { useAuth } from "@/hooks/useAuth";
+import { showToast } from "@/utils/showToast";
 
 interface ProfileGalleryProps {
     userId?: string;
-    images?: string[]; // Keep for backward compatibility
+    images?: string[];
 }
 
 interface PostImage {
     imageUrl: string;
     postId: string;
+    postUserId: string;
 }
 
 export default function ProfileGallery({ userId, images }: ProfileGalleryProps) {
+    const { user } = useAuth();
     const [postImages, setPostImages] = useState<PostImage[]>([]);
-
+    const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set());
+    
     useEffect(() => {
         const fetchImages = async () => {
             if (images && images.length > 0) {
                 const legacyImages = images.map((imageUrl, index) => ({
                     imageUrl,
                     postId: `legacy-${index}`,
+                    postUserId: "",
                 }));
                 setPostImages(legacyImages);
                 return;
@@ -45,6 +51,7 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
                     .map((post) => ({
                         imageUrl: post.images[0],
                         postId: post._id,
+                        postUserId: post.user._id,
                     }));
 
                 setPostImages(postImageData);
@@ -64,26 +71,111 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
         router.push(`/(logged-in)/posting/${postId}`);
     };
 
+    const canDeletePost = (postUserId: string) => {
+        if (!user?._id) return false;
+        return user._id === postUserId;
+    };
+
+    const showPostOptions = (postId: string, postUserId: string) => {
+        if (postId.startsWith("legacy-")) {
+            return;
+        }
+
+        const options = [];
+
+        options.push({
+            text: "View Post",
+            onPress: () => handleImagePress(postId),
+        });
+
+        if (canDeletePost(postUserId)) {
+            options.push({
+                text: "Delete Post",
+                style: "destructive" as const,
+                onPress: () => showDeleteConfirmation(postId),
+            });
+        }
+
+        options.push({
+            text: "Cancel",
+            style: "cancel" as const,
+        });
+
+        Alert.alert("Post Options", "", options);
+    };
+
+    const showDeleteConfirmation = (postId: string) => {
+        Alert.alert(
+            "Delete Post", 
+            "Are you sure you want to delete this post? This action cannot be undone.", 
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => handleDeletePost(postId),
+                },
+            ]
+        );
+    };
+
+    const handleDeletePost = async (postId: string) => {
+        setDeletingPosts(prev => new Set([...prev, postId]));
+
+        try {
+            await deletePost(postId);
+            
+            // remove from local state
+            setPostImages(prev => prev.filter(img => img.postId !== postId));
+            
+            showToast("Post deleted successfully", "success");
+        } catch (error) {
+            console.error("Failed to delete post:", error);
+            
+            setDeletingPosts(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(postId);
+                return newSet;
+            });
+            
+            showToast("Failed to delete post", "danger");
+        }
+    };
+
+    const handleImageLongPress = (postId: string, postUserId: string) => {
+        showPostOptions(postId, postUserId);
+    };
+
     return (
         <FlatList
             numColumns={3}
             data={postImages}
-            renderItem={({ item }) => (
-                <TouchableOpacity 
-                    style={styles.galleryItem}
-                    onPress={() => handleImagePress(item.postId)}
-                    activeOpacity={0.8}
-                >
-                    <Image
-                        style={styles.galleryImage}
-                        source={{
-                            uri: item.imageUrl,
-                            cache: "reload",
-                        }}
-                    />
-                </TouchableOpacity>
-            )}
-            keyExtractor={(item, index) => `gallery-${item.postId}-${index}`} // ✅ Better key
+            renderItem={({ item }) => {
+                const isDeleting = deletingPosts.has(item.postId);
+                const canDelete = canDeletePost(item.postUserId);
+                
+                return (
+                    <TouchableOpacity
+                        style={[styles.galleryItem, isDeleting && styles.deletingItem]}
+                        onPress={() => handleImagePress(item.postId)}
+                        onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
+                        delayLongPress={500}
+                        activeOpacity={isDeleting ? 1 : 0.8}>
+                        <Image
+                            style={[styles.galleryImage, isDeleting && styles.deletingImage]}
+                            source={{
+                                uri: item.imageUrl,
+                                cache: "reload",
+                            }}
+                        />
+                    </TouchableOpacity>
+                );
+            }}
+            keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.galleryContainer}
         />
@@ -101,5 +193,11 @@ const styles = StyleSheet.create({
     },
     galleryImage: {
         aspectRatio: 1,
+    },
+    deletingItem: {
+        opacity: 0.5,
+    },
+    deletingImage: {
+        opacity: 0.7,
     },
 });

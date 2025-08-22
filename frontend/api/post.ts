@@ -66,7 +66,7 @@ export const getAllPosts = async (): Promise<PostDocumentAPI[]> => {
  * Get post by ID
  * @param postId
  */
-export const getPostById = async (postId: string): Promise<PostDocument> => {
+export const getPostById = async (postId: string): Promise<PostDocumentAPI> => {
     const { data, error } = await client.GET("/v1/user/posts/{id}", {
         params: withAuthHeaders({ path: { id: postId } }),
     });
@@ -77,6 +77,7 @@ export const getPostById = async (postId: string): Promise<PostDocument> => {
 
     return data;
 };
+
 
 /**
  * Get user's posts
@@ -144,7 +145,7 @@ export const addComment = async (
  * @param commentId 
  */
 export const deleteComment = async (postId: string, commentId: string): Promise<void> => {
-    const { error } = await client.DELETE("/v1/user/posts/{postId}/comment", {
+    const { error } = await client.DELETE("/v1/user/posts/{postId}/comment/{commentId}", {
         params: withAuthHeaders({ 
             path: {
                 postId,

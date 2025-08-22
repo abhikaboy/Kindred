@@ -93,10 +93,10 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         if (startDate) {
             const atStartReminder = getStartDateReminder(startDate, startTime);
             const beforeStartReminder = getStartTimeReminder(startDate, startTime);
-            
+
             setReminders((prev) => {
                 let newReminders = [...prev];
-                
+
                 // Add "at start time" reminder
                 if (atStartReminder) {
                     const existsAtStart = prev.some(
@@ -108,7 +108,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                     );
                     if (!existsAtStart) newReminders.push(atStartReminder);
                 }
-                
+
                 // Add "15 minutes before start" reminder
                 if (beforeStartReminder) {
                     const existsBeforeStart = prev.some(
@@ -118,7 +118,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                     );
                     if (!existsBeforeStart) newReminders.push(beforeStartReminder);
                 }
-                
+
                 return newReminders;
             });
         }
@@ -130,26 +130,27 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         if (startDate && startTimeVal) {
             const atStartReminder = getStartDateReminder(startDate, startTimeVal);
             const beforeStartReminder = getStartTimeReminder(startDate, startTimeVal);
-            
+
             setReminders((prev) => {
                 // Remove old start-time related reminders
-                const filtered = prev.filter((r) => 
-                    !(r.type === "ABSOLUTE" && !r.beforeDeadline && !r.beforeStart) && // Remove old "at start" reminders
-                    !r.beforeStart // Remove old "before start" reminders
+                const filtered = prev.filter(
+                    (r) =>
+                        !(r.type === "ABSOLUTE" && !r.beforeDeadline && !r.beforeStart) && // Remove old "at start" reminders
+                        !r.beforeStart // Remove old "before start" reminders
                 );
-                
+
                 const newReminders = [...filtered];
-                
+
                 // Add updated "at start time" reminder
                 if (atStartReminder) {
                     newReminders.push(atStartReminder);
                 }
-                
+
                 // Add updated "15 minutes before start" reminder
                 if (beforeStartReminder) {
                     newReminders.push(beforeStartReminder);
                 }
-                
+
                 return newReminders;
             });
         }
@@ -174,7 +175,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setTaskName("");
         setSuggestion("");
         setPriority(1);
-        setValue(3);
+        setValue(1);
         setRecurring(false);
         setRecurFrequency("");
         setRecurDetails({
@@ -196,7 +197,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setValue(taskData.value || 3);
         setRecurring(taskData.recurring || false);
         setRecurFrequency(taskData.recurFrequency || "");
-        
+
         // Handle recurDetails with proper defaults
         if (taskData.recurDetails) {
             setRecurDetails({
@@ -211,14 +212,16 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 behavior: "ROLLING",
             });
         }
-        
+
         setDeadline(taskData.deadline ? new Date(taskData.deadline) : null);
         setStartTime(taskData.startTime ? new Date(taskData.startTime) : null);
         setStartDate(taskData.startDate ? new Date(taskData.startDate) : null);
-        setReminders(taskData.reminders?.map(reminder => ({
-            ...reminder,
-            triggerTime: new Date(reminder.triggerTime)
-        })) || []);
+        setReminders(
+            taskData.reminders?.map((reminder) => ({
+                ...reminder,
+                triggerTime: new Date(reminder.triggerTime),
+            })) || []
+        );
         setIsPublic(taskData.public || false);
     };
 

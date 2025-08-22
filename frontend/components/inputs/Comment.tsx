@@ -17,6 +17,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetView, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { addComment, deleteComment } from "@/api/post";
 import { showToast } from "@/utils/showToast";
+import { router } from "expo-router";
 
 export type CommentProps = {
     id: string;
@@ -46,7 +47,15 @@ export type PopupProp = {
     postOwnerId?: string;
 };
 
-const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUserId, postOwnerId }: PopupProp) => {
+const Comment = ({
+    comments,
+    postId,
+    onCommentAdded,
+    onCommentDeleted,
+    currentUserId,
+    postOwnerId,
+    onClose,
+}: PopupProp) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
 
@@ -280,6 +289,11 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                                             ? () => handleLongPress(comment.id, comment.user._id)
                                             : undefined
                                     }
+                                    onPress={async () => {
+                                        onClose();
+                                        console.log("Navigating to user:", comment.user._id);
+                                        router.push(`/account/${comment.user._id}`);
+                                    }}
                                     delayLongPress={500}
                                     activeOpacity={isDeleting ? 1 : 0.7}>
                                     <UserInfoRowComment
@@ -287,7 +301,7 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                                         content={comment.content}
                                         icon={comment.user.profile_picture}
                                         time={getTimeAgo(comment.metadata.createdAt)}
-                                        id={comment.id}
+                                        id={comment.user._id}
                                         onReply={!isDeleting ? handleReply : undefined}
                                     />
                                     {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}
