@@ -36,6 +36,7 @@ import type { components } from "@/api/generated/types";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
+import { Picker } from "@react-native-picker/picker";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -56,7 +57,8 @@ export default function Task() {
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
-
+    const [hours, setHours] = useState(0);
+    const [minutes, setMinutes] = useState(0);
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
     const [recurDetails, setRecurDetails] = useState<RecurDetails | null>(null);
@@ -462,82 +464,39 @@ export default function Task() {
                 </View>
 
                 {/* Timer Tab */}
-                <View key="1" style={{ flex: 1 }}>
-                    <ScrollView
-                        style={{ flex: 1 }}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 50 }}
-                        scrollEventThrottle={16}>
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: 16,
-                                marginTop: Dimensions.get("screen").height * 0.05,
+                <View key="1">
+                    <View
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            gap: 8,
+                            alignItems: "center",
+                            borderColor: ThemedColor.border,
+                            borderRadius: 12,
+                            padding: 2,
+                        }}>
+                        <Picker selectedValue={hours} style={{ flex: 1 }} onValueChange={setHours}>
+                            {Array.from({ length: 59 }, (_, i) => (
+                                <Picker.Item key={i + 1} label={`${i + 1} hours`} value={i + 1} />
+                            ))}
+                        </Picker>
+                        <Picker selectedValue={minutes} style={{ flex: 1 }} onValueChange={setMinutes}>
+                            {Array.from({ length: 59 }, (_, i) => (
+                                <Picker.Item key={i + 1} label={`${i + 1} minutes`} value={i + 1} />
+                            ))}
+                        </Picker>
+                    </View>
+                    <View>
+                        <PrimaryButton
+                            title="Set Timer"
+                            onPress={() => {
+                                console.log(hours, minutes);
                             }}
-                            onPress={toggleTimer}>
-                            <View
-                                style={{
-                                    borderWidth: 16,
-                                    borderColor: isRunning ? "#CBFFDD" : "#FFB8B8",
-                                    borderRadius: 2000,
-                                    width: Dimensions.get("screen").width * 0.8,
-                                    height: Dimensions.get("screen").width * 0.8,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                }}>
-                                <View
-                                    style={{
-                                        display: "flex",
-                                        width: Dimensions.get("screen").width * 0.8,
-                                        height: Dimensions.get("screen").width * 0.8,
-                                        flexDirection: "column",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        borderColor: isRunning ? "#00C49F" : "#FF5C5F",
-                                        borderWidth: 6,
-                                        borderRadius: 2000,
-                                    }}>
-                                    <ThemedText type="heading">
-                                        {formatElapsedTime(new Date().getTime() - baseTime.getTime())}
-                                    </ThemedText>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                        <ConditionalView condition={!isRunning}>
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "center",
-                                    width: "100%",
-                                    marginTop: 24,
-                                }}>
-                                <ThemedText type="lightBody">Tap the stopwatch to begin</ThemedText>
-                            </View>
-                        </ConditionalView>
-                        <ConditionalView condition={isRunning}>
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    justifyContent: "center",
-                                    width: "100%",
-                                    marginTop: 24,
-                                }}>
-                                {/* <TouchableOpacity onPress={() => pauseTimer()}>
-                                    <MaterialIcons name="pause" size={48} color={ThemedColor.text} />
-                                </TouchableOpacity> */}
-                                <TouchableOpacity onPress={() => restartTimer(id)}>
-                                    <MaterialIcons name="restart-alt" size={48} color={ThemedColor.text} />
-                                </TouchableOpacity>
-                                {/* <TouchableOpacity onPress={() => stopTimer()}>
-                                    <MaterialIcons name="stop" size={48} color={ThemedColor.text} />
-                                </TouchableOpacity> */}
-                            </View>
-                        </ConditionalView>
-                    </ScrollView>
+                        />
+                    </View>
                 </View>
             </PagerView>
-            
+
             <CreateModal
                 visible={showEditModal}
                 setVisible={setShowEditModal}
@@ -545,7 +504,7 @@ export default function Task() {
                 categoryId={categoryId as string}
                 screen={Screen.DEADLINE}
             />
-            
+
             <DeadlineBottomSheetModal
                 visible={showDeadlineModal}
                 setVisible={setShowDeadlineModal}

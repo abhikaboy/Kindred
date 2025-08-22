@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
+import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -10,28 +10,15 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { getConnectionsByReceiverAPI } from "@/api/connection";
+import { useNotifications } from "@/hooks/useNotifications";
+import type { components } from "@/api/generated/types";
 import { showToast } from "@/utils/showToast";
+
+type NotificationDocument = components["schemas"]["NotificationDocument"];
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
 const ONE_MONTH = 30 * ONE_DAY;
-
-type CommentNotificationProps = {
-    name: string;
-    userId: string;
-    comment: string;
-    icon: string;
-    time: number;
-    image: string;
-};
-
-type EncouragementNotificationProps = {
-    name: string;
-    userId: string;
-    taskName: string;
-    icon: string;
-    time: number;
-};
 
 type FollowRequestProps = {
     name: string;
@@ -41,9 +28,18 @@ type FollowRequestProps = {
     connectionID: string;
 };
 
-type CombinedNotification =
-    | (CommentNotificationProps & { type: "comment" })
-    | (EncouragementNotificationProps & { type: "encouragement" });
+type ProcessedNotification = {
+    id: string;
+    type: "comment" | "encouragement" | "congratulation";
+    name: string;
+    userId: string;
+    time: number;
+    icon: string;
+    content: string;
+    taskName?: string;
+    image?: string;
+    read: boolean;
+};
 
 // Extract NotificationItem component
 const NotificationItem = ({
@@ -51,7 +47,7 @@ const NotificationItem = ({
     index,
     styles,
 }: {
-    notification: CombinedNotification;
+    notification: ProcessedNotification;
     index: number;
     styles: any;
 }) => {
@@ -61,16 +57,24 @@ const NotificationItem = ({
                 <UserInfoCommentNotification
                     name={notification.name}
                     userId={notification.userId}
-                    comment={notification.comment}
+                    comment={notification.content}
                     icon={notification.icon}
                     time={notification.time}
-                    image={notification.image}
+                    image={notification.image || Icons.coffee}
+                />
+            ) : notification.type === "encouragement" ? (
+                <UserInfoEncouragementNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    taskName={notification.taskName || "Task"}
+                    icon={notification.icon}
+                    time={notification.time}
                 />
             ) : (
                 <UserInfoEncouragementNotification
                     name={notification.name}
                     userId={notification.userId}
-                    taskName={notification.taskName}
+                    taskName={notification.taskName || "Task"}
                     icon={notification.icon}
                     time={notification.time}
                 />
@@ -86,7 +90,7 @@ const NotificationSection = ({
     styles,
 }: {
     title: string;
-    notifications: CombinedNotification[];
+    notifications: ProcessedNotification[];
     styles: any;
 }) => {
     if (notifications.length === 0) return null;
@@ -96,7 +100,7 @@ const NotificationSection = ({
             <ThemedText type="subtitle">{title}</ThemedText>
             {notifications.map((notification, index) => (
                 <NotificationItem
-                    key={`${notification.type}-${index}`}
+                    key={`${notification.type}-${notification.id}-${index}`}
                     notification={notification}
                     index={index}
                     styles={styles}
@@ -185,8 +189,14 @@ const FollowRequestsSection = ({ styles }: { styles: any }) => {
 const Notifications = () => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-    const now = Date.now();
+    const { 
+        notifications: rawNotifications, 
+        loading, 
+        error, 
+        refreshNotifications 
+    } = useNotifications();
 
+    const now = Date.now();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
@@ -194,93 +204,64 @@ const Notifications = () => {
     const isToday = (time: number) => time >= todayTimestamp;
     const isThisWeek = (time: number) => time >= now - ONE_WEEK && time < todayTimestamp;
     const isThisMonth = (time: number) => time >= now - ONE_MONTH && time < now - ONE_WEEK;
-    const isOlder = (time: number) => time < now - ONE_MONTH;
 
-    // Note: follow_requests are now handled within FollowRequestsSection component
+    // Convert API notification to processed notification
+    const processNotification = (notification: NotificationDocument): ProcessedNotification => {
+        const notificationTime = new Date(notification.time).getTime();
+        
+        // Extract task name from content for encouragement/congratulation notifications
+        let taskName = "";
+        if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
+            const match = notification.content.match(/on (.+?):/);
+            taskName = match ? match[1] : "Task";
+        }
 
-    const comment_notifications: CommentNotificationProps[] = [
-        {
-            name: "Coffee Lover",
-            userId: "user456",
-            comment: "I love how you approached this problem!",
-            icon: Icons.coffee,
-            time: now - 45 * 60 * 1000, // 45 minutes ago
-            image: Icons.coffee,
-        },
-        {
-            name: "Tea Master",
-            userId: "user101",
-            comment: "This solution is elegant. I'm impressed!",
-            icon: Icons.coffee,
-            time: now - 2 * ONE_DAY, // 2 days ago
-            image: Icons.latte,
-        },
-        {
-            name: "Design Guru",
-            userId: "user303",
-            comment: "The UI looks clean and intuitive!",
-            icon: Icons.latte,
-            time: now - 14 * ONE_DAY, // 2 weeks ago
-            image: Icons.luffy,
-        },
-    ];
+        return {
+            id: notification.id,
+            type: notification.notificationType.toLowerCase() as "comment" | "encouragement" | "congratulation",
+            name: notification.user.display_name,
+            userId: notification.user.id,
+            time: notificationTime,
+            icon: notification.user.profile_picture || Icons.coffee,
+            content: notification.content,
+            taskName: taskName || undefined,
+            image: notification.user.profile_picture || Icons.coffee,
+            read: notification.read
+        };
+    };
 
-    const encouragement_notifications: EncouragementNotificationProps[] = [
-        {
-            name: "Monkey D. Luffy",
-            userId: "user123",
-            taskName: "Complete Project Documentation",
-            icon: Icons.luffy,
-            time: now - 30 * 60 * 1000, // 30 minutes ago
-        },
-        {
-            name: "Team Leader",
-            userId: "user321",
-            taskName: "Code Review Session",
-            icon: Icons.coffee,
-            time: now - ONE_DAY, // 1 day ago
-        },
-        {
-            name: "Career Mentor",
-            userId: "user246",
-            taskName: "Resume Update",
-            icon: Icons.coffee,
-            time: now - 12 * ONE_DAY, // 12 days ago
-        },
-    ];
+    // Convert raw notifications to processed notifications
+    const notifications = rawNotifications.map(processNotification);
 
-    // Helper functions
-    const filterByTimePeriod = <T extends { time: number }>(
-        notifications: T[],
+    // Helper function to filter notifications by time period
+    const filterByTimePeriod = (
+        notifications: ProcessedNotification[],
         filterFn: (time: number) => boolean
-    ): T[] => {
+    ): ProcessedNotification[] => {
         return notifications.filter((item) => filterFn(item.time));
     };
 
-    const mergeAndSort = (
-        commentsArray: CommentNotificationProps[],
-        encouragementsArray: EncouragementNotificationProps[]
-    ): CombinedNotification[] => {
-        const taggedComments = commentsArray.map((item) => ({ ...item, type: "comment" as const }));
-        const taggedEncouragements = encouragementsArray.map((item) => ({ ...item, type: "encouragement" as const }));
-        return [...taggedComments, ...taggedEncouragements].sort((a, b) => b.time - a.time);
-    };
-
     // Organize notifications by time period
-    const todayNotifications = mergeAndSort(
-        filterByTimePeriod(comment_notifications, isToday),
-        filterByTimePeriod(encouragement_notifications, isToday)
-    );
+    const todayNotifications = filterByTimePeriod(notifications, isToday);
+    const thisWeekNotifications = filterByTimePeriod(notifications, isThisWeek);
+    const thisMonthNotifications = filterByTimePeriod(notifications, isThisMonth);
 
-    const thisWeekNotifications = mergeAndSort(
-        filterByTimePeriod(comment_notifications, isThisWeek),
-        filterByTimePeriod(encouragement_notifications, isThisWeek)
-    );
-
-    const thisMonthNotifications = mergeAndSort(
-        filterByTimePeriod(comment_notifications, isThisMonth),
-        filterByTimePeriod(encouragement_notifications, isThisMonth)
-    );
+    if (loading) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={styles.headerContainer}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    <ThemedText type="subtitle">Notifications</ThemedText>
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={ThemedColor.text} />
+                    <ThemedText style={{ marginTop: 16 }}>Loading notifications...</ThemedText>
+                </View>
+            </ThemedView>
+        );
+    }
 
     return (
         <ThemedView style={styles.container}>
@@ -292,9 +273,24 @@ const Notifications = () => {
             </View>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
                 <FollowRequestsSection styles={styles} />
-                <NotificationSection title="Today" notifications={todayNotifications} styles={styles} />
-                <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} />
-                <NotificationSection title="This Month" notifications={thisMonthNotifications} styles={styles} />
+                {error ? (
+                    <View style={styles.section}>
+                        <ThemedText style={{ textAlign: 'center', color: 'red' }}>{error}</ThemedText>
+                        <TouchableOpacity onPress={() => refreshNotifications()} style={{ marginTop: 16, alignItems: 'center' }}>
+                            <ThemedText style={{ color: ThemedColor.text }}>Tap to retry</ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                ) : notifications.length === 0 ? (
+                    <View style={styles.section}>
+                        <ThemedText style={{ textAlign: 'center' }}>No notifications yet</ThemedText>
+                    </View>
+                ) : (
+                    <>
+                        <NotificationSection title="Today" notifications={todayNotifications} styles={styles} />
+                        <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} />
+                        <NotificationSection title="This Month" notifications={thisMonthNotifications} styles={styles} />
+                    </>
+                )}
             </ScrollView>
         </ThemedView>
     );

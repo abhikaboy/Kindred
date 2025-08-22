@@ -3,9 +3,12 @@ package Post
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,10 +17,11 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Posts:      collections["posts"],
-		Users:      collections["users"],
-		Blueprints: collections["blueprints"],
-		Categories: collections["categories"],
+		Posts:               collections["posts"],
+		Users:               collections["users"],
+		Blueprints:          collections["blueprints"],
+		Categories:          collections["categories"],
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 
@@ -154,8 +158,35 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		},
 	}
 
-	_, err := s.Posts.UpdateOne(ctx, filter, update)
-	return err
+	// Use FindOneAndUpdate to get the post document and update it in one operation
+	var post types.PostDocument
+	err := s.Posts.FindOneAndUpdate(ctx, filter, update).Decode(&post)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("post not found or has been deleted")
+		}
+		return fmt.Errorf("failed to add comment: %w", err)
+	}
+
+	// Send notification to post owner (only if commenter is not the post owner)
+	if comment.User != nil && comment.User.ID != post.User.ID {
+		// Send push notification
+		err = s.sendCommentNotification(post.User.ID, comment.User.DisplayName, comment.Content)
+		if err != nil {
+			// Log error but don't fail the operation since comment was already created
+			slog.Error("Failed to send comment notification", "error", err, "post_owner_id", post.User.ID)
+		}
+
+		// Create notification in the database
+		notificationContent := fmt.Sprintf("%s commented on your post: \"%s\"", comment.User.DisplayName, comment.Content)
+		err = s.NotificationService.CreateNotification(post.User.ID, notificationContent, notifications.NotificationTypeComment, comment.ID)
+		if err != nil {
+			// Log error but don't fail the operation since comment was already created
+			slog.Error("Failed to create comment notification in database", "error", err, "post_owner_id", post.User.ID)
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) ToggleReaction(r *types.ReactDocument) (bool, error) {
@@ -254,4 +285,40 @@ func (s *Service) DeleteComment(postID primitive.ObjectID, commentID primitive.O
 	}
 
 	return nil
+}
+
+// sendCommentNotification sends a push notification when a comment is added to a post
+func (s *Service) sendCommentNotification(postOwnerID primitive.ObjectID, commenterName, commentText string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	// Get post owner's push token
+	var postOwner types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": postOwnerID}).Decode(&postOwner)
+	if err != nil {
+		return fmt.Errorf("failed to get post owner user: %w", err)
+	}
+
+	if postOwner.PushToken == "" {
+		slog.Warn("Post owner has no push token", "post_owner_id", postOwnerID)
+		return nil // Not an error, just no notification sent
+	}
+
+	message := fmt.Sprintf("%s has commented on your post \"%s\"", commenterName, commentText)
+
+	notification := xutils.Notification{
+		Token:   postOwner.PushToken,
+		Title:   "New Comment!",
+		Message: message,
+		Data: map[string]string{
+			"type":           "comment",
+			"commenter_name": commenterName,
+			"comment_text":   commentText,
+		},
+	}
+
+	return xutils.SendNotification(notification)
 }

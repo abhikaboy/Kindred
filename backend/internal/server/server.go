@@ -12,6 +12,7 @@ import (
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	encouragement "github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
@@ -105,6 +106,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	// Register encouragement and congratulation routes
 	encouragement.Routes(api, collections)
 	congratulation.Routes(api, collections)
+
+	// Register notification routes
+	notifications.Routes(api, collections)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)

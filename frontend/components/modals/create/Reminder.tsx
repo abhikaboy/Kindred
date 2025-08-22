@@ -167,7 +167,6 @@ const RelativeReminderOptions = ({
                         gap: 8,
                         alignItems: "center",
                         borderColor: ThemedColor.border,
-                        backgroundColor: ThemedColor.lightened,
                         borderRadius: 12,
                         padding: 2,
                     }}>

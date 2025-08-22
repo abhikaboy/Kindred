@@ -4,6 +4,42 @@ info:
     description: Kindred API built with Huma v2 and Fiber
     version: 1.0.0
 paths:
+    /v1/{userId}/posts:
+        get:
+            tags:
+                - posts
+            summary: Get User's posts
+            description: Get posts of a user
+            operationId: get-user-posts
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/PostDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/activity:
         get:
             tags:
@@ -2389,6 +2425,176 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/notifications:
+        get:
+            tags:
+                - notifications
+            summary: Get notifications
+            description: Retrieve notifications for the authenticated user with pagination
+            operationId: get-notifications
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: limit
+                  in: query
+                  description: 'Maximum number of notifications to return (default: 20, max: 100)'
+                  explode: false
+                  schema:
+                    type: integer
+                    description: 'Maximum number of notifications to return (default: 20, max: 100)'
+                    format: int64
+                    examples:
+                        - 20
+                  example: 20
+                - name: skip
+                  in: query
+                  description: Number of notifications to skip for pagination
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Number of notifications to skip for pagination
+                    format: int64
+                    examples:
+                        - 0
+                  example: 0
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetNotificationsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/notifications/{id}:
+        delete:
+            tags:
+                - notifications
+            summary: Delete notification
+            description: Delete a specific notification
+            operationId: delete-notification
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteNotificationOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/notifications/read:
+        patch:
+            tags:
+                - notifications
+            summary: Mark notifications as read
+            description: Mark specific notifications as read
+            operationId: mark-notifications-read
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MarkNotificationsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/notifications/read-all:
+        patch:
+            tags:
+                - notifications
+            summary: Mark all notifications as read
+            description: Mark all notifications as read for the authenticated user
+            operationId: mark-all-notifications-read
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MarkAllNotificationsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/posts:
         get:
             tags:
@@ -2408,9 +2614,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/PostDocument'
+                                $ref: '#/components/schemas/GetPostsOutputBody'
                 default:
                     description: Error
                     content:
@@ -2441,7 +2645,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PostDocument'
+                                $ref: '#/components/schemas/PostDocumentAPI'
                 default:
                     description: Error
                     content:
@@ -2475,7 +2679,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PostDocument'
+                                $ref: '#/components/schemas/PostDocumentAPI'
                 default:
                     description: Error
                     content:
@@ -2539,7 +2743,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UpdatePostDocument'
+                            $ref: '#/components/schemas/UpdatePostParams'
                 required: true
             responses:
                 "200":
@@ -2548,6 +2752,126 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdatePostOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/posts/{postId}/comment:
+        post:
+            tags:
+                - posts
+            summary: Add comment to post
+            description: Add a comment to an existing post
+            operationId: add-comment
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: postId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddCommentParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddCommentOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/posts/{postId}/comment/{commentId}:
+        delete:
+            tags:
+                - posts
+            summary: Delete comment from post
+            description: Delete comment from an existing post
+            operationId: delete-comment
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: postId
+                  in: path
+                  description: Post ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Post ID
+                - name: commentId
+                  in: path
+                  description: Comment ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Comment ID
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteCommentOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/posts/{postId}/reaction:
+        post:
+            tags:
+                - posts
+            summary: React to a post
+            description: Adds a reaction to a post
+            operationId: add-reaction
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: postId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddReactionParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddReactionOutputBody'
                 default:
                     description: Error
                     content:
@@ -3456,6 +3780,80 @@ components:
                 - days
                 - totalCount
                 - lastUpdated
+        AddCommentOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AddCommentOutputBody.json
+                    readOnly: true
+                comment:
+                    $ref: '#/components/schemas/CommentDocumentAPI'
+                message:
+                    type: string
+                    examples:
+                        - Comment added successfully
+            required:
+                - message
+                - comment
+        AddCommentParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AddCommentParams.json
+                    readOnly: true
+                content:
+                    type: string
+                parentId:
+                    type: string
+            required:
+                - content
+        AddReactionOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AddReactionOutputBody.json
+                    readOnly: true
+                added:
+                    type: boolean
+                    examples:
+                        - true
+                message:
+                    type: string
+                    examples:
+                        - Reaction added successfully
+            required:
+                - message
+                - added
+        AddReactionParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AddReactionParams.json
+                    readOnly: true
+                emoji:
+                    type: string
+            required:
+                - emoji
         BlueprintDocument:
             type: object
             additionalProperties: false
@@ -3595,6 +3993,14 @@ components:
                 - owner
                 - subscribersCount
                 - timestamp
+        BlueprintReference:
+            type: object
+            additionalProperties: false
+            properties:
+                id:
+                    type: string
+            required:
+                - id
         CategoryDocument:
             type: object
             additionalProperties: false
@@ -3628,6 +4034,17 @@ components:
                 - lastEdited
                 - tasks
                 - user
+        CategoryExtendedReference:
+            type: object
+            additionalProperties: false
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+            required:
+                - id
+                - name
         ChecklistItem:
             type: object
             additionalProperties: false
@@ -3643,6 +4060,60 @@ components:
                 - content
                 - completed
                 - order
+        CommentDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
+                    type: string
+                id:
+                    type: string
+                metadata:
+                    $ref: '#/components/schemas/CommentMetadata'
+                parentId:
+                    type: string
+                user:
+                    $ref: '#/components/schemas/UserExtendedReferenceInternal'
+            required:
+                - id
+                - user
+                - content
+                - metadata
+        CommentDocumentAPI:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
+                    type: string
+                id:
+                    type: string
+                metadata:
+                    $ref: '#/components/schemas/CommentMetadata'
+                parentId:
+                    type: string
+                user:
+                    $ref: '#/components/schemas/UserExtendedReference'
+            required:
+                - id
+                - user
+                - content
+                - metadata
+        CommentMetadata:
+            type: object
+            additionalProperties: false
+            properties:
+                createdAt:
+                    type: string
+                    format: date-time
+                isDeleted:
+                    type: boolean
+                lastEdited:
+                    type: string
+                    format: date-time
+            required:
+                - createdAt
+                - isDeleted
+                - lastEdited
         CompleteTaskDocument:
             type: object
             additionalProperties: false
@@ -4029,16 +4500,22 @@ components:
                     examples:
                         - https://example.com/schemas/CreatePostParams.json
                     readOnly: true
-                field1:
+                blueprintId:
                     type: string
-                field2:
+                caption:
                     type: string
-                picture:
-                    type: string
+                images:
+                    type: array
+                    items:
+                        type: string
+                isPublic:
+                    type: boolean
+                task:
+                    $ref: '#/components/schemas/PostTaskExtendedReference'
             required:
-                - field1
-                - field2
-                - picture
+                - images
+                - caption
+                - isPublic
         CreateTaskParams:
             type: object
             additionalProperties: false
@@ -4152,6 +4629,21 @@ components:
                         - Category deleted successfully
             required:
                 - message
+        DeleteCommentOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DeleteCommentOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+            required:
+                - message
         DeleteCongratulationOutputBody:
             type: object
             additionalProperties: false
@@ -4201,6 +4693,23 @@ components:
                     type: string
                     examples:
                         - Encouragement deleted successfully
+            required:
+                - message
+        DeleteNotificationOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DeleteNotificationOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Notification deleted successfully
             required:
                 - message
         DeletePostOutputBody:
@@ -4464,6 +4973,48 @@ components:
                 - key
                 - public_url
                 - message
+        GetNotificationsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetNotificationsOutputBody.json
+                    readOnly: true
+                notifications:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/NotificationDocument'
+                total:
+                    type: integer
+                    format: int64
+                unread_count:
+                    type: integer
+                    format: int64
+            required:
+                - notifications
+                - unread_count
+                - total
+        GetPostsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetPostsOutputBody.json
+                    readOnly: true
+                posts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PostDocumentAPI'
+            required:
+                - posts
         HealthOutputBody:
             type: object
             additionalProperties: false
@@ -4531,6 +5082,23 @@ components:
                         - Logout Successful
             required:
                 - message
+        MarkAllNotificationsReadOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MarkAllNotificationsReadOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - All notifications marked as read successfully
+            required:
+                - message
         MarkCongratulationsReadOutputBody:
             type: object
             additionalProperties: false
@@ -4579,7 +5147,7 @@ components:
             required:
                 - message
                 - count
-        PostDocument:
+        MarkNotificationsReadOutputBody:
             type: object
             additionalProperties: false
             properties:
@@ -4588,28 +5156,171 @@ components:
                     description: A URL to the JSON Schema for this object.
                     format: uri
                     examples:
-                        - https://example.com/schemas/PostDocument.json
+                        - https://example.com/schemas/MarkNotificationsReadOutputBody.json
                     readOnly: true
-                field1:
+                count:
+                    type: integer
+                    description: Number of notifications marked as read
+                    format: int64
+                    examples:
+                        - 2
+                message:
                     type: string
-                field2:
+                    examples:
+                        - Notifications marked as read successfully
+            required:
+                - message
+                - count
+        NotificationDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
                     type: string
                 id:
                     type: string
-                picture:
+                notificationType:
                     type: string
-                timestamp:
+                read:
+                    type: boolean
+                reference_id:
+                    type: string
+                time:
                     type: string
                     format: date-time
-                user_id:
+                user:
+                    $ref: '#/components/schemas/UserReference'
+            required:
+                - id
+                - content
+                - user
+                - time
+                - notificationType
+                - reference_id
+                - read
+        PostDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                _id:
+                    type: string
+                blueprint:
+                    $ref: '#/components/schemas/BlueprintReference'
+                caption:
+                    type: string
+                category:
+                    $ref: '#/components/schemas/CategoryExtendedReference'
+                comments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CommentDocument'
+                images:
+                    type: array
+                    items:
+                        type: string
+                metadata:
+                    $ref: '#/components/schemas/PostMetadata'
+                reactions:
+                    type: object
+                    additionalProperties:
+                        type: array
+                        items:
+                            type: string
+                task:
+                    $ref: '#/components/schemas/PostTaskExtendedReference'
+                user:
+                    $ref: '#/components/schemas/UserExtendedReferenceInternal'
+            required:
+                - _id
+                - user
+                - images
+                - caption
+                - reactions
+                - comments
+                - metadata
+        PostDocumentAPI:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PostDocumentAPI.json
+                    readOnly: true
+                _id:
+                    type: string
+                blueprint:
+                    $ref: '#/components/schemas/BlueprintReference'
+                caption:
+                    type: string
+                category:
+                    $ref: '#/components/schemas/CategoryExtendedReference'
+                comments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CommentDocumentAPI'
+                images:
+                    type: array
+                    items:
+                        type: string
+                metadata:
+                    $ref: '#/components/schemas/PostMetadata'
+                reactions:
+                    type: object
+                    additionalProperties:
+                        type: array
+                        items:
+                            type: string
+                task:
+                    $ref: '#/components/schemas/PostTaskExtendedReference'
+                user:
+                    $ref: '#/components/schemas/UserExtendedReference'
+            required:
+                - _id
+                - user
+                - images
+                - caption
+                - reactions
+                - comments
+                - metadata
+        PostMetadata:
+            type: object
+            additionalProperties: false
+            properties:
+                createdAt:
+                    type: string
+                    format: date-time
+                isDeleted:
+                    type: boolean
+                isEdited:
+                    type: boolean
+                isPublic:
+                    type: boolean
+                updatedAt:
+                    type: string
+                    format: date-time
+            required:
+                - createdAt
+                - updatedAt
+                - isPublic
+                - isDeleted
+                - isEdited
+        PostTaskExtendedReference:
+            type: object
+            additionalProperties: false
+            properties:
+                category:
+                    $ref: '#/components/schemas/CategoryExtendedReference'
+                content:
+                    type: string
+                id:
                     type: string
             required:
                 - id
-                - user_id
-                - field1
-                - field2
-                - picture
-                - timestamp
+                - content
+                - category
         ProfileDocument:
             type: object
             additionalProperties: false
@@ -5321,23 +6032,6 @@ components:
                         - Encouragement updated successfully
             required:
                 - message
-        UpdatePostDocument:
-            type: object
-            additionalProperties: false
-            properties:
-                $schema:
-                    type: string
-                    description: A URL to the JSON Schema for this object.
-                    format: uri
-                    examples:
-                        - https://example.com/schemas/UpdatePostDocument.json
-                    readOnly: true
-                field1:
-                    type: string
-                field2:
-                    type: string
-                picture:
-                    type: string
         UpdatePostOutputBody:
             type: object
             additionalProperties: false
@@ -5355,6 +6049,21 @@ components:
                         - Post updated successfully
             required:
                 - message
+        UpdatePostParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdatePostParams.json
+                    readOnly: true
+                caption:
+                    type: string
+                isPublic:
+                    type: boolean
         UpdateProfileDocument:
             type: object
             additionalProperties: false
@@ -5681,6 +6390,40 @@ components:
                         - https://example.com/avatar.jpg
             required:
                 - _id
+                - display_name
+                - handle
+                - profile_picture
+        UserExtendedReferenceInternal:
+            type: object
+            additionalProperties: false
+            properties:
+                DisplayName:
+                    type: string
+                Handle:
+                    type: string
+                ID:
+                    type: string
+                ProfilePicture:
+                    type: string
+            required:
+                - ID
+                - DisplayName
+                - Handle
+                - ProfilePicture
+        UserReference:
+            type: object
+            additionalProperties: false
+            properties:
+                display_name:
+                    type: string
+                handle:
+                    type: string
+                id:
+                    type: string
+                profile_picture:
+                    type: string
+            required:
+                - id
                 - display_name
                 - handle
                 - profile_picture

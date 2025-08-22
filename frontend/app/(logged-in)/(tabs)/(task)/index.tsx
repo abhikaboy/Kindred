@@ -147,7 +147,7 @@ const Home = (props: Props) => {
                                 <PrimaryButton
                                     title="Try!"
                                     onPress={() => {
-                                        Sentry.captureException(new Error("First error"));
+                                        Sentry.showFeedbackWidget();
                                     }}
                                 />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>

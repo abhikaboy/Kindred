@@ -8,6 +8,7 @@ import {
     Alert,
     Keyboard,
     KeyboardAvoidingView,
+    Dimensions,
 } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
 import { ThemedText } from "../ThemedText";
@@ -371,7 +372,7 @@ const stylesheet = (ThemedColor: any) =>
             color: ThemedColor.text,
         },
         scrollView: {
-            flex: 1,
+            maxHeight: Dimensions.get("window").height * 0.4,
         },
         contentContainer: {
             paddingBottom: 20,

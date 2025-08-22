@@ -1,6 +1,7 @@
 package Post
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -138,8 +139,9 @@ Database layer of the application
 */
 
 type Service struct {
-	Posts      *mongo.Collection
-	Users      *mongo.Collection
-	Categories *mongo.Collection
-	Blueprints *mongo.Collection
+	Posts               *mongo.Collection
+	Users               *mongo.Collection
+	Categories          *mongo.Collection
+	Blueprints          *mongo.Collection
+	NotificationService *notifications.Service
 }

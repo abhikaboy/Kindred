@@ -127,3 +127,45 @@ export interface Profile {
     friends: string[];
     relationship?: RelationshipInfo;
 }
+
+// Notification types for custom Fiber endpoints (not in OpenAPI spec)
+// Following the same patterns as generated types
+export interface NotificationDocument {
+    /** @description Unique notification identifier */
+    id: string;
+    /** @description Notification content/message */
+    content: string;
+    /** @description User who the notification is for */
+    user: {
+        /** @description User ID */
+        id: string;
+        /** @description User display name */
+        display_name: string;
+        /** @description User handle */
+        handle: string;
+        /** @description Profile picture URL */
+        profile_picture: string;
+    };
+    /** @description Notification timestamp */
+    time: string;
+    /** @description Type of notification */
+    notificationType: "ENCOURAGEMENT" | "COMMENT" | "CONGRATULATION";
+    /** @description Reference ID (e.g., post ID, task ID) */
+    reference_id: string;
+    /** @description Whether notification has been read */
+    read: boolean;
+}
+
+export interface NotificationsResponse {
+    /** @description List of notifications */
+    notifications: NotificationDocument[];
+    /** @description Count of unread notifications */
+    unread_count: number;
+    /** @description Total number of notifications */
+    total: number;
+}
+
+export interface MarkNotificationsReadRequest {
+    /** @description Array of notification IDs to mark as read */
+    notification_ids: string[];
+}
