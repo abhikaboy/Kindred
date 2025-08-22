@@ -125,6 +125,13 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 		return nil, err
 	}
 
+	// Send push notification to receiver
+	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.Name)
+	if err != nil {
+		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", r.ReceiverID)
+		// Don't fail the request if notification fails
+	}
+
 	// Cast the inserted ID to ObjectID and update the internal document
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
