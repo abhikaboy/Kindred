@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,7 +17,7 @@ import (
 func newService(collections map[string]*mongo.Collection) *Service {
 	encouragements := collections["encouragements"]
 	users := collections["users"]
-	
+
 	// Log if collections are not found
 	if encouragements == nil {
 		slog.Error("Encouragements collection not found in database")
@@ -24,7 +25,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	if users == nil {
 		slog.Error("Users collection not found in database")
 	}
-	
+
 	return &Service{
 		Encouragements: encouragements,
 		Users:          users,
@@ -36,10 +37,10 @@ func (s *Service) GetAllEncouragements(receiverID primitive.ObjectID) ([]Encoura
 	if s.Encouragements == nil {
 		return nil, fmt.Errorf("encouragements collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"receiver": receiverID}
-	
+
 	cursor, err := s.Encouragements.Find(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (s *Service) GetEncouragementByID(id primitive.ObjectID) (*EncouragementDoc
 	if s.Encouragements == nil {
 		return nil, fmt.Errorf("encouragements collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
@@ -88,7 +89,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	if s.Encouragements == nil {
 		return nil, fmt.Errorf("encouragements collection not available")
 	}
-	
+
 	ctx := context.Background()
 
 	// Check if sender has enough encouragements
@@ -96,7 +97,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user balance: %w", err)
 	}
-	
+
 	if balance <= 0 {
 		return nil, fmt.Errorf("insufficient encouragement balance: user has %d encouragements remaining", balance)
 	}
@@ -113,7 +114,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	}
 
 	slog.Info("Creating encouragement", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)
-	
+
 	result, err := s.Encouragements.InsertOne(ctx, encouragement)
 	if err != nil {
 		return nil, err
@@ -131,6 +132,13 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	encouragement.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", id.Hex()))
 
+	// Send notification to receiver
+	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message)
+	if err != nil {
+		// Log error but don't fail the operation since encouragement was already created
+		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
+	}
+
 	return encouragement.ToAPI(), nil
 }
 
@@ -139,7 +147,7 @@ func (s *Service) UpdatePartialEncouragement(id primitive.ObjectID, updated Upda
 	if s.Encouragements == nil {
 		return fmt.Errorf("encouragements collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
 
@@ -159,7 +167,7 @@ func (s *Service) DeleteEncouragement(id primitive.ObjectID) error {
 	if s.Encouragements == nil {
 		return fmt.Errorf("encouragements collection not available")
 	}
-	
+
 	ctx := context.Background()
 
 	filter := bson.M{"_id": id}
@@ -173,7 +181,7 @@ func (s *Service) MarkEncouragementsAsRead(ids []primitive.ObjectID) (int64, err
 	if s.Encouragements == nil {
 		return 0, fmt.Errorf("encouragements collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": bson.M{"$in": ids}}
 	update := bson.M{"$set": bson.M{"read": true}}
@@ -191,19 +199,19 @@ func (s *Service) GetUserBalance(userID primitive.ObjectID) (int, error) {
 	if s.Users == nil {
 		return 0, fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": userID}
-	
+
 	var user struct {
 		Encouragements int `bson:"encouragements"`
 	}
-	
+
 	err := s.Users.FindOne(ctx, filter, nil).Decode(&user)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return user.Encouragements, nil
 }
 
@@ -212,11 +220,11 @@ func (s *Service) DecrementUserBalance(userID primitive.ObjectID) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
 	filter := bson.M{"_id": userID}
 	update := bson.M{"$inc": bson.M{"encouragements": -1}}
-	
+
 	_, err := s.Users.UpdateOne(ctx, filter, update)
 	return err
 }
@@ -226,9 +234,9 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 	if s.Users == nil {
 		return nil, fmt.Errorf("users collection not available")
 	}
-	
+
 	ctx := context.Background()
-	
+
 	cursor, err := s.Users.Aggregate(ctx, []bson.M{
 		{
 			"$match": bson.M{"_id": senderID},
@@ -263,4 +271,41 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 		Picture: user.ProfilePicture,
 		ID:      user.ID,
 	}, nil
-} 
+}
+
+// sendEncouragementNotification sends a push notification when an encouragement is created
+func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	// Get receiver's push token
+	var receiver types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": receiverID}).Decode(&receiver)
+	if err != nil {
+		return fmt.Errorf("failed to get receiver user: %w", err)
+	}
+
+	if receiver.PushToken == "" {
+		slog.Warn("Receiver has no push token", "receiver_id", receiverID)
+		return nil // Not an error, just no notification sent
+	}
+
+	message := fmt.Sprintf("%s has sent you an encouragement on %s \"%s\"", senderName, taskName, encouragementText)
+
+	notification := xutils.Notification{
+		Token:   receiver.PushToken,
+		Title:   "New Encouragement!",
+		Message: message,
+		Data: map[string]string{
+			"type":         "encouragement",
+			"sender_name":  senderName,
+			"task_name":    taskName,
+			"message_text": encouragementText,
+		},
+	}
+
+	return xutils.SendNotification(notification)
+}
