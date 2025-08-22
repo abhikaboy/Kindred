@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,6 +17,7 @@ import (
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
 		Connections: collections["friend-requests"],
+		Users:       collections["users"],
 	}
 }
 
@@ -123,6 +125,13 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 		return nil, err
 	}
 
+	// Send push notification to receiver
+	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.Name)
+	if err != nil {
+		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", r.ReceiverID)
+		// Don't fail the request if notification fails
+	}
+
 	// Cast the inserted ID to ObjectID and update the internal document
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
@@ -222,9 +231,6 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		return fmt.Errorf("connection request not found or already processed")
 	}
 
-	// Get the users collection and add each user to the other's friends list
-	usersCollection := s.Connections.Database().Collection("users")
-
 	// Get the other user's ID (the requester)
 	var otherUserID primitive.ObjectID
 	for _, participantID := range connection.Users {
@@ -235,7 +241,7 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 	}
 
 	// Add each user to the other's friends list
-	_, err = usersCollection.UpdateOne(
+	_, err = s.Users.UpdateOne(
 		ctx,
 		bson.M{"_id": userID},
 		bson.M{"$addToSet": bson.M{"friends": otherUserID}},
@@ -244,7 +250,7 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		return fmt.Errorf("failed to add friend to user's friends list: %v", err)
 	}
 
-	_, err = usersCollection.UpdateOne(
+	_, err = s.Users.UpdateOne(
 		ctx,
 		bson.M{"_id": otherUserID},
 		bson.M{"$addToSet": bson.M{"friends": userID}},
@@ -253,7 +259,86 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		return fmt.Errorf("failed to add user to friend's friends list: %v", err)
 	}
 
+	// Get accepter's name for the notification
+	var accepterUser struct {
+		Name string `bson:"display_name"`
+	}
+	err = s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&accepterUser)
+	if err != nil {
+		slog.Error("Failed to get accepter user details for notification", "error", err, "user_id", userID)
+		// Don't fail the request if we can't get user details for notification
+	} else {
+		// Send push notification to requester
+		err = s.sendFriendRequestAcceptedNotification(otherUserID, accepterUser.Name)
+		if err != nil {
+			slog.Error("Failed to send friend request accepted notification", "error", err, "requester_id", otherUserID)
+			// Don't fail the request if notification fails
+		}
+	}
+
 	return nil
+}
+
+// sendFriendRequestNotification sends a push notification to the receiver when a friend request is sent
+func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, requesterName string) error {
+	ctx := context.Background()
+
+	// Get receiver's push token
+	var receiver types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": receiverID}).Decode(&receiver)
+	if err != nil {
+		return fmt.Errorf("failed to get receiver user: %w", err)
+	}
+
+	if receiver.PushToken == "" {
+		slog.Warn("Receiver has no push token", "receiver_id", receiverID)
+		return nil // Not an error, just no notification sent
+	}
+
+	message := fmt.Sprintf("%s sent you a friend request", requesterName)
+
+	notification := xutils.Notification{
+		Token:   receiver.PushToken,
+		Title:   "New Friend Request!",
+		Message: message,
+		Data: map[string]string{
+			"type":           "friend_request",
+			"requester_name": requesterName,
+		},
+	}
+
+	return xutils.SendNotification(notification)
+}
+
+// sendFriendRequestAcceptedNotification sends a push notification to the requester when their friend request is accepted
+func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.ObjectID, accepterName string) error {
+	ctx := context.Background()
+
+	// Get requester's push token
+	var requester types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": requesterID}).Decode(&requester)
+	if err != nil {
+		return fmt.Errorf("failed to get requester user: %w", err)
+	}
+
+	if requester.PushToken == "" {
+		slog.Warn("Requester has no push token", "requester_id", requesterID)
+		return nil // Not an error, just no notification sent
+	}
+
+	message := fmt.Sprintf("%s accepted your friend request", accepterName)
+
+	notification := xutils.Notification{
+		Token:   requester.PushToken,
+		Title:   "Friend Request Accepted!",
+		Message: message,
+		Data: map[string]string{
+			"type":          "friend_request_accepted",
+			"accepter_name": accepterName,
+		},
+	}
+
+	return xutils.SendNotification(notification)
 }
 
 // GetRelationship returns the relationship status between two users
@@ -307,7 +392,6 @@ func (s *Service) CreateConnectionRequest(requesterID, receiverID primitive.Obje
 	}
 
 	// Fetch requester details from users collection
-	usersCollection := s.Connections.Database().Collection("users")
 	var requesterUser struct {
 		ID             primitive.ObjectID `bson:"_id"`
 		Name           string             `bson:"display_name"`
@@ -315,7 +399,7 @@ func (s *Service) CreateConnectionRequest(requesterID, receiverID primitive.Obje
 		ProfilePicture *string            `bson:"profile_picture"`
 	}
 
-	err = usersCollection.FindOne(ctx, bson.M{"_id": requesterID}).Decode(&requesterUser)
+	err = s.Users.FindOne(ctx, bson.M{"_id": requesterID}).Decode(&requesterUser)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("requester user not found")

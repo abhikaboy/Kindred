@@ -372,7 +372,6 @@ const stylesheet = (ThemedColor: any) =>
             color: ThemedColor.text,
         },
         scrollView: {
-            flex: 1,
             maxHeight: Dimensions.get("window").height * 0.4,
         },
         contentContainer: {

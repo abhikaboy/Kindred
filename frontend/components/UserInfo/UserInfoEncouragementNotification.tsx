@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "../ThemedText";
 import PreviewIcon from "../profile/PreviewIcon";
 import Svg, { Path } from "react-native-svg";
+import { router } from "expo-router";
 
 type Props = {
     name: string;
@@ -65,7 +66,7 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time 
     const timeLabel = getTimeLabel(time);
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={() => console.log("Encouragement Notification")}>
+            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)}>
                 <PreviewIcon size={"smallMedium"} icon={icon} />
             </TouchableOpacity>
 
