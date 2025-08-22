@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,10 +17,11 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Posts:      collections["posts"],
-		Users:      collections["users"],
-		Blueprints: collections["blueprints"],
-		Categories: collections["categories"],
+		Posts:               collections["posts"],
+		Users:               collections["users"],
+		Blueprints:          collections["blueprints"],
+		Categories:          collections["categories"],
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 
@@ -168,10 +170,19 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 
 	// Send notification to post owner (only if commenter is not the post owner)
 	if comment.User != nil && comment.User.ID != post.User.ID {
+		// Send push notification
 		err = s.sendCommentNotification(post.User.ID, comment.User.DisplayName, comment.Content)
 		if err != nil {
 			// Log error but don't fail the operation since comment was already created
 			slog.Error("Failed to send comment notification", "error", err, "post_owner_id", post.User.ID)
+		}
+
+		// Create notification in the database
+		notificationContent := fmt.Sprintf("%s commented on your post: \"%s\"", comment.User.DisplayName, comment.Content)
+		err = s.NotificationService.CreateNotification(post.User.ID, notificationContent, notifications.NotificationTypeComment, comment.ID)
+		if err != nil {
+			// Log error but don't fail the operation since comment was already created
+			slog.Error("Failed to create comment notification in database", "error", err, "post_owner_id", post.User.ID)
 		}
 	}
 

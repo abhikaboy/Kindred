@@ -24,7 +24,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		fatal(ctx, "Failed to load .env", err)
 	}
-	
+
 	config, err := config.Load()
 	if err != nil {
 		fatal(ctx, "Failed to load config", err)
@@ -36,13 +36,13 @@ func main() {
 	}
 
 	// Collections to create
-	collections := []string{"encouragements", "congratulations"}
+	collections := []string{"encouragements", "congratulations", "notifications"}
 
 	for _, collectionName := range collections {
 		if err := createCollectionIfNotExists(ctx, db.DB, collectionName); err != nil {
 			fatal(ctx, "Failed to create collection: "+collectionName, err)
 		} else {
-			slog.LogAttrs(ctx, slog.LevelInfo, "Collection created successfully", 
+			slog.LogAttrs(ctx, slog.LevelInfo, "Collection created successfully",
 				slog.String("collection", collectionName),
 				slog.String("database", db.DB.Name()))
 		}
@@ -80,4 +80,4 @@ func fatal(ctx context.Context, msg string, err error) {
 		xslog.Error(err),
 	)
 	os.Exit(1)
-} 
+}

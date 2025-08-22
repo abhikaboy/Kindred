@@ -3,6 +3,7 @@ package encouragement
 import (
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -163,6 +164,7 @@ Database layer of the application
 */
 
 type Service struct {
-	Encouragements *mongo.Collection
-	Users          *mongo.Collection
+	Encouragements      *mongo.Collection
+	Users               *mongo.Collection
+	NotificationService *notifications.Service
 }
