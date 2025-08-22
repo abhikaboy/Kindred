@@ -1,130 +1,35 @@
 import { client } from "@/hooks/useTypedAPI";
-import createClient from "openapi-fetch";
 import type { paths, components } from "./generated/types";
-import * as SecureStore from "expo-secure-store";
 
-// Create a separate client ONLY for posts that points to local backend
-const createLocalPostsClient = () => {
-    // For iOS Simulator, use your computer's IP instead of 127.0.0.1
-    // To find your IP: run `ipconfig getifaddr en0` (Mac) or `hostname -I` (Linux)
-    const localUrl = __DEV__ ? 
-        "http://192.168.0.200:8080" : // Replace with your actual IP address
-        "http://127.0.0.1:8080";
-        
-    console.log("🔧 LOCAL POSTS CLIENT: Using URL:", localUrl);
-    
-    const localClient = createClient<paths>({
-        baseUrl: localUrl,
-    });
-
-    // Add the same auth interceptor as your main client
-    localClient.use({
-        async onRequest({ request }) {
-            console.log("🔧 LOCAL POSTS: Making request to:", request.url);
-
-            try {
-                const authData = await SecureStore.getItemAsync("auth_data");
-                
-                if (authData) {
-                    const parsed = JSON.parse(authData);
-                    const { access_token, refresh_token } = parsed;
-
-                    if (access_token) {
-                        request.headers.set("Authorization", `Bearer ${access_token}`);
-                        console.log("🔧 LOCAL POSTS: Added auth token");
-                    }
-
-                    if (refresh_token) {
-                        request.headers.set("refresh_token", refresh_token);
-                    }
-                }
-            } catch (error) {
-                console.error("Error retrieving auth data:", error);
-            }
-
-            request.headers.set("Content-Type", "application/json");
-            return request;
-        },
-
-        async onResponse({ response, request }) {
-            console.log(`🔧 LOCAL POSTS: Response ${response.status} for ${request.url}`);
-            return response;
-        },
-    });
-
-    return localClient;
-};
-
-// Get the local client for posts
-const localPostsClient = createLocalPostsClient();
-
-// Helper to inject auth headers for regular client
+// Helper to inject auth headers that will be overridden by middleware
 const withAuthHeaders = (params: any = {}) => ({
     ...params,
     header: { Authorization: "", ...(params.header || {}) },
 });
 
+// Extract the type definitions from the generated types
 type PostDocument = components["schemas"]["PostDocument"];
+type PostDocumentAPI = components["schemas"]["PostDocumentAPI"];
 type CreatePostParams = components["schemas"]["CreatePostParams"];
 type CommentDocument = components["schemas"]["CommentDocument"];
-
-// Remove UpdatePostDocument since it doesn't exist in your generated types
-
-/**
- * @param images
- * @param caption 
- * @param taskReference 
- * @param blueprintId 
- * @param isPublic 
- * @returns 
- */
-export async function createPostToBackend(
-    images: string[], 
-    caption: string, 
-    taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
-    blueprintId?: string, 
-    isPublic: boolean = false
-) {
-    try {
-        const result = await createPost(images, caption, taskReference, blueprintId, isPublic);
-        return result;
-    } catch (error) {
-        console.log(`Failed to create post to backend: ${JSON.stringify(error)}`);
-    }
-}
-
+type CommentDocumentAPI = components["schemas"]["CommentDocumentAPI"];
 
 /**
- * 
- * @returns 
- */
-export async function getPostsFromBackend() {
-    try {
-        const result = await getAllPosts();
-        return result;
-    } catch (error) {
-        console.log(`Failed to get all posts from backend: ${JSON.stringify(error)}`);
-    }
-}
-
-
-/**
- * 
+ * Create a new post
  * @param images 
- * @param caption 
+ * @param caption
  * @param taskReference 
  * @param blueprintId 
- * @param isPublic 
- * @returns 
+ * @param isPublic
  */
 export const createPost = async (
     images: string[],
     caption: string,
-    taskReference?: any,
+    taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
     blueprintId?: string,
     isPublic: boolean = true
-): Promise<PostDocument> => {    
-    const { data, error } = await localPostsClient.POST("/v1/user/posts", {
+): Promise<PostDocumentAPI> => {    
+    const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
         body: { 
             images, 
@@ -143,27 +48,26 @@ export const createPost = async (
 };
 
 /**
- * 
- * @returns 
+ * Get all posts
  */
-export const getAllPosts = async (): Promise<PostDocument[]> => {
-    const { data, error } = await localPostsClient.GET("/v1/user/posts", {
+export const getAllPosts = async (): Promise<PostDocumentAPI[]> => {
+    const { data, error } = await client.GET("/v1/user/posts", {
         params: withAuthHeaders({}),
     });
 
     if (error) {
         throw new Error(`Failed to get posts: ${JSON.stringify(error)}`);
     }
-    return data?.body?.posts || data?.posts || [];
+    
+    return data?.posts || [];
 };
 
 /**
- * Get Post by Id 
- * @param postId 
- * @returns 
+ * Get post by ID
+ * @param postId
  */
 export const getPostById = async (postId: string): Promise<PostDocument> => {
-    const { data, error } = await localPostsClient.GET("/v1/user/posts/{id}", {
+    const { data, error } = await client.GET("/v1/user/posts/{id}", {
         params: withAuthHeaders({ path: { id: postId } }),
     });
 
@@ -174,14 +78,33 @@ export const getPostById = async (postId: string): Promise<PostDocument> => {
     return data;
 };
 
+/**
+ * Get user's posts
+ * @param userId 
+ */
+export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
+    const { data, error } = await client.GET("/v1/{userId}/posts", {
+        params: withAuthHeaders({ path: { userId } }),
+    });
 
+    if (error) {
+        throw new Error(`Failed to get user posts: ${JSON.stringify(error)}`);
+    }
 
+    return data || [];
+};
+
+/**
+ * Add comment to post
+ * @param postId 
+ * @param content 
+ * @param parentId 
+ */
 export const addComment = async (
     postId: string, 
     content: string, 
     parentId?: string
-): Promise<CommentDocument> => {
-  
+): Promise<CommentDocumentAPI> => {
     if (!postId) {
         throw new Error("PostId is required");
     }
@@ -196,41 +119,54 @@ export const addComment = async (
         throw new Error(`Invalid post ID format: ${cleanPostId}`);
     }
         
-    const { data, error } = await localPostsClient.POST("/v1/user/posts/{postId}/comment", {
-        params: { path: { postId: cleanPostId } }, 
+    const { data, error } = await client.POST("/v1/user/posts/{postId}/comment", {
+        params: withAuthHeaders({path: { postId: cleanPostId }}), 
         body: { 
             content,
             parentId 
         },
     });
+    
     if (error) {
         throw new Error(`Failed to add comment: ${JSON.stringify(error)}`);
     }
     
-    if (data && typeof data === 'object') {
-        if ('comment' in data) {
-            const comment = (data as any).comment as CommentDocument;
-            return comment;
-        }
+    if (data && typeof data === 'object' && 'comment' in data) {
+        return (data as any).comment as CommentDocumentAPI;
     }
     
     throw new Error("Invalid API response structure");
 };
 
+/**
+ * Delete comment from post
+ * @param postId 
+ * @param commentId 
+ */
+export const deleteComment = async (postId: string, commentId: string): Promise<void> => {
+    const { error } = await client.DELETE("/v1/user/posts/{postId}/comment", {
+        params: withAuthHeaders({ 
+            path: {
+                postId,
+                commentId
+            },
+        }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to delete comment: ${JSON.stringify(error)}`);
+    }
+};
 
 /**
- * toggle reaction
+ * Toggle reaction on post
  * @param postId 
- * @param emoji 
- * @returns 
+ * @param emoji
  */
-// Add this to your @/api/post.ts file with extra debugging:
-
 export const toggleReaction = async (
     postId: string, 
     emoji: string
 ): Promise<{ added: boolean; message: string }> => {
-  
     // Validate inputs
     if (!postId) {
         throw new Error("PostId is required");
@@ -246,46 +182,30 @@ export const toggleReaction = async (
         throw new Error(`Invalid post ID format: ${cleanPostId}`);
     }
         
-    try {
-        const { data, error } = await localPostsClient.POST("/v1/user/posts/{postId}/reaction", {
-            params: { path: { postId: cleanPostId } }, 
-            body: { 
-                emoji: emoji.trim()
-            },
-        });
-        
-        
-        if (error) {
-            throw new Error(`Failed to toggle reaction: ${JSON.stringify(error)}`);
-        }
-        if (data && typeof data === 'object') {            
-            if ('added' in data && 'message' in data) {
-                const result = data as { added: boolean; message: string };
-                return result;
-            } else {
-            }
-        }
-    } catch (networkError) {
-        throw networkError;
+    const { data, error } = await client.POST("/v1/user/posts/{postId}/reaction", {
+        params: withAuthHeaders({ path: { postId: cleanPostId } }), 
+        body: { 
+            emoji: emoji.trim()
+        },
+    });
+    
+    if (error) {
+        throw new Error(`Failed to toggle reaction: ${JSON.stringify(error)}`);
     }
+    
+    if (data && typeof data === 'object' && 'added' in data && 'message' in data) {
+        return data as { added: boolean; message: string };
+    }
+    
+    throw new Error("Invalid API response structure");
 };
 
 /**
- * Helper function 
- * @param postId 
- * @param emoji 
- * @returns 
- */
-export const addReaction = async (postId: string, emoji: string) => {
-    return await toggleReaction(postId, emoji);
-};
-
-/**
- * Delete Post
+ * Delete post
  * @param postId 
  */
-export const deletePost = async (postId: string) => {
-    const { data, error } = await localPostsClient.DELETE("/v1/user/posts/{id}", {
+export const deletePost = async (postId: string): Promise<void> => {
+    const { error } = await client.DELETE("/v1/user/posts/{id}", {
         params: withAuthHeaders({ path: { id: postId } }),
     });
 
@@ -295,28 +215,53 @@ export const deletePost = async (postId: string) => {
 };
 
 /**
- * Delete Comment
+ * Update post
  * @param postId 
+ * @param caption 
+ * @param isPublic 
  */
-export const deleteComment = async (postId: string, commentId: string) => {
+export const updatePost = async (
+    postId: string, 
+    caption?: string, 
+    isPublic?: boolean
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/posts/{id}", {
+        params: withAuthHeaders({ path: { id: postId } }),
+        body: { caption, isPublic },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update post: ${JSON.stringify(error)}`);
+    }
+};
+
+
+export const createPostToBackend = async (
+    images: string[], 
+    caption: string, 
+    taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
+    blueprintId?: string, 
+    isPublic: boolean = false
+) => {
     try {
-        const { data, error } = await localPostsClient.DELETE("/v1/user/posts/{postId}/comment/{commentId}", {
-            params: { 
-                path: { 
-                    postId: postId,
-                    commentId: commentId 
-                } 
-            },
-        });
-
-        if (error) {
-            throw new Error(`Failed to delete comment: ${JSON.stringify(error)}`);
-        }
-
-        return data;
+        const result = await createPost(images, caption, taskReference, blueprintId, isPublic);
+        return result;
     } catch (error) {
-        console.error("Error deleting comment:", error);
+        console.log(`Failed to create post to backend: ${JSON.stringify(error)}`);
         throw error;
     }
 };
 
+export const getPostsFromBackend = async () => {
+    try {
+        const result = await getAllPosts();
+        return result;
+    } catch (error) {
+        console.log(`Failed to get all posts from backend: ${JSON.stringify(error)}`);
+        throw error;
+    }
+};
+
+export const addReaction = async (postId: string, emoji: string) => {
+    return await toggleReaction(postId, emoji);
+};
