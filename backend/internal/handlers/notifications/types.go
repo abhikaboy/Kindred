@@ -13,6 +13,11 @@ type Service struct {
 	Users         *mongo.Collection
 }
 
+// Handler holds the service for Huma operations
+type Handler struct {
+	service *Service
+}
+
 // NotificationType defines the different types of notifications
 type NotificationType string
 
@@ -58,4 +63,61 @@ type UpdateNotificationRequest struct {
 type GetNotificationsResponse struct {
 	Notifications []NotificationDocument `json:"notifications"`
 	Total         int                    `json:"total"`
+}
+
+// Huma Input/Output types for notification operations
+
+// Get Notifications
+type GetNotificationsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Limit         int    `query:"limit" example:"20" doc:"Maximum number of notifications to return (default: 20, max: 100)"`
+	Skip          int    `query:"skip" example:"0" doc:"Number of notifications to skip for pagination"`
+}
+
+type GetNotificationsOutput struct {
+	Body struct {
+		Notifications []NotificationDocument `json:"notifications"`
+		UnreadCount   int                    `json:"unread_count"`
+		Total         int                    `json:"total"`
+	} `json:"body"`
+}
+
+// Mark Notifications as Read
+type MarkNotificationsReadInput struct {
+	Authorization    string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken     string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	NotificationIDs  []string `json:"notification_ids" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of notification IDs to mark as read"`
+}
+
+type MarkNotificationsReadOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Notifications marked as read successfully"`
+		Count   int    `json:"count" example:"2" doc:"Number of notifications marked as read"`
+	} `json:"body"`
+}
+
+// Mark All Notifications as Read
+type MarkAllNotificationsReadInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
+
+type MarkAllNotificationsReadOutput struct {
+	Body struct {
+		Message string `json:"message" example:"All notifications marked as read successfully"`
+	} `json:"body"`
+}
+
+// Delete Notification
+type DeleteNotificationInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type DeleteNotificationOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Notification deleted successfully"`
+	} `json:"body"`
 }

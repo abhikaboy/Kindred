@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getNotifications, markNotificationsAsRead, markAllNotificationsAsRead, NotificationDocument } from '@/api/notifications';
+import { getNotifications, markNotificationsAsRead, markAllNotificationsAsRead } from '@/api/notifications';
+import type { components } from '@/api/generated/types';
 import { showToast } from '@/utils/showToast';
+
+type NotificationDocument = components["schemas"]["NotificationDocument"];
 
 export interface UseNotificationsReturn {
     notifications: NotificationDocument[];

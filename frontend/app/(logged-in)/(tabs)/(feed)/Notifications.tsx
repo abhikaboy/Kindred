@@ -10,9 +10,11 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { getConnectionsByReceiverAPI } from "@/api/connection";
-import { NotificationDocument } from "@/api/notifications";
 import { useNotifications } from "@/hooks/useNotifications";
+import type { components } from "@/api/generated/types";
 import { showToast } from "@/utils/showToast";
+
+type NotificationDocument = components["schemas"]["NotificationDocument"];
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;

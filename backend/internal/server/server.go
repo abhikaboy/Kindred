@@ -107,8 +107,8 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	encouragement.Routes(api, collections)
 	congratulation.Routes(api, collections)
 
-	// Register notification routes (using Fiber app directly as these are REST endpoints)
-	notifications.SetupRoutes(app, collections)
+	// Register notification routes
+	notifications.Routes(api, collections)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)
