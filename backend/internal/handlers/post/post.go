@@ -94,14 +94,6 @@ func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetP
 	return output, nil
 }
 
-func convertPostsToAPI(posts []types.PostDocument) []types.PostDocumentAPI {
-	apiPosts := make([]types.PostDocumentAPI, len(posts))
-	for i, post := range posts {
-		apiPosts[i] = *post.ToAPI()
-	}
-	return apiPosts
-}
-
 func (h *Handler) GetPostHuma(ctx context.Context, input *GetPostInput) (*GetPostOutput, error) {
 	// Extract user_id from context for authorization
 	_, err := auth.RequireAuth(ctx)
@@ -331,65 +323,39 @@ func (h *Handler) DeleteCommentHuma(ctx context.Context, input *DeleteCommentInp
 		return nil, huma.Error400BadRequest("Invalid comment ID format", err)
 	}
 
-	// Get the post to check if comment exists and verify ownership
 	post, err := h.service.GetPostByID(postID)
 	if err != nil {
-		fmt.Printf("🔍 DELETE COMMENT DEBUG: Post not found - %s\n", postID.Hex())
 		return nil, huma.Error404NotFound("Post not found", err)
 	}
 
-	// DEBUG: Add detailed logging
-	fmt.Printf("🔍 DELETE COMMENT DEBUG:\n")
-	fmt.Printf("  - user_id (string): %s\n", user_id)
-	fmt.Printf("  - userObjID: %s\n", userObjID.Hex())
-	fmt.Printf("  - post.User.ID: %s (type: %T)\n", post.User.ID.Hex(), post.User.ID)
-	fmt.Printf("  - postID: %s\n", postID.Hex())
-	fmt.Printf("  - commentID we're looking for: %s\n", commentID.Hex())
-	fmt.Printf("  - post owner match: %v\n", post.User.ID == userObjID)
-	fmt.Printf("  - total comments in post: %d\n", len(post.Comments))
-
-	// List all comments in the post
-	fmt.Printf("  - all comments in post:\n")
 	for i, comment := range post.Comments {
 		fmt.Printf("    [%d] ID: %s, User: %s, Content: %s\n",
 			i, comment.ID.Hex(), comment.User.ID.Hex(), comment.Content)
 	}
 
-	// Simple ownership check - just find the comment and verify user can delete
 	var canDelete bool
 	var foundComment *types.CommentDocument
 	for _, comment := range post.Comments {
 		if comment.ID == commentID {
 			foundComment = &comment
-			// DEBUG: Add comment-specific logging
-			fmt.Printf("  - FOUND COMMENT!\n")
-			fmt.Printf("  - comment.User.ID: %s (type: %T)\n", comment.User.ID.Hex(), comment.User.ID)
-			fmt.Printf("  - comment owner match: %v\n", comment.User.ID == userObjID)
 
-			// User can delete if they own the comment OR own the post
 			canDelete = comment.User.ID == userObjID || post.User.ID == userObjID
-			fmt.Printf("  - canDelete: %v\n", canDelete)
 			break
 		}
 	}
 
 	if foundComment == nil {
-		fmt.Printf("  - ERROR: Comment %s not found in post %s\n", commentID.Hex(), postID.Hex())
 		return nil, huma.Error404NotFound("Comment not found")
 	}
 
 	if !canDelete {
-		fmt.Printf("  - ERROR: Permission denied\n")
 		return nil, huma.Error403Forbidden("You can only delete your own comments or comments on your posts")
 	}
 
-	// Simple delete - just remove this one comment
 	if err := h.service.DeleteComment(postID, commentID); err != nil {
-		fmt.Printf("  - ERROR: Delete service failed: %v\n", err)
 		return nil, huma.Error500InternalServerError("Failed to delete comment", err)
 	}
 
-	fmt.Printf("  - SUCCESS: Comment deleted\n")
 	resp := &DeleteCommentOutput{}
 	resp.Body.Message = "Comment deleted successfully"
 	return resp, nil

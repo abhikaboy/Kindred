@@ -17,6 +17,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetView, BottomSheetModal } from "@gorhom/bottom-sheet";
 import { addComment, deleteComment } from "@/api/post";
 import { showToast } from "@/utils/showToast";
+import { router } from "expo-router";
 
 export type CommentProps = {
     id: string;
@@ -46,13 +47,25 @@ export type PopupProp = {
     postOwnerId?: string;
 };
 
-const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUserId, postOwnerId }: PopupProp) => {
+const Comment = ({
+    comments,
+    postId,
+    onCommentAdded,
+    onCommentDeleted,
+    currentUserId,
+    postOwnerId,
+    onClose,
+}: PopupProp) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
 
     const [commentText, setCommentText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [replyingTo, setReplyingTo] = useState<{ id: string; name: string } | null>(null);
+    const [replyingTo, setReplyingTo] = useState<{
+        id: string;
+        name: string;
+        immediateParent?: string;
+    } | null>(null);
     const [localComments, setLocalComments] = useState<CommentProps[]>(comments || []);
     const [autoFocusInput, setAutoFocusInput] = useState(false);
     const [deletingComments, setDeletingComments] = useState<Set<string>>(new Set());
@@ -72,43 +85,53 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
         };
     }, []);
 
-    // sort comments where its reverse chronological for replies + parents separately
+    // helper function to find the root parent of any comment
+    const findRootParent = (commentId: string, commentsArray: CommentProps[]): string => {
+        const comment = commentsArray.find((c) => c.id === commentId);
+        if (!comment || !comment.parentId) {
+            return commentId;
+        }
+        return findRootParent(comment.parentId, commentsArray);
+    };
+
+    // sort comments
     const sortCommentsHierarchically = (comments) => {
-        // separate parent comments from replies
-        const parentComments = comments.filter((comment) => !comment.parentId);
+        // separate root comments from replies
+        const rootComments = comments.filter((comment) => !comment.parentId);
         const replies = comments.filter((comment) => comment.parentId);
 
-        // sort parent comments in reverse chronological order
-        const sortedParents = parentComments.sort((a, b) => {
+        // sort root comments by time
+        const sortedRoots = rootComments.sort((a, b) => {
             const timeA = new Date(a.metadata.createdAt).getTime();
             const timeB = new Date(b.metadata.createdAt).getTime();
             return timeB - timeA;
         });
 
-        // create a map of replies grouped by their parent ID
-        const repliesByParent = replies.reduce((acc, reply) => {
-            if (!acc[reply.parentId]) {
-                acc[reply.parentId] = [];
+        // group replies by their root parent
+        const repliesByRoot = {};
+        replies.forEach((reply) => {
+            const rootParentId = findRootParent(reply.parentId, comments);
+            if (!repliesByRoot[rootParentId]) {
+                repliesByRoot[rootParentId] = [];
             }
-            acc[reply.parentId].push(reply);
-            return acc;
-        }, {});
+            repliesByRoot[rootParentId].push(reply);
+        });
 
-        // sort replies within each parent group
-        Object.keys(repliesByParent).forEach((parentId) => {
-            repliesByParent[parentId].sort((a, b) => {
+        // sort replies within each root group by time
+        Object.keys(repliesByRoot).forEach((rootId) => {
+            repliesByRoot[rootId].sort((a, b) => {
                 const timeA = new Date(a.metadata.createdAt).getTime();
                 const timeB = new Date(b.metadata.createdAt).getTime();
                 return timeB - timeA;
             });
         });
 
-        // build the result
+        // build final structure
         const result = [];
-        sortedParents.forEach((parent) => {
-            result.push(parent);
-            if (repliesByParent[parent.id]) {
-                result.push(...repliesByParent[parent.id]);
+        sortedRoots.forEach((root) => {
+            result.push(root);
+            if (repliesByRoot[root.id]) {
+                result.push(...repliesByRoot[root.id]);
             }
         });
 
@@ -137,10 +160,11 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
         setIsSubmitting(true);
 
         try {
+            // Use the root parent ID for proper threading
             const parentId = replyingTo?.id;
             let finalCommentText = commentText.trim();
 
-            // adds mention if needed
+            // Add mention if needed
             if (replyingTo && !finalCommentText.includes(`@${replyingTo.name}`)) {
                 finalCommentText = `@${replyingTo.name} ${finalCommentText}`;
             }
@@ -164,7 +188,14 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
 
     // handles replying
     const handleReply = (commentId: string, userName: string) => {
-        setReplyingTo({ id: commentId, name: userName });
+        const rootParentId = findRootParent(commentId, localComments);
+
+        setReplyingTo({
+            id: rootParentId,
+            name: userName,
+            immediateParent: commentId,
+        });
+
         setCommentText(`@${userName} `);
         setAutoFocusInput(true);
     };
@@ -176,7 +207,6 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
             return;
         }
 
-        // second alert
         Alert.alert("Delete Comment", "Are you sure you want to delete this comment?", [
             {
                 text: "Cancel",
@@ -191,10 +221,9 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                     try {
                         await deleteComment(postId, commentId);
 
-                        // remove from the local state
+                        // Remove from local state
                         setLocalComments((prev) => prev.filter((c) => c.id !== commentId));
 
-                        // notify the parent
                         if (onCommentDeleted) {
                             onCommentDeleted(commentId);
                         }
@@ -208,7 +237,6 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                             if (onCommentDeleted) {
                                 onCommentDeleted(commentId);
                             }
-
                             showToast("Comment deleted", "success");
                         } else {
                             setDeletingComments((prev) => {
@@ -216,7 +244,6 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                                 newSet.delete(commentId);
                                 return newSet;
                             });
-
                             showToast("Failed to delete comment", "danger");
                         }
                     }
@@ -231,7 +258,6 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
             return;
         }
 
-        // first alert
         Alert.alert("Comment Options", "", [
             {
                 text: "Delete Comment",
@@ -280,6 +306,10 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                                             ? () => handleLongPress(comment.id, comment.user._id)
                                             : undefined
                                     }
+                                    onPress={async () => {
+                                        onClose();
+                                        router.push(`/account/${comment.user._id}`);
+                                    }}
                                     delayLongPress={500}
                                     activeOpacity={isDeleting ? 1 : 0.7}>
                                     <UserInfoRowComment
@@ -287,7 +317,7 @@ const Comment = ({ comments, postId, onCommentAdded, onCommentDeleted, currentUs
                                         content={comment.content}
                                         icon={comment.user.profile_picture}
                                         time={getTimeAgo(comment.metadata.createdAt)}
-                                        id={comment.id}
+                                        id={comment.id} // Pass comment ID for proper threading
                                         onReply={!isDeleting ? handleReply : undefined}
                                     />
                                     {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}

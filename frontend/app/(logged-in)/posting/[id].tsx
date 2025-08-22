@@ -36,10 +36,10 @@ export default function PostDetail() {
                 const processedPost = {
                     ...postData,
                     user: {
-                        _id: user.ID,
-                        display_name: user.DisplayName,
-                        handle: user.Handle,
-                        profile_picture: user.ProfilePicture,
+                        _id: user._id,
+                        display_name: user.display_name,
+                        handle: user.handle,
+                        profile_picture: user.profile_picture,
                     },
                 };
                 setPost(processedPost);
@@ -64,10 +64,10 @@ export default function PostDetail() {
             const processedPost = {
                 ...postData,
                 user: {
-                    _id: user.ID,
-                    display_name: user.DisplayName,
-                    handle: user.Handle,
-                    profile_picture: user.ProfilePicture,
+                    _id: user._id,
+                    display_name: user.display_name,
+                    handle: user.handle,
+                    profile_picture: user.profile_picture,
                 },
             };
             setPost(processedPost);
