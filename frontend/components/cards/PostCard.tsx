@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Modal,
     Image,
@@ -24,7 +24,7 @@ import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
 import { toggleReaction } from "@/api/post";
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from "@tanstack/react-query";
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -86,16 +86,27 @@ const PostCard = ({
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
     const queryClient = useQueryClient();
+    const headerHeight = 100;
 
     useEffect(() => {
-        setLocalReactions(reactions);
+        if (JSON.stringify(reactions) !== JSON.stringify(localReactions)) {
+            setLocalReactions(reactions);
+        }
     }, [reactions]);
 
     useEffect(() => {
-        console.log("🔍 POSTCARD: Comments prop changed:", comments?.length || 0);
         setCurrentComments(comments || []);
     }, [comments]);
 
+    const screenHeight = Dimensions.get("window").height;
+
+    // Define snap points
+    const snapPoints = useMemo(() => {
+        const baseHeight = screenHeight * 0.6; // 50% of screen
+        const maxHeight = screenHeight * 0.6; // 90% of screen (for keyboard)
+
+        return [baseHeight, maxHeight];
+    }, [screenHeight]);
     const mergeReactions = (): SlackReaction[] => {
         const safeReactions = Array.isArray(reactions) ? reactions : [];
         const reactionMap = new Map<string, SlackReaction>();
@@ -428,6 +439,8 @@ const PostCard = ({
                     ref={bottomSheetModalRef}
                     onChange={handleSheetChanges}
                     enableDynamicSizing={true}
+                    snapPoints={snapPoints}
+                    index={0}
                     enablePanDownToClose={true}
                     enableDismissOnClose={true}
                     enableHandlePanningGesture={true}
