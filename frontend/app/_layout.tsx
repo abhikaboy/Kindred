@@ -37,7 +37,16 @@ Sentry.init({
   // Configure Session Replay
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+  integrations: [Sentry.mobileReplayIntegration(),     Sentry.feedbackIntegration({
+    // Additional SDK configuration goes in here, for example:
+    styles: {
+      submitButton: {
+        backgroundColor: "#6a1b9a",
+      },
+    },
+    namePlaceholder: "Fullname",
+
+  }),],
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
@@ -62,26 +71,26 @@ export default Sentry.wrap(function RootLayout() {
 
     Accelerometer.setUpdateInterval(500); // Adjust update interval as needed
 
-    useEffect(() => {
-        const subscription = Accelerometer.addListener((data) => {
-            const totalForce = Math.abs(data.x) + Math.abs(data.y) + Math.abs(data.z);
+    // useEffect(() => {
+    //     const subscription = Accelerometer.addListener((data) => {
+    //         const totalForce = Math.abs(data.x) + Math.abs(data.y) + Math.abs(data.z);
 
-            if (totalForce > 3) {
-                // Adjust the threshold as needed
-                setShakeDetected(true);
-                // router.push("/AuditLog");
-                setTimeout(() => {
-                    setShakeDetected(false);
-                }, 500); // Reset after a short period
-            }
-        });
+    //         if (totalForce > 3) {
+    //             // Adjust the threshold as needed
+    //             setShakeDetected(true);
+    //             // router.push("/AuditLog");
+    //             setTimeout(() => {
+    //                 setShakeDetected(false);
+    //             }, 500); // Reset after a short period
+    //         }
+    //     });
 
-        setSubscription(subscription);
+    //     setSubscription(subscription);
 
-        return () => {
-            subscription.remove();
-        };
-    }, []);
+    //     return () => {
+    //         subscription.remove();
+    //     };
+    // }, []);
 
     useEffect(() => {
         const hideSplash = async () => {
