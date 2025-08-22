@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -130,6 +131,13 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	id := result.InsertedID.(primitive.ObjectID)
 	congratulation.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Congratulation inserted", slog.String("id", id.Hex()))
+
+	// Send notification to receiver
+	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message)
+	if err != nil {
+		// Log error but don't fail the operation since congratulation was already created
+		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
+	}
 
 	return congratulation.ToAPI(), nil
 }
@@ -263,4 +271,41 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*CongratulationSen
 		Picture: user.ProfilePicture,
 		ID:      user.ID,
 	}, nil
+}
+
+// sendCongratulationNotification sends a push notification when a congratulation is created
+func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+	
+	ctx := context.Background()
+	
+	// Get receiver's push token
+	var receiver types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": receiverID}).Decode(&receiver)
+	if err != nil {
+		return fmt.Errorf("failed to get receiver user: %w", err)
+	}
+	
+	if receiver.PushToken == "" {
+		slog.Warn("Receiver has no push token", "receiver_id", receiverID)
+		return nil // Not an error, just no notification sent
+	}
+	
+	message := fmt.Sprintf("%s has sent you a congratulation on %s \"%s\"", senderName, taskName, congratulationText)
+	
+	notification := xutils.Notification{
+		Token:   receiver.PushToken,
+		Title:   "New Congratulation!",
+		Message: message,
+		Data: map[string]string{
+			"type":         "congratulation",
+			"sender_name":  senderName,
+			"task_name":    taskName,
+			"message_text": congratulationText,
+		},
+	}
+	
+	return xutils.SendNotification(notification)
 } 
