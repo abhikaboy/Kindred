@@ -24,6 +24,7 @@ import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
 import { toggleReaction } from "@/api/post";
+import { useQueryClient } from '@tanstack/react-query';
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -84,10 +85,16 @@ const PostCard = ({
     const [currentComments, setCurrentComments] = useState(comments || []);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         setLocalReactions(reactions);
     }, [reactions]);
+
+    useEffect(() => {
+        console.log("🔍 POSTCARD: Comments prop changed:", comments?.length || 0);
+        setCurrentComments(comments || []);
+    }, [comments]);
 
     const mergeReactions = (): SlackReaction[] => {
         const safeReactions = Array.isArray(reactions) ? reactions : [];

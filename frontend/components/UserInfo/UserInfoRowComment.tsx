@@ -10,7 +10,7 @@ type Props = {
     name: string;
     content: string;
     icon: string;
-    id?: string;
+    id?: string; 
     time?: number;
     onReply?: (commentId: string, userName: string) => void;
 };
@@ -20,47 +20,47 @@ const UserInfoRowComment = ({ name, content, icon, time, id, onReply }: Props) =
 
     const handleReply = () => {
         if (onReply && id) {
-            onReply(id, name);
+            onReply(id, name); 
         }
     };
 
     return (
         <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
-           
-                <View style={styles.row}>
-                    <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-                        <View style={{ paddingTop: 8 }}>
-                            <PreviewIcon size={"smallMedium"} icon={icon} />
-                        </View>
-                        <View style={{ gap: 2, flex: 1 }}>
-                            <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
+            <View style={styles.row}>
+                <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+                    <View style={{ paddingTop: 8 }}>
+                        <PreviewIcon size={"smallMedium"} icon={icon} />
+                    </View>
+                    <View style={{ gap: 2, flex: 1 }}>
+                        <View style={{ flexDirection: "row", gap: 8, alignItems: "baseline" }}>
+                            <ThemedText
+                                type="caption"
+                                style={{
+                                    color: ThemedColor.text,
+                                }}>
+                                {name || "Unknown User"}
+                            </ThemedText>
+                            {time !== undefined && (
                                 <ThemedText
                                     type="caption"
                                     style={{
-                                        color: ThemedColor.text,
+                                        color: ThemedColor.caption,
                                     }}>
-                                    {name || "Unknown User"}
+                                    {time < 1 ? `${Math.round(time * 60)}m ago` : `${Math.round(time)}h ago`}
                                 </ThemedText>
-                                {time !== undefined && (
-                                    <ThemedText
-                                        type="caption"
-                                        style={{
-                                            color: ThemedColor.caption,
-                                        }}>
-                                        {time < 1 ? `${Math.round(time * 60)}m ago` : `${Math.round(time)}h ago`}
-                                    </ThemedText>
-                                )}
-                            </View>
-                            <ThemedText
-                                style={[
-                                    styles.commentText,
-                                    {
-                                        color: ThemedColor.text,
-                                    },
-                                ]}
-                                type={"default"}>
-                                {content}
-                            </ThemedText>
+                            )}
+                        </View>
+                        <ThemedText
+                            style={[
+                                styles.commentText,
+                                {
+                                    color: ThemedColor.text,
+                                },
+                            ]}
+                            type={"default"}>
+                            {content}
+                        </ThemedText>
+                        {onReply && (
                             <TouchableOpacity onPress={handleReply}>
                                 <ThemedText
                                     type="caption"
@@ -70,9 +70,10 @@ const UserInfoRowComment = ({ name, content, icon, time, id, onReply }: Props) =
                                     Reply
                                 </ThemedText>
                             </TouchableOpacity>
-                        </View>
+                        )}
                     </View>
                 </View>
+            </View>
         </View>
     );
 };
