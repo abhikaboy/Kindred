@@ -123,4 +123,5 @@ Database layer of the application
 
 type Service struct {
 	Connections *mongo.Collection
+	Users       *mongo.Collection
 }

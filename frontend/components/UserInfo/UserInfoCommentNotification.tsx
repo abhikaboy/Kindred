@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { ThemedText } from "../ThemedText";
 import PreviewIcon from "../profile/PreviewIcon";
 import { getThemedColor } from "@/constants/Colors";
+import { router } from "expo-router";
 
 type Props = {
     name: string;
@@ -68,14 +69,13 @@ const UserInfoEncouragementNotification = ({ name, userId, comment, icon, time, 
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={() => console.log("Comment Notification")}>
+            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)}>
                 <PreviewIcon size={"smallMedium"} icon={icon} />
             </TouchableOpacity>
 
             <View style={styles.textContainer}>
                 <ThemedText numberOfLines={0} ellipsizeMode="tail" type="smallerDefault" style={styles.text}>
-                    <ThemedText type="smallerDefault" style={{ fontWeight: "500" }}>{name}</ThemedText>
-                    <ThemedText type="smallerDefault" > just commented "{comment}" on your recent post</ThemedText>
+                    <ThemedText type="smallerDefault" > {comment} on your recent post</ThemedText>
                 </ThemedText>
                 <ThemedText type="caption">
                 {timeLabel}
