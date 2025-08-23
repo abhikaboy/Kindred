@@ -19,9 +19,14 @@ import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
+import { components } from "@/api/generated/types";
+import { useTasks } from "@/contexts/tasksContext";
+
+
 
 export default function Profile() {
     const { user } = useAuth();
+    const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
     let ThemedColor = useThemeColor();
 
     const [activeTab, setActiveTab] = useState(0);
@@ -30,29 +35,32 @@ export default function Profile() {
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
 
-    // Use useMemo to recalculate mockTasks when user changes
-    const mockTasks = useMemo(
-        () => ({
-            activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
-            todayTasks: user?._id
-                ? [
-                      { id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true },
-                      {
-                          id: "today-2",
-                          content: "complete project",
-                          value: 15,
-                          priority: 2 as const,
-                          congratulate: true,
-                      },
-                  ]
-                : [],
-            completedTasks: [
-                { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
-                { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
-            ],
-        }),
-        [user?._id]
-    );
+    type TaskDocument = components["schemas"]["TaskDocument"];
+
+    const tasks = useMemo(() => {
+        // Combine start today and due today tasks, filter for public tasks
+        const todayTasks = [...startTodayTasks, ...dueTodayTasks, ...windowTasks]
+            .filter(task => task.public)
+            .map(task => ({ 
+                id: task.id,
+                content: task.content,
+                value: task.value,
+                priority: task.priority as 1 | 2 | 3,
+                encourage: false, 
+                categoryName: (task as any).categoryName || task.categoryID 
+            }));
+
+        return {
+            todayTasks,
+            completedTasks: [],
+            activeTasks: [],
+            encouragementConfig: {
+                userHandle: user?.handle,
+                receiverId: user?._id,
+                categoryName: "Encouragement",
+            },
+        };
+    }, [startTodayTasks, dueTodayTasks, windowTasks, user]);
 
 
     return (
@@ -81,26 +89,8 @@ export default function Profile() {
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <ConditionalView condition={activeTab == 0}>
-                    <TaskList
-                        {...mockTasks}
-                        encouragementConfig={
-                            user?._id
-                                ? {
-                                      userHandle: user?.handle,
-                                      receiverId: user._id,
-                                      categoryName: "Profile Tasks",
-                                  }
-                                : undefined
-                        }
-                        congratulationConfig={
-                            user?._id
-                                ? {
-                                      userHandle: user?.handle,
-                                      receiverId: user._id,
-                                      categoryName: "Profile Tasks",
-                                  }
-                                : undefined
-                        }
+                    <TaskList 
+                    {...tasks}
                     />
                 </ConditionalView>
 

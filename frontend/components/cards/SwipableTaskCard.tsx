@@ -29,22 +29,10 @@ type Props = {
 export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName }: Props) {
     const { removeFromCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
-    console.log("🔍 CATEGORY DEBUG:");
-    console.log("  - categoryId:", categoryId);
-    console.log("  - categoryName prop:", categoryName);
-    console.log(
-        "  - available categories:",
-        categories?.map((c) => ({ id: c.id, name: c.name }))
-    );
-    console.log(
-        "  - lookup result:",
-        categories?.find((cat) => cat.id === categoryId)
-    );
 
     const finalCategoryName =
         categoryName || categories?.find((cat) => cat.id === categoryId)?.name || "Unknown Category";
 
-    console.log("  - finalCategoryName:", finalCategoryName);
 
     /* 
   Mark as completed function

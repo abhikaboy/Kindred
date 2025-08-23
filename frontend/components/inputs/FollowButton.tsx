@@ -6,6 +6,8 @@ import { createConnectionAPI, deleteConnectionAPI } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import PrimaryButton from "./PrimaryButton";
 
 type Props = {
     profile: Profile; // Profile with relationship information
@@ -15,6 +17,7 @@ type Props = {
 export default function FollowButton({ profile, onRelationshipChange }: Props) {
     const [isLoading, setIsLoading] = useState(false);
     const { user } = useAuth();
+    const router = useRouter();
     let ThemedColor = useThemeColor();
 
     console.log("FollowButton - profile:", profile);
@@ -116,8 +119,14 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
 
     // Don't show button for self profile
     if (relationship === "self") {
-        console.log("FollowButton - not showing button for self profile");
-        return null;
+        return (
+            <PrimaryButton
+                title="Edit Profile"
+                onPress={() => {
+                    router.push("/(logged-in)/(tabs)/(profile)/edit");
+                }}
+            />
+        );
     }
 
     console.log("FollowButton - rendering button with relationship:", relationship);
