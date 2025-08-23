@@ -13,7 +13,7 @@ import { useDrawer } from "@/contexts/drawerContext";
 
 const Today = () => {
     const ThemedColor = useThemeColor();
-    const { startTodayTasks, dueTodayTasks } = useTasks();
+    const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
     const drawerRef = useRef(null);
     const { setIsDrawerOpen } = useDrawer();
 
@@ -67,6 +67,23 @@ const Today = () => {
                                 <ThemedText type="lightBody">No tasks scheduled for today.</ThemedText>
                             ) : (
                                 startTodayTasks.map((task) => (
+                                    <SwipableTaskCard
+                                        key={task.id}
+                                        redirect={true}
+                                        categoryId={task.categoryID}
+                                        task={task}
+                                    />
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                    <View style={{ gap: 8 }}>
+                        <ThemedText type="subtitle">Window Tasks</ThemedText>
+                        <ScrollView contentContainerStyle={{ gap: 16 }}>
+                            {windowTasks.length === 0 ? (
+                                <ThemedText type="lightBody">No tasks in the window.</ThemedText>
+                            ) : (
+                                windowTasks.map((task) => (
                                     <SwipableTaskCard
                                         key={task.id}
                                         redirect={true}

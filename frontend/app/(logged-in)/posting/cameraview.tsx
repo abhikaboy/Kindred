@@ -40,7 +40,9 @@ export default function Posting() {
     }, [viewMode, currentPhotoIndex]);
 
     const takePicture = async () => {
-        const photo = await camera.current?.takePictureAsync();
+        const photo = await camera.current?.takePictureAsync({
+            quality: 0.5,
+        });
         if (photo?.uri) {
             setPhotos([...photos, photo.uri]);
             setCurrentPhotoIndex(photos.length);
@@ -51,7 +53,7 @@ export default function Posting() {
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 1,
+            quality: 0.5,
             allowsMultipleSelection: true,
         });
         if (!result.canceled && result.assets && result.assets.length > 0) {

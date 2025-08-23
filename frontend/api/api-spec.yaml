@@ -5183,6 +5183,8 @@ components:
                     type: string
                 read:
                     type: boolean
+                receiver:
+                    type: string
                 reference_id:
                     type: string
                 time:
@@ -5193,6 +5195,7 @@ components:
             required:
                 - id
                 - content
+                - receiver
                 - user
                 - time
                 - notificationType

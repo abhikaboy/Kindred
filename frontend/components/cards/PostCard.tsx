@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
     Modal,
     Image,
@@ -86,7 +86,59 @@ const PostCard = ({
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
     const queryClient = useQueryClient();
-    const headerHeight = 100;
+    const [imageDimensions, setImageDimensions] = useState<{[key: number]: {width: number, height: number}}>({});
+    const screenWidth = Dimensions.get("window").width;
+    const maxHeight = screenWidth * 1.5;
+
+    // Calculate the optimal height based on the largest image aspect ratio
+    const optimalHeight = useMemo(() => {
+        if (!images || images.length === 0) return maxHeight;
+        
+        // Check if we have all image dimensions
+        const hasAllDimensions = images.every((_, index) => imageDimensions[index]);
+        
+        if (!hasAllDimensions) return maxHeight;
+        
+        // Find the image with the largest height when scaled to screen width
+        let maxCalculatedHeight = screenWidth * 0.34; // Minimum height
+        
+        Object.values(imageDimensions).forEach(({ width, height }) => {
+            const aspectRatio = width / height;
+            const calculatedHeight = screenWidth / aspectRatio;
+            
+            // Constrain height between screen width and max height
+            const constrainedHeight = Math.max(screenWidth * 0.34, Math.min(calculatedHeight, maxHeight));
+            maxCalculatedHeight = Math.max(maxCalculatedHeight, constrainedHeight);
+        });
+        
+        return maxCalculatedHeight;
+    }, [images, imageDimensions, screenWidth, maxHeight]);
+
+    // Function to get image dimensions
+    const getImageDimensions = useCallback((imageUri: string, index: number) => {
+        Image.getSize(imageUri, (width, height) => {
+            setImageDimensions(prev => ({
+                ...prev,
+                [index]: { width, height }
+            }));
+        }, (error) => {
+            console.error('Error getting image size:', error);
+            // Fallback to square aspect ratio if we can't get the image size
+            setImageDimensions(prev => ({
+                ...prev,
+                [index]: { width: screenWidth, height: screenWidth }
+            }));
+        });
+    }, [screenWidth]);
+
+    // Get dimensions for all images when images change
+    useEffect(() => {
+        if (images && images.length > 0) {
+            images.forEach((imageUri, index) => {
+                getImageDimensions(imageUri, index);
+            });
+        }
+    }, [images, getImageDimensions]);
 
     useEffect(() => {
         if (JSON.stringify(reactions) !== JSON.stringify(localReactions)) {
@@ -300,14 +352,20 @@ const PostCard = ({
                             {images.length === 1 ? (
                                 // Single image - no counter needed
                                 <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                    <Image source={{ uri: images[0] }} style={styles.image} />
+                                    <Image 
+                                        source={{ uri: images[0] }} 
+                                        style={[
+                                            styles.image,
+                                            { height: optimalHeight }
+                                        ]} 
+                                    />
                                 </TouchableOpacity>
                             ) : (
                                 <View style={styles.carouselContainer}>
                                     <Carousel
                                         loop={false}
                                         width={Dimensions.get("window").width}
-                                        height={Dimensions.get("window").width}
+                                        height={optimalHeight}
                                         style={styles.carousel}
                                         snapEnabled={true}
                                         pagingEnabled={true}
@@ -315,7 +373,13 @@ const PostCard = ({
                                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                                         renderItem={({ item, index }) => (
                                             <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
-                                                <Image source={{ uri: item }} style={styles.image} />
+                                                <Image 
+                                                    source={{ uri: item }} 
+                                                    style={[
+                                                        styles.image,
+                                                        { height: optimalHeight }
+                                                    ]} 
+                                                />
                                             </TouchableOpacity>
                                         )}
                                     />
@@ -502,6 +566,7 @@ const PostCard = ({
     );
 };
 
+
 const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
@@ -627,11 +692,10 @@ const stylesheet = (ThemedColor: any) =>
         },
         carousel: {
             width: Dimensions.get("window").width,
-            height: Dimensions.get("window").width,
+            minWidth: Dimensions.get("window").width,
         },
         image: {
             width: Dimensions.get("window").width,
-            height: Dimensions.get("window").width,
             resizeMode: "cover",
         },
         imageCounter: {

@@ -14,7 +14,7 @@ import { useTaskCreation } from "@/contexts/taskCreationContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
-import { isSameDay, startOfDay, endOfDay } from "date-fns";
+import { isSameDay, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 
@@ -120,6 +120,15 @@ const Daily = (props: Props) => {
             if (task.deadline) {
                 const taskDeadline = new Date(task.deadline);
                 if (isSameDay(taskDeadline, selectedDate)) {
+                    return true;
+                }
+            }
+
+            // Check if task is in the window between start date and deadline
+            if (task.startDate && task.deadline) {
+                const taskStartDate = new Date(task.startDate);
+                const taskDeadline = new Date(task.deadline);
+                if (isWithinInterval(selectedDate, { start: taskStartDate, end: taskDeadline })) {
                     return true;
                 }
             }
