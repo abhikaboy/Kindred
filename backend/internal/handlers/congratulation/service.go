@@ -143,7 +143,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 
 	// Create notification in the database
 	notificationContent := fmt.Sprintf("%s has sent you a congratulation on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
-	err = s.NotificationService.CreateNotification(r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id)
+	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to create congratulation notification in database", "error", err, "receiver_id", r.Receiver)

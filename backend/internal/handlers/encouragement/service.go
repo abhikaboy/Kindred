@@ -142,7 +142,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 
 	// Create notification in the database
 	notificationContent := fmt.Sprintf("%s has sent you an encouragement on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
-	err = s.NotificationService.CreateNotification(r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, id)
+	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, id)
 	if err != nil {
 		// Log error but don't fail the operation since encouragement was already created
 		slog.Error("Failed to create encouragement notification in database", "error", err, "receiver_id", r.Receiver)

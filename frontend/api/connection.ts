@@ -6,6 +6,7 @@ import { withAuthHeaders } from "./utils";
 type ConnectionDocument = components["schemas"]["ConnectionDocument"];
 type CreateConnectionParams = components["schemas"]["CreateConnectionParams"];
 type ConnectionUser = components["schemas"]["ConnectionUser"];
+type UserExtendedReference = components["schemas"]["UserExtendedReference"];
 
 /**
  * Create a new friend connection request
@@ -38,6 +39,23 @@ export const getConnectionsAPI = async (): Promise<ConnectionDocument[]> => {
 
     if (error) {
         throw new Error(`Failed to get connections: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
+
+/**
+ * Get all friends of the authenticated user
+ * API: Makes GET request to retrieve user's friends
+ * Frontend: Used to display friends in profile or activity feed
+ */
+export const getFriendsAPI = async (): Promise<UserExtendedReference[]> => {
+    const { data, error } = await client.GET("/v1/user/connections/friends", {
+        params: withAuthHeaders(),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get friends: ${JSON.stringify(error)}`);
     }
 
     return data || [];

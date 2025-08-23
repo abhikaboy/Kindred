@@ -1,6 +1,7 @@
 package Profile
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -23,11 +24,12 @@ type ProfileDocument struct {
 	Handle         string               `bson:"handle" json:"handle"`
 	TasksComplete  int                  `bson:"tasks_complete" json:"tasks_complete"`
 	Streak         int                  `bson:"streak" json:"streak"`
-	Points         int                  `bson:"points" json:"points"`               // Stored field in users collection
-	PostsMade      int                  `bson:"posts_made" json:"posts_made"`      // Stored field in users collection
+	Points         int                  `bson:"points" json:"points"`         // Stored field in users collection
+	PostsMade      int                  `bson:"posts_made" json:"posts_made"` // Stored field in users collection
 	Friends        []primitive.ObjectID `bson:"friends" json:"friends"`
 	// Relationship information - only included when viewing another user's profile
-	Relationship *RelationshipInfo `bson:"-" json:"relationship,omitempty"`
+	Relationship *RelationshipInfo    `bson:"-" json:"relationship,omitempty"`
+	Tasks        []types.TaskDocument `bson:"tasks" json:"tasks,omitempty"`
 }
 
 // RelationshipInfo contains details about the relationship between users
@@ -50,4 +52,5 @@ Database layer of the application
 type Service struct {
 	Profiles    *mongo.Collection
 	Connections *mongo.Collection // Add connections collection for relationship checks
+	Tasks       *mongo.Collection
 }

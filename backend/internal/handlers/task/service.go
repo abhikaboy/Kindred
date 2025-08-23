@@ -108,6 +108,30 @@ func (s *Service) GetTasksByUser(id primitive.ObjectID, sort bson.D) ([]TaskDocu
 
 	return results, nil
 }
+func (s *Service) GetPublicTasks(id primitive.ObjectID, sort bson.D) ([]TaskDocument, error) {
+	ctx := context.Background()
+
+	fmt.Println(sort)
+
+	pipeline := getTasksByUserPipeline(id)
+	pipeline = append(pipeline, bson.D{
+		{Key: "$match", Value: bson.M{"public": true}},
+	})
+	pipeline = append(pipeline, sort)
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
 
 // GetTaskByID returns a single Task document by its ObjectID
 func (s *Service) GetTaskByID(id primitive.ObjectID, user primitive.ObjectID) (*TaskDocument, error) {

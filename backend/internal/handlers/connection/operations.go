@@ -182,6 +182,17 @@ func RegisterUpdateConnectionOperation(api huma.API, handler *Handler) {
 	}, handler.UpdateConnectionHuma)
 }
 
+func RegisterGetFriendsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-friends",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/connections/friends",
+		Summary:     "Get friends",
+		Description: "Get all friends of the authenticated user",
+		Tags:        []string{"connections"},
+	}, handler.GetFriendsHuma)
+}
+
 func RegisterDeleteConnectionOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-connection",

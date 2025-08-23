@@ -3,6 +3,7 @@ package Connection
 import (
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -114,6 +115,15 @@ func SortUserIDStrings(userA, userB string) []string {
 		return []string{userA, userB}
 	}
 	return []string{userB, userA}
+}
+
+type GetFriendsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
+
+type GetFriendsOutput struct {
+	Body []types.UserExtendedReference `json:"body"`
 }
 
 /*
