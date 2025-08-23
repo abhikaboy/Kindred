@@ -85,7 +85,7 @@ func (s *Service) GetUserNotifications(userID primitive.ObjectID, limit int, ski
 	}
 
 	ctx := context.Background()
-	filter := bson.M{"user._id": userID}
+	filter := bson.M{"receiver": userID}
 
 	// Sort by time descending (newest first)
 	opts := options.Find().
@@ -115,7 +115,7 @@ func (s *Service) GetUnreadCount(userID primitive.ObjectID) (int64, error) {
 
 	ctx := context.Background()
 	filter := bson.M{
-		"user._id": userID,
+		"receiver": userID,
 		"read":     false,
 	}
 
@@ -154,7 +154,7 @@ func (s *Service) MarkAllAsReadForUser(userID primitive.ObjectID) error {
 
 	ctx := context.Background()
 	filter := bson.M{
-		"user._id": userID,
+		"receiver": userID,
 		"read":     false,
 	}
 	update := bson.M{"$set": bson.M{"read": true}}
