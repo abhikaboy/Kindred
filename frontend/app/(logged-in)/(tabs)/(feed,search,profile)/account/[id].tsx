@@ -21,12 +21,17 @@ import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import FollowButton from "@/components/inputs/FollowButton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
-import { type Profile, type RelationshipStatus } from "@/api/types";
+import { type Profile, type RelationshipStatus} from "@/api/types";
+import { components } from "@/api/generated/types";
 
 export default function Profile() {
     const { id } = useLocalSearchParams();
     const queryClient = useQueryClient();
     const { user } = useAuth();
+
+    type TaskDocument = components["schemas"]["TaskDocument"];
+    type ProfileDocument = components["schemas"]["ProfileDocument"];
+
 
     const fallback_profile = {
         id: "67ef139d4931ee7a9fb630fc",
@@ -55,19 +60,19 @@ export default function Profile() {
     const tasks = useMemo(() => {
         if (profile?.tasks?.length > 0)
             return {
-                todayTasks: profile?.tasks,
+                todayTasks: profile?.tasks.map((task : TaskDocument) => ({ ...task, encourage: true, categoryName: task.categoryID })),
                 completedTasks: [],
                 activeTasks: [],
+                encouragementConfig: {
+                    userHandle: profile?.handle,
+                    receiverId: profile?.id,
+                    categoryName: "Encouragement",
+                },
             };
 
         const tasks = {
-            todayTasks: profile?.id
-                ? [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }]
-                : [],
-            completedTasks: [
-                { id: "done-1", content: "do my hw lol", value: 3, priority: 1 as const },
-                { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
-            ],
+            todayTasks: [],
+            completedTasks: [],
         };
         return tasks;
     }, [profile]);
@@ -120,18 +125,7 @@ export default function Profile() {
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <ConditionalView condition={activeTab == 0}>
-                    <TaskList
-                        {...tasks}
-                        encouragementConfig={
-                            profile?.id
-                                ? {
-                                      userHandle: profile?.handle,
-                                      receiverId: profile.id,
-                                      categoryName: "Profile Tasks",
-                                  }
-                                : undefined
-                        }
-                    />
+                    <TaskList {...tasks} />
                 </ConditionalView>
 
                 <ConditionalView condition={activeTab == 1}>

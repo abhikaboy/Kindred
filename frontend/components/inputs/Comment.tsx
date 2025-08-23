@@ -71,6 +71,8 @@ const Comment = ({
     const [autoFocusInput, setAutoFocusInput] = useState(false);
     const [deletingComments, setDeletingComments] = useState<Set<string>>(new Set());
 
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
     // only update if comments changed
     useEffect(() => {
         setLocalComments(comments || []);
@@ -78,8 +80,12 @@ const Comment = ({
 
     // gets keyboard height when keyboard is being used
     useEffect(() => {
-        const showSub = Keyboard.addListener("keyboardDidShow", (e) => {});
-        const hideSub = Keyboard.addListener("keyboardDidHide", () => {});
+        const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+            setIsKeyboardVisible(true);
+        });
+        const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+            setIsKeyboardVisible(false);
+        });
         return () => {
             showSub.remove();
             hideSub.remove();
@@ -279,7 +285,9 @@ const Comment = ({
                     <ThemedText style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
                 </View>
                 <ScrollView
-                    style={styles.scrollView}
+                    style={{
+                        maxHeight: Dimensions.get("window").height * (isKeyboardVisible ? 0.37 : 0.6),
+                    }}
                     contentContainerStyle={styles.contentContainer}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled">
@@ -370,9 +378,6 @@ const stylesheet = (ThemedColor: any) =>
             fontSize: 18,
             fontWeight: "600",
             color: ThemedColor.text,
-        },
-        scrollView: {
-            maxHeight: Dimensions.get("window").height * 0.4,
         },
         contentContainer: {
             paddingBottom: 20,

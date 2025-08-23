@@ -5,7 +5,7 @@ import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI } from "@/api/category";
-import { isFuture, isPast, isToday } from "date-fns";
+import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
@@ -44,6 +44,7 @@ type TaskContextType = {
     pastDueTasks: Task[];
     futureTasks: Task[];
     allTasks: Task[];
+    windowTasks: Task[];
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,17 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const dueTodayTasks = useMemo(() => {
         return unnestedTasks.filter((task) => {
             return isToday(new Date(task?.deadline));
+        });
+    }, [unnestedTasks]);
+
+    const windowTasks = useMemo(() => {
+        return unnestedTasks.filter((task) => {
+            const today = new Date();
+            const startDate = new Date(task?.startDate);
+            const deadline = new Date(task?.deadline);
+            
+            // Check if today falls between start date and deadline
+            return startDate <= today && today <= deadline;
         });
     }, [unnestedTasks]);
 
@@ -404,6 +416,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 futureTasks,
                 allTasks,
                 fetchingWorkspaces,
+                windowTasks,
             }}>
             {children}
         </TaskContext.Provider>

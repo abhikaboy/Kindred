@@ -2410,6 +2410,7 @@ export interface components {
             id: string;
             notificationType: string;
             read: boolean;
+            receiver: string;
             reference_id: string;
             /** Format: date-time */
             time: string;
