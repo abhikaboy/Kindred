@@ -13,7 +13,6 @@ interface Task {
 }
 
 interface TaskListProps {
-    activeTasks: Task[];
     todayTasks: Task[];
     completedTasks: Task[];
     encouragementConfig?: {
@@ -29,7 +28,6 @@ interface TaskListProps {
 }
 
 export default function TaskList({
-    activeTasks,
     todayTasks,
     completedTasks,
     encouragementConfig,
@@ -37,19 +35,6 @@ export default function TaskList({
 }: TaskListProps) {
     return (
         <>
-            <View style={styles.taskSection}>
-                <ThemedText type="subtitle">Active Tasks</ThemedText>
-                {activeTasks.map((task) => (
-                    <TaskCard
-                        key={task.id}
-                        content={task.content}
-                        value={task.value}
-                        priority={task.priority}
-                        id={task.id}
-                        categoryId="profile"
-                    />
-                ))}
-            </View>
             <View style={styles.taskSection}>
                 <ThemedText type="subtitle">Today's Tasks</ThemedText>
                 {todayTasks.map((task) => (

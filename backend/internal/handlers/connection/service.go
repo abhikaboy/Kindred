@@ -310,6 +310,42 @@ func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, r
 	return xutils.SendNotification(notification)
 }
 
+func (s *Service) GetFriends(userID primitive.ObjectID) ([]types.UserExtendedReference, error) {
+	ctx := context.Background()
+
+	var friends []types.UserExtendedReference
+	pipeline := bson.D{
+		{Key: "$match", Value: bson.M{"friends": userID}},
+		{Key: "$lookup", Value: bson.M{
+			"from":         "users",
+			"localField":   "friends",
+			"foreignField": "_id",
+			"as":           "friends",
+		}},
+		{Key: "$unwind", Value: "$friends"},
+		{Key: "$replaceRoot", Value: bson.M{
+			"newRoot": "$friends",
+		}},
+		{Key: "$project", Value: bson.M{
+			"_id":             1,
+			"display_name":    1,
+			"handle":          1,
+			"profile_picture": 1,
+		}},
+	}
+	cursor, err := s.Users.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err := cursor.All(ctx, &friends); err != nil {
+		return nil, err
+	}
+
+	return friends, nil
+}
+
 // sendFriendRequestAcceptedNotification sends a push notification to the requester when their friend request is accepted
 func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.ObjectID, accepterName string) error {
 	ctx := context.Background()

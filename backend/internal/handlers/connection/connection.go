@@ -192,3 +192,24 @@ func (h *Handler) AcceptConnectionHuma(ctx context.Context, input *AcceptConnect
 	resp.Body.Message = "Connection request accepted successfully"
 	return resp, nil
 }
+
+func (h *Handler) GetFriendsHuma(ctx context.Context, input *GetFriendsInput) (*GetFriendsOutput, error) {
+	// Extract user_id from context for authorization
+
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userOID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	friends, err := h.service.GetFriends(userOID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get friends", err)
+	}
+
+	return &GetFriendsOutput{Body: friends}, nil
+}

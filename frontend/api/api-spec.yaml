@@ -5355,6 +5355,10 @@ components:
                 streak:
                     type: integer
                     format: int64
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
                 tasks_complete:
                     type: integer
                     format: int64

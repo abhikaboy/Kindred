@@ -38,7 +38,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 }
 
 // CreateNotification adds a new notification to the database
-func (s *Service) CreateNotification(userID primitive.ObjectID, content string, notificationType NotificationType, referenceID primitive.ObjectID) error {
+func (s *Service) CreateNotification(userID primitive.ObjectID, receiverID primitive.ObjectID, content string, notificationType NotificationType, referenceID primitive.ObjectID) error {
 	if s.Notifications == nil {
 		return fmt.Errorf("notifications collection not available")
 	}
@@ -54,8 +54,9 @@ func (s *Service) CreateNotification(userID primitive.ObjectID, content string, 
 
 	// Create the notification document
 	notification := NotificationDocument{
-		ID:      primitive.NewObjectID(),
-		Content: content,
+		ID:       primitive.NewObjectID(),
+		Receiver: receiverID,
+		Content:  content,
 		User: UserReference{
 			ID:             user.ID,
 			DisplayName:    user.DisplayName,

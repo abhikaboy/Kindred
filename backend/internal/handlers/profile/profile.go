@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -142,6 +143,17 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 
 	// Add relationship information to the profile
 	profile.Relationship = relationship
+
+	// if the profile relationship is friend or self, add tasks to the profile
+	if relationship.Status == RelationshipConnected || relationship.Status == RelationshipSelf {
+		tasks, err := h.service.GetProfileTasks(id)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Failed to get profile tasks", err)
+		}
+		profile.Tasks = tasks
+	} else {
+		profile.Tasks = []types.TaskDocument{}
+	}
 
 	resp := &GetProfileOutput{Body: *profile}
 	return resp, nil

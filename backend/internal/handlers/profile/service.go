@@ -4,6 +4,7 @@ import (
 	"context"
 
 	Connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +16,7 @@ func NewService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
 		Profiles:    collections["users"],
 		Connections: collections["friend-requests"],
+		Tasks:       collections["categories"],
 	}
 }
 
@@ -205,6 +207,38 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 
 	_, err := s.Profiles.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (s *Service) GetProfileTasks(userID primitive.ObjectID) ([]types.TaskDocument, error) {
+	ctx := context.Background()
+	var pipeline []bson.D = []bson.D{
+		{
+			{Key: "$match", Value: bson.M{"user": userID}},
+		},
+		{
+			{Key: "$unwind", Value: "$tasks"},
+		},
+		{
+			{Key: "$replaceRoot", Value: bson.M{
+				"newRoot": "$tasks",
+			}},
+		},
+		{
+			{Key: "$match", Value: bson.M{"public": true}},
+		},
+	}
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var tasks []types.TaskDocument
+	if err := cursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func (s *Service) CheckRelationship(userAID, userBID primitive.ObjectID) (*RelationshipInfo, error) {

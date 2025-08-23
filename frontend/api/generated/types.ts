@@ -2480,6 +2480,7 @@ export interface components {
             relationship?: components["schemas"]["RelationshipInfo"];
             /** Format: int64 */
             streak: number;
+            tasks?: components["schemas"]["TaskDocument"][];
             /** Format: int64 */
             tasks_complete: number;
         };

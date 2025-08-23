@@ -50,16 +50,17 @@ export default function Profile() {
         enabled: !!id,
     }) as any; // Type assertion until profile types are aligned
 
-    console.log("Account Profile component - profile:", profile);
-    console.log("Account Profile component - profile?.id:", profile?.id);
-    console.log("Account Profile component - isLoading:", isLoading);
-    console.log("Account Profile component - id from params:", id);
-    console.log("Account Profile component - profile?.relationship:", profile?.relationship);
 
     // Only show encourage tasks when profile data is loaded
-    const mockTasks = useMemo(() => {
+    const tasks = useMemo(() => {
+        if (profile?.tasks?.length > 0)
+            return {
+                todayTasks: profile?.tasks,
+                completedTasks: [],
+                activeTasks: [],
+            };
+
         const tasks = {
-            activeTasks: [{ id: "active-1", content: "do my hw lol", value: 9, priority: 1 as const }],
             todayTasks: profile?.id
                 ? [{ id: "today-1", content: "do my hw lol", value: 9, priority: 1 as const, encourage: true }]
                 : [],
@@ -68,8 +69,6 @@ export default function Profile() {
                 { id: "done-2", content: "do my hw lol", value: 2, priority: 2 as const },
             ],
         };
-        console.log("Account Profile component - mockTasks:", tasks);
-        console.log("Account Profile component - todayTasks length:", tasks.todayTasks.length);
         return tasks;
     }, [profile]);
 
@@ -122,7 +121,7 @@ export default function Profile() {
 
                 <ConditionalView condition={activeTab == 0}>
                     <TaskList
-                        {...mockTasks}
+                        {...tasks}
                         encouragementConfig={
                             profile?.id
                                 ? {

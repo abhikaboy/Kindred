@@ -31,6 +31,7 @@ const (
 type NotificationDocument struct {
 	ID               primitive.ObjectID `bson:"_id" json:"id"`
 	Content          string             `bson:"content" json:"content"`
+	Receiver         primitive.ObjectID `bson:"receiver" json:"receiver"`
 	User             UserReference      `bson:"user" json:"user"`
 	Time             time.Time          `bson:"time" json:"time"`
 	NotificationType NotificationType   `bson:"notificationType" json:"notificationType"`
@@ -85,9 +86,9 @@ type GetNotificationsOutput struct {
 
 // Mark Notifications as Read
 type MarkNotificationsReadInput struct {
-	Authorization    string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken     string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	NotificationIDs  []string `json:"notification_ids" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of notification IDs to mark as read"`
+	Authorization   string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken    string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	NotificationIDs []string `json:"notification_ids" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of notification IDs to mark as read"`
 }
 
 type MarkNotificationsReadOutput struct {
