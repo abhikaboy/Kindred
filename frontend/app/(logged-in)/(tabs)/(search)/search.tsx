@@ -3,41 +3,104 @@ import {
     StyleSheet,
     ScrollView,
     View,
-    Text,
     Pressable,
     Keyboard,
-    FlatList,
     RefreshControl,
 } from "react-native";
-import React, { useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo, useRef, useReducer } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { SearchBox } from "@/components/SearchBox";
-import ContactCard from "@/components/cards/ContactCard";
-import { Icons } from "@/constants/Icons";
-import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import BlueprintCard from "@/components/cards/BlueprintCard";
 import { getBlueprintsByCategoryFromBackend, searchBlueprintsFromBackend } from "@/api/blueprint";
+import { searchProfiles } from "@/api/profile";
 import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SearchResults } from "@/components/search/SearchResults";
+import { ExplorePage } from "@/components/search/ExplorePage";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
+type ProfileDocument = components["schemas"]["ProfileDocument"];
 
 type Props = {};
+
+type SearchState = {
+    mode: 'categories' | 'searching' | 'results' | 'no-results';
+    searchTerm: string;
+    searchResults: BlueprintDocument[];
+    userResults: ProfileDocument[];
+    error: string | null;
+};
+
+type SearchAction = 
+    | { type: 'SET_SEARCH_TERM'; payload: string }
+    | { type: 'START_SEARCH' }
+    | { type: 'SEARCH_SUCCESS'; payload: { blueprints: BlueprintDocument[]; users: ProfileDocument[] } }
+    | { type: 'SEARCH_ERROR'; payload: string }
+    | { type: 'CLEAR_SEARCH' }
+    | { type: 'REFRESH' };
+
+const searchReducer = (state: SearchState, action: SearchAction): SearchState => {
+    switch (action.type) {
+        case 'SET_SEARCH_TERM':
+            return {
+                ...state,
+                searchTerm: action.payload,
+                mode: action.payload.trim() ? 'searching' : 'categories'
+            };
+        case 'START_SEARCH':
+            return { ...state, mode: 'searching' };
+        case 'SEARCH_SUCCESS':
+            const hasResults = action.payload.blueprints.length > 0 || action.payload.users.length > 0;
+            return {
+                ...state,
+                searchResults: action.payload.blueprints,
+                userResults: action.payload.users,
+                mode: hasResults ? 'results' : 'no-results'
+            };
+        case 'SEARCH_ERROR':
+            return { ...state, mode: 'no-results', error: action.payload };
+        case 'CLEAR_SEARCH':
+            return {
+                ...state,
+                searchTerm: '',
+                searchResults: [],
+                userResults: [],
+                mode: 'categories',
+                error: null
+            };
+        case 'REFRESH':
+            return {
+                ...state,
+                searchResults: [],
+                userResults: [],
+                mode: 'categories',
+                error: null
+            };
+        default:
+            return state;
+    }
+};
 
 const Search = (props: Props) => {
     const [categoryGroups, setCategoryGroups] = React.useState<BlueprintCategoryGroup[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [activeTab, setActiveTab] = React.useState(0);
 
-    const [searchTerm, setSearchTerm] = React.useState("");
-    const [searched, setSearched] = React.useState(false);
+    const [state, dispatch] = useReducer(searchReducer, {
+        mode: 'categories',
+        searchTerm: '',
+        searchResults: [],
+        userResults: [],
+        error: null
+    });
+
+    const { searchTerm, searchResults, userResults, mode, error: searchError } = state;
+
     const [focused, setFocused] = React.useState(false);
-    const [searchResults, setSearchResults] = React.useState<BlueprintDocument[]>([]);
-    const [isSearching, setIsSearching] = React.useState(false);
-    const [refreshing, setRefreshing] = React.useState(false);
     const ThemedColor = useThemeColor();
 
     const opacity = useSharedValue(1);
@@ -67,21 +130,30 @@ const Search = (props: Props) => {
         loadBlueprintsByCategory();
     }, [loadBlueprintsByCategory]);
 
-    // Search functionality
+    // Update the search function to handle both blueprints and users
     const handleSearch = useCallback(async (query: string) => {
         if (!query.trim()) {
-            setSearchResults([]);
-            setSearched(false);
+            dispatch({ type: 'CLEAR_SEARCH' });
             return;
         }
 
-        setIsSearching(true);
+        dispatch({ type: 'START_SEARCH' });
         try {
-            const results = await searchBlueprintsFromBackend(query);
-            setSearchResults(results);
-            setSearched(true);
-        } finally {
-            setIsSearching(false);
+            // Search for both blueprints and users in parallel
+            const [blueprintResults, userResults] = await Promise.all([
+                searchBlueprintsFromBackend(query),
+                searchProfiles(query)
+            ]);
+
+            dispatch({ 
+                type: 'SEARCH_SUCCESS', 
+                payload: { 
+                    blueprints: blueprintResults, 
+                    users: userResults 
+                } 
+            });
+        } catch (error) {
+            dispatch({ type: 'SEARCH_ERROR', payload: error.message });
         }
     }, []);
 
@@ -103,52 +175,29 @@ const Search = (props: Props) => {
 
     // Refresh functionality
     const onRefresh = useCallback(async () => {
-        setRefreshing(true);
+        dispatch({ type: 'REFRESH' });
         try {
             await loadBlueprintsByCategory();
-            // Clear search results when refreshing
-            setSearchResults([]);
-            setSearched(false);
-            setSearchTerm("");
+            dispatch({ type: 'CLEAR_SEARCH' });
         } catch (error) {
             setError(error.message);
-        } finally {
-            setRefreshing(false);
         }
     }, [loadBlueprintsByCategory]);
 
-    // Memoized render functions for performance
-    const renderBlueprint = useCallback(({ item }: { item: BlueprintDocument }) => (
-        <BlueprintCard {...item} />
-    ), []);
+    // Memoize the onChangeText callback to prevent unnecessary re-renders
+    const handleSearchTermChange = useCallback((text: string) => {
+        dispatch({ type: 'SET_SEARCH_TERM', payload: text });
+    }, []);
 
-    const renderBlueprintLarge = useCallback(({ item }: { item: BlueprintDocument }) => (
-        <View style={{ marginBottom: 16 }}>
-            <BlueprintCard {...item} large={true} />
-        </View>
-    ), []);
+    // Memoize the onSubmit callback
+    const handleSubmit = useCallback(() => {
+        handleSearch(searchTerm);
+    }, [handleSearch, searchTerm]);
 
-    const renderContacts = useCallback(({ item }) => (
-        <ContactCard name={item.name} icon={item.icon} handle={item.handle} following={item.following} />
-    ), []);
-
-    // Memoized category section renderer
-    const renderCategorySection = useCallback(({ item }: { item: BlueprintCategoryGroup }) => (
-        <View style={styles.categorySection}>
-            <ThemedText type="subtitle" style={styles.categoryHeader}>
-                {item.category ? item.category : "Uncategorized"}
-            </ThemedText>
-            <FlatList
-                data={item.blueprints}
-                renderItem={renderBlueprint}
-                keyExtractor={(blueprint) => blueprint.id}
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.blueprintList}
-                ItemSeparatorComponent={() => <View style={{ width: 4 }} />}
-            />
-        </View>
-    ), [renderBlueprint]);
+    // Memoize the setFocused callback
+    const handleSetFocused = useCallback((focused: boolean) => {
+        setFocused(focused);
+    }, []);
 
     // Loading state
     if (loading) {
@@ -168,25 +217,17 @@ const Search = (props: Props) => {
         );
     }
 
-    // Mock contacts data
-    const contacts = [
-        { id: "1", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "2", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-        { id: "3", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "4", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-    ];
-
     return (
         <ThemedView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={styles.searchContainer}>
                 <SearchBox
                     value={searchTerm}
-                    placeholder={"Search for your friends!"}
-                    onChangeText={setSearchTerm}
-                    onSubmit={onSubmit}
+                    placeholder={"Search for a user or blueprint!"}
+                    onChangeText={handleSearchTermChange}
+                    onSubmit={handleSubmit}
                     recent={true}
                     name={"search-page"}
-                    setFocused={setFocused}
+                    setFocused={handleSetFocused}
                 />
             </View>
 
@@ -194,68 +235,28 @@ const Search = (props: Props) => {
                 style={styles.scrollView}
                 refreshControl={
                     <RefreshControl
-                        refreshing={refreshing}
+                        refreshing={false}
                         onRefresh={onRefresh}
                         tintColor={ThemedColor.text}
                         colors={[ThemedColor.text]}
                     />
                 }>
                 <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
-                    {!searched ? (
-                        <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
-                            {/* Categories with blueprints */}
-                            <FlatList
-                                data={categoryGroups}
-                                renderItem={renderCategorySection}
-                                keyExtractor={(item) => item.category}
-                                scrollEnabled={false}
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={styles.categoriesContainer}
-                            />
-
-                            {/* Suggested contacts */}
-                            <View style={styles.suggestedSection}>
-                                <ThemedText type="subtitle" style={styles.suggestedHeader}>
-                                    Suggested For You
-                                </ThemedText>
-                                <FlatList
-                                    data={contacts}
-                                    renderItem={renderContacts}
-                                    keyExtractor={(item) => item.id}
-                                    horizontal={true}
-                                    showsHorizontalScrollIndicator={false}
-                                    contentContainerStyle={styles.contactsList}
-                                />
-                            </View>
-                        </Animated.View>
+                    {mode === 'categories' ? (
+                        <ExplorePage 
+                            categoryGroups={categoryGroups}
+                            focusStyle={focusStyle}
+                        />
                     ) : (
-                        <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                            <ThemedText type="subtitle" style={styles.searchResultsHeader}>
-                                {isSearching ? "Searching..." : "Results"}
-                            </ThemedText>
-
-                            {isSearching ? (
-                                <View style={styles.searchingContainer}>
-                                    <ThemedText>Searching blueprints...</ThemedText>
-                                </View>
-                            ) : (
-                                <View style={styles.searchResultsContainer}>
-                                    {searchResults.length > 0 ? (
-                                        searchResults.map((blueprint) => (
-                                            <View key={blueprint.id} style={styles.searchResultItem}>
-                                                <BlueprintCard {...blueprint} large={true} />
-                                            </View>
-                                        ))
-                                    ) : (
-                                        <View style={styles.noResultsContainer}>
-                                            <ThemedText style={styles.noResultsText}>
-                                                No blueprints found for "{searchTerm}"
-                                            </ThemedText>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
-                        </Animated.View>
+                        <SearchResults
+                            mode={mode}
+                            searchResults={searchResults}
+                            userResults={userResults}
+                            searchTerm={searchTerm}
+                            focusStyle={focusStyle}
+                            activeTab={activeTab}
+                            setActiveTab={setActiveTab}
+                        />
                     )}
                 </Pressable>
             </ScrollView>
@@ -282,53 +283,5 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         gap: 16,
-    },
-    categoriesContainer: {
-        gap: 32,
-    },
-    categorySection: {
-        marginBottom: 8,
-    },
-    categoryHeader: {
-        marginBottom: 16,
-        paddingHorizontal: 16,
-    },
-    blueprintList: {
-        paddingHorizontal: 16,
-        gap: 20,
-    },
-    suggestedSection: {
-        marginTop: 32,
-    },
-    suggestedHeader: {
-        marginBottom: 16,
-        paddingHorizontal: 16,
-    },
-    contactsList: {
-        gap: 16,
-        marginTop: 16,
-        paddingHorizontal: 16,
-    },
-    searchResultsHeader: {
-        paddingHorizontal: 16,
-        marginBottom: 20,
-    },
-    searchingContainer: {
-        padding: 20,
-        alignItems: "center",
-    },
-    searchResultsContainer: {
-        paddingHorizontal: 16,
-    },
-    searchResultItem: {
-        marginBottom: 16,
-    },
-    noResultsContainer: {
-        padding: 20,
-        alignItems: "center",
-    },
-    noResultsText: {
-        textAlign: "center",
-        opacity: 0.7,
     },
 });

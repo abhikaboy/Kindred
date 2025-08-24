@@ -14,6 +14,8 @@ import { Category } from "@/components/category";
 import Entypo from "@expo/vector-icons/Entypo";
 import * as Sharing from 'expo-sharing';
 import * as SMS from 'expo-sms';
+import { getBlueprintById } from "@/api/blueprint";
+import { useTasks } from "@/contexts/tasksContext";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
@@ -22,7 +24,15 @@ export default function BlueprintDetailScreen() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
 
-    const { selectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe } = useBlueprints();
+    const { selectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe, setSelectedBlueprint } = useBlueprints();
+    const { fetchWorkspaces } = useTasks();
+    useEffect(() => {
+        const fetchBlueprint = async () => {
+            const blueprint = await getBlueprintById(id as string);
+            setSelectedBlueprint(blueprint);
+        };
+        fetchBlueprint();
+    }, [id]);
 
     if (!selectedBlueprint) {
         return (
@@ -39,6 +49,7 @@ export default function BlueprintDetailScreen() {
     const onSubscribePress = async () => {
         setIsLoading(true);
         await handleSubscribe(selectedBlueprint.id, selectedBlueprint.subscribers || []);
+        await fetchWorkspaces();
         setIsSubscribed(true);
         setIsLoading(false);
     };

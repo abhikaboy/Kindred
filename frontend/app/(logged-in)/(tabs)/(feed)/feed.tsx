@@ -65,6 +65,7 @@ export default function Feed() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+    const [postHeights, setPostHeights] = useState<{[key: string]: number}>({});
 
     // Feed switching state
     const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
@@ -80,7 +81,11 @@ export default function Feed() {
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
-    const flatListRef = useRef<FlatList>(null);
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    // Base post height (without images) - adjust based on your PostCard layout
+    const BASE_POST_HEIGHT = 200; // Header + caption + reactions + padding
+    const HEADER_HEIGHT = 120; // Header component height
 
     const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
         setPosts((prevPosts) => prevPosts.map((post) => (post._id === postId ? { ...post, ...updatedPost } : post)));
@@ -98,6 +103,14 @@ export default function Feed() {
         },
         [updatePostInFeed]
     );
+
+    // Handle post height changes
+    const handlePostHeightChange = useCallback((postId: string, imageHeight: number) => {
+        setPostHeights(prev => ({
+            ...prev,
+            [postId]: imageHeight
+        }));
+    }, []);
 
     // Start loading animation when loading state changes
     useEffect(() => {
@@ -191,6 +204,8 @@ export default function Feed() {
         [headerOpacity, headerTranslateY]
     );
 
+
+
     const handleScroll = useCallback(
         (event: any) => {
             const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -233,7 +248,7 @@ export default function Feed() {
         );
     };
 
-    const renderPost = useCallback(({ item: post, index }: { item: PostData; index: number }) => {
+    const renderPost = useCallback((post: PostData) => {
         return (
             <PostCard
                 icon={post.user?.profile_picture || ""}
@@ -264,10 +279,11 @@ export default function Feed() {
                 comments={post.comments || []}
                 images={post.images || []}
                 onReactionUpdate={() => refreshSinglePost(post._id)}
+                onHeightChange={(imageHeight) => handlePostHeightChange(post._id, imageHeight)}
                 id={post._id}
             />
         );
-    }, [refreshSinglePost]);
+    }, [refreshSinglePost, handlePostHeightChange]);
 
     const renderHeader = useCallback(() => {
         return (
@@ -363,6 +379,23 @@ export default function Feed() {
 
     const keyExtractor = useCallback((item: PostData) => item._id || Math.random().toString(), []);
 
+    // Calculate getItemLayout with dynamic heights
+    const getItemLayout = useCallback((data: any, index: number) => {
+        let offset = HEADER_HEIGHT; // Start with header height
+        
+        // Add heights of all previous items
+        for (let i = 0; i < index; i++) {
+            const postId = sortedPosts[i]?._id;
+            const postHeight = postHeights[postId] || BASE_POST_HEIGHT;
+            offset += postHeight;
+        }
+        
+        const postId = sortedPosts[index]?._id;
+        const length = postHeights[postId] || BASE_POST_HEIGHT;
+        
+        return { length, offset, index };
+    }, [sortedPosts, postHeights, BASE_POST_HEIGHT, HEADER_HEIGHT]);
+
     return (
         <View style={styles.container}>
             <Animated.View
@@ -407,13 +440,8 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
-            <FlatList
-                ref={flatListRef}
-                data={sortedPosts}
-                renderItem={renderPost}
-                keyExtractor={keyExtractor}
-                ListHeaderComponent={renderHeader}
-                ListEmptyComponent={renderEmptyComponent}
+            <ScrollView
+                ref={scrollViewRef}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
@@ -428,16 +456,14 @@ export default function Feed() {
                     />
                 }
                 contentContainerStyle={styles.flatListContent}
-                getItemLayout={(data, index) => ({
-                    length: 200, // Approximate height of each post card
-                    offset: 200 * index + 100, // 100 for header height
-                    index,
-                })}
-                initialNumToRender={5}
-                maxToRenderPerBatch={10}
-                windowSize={10}
-                removeClippedSubviews={true}
-            />
+            >
+                {renderHeader()}
+                {loading || error || posts.length === 0 ? (
+                    renderEmptyComponent()
+                ) : (
+                    sortedPosts.map((post) => renderPost(post))
+                )}
+            </ScrollView>
         </View>
     );
 }

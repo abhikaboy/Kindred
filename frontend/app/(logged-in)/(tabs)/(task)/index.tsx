@@ -176,7 +176,6 @@ const Home = (props: Props) => {
                                                                 }
                                                             ]}>
                                                             <View style={styles.workspaceCardContent}>
-                                                                <Feather name="feather" size={24} color={ThemedColor.text} />
                                                                 <View style={styles.workspaceCardText}>
                                                                     <ThemedText type="default">{workspace.name}</ThemedText>
                                                                     <ThemedText type="defaultSemiBold">{"→"}</ThemedText>
@@ -253,7 +252,7 @@ const styles = StyleSheet.create({
     workspaceCard: {
         borderRadius: 12,
         padding: 16,
-        aspectRatio: 1.36,
+        minHeight: 100,
         justifyContent: "flex-end",
         width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2) / 2.1,
         borderWidth: 1,
