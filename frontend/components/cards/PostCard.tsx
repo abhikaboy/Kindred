@@ -95,7 +95,9 @@ const PostCard = ({
     const { fetchWorkspaces } = useTasks();
 
     useEffect(() => {
-        setLocalReactions(reactions);
+        if (JSON.stringify(reactions) !== JSON.stringify(localReactions)) {
+            setLocalReactions(reactions);
+        }
     }, [reactions]);
 
     useEffect(() => {
@@ -132,6 +134,16 @@ const PostCard = ({
             onHeightChange?.(fallbackHeight);
         });
     }, [screenWidth, onHeightChange]);
+
+    const screenHeight = Dimensions.get("window").height;
+
+    // Define snap points
+    const snapPoints = useMemo(() => {
+        const baseHeight = screenHeight * 0.6; // 50% of screen
+        const maxHeight = screenHeight * 0.6; // 90% of screen (for keyboard)
+
+        return [baseHeight, maxHeight];
+    }, [screenHeight]);
 
     const mergeReactions = (): SlackReaction[] => {
         const safeReactions = Array.isArray(reactions) ? reactions : [];
@@ -472,6 +484,8 @@ const PostCard = ({
                     ref={bottomSheetModalRef}
                     onChange={handleSheetChanges}
                     enableDynamicSizing={true}
+                    snapPoints={snapPoints}
+                    index={0}
                     enablePanDownToClose={true}
                     enableDismissOnClose={true}
                     enableHandlePanningGesture={true}
