@@ -10,6 +10,7 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createPostToBackend } from "@/api/post";
 import { uploadImage, getMimeTypeFromUri } from "@/api/upload";
 import { Icons } from "@/constants/Icons";
+import { ObjectId } from "bson";
 
 export default function Caption() {
     const params = useLocalSearchParams();
@@ -40,7 +41,7 @@ export default function Caption() {
                 const fileType = getMimeTypeFromUri(photoUris[i]);
                 const publicUrl = await uploadImage(
                     "post",
-                    taskInfo?.id || `temp_${Date.now()}`,
+                    taskInfo?.id || new ObjectId().toString(),
                     photoUris[i],
                     fileType
                 );

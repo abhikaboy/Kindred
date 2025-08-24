@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, Dimensions, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Text, Dimensions, TouchableOpacity, KeyboardAvoidingView } from "react-native";
 import React, { useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -54,7 +54,7 @@ const TagCreator = ({ onTagsChange, placeholder = "Add tags...", initialTags = [
     const styles = createStyles(ThemedColor);
 
     return (
-        <View style={styles.container}>
+        <View style={styles.container} >
             <View style={styles.header} >
                 <ThemedText type="lightBody">
                     Tag

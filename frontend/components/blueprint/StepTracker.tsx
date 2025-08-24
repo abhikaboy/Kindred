@@ -97,13 +97,13 @@ const createStyles = (ThemedColor: any) => StyleSheet.create({
     },
     stepContainer: {
         flex: 1,
-        alignItems: "center",
+        alignItems: "flex-start",
         position: "relative",
         width: "100%"
     },
     stepWrapper: {
         width: "100%",
-        alignItems: "center",
+        alignItems: "flex-start",
         marginBottom: 8,
     },
     stepCircle: {

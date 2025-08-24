@@ -1809,6 +1809,10 @@ export interface components {
             readonly $schema?: string;
             /** @description Banner image URL */
             banner: string;
+            /** @description Categories associated with the blueprint */
+            categories: components["schemas"]["CategoryDocument"][];
+            /** @description Category of the blueprint */
+            category: string;
             /** @description Description of the blueprint */
             description: string;
             /** @description Expected duration */
@@ -1837,6 +1841,10 @@ export interface components {
         BlueprintDocumentWithoutSubscribers: {
             /** @description Banner image URL */
             banner: string;
+            /** @description Categories associated with the blueprint */
+            categories: components["schemas"]["CategoryDocument"][];
+            /** @description Category of the blueprint */
+            category: string;
             /** @description Description of the blueprint */
             description: string;
             /** @description Expected duration */
@@ -2020,6 +2028,10 @@ export interface components {
             readonly $schema?: string;
             /** @description Banner image URL for the blueprint */
             banner: string;
+            /** @description Categories associated with the blueprint */
+            categories: components["schemas"]["CategoryDocument"][];
+            /** @description Category of the blueprint */
+            category: string;
             /** @description Description of the blueprint */
             description: string;
             /** @description Expected duration to complete the blueprint */
@@ -2680,6 +2692,10 @@ export interface components {
             readonly $schema?: string;
             /** @description New banner image URL */
             banner?: string;
+            /** @description Updated categories associated with the blueprint */
+            categories?: components["schemas"]["CategoryDocument"][];
+            /** @description Updated category of the blueprint */
+            category?: string;
             /** @description New description */
             description?: string;
             /** @description Updated expected duration */

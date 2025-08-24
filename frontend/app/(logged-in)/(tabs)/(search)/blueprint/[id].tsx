@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, Image, Dimensions, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
@@ -28,12 +28,15 @@ export default function BlueprintDetailScreen() {
         );
     }
 
-    const isSubscribed = getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []);
-    const isLoading = getIsLoading(selectedBlueprint.id);
+    const [isSubscribed, setIsSubscribed] = useState(getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []));
+    const [isLoading, setIsLoading] = useState(getIsLoading(selectedBlueprint.id));
     const currentSubscriberCount = getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscribersCount);
 
     const onSubscribePress = async () => {
+        setIsLoading(true);
         await handleSubscribe(selectedBlueprint.id, selectedBlueprint.subscribers || []);
+        setIsSubscribed(true);
+        setIsLoading(false);
     };
 
     const getImageSource = () => {

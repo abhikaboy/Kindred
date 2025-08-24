@@ -73,6 +73,8 @@ func (s *Service) CreateBlueprint(r *BlueprintDocumentInternal) (*BlueprintDocum
 		Tags:             r.Tags,
 		Description:      r.Description,
 		Duration:         r.Duration,
+		Category:         r.Category,
+		Categories:       r.Categories,
 		Subscribers:      []primitive.ObjectID{},
 		SubscribersCount: 0,
 		Timestamp:        time.Now(),
@@ -212,7 +214,7 @@ func (s *Service) SearchBlueprints(query string) ([]BlueprintDocument, error) {
 func (s *Service) GetUserSubscribedBlueprints(userID primitive.ObjectID) ([]BlueprintDocumentWithoutSubscribers, error) {
 	ctx := context.Background()
 	filter := bson.M{"subscribers": userID}
-	
+
 	cursor, err := s.Blueprints.Find(ctx, filter)
 	if err != nil {
 		return nil, err

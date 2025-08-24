@@ -8,6 +8,7 @@ import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
 import * as ImagePicker from "expo-image-picker";
 import { uploadBlueprintBanner, getMimeTypeFromUri } from "@/api/upload";
 import { Ionicons } from "@expo/vector-icons";
+import { ObjectId } from "bson";
 
 // Common habit categories
 const HABIT_CATEGORIES = [
@@ -111,7 +112,7 @@ const Details = ({ data, onUpdate }: Props) => {
             setIsUploading(true);
 
             // Generate a temporary ID for the blueprint (since it doesn't exist yet)
-            const tempBlueprintId = "temp_" + Date.now();
+            const tempBlueprintId = new ObjectId().toString();
             const fileType = getMimeTypeFromUri(imageUri);
 
             console.log("Uploading banner image...");

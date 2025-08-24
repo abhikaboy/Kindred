@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, Animated, Alert } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -13,6 +13,10 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createBlueprintToBackend } from "@/api/blueprint";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BlueprintIntroBottomSheet from "@/components/modals/BlueprintIntroBottomSheet";
+import { components } from "@/api/types";
+import { useBlueprints } from "@/contexts/blueprintContext";
+
+type Category = components["schemas"]["CategoryDocument"];
 
 export type BlueprintData = {
     blueprintName: string;
@@ -22,6 +26,7 @@ export type BlueprintData = {
     duration: string;
     tasks: Task[];
     category: string;
+    categories: Category[];
 };
 
 export type Task = {
@@ -43,13 +48,21 @@ const BlueprintCreationLayout = () => {
         duration: "",
         tasks: [],
         category: "",
+        categories: [],
     });
 
     const [isCreating, setIsCreating] = useState(false);
     const [showBlueprintIntro, setShowBlueprintIntro] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    
+    // Animation values for header collapse
+    const headerHeight = new Animated.Value(1);
+    const titleOpacity = new Animated.Value(1);
+    const progressOpacity = new Animated.Value(1);
 
     const router = useRouter();
     const ThemedColor = useThemeColor();
+    const { blueprintCategories, clearBlueprintData } = useBlueprints();
 
     const steps = [
         { number: 1, title: "Instruction" },
@@ -65,20 +78,49 @@ const BlueprintCreationLayout = () => {
         try {
             setIsCreating(true);
 
+            // Debug logging to verify data structure
+            console.log("🔍 Blueprint Creation Data:");
+            console.log("  - category (string):", blueprintData.category);
+            console.log("  - categories (array):", blueprintCategories);
+            console.log("  - categories length:", blueprintCategories.length);
+            
+            // Validate that we have the required data
+            if (!blueprintData.category) {
+                throw new Error("Blueprint category is required");
+            }
+            
+            if (blueprintCategories.length === 0) {
+                throw new Error("At least one category with tasks is required");
+            }
+
+            // Validate that categories have tasks
+            const categoriesWithTasks = blueprintCategories.filter(cat => cat.tasks && cat.tasks.length > 0);
+            if (categoriesWithTasks.length === 0) {
+                throw new Error("At least one category must contain tasks");
+            }
+
+            console.log("✅ Validation passed - creating blueprint...");
+
             const createdBlueprint = await createBlueprintToBackend(
                 blueprintData.bannerImage,
                 blueprintData.blueprintName,
                 blueprintData.selectedTags,
                 blueprintData.description,
-                blueprintData.duration
+                blueprintData.duration,
+                blueprintData.category,
+                blueprintCategories
             );
 
             if (createdBlueprint) {
                 console.log("Blueprint created successfully:", createdBlueprint);
+                // Clear the blueprint context data after successful creation
+                clearBlueprintData();
                 router.back();
             }
         } catch (error) {
             console.error("Error creating blueprint:", error);
+            // Show user-friendly error message
+            Alert.alert("Error", error instanceof Error ? error.message : "Failed to create blueprint");
         } finally {
             setIsCreating(false);
         }
@@ -96,6 +138,8 @@ const BlueprintCreationLayout = () => {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1);
         } else {
+            // Clear blueprint context data when leaving the creation flow
+            clearBlueprintData();
             router.back();
         }
     };
@@ -110,6 +154,65 @@ const BlueprintCreationLayout = () => {
             return () => clearTimeout(timer);
         }
     }, [currentStep]);
+
+    // Clear blueprint context data when component unmounts
+    React.useEffect(() => {
+        return () => {
+            clearBlueprintData();
+        };
+    }, [clearBlueprintData]);
+
+    // Keyboard event handlers
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+            setIsKeyboardVisible(true);
+            // Animate header to collapsed state
+            Animated.parallel([
+                Animated.timing(headerHeight, {
+                    toValue: 0.3,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(titleOpacity, {
+                    toValue: 0.7,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(progressOpacity, {
+                    toValue: 0.5,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+            ]).start();
+        });
+
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setIsKeyboardVisible(false);
+            // Animate header back to expanded state
+            Animated.parallel([
+                Animated.timing(headerHeight, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(titleOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(progressOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+            ]).start();
+        });
+
+        return () => {
+            keyboardDidShowListener?.remove();
+            keyboardDidHideListener?.remove();
+        };
+    }, []);
 
     const handleBuildBlueprint = () => {
         setShowBlueprintIntro(false);
@@ -141,67 +244,108 @@ const BlueprintCreationLayout = () => {
         }
     };
 
-    const styles = createStyles(ThemedColor, insets);
+    const styles = createStyles(ThemedColor, insets, isKeyboardVisible);
 
     return (
-        <ThemedView style={styles.container}>
-            <View style={styles.header}>
-                {/* <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <ThemedText type="subtitle_subtle">Back</ThemedText>
-                </TouchableOpacity> */}
-                <ThemedText type="fancyFrauncesHeading" style={{fontSize: 28, paddingVertical: 12}}>New Blueprint</ThemedText>
-            </View>
+        <View style={styles.container}>
+            <KeyboardAvoidingView 
+                style={{ flex: 1 }}
+                behavior="padding"
+                keyboardVerticalOffset={0}
+            >
+                {/* Animated Header Section */}
+                <Animated.View style={[
+                    styles.fixedHeader,
+                    {
+                        transform: [{ scaleY: headerHeight }],
+                        opacity: titleOpacity,
+                    }
+                ]}>
+                    {/* Header */}
+                    <Animated.View style={[
+                        styles.header,
+                        {
+                            opacity: titleOpacity,
+                            transform: [{ scaleY: headerHeight }],
+                        }
+                    ]}>
+                        <ThemedText type="fancyFrauncesHeading" style={{fontSize: 28, paddingVertical: 12}}>
+                            New Blueprint
+                        </ThemedText>
+                    </Animated.View>
 
-            <View style={styles.progressContainer}>
-                <StepProgress steps={steps} currentStep={currentStep} />
-            </View>
+                    {/* Progress Container */}
+                    <Animated.View style={[
+                        styles.progressContainer,
+                        {
+                            opacity: progressOpacity,
+                            transform: [{ scaleY: headerHeight }],
+                        }
+                    ]}>
+                        <StepProgress steps={steps} currentStep={currentStep} />
+                    </Animated.View>
+                </Animated.View>
 
-            <View style={{flex: 1, backgroundColor: ThemedColor.background, borderRadius: 24, marginTop: 24,boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 0.2)"}}>
+                {/* Main Content */}
+                <View style={{
+                    flex: 1,
+                    backgroundColor: ThemedColor.background, 
+                    borderRadius: 24, 
+                    marginTop: 24,
+                    boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 0.2)"
+                }}>
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {renderStepContent()}
+                    </ScrollView>
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled">
-                {renderStepContent()}
-            </ScrollView>
-
-            <View style={styles.continueButtonContainer}>
-                <PrimaryButton
-                    title="Back"
-                    onPress={handleBack}
-                    ghost
-                    />
-                <PrimaryButton
-                    title={currentStep === 3 ? "Create Blueprint" : "Continue"}
-                    onPress={handleNext}
-                    disabled={!isStepValid() || isCreating}
-                    />
-            </View>
+                    <View style={styles.continueButtonContainer}>
+                        <PrimaryButton
+                            title="Back"
+                            onPress={handleBack}
+                            ghost
+                        />
+                        <PrimaryButton
+                            title={currentStep === 3 ? "Create Blueprint" : "Continue"}
+                            onPress={handleNext}
+                            disabled={!isStepValid() || isCreating}
+                        />
                     </View>
+                </View>
+            </KeyboardAvoidingView>
 
             <BlueprintIntroBottomSheet
                 isVisible={showBlueprintIntro}
                 onClose={() => setShowBlueprintIntro(false)}
                 onBuildBlueprint={handleBuildBlueprint}
             />
-        </ThemedView>
+        </View>
     );
 };
 
-const createStyles = (ThemedColor: any, insets: any) =>
+const HORIZONTAL_PADDING = 20;
+
+const createStyles = (ThemedColor: any, insets: any, isKeyboardVisible: boolean) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: ThemedColor.lightened,
+            backgroundColor: ThemedColor.background,
             paddingTop: insets.top,
         },
+        fixedHeader: {
+            // This ensures the header section has a defined size
+            minHeight: 100,
+            maxHeight: 120,
+        },
         header: {
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
+            justifyContent: "flex-start",
+            alignItems: "flex-start",
             paddingHorizontal: 20,
-            paddingBottom: 24,
+            paddingBottom: 8,
         },
         backButton: {
             position: "absolute",
@@ -209,11 +353,11 @@ const createStyles = (ThemedColor: any, insets: any) =>
             bottom: 16,
         },
         progressContainer: {
-            paddingLeft: 20,
+            minHeight: isKeyboardVisible ? 40 : 100,
+            paddingLeft: HORIZONTAL_PADDING,
         },
         scrollView: {
             flex: 1,
-            height: "100%",
         },
         scrollContent: {
             paddingHorizontal: 20,
