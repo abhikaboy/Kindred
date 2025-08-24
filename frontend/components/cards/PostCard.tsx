@@ -113,6 +113,7 @@ const PostCard = ({
         });
         
         return maxCalculatedHeight;
+
     }, [images, imageDimensions, screenWidth, maxHeight]);
 
     // Function to get image dimensions
@@ -190,7 +191,6 @@ const PostCard = ({
     const { user } = useAuth();
     const handleClose = () => {
         bottomSheetModalRef.current?.dismiss();
-        console.log("handleClose");
     };
 
     const renderBackdrop = useCallback(
@@ -334,7 +334,7 @@ const PostCard = ({
                                 console.log("Navigating to user:", userId);
                                 router.push(`/account/${userId}`);
                             }}>
-                            <Image source={{ uri: icon }} style={styles.userIcon} cachePolicy="memory" transition={100} placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"} />
+                            <Image source={{ uri: icon }} style={styles.userIcon} cachePolicy="disk" placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"} />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
@@ -634,6 +634,9 @@ const stylesheet = (ThemedColor: any) =>
             flexDirection: "row",
             alignItems: "center",
             gap: 8,
+            flexWrap: "wrap",
+            maxWidth: "70%",
+            flex: 1,
         },
         categoryText: {
             fontSize: 16,
