@@ -136,7 +136,7 @@ const Search = (props: Props) => {
     const renderCategorySection = useCallback(({ item }: { item: BlueprintCategoryGroup }) => (
         <View style={styles.categorySection}>
             <ThemedText type="subtitle" style={styles.categoryHeader}>
-                {item.category}
+                {item.category ? item.category : "Uncategorized"}
             </ThemedText>
             <FlatList
                 data={item.blueprints}

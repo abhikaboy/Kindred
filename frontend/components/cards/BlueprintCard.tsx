@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TouchableOpacity, View, StyleSheet, Image } from "react-native";
+import { TouchableOpacity, View, StyleSheet, Image as RNImage } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -8,6 +8,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import type { components } from "@/api/generated/types";
+import { Image } from "expo-image";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
@@ -80,6 +81,10 @@ const BlueprintCard = ({
                         borderTopLeftRadius: 11,
                         borderTopRightRadius: 11,
                     }}
+                    cachePolicy="disk"
+                    placeholder={require("@/assets/images/icon.png")}
+                    contentFit="cover"
+                    priority="normal"
                 />
                 <View style={styles.informationContainer}>
                     <ThemedText type="subtitle">{name}</ThemedText>

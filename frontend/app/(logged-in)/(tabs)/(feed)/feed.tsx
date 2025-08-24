@@ -57,7 +57,7 @@ export default function Feed() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const ThemedColor = useThemeColor();
-    const styles = stylesheet(ThemedColor);
+    const styles = stylesheet(ThemedColor, insets);
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
@@ -80,6 +80,7 @@ export default function Feed() {
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
+    const flatListRef = useRef<FlatList>(null);
 
     const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
         setPosts((prevPosts) => prevPosts.map((post) => (post._id === postId ? { ...post, ...updatedPost } : post)));
@@ -232,6 +233,136 @@ export default function Feed() {
         );
     };
 
+    const renderPost = useCallback(({ item: post, index }: { item: PostData; index: number }) => {
+        return (
+            <PostCard
+                icon={post.user?.profile_picture || ""}
+                name={post.user?.display_name || "Unknown"}
+                username={post.user?.handle || "unknown"}
+                userId={post.user?._id || ""}
+                caption={post.caption || ""}
+                time={
+                    post.metadata?.createdAt
+                        ? Math.abs(new Date().getTime() - new Date(post.metadata.createdAt).getTime()) /
+                          36e5
+                        : 0
+                }
+                priority="low"
+                points={0}
+                timeTaken={0}
+                category={post.task?.category?.name}
+                taskName={post.task?.content}
+                reactions={
+                    post.reactions
+                        ? Object.entries(post.reactions).map(([emoji, userIds]) => ({
+                              emoji,
+                              count: userIds.length,
+                              ids: userIds,
+                          }))
+                        : []
+                }
+                comments={post.comments || []}
+                images={post.images || []}
+                onReactionUpdate={() => refreshSinglePost(post._id)}
+                id={post._id}
+            />
+        );
+    }, [refreshSinglePost]);
+
+    const renderHeader = useCallback(() => {
+        return (
+            <View style={styles.listHeader}>
+                <View style={styles.headerContainer}>
+                    <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push("/(logged-in)/(tabs)/(feed)/Notifications");
+                        }}
+                        style={{ position: 'relative' }}>
+                        <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                        <View style={{ position: 'absolute', top: -8, right: -8 }}>
+                            <NotificationBadge />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.feedTabsContainer}>
+                    <FlatList
+                        data={availableFeeds}
+                        renderItem={renderFeedTab}
+                        keyExtractor={(item) => item.id}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.feedTabsContent}
+                    />
+                </View>
+            </View>
+        );
+    }, [ThemedColor.text, router, availableFeeds, currentFeed.id, handleFeedChange, renderFeedTab]);
+
+    const renderEmptyComponent = useCallback(() => {
+        if (loading) {
+            return (
+                <View style={styles.loadingContainer}>
+                    <Animated.View
+                        style={[
+                            styles.loadingIcon,
+                            {
+                                transform: [
+                                    {
+                                        rotate: loadingRotation.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: ["0deg", "360deg"],
+                                        }),
+                                    },
+                                ],
+                            },
+                        ]}>
+                        <Ionicons name="refresh" size={30} color={ThemedColor.primary} />
+                    </Animated.View>
+                    <ThemedText style={[styles.loadingText, { color: ThemedColor.text }]}>
+                        Loading posts...
+                    </ThemedText>
+                </View>
+            );
+        }
+
+        if (error) {
+            return (
+                <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle-outline" size={50} color={ThemedColor.danger || "#ff4444"} />
+                    <ThemedText style={[styles.errorText, { color: ThemedColor.danger || "#ff4444" }]}>
+                        {error || "Something went wrong"}
+                    </ThemedText>
+                    <TouchableOpacity
+                        style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
+                        onPress={() => fetchPosts(currentFeed.id)}>
+                        <ThemedText style={styles.retryButtonText}>Try Again</ThemedText>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        if (posts.length === 0) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="newspaper-outline" size={50} color={ThemedColor.caption} />
+                    <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
+                        No posts yet
+                    </ThemedText>
+                    <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
+                        Pull down to refresh
+                    </ThemedText>
+                </View>
+            );
+        }
+
+        return null;
+    }, [loading, error, posts.length, loadingRotation, ThemedColor, fetchPosts, currentFeed.id]);
+
+    const keyExtractor = useCallback((item: PostData) => item._id || Math.random().toString(), []);
+
     return (
         <View style={styles.container}>
             <Animated.View
@@ -276,8 +407,13 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
-            <Animated.ScrollView
-                style={{ flex: 1, paddingTop: insets.top }}
+            <FlatList
+                ref={flatListRef}
+                data={sortedPosts}
+                renderItem={renderPost}
+                keyExtractor={keyExtractor}
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={renderEmptyComponent}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
@@ -290,144 +426,23 @@ export default function Feed() {
                         title="Pull to refresh"
                         titleColor={ThemedColor.text}
                     />
-                }>
-                <Animated.View
-                    style={[
-                        styles.staticHeader,
-                        {
-                            opacity: scrollY.interpolate({
-                                inputRange: [0, 50],
-                                outputRange: [1, 0],
-                                extrapolate: "clamp",
-                            }),
-                            transform: [
-                                {
-                                    translateY: scrollY.interpolate({
-                                        inputRange: [0, 50],
-                                        outputRange: [0, -50],
-                                        extrapolate: "clamp",
-                                    }),
-                                },
-                            ],
-                        },
-                    ]}>
-                    <View>
-                        <View style={styles.headerContainer}>
-                            <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
-                            <TouchableOpacity
-                                activeOpacity={0.8}
-                                onPress={() => {
-                                    router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                                }}
-                                style={{ position: 'relative' }}>
-                                <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
-                                <View style={{ position: 'absolute', top: -8, right: -8 }}>
-                                    <NotificationBadge />
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.feedTabsContainer}>
-                            <FlatList
-                                data={availableFeeds}
-                                renderItem={renderFeedTab}
-                                keyExtractor={(item) => item.id}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.feedTabsContent}
-                            />
-                        </View>
-                    </View>
-                </Animated.View>
-
-                <View style={styles.contentContainer}>
-                    {loading ? (
-                        <View style={styles.loadingContainer}>
-                            <Animated.View
-                                style={[
-                                    styles.loadingIcon,
-                                    {
-                                        transform: [
-                                            {
-                                                rotate: loadingRotation.interpolate({
-                                                    inputRange: [0, 1],
-                                                    outputRange: ["0deg", "360deg"],
-                                                }),
-                                            },
-                                        ],
-                                    },
-                                ]}>
-                                <Ionicons name="refresh" size={30} color={ThemedColor.primary} />
-                            </Animated.View>
-                            <ThemedText style={[styles.loadingText, { color: ThemedColor.text }]}>
-                                Loading posts...
-                            </ThemedText>
-                        </View>
-                    ) : error ? (
-                        <View style={styles.errorContainer}>
-                            <Ionicons name="alert-circle-outline" size={50} color={ThemedColor.danger || "#ff4444"} />
-                            <ThemedText style={[styles.errorText, { color: ThemedColor.danger || "#ff4444" }]}>
-                                {error || "Something went wrong"}
-                            </ThemedText>
-                            <TouchableOpacity
-                                style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
-                                onPress={() => fetchPosts(currentFeed.id)}>
-                                <ThemedText style={styles.retryButtonText}>Try Again</ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                    ) : posts.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="newspaper-outline" size={50} color={ThemedColor.caption} />
-                            <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
-                                No posts yet
-                            </ThemedText>
-                            <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
-                                Pull down to refresh
-                            </ThemedText>
-                        </View>
-                    ) : (
-                        sortedPosts.map((post, index) => (
-                            <PostCard
-                                key={post._id || index}
-                                icon={post.user?.profile_picture || ""}
-                                name={post.user?.display_name || "Unknown"}
-                                username={post.user?.handle || "unknown"}
-                                userId={post.user?._id || ""}
-                                caption={post.caption || ""}
-                                time={
-                                    post.metadata?.createdAt
-                                        ? Math.abs(new Date().getTime() - new Date(post.metadata.createdAt).getTime()) /
-                                          36e5
-                                        : 0
-                                }
-                                priority="low"
-                                points={0}
-                                timeTaken={0}
-                                category={post.task?.category?.name}
-                                taskName={post.task?.content}
-                                reactions={
-                                    post.reactions
-                                        ? Object.entries(post.reactions).map(([emoji, userIds]) => ({
-                                              emoji,
-                                              count: userIds.length,
-                                              ids: userIds,
-                                          }))
-                                        : []
-                                }
-                                comments={post.comments || []}
-                                images={post.images || []}
-                                onReactionUpdate={() => refreshSinglePost(post._id)}
-                                id={post._id}
-                            />
-                        ))
-                    )}
-                </View>
-            </Animated.ScrollView>
+                }
+                contentContainerStyle={styles.flatListContent}
+                getItemLayout={(data, index) => ({
+                    length: 200, // Approximate height of each post card
+                    offset: 200 * index + 100, // 100 for header height
+                    index,
+                })}
+                initialNumToRender={5}
+                maxToRenderPerBatch={10}
+                windowSize={10}
+                removeClippedSubviews={true}
+            />
         </View>
     );
 }
 
-const stylesheet = (ThemedColor: any) =>
+const stylesheet = (ThemedColor: any, insets: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
@@ -498,9 +513,14 @@ const stylesheet = (ThemedColor: any) =>
             fontSize: 18,
             fontWeight: "600",
         },
-        contentContainer: {
-            marginTop: 100,
+        flatListContent: {
             paddingBottom: 150,
+        },
+        listHeader: {
+            backgroundColor: ThemedColor.background,
+            borderBottomWidth: 1,
+            borderBottomColor: ThemedColor.tertiary,
+            paddingTop: insets.top + 8,
         },
         loadingContainer: {
             flex: 1,
