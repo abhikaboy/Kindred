@@ -215,3 +215,11 @@ func (h *Handler) GetUserSubscribedBlueprintsHuma(ctx context.Context, input *Ge
 
 	return &GetUserSubscribedBlueprintsOutput{Body: blueprints}, nil
 }
+
+func (h *Handler) GetBlueprintByCategoryHuma(ctx context.Context, input *GetBlueprintByCategoryInput) (*GetBlueprintByCategoryOutput, error) {
+	blueprintGroups, err := h.service.GetBlueprintByCategory()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get blueprints by category", err)
+	}
+	return &GetBlueprintByCategoryOutput{Body: blueprintGroups}, nil
+}

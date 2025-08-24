@@ -2,6 +2,7 @@ package Category
 
 import (
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -13,7 +14,9 @@ type CreateCategoryParams struct {
 type CategoryDocument = types.CategoryDocument
 
 type UpdateCategoryDocument struct {
-	Name string `bson:"name,omitempty" json:"name,omitempty"`
+	Name        string              `bson:"name,omitempty" json:"name,omitempty"`
+	IsBlueprint *bool               `bson:"isBlueprint,omitempty" json:"isBlueprint,omitempty"`
+	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 type WorkspaceResult struct {

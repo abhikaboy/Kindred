@@ -15,12 +15,14 @@ const (
 )
 
 type CategoryDocument struct {
-	ID            primitive.ObjectID `bson:"_id" json:"id"`
-	Name          string             `bson:"name" json:"name"`
-	WorkspaceName string             `bson:"workspaceName" json:"workspaceName"`
-	LastEdited    time.Time          `bson:"lastEdited" json:"lastEdited"`
-	Tasks         []TaskDocument     `bson:"tasks" json:"tasks"`
-	User          primitive.ObjectID `bson:"user" json:"user"`
+	ID            primitive.ObjectID  `bson:"_id" json:"id"`
+	Name          string              `bson:"name" json:"name"`
+	WorkspaceName string              `bson:"workspaceName" json:"workspaceName"`
+	LastEdited    time.Time           `bson:"lastEdited" json:"lastEdited"`
+	Tasks         []TaskDocument      `bson:"tasks" json:"tasks"`
+	User          primitive.ObjectID  `bson:"user" json:"user"`
+	IsBlueprint   bool                `bson:"isBlueprint,omitempty" json:"isBlueprint,omitempty"`
+	BlueprintID   *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 type WorkspaceResult struct {
@@ -53,6 +55,8 @@ type TaskDocument struct {
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+
+	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 /*
@@ -95,6 +99,8 @@ type TemplateTaskDocument struct {
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+
+	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 type RecurDetails struct {
@@ -252,40 +258,48 @@ type PostMetadata struct {
 	IsEdited  bool      `bson:"isEdited" json:"isEdited"`
 }
 type CategoryExtendedReference struct {
-	ID   primitive.ObjectID `bson:"id" json:"id"`
-	Name string             `bson:"name" json:"name"`
+	ID          primitive.ObjectID  `bson:"id" json:"id"`
+	Name        string              `bson:"name" json:"name"`
+	IsBlueprint bool                `bson:"isBlueprint,omitempty" json:"isBlueprint,omitempty"`
+	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 type TaskExtendedReference struct {
-	ID      primitive.ObjectID `bson:"id" json:"id"`
-	Content string             `bson:"content" json:"content"`
+	ID          primitive.ObjectID  `bson:"id" json:"id"`
+	Content     string              `bson:"content" json:"content"`
+	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 type PostTaskExtendedReference struct {
-	ID       primitive.ObjectID        `bson:"id" json:"id"`
-	Content  string                    `bson:"content" json:"content"`
-	Category CategoryExtendedReference `bson:"category" json:"category"`
+	ID          primitive.ObjectID        `bson:"id" json:"id"`
+	Content     string                    `bson:"content" json:"content"`
+	Category    CategoryExtendedReference `bson:"category" json:"category"`
+	BlueprintID *primitive.ObjectID       `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 func (c *CategoryDocument) ToReference() *CategoryExtendedReference {
 	return &CategoryExtendedReference{
-		ID:   c.ID,
-		Name: c.Name,
+		ID:          c.ID,
+		Name:        c.Name,
+		IsBlueprint: c.IsBlueprint,
+		BlueprintID: c.BlueprintID,
 	}
 }
 
 func (t *TaskDocument) ToReference() *TaskExtendedReference {
 	return &TaskExtendedReference{
-		ID:      t.ID,
-		Content: t.Content,
+		ID:          t.ID,
+		Content:     t.Content,
+		BlueprintID: t.BlueprintID,
 	}
 }
 
 func (t *TaskDocument) ToPostReference(category *CategoryDocument) *PostTaskExtendedReference {
 	return &PostTaskExtendedReference{
-		ID:       t.ID,
-		Content:  t.Content,
-		Category: *category.ToReference(),
+		ID:          t.ID,
+		Content:     t.Content,
+		Category:    *category.ToReference(),
+		BlueprintID: t.BlueprintID,
 	}
 }
 
@@ -302,9 +316,9 @@ func NewPostMetadata() PostMetadata {
 
 func NewCommentMetadata() CommentMetadata {
 	return CommentMetadata{
-		CreatedAt: time.Now(),
-		LastEdited: time.Now(), 
-		IsDeleted: false,
+		CreatedAt:  time.Now(),
+		LastEdited: time.Now(),
+		IsDeleted:  false,
 	}
 }
 

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
 import { deletePost, getAllPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { showToast } from "@/utils/showToast";
+import { Image } from "expo-image";
 
 interface ProfileGalleryProps {
     userId?: string;
@@ -168,8 +169,10 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
                             style={[styles.galleryImage, isDeleting && styles.deletingImage]}
                             source={{
                                 uri: item.imageUrl,
-                                cache: "reload",
                             }}
+                            cachePolicy="memory"
+                            transition={100}
+                            placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                         />
                     </TouchableOpacity>
                 );

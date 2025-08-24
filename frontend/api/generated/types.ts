@@ -304,6 +304,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/blueprints/by-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get blueprints grouped by category
+         * @description Retrieve all blueprints grouped by their category field
+         */
+        get: operations["get-blueprints-by-category"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/blueprints/search": {
         parameters: {
             query?: never;
@@ -1801,6 +1821,17 @@ export interface components {
             readonly $schema?: string;
             emoji: string;
         };
+        BlueprintCategoryGroup: {
+            /** @description List of blueprints in this category */
+            blueprints: components["schemas"]["BlueprintDocument"][];
+            /** @description Category name */
+            category: string;
+            /**
+             * Format: int64
+             * @description Number of blueprints in this category
+             */
+            count: number;
+        };
         BlueprintDocument: {
             /**
              * Format: uri
@@ -1877,7 +1908,9 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
+            blueprintId?: string;
             id: string;
+            isBlueprint?: boolean;
             /** Format: date-time */
             lastEdited: string;
             name: string;
@@ -1886,7 +1919,9 @@ export interface components {
             workspaceName: string;
         };
         CategoryExtendedReference: {
+            blueprintId?: string;
             id: string;
+            isBlueprint?: boolean;
             name: string;
         };
         ChecklistItem: {
@@ -2471,6 +2506,7 @@ export interface components {
             updatedAt: string;
         };
         PostTaskExtendedReference: {
+            blueprintId?: string;
             category: components["schemas"]["CategoryExtendedReference"];
             content: string;
             id: string;
@@ -2607,6 +2643,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            blueprintId?: string;
             categoryID?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
@@ -2641,6 +2678,7 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
+            blueprintId?: string;
             categoryID: string;
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
@@ -2726,6 +2764,8 @@ export interface components {
              * @description A URL to the JSON Schema for this object.
              */
             readonly $schema?: string;
+            blueprintId?: string;
+            isBlueprint?: boolean;
             name?: string;
         };
         UpdateCategoryOutputBody: {
@@ -2901,6 +2941,7 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            blueprintId?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
@@ -3524,6 +3565,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlueprintDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-blueprints-by-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintCategoryGroup"][];
                 };
             };
             /** @description Error */

@@ -54,8 +54,9 @@ type UpdateTaskDocument struct {
 	StartDate *time.Time  `bson:"startDate,omitempty" json:"startDate,omitempty"`
 	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
 
-	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
-	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Notes       string              `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist   []ChecklistItem     `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 }
 
 type SortTypes string
