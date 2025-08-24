@@ -221,5 +221,6 @@ func (h *Handler) GetBlueprintByCategoryHuma(ctx context.Context, input *GetBlue
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to get blueprints by category", err)
 	}
+
 	return &GetBlueprintByCategoryOutput{Body: blueprintGroups}, nil
 }

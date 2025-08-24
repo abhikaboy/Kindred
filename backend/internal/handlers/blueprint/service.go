@@ -2,6 +2,7 @@ package Blueprint
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -400,7 +401,18 @@ func (s *Service) GetBlueprintByCategory() ([]BlueprintCategoryGroup, error) {
 	cursor, err := s.Blueprints.Aggregate(ctx, mongo.Pipeline{
 		bson.D{
 			{"$group", bson.D{
-				{"_id", "$category"},
+				{"_id", bson.D{
+					{"$cond", bson.D{
+						{"if", bson.D{
+							{"$or", bson.A{
+								bson.D{{"$eq", bson.A{"$category", nil}}},
+								bson.D{{"$eq", bson.A{"$category", ""}}},
+							}},
+						}},
+						{"then", "Uncategorized"},
+						{"else", "$category"},
+					}},
+				}},
 				{"blueprints", bson.D{
 					{"$push", "$$ROOT"},
 				}},
@@ -432,11 +444,22 @@ func (s *Service) GetBlueprintByCategory() ([]BlueprintCategoryGroup, error) {
 		for j, blueprint := range group.Blueprints {
 			// Convert the raw blueprint document to internal format
 			var internalBlueprint BlueprintDocumentInternal
-			bytes, _ := bson.Marshal(blueprint)
-			bson.Unmarshal(bytes, &internalBlueprint)
+			bytes, err := bson.Marshal(blueprint)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal blueprint at index %d: %w", j, err)
+			}
+
+			if err := bson.Unmarshal(bytes, &internalBlueprint); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal blueprint at index %d: %w", j, err)
+			}
 
 			// Convert to API format
-			blueprints[j] = *internalBlueprint.ToAPI()
+			apiBlueprint := internalBlueprint.ToAPI()
+			if apiBlueprint == nil {
+				return nil, fmt.Errorf("failed to convert blueprint at index %d to API format", j)
+			}
+
+			blueprints[j] = *apiBlueprint
 		}
 		results[i].Blueprints = blueprints
 	}
