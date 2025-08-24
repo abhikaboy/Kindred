@@ -3870,6 +3870,22 @@ components:
                     description: Banner image URL
                     examples:
                         - https://example.com/banner.jpg
+                categories:
+                    type: array
+                    description: Categories associated with the blueprint
+                    examples:
+                        - - id: 507f1f77bcf86cd799439011
+                            lastEdited: "2023-01-01T00:00:00Z"
+                            name: Productivity
+                            user: 507f1f77bcf86cd799439012
+                            workspaceName: Personal
+                    items:
+                        $ref: '#/components/schemas/CategoryDocument'
+                category:
+                    type: string
+                    description: Category of the blueprint
+                    examples:
+                        - productivity
                 description:
                     type: string
                     description: Description of the blueprint
@@ -3931,6 +3947,8 @@ components:
                 - owner
                 - subscribersCount
                 - timestamp
+                - categories
+                - category
         BlueprintDocumentWithoutSubscribers:
             type: object
             additionalProperties: false
@@ -3940,6 +3958,19 @@ components:
                     description: Banner image URL
                     examples:
                         - https://example.com/banner.jpg
+                categories:
+                    type: array
+                    description: Categories associated with the blueprint
+                    examples:
+                        - - id: 507f1f77bcf86cd799439011
+                            name: Productivity
+                    items:
+                        $ref: '#/components/schemas/CategoryDocument'
+                category:
+                    type: string
+                    description: Category of the blueprint
+                    examples:
+                        - productivity
                 description:
                     type: string
                     description: Description of the blueprint
@@ -3993,6 +4024,8 @@ components:
                 - owner
                 - subscribersCount
                 - timestamp
+                - category
+                - categories
         BlueprintReference:
             type: object
             additionalProperties: false
@@ -4355,6 +4388,22 @@ components:
                     description: Banner image URL for the blueprint
                     examples:
                         - https://example.com/banner.jpg
+                categories:
+                    type: array
+                    description: Categories associated with the blueprint
+                    examples:
+                        - - id: 507f1f77bcf86cd799439011
+                            lastEdited: "2023-01-01T00:00:00Z"
+                            name: Productivity
+                            user: 507f1f77bcf86cd799439012
+                            workspaceName: Personal
+                    items:
+                        $ref: '#/components/schemas/CategoryDocument'
+                category:
+                    type: string
+                    description: Category of the blueprint
+                    examples:
+                        - productivity
                 description:
                     type: string
                     description: Description of the blueprint
@@ -4384,6 +4433,8 @@ components:
                 - tags
                 - description
                 - duration
+                - category
+                - categories
         CreateCategoryParams:
             type: object
             additionalProperties: false
@@ -5814,6 +5865,22 @@ components:
                     description: New banner image URL
                     examples:
                         - https://example.com/new-banner.jpg
+                categories:
+                    type: array
+                    description: Updated categories associated with the blueprint
+                    examples:
+                        - - id: 507f1f77bcf86cd799439011
+                            lastEdited: "2023-01-01T00:00:00Z"
+                            name: Productivity
+                            user: 507f1f77bcf86cd799439012
+                            workspaceName: Personal
+                    items:
+                        $ref: '#/components/schemas/CategoryDocument'
+                category:
+                    type: string
+                    description: Updated category of the blueprint
+                    examples:
+                        - productivity
                 description:
                     type: string
                     description: New description

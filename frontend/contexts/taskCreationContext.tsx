@@ -27,6 +27,8 @@ type TaskCreationContextType = {
     setReminders: (reminders: Reminder[]) => void;
     isPublic: boolean;
     setIsPublic: (isPublic: boolean) => void;
+    isBlueprint: boolean;
+    setIsBlueprint: (isBlueprint: boolean) => void;
     setPriority: (priority: number) => void;
     setValue: (value: number) => void;
     setRecurring: (recurring: boolean) => void;
@@ -63,6 +65,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [isPublic, setIsPublic] = useState(false);
+    const [isBlueprint, setIsBlueprint] = useState(false);
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
 
@@ -188,6 +191,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setStartDate(null);
         setReminders([]);
         setIsPublic(false);
+        setIsBlueprint(false);
         setShowAdvanced(false);
     };
 
@@ -223,6 +227,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
             })) || []
         );
         setIsPublic(taskData.public || false);
+        setIsBlueprint(taskData.isBlueprint || false);
     };
 
     return (
@@ -247,6 +252,8 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 setReminders,
                 isPublic,
                 setIsPublic,
+                isBlueprint,
+                setIsBlueprint,
                 setPriority,
                 setValue,
                 setRecurring,

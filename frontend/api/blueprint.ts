@@ -24,6 +24,8 @@ type UnsubscribeFromBlueprintOutputBody = components["schemas"]["UnsubscribeFrom
  * @param tags 
  * @param description 
  * @param duration 
+ * @param category 
+ * @param categories 
  * @returns 
  */
 export async function createBlueprintToBackend(
@@ -31,10 +33,12 @@ export async function createBlueprintToBackend(
     name: string,
     tags: string[],
     description: string,
-    duration: string
+    duration: string,
+    category: string,
+    categories: any[]
 ) {
     try {
-        const result = await createBlueprint(banner, name, tags, description, duration);
+        const result = await createBlueprint(banner, name, tags, description, duration, category, categories);
         console.log("Blueprint created successfully:", result);
         return result;
     } catch (error) {
@@ -175,6 +179,8 @@ export async function searchBlueprintsFromBackend(query: string) {
  * @param tags 
  * @param description 
  * @param duration 
+ * @param category 
+ * @param categories 
  * @returns 
  */
 export const createBlueprint = async (
@@ -182,11 +188,13 @@ export const createBlueprint = async (
     name: string,
     tags: string[],
     description: string,
-    duration: string
+    duration: string,
+    category?: string,
+    categories?: any[]
 ): Promise<BlueprintDocument> => {
     const { data, error } = await client.POST("/v1/user/blueprints", {
         params: withAuthHeaders({}),
-        body: { banner, name, tags, description, duration },
+        body: { banner, name, tags, description, duration, category, categories },
     });
 
     if (error) {

@@ -45,6 +45,8 @@ func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprin
 		Subscribers:      []primitive.ObjectID{},
 		SubscribersCount: 0,
 		Timestamp:        time.Now(),
+		Category:         input.Body.Category,
+		Categories:       input.Body.Categories,
 		Owner: &types.UserExtendedReferenceInternal{
 			ID:             ownerid,
 			DisplayName:    "",

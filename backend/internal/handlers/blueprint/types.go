@@ -108,11 +108,13 @@ type GetUserSubscribedBlueprintsOutput struct {
 	Body []BlueprintDocumentWithoutSubscribers `json:"body"`
 }
 type CreateBlueprintParams struct {
-	Banner      string   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
-	Name        string   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`
-	Tags        []string `bson:"tags" json:"tags" example:"[\"productivity\",\"morning\"]" doc:"Tags associated with the blueprint"`
-	Description string   `bson:"description" json:"description" example:"A comprehensive morning routine to start your day right" doc:"Description of the blueprint"`
-	Duration    string   `bson:"duration" json:"duration" example:"30m" doc:"Expected duration to complete the blueprint"`
+	Banner      string                   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
+	Name        string                   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`
+	Tags        []string                 `bson:"tags" json:"tags" example:"[\"productivity\",\"morning\"]" doc:"Tags associated with the blueprint"`
+	Description string                   `bson:"description" json:"description" example:"A comprehensive morning routine to start your day right" doc:"Description of the blueprint"`
+	Duration    string                   `bson:"duration" json:"duration" example:"30m" doc:"Expected duration to complete the blueprint"`
+	Category    string                   `bson:"category" json:"category" example:"productivity" doc:"Category of the blueprint"`
+	Categories  []types.CategoryDocument `bson:"categories" json:"categories" example:"[{\"id\":\"507f1f77bcf86cd799439011\",\"name\":\"Productivity\",\"workspaceName\":\"Personal\",\"lastEdited\":\"2023-01-01T00:00:00Z\",\"user\":\"507f1f77bcf86cd799439012\"}]" doc:"Categories associated with the blueprint"`
 }
 
 type BlueprintDocument struct {
@@ -126,6 +128,8 @@ type BlueprintDocument struct {
 	Owner            *types.UserExtendedReference `bson:"owner" json:"owner" doc:"Owner information"`
 	SubscribersCount int64                        `bson:"subscribersCount" json:"subscribersCount" example:"42" doc:"Number of subscribers"`
 	Timestamp        time.Time                    `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Creation timestamp"`
+	Categories       []types.CategoryDocument     `bson:"categories" json:"categories" example:"[{\"id\":\"507f1f77bcf86cd799439011\",\"name\":\"Productivity\",\"workspaceName\":\"Personal\",\"lastEdited\":\"2023-01-01T00:00:00Z\",\"user\":\"507f1f77bcf86cd799439012\"}]" doc:"Categories associated with the blueprint"`
+	Category         string                       `bson:"category" json:"category" example:"productivity" doc:"Category of the blueprint"`
 }
 
 // BlueprintDocumentWithoutSubscribers is the same as BlueprintDocument but without the Subscribers field
@@ -139,6 +143,8 @@ type BlueprintDocumentWithoutSubscribers struct {
 	Owner            *types.UserExtendedReference `bson:"owner" json:"owner" doc:"Owner information"`
 	SubscribersCount int64                        `bson:"subscribersCount" json:"subscribersCount" example:"42" doc:"Number of subscribers"`
 	Timestamp        time.Time                    `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Creation timestamp"`
+	Category         string                       `bson:"category" json:"category" example:"productivity" doc:"Category of the blueprint"`
+	Categories       []types.CategoryDocument     `bson:"categories" json:"categories" example:"[{\"id\":\"507f1f77bcf86cd799439011\",\"name\":\"Productivity\"}]" doc:"Categories associated with the blueprint"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -153,16 +159,20 @@ type BlueprintDocumentInternal struct {
 	Owner            *types.UserExtendedReferenceInternal `bson:"owner"`
 	SubscribersCount int64                                `bson:"subscribersCount"`
 	Timestamp        time.Time                            `bson:"timestamp"`
+	Category         string                               `bson:"category"`
+	Categories       []types.CategoryDocument             `bson:"categories"`
 }
 
 type UpdateBlueprintDocument struct {
-	Banner      *string    `bson:"banner,omitempty" json:"banner,omitempty" example:"https://example.com/new-banner.jpg" doc:"New banner image URL"`
-	Name        *string    `bson:"name,omitempty" json:"name,omitempty" example:"Updated Morning Routine" doc:"New name for the blueprint"`
-	Tags        *[]string  `bson:"tags,omitempty" json:"tags,omitempty" example:"[\"productivity\",\"morning\",\"health\"]" doc:"Updated tags"`
-	Description *string    `bson:"description,omitempty" json:"description,omitempty" example:"An updated comprehensive morning routine" doc:"New description"`
-	Duration    *string    `bson:"duration,omitempty" json:"duration,omitempty" example:"45m" doc:"Updated expected duration"`
-	Subscribers *[]string  `bson:"subscribers,omitempty" json:"subscribers,omitempty" example:"[\"507f1f77bcf86cd799439012\"]" doc:"Updated subscriber list"`
-	Timestamp   *time.Time `bson:"timestamp,omitempty" json:"timestamp,omitempty" example:"2023-01-02T00:00:00Z" doc:"Update timestamp"`
+	Banner      *string                   `bson:"banner,omitempty" json:"banner,omitempty" example:"https://example.com/new-banner.jpg" doc:"New banner image URL"`
+	Name        *string                   `bson:"name,omitempty" json:"name,omitempty" example:"Updated Morning Routine" doc:"New name for the blueprint"`
+	Tags        *[]string                 `bson:"tags,omitempty" json:"tags,omitempty" example:"[\"productivity\",\"morning\",\"health\"]" doc:"Updated tags"`
+	Description *string                   `bson:"description,omitempty" json:"description,omitempty" example:"An updated comprehensive morning routine" doc:"New description"`
+	Duration    *string                   `bson:"duration,omitempty" json:"duration,omitempty" example:"45m" doc:"Updated expected duration"`
+	Category    *string                   `bson:"category,omitempty" json:"category,omitempty" example:"productivity" doc:"Updated category of the blueprint"`
+	Categories  *[]types.CategoryDocument `bson:"categories,omitempty" json:"categories,omitempty" example:"[{\"id\":\"507f1f77bcf86cd799439011\",\"name\":\"Productivity\",\"workspaceName\":\"Personal\",\"lastEdited\":\"2023-01-01T00:00:00Z\",\"user\":\"507f1f77bcf86cd799439012\"}]" doc:"Updated categories associated with the blueprint"`
+	Subscribers *[]string                 `bson:"subscribers,omitempty" json:"subscribers,omitempty" example:"[\"507f1f77bcf86cd799439012\"]" doc:"Updated subscriber list"`
+	Timestamp   *time.Time                `bson:"timestamp,omitempty" json:"timestamp,omitempty" example:"2023-01-02T00:00:00Z" doc:"Update timestamp"`
 }
 
 // Helper functions to convert between internal and API types
@@ -188,6 +198,8 @@ func (b *BlueprintDocumentInternal) ToAPI() *BlueprintDocument {
 		Owner:            owner,
 		SubscribersCount: b.SubscribersCount,
 		Timestamp:        b.Timestamp,
+		Category:         b.Category,
+		Categories:       b.Categories,
 	}
 }
 
@@ -208,6 +220,8 @@ func (b *BlueprintDocumentInternal) ToAPIWithoutSubscribers() *BlueprintDocument
 		Owner:            owner,
 		SubscribersCount: b.SubscribersCount,
 		Timestamp:        b.Timestamp,
+		Category:         b.Category,
+		Categories:       b.Categories,
 	}
 }
 
@@ -220,4 +234,3 @@ type Service struct {
 	Blueprints *mongo.Collection
 	Users      *mongo.Collection
 }
-

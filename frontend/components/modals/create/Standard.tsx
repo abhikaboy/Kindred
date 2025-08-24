@@ -5,6 +5,7 @@ import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useBlueprints } from "@/contexts/blueprintContext";
 import { Screen } from "../CreateModal";
 import { ThemedText } from "@/components/ThemedText";
 import TrafficLight from "@/components/inputs/TrafficLight";
@@ -18,6 +19,7 @@ import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { updateTaskAPI } from "@/api/task";
+import { ObjectId } from "bson";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -27,12 +29,14 @@ type Props = {
     edit?: boolean;
     screen?: Screen;
     categoryId?: string; // Category ID for editing tasks
+    isBlueprint?: boolean; // Flag to indicate if this modal is being used for blueprint task creation
 };
 
-const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
+const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, selectedCategory, setCreateCategory, task } = useTasks();
+    const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
         taskName,
         setTaskName,
@@ -60,8 +64,14 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
         setStartDate,
         setReminders,
         setIsPublic,
+        setIsBlueprint,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
+
+    // Set the blueprint flag when component mounts
+    useEffect(() => {
+        setIsBlueprint(isBlueprint);
+    }, [isBlueprint, setIsBlueprint]);
 
     useEffect(() => {
         if (screen && edit) {
@@ -120,7 +130,41 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
     const createPost = async () => {
         console.log("🔍 CLIENT BASE URL:", process.env.EXPO_PUBLIC_URL);
         console.log("🔍 ABOUT TO CALL:", `${process.env.EXPO_PUBLIC_URL}/v1/user/posts`);
-        if (categories.length === 0) return;
+        if (availableCategories.length === 0) return;
+        
+        if (isBlueprint) {
+            // For blueprint mode, create task locally with proper TaskDocument structure
+            const newTask: components["schemas"]["TaskDocument"] = {
+                id: new ObjectId().toString(), // Temporary ID for local use
+                content: taskName,
+                priority: priority,
+                value: value,
+                recurring: recurring,
+                public: isPublic,
+                active: false,
+                checklist: [],
+                notes: "",
+                startDate: startDate?.toISOString(),
+                startTime: startTime?.toISOString(),
+                deadline: deadline?.toISOString(),
+                reminders: reminders.map(reminder => ({
+                    ...reminder,
+                    triggerTime: reminder.triggerTime.toISOString()
+                })),
+                recurFrequency: recurring ? recurFrequency : undefined,
+                recurDetails: recurring ? recurDetails as any : undefined,
+                timestamp: new Date().toISOString(),
+                lastEdited: new Date().toISOString(),
+                userID: "", // Will be set by backend when blueprint is created
+                categoryID: selectedCategory.id,
+            };
+            
+            addTaskToBlueprintCategory(selectedCategory.id, newTask);
+            resetTaskCreation();
+            return;
+        }
+        
+        // Normal mode - create task via API
         let postBody: CreateTaskParams = {
             content: taskName,
             priority: priority,
@@ -182,12 +226,15 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
         resetTaskCreation();
     };
 
-    if (categories) {
-        if (categories.filter((c) => c.name !== "!-proxy-!").length == 0) {
+    // Determine which categories to use based on blueprint mode
+    const availableCategories = isBlueprint ? blueprintCategories : categories;
+
+    if (availableCategories) {
+        if (availableCategories.filter((c) => c.name !== "!-proxy-!").length == 0) {
             goTo(Screen.NEW_CATEGORY);
         }
     } else {
-        console.warn("Categories is null " + categories);
+        console.warn("Categories is null " + availableCategories);
     }
 
     return (
@@ -215,7 +262,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen }: Props) => {
                 }}>
                 <Dropdown
                     options={[
-                        ...categories
+                        ...availableCategories
                             .filter((c) => c.name !== "!-proxy-!")
                             .map((c) => {
                                 return { label: c.name, id: c.id, special: false };

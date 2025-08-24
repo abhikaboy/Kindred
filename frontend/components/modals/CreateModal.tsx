@@ -29,6 +29,10 @@ type Props = {
     categoryId?: string; // Category ID for editing tasks
     focused?: string;
     setFocused?: (focused: string) => void;
+    blueprintConfig?: {
+        blueprintName: string;
+    };
+    isBlueprint?: boolean; // Flag to indicate if this modal is being used for blueprint task creation
 };
 
 export enum Screen {
@@ -151,13 +155,14 @@ const CreateModal = (props: Props) => {
                             goTo={goToScreen}
                             edit={props.edit}
                             categoryId={props.categoryId}
+                            isBlueprint={props.isBlueprint}
                         />
                     </Animated.View>
                 );
             case Screen.NEW_CATEGORY:
                 return (
                     <Animated.View style={animatedStyle}>
-                        <NewCategory {...screenProps} />
+                        <NewCategory {...screenProps} goToStandard={goToStandard} isBlueprint={props.isBlueprint} />
                     </Animated.View>
                 );
             case Screen.DEADLINE:
