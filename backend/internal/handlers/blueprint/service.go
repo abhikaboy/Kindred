@@ -136,19 +136,144 @@ func (s *Service) DeleteBlueprint(id primitive.ObjectID) error {
 // SubscribeToBlueprint adds a user to the subscribers array and increments the count
 func (s *Service) SubscribeToBlueprint(blueprintID, userID primitive.ObjectID) error {
 	ctx := context.Background()
+
+	// Use FindOneAndUpdate to get the blueprint and update it atomically
 	filter := bson.M{"_id": blueprintID, "subscribers": bson.M{"$ne": userID}}
 	update := bson.M{
 		"$addToSet": bson.M{"subscribers": userID},
 		"$inc":      bson.M{"subscribersCount": 1},
 	}
-	result, err := s.Blueprints.UpdateOne(ctx, filter, update)
+
+	var blueprint BlueprintDocumentInternal
+	err := s.Blueprints.FindOneAndUpdate(ctx, filter, update).Decode(&blueprint)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return mongo.ErrNoDocuments // Already subscribed or blueprint not found
+		}
 		return err
 	}
-	if result.MatchedCount == 0 {
-		return mongo.ErrNoDocuments // Already subscribed or blueprint not found
+
+	// Process and insert categories from the blueprint
+	if err := s.processBlueprintCategories(&blueprint, userID); err != nil {
+		return err
 	}
+
 	return nil
+}
+
+// processBlueprintCategories processes the blueprint categories and inserts them into the categories collection
+func (s *Service) processBlueprintCategories(blueprint *BlueprintDocumentInternal, userID primitive.ObjectID) error {
+	ctx := context.Background()
+	today := time.Now()
+
+	// Get the categories collection
+	categoriesCollection := s.Blueprints.Database().Collection("categories")
+
+	for _, category := range blueprint.Categories {
+		// Create a new category document for the user
+		newCategory := types.CategoryDocument{
+			ID:            primitive.NewObjectID(),
+			Name:          category.Name,
+			WorkspaceName: blueprint.Name, // Use blueprint name as workspace name
+			LastEdited:    today,
+			User:          userID,
+			Tasks:         make([]types.TaskDocument, 0),
+			IsBlueprint:   true,
+			BlueprintID:   &blueprint.ID,
+		}
+
+		// Process tasks in the category
+		for _, task := range category.Tasks {
+			newTask := s.processTaskForSubscription(task, today, newCategory.ID, userID, blueprint.ID)
+			newCategory.Tasks = append(newCategory.Tasks, newTask)
+		}
+
+		// Insert the new category
+		_, err := categoriesCollection.InsertOne(ctx, newCategory)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processTaskForSubscription processes a task for subscription, adjusting time-related fields
+func (s *Service) processTaskForSubscription(task types.TaskDocument, today time.Time, categoryID, userID, blueprintID primitive.ObjectID) types.TaskDocument {
+	// Create new task with fresh ID
+	newTask := types.TaskDocument{
+		ID:             primitive.NewObjectID(),
+		Priority:       task.Priority,
+		Content:        task.Content,
+		Value:          task.Value,
+		Recurring:      task.Recurring,
+		RecurFrequency: task.RecurFrequency,
+		RecurType:      task.RecurType,
+		RecurDetails:   task.RecurDetails,
+		Public:         task.Public,
+		Active:         task.Active,
+		Timestamp:      today,
+		LastEdited:     today,
+		UserID:         userID,
+		CategoryID:     categoryID,
+		Notes:          task.Notes,
+		Checklist:      task.Checklist,
+		BlueprintID:    &blueprintID,
+	}
+
+	// Process time-related fields
+	if task.StartDate != nil {
+		// Calculate the offset from unix epoch and apply it to today
+		epoch := time.Unix(0, 0)
+		offset := task.StartDate.Sub(epoch)
+		newStartDate := today.Add(offset)
+		newTask.StartDate = &newStartDate
+	}
+
+	if task.StartTime != nil {
+		// Calculate the offset from unix epoch and apply it to today
+		epoch := time.Unix(0, 0)
+		offset := task.StartTime.Sub(epoch)
+		newStartTime := today.Add(offset)
+		newTask.StartTime = &newStartTime
+	}
+
+	if task.Deadline != nil {
+		// Calculate the offset from unix epoch and apply it to today
+		epoch := time.Unix(0, 0)
+		offset := task.Deadline.Sub(epoch)
+		newDeadline := today.Add(offset)
+		newTask.Deadline = &newDeadline
+	}
+
+	// Process reminders
+	if task.Reminders != nil {
+		newReminders := make([]*types.Reminder, len(task.Reminders))
+		for i, reminder := range task.Reminders {
+			if reminder != nil {
+				// Calculate the offset from unix epoch and apply it to today
+				epoch := time.Unix(0, 0)
+				offset := reminder.TriggerTime.Sub(epoch)
+				newTriggerTime := today.Add(offset)
+
+				newReminders[i] = &types.Reminder{
+					TriggerTime:    newTriggerTime,
+					Type:           reminder.Type,
+					Sent:           false, // Reset sent status
+					AfterStart:     reminder.AfterStart,
+					BeforeStart:    reminder.BeforeStart,
+					BeforeDeadline: reminder.BeforeDeadline,
+					AfterDeadline:  reminder.AfterDeadline,
+					CustomMessage:  reminder.CustomMessage,
+					Sound:          reminder.Sound,
+					Vibration:      reminder.Vibration,
+				}
+			}
+		}
+		newTask.Reminders = newReminders
+	}
+
+	return newTask
 }
 
 // UnsubscribeFromBlueprint removes a user from the subscribers array and decrements the count only if the user was subscribed
@@ -166,6 +291,39 @@ func (s *Service) UnsubscribeFromBlueprint(blueprintID, userID primitive.ObjectI
 	if result.MatchedCount == 0 {
 		return mongo.ErrNoDocuments // Not subscribed or blueprint not found
 	}
+
+	// Delete all categories that were created from this blueprint subscription
+	if err := s.deleteBlueprintCategories(blueprintID, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// deleteBlueprintCategories deletes all categories that were created from a specific blueprint subscription
+func (s *Service) deleteBlueprintCategories(blueprintID, userID primitive.ObjectID) error {
+	ctx := context.Background()
+
+	// Get the categories collection
+	categoriesCollection := s.Blueprints.Database().Collection("categories")
+
+	// Delete all categories that match the userID and blueprintID
+	filter := bson.M{
+		"user":        userID,
+		"blueprintId": blueprintID,
+		"isBlueprint": true,
+	}
+
+	result, err := categoriesCollection.DeleteMany(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Deleted blueprint categories",
+		"blueprintID", blueprintID.Hex(),
+		"userID", userID.Hex(),
+		"deletedCount", result.DeletedCount)
+
 	return nil
 }
 
@@ -230,6 +388,57 @@ func (s *Service) GetUserSubscribedBlueprints(userID primitive.ObjectID) ([]Blue
 	results := make([]BlueprintDocumentWithoutSubscribers, len(internalResults))
 	for i, internal := range internalResults {
 		results[i] = *internal.ToAPIWithoutSubscribers()
+	}
+
+	return results, nil
+}
+
+// GetBlueprintByCategory groups blueprints by their category field
+func (s *Service) GetBlueprintByCategory() ([]BlueprintCategoryGroup, error) {
+	ctx := context.Background()
+
+	cursor, err := s.Blueprints.Aggregate(ctx, mongo.Pipeline{
+		bson.D{
+			{"$group", bson.D{
+				{"_id", "$category"},
+				{"blueprints", bson.D{
+					{"$push", "$$ROOT"},
+				}},
+				{"count", bson.D{
+					{"$sum", 1},
+				}},
+			}},
+		},
+		bson.D{
+			{"$sort", bson.D{
+				{"count", -1},
+				{"_id", 1},
+			}},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []BlueprintCategoryGroup
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	// Convert internal documents to API documents for each blueprint in the groups
+	for i, group := range results {
+		blueprints := make([]BlueprintDocument, len(group.Blueprints))
+		for j, blueprint := range group.Blueprints {
+			// Convert the raw blueprint document to internal format
+			var internalBlueprint BlueprintDocumentInternal
+			bytes, _ := bson.Marshal(blueprint)
+			bson.Unmarshal(bytes, &internalBlueprint)
+
+			// Convert to API format
+			blueprints[j] = *internalBlueprint.ToAPI()
+		}
+		results[i].Blueprints = blueprints
 	}
 
 	return results, nil

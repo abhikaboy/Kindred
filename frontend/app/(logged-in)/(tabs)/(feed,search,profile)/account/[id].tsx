@@ -23,14 +23,31 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
 import { type Profile, type RelationshipStatus} from "@/api/types";
 import { components } from "@/api/generated/types";
+import { useBlueprints } from "@/contexts/blueprintContext";
+import { getBlueprintById } from "@/api/blueprint";
 
 export default function Profile() {
-    const { id } = useLocalSearchParams();
+    const { id, blueprintId } = useLocalSearchParams();
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    const { setSelectedBlueprint } = useBlueprints();
 
     type TaskDocument = components["schemas"]["TaskDocument"];
     type ProfileDocument = components["schemas"]["ProfileDocument"];
+
+    // Fetch blueprint by ID if provided in search params
+    const { data: blueprint } = useQuery({
+        queryKey: ["blueprint", blueprintId],
+        queryFn: () => getBlueprintById(blueprintId as string),
+        enabled: !!blueprintId,
+    });
+
+    // Set selected blueprint when blueprint data is loaded
+    useEffect(() => {
+        if (blueprint) {
+            setSelectedBlueprint(blueprint);
+        }
+    }, [blueprint, setSelectedBlueprint]);
 
 
     const fallback_profile = {

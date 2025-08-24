@@ -107,6 +107,19 @@ type GetUserSubscribedBlueprintsInput struct {
 type GetUserSubscribedBlueprintsOutput struct {
 	Body []BlueprintDocumentWithoutSubscribers `json:"body"`
 }
+
+// Get Blueprints By Category
+type GetBlueprintByCategoryInput struct{}
+
+type BlueprintCategoryGroup struct {
+	Category   string              `bson:"_id" json:"category" example:"productivity" doc:"Category name"`
+	Blueprints []BlueprintDocument `bson:"blueprints" json:"blueprints" doc:"List of blueprints in this category"`
+	Count      int64               `bson:"count" json:"count" example:"5" doc:"Number of blueprints in this category"`
+}
+
+type GetBlueprintByCategoryOutput struct {
+	Body []BlueprintCategoryGroup `json:"body"`
+}
 type CreateBlueprintParams struct {
 	Banner      string                   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
 	Name        string                   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`

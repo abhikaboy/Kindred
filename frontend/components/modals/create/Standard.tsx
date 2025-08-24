@@ -68,10 +68,10 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
 
-    // Set the blueprint flag when component mounts
+    // Set the blueprint flag when component mounts - only once
     useEffect(() => {
         setIsBlueprint(isBlueprint);
-    }, [isBlueprint, setIsBlueprint]);
+    }, []); // Empty dependency array - only run once on mount
 
     useEffect(() => {
         if (screen && edit) {
@@ -81,32 +81,20 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
 
     // Set the selected category when in edit mode
     useEffect(() => {
-        console.log("Category selection useEffect triggered:", { edit, categoryId, categories: !!categories });
-        console.log("Categories length:", categories?.length);
-        
         if (edit && categoryId && categories && categories.length > 0) {
-            console.log("Available categories:", categories.map(c => ({ id: c.id, name: c.name })));
-            
-            // Add a small delay to ensure everything is loaded
             const timer = setTimeout(() => {
                 const taskCategory = categories.find(cat => cat.id === categoryId);
-                console.log("Found task category:", taskCategory);
                 
                 if (taskCategory) {
-                    console.log("Setting category to:", { label: taskCategory.name, id: taskCategory.id });
                     setCreateCategory({ 
                         label: taskCategory.name, 
                         id: taskCategory.id, 
                         special: false 
                     });
                 } else {
-                    console.log("No matching category found for categoryId:", categoryId);
-                    console.log("Available category IDs:", categories.map(c => c.id));
-                    
                     // As a last resort, set the first available category
                     if (categories.length > 0) {
                         const firstCategory = categories[0];
-                        console.log("Setting to first available category:", { label: firstCategory.name, id: firstCategory.id });
                         setCreateCategory({ 
                             label: firstCategory.name, 
                             id: firstCategory.id, 
@@ -118,18 +106,10 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             
             return () => clearTimeout(timer);
         } else {
-            console.log("Missing required data:", { 
-                edit, 
-                hasCategoryId: !!categoryId, 
-                hasCategories: !!categories, 
-                categoriesLength: categories?.length 
-            });
         }
     }, [edit, categoryId, categories]);
 
     const createPost = async () => {
-        console.log("🔍 CLIENT BASE URL:", process.env.EXPO_PUBLIC_URL);
-        console.log("🔍 ABOUT TO CALL:", `${process.env.EXPO_PUBLIC_URL}/v1/user/posts`);
         if (availableCategories.length === 0) return;
         
         if (isBlueprint) {
@@ -186,7 +166,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             postBody.recurFrequency = recurFrequency;
             postBody.recurDetails = recurDetails as RecurDetails;
         }
-        console.log(postBody);
         const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody);
 
         addToCategory(selectedCategory.id, response);

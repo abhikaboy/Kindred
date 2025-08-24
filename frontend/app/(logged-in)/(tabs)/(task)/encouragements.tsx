@@ -235,11 +235,13 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         userInfo: {
             alignItems: "center",
+            width: Dimensions.get("window").width * 0.2,
         },
         userName: {
             color: ThemedColor.text,
             fontSize: 14,
             textAlign: "center",
+            width: Dimensions.get("window").width * 0.2,
         },
         timeText: {
             color: ThemedColor.caption,

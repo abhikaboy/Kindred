@@ -28,6 +28,8 @@ const BlueprintCard = ({
     subscribers = [],
     owner,
     large = false,
+    categories,
+    category,
 }: Props) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor, large);
@@ -51,6 +53,8 @@ const BlueprintCard = ({
             subscribers,
             owner,
             timestamp: new Date().toISOString(), // Add required timestamp
+            categories,
+            category,
         });
         router.push({
             pathname: "/(logged-in)/(tabs)/(search)/blueprint/[id]",

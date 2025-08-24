@@ -9,6 +9,7 @@ const withAuthHeaders = (params: any = {}) => ({
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintDocumentWithoutSubscribers = components["schemas"]["BlueprintDocumentWithoutSubscribers"];
+type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
 type CreateBlueprintParams = components["schemas"]["CreateBlueprintParams"];
 type UpdateBlueprintDocument = components["schemas"]["UpdateBlueprintDocument"];
 type UpdateBlueprintOutputBody = components["schemas"]["UpdateBlueprintOutputBody"];
@@ -171,6 +172,21 @@ export async function searchBlueprintsFromBackend(query: string) {
     }
 }
 
+/**
+ * Get blueprints by category from backend
+ * @returns 
+ */
+export async function getBlueprintsByCategoryFromBackend() {
+    try {
+        const results = await getBlueprintsByCategory();
+        console.log("Blueprints by category:", results);
+        return results;
+    } catch (error) {
+        console.error("Failed to get blueprints by category:", error);
+        throw error;
+    }
+}
+
 
 /**
  * Creates a new blueprint 
@@ -329,6 +345,22 @@ export const searchBlueprints = async (query: string): Promise<BlueprintDocument
 
     if (error) {
         throw new Error(`Failed to search blueprints: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
+
+/**
+ * Get blueprints grouped by category
+ * @returns 
+ */
+export const getBlueprintsByCategory = async (): Promise<BlueprintCategoryGroup[]> => {
+    const { data, error } = await client.GET("/v1/blueprints/by-category", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get blueprints by category: ${JSON.stringify(error)}`);
     }
 
     return data || [];

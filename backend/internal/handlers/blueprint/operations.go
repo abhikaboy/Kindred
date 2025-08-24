@@ -107,6 +107,17 @@ func RegisterGetUserSubscribedBlueprintsOperation(api huma.API, handler *Handler
 	}, handler.GetUserSubscribedBlueprintsHuma)
 }
 
+func RegisterGetBlueprintByCategoryOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-blueprints-by-category",
+		Method:      http.MethodGet,
+		Path:        "/v1/blueprints/by-category",
+		Summary:     "Get blueprints grouped by category",
+		Description: "Retrieve all blueprints grouped by their category field",
+		Tags:        []string{"blueprints"},
+	}, handler.GetBlueprintByCategoryHuma)
+}
+
 // Register all blueprint operations
 func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSearchBlueprintsOperation(api, handler)
@@ -118,4 +129,5 @@ func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSubscribeToBlueprintOperation(api, handler)
 	RegisterUnsubscribeFromBlueprintOperation(api, handler)
 	RegisterGetUserSubscribedBlueprintsOperation(api, handler)
+	RegisterGetBlueprintByCategoryOperation(api, handler)
 }

@@ -484,6 +484,28 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/blueprints/by-category:
+        get:
+            tags:
+                - blueprints
+            summary: Get blueprints grouped by category
+            description: Retrieve all blueprints grouped by their category field
+            operationId: get-blueprints-by-category
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/BlueprintCategoryGroup'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/blueprints/search:
         get:
             tags:
@@ -3854,6 +3876,30 @@ components:
                     type: string
             required:
                 - emoji
+        BlueprintCategoryGroup:
+            type: object
+            additionalProperties: false
+            properties:
+                blueprints:
+                    type: array
+                    description: List of blueprints in this category
+                    items:
+                        $ref: '#/components/schemas/BlueprintDocument'
+                category:
+                    type: string
+                    description: Category name
+                    examples:
+                        - productivity
+                count:
+                    type: integer
+                    description: Number of blueprints in this category
+                    format: int64
+                    examples:
+                        - 5
+            required:
+                - category
+                - blueprints
+                - count
         BlueprintDocument:
             type: object
             additionalProperties: false
@@ -4045,8 +4091,12 @@ components:
                     examples:
                         - https://example.com/schemas/CategoryDocument.json
                     readOnly: true
+                blueprintId:
+                    type: string
                 id:
                     type: string
+                isBlueprint:
+                    type: boolean
                 lastEdited:
                     type: string
                     format: date-time
@@ -4071,8 +4121,12 @@ components:
             type: object
             additionalProperties: false
             properties:
+                blueprintId:
+                    type: string
                 id:
                     type: string
+                isBlueprint:
+                    type: boolean
                 name:
                     type: string
             required:
@@ -5365,6 +5419,8 @@ components:
             type: object
             additionalProperties: false
             properties:
+                blueprintId:
+                    type: string
                 category:
                     $ref: '#/components/schemas/CategoryExtendedReference'
                 content:
@@ -5682,6 +5738,8 @@ components:
                     readOnly: true
                 active:
                     type: boolean
+                blueprintId:
+                    type: string
                 categoryID:
                     type: string
                 checklist:
@@ -5755,6 +5813,8 @@ components:
                     examples:
                         - https://example.com/schemas/TemplateTaskDocument.json
                     readOnly: true
+                blueprintId:
+                    type: string
                 categoryID:
                     type: string
                 checklist:
@@ -5946,6 +6006,10 @@ components:
                     examples:
                         - https://example.com/schemas/UpdateCategoryDocument.json
                     readOnly: true
+                blueprintId:
+                    type: string
+                isBlueprint:
+                    type: boolean
                 name:
                     type: string
         UpdateCategoryOutputBody:
@@ -6282,6 +6346,8 @@ components:
                     readOnly: true
                 active:
                     type: boolean
+                blueprintId:
+                    type: string
                 checklist:
                     type: array
                     items:

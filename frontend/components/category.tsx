@@ -13,9 +13,10 @@ interface CategoryProps {
     tasks: Task[];
     onLongPress: (categoryId: string) => void;
     onPress: (categoryId: string) => void;
+    viewOnly?: boolean;
 }
 
-export const Category: React.FC<CategoryProps> = ({ id, name, tasks, onLongPress, onPress }) => {
+export const Category: React.FC<CategoryProps> = ({ id, name, tasks, onLongPress, onPress, viewOnly = false }) => {
     const { setCreateCategory } = useTasks();
     const ThemedColor = useThemeColor();
     return (
@@ -23,21 +24,33 @@ export const Category: React.FC<CategoryProps> = ({ id, name, tasks, onLongPress
             <TouchableOpacity
                 style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                 onLongPress={() => onLongPress(id)}
+                disabled={viewOnly} 
                 onPress={() => {
                     onPress(id);
                     setCreateCategory({ label: name, id: id, special: false });
                 }}>
                 <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
-                <AntDesign name="plus" size={16} color={ThemedColor.caption} />
+                {!viewOnly && <AntDesign name="plus" size={16} color={ThemedColor.caption} />}
             </TouchableOpacity>
             {tasks.map((task) => (
+                !viewOnly ? (
                 <SwipableTaskCard
                     key={task.id + task.content}
-                    redirect={true}
+                    redirect={!viewOnly}
                     categoryId={id}
                     categoryName={name}
                     task={task}
                 />
+                ) : (
+                    <TaskCard
+                        key={task.id + task.content}
+                        content={task.content}
+                        value={task.value}
+                        priority={task.priority as any}
+                        id={task.id}
+                        categoryId={id}
+                    />
+                )
             ))}
         </View>
     );

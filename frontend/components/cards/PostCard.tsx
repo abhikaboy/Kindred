@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
     Modal,
-    Image,
     TouchableOpacity,
     View,
     StyleSheet,
     Dimensions,
     Platform,
     KeyboardAvoidingView,
+    Image as RNImage,
 } from "react-native";
+import { Image } from "expo-image";
 import { ThemedText } from "../ThemedText";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
@@ -116,7 +117,7 @@ const PostCard = ({
 
     // Function to get image dimensions
     const getImageDimensions = useCallback((imageUri: string, index: number) => {
-        Image.getSize(imageUri, (width, height) => {
+        RNImage.getSize(imageUri, (width, height) => {
             setImageDimensions(prev => ({
                 ...prev,
                 [index]: { width, height }
@@ -333,7 +334,7 @@ const PostCard = ({
                                 console.log("Navigating to user:", userId);
                                 router.push(`/account/${userId}`);
                             }}>
-                            <Image source={{ uri: icon }} style={styles.userIcon} />
+                            <Image source={{ uri: icon }} style={styles.userIcon} cachePolicy="memory" transition={100} placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"} />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
@@ -358,6 +359,9 @@ const PostCard = ({
                                             styles.image,
                                             { height: optimalHeight }
                                         ]} 
+                                        cachePolicy="memory"
+                                        transition={100}
+                                        placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                                     />
                                 </TouchableOpacity>
                             ) : (
@@ -379,6 +383,9 @@ const PostCard = ({
                                                         styles.image,
                                                         { height: optimalHeight }
                                                     ]} 
+                                                    cachePolicy="memory"
+                                                    transition={100}
+                                                    placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                                                 />
                                             </TouchableOpacity>
                                         )}
