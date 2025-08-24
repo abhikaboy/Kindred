@@ -121,6 +121,7 @@ func RegisterGetBlueprintByCategoryOperation(api huma.API, handler *Handler) {
 // Register all blueprint operations
 func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSearchBlueprintsOperation(api, handler)
+	RegisterGetBlueprintByCategoryOperation(api, handler)
 	RegisterCreateBlueprintOperation(api, handler)
 	RegisterGetBlueprintsOperation(api, handler)
 	RegisterGetBlueprintOperation(api, handler)
@@ -129,5 +130,4 @@ func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSubscribeToBlueprintOperation(api, handler)
 	RegisterUnsubscribeFromBlueprintOperation(api, handler)
 	RegisterGetUserSubscribedBlueprintsOperation(api, handler)
-	RegisterGetBlueprintByCategoryOperation(api, handler)
 }
