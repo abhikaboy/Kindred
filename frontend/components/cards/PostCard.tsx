@@ -26,6 +26,7 @@ import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
 import { toggleReaction } from "@/api/post";
 import { useQueryClient } from '@tanstack/react-query';
+import { useTasks } from "@/contexts/tasksContext";
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -60,6 +61,7 @@ type Props = {
     category?: string;
     taskName?: string;
     onReactionUpdate?: () => void;
+    onHeightChange?: (height: number) => void;
 };
 
 const PostCard = ({
@@ -78,6 +80,7 @@ const PostCard = ({
     category,
     taskName,
     id,
+    onHeightChange,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
@@ -86,61 +89,10 @@ const PostCard = ({
     const [currentComments, setCurrentComments] = useState(comments || []);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
+    const [imageHeight, setImageHeight] = useState<number>(0);
     const queryClient = useQueryClient();
-    const [imageDimensions, setImageDimensions] = useState<{[key: number]: {width: number, height: number}}>({});
     const screenWidth = Dimensions.get("window").width;
-    const maxHeight = screenWidth * 1.5;
-
-    // Calculate the optimal height based on the largest image aspect ratio
-    const optimalHeight = useMemo(() => {
-        if (!images || images.length === 0) return maxHeight;
-        
-        // Check if we have all image dimensions
-        const hasAllDimensions = images.every((_, index) => imageDimensions[index]);
-        
-        if (!hasAllDimensions) return maxHeight;
-        
-        // Find the image with the largest height when scaled to screen width
-        let maxCalculatedHeight = screenWidth * 0.34; // Minimum height
-        
-        Object.values(imageDimensions).forEach(({ width, height }) => {
-            const aspectRatio = width / height;
-            const calculatedHeight = screenWidth / aspectRatio;
-            
-            // Constrain height between screen width and max height
-            const constrainedHeight = Math.max(screenWidth * 0.34, Math.min(calculatedHeight, maxHeight));
-            maxCalculatedHeight = Math.max(maxCalculatedHeight, constrainedHeight);
-        });
-        
-        return maxCalculatedHeight;
-
-    }, [images, imageDimensions, screenWidth, maxHeight]);
-
-    // Function to get image dimensions
-    const getImageDimensions = useCallback((imageUri: string, index: number) => {
-        RNImage.getSize(imageUri, (width, height) => {
-            setImageDimensions(prev => ({
-                ...prev,
-                [index]: { width, height }
-            }));
-        }, (error) => {
-            console.error('Error getting image size:', error);
-            // Fallback to square aspect ratio if we can't get the image size
-            setImageDimensions(prev => ({
-                ...prev,
-                [index]: { width: screenWidth, height: screenWidth }
-            }));
-        });
-    }, [screenWidth]);
-
-    // Get dimensions for all images when images change
-    useEffect(() => {
-        if (images && images.length > 0) {
-            images.forEach((imageUri, index) => {
-                getImageDimensions(imageUri, index);
-            });
-        }
-    }, [images, getImageDimensions]);
+    const { fetchWorkspaces } = useTasks();
 
     useEffect(() => {
         setLocalReactions(reactions);
@@ -149,6 +101,37 @@ const PostCard = ({
     useEffect(() => {
         setCurrentComments(comments || []);
     }, [comments]);
+
+    // Calculate image height when images change
+    useEffect(() => {
+        if (images && images.length > 0) {
+            calculateImageHeight(images[0]);
+        } else {
+            setImageHeight(0);
+            onHeightChange?.(0);
+        }
+    }, [images]);
+
+    const calculateImageHeight = useCallback((imageUri: string) => {
+        RNImage.getSize(imageUri, (width, height) => {
+            const aspectRatio = width / height;
+            const calculatedHeight = screenWidth / aspectRatio;
+            
+            // Constrain height between 0.5x and 1.5x screen width
+            const minHeight = screenWidth * 0.5;
+            const maxHeight = screenWidth * 1.5;
+            const constrainedHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
+            
+            setImageHeight(constrainedHeight);
+            onHeightChange?.(constrainedHeight);
+        }, (error) => {
+            console.error('Error getting image size:', error);
+            // Fallback to default height
+            const fallbackHeight = screenWidth * 0.75;
+            setImageHeight(fallbackHeight);
+            onHeightChange?.(fallbackHeight);
+        });
+    }, [screenWidth, onHeightChange]);
 
     const mergeReactions = (): SlackReaction[] => {
         const safeReactions = Array.isArray(reactions) ? reactions : [];
@@ -323,7 +306,7 @@ const PostCard = ({
                                 console.log("Navigating to user:", userId);
                                 router.push(`/account/${userId}`);
                             }}>
-                            <Image source={{ uri: icon }} style={styles.userIcon} cachePolicy="disk" placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"} />
+                            <RNImage source={{ uri: icon }} style={styles.userIcon} />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
@@ -342,15 +325,10 @@ const PostCard = ({
                             {images.length === 1 ? (
                                 // Single image - no counter needed
                                 <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                    <Image 
+                                    <RNImage 
                                         source={{ uri: images[0] }} 
-                                        style={[
-                                            styles.image,
-                                            { height: optimalHeight }
-                                        ]} 
-                                        cachePolicy="memory"
-                                        transition={100}
-                                        placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
+                                        style={[styles.image, { height: imageHeight }]}
+                                        resizeMode="cover"
                                     />
                                 </TouchableOpacity>
                             ) : (
@@ -358,7 +336,7 @@ const PostCard = ({
                                     <Carousel
                                         loop={false}
                                         width={Dimensions.get("window").width}
-                                        height={optimalHeight}
+                                        height={imageHeight}
                                         style={styles.carousel}
                                         snapEnabled={true}
                                         pagingEnabled={true}
@@ -366,15 +344,10 @@ const PostCard = ({
                                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                                         renderItem={({ item, index }) => (
                                             <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
-                                                <Image 
+                                                <RNImage 
                                                     source={{ uri: item }} 
-                                                    style={[
-                                                        styles.image,
-                                                        { height: optimalHeight }
-                                                    ]} 
-                                                    cachePolicy="memory"
-                                                    transition={100}
-                                                    placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
+                                                    style={[styles.image, { height: imageHeight }]}
+                                                    resizeMode="cover"
                                                 />
                                             </TouchableOpacity>
                                         )}
@@ -488,7 +461,7 @@ const PostCard = ({
                             style={styles.modalContainer}
                             onPress={() => setModalVisible(false)}>
                             <View style={styles.modalContent}>
-                                <Image source={{ uri: images[modalIndex] }} style={styles.popupImage} />
+                                <RNImage source={{ uri: images[modalIndex] }} style={styles.popupImage} />
                             </View>
                         </TouchableOpacity>
                     </Modal>

@@ -9,6 +9,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import type { components } from "@/api/generated/types";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
+import { useTasks } from "@/contexts/tasksContext";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
@@ -35,8 +37,8 @@ const BlueprintCard = ({
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor, large);
     const router = useRouter();
-    const { setSelectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe } =
-        useBlueprints();
+    const { setSelectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe } = useBlueprints();
+    const { fetchWorkspaces } = useTasks();
 
     const isSubscribed = getIsSubscribed(id, subscribers);
     const isLoading = getIsLoading(id);
@@ -68,6 +70,8 @@ const BlueprintCard = ({
 
     const onSubscribePress = async () => {
         await handleSubscribe(id, subscribers);
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        await fetchWorkspaces();
     };
 
     return (
