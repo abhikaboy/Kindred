@@ -10,6 +10,10 @@ import Feather from "@expo/vector-icons/Feather";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import PreviewIcon from "@/components/profile/PreviewIcon";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
+import { Category } from "@/components/category";
+import Entypo from "@expo/vector-icons/Entypo";
+import * as Sharing from 'expo-sharing';
+import * as SMS from 'expo-sms';
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
@@ -53,14 +57,13 @@ export default function BlueprintDetailScreen() {
             <View style={styles.informationContainer}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <TouchableOpacity onPress={() => router.push(`/account/${selectedBlueprint.owner?._id}`)}>
-                    <View style={{ flexDirection: "row", gap: 14 }}>
-                        <PreviewIcon icon={selectedBlueprint.owner?.profile_picture || ""} size={"medium"}></PreviewIcon>
-
-                        <View style={{ flexDirection: "column" }}>
-                            <ThemedText type="default">{selectedBlueprint.owner?.display_name || "Unknown"}</ThemedText>
-                            <ThemedText type="caption">{selectedBlueprint.owner?.handle || ""}</ThemedText>
+                        <View style={{ flexDirection: "row", gap: 14 }}>
+                            <PreviewIcon icon={selectedBlueprint.owner?.profile_picture || ""} size={"medium"}></PreviewIcon>
+                            <View style={{ flexDirection: "column" }}>
+                                <ThemedText type="default">{selectedBlueprint.owner?.display_name || "Unknown"}</ThemedText>
+                                <ThemedText type="caption">{selectedBlueprint.owner?.handle || ""}</ThemedText>
+                            </View>
                         </View>
-                    </View>
                     </TouchableOpacity>
 
                     <PrimaryButton
@@ -75,9 +78,22 @@ export default function BlueprintDetailScreen() {
                 <ThemedText type="subtitle">{selectedBlueprint.name}</ThemedText>
                 <ThemedText type="default">{selectedBlueprint.description}</ThemedText>
 
-                <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
-                    <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
-                    <ThemedText type="smallerDefault">{selectedBlueprint.duration}</ThemedText>
+                <View style={{ flexDirection: "row", gap: 5, alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+
+                    <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+                        <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
+                        <ThemedText type="smallerDefault">{selectedBlueprint.duration}</ThemedText>
+                    </View>
+                    <MaterialIcons name="category" size={20} color={ThemedColor.text} />
+                    <ThemedText type="smallerDefault">{selectedBlueprint.category}</ThemedText>
+                    </View>
+                    <TouchableOpacity onPress={() => {
+                        SMS.sendSMSAsync([], `kindred://blueprint/${selectedBlueprint.id}`);
+                    }}>
+                        <Entypo name="share-alternative" size={20} color={ThemedColor.text} />
+                    </TouchableOpacity>
+
                 </View>
 
                 <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
@@ -94,6 +110,16 @@ export default function BlueprintDetailScreen() {
                             {tag}
                         </ThemedText>
                     ))}
+                </View>
+
+                <View style={{ gap: 12, paddingBottom: 24 }}>
+                    {selectedBlueprint?.categories?.length > 0 ? (
+                        selectedBlueprint?.categories?.map((category, index) => (
+                            <Category key={index} id={category.id} name={category.name} tasks={category.tasks as any} onLongPress={() => {}} onPress={() => {}} viewOnly/>
+                        ))
+                    ) : (
+                        <ThemedText type="default">No categories</ThemedText>
+                    )}
                 </View>
             </View>
         </ParallaxScrollView>

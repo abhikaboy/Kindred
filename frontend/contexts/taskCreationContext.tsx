@@ -69,6 +69,30 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
 
+    // Function to get default start date based on blueprint mode
+    const getDefaultStartDate = (isBlueprintMode: boolean): Date | null => {
+        if (isBlueprintMode) {
+            // Return January 1, 1970 for blueprint mode
+            const defaultDate = new Date(1970, 0, 1); // Month is 0-indexed, so 0 = January
+            return defaultDate;
+        }
+        // Return null for normal mode (no default date)
+        return null;
+    };
+
+    // Internal function to set blueprint state without triggering start date logic
+    const setBlueprintStateInternal = (isBlueprintMode: boolean) => {
+        setIsBlueprint(isBlueprintMode);
+    };
+
+    // Custom setIsBlueprint function that also sets the start date
+    const setIsBlueprintWithStartDate = (isBlueprintMode: boolean) => {
+        setBlueprintStateInternal(isBlueprintMode);
+        // Set the start date based on blueprint mode
+        const defaultStartDate = getDefaultStartDate(isBlueprintMode);
+        setStartDateWithReminder(defaultStartDate);
+    };
+
     // Wrap setDeadline to auto-add 1h-before reminder
     const setDeadlineWithReminder = (deadline: Date | null) => {
         setDeadline(deadline);
@@ -188,10 +212,12 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         });
         setDeadline(null);
         setStartTime(null);
-        setStartDate(null);
+        // Set start date based on current blueprint mode
+        const defaultStartDate = getDefaultStartDate(isBlueprint);
+        setStartDateWithReminder(defaultStartDate);
         setReminders([]);
         setIsPublic(false);
-        setIsBlueprint(false);
+        // Don't reset isBlueprint here as it should persist
         setShowAdvanced(false);
     };
 
@@ -227,7 +253,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
             })) || []
         );
         setIsPublic(taskData.public || false);
-        setIsBlueprint(taskData.isBlueprint || false);
+        setBlueprintStateInternal(taskData.isBlueprint || false);
     };
 
     return (
@@ -253,7 +279,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 isPublic,
                 setIsPublic,
                 isBlueprint,
-                setIsBlueprint,
+                setIsBlueprint: setIsBlueprintWithStartDate,
                 setPriority,
                 setValue,
                 setRecurring,
