@@ -1,4 +1,5 @@
-import { StyleSheet, Image, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Image  } from "expo-image";
 import React from "react";
 type Size = "small" | "smallMedium" | "medium" | "large" ;
 
@@ -16,7 +17,15 @@ const sizeOfIcon = {
 const PreviewIcon = ({ icon, size }: Props) => {
     return (
         <View>
-            <Image src={icon} style={{ width: sizeOfIcon[size], height: sizeOfIcon[size], borderRadius: 100 }} />
+            <Image 
+            source={{ uri: icon }}
+            style={{ width: sizeOfIcon[size], height: sizeOfIcon[size], borderRadius: 100 }}
+            contentFit="cover"
+            placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
+            cachePolicy="memory"
+            decodeFormat="rgb"
+            allowDownscaling={true}
+        />
         </View>
     );
 };

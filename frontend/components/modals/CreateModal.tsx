@@ -89,9 +89,9 @@ const CreateModal = (props: Props) => {
         };
     });
 
-    const goToScreen = (newScreen: Screen) => {
+    const goToScreen = useCallback((newScreen: Screen) => {
         setScreen(newScreen);
-    };
+    }, []);
 
     // Handle visibility changes
     useEffect(() => {
@@ -141,70 +141,46 @@ const CreateModal = (props: Props) => {
         []
     );
 
-    const goToStandard = () => setScreen(Screen.STANDARD);
+    const goToStandard = useCallback(() => setScreen(Screen.STANDARD), []);
+    
+    const hideModal = useCallback(() => props.setVisible(false), [props.setVisible]);
 
-    const renderScreen = () => {
-        const screenProps = { goToStandard };
+    // Memoize screen props to prevent unnecessary re-renders
+    const screenProps = useMemo(() => ({ goToStandard }), [goToStandard]);
 
+    // Memoize the screen component to prevent recreation on every render
+    const currentScreenComponent = useMemo(() => {
         switch (screen) {
             case Screen.STANDARD:
                 return (
-                    <Animated.View style={animatedStyle}>
-                        <Standard
-                            hide={() => props.setVisible(false)}
-                            goTo={goToScreen}
-                            edit={props.edit}
-                            categoryId={props.categoryId}
-                            isBlueprint={props.isBlueprint}
-                        />
-                    </Animated.View>
+                    <Standard
+                        hide={hideModal}
+                        goTo={goToScreen}
+                        edit={props.edit}
+                        categoryId={props.categoryId}
+                        isBlueprint={props.isBlueprint}
+                    />
                 );
             case Screen.NEW_CATEGORY:
                 return (
-                    <Animated.View style={animatedStyle}>
-                        <NewCategory {...screenProps} goToStandard={goToStandard} isBlueprint={props.isBlueprint} />
-                    </Animated.View>
+                    <NewCategory {...screenProps} goToStandard={goToStandard} isBlueprint={props.isBlueprint} />
                 );
             case Screen.DEADLINE:
-                return (
-                    <Animated.View style={animatedStyle}>
-                        <Deadline {...screenProps} />
-                    </Animated.View>
-                );
+                return <Deadline {...screenProps} />;
             case Screen.RECURRING:
-                return (
-                    <Animated.View style={animatedStyle}>
-                        <Recurring {...screenProps} />
-                    </Animated.View>
-                );
+                return <Recurring {...screenProps} />;
             case Screen.STARTDATE:
-                return (
-                    <Animated.View style={animatedStyle}>
-                        <StartDate {...screenProps} />
-                    </Animated.View>
-                );
+                return <StartDate {...screenProps} />;
             case Screen.STARTTIME:
-                return (
-                    <Animated.View style={animatedStyle}>
-                        <StartTime {...screenProps} />
-                    </Animated.View>
-                );
+                return <StartTime {...screenProps} />;
             case Screen.REMINDER:
-                return (
-                    <Animated.View style={animatedStyle}>
-                        <Reminder {...screenProps} />
-                    </Animated.View>
-                );
+                return <Reminder {...screenProps} />;
             case Screen.COLLABORATORS:
-                return (
-                    <Animated.View style={animatedStyle}>
-                        <Collaborators {...screenProps} />
-                    </Animated.View>
-                );
+                return <Collaborators {...screenProps} />;
             default:
                 return null;
         }
-    };
+    }, [screen, screenProps, goToScreen, props.edit, props.categoryId, props.isBlueprint, hideModal, goToStandard]);
 
     return (
         <BottomSheetModal
@@ -219,7 +195,9 @@ const CreateModal = (props: Props) => {
             enablePanDownToClose={true}>
             <BottomSheetView style={[styles.container, { backgroundColor: ThemedColor.background }]}>
                 <PanGestureHandler onGestureEvent={gestureHandler}>
-                    <Animated.View style={{ flex: 1 }}>{renderScreen()}</Animated.View>
+                    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+                        {currentScreenComponent}
+                    </Animated.View>
                 </PanGestureHandler>
             </BottomSheetView>
         </BottomSheetModal>

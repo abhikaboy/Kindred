@@ -10,9 +10,27 @@ import FollowButton from "../inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoRowBase from "../UserInfo/UserInfoRowBase";
 import { useRouter } from "expo-router";
+import { SearchResultsSkeleton } from "../ui/SkeletonLoader";
+import { Profile, RelationshipStatus } from "@/api/types";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type ProfileDocument = components["schemas"]["ProfileDocument"];
+
+// Helper function to convert ProfileDocument to Profile
+const convertToProfile = (profileDoc: ProfileDocument): Profile => {
+    return {
+        id: profileDoc.id,
+        display_name: profileDoc.display_name,
+        handle: profileDoc.handle,
+        profile_picture: profileDoc.profile_picture,
+        tasks_complete: profileDoc.tasks_complete,
+        friends: profileDoc.friends,
+        relationship: profileDoc.relationship ? {
+            status: profileDoc.relationship.status as RelationshipStatus,
+            request_id: profileDoc.relationship.request_id
+        } : undefined
+    };
+};
 
 type SearchResultsProps = {
     mode: 'searching' | 'results' | 'no-results';
@@ -39,12 +57,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (mode === 'searching') {
         return (
             <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                <ThemedText type="subtitle" style={styles.searchResultsHeader}>
-                    Searching...
-                </ThemedText>
-                <View style={styles.searchingContainer}>
-                    <ThemedText>Searching...</ThemedText>
-                </View>
+                <SearchResultsSkeleton activeTab={activeTab} />
             </Animated.View>
         );
     }
@@ -91,7 +104,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                                         icon={user.profile_picture}
                                         id={user.id}
                                         right={<View>
-                                            <FollowButton profile={user as Profile} />
+                                            <FollowButton profile={convertToProfile(user)} />
                                         </View>}
                                     />
                                 </TouchableOpacity>

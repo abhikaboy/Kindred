@@ -169,3 +169,5 @@ export interface MarkNotificationsReadRequest {
     /** @description Array of notification IDs to mark as read */
     notification_ids: string[];
 }
+export { components };
+

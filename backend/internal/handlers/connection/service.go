@@ -315,7 +315,7 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]types.UserExtendedRef
 
 	var friends []types.UserExtendedReference
 	pipeline := bson.D{
-		{Key: "$match", Value: bson.M{"friends": userID}},
+		{Key: "$match", Value: bson.M{"_id": userID}},
 		{Key: "$lookup", Value: bson.M{
 			"from":         "users",
 			"localField":   "friends",

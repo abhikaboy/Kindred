@@ -199,15 +199,6 @@ const Search = (props: Props) => {
         setFocused(focused);
     }, []);
 
-    // Loading state
-    if (loading) {
-        return (
-            <ThemedView style={styles.centerContainer}>
-                <ThemedText>Loading blueprints...</ThemedText>
-            </ThemedView>
-        );
-    }
-
     // Error state
     if (error) {
         return (
@@ -246,6 +237,7 @@ const Search = (props: Props) => {
                         <ExplorePage 
                             categoryGroups={categoryGroups}
                             focusStyle={focusStyle}
+                            loading={loading}
                         />
                     ) : (
                         <SearchResults

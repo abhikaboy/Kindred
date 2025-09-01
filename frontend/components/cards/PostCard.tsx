@@ -318,7 +318,7 @@ const PostCard = ({
                                 console.log("Navigating to user:", userId);
                                 router.push(`/account/${userId}`);
                             }}>
-                            <RNImage source={{ uri: icon }} style={styles.userIcon} />
+                            <Image source={{ uri: icon }} style={styles.userIcon} contentFit="cover" placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"} />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
@@ -337,10 +337,14 @@ const PostCard = ({
                             {images.length === 1 ? (
                                 // Single image - no counter needed
                                 <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                    <RNImage 
+                                    <Image 
                                         source={{ uri: images[0] }} 
                                         style={[styles.image, { height: imageHeight }]}
-                                        resizeMode="cover"
+                                        contentFit="cover"
+                                        placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
+                                        cachePolicy="memory"
+                                        decodeFormat="rgb"
+                                        allowDownscaling={true} // Let expo-image handle sizing
                                     />
                                 </TouchableOpacity>
                             ) : (
@@ -356,10 +360,14 @@ const PostCard = ({
                                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                                         renderItem={({ item, index }) => (
                                             <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
-                                                <RNImage 
+                                                <Image 
                                                     source={{ uri: item }} 
                                                     style={[styles.image, { height: imageHeight }]}
-                                                    resizeMode="cover"
+                                                    contentFit="cover"
+                                                    placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
+                                                    cachePolicy="memory"
+                                                    decodeFormat="rgb"
+                                                    allowDownscaling={true}
                                                 />
                                             </TouchableOpacity>
                                         )}

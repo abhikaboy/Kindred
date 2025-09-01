@@ -6,6 +6,7 @@ import ContactCard from "@/components/cards/ContactCard";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import type { components } from "@/api/generated/types";
 import { Icons } from "@/constants/Icons";
+import { CategorySectionSkeleton } from "../ui/SkeletonLoader";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -13,11 +14,13 @@ type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
 type ExplorePageProps = {
     categoryGroups: BlueprintCategoryGroup[];
     focusStyle: any;
+    loading?: boolean;
 };
 
 export const ExplorePage: React.FC<ExplorePageProps> = ({
     categoryGroups,
-    focusStyle
+    focusStyle,
+    loading = false
 }) => {
     // Mock contacts data - could be moved to props or fetched separately
     const contacts = [
@@ -53,6 +56,26 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
             />
         </View>
     ), [renderBlueprint]);
+
+    if (loading) {
+        return (
+            <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
+                {/* Category skeletons */}
+                <View style={styles.categoriesContainer}>
+                    {[...Array(3)].map((_, index) => (
+                        <CategorySectionSkeleton key={index} />
+                    ))}
+                </View>
+
+                {/* Suggested contacts skeleton */}
+                <View style={styles.suggestedSection}>
+                    <View style={styles.suggestedSkeletonHeader}>
+                        <CategorySectionSkeleton />
+                    </View>
+                </View>
+            </Animated.View>
+        );
+    }
 
     return (
         <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
@@ -109,6 +132,9 @@ const styles = StyleSheet.create({
     contactsList: {
         gap: 16,
         marginTop: 16,
+        paddingHorizontal: 16,
+    },
+    suggestedSkeletonHeader: {
         paddingHorizontal: 16,
     },
 });

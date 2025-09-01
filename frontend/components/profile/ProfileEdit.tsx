@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "../inputs/PrimaryButton";
@@ -21,7 +21,10 @@ export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
                     }}
                 />
             </View>
-            <View
+            <TouchableOpacity
+                onPress={() => {
+                    router.push("/(logged-in)/(tabs)/(profile)/friends");
+                }}
                 style={{
                     width: "50%",
                     backgroundColor: ThemedColor.lightened,
@@ -32,7 +35,7 @@ export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
                 <ThemedText type="lightBody" style={{ width: "100%", textAlign: "center" }}>
                     {friendsCount} Friends
                 </ThemedText>
-            </View>
+            </TouchableOpacity>
         </View>
     );
 }
