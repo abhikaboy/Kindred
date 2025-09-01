@@ -217,6 +217,7 @@ func RegisterAcceptConnectionOperation(api huma.API, handler *Handler) {
 
 // Register all connection operations
 func RegisterConnectionOperations(api huma.API, handler *Handler) {
+	RegisterGetFriendsOperation(api, handler)
 	RegisterCreateConnectionOperation(api, handler)
 	RegisterGetConnectionsByReceiverOperation(api, handler)
 	RegisterGetConnectionsByRequesterOperation(api, handler)
