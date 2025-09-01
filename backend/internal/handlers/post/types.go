@@ -17,11 +17,13 @@ type CreatePostOutput struct {
 }
 
 type CreatePostParams struct {
-	Images      []string                         `json:"images" validate:"omitempty,dive,url"`
-	Caption     string                           `json:"caption" validate:"required"`
-	Task        *types.PostTaskExtendedReference `json:"task,omitempty"`
-	BlueprintID *string                          `json:"blueprintId,omitempty"`
-	IsPublic    bool                             `json:"isPublic"`
+	Images            []string                         `json:"images" validate:"omitempty,dive,url"`
+	Caption           string                           `json:"caption" validate:"required"`
+	Task              *types.PostTaskExtendedReference `json:"task,omitempty"`
+	BlueprintID       *string                          `json:"blueprintId,omitempty"`
+	BlueprintIsPublic *bool                            `json:"blueprintIsPublic,omitempty"`
+	Groups            []string                         `json:"groups,omitempty" validate:"omitempty,dive,len=24"`
+	IsPublic          bool                             `json:"isPublic"`
 }
 
 // Get Posts (all)
@@ -30,6 +32,17 @@ type GetPostsInput struct {
 }
 
 type GetPostsOutput struct {
+	Body struct {
+		Posts []types.PostDocumentAPI `json:"posts"`
+	} `json:"body"`
+}
+
+// Get Friends Posts
+type GetFriendsPostsInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type GetFriendsPostsOutput struct {
 	Body struct {
 		Posts []types.PostDocumentAPI `json:"posts"`
 	} `json:"body"`
@@ -71,6 +84,29 @@ type UpdatePostOutput struct {
 type UpdatePostParams struct {
 	Caption  *string `json:"caption,omitempty"`
 	IsPublic *bool   `json:"isPublic,omitempty"`
+}
+
+// Get User Groups (for posts)
+type GetUserGroupsInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type GetUserGroupsOutput struct {
+	Body struct {
+		Groups []types.GroupDocumentAPI `json:"groups"`
+	} `json:"body"`
+}
+
+// Get Posts by Blueprint
+type GetPostsByBlueprintInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	BlueprintID   string `path:"blueprintId" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetPostsByBlueprintOutput struct {
+	Body struct {
+		Posts []types.PostDocumentAPI `json:"posts"`
+	} `json:"body"`
 }
 
 // Delete Post
@@ -143,5 +179,6 @@ type Service struct {
 	Users               *mongo.Collection
 	Categories          *mongo.Collection
 	Blueprints          *mongo.Collection
+	Groups              *mongo.Collection
 	NotificationService *notifications.Service
 }

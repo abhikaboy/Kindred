@@ -19,6 +19,7 @@ import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import FollowButton from "@/components/inputs/FollowButton";
+import BlueprintSection from "@/components/profile/BlueprintSection";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
 import { type Profile, type RelationshipStatus} from "@/api/types";
@@ -138,6 +139,14 @@ export default function Profile() {
                 <TodayStats userId={profile?.id} />
 
                 <WeeklyActivity userid={profile?.id} />
+
+                {profile?.id && (
+                    <BlueprintSection 
+                        userId={profile.id} 
+                        title={`${profile.display_name}'s Blueprints`}
+                        showViewAll={true}
+                    />
+                )}
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 

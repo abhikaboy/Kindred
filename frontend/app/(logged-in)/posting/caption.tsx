@@ -74,9 +74,16 @@ export default function Caption() {
                   }
                 : undefined;
 
-            createPostToBackend(photoUrls, data.caption, taskReference, undefined, taskInfo?.public ?? false);
+            const createdPost = await createPostToBackend(photoUrls, data.caption, taskReference, undefined, taskInfo?.public ?? false);
 
             Alert.alert("Success!", "Your post has been shared!", [
+                {
+                    text: "View Post",
+                    onPress: () => {
+                        router.dismissAll();
+                        router.push(`/(logged-in)/posting/${createdPost._id}`);
+                    },
+                },
                 {
                     text: "OK",
                     onPress: () => {

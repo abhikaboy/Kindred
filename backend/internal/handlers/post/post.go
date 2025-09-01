@@ -57,12 +57,32 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 		Metadata:  types.NewPostMetadata(),
 	}
 
+	// Handle blueprint with isPublic flag
 	if input.Body.BlueprintID != nil {
 		blueprintID, err := primitive.ObjectIDFromHex(*input.Body.BlueprintID)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("Invalid blueprint id", err)
 		}
-		doc.Blueprint = types.NewBlueprintReference(blueprintID)
+
+		blueprintIsPublic := false
+		if input.Body.BlueprintIsPublic != nil {
+			blueprintIsPublic = *input.Body.BlueprintIsPublic
+		}
+
+		doc.Blueprint = types.NewEnhancedBlueprintReference(blueprintID, blueprintIsPublic)
+	}
+
+	// Handle groups
+	if len(input.Body.Groups) > 0 {
+		var groupIDs []primitive.ObjectID
+		for _, groupIDStr := range input.Body.Groups {
+			groupID, err := primitive.ObjectIDFromHex(groupIDStr)
+			if err != nil {
+				return nil, huma.Error400BadRequest("Invalid group ID format", err)
+			}
+			groupIDs = append(groupIDs, groupID)
+		}
+		doc.Groups = groupIDs
 	}
 
 	doc.Metadata.IsPublic = input.Body.IsPublic
@@ -89,6 +109,90 @@ func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetP
 	}
 
 	output := &GetPostsOutput{}
+	output.Body.Posts = apiPosts
+
+	return output, nil
+}
+
+func (h *Handler) GetFriendsPostsHuma(ctx context.Context, input *GetFriendsPostsInput) (*GetFriendsPostsOutput, error) {
+	// Extract user_id from context for authorization
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	posts, err := h.service.GetFriendsPosts(userID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get friends posts", err)
+	}
+
+	var apiPosts []types.PostDocumentAPI
+	for _, post := range posts {
+		apiPosts = append(apiPosts, *post.ToAPI())
+	}
+
+	output := &GetFriendsPostsOutput{}
+	output.Body.Posts = apiPosts
+
+	return output, nil
+}
+
+func (h *Handler) GetUserGroupsHuma(ctx context.Context, input *GetUserGroupsInput) (*GetUserGroupsOutput, error) {
+	// Extract user_id from context for authorization
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	groups, err := h.service.GetUserGroups(userID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get user groups", err)
+	}
+
+	var apiGroups []types.GroupDocumentAPI
+	for _, group := range groups {
+		apiGroups = append(apiGroups, *group.ToAPI())
+	}
+
+	output := &GetUserGroupsOutput{}
+	output.Body.Groups = apiGroups
+
+	return output, nil
+}
+
+func (h *Handler) GetPostsByBlueprintHuma(ctx context.Context, input *GetPostsByBlueprintInput) (*GetPostsByBlueprintOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	blueprintID, err := primitive.ObjectIDFromHex(input.BlueprintID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid blueprint ID format", err)
+	}
+
+	posts, err := h.service.GetPostsByBlueprint(blueprintID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get posts by blueprint", err)
+	}
+
+	var apiPosts []types.PostDocumentAPI
+	for _, post := range posts {
+		apiPosts = append(apiPosts, *post.ToAPI())
+	}
+
+	output := &GetPostsByBlueprintOutput{}
 	output.Body.Posts = apiPosts
 
 	return output, nil
@@ -177,10 +281,6 @@ func (h *Handler) DeletePostHuma(ctx context.Context, input *DeletePostInput) (*
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(user_id)
-	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID format", err)
-	}
-
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}

@@ -1199,6 +1199,44 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/blueprints/creator/{creatorId}:
+        get:
+            tags:
+                - blueprints
+            summary: Get blueprints by creator
+            description: Retrieve all blueprints created by a specific user
+            operationId: get-blueprints-by-creator
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: creatorId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/BlueprintDocumentWithoutSubscribers'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/blueprints/subscribed:
         get:
             tags:
@@ -2414,6 +2452,248 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/groups:
+        get:
+            tags:
+                - groups
+            summary: Get all user groups
+            description: Retrieve all groups where user is creator or member
+            operationId: get-groups
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetGroupsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        post:
+            tags:
+                - groups
+            summary: Create a new group
+            description: Create a new group with the provided details
+            operationId: create-group
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateGroupParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDocumentAPI'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/groups/{id}:
+        get:
+            tags:
+                - groups
+            summary: Get group by ID
+            description: Retrieve a specific group by its ID
+            operationId: get-group
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GroupDocumentAPI'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        delete:
+            tags:
+                - groups
+            summary: Delete group
+            description: Delete an existing group (creator only)
+            operationId: delete-group
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteGroupOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        patch:
+            tags:
+                - groups
+            summary: Update group
+            description: Update an existing group (creator only)
+            operationId: update-group
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateGroupParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateGroupOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/groups/{id}/members:
+        post:
+            tags:
+                - groups
+            summary: Add member to group
+            description: Add a member to an existing group (creator only)
+            operationId: add-group-member
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AddMemberParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AddMemberOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        delete:
+            tags:
+                - groups
+            summary: Remove member from group
+            description: Remove a member from an existing group (creator only or self)
+            operationId: remove-group-member
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RemoveMemberParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RemoveMemberOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/login:
         post:
             tags:
@@ -2894,6 +3174,92 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/AddReactionOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/posts/blueprint/{blueprintId}:
+        get:
+            tags:
+                - posts
+            summary: Get posts by blueprint
+            description: Retrieve all posts associated with a specific blueprint
+            operationId: get-posts-by-blueprint
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: blueprintId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetPostsByBlueprintOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/posts/friends:
+        get:
+            tags:
+                - posts
+            summary: Get friends posts
+            description: Retrieve posts from user's friends, ordered chronologically
+            operationId: get-friends-posts
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFriendsPostsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/posts/groups:
+        get:
+            tags:
+                - posts
+            summary: Get user groups
+            description: Retrieve all groups where user is creator or member
+            operationId: get-user-groups
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetUserGroupsOutputBody'
                 default:
                     description: Error
                     content:
@@ -3839,6 +4205,38 @@ components:
                     type: string
             required:
                 - content
+        AddMemberOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AddMemberOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Member added successfully
+            required:
+                - message
+        AddMemberParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AddMemberParams.json
+                    readOnly: true
+                userId:
+                    type: string
+            required:
+                - userId
         AddReactionOutputBody:
             type: object
             additionalProperties: false
@@ -3887,7 +4285,7 @@ components:
                         $ref: '#/components/schemas/BlueprintDocument'
                 category:
                     type: string
-                    description: Category name
+                    description: Category name (maps from aggregation _id)
                     examples:
                         - productivity
                 count:
@@ -4072,14 +4470,6 @@ components:
                 - timestamp
                 - category
                 - categories
-        BlueprintReference:
-            type: object
-            additionalProperties: false
-            properties:
-                id:
-                    type: string
-            required:
-                - id
         CategoryDocument:
             type: object
             additionalProperties: false
@@ -4594,6 +4984,25 @@ components:
                 - message
                 - categoryName
                 - taskName
+        CreateGroupParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateGroupParams.json
+                    readOnly: true
+                members:
+                    type: array
+                    items:
+                        type: string
+                name:
+                    type: string
+            required:
+                - name
         CreatePostParams:
             type: object
             additionalProperties: false
@@ -4607,8 +5016,14 @@ components:
                     readOnly: true
                 blueprintId:
                     type: string
+                blueprintIsPublic:
+                    type: boolean
                 caption:
                     type: string
+                groups:
+                    type: array
+                    items:
+                        type: string
                 images:
                     type: array
                     items:
@@ -4800,6 +5215,23 @@ components:
                         - Encouragement deleted successfully
             required:
                 - message
+        DeleteGroupOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DeleteGroupOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Group deleted successfully
+            required:
+                - message
         DeleteNotificationOutputBody:
             type: object
             additionalProperties: false
@@ -4989,6 +5421,17 @@ components:
                 - name
                 - picture
                 - id
+        EnhancedBlueprintReference:
+            type: object
+            additionalProperties: false
+            properties:
+                id:
+                    type: string
+                isPublic:
+                    type: boolean
+            required:
+                - id
+                - isPublic
         ErrorDetail:
             type: object
             additionalProperties: false
@@ -5078,6 +5521,40 @@ components:
                 - key
                 - public_url
                 - message
+        GetFriendsPostsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetFriendsPostsOutputBody.json
+                    readOnly: true
+                posts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PostDocumentAPI'
+            required:
+                - posts
+        GetGroupsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetGroupsOutputBody.json
+                    readOnly: true
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupDocumentAPI'
+            required:
+                - groups
         GetNotificationsOutputBody:
             type: object
             additionalProperties: false
@@ -5103,6 +5580,23 @@ components:
                 - notifications
                 - unread_count
                 - total
+        GetPostsByBlueprintOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetPostsByBlueprintOutputBody.json
+                    readOnly: true
+                posts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PostDocumentAPI'
+            required:
+                - posts
         GetPostsOutputBody:
             type: object
             additionalProperties: false
@@ -5120,6 +5614,68 @@ components:
                         $ref: '#/components/schemas/PostDocumentAPI'
             required:
                 - posts
+        GetUserGroupsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetUserGroupsOutputBody.json
+                    readOnly: true
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupDocumentAPI'
+            required:
+                - groups
+        GroupDocumentAPI:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GroupDocumentAPI.json
+                    readOnly: true
+                _id:
+                    type: string
+                creator:
+                    type: string
+                members:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UserExtendedReference'
+                metadata:
+                    $ref: '#/components/schemas/GroupMetadata'
+                name:
+                    type: string
+            required:
+                - _id
+                - name
+                - creator
+                - members
+                - metadata
+        GroupMetadata:
+            type: object
+            additionalProperties: false
+            properties:
+                createdAt:
+                    type: string
+                    format: date-time
+                isDeleted:
+                    type: boolean
+                updatedAt:
+                    type: string
+                    format: date-time
+            required:
+                - createdAt
+                - updatedAt
+                - isDeleted
         HealthOutputBody:
             type: object
             additionalProperties: false
@@ -5313,7 +5869,7 @@ components:
                 _id:
                     type: string
                 blueprint:
-                    $ref: '#/components/schemas/BlueprintReference'
+                    $ref: '#/components/schemas/EnhancedBlueprintReference'
                 caption:
                     type: string
                 category:
@@ -5322,6 +5878,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentDocument'
+                groups:
+                    type: array
+                    items:
+                        type: string
                 images:
                     type: array
                     items:
@@ -5360,7 +5920,7 @@ components:
                 _id:
                     type: string
                 blueprint:
-                    $ref: '#/components/schemas/BlueprintReference'
+                    $ref: '#/components/schemas/EnhancedBlueprintReference'
                 caption:
                     type: string
                 category:
@@ -5369,6 +5929,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentDocumentAPI'
+                groups:
+                    type: array
+                    items:
+                        type: string
                 images:
                     type: array
                     items:
@@ -5608,6 +6172,38 @@ components:
                 - beforeDeadline
                 - afterDeadline
                 - vibration
+        RemoveMemberOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RemoveMemberOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Member removed successfully
+            required:
+                - message
+        RemoveMemberParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RemoveMemberParams.json
+                    readOnly: true
+                userId:
+                    type: string
+            required:
+                - userId
         RenameWorkspaceInputBody:
             type: object
             additionalProperties: false
@@ -6170,6 +6766,36 @@ components:
                         - Encouragement updated successfully
             required:
                 - message
+        UpdateGroupOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateGroupOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Group updated successfully
+            required:
+                - message
+        UpdateGroupParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateGroupParams.json
+                    readOnly: true
+                name:
+                    type: string
         UpdatePostOutputBody:
             type: object
             additionalProperties: false

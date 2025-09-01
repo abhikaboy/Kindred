@@ -121,6 +121,16 @@ type GetBlueprintByCategoryOutput struct {
 	Body []BlueprintCategoryGroup `json:"body"`
 }
 
+// Get Blueprints by Creator
+type GetBlueprintsByCreatorInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	CreatorID     string `path:"creatorId" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetBlueprintsByCreatorOutput struct {
+	Body []BlueprintDocumentWithoutSubscribers `json:"body"`
+}
+
 type CreateBlueprintParams struct {
 	Banner      string                   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
 	Name        string                   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`

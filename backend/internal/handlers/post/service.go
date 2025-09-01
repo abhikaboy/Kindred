@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // newService receives the map of collections and picks out Jobs
@@ -21,6 +22,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Users:               collections["users"],
 		Blueprints:          collections["blueprints"],
 		Categories:          collections["categories"],
+		Groups:              collections["groups"],
 		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
@@ -129,6 +131,129 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 	}
 
 	cursor, err := s.Posts.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []types.PostDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// GetFriendsPosts fetches posts from the user's friends using aggregation pipeline, ordered chronologically (newest first)
+func (s *Service) GetFriendsPosts(userID primitive.ObjectID) ([]types.PostDocument, error) {
+	ctx := context.Background()
+
+	// Use aggregation pipeline with $lookup operations
+	pipeline := mongo.Pipeline{
+		// Stage 1: Match the specific user
+		{{Key: "$match", Value: bson.M{"_id": userID}}},
+
+		// Stage 2: Lookup friends from users collection based on friends array
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "users",
+			"localField":   "friends",
+			"foreignField": "_id",
+			"as":           "friendsData",
+		}}},
+
+		// Stage 3: Extract friend IDs for posts lookup
+		{{Key: "$project", Value: bson.M{
+			"friendIds": "$friends",
+		}}},
+
+		// Stage 4: Lookup posts from friends
+		{{Key: "$lookup", Value: bson.M{
+			"from": "posts",
+			"let":  bson.M{"friendIds": "$friendIds"},
+			"pipeline": mongo.Pipeline{
+				// Match posts from friends that are public and not deleted
+				{{Key: "$match", Value: bson.M{
+					"$expr": bson.M{
+						"$and": []bson.M{
+							{"$in": []interface{}{
+								bson.M{"$toObjectId": "$user._id"},
+								"$$friendIds",
+							}},
+							{"$eq": []interface{}{"$metadata.isDeleted", false}},
+							{"$eq": []interface{}{"$metadata.isPublic", true}},
+						},
+					},
+				}}},
+				// Sort by creation date (newest first)
+				{{Key: "$sort", Value: bson.M{"metadata.createdAt": -1}}},
+			},
+			"as": "friendsPosts",
+		}}},
+
+		// Stage 5: Unwind the posts array to get individual posts
+		{{Key: "$unwind", Value: "$friendsPosts"}},
+
+		// Stage 6: Replace root with the post document
+		{{Key: "$replaceRoot", Value: bson.M{
+			"newRoot": "$friendsPosts",
+		}}},
+	}
+
+	cursor, err := s.Users.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute aggregation pipeline: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var results []types.PostDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, fmt.Errorf("failed to decode aggregation results: %w", err)
+	}
+
+	return results, nil
+}
+
+// GetUserGroups fetches all groups where the user is a creator or member
+func (s *Service) GetUserGroups(userID primitive.ObjectID) ([]types.GroupDocument, error) {
+	ctx := context.Background()
+
+	// Find groups where user is creator or member
+	filter := bson.M{
+		"$or": []bson.M{
+			{"creator": userID},
+			{"members._id": userID},
+		},
+		"metadata.isDeleted": false,
+	}
+
+	cursor, err := s.Groups.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []types.GroupDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// GetPostsByBlueprint fetches all posts associated with a specific blueprint
+func (s *Service) GetPostsByBlueprint(blueprintID primitive.ObjectID) ([]types.PostDocument, error) {
+	ctx := context.Background()
+
+	filter := bson.M{
+		"blueprint.id":       blueprintID,
+		"metadata.isDeleted": false,
+		"metadata.isPublic":  true, // Only return public posts
+	}
+
+	// Sort by creation date, newest first
+	cursor, err := s.Posts.Find(ctx, filter, &options.FindOptions{
+		Sort: bson.D{{Key: "metadata.createdAt", Value: -1}},
+	})
 	if err != nil {
 		return nil, err
 	}

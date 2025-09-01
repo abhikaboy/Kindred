@@ -184,9 +184,10 @@ type PostDocument struct {
 	Images  []string `bson:"images" json:"images"`
 	Caption string   `bson:"caption" json:"caption"`
 
-	Category  *CategoryExtendedReference `bson:"category,omitempty" json:"category,omitempty"`
-	Task      *PostTaskExtendedReference `bson:"task,omitempty" json:"task,omitempty"`
-	Blueprint *BlueprintReference        `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
+	Category  *CategoryExtendedReference  `bson:"category,omitempty" json:"category,omitempty"`
+	Task      *PostTaskExtendedReference  `bson:"task,omitempty" json:"task,omitempty"`
+	Blueprint *EnhancedBlueprintReference `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
+	Groups    []primitive.ObjectID        `bson:"groups,omitempty" json:"groups,omitempty"`
 
 	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
 	Comments  []CommentDocument               `bson:"comments" json:"comments"`
@@ -351,11 +352,12 @@ type PostDocumentAPI struct {
 	ID   primitive.ObjectID    `json:"_id"`
 	User UserExtendedReference `json:"user"`
 
-	Images    []string                   `json:"images"`
-	Caption   string                     `json:"caption"`
-	Category  *CategoryExtendedReference `json:"category,omitempty"`
-	Task      *PostTaskExtendedReference `json:"task,omitempty"`
-	Blueprint *BlueprintReference        `json:"blueprint,omitempty"`
+	Images    []string                    `json:"images"`
+	Caption   string                      `json:"caption"`
+	Category  *CategoryExtendedReference  `json:"category,omitempty"`
+	Task      *PostTaskExtendedReference  `json:"task,omitempty"`
+	Blueprint *EnhancedBlueprintReference `json:"blueprint,omitempty"`
+	Groups    []string                    `json:"groups,omitempty"`
 
 	Reactions map[string][]string  `json:"reactions"`
 	Comments  []CommentDocumentAPI `json:"comments"`
@@ -378,6 +380,12 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		apiReactions[emoji] = stringIDs
 	}
 
+	// Convert group IDs to strings
+	var groupStrings []string
+	for _, groupID := range p.Groups {
+		groupStrings = append(groupStrings, groupID.Hex())
+	}
+
 	return &PostDocumentAPI{
 		ID:        p.ID,
 		User:      *p.User.ToAPI(),
@@ -386,8 +394,69 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		Category:  p.Category,
 		Task:      p.Task,
 		Blueprint: p.Blueprint,
+		Groups:    groupStrings,
 		Reactions: apiReactions,
 		Comments:  apiComments,
 		Metadata:  p.Metadata,
+	}
+}
+
+// Group Document
+type GroupDocument struct {
+	ID       primitive.ObjectID              `bson:"_id" json:"_id"`
+	Name     string                          `bson:"name" json:"name"`
+	Creator  primitive.ObjectID              `bson:"creator" json:"creator"`
+	Members  []UserExtendedReferenceInternal `bson:"members" json:"members"`
+	Metadata GroupMetadata                   `bson:"metadata" json:"metadata"`
+}
+
+type GroupDocumentAPI struct {
+	ID       primitive.ObjectID      `json:"_id"`
+	Name     string                  `json:"name"`
+	Creator  string                  `json:"creator"`
+	Members  []UserExtendedReference `json:"members"`
+	Metadata GroupMetadata           `json:"metadata"`
+}
+
+func (g *GroupDocument) ToAPI() *GroupDocumentAPI {
+	var apiMembers []UserExtendedReference
+	for _, member := range g.Members {
+		apiMembers = append(apiMembers, *member.ToAPI())
+	}
+
+	return &GroupDocumentAPI{
+		ID:       g.ID,
+		Name:     g.Name,
+		Creator:  g.Creator.Hex(),
+		Members:  apiMembers,
+		Metadata: g.Metadata,
+	}
+}
+
+type GroupMetadata struct {
+	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time `bson:"updatedAt" json:"updatedAt"`
+	IsDeleted bool      `bson:"isDeleted" json:"isDeleted"`
+}
+
+func NewGroupMetadata() GroupMetadata {
+	now := time.Now()
+	return GroupMetadata{
+		CreatedAt: now,
+		UpdatedAt: now,
+		IsDeleted: false,
+	}
+}
+
+// Enhanced Blueprint Reference with isPublic
+type EnhancedBlueprintReference struct {
+	ID       primitive.ObjectID `bson:"id" json:"id"`
+	IsPublic bool               `bson:"isPublic" json:"isPublic"`
+}
+
+func NewEnhancedBlueprintReference(blueprintID primitive.ObjectID, isPublic bool) *EnhancedBlueprintReference {
+	return &EnhancedBlueprintReference{
+		ID:       blueprintID,
+		IsPublic: isPublic,
 	}
 }

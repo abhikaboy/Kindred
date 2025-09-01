@@ -118,10 +118,22 @@ func RegisterGetBlueprintByCategoryOperation(api huma.API, handler *Handler) {
 	}, handler.GetBlueprintByCategoryHuma)
 }
 
+func RegisterGetBlueprintsByCreatorOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-blueprints-by-creator",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/blueprints/creator/{creatorId}",
+		Summary:     "Get blueprints by creator",
+		Description: "Retrieve all blueprints created by a specific user",
+		Tags:        []string{"blueprints"},
+	}, handler.GetBlueprintsByCreatorHuma)
+}
+
 // Register all blueprint operations
 func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSearchBlueprintsOperation(api, handler)
 	RegisterGetBlueprintByCategoryOperation(api, handler)
+	RegisterGetBlueprintsByCreatorOperation(api, handler)
 	RegisterCreateBlueprintOperation(api, handler)
 	RegisterGetBlueprintsOperation(api, handler)
 	RegisterGetBlueprintOperation(api, handler)

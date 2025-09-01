@@ -11,6 +11,7 @@ import (
 	congratulation "github.com/abhikaboy/Kindred/internal/handlers/congratulation"
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	encouragement "github.com/abhikaboy/Kindred/internal/handlers/encouragement"
+	group "github.com/abhikaboy/Kindred/internal/handlers/group"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
@@ -96,6 +97,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	profile.Routes(api, collections)
 	task.Routes(api, collections)
 	connection.Routes(api, collections)
+	group.RegisterRoutes(api, collections)
 	post.Routes(api, collections)
 	spaces.Routes(api, presigner, collections)
 

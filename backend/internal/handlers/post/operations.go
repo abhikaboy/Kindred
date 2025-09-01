@@ -30,6 +30,39 @@ func RegisterGetPostsOperation(api huma.API, handler *Handler) {
 	}, handler.GetPostsHuma)
 }
 
+func RegisterGetFriendsPostsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-friends-posts",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/posts/friends",
+		Summary:     "Get friends posts",
+		Description: "Retrieve posts from user's friends, ordered chronologically",
+		Tags:        []string{"posts"},
+	}, handler.GetFriendsPostsHuma)
+}
+
+func RegisterGetUserGroupsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-groups",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/posts/groups",
+		Summary:     "Get user groups",
+		Description: "Retrieve all groups where user is creator or member",
+		Tags:        []string{"posts"},
+	}, handler.GetUserGroupsHuma)
+}
+
+func RegisterGetPostsByBlueprintOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-posts-by-blueprint",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/posts/blueprint/{blueprintId}",
+		Summary:     "Get posts by blueprint",
+		Description: "Retrieve all posts associated with a specific blueprint",
+		Tags:        []string{"posts"},
+	}, handler.GetPostsByBlueprintHuma)
+}
+
 func RegisterGetPostOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-post",
@@ -111,6 +144,9 @@ func RegisterToggleReaction(api huma.API, handler *Handler) {
 func RegisterPostOperations(api huma.API, handler *Handler) {
 	RegisterCreatePostOperation(api, handler)
 	RegisterGetPostsOperation(api, handler)
+	RegisterGetFriendsPostsOperation(api, handler)
+	RegisterGetUserGroupsOperation(api, handler)
+	RegisterGetPostsByBlueprintOperation(api, handler)
 	RegisterGetPostOperation(api, handler)
 	RegisterGetUserPosts(api, handler)
 	RegisterUpdatePostOperation(api, handler)

@@ -712,6 +712,26 @@ export interface paths {
         patch: operations["unsubscribe-from-blueprint"];
         trace?: never;
     };
+    "/v1/user/blueprints/creator/{creatorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get blueprints by creator
+         * @description Retrieve all blueprints created by a specific user
+         */
+        get: operations["get-blueprints-by-creator"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/blueprints/subscribed": {
         parameters: {
             query?: never;
@@ -1136,6 +1156,82 @@ export interface paths {
         patch: operations["mark-encouragements-read"];
         trace?: never;
     };
+    "/v1/user/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all user groups
+         * @description Retrieve all groups where user is creator or member
+         */
+        get: operations["get-groups"];
+        put?: never;
+        /**
+         * Create a new group
+         * @description Create a new group with the provided details
+         */
+        post: operations["create-group"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get group by ID
+         * @description Retrieve a specific group by its ID
+         */
+        get: operations["get-group"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete group
+         * @description Delete an existing group (creator only)
+         */
+        delete: operations["delete-group"];
+        options?: never;
+        head?: never;
+        /**
+         * Update group
+         * @description Update an existing group (creator only)
+         */
+        patch: operations["update-group"];
+        trace?: never;
+    };
+    "/v1/user/groups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add member to group
+         * @description Add a member to an existing group (creator only)
+         */
+        post: operations["add-group-member"];
+        /**
+         * Remove member from group
+         * @description Remove a member from an existing group (creator only or self)
+         */
+        delete: operations["remove-group-member"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/login": {
         parameters: {
             query?: never;
@@ -1342,6 +1438,66 @@ export interface paths {
          * @description Adds a reaction to a post
          */
         post: operations["add-reaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/posts/blueprint/{blueprintId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get posts by blueprint
+         * @description Retrieve all posts associated with a specific blueprint
+         */
+        get: operations["get-posts-by-blueprint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/posts/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get friends posts
+         * @description Retrieve posts from user's friends, ordered chronologically
+         */
+        get: operations["get-friends-posts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/posts/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user groups
+         * @description Retrieve all groups where user is creator or member
+         */
+        get: operations["get-user-groups"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1804,6 +1960,22 @@ export interface components {
             content: string;
             parentId?: string;
         };
+        AddMemberOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        AddMemberParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            userId: string;
+        };
         AddReactionOutputBody: {
             /**
              * Format: uri
@@ -1824,7 +1996,7 @@ export interface components {
         BlueprintCategoryGroup: {
             /** @description List of blueprints in this category */
             blueprints: components["schemas"]["BlueprintDocument"][];
-            /** @description Category name */
+            /** @description Category name (maps from aggregation _id) */
             category: string;
             /**
              * Format: int64
@@ -1898,9 +2070,6 @@ export interface components {
              * @description Creation timestamp
              */
             timestamp: string;
-        };
-        BlueprintReference: {
-            id: string;
         };
         CategoryDocument: {
             /**
@@ -2124,6 +2293,15 @@ export interface components {
             /** @description Task name */
             taskName: string;
         };
+        CreateGroupParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            members?: string[];
+            name: string;
+        };
         CreatePostParams: {
             /**
              * Format: uri
@@ -2131,7 +2309,9 @@ export interface components {
              */
             readonly $schema?: string;
             blueprintId?: string;
+            blueprintIsPublic?: boolean;
             caption: string;
+            groups?: string[];
             images: string[];
             isPublic: boolean;
             task?: components["schemas"]["PostTaskExtendedReference"];
@@ -2214,6 +2394,14 @@ export interface components {
             message: string;
         };
         DeleteEncouragementOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        DeleteGroupOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
@@ -2304,6 +2492,10 @@ export interface components {
             /** @description Sender's profile picture URL */
             picture: string;
         };
+        EnhancedBlueprintReference: {
+            id: string;
+            isPublic: boolean;
+        };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
             location?: string;
@@ -2352,6 +2544,22 @@ export interface components {
             public_url: string;
             upload_url: string;
         };
+        GetFriendsPostsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            posts: components["schemas"]["PostDocumentAPI"][];
+        };
+        GetGroupsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            groups: components["schemas"]["GroupDocumentAPI"][];
+        };
         GetNotificationsOutputBody: {
             /**
              * Format: uri
@@ -2364,6 +2572,14 @@ export interface components {
             /** Format: int64 */
             unread_count: number;
         };
+        GetPostsByBlueprintOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            posts: components["schemas"]["PostDocumentAPI"][];
+        };
         GetPostsOutputBody: {
             /**
              * Format: uri
@@ -2371,6 +2587,33 @@ export interface components {
              */
             readonly $schema?: string;
             posts: components["schemas"]["PostDocumentAPI"][];
+        };
+        GetUserGroupsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            groups: components["schemas"]["GroupDocumentAPI"][];
+        };
+        GroupDocumentAPI: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            _id: string;
+            creator: string;
+            members: components["schemas"]["UserExtendedReference"][];
+            metadata: components["schemas"]["GroupMetadata"];
+            name: string;
+        };
+        GroupMetadata: {
+            /** Format: date-time */
+            createdAt: string;
+            isDeleted: boolean;
+            /** Format: date-time */
+            updatedAt: string;
         };
         HealthOutputBody: {
             /**
@@ -2465,10 +2708,11 @@ export interface components {
         };
         PostDocument: {
             _id: string;
-            blueprint?: components["schemas"]["BlueprintReference"];
+            blueprint?: components["schemas"]["EnhancedBlueprintReference"];
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
             comments: components["schemas"]["CommentDocument"][];
+            groups?: string[];
             images: string[];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
@@ -2484,10 +2728,11 @@ export interface components {
              */
             readonly $schema?: string;
             _id: string;
-            blueprint?: components["schemas"]["BlueprintReference"];
+            blueprint?: components["schemas"]["EnhancedBlueprintReference"];
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
             comments: components["schemas"]["CommentDocumentAPI"][];
+            groups?: string[];
             images: string[];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
@@ -2584,6 +2829,22 @@ export interface components {
             triggerTime: string;
             type: string;
             vibration: boolean;
+        };
+        RemoveMemberOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        RemoveMemberParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            userId: string;
         };
         RenameWorkspaceInputBody: {
             /**
@@ -2849,6 +3110,22 @@ export interface components {
              */
             readonly $schema?: string;
             message: string;
+        };
+        UpdateGroupOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            message: string;
+        };
+        UpdateGroupParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            name?: string;
         };
         UpdatePostOutputBody: {
             /**
@@ -4312,6 +4589,41 @@ export interface operations {
             };
         };
     };
+    "get-blueprints-by-creator": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                creatorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-user-subscribed-blueprints": {
         parameters: {
             query?: never;
@@ -5414,6 +5726,254 @@ export interface operations {
             };
         };
     };
+    "get-groups": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetGroupsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-group": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupDocumentAPI"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-group": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupDocumentAPI"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-group": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteGroupOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-group": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGroupParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGroupOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "add-group-member": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddMemberParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddMemberOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "remove-group-member": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveMemberParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveMemberOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "login-token": {
         parameters: {
             query?: never;
@@ -5868,6 +6428,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddReactionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-posts-by-blueprint": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                blueprintId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPostsByBlueprintOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-friends-posts": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFriendsPostsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-groups": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetUserGroupsOutputBody"];
                 };
             };
             /** @description Error */
