@@ -91,20 +91,30 @@ func (s *Service) GenerateImageUploadURL(ctx context.Context, params *ImageUploa
 		return nil, fmt.Errorf("failed to generate presigned URL: %w", err)
 	}
 
-	// Generate public URL
+	// Generate public URL and CDN URL
 	publicURL := ""
+	cdnURL := ""
 	if spacesURL != "" {
 		if !strings.HasSuffix(spacesURL, "/") {
 			spacesURL += "/"
 		}
 		publicURL = spacesURL + key
+
+		// Auto-generate CDN URL from spaces URL
+		if strings.Contains(spacesURL, ".digitaloceanspaces.com") && !strings.Contains(spacesURL, ".cdn.") {
+			// Convert to CDN URL: example.digitaloceanspaces.com -> example.cdn.digitaloceanspaces.com
+			cdnURL = strings.Replace(spacesURL, ".digitaloceanspaces.com", ".cdn.digitaloceanspaces.com", 1) + key
+		} else {
+			// If it's already a custom CDN domain or already has .cdn., use as-is
+			cdnURL = publicURL
+		}
 	}
 
 	return &ImageUploadResult{
 		UploadURL: req.URL,
 		Key:       key,
 		PublicURL: publicURL,
-		CDNUrl:    publicURL,
+		CDNUrl:    cdnURL, // Use auto-generated CDN URL for serving images
 	}, nil
 }
 

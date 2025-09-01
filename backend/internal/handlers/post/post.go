@@ -87,13 +87,21 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 
 	doc.Metadata.IsPublic = input.Body.IsPublic
 
-	createdPost, err := h.service.CreatePost(&doc)
+	createdPost, userStats, err := h.service.CreatePost(&doc)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to create post", err)
 	}
 
-	// Return API version
-	return &CreatePostOutput{Body: *createdPost.ToAPI()}, nil
+	// Prepare response with user stats
+	response := &CreatePostOutput{Body: *createdPost.ToAPI()}
+
+	// Include user stats if available
+	if userStats != nil {
+		response.UserStats.PostsMade = userStats.PostsMade
+		response.UserStats.Points = userStats.Points
+	}
+
+	return response, nil
 }
 
 func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetPostsOutput, error) {

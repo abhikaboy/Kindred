@@ -18,9 +18,11 @@ import {
     RefreshControl,
     FlatList,
 } from "react-native";
-import { getAllPosts, getFriendsPosts } from "@/api/post";
+import { getAllPosts, getFriendsPosts, getPostsByBlueprint } from "@/api/post";
+import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
+import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 
 const HORIZONTAL_PADDING = 16;
 
@@ -76,6 +78,7 @@ export default function Feed() {
         { name: "Friends", id: "friends" },
         { name: "All Posts", id: "all" }
     ]);
+    const [subscribedBlueprints, setSubscribedBlueprints] = useState<any[]>([]);
     const scrollY = useRef(new Animated.Value(0)).current;
     const headerOpacity = useRef(new Animated.Value(0)).current;
     const headerTranslateY = useRef(new Animated.Value(-100)).current;
@@ -130,6 +133,34 @@ export default function Feed() {
         }
     }, [loading, loadingRotation]);
 
+    // Fetch subscribed blueprints and update available feeds
+    const fetchSubscribedBlueprints = useCallback(async () => {
+        try {
+            const blueprints = await getUserSubscribedBlueprints();
+            setSubscribedBlueprints(blueprints);
+            
+            // Create feeds array with base feeds + blueprint feeds
+            const baseFeeds = [
+                { name: "Friends", id: "friends" },
+                { name: "All Posts", id: "all" }
+            ];
+            
+            const blueprintFeeds = blueprints.map(blueprint => ({
+                name: blueprint.name,
+                id: `blueprint-${blueprint.id}`
+            }));
+            
+            setAvailableFeeds([...baseFeeds, ...blueprintFeeds]);
+        } catch (error) {
+            console.error("Error fetching subscribed blueprints:", error);
+            // Keep the base feeds if blueprint fetch fails
+            setAvailableFeeds([
+                { name: "Friends", id: "friends" },
+                { name: "All Posts", id: "all" }
+            ]);
+        }
+    }, []);
+
     const fetchPosts = useCallback(async (feedId?: string) => {
         setLoading(true);
         setError(null);
@@ -139,6 +170,10 @@ export default function Feed() {
             
             if (currentFeedId === "friends") {
                 fetchedPosts = await getFriendsPosts();
+            } else if (currentFeedId.startsWith("blueprint-")) {
+                // Extract blueprint ID from feed ID
+                const blueprintId = currentFeedId.replace("blueprint-", "");
+                fetchedPosts = await getPostsByBlueprint(blueprintId);
             } else {
                 fetchedPosts = await getAllPosts();
             }
@@ -187,6 +222,11 @@ export default function Feed() {
             setRefreshing(false);
         }
     }, [fetchPosts, currentFeed.id]);
+
+    // Load blueprints on component mount
+    useEffect(() => {
+        fetchSubscribedBlueprints();
+    }, [fetchSubscribedBlueprints]);
 
     // Load posts on component mount and when feed changes
     useEffect(() => {
@@ -332,25 +372,7 @@ export default function Feed() {
         if (loading) {
             return (
                 <View style={styles.loadingContainer}>
-                    <Animated.View
-                        style={[
-                            styles.loadingIcon,
-                            {
-                                transform: [
-                                    {
-                                        rotate: loadingRotation.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: ["0deg", "360deg"],
-                                        }),
-                                    },
-                                ],
-                            },
-                        ]}>
-                        <Ionicons name="refresh" size={30} color={ThemedColor.primary} />
-                    </Animated.View>
-                    <ThemedText style={[styles.loadingText, { color: ThemedColor.text }]}>
-                        Loading posts...
-                    </ThemedText>
+                    <PostCardSkeleton />
                 </View>
             );
         }
@@ -373,25 +395,36 @@ export default function Feed() {
 
         if (posts.length === 0) {
             const isFriendsFeed = currentFeed.id === "friends";
+            const isBlueprintFeed = currentFeed.id.startsWith("blueprint-");
+            
+            let iconName: any = "newspaper-outline";
+            let emptyText = "No posts yet";
+            let emptySubtext = "Pull down to refresh";
+            
+            if (isFriendsFeed) {
+                iconName = "people-outline";
+                emptyText = "No posts from friends yet";
+                emptySubtext = "Add friends to see their posts here";
+            } else if (isBlueprintFeed) {
+                iconName = "document-text-outline";
+                emptyText = `No posts in ${currentFeed.name} yet`;
+                emptySubtext = "Create posts using this blueprint to see them here";
+            }
+            
             return (
                 <View style={styles.emptyContainer}>
-                    <Ionicons 
-                        name={isFriendsFeed ? "people-outline" : "newspaper-outline"} 
-                        size={50} 
-                        color={ThemedColor.caption} 
-                    />
                     <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
-                        {isFriendsFeed ? "No posts from friends yet" : "No posts yet"}
+                        {emptyText}
                     </ThemedText>
                     <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
-                        {isFriendsFeed ? "Add friends to see their posts here" : "Pull down to refresh"}
+                        {emptySubtext}
                     </ThemedText>
                 </View>
             );
         }
 
         return null;
-    }, [loading, error, posts.length, loadingRotation, ThemedColor, fetchPosts, currentFeed.id]);
+    }, [loading, error, posts.length, loadingRotation, ThemedColor, fetchPosts, currentFeed.id, currentFeed.name]);
 
     const keyExtractor = useCallback((item: PostData) => item._id || Math.random().toString(), []);
 
@@ -566,31 +599,22 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         loadingContainer: {
             flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
+            paddingHorizontal: 16,
             paddingVertical: 20,
-        },
-        loadingIcon: {
-            transform: [{ rotate: "0deg" }],
-        },
-        loadingText: {
-            marginTop: 10,
-            fontSize: 16,
         },
         emptyContainer: {
             flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
             paddingVertical: 20,
+            paddingHorizontal: 20,
         },
         emptyText: {
             fontSize: 20,
             fontWeight: "bold",
             marginTop: 10,
+            width: "70%",
         },
         emptySubtext: {
-            fontSize: 14,
-            marginTop: 5,
+            marginTop: 8,
         },
         errorContainer: {
             flex: 1,

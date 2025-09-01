@@ -8,9 +8,10 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createPostToBackend } from "@/api/post";
-import { uploadImage, getMimeTypeFromUri } from "@/api/upload";
+import { uploadImageSmart } from "@/api/upload";
 import { Icons } from "@/constants/Icons";
 import { ObjectId } from "bson";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Caption() {
     const params = useLocalSearchParams();
@@ -22,6 +23,7 @@ export default function Caption() {
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
 
     const ThemedColor = useThemeColor();
+    const { updateUser } = useAuth();
     const displayItems = photos.length > 0 ? photos : [Icons.coffee];
     const hasActualPhotos = photos.length > 0;
     const handleCaptionChange = (text: string) => {
@@ -38,12 +40,11 @@ export default function Caption() {
         const uploadedUrls = [];
         for (let i = 0; i < photoUris.length; i++) {
             try {
-                const fileType = getMimeTypeFromUri(photoUris[i]);
-                const publicUrl = await uploadImage(
+                const publicUrl = await uploadImageSmart(
                     "post",
                     taskInfo?.id || new ObjectId().toString(),
                     photoUris[i],
-                    fileType
+                    { variant: "large" }
                 );
                 uploadedUrls.push(publicUrl);
             } catch (error) {
@@ -74,14 +75,22 @@ export default function Caption() {
                   }
                 : undefined;
 
-            const createdPost = await createPostToBackend(photoUrls, data.caption, taskReference, undefined, taskInfo?.public ?? false);
+            const result = await createPostToBackend(photoUrls, data.caption, taskReference, undefined, taskInfo?.public ?? false);
+
+            // Update user stats locally if available
+            if (result.userStats) {
+                updateUser({
+                    posts_made: result.userStats.posts_made,
+                    points: result.userStats.points
+                });
+            }
 
             Alert.alert("Success!", "Your post has been shared!", [
                 {
                     text: "View Post",
                     onPress: () => {
                         router.dismissAll();
-                        router.push(`/(logged-in)/posting/${createdPost._id}`);
+                        router.push(`/(logged-in)/posting/${result.post._id}`);
                     },
                 },
                 {

@@ -146,6 +146,51 @@ export const SearchResultsSkeleton: React.FC<{ activeTab: number }> = ({ activeT
     );
 };
 
+// Post Card Skeleton
+export const PostCardSkeleton: React.FC = () => {
+    const ThemedColor = useThemeColor();
+    
+    return (
+        <View style={[styles.postCardSkeleton, { backgroundColor: ThemedColor.background }]}>
+            {/* Header with user info */}
+            <View style={styles.postCardHeader}>
+                <View style={styles.postCardUserInfo}>
+                    <SkeletonLoader width={40} height={40} borderRadius={20} />
+                    <View style={styles.postCardUserDetails}>
+                        <SkeletonLoader width={100} height={16} borderRadius={4} />
+                        <SkeletonLoader width={80} height={12} borderRadius={4} style={{ marginTop: 4 }} />
+                    </View>
+                </View>
+                <SkeletonLoader width={40} height={12} borderRadius={4} />
+            </View>
+            
+            {/* Main image */}
+            <SkeletonLoader 
+                width="100%" 
+                height={250} 
+                borderRadius={16} 
+                style={styles.postCardImage} 
+            />
+            
+            {/* Caption */}
+            <View style={styles.postCardCaption}>
+                <SkeletonLoader width="90%" height={14} borderRadius={4} />
+                <SkeletonLoader width="60%" height={14} borderRadius={4} style={{ marginTop: 4 }} />
+            </View>
+            
+            {/* Reactions and comments area */}
+            <View style={styles.postCardFooter}>
+                <View style={styles.postCardReactions}>
+                    <SkeletonLoader width={30} height={24} borderRadius={12} />
+                    <SkeletonLoader width={30} height={24} borderRadius={12} />
+                    <SkeletonLoader width={30} height={24} borderRadius={12} />
+                </View>
+                <SkeletonLoader width={80} height={12} borderRadius={4} />
+            </View>
+        </View>
+    );
+};
+
 const styles = StyleSheet.create({
     blueprintCardSkeleton: {
         borderRadius: 16,
@@ -200,5 +245,44 @@ const styles = StyleSheet.create({
     },
     searchResultItem: {
         marginBottom: 16,
+    },
+    postCardSkeleton: {
+        padding: 16,
+        marginBottom: 16,
+        borderRadius: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    postCardHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: 12,
+    },
+    postCardUserInfo: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+    },
+    postCardUserDetails: {
+        flex: 1,
+    },
+    postCardImage: {
+        marginBottom: 12,
+    },
+    postCardCaption: {
+        marginBottom: 12,
+    },
+    postCardFooter: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    postCardReactions: {
+        flexDirection: "row",
+        gap: 8,
     },
 });

@@ -10,6 +10,7 @@ import {
     Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
+import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
 import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
@@ -337,15 +338,13 @@ const PostCard = ({
                             {images.length === 1 ? (
                                 // Single image - no counter needed
                                 <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                    <Image 
-                                        source={{ uri: images[0] }} 
-                                        style={[styles.image, { height: imageHeight }]}
-                                        contentFit="cover"
-                                        placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
-                                        cachePolicy="memory"
-                                        decodeFormat="rgb"
-                                        allowDownscaling={true} // Let expo-image handle sizing
-                                    />
+                                                                            <CachedImage 
+                                            source={{ uri: images[0] }} 
+                                            style={[styles.image, { height: imageHeight }]}
+                                            variant="large"
+                                            cachePolicy="memory-disk"
+                                            placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
+                                        />
                                 </TouchableOpacity>
                             ) : (
                                 <View style={styles.carouselContainer}>
@@ -360,14 +359,12 @@ const PostCard = ({
                                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                                         renderItem={({ item, index }) => (
                                             <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
-                                                <Image 
+                                                <CachedImage 
                                                     source={{ uri: item }} 
                                                     style={[styles.image, { height: imageHeight }]}
-                                                    contentFit="cover"
+                                                    variant="large"
+                                                    cachePolicy="memory-disk"
                                                     placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
-                                                    cachePolicy="memory"
-                                                    decodeFormat="rgb"
-                                                    allowDownscaling={true}
                                                 />
                                             </TouchableOpacity>
                                         )}

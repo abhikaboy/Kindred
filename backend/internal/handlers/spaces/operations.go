@@ -57,6 +57,29 @@ type ConfirmImageUploadOutput struct {
 	}
 }
 
+// Process and Upload Image
+type ProcessAndUploadImageInput struct {
+	ResourceType string `path:"resource_type" example:"profile" description:"Type of resource (profile, post, etc.)"`
+	ResourceID   string `path:"resource_id" example:"507f1f77bcf86cd799439011" description:"ID of the resource"`
+	Variant      string `query:"variant" example:"medium" description:"Image variant (thumbnail, medium, large, original)"`
+	Body         struct {
+		ImageData   string `json:"image_data" required:"true" description:"Base64 encoded image data"`
+		ContentType string `json:"content_type" required:"true" example:"image/jpeg" description:"Original image MIME type"`
+	}
+}
+
+type ProcessAndUploadImageOutput struct {
+	Body struct {
+		PublicURL   string `json:"public_url" example:"https://cdn.kindredtodo.com/profiles/507f1f77bcf86cd799439011/uuid.webp"`
+		ProcessedAt string `json:"processed_at" example:"2024-01-01T12:00:00Z"`
+		Width       int    `json:"width" example:"800"`
+		Height      int    `json:"height" example:"600"`
+		Size        int64  `json:"size" example:"123456"`
+		Format      string `json:"format" example:"webp"`
+		Message     string `json:"message" example:"Image processed and uploaded successfully"`
+	}
+}
+
 // Operation registrations
 
 func RegisterGetPresignedUrlOperation(api huma.API, handler *Handler) {
@@ -103,10 +126,22 @@ func RegisterConfirmImageUploadOperation(api huma.API, handler *Handler) {
 	}, handler.ConfirmImageUpload)
 }
 
+func RegisterProcessAndUploadImageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "process-and-upload-image",
+		Method:      http.MethodPost,
+		Path:        "/v1/uploads/{resource_type}/{resource_id}/process",
+		Summary:     "Process and upload image",
+		Description: "Process an image (resize, convert to WebP) and upload to Digital Ocean Spaces",
+		Tags:        []string{"uploads", "images", "processing"},
+	}, handler.ProcessAndUploadImage)
+}
+
 // Register all s3bucket operations
 func RegisterS3BucketOperations(api huma.API, handler *Handler) {
 	RegisterGetPresignedUrlOperation(api, handler)
 	RegisterCreatePresignedUrlOperation(api, handler)
 	RegisterGenerateImageUploadURLOperation(api, handler)
 	RegisterConfirmImageUploadOperation(api, handler)
+	RegisterProcessAndUploadImageOperation(api, handler)
 }

@@ -6,7 +6,7 @@ import ThemedInput from "@/components/inputs/ThemedInput";
 import Dropdown from "@/components/inputs/Dropdown";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
 import * as ImagePicker from "expo-image-picker";
-import { uploadBlueprintBanner, getMimeTypeFromUri } from "@/api/upload";
+import { uploadImageSmart } from "@/api/upload";
 import { Ionicons } from "@expo/vector-icons";
 import { ObjectId } from "bson";
 
@@ -113,10 +113,9 @@ const Details = ({ data, onUpdate }: Props) => {
 
             // Generate a temporary ID for the blueprint (since it doesn't exist yet)
             const tempBlueprintId = new ObjectId().toString();
-            const fileType = getMimeTypeFromUri(imageUri);
 
             console.log("Uploading banner image...");
-            const bannerImageUrl = await uploadBlueprintBanner(tempBlueprintId, imageUri, fileType);
+            const bannerImageUrl = await uploadImageSmart("blueprint", tempBlueprintId, imageUri, { variant: "large" });
             console.log("Banner image uploaded:", bannerImageUrl);
 
             // Update the blueprint data with the banner image URL

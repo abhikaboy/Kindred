@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { showToast } from "@/utils/showToast";
 import { Image } from "expo-image";
+import CachedImage from "../CachedImage";
 
 interface ProfileGalleryProps {
     userId?: string;
@@ -165,12 +166,13 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
                         onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
                         delayLongPress={500}
                         activeOpacity={isDeleting ? 1 : 0.8}>
-                        <Image
+                        <CachedImage
                             style={[styles.galleryImage, isDeleting && styles.deletingImage]}
                             source={{
                                 uri: item.imageUrl,
                             }}
-                            cachePolicy="memory"
+                            variant="thumbnail"
+                            cachePolicy="disk"
                             transition={100}
                             placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                         />

@@ -9,7 +9,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import Svg, { Path, Rect } from "react-native-svg";
 import InputGroup from "@/components/inputs/InputGroup";
 import * as ImagePicker from "expo-image-picker";
-import { uploadProfilePicture, getMimeTypeFromUri } from "@/api/upload";
+import { uploadImageSmart } from "@/api/upload";
 import { updateProfile } from "@/api/profile";
 import { router } from "expo-router";
 
@@ -70,8 +70,7 @@ const Edit = () => {
             // If there's a new image selected, upload it first
             if (selectedImage && selectedImage !== user.profile_picture) {
                 console.log("Uploading new profile picture...");
-                const fileType = getMimeTypeFromUri(selectedImage);
-                profilePictureUrl = await uploadProfilePicture(user._id, selectedImage, fileType);
+                profilePictureUrl = await uploadImageSmart("profile", user._id, selectedImage, { variant: "medium" });
                 console.log("Profile picture uploaded:", profilePictureUrl);
                 console.log("Type of profilePictureUrl:", typeof profilePictureUrl);
             }

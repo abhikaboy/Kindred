@@ -48,7 +48,9 @@ const searchReducer = (state: SearchState, action: SearchAction): SearchState =>
             return {
                 ...state,
                 searchTerm: action.payload,
-                mode: action.payload.trim() ? 'searching' : 'categories'
+                // Only change to categories mode if search term is completely empty
+                // Otherwise maintain current mode until user submits
+                mode: action.payload.trim() === '' ? 'categories' : state.mode
             };
         case 'START_SEARCH':
             return { ...state, mode: 'searching' };
@@ -157,13 +159,7 @@ const Search = (props: Props) => {
         }
     }, []);
 
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            handleSearch(searchTerm);
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm, handleSearch]);
+    // Search is now only triggered on submit, not on every character change
 
     const onSubmit = useCallback(() => {
         handleSearch(searchTerm);

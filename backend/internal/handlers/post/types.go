@@ -13,7 +13,11 @@ type CreatePostInput struct {
 }
 
 type CreatePostOutput struct {
-	Body types.PostDocumentAPI `json:"body"`
+	Body      types.PostDocumentAPI `json:"body"`
+	UserStats struct {
+		PostsMade int `json:"posts_made"`
+		Points    int `json:"points"`
+	} `json:"user_stats"`
 }
 
 type CreatePostParams struct {
