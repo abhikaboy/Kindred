@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TouchableOpacity, View, StyleSheet, Image as RNImage } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
@@ -40,9 +40,16 @@ const BlueprintCard = ({
     const { setSelectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe } = useBlueprints();
     const { fetchWorkspaces } = useTasks();
 
-    const isSubscribed = getIsSubscribed(id, subscribers);
-    const isLoading = getIsLoading(id);
-    const currentSubscriberCount = getSubscriberCount(id, subscribersCount);
+    // Local state for subscription status and loading
+    const [localIsSubscribed, setLocalIsSubscribed] = useState(getIsSubscribed(id, subscribers));
+    const [localIsLoading, setLocalIsLoading] = useState(false);
+    const [localSubscriberCount, setLocalSubscriberCount] = useState(getSubscriberCount(id, subscribersCount));
+
+    // Update local state when props change (for cases where parent data updates)
+    useEffect(() => {
+        setLocalIsSubscribed(getIsSubscribed(id, subscribers));
+        setLocalSubscriberCount(getSubscriberCount(id, subscribersCount));
+    }, [id, subscribers, subscribersCount, getIsSubscribed, getSubscriberCount]);
 
     const handlePress = () => {
         setSelectedBlueprint({
@@ -50,7 +57,7 @@ const BlueprintCard = ({
             banner,
             name,
             duration,
-            subscribersCount: currentSubscriberCount,
+            subscribersCount: localSubscriberCount,
             description,
             tags,
             subscribers,
@@ -60,7 +67,7 @@ const BlueprintCard = ({
             category,
         });
         router.push({
-            pathname: "/(logged-in)/(tabs)/(search)/blueprint/[id]",
+            pathname: "/(logged-in)/(tabs)/(profile)/blueprint/[id]",
             params: {
                 id: id,
                 name: name,
@@ -69,9 +76,30 @@ const BlueprintCard = ({
     };
 
     const onSubscribePress = async () => {
-        await handleSubscribe(id, subscribers);
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        await fetchWorkspaces();
+        try {
+            // Optimistic update - immediately update local state
+            setLocalIsLoading(true);
+            const wasSubscribed = localIsSubscribed;
+            const newSubscribedState = !wasSubscribed;
+            
+            setLocalIsSubscribed(newSubscribedState);
+            setLocalSubscriberCount(prev => newSubscribedState ? prev + 1 : Math.max(0, prev - 1));
+            
+            // Haptic feedback
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            
+            // Call the actual API
+            await handleSubscribe(id, subscribers);
+            await fetchWorkspaces();
+            
+        } catch (error) {
+            // Revert optimistic update on error
+            console.error("Error updating subscription:", error);
+            setLocalIsSubscribed(getIsSubscribed(id, subscribers));
+            setLocalSubscriberCount(getSubscriberCount(id, subscribersCount));
+        } finally {
+            setLocalIsLoading(false);
+        }
     };
 
     return (
@@ -100,7 +128,7 @@ const BlueprintCard = ({
 
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                         <Feather name="users" size={18} color={ThemedColor.caption} />
-                        <ThemedText type="caption">{currentSubscriberCount} Subscribers</ThemedText>
+                        <ThemedText type="caption">{localSubscriberCount} Subscribers</ThemedText>
                     </View>
 
                     <View
@@ -128,11 +156,11 @@ const BlueprintCard = ({
                     </View>
 
                     <PrimaryButton
-                        style={{ width: 100, paddingVertical: 10, paddingHorizontal: 10 }}
-                        title={isLoading ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
+                        style={{ width: 100,paddingVertical: 10, paddingHorizontal: 10 }}
+                        title={localIsLoading ? "..." : localIsSubscribed ? "Subscribed" : "Subscribe"}
                         onPress={onSubscribePress}
-                        outline={isSubscribed}
-                        disabled={isLoading}
+                        outline={localIsSubscribed}
+                        disabled={localIsLoading}
                     />
                 </View>
             </TouchableOpacity>

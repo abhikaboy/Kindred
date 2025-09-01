@@ -86,8 +86,8 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	// Register welcome route
 	RegisterWelcomeRoute(api)
 
-	// Create presigner
-	presigner := spaces.NewPresigner()
+	// Create presigner and S3 client
+	presigner, s3Client := spaces.NewPresigner()
 
 	// Register converted routes
 	health.Routes(api, collections)
@@ -99,7 +99,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	connection.Routes(api, collections)
 	group.RegisterRoutes(api, collections)
 	post.Routes(api, collections)
-	spaces.Routes(api, presigner, collections)
+	spaces.Routes(api, presigner, s3Client, collections)
 
 	// Register waitlist and blueprint routes
 	Waitlist.Routes(api, collections)

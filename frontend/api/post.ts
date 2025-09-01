@@ -28,7 +28,7 @@ export const createPost = async (
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
     blueprintId?: string,
     isPublic: boolean = true
-): Promise<PostDocumentAPI> => {    
+): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {    
     const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
         body: { 
@@ -44,7 +44,10 @@ export const createPost = async (
         throw new Error(`Failed to create post: ${JSON.stringify(error)}`);
     }
 
-    return data;
+    return {
+        post: (data as any).body || data,
+        userStats: (data as any).user_stats || null
+    };
 };
 
 /**
@@ -258,7 +261,7 @@ export const createPostToBackend = async (
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
     blueprintId?: string, 
     isPublic: boolean = false
-): Promise<PostDocumentAPI> => {
+): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
     try {
         const result = await createPost(images, caption, taskReference, blueprintId, isPublic);
         return result;

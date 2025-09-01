@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { components } from "@/api/generated/types";
 import BlueprintCard from "../cards/BlueprintCard";
+import { Ionicons } from "@expo/vector-icons";
 
 type BlueprintDocumentWithoutSubscribers = components["schemas"]["BlueprintDocumentWithoutSubscribers"];
 
@@ -108,12 +109,12 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <ThemedText type="subtitle" style={styles.title}>
+                <ThemedText type="subtitle">
                     {title}
                 </ThemedText>
                 {showViewAll && blueprints.length > 0 && (
                     <TouchableOpacity onPress={handleViewAllPress} style={styles.viewAllButton}>
-                        <MaterialIcons name="arrow-forward" size={20} color={ThemedColor.primary} />
+                        <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -159,15 +160,10 @@ const stylesheet = (ThemedColor: any) =>
             alignItems: "center",
             marginBottom: 16,
         },
-        title: {
-            fontSize: 18,
-            fontWeight: "600",
-        },
         viewAllButton: {
             padding: 4,
         },
         horizontalList: {
-            paddingHorizontal: 20,
             gap: 16,
         },
         cardContainer: {

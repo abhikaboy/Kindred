@@ -15,6 +15,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type UserStatsUpdate struct {
+	PostsMade int `json:"posts_made"`
+	Points    int `json:"points"`
+}
+
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
@@ -72,20 +77,59 @@ func (s *Service) GetPostByID(id primitive.ObjectID) (*types.PostDocument, error
 }
 
 // InsertPost adds a new Post document
-func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, error) {
+func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, *UserStatsUpdate, error) {
 	ctx := context.Background()
 
 	// Insert the document into the collection
-
 	result, err := s.Posts.InsertOne(ctx, r)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Cast the inserted ID to ObjectID
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
-	return r, nil
+
+	// Update user stats after successful post creation and get the updated stats
+	userStats, err := s.updateUserPostStats(ctx, r.User.ID)
+	if err != nil {
+		// Log the error but don't fail the post creation
+		// The post was created successfully, so we return it
+		// Consider using a proper logger here
+		fmt.Printf("Warning: Failed to update user stats after post creation: %v\n", err)
+		return r, nil, nil
+	}
+
+	return r, userStats, nil
+}
+
+// updateUserPostStats increments the user's posts made count and adds points based on streak
+func (s *Service) updateUserPostStats(ctx context.Context, userID primitive.ObjectID) (*UserStatsUpdate, error) {
+	userFilter := bson.M{"_id": userID}
+
+	// Use aggregation pipeline to calculate points based on current streak in a single atomic operation
+	// Points = 1 (base) + current streak value
+	updatePipeline := []bson.M{
+		{
+			"$set": bson.M{
+				"posts_made": bson.M{"$add": []interface{}{"$posts_made", 1}},
+				"points":     bson.M{"$add": []interface{}{"$points", bson.M{"$add": []interface{}{1, "$streak"}}}},
+			},
+		},
+	}
+
+	// Use FindOneAndUpdate with ReturnDocument: options.After to get the updated document
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updatedUser types.SafeUser
+	err := s.Users.FindOneAndUpdate(ctx, userFilter, updatePipeline, opts).Decode(&updatedUser)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user stats: %w", err)
+	}
+
+	return &UserStatsUpdate{
+		PostsMade: updatedUser.PostsMade,
+		Points:    updatedUser.Points,
+	}, nil
 }
 
 // UpdatePartialPost updates only specified fields of a Post document by ObjectID.

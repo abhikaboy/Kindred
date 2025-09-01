@@ -15,7 +15,7 @@ type Props = {
 
 const EditCategory = (props: Props) => {
     const { editing, setEditing, id } = props;
-    const { categories } = useTasks();
+    const { categories, workspaces, removeFromWorkspace } = useTasks();
     const [showEditModal, setShowEditModal] = useState(false);
     const ThemedColor = useThemeColor();
 
@@ -28,6 +28,16 @@ const EditCategory = (props: Props) => {
     // Find the current category to get its name
     const currentCategory = categories.find(cat => cat.id === id);
     const currentName = currentCategory?.name || "";
+
+    // Helper function to find which workspace contains this category
+    const findWorkspaceNameForCategory = (categoryId: string): string | null => {
+        for (const workspace of workspaces) {
+            if (workspace.categories.some(cat => cat.id === categoryId)) {
+                return workspace.name;
+            }
+        }
+        return null;
+    };
 
     const handleEditClick = () => {
         setShowEditModal(true);
@@ -57,9 +67,29 @@ const EditCategory = (props: Props) => {
         {
             label: "Delete",
             icon: "delete",
-            callback: () => {
+            callback: async () => {
                 console.log("deleting category", id);
-                deleteCategory(id);
+                
+                // Find which workspace contains this category
+                const workspaceName = findWorkspaceNameForCategory(id);
+                
+                try {
+                    // First update local state immediately
+                    if (workspaceName) {
+                        removeFromWorkspace(workspaceName, id);
+                    }
+                    
+                    // Then call API to delete from backend
+                    await deleteCategory(id);
+                    
+                    console.log("Category deleted successfully");
+                } catch (error) {
+                    console.error("Error deleting category:", error);
+                    // If API call fails, we should restore the local state
+                    // For now, we'll refresh the data to ensure consistency
+                    // TODO: Add proper error handling and state restoration
+                }
+                
                 setEditing(false);
             },
         },

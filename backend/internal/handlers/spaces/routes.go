@@ -15,16 +15,18 @@ import (
 
 type Service struct {
 	Presigner *s3.PresignClient
+	S3Client  *s3.Client
 }
 
-func newService(presigner *s3.PresignClient) *Service {
+func newService(presigner *s3.PresignClient, s3Client *s3.Client) *Service {
 	return &Service{
 		Presigner: presigner,
+		S3Client:  s3Client,
 	}
 }
 
 // NewPresigner creates a new S3 presigner client configured for Digital Ocean Spaces
-func NewPresigner() *s3.PresignClient {
+func NewPresigner() (*s3.PresignClient, *s3.Client) {
 	// Load application configuration
 	cfg, err := internalConfig.Load()
 	if err != nil {
@@ -72,20 +74,22 @@ func NewPresigner() *s3.PresignClient {
 	})
 
 	// Create presigner client
-	return s3.NewPresignClient(s3Client)
+	return s3.NewPresignClient(s3Client), s3Client
 }
 
-func Routes(api huma.API, presigner *s3.PresignClient, collections map[string]*mongo.Collection) {
+func Routes(api huma.API, presigner *s3.PresignClient, s3Client *s3.Client, collections map[string]*mongo.Collection) {
 	cfg, err := internalConfig.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	service := newService(presigner)
+	service := newService(presigner, s3Client)
+	processor := NewImageProcessor()
 	handler := &Handler{
 		service:     service,
 		config:      cfg,
 		collections: collections,
+		processor:   processor,
 	}
 
 	RegisterS3BucketOperations(api, handler)

@@ -568,6 +568,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/uploads/{resource_type}/{resource_id}/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process and upload image
+         * @description Process an image (resize, convert to WebP) and upload to Digital Ocean Spaces
+         */
+        post: operations["process-and-upload-image"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/uploads/{resource_type}/{resource_id}/url": {
         parameters: {
             query?: never;
@@ -1038,6 +1058,26 @@ export interface paths {
          * @description Accept a friend connection request
          */
         post: operations["accept-connection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/connections/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get friends
+         * @description Get all friends of the authenticated user
+         */
+        get: operations["get-friends"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2301,6 +2341,12 @@ export interface components {
             readonly $schema?: string;
             members?: string[];
             name: string;
+        };
+        CreatePostOutputUserStats: {
+            /** Format: int64 */
+            points: number;
+            /** Format: int64 */
+            posts_made: number;
         };
         CreatePostParams: {
             /**
@@ -4300,6 +4346,60 @@ export interface operations {
             };
         };
     };
+    "process-and-upload-image": {
+        parameters: {
+            query?: {
+                /** @example medium */
+                variant?: string;
+            };
+            header?: never;
+            path: {
+                /** @example profile */
+                resource_type: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Base64 encoded image data */
+                    image_data: string;
+                    /** @description Original image MIME type */
+                    content_type: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        public_url: string;
+                        processed_at?: string;
+                        width?: number;
+                        height?: number;
+                        size?: number;
+                        format?: string;
+                        message: string;
+                    };
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "generate-image-upload-url": {
         parameters: {
             query: {
@@ -5434,6 +5534,40 @@ export interface operations {
             };
         };
     };
+    "get-friends": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtendedReference"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-connections-by-receiver": {
         parameters: {
             query?: never;
@@ -6206,6 +6340,7 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    UserStats?: components["schemas"]["CreatePostOutputUserStats"];
                     [name: string]: unknown;
                 };
                 content: {

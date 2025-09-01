@@ -882,6 +882,103 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/uploads/{resource_type}/{resource_id}/process:
+        post:
+            tags:
+                - uploads
+                - images
+                - processing
+            summary: Process and upload image
+            description: Process an image (resize, convert to WebP) and upload to Digital Ocean Spaces
+            operationId: process-and-upload-image
+            parameters:
+                - name: resource_type
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - profile
+                  example: profile
+                - name: resource_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: variant
+                  in: query
+                  required: false
+                  schema:
+                    type: string
+                    examples:
+                        - medium
+                  example: medium
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                image_data:
+                                    type: string
+                                    description: Base64 encoded image data
+                                content_type:
+                                    type: string
+                                    description: Original image MIME type
+                                    examples:
+                                        - image/jpeg
+                            required:
+                                - image_data
+                                - content_type
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    public_url:
+                                        type: string
+                                        examples:
+                                            - https://cdn.kindredtodo.com/profiles/507f1f77bcf86cd799439011/uuid.webp
+                                    processed_at:
+                                        type: string
+                                        examples:
+                                            - 2024-01-01T12:00:00Z
+                                    width:
+                                        type: integer
+                                        examples:
+                                            - 800
+                                    height:
+                                        type: integer
+                                        examples:
+                                            - 600
+                                    size:
+                                        type: integer
+                                        examples:
+                                            - 123456
+                                    format:
+                                        type: string
+                                        examples:
+                                            - webp
+                                    message:
+                                        type: string
+                                        examples:
+                                            - Image processed and uploaded successfully
+                                required:
+                                    - public_url
+                                    - message
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/uploads/{resource_type}/{resource_id}/url:
         get:
             tags:
@@ -2125,6 +2222,43 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/connections/friends:
+        get:
+            tags:
+                - connections
+            summary: Get friends
+            description: Get all friends of the authenticated user
+            operationId: get-friends
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/UserExtendedReference'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/connections/received:
         get:
             tags:
@@ -2944,6 +3078,10 @@ paths:
             responses:
                 "200":
                     description: OK
+                    headers:
+                        UserStats:
+                            schema:
+                                $ref: '#/components/schemas/CreatePostOutputUserStats'
                     content:
                         application/json:
                             schema:
@@ -5003,6 +5141,19 @@ components:
                     type: string
             required:
                 - name
+        CreatePostOutputUserStats:
+            type: object
+            additionalProperties: false
+            properties:
+                points:
+                    type: integer
+                    format: int64
+                posts_made:
+                    type: integer
+                    format: int64
+            required:
+                - posts_made
+                - points
         CreatePostParams:
             type: object
             additionalProperties: false
