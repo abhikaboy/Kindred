@@ -18,7 +18,7 @@ import {
     RefreshControl,
     FlatList,
 } from "react-native";
-import { getAllPosts } from "@/api/post";
+import { getAllPosts, getFriendsPosts } from "@/api/post";
 import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
 
@@ -69,10 +69,13 @@ export default function Feed() {
 
     // Feed switching state
     const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
-        name: "All Posts",
-        id: "all",
+        name: "Friends",
+        id: "friends",
     });
-    const [availableFeeds, setAvailableFeeds] = useState([{ name: "All Posts", id: "all" }]);
+    const [availableFeeds, setAvailableFeeds] = useState([
+        { name: "Friends", id: "friends" },
+        { name: "All Posts", id: "all" }
+    ]);
     const scrollY = useRef(new Animated.Value(0)).current;
     const headerOpacity = useRef(new Animated.Value(0)).current;
     const headerTranslateY = useRef(new Animated.Value(-100)).current;
@@ -131,7 +134,15 @@ export default function Feed() {
         setLoading(true);
         setError(null);
         try {
-            const fetchedPosts = await getAllPosts();
+            const currentFeedId = feedId || currentFeed.id;
+            let fetchedPosts;
+            
+            if (currentFeedId === "friends") {
+                fetchedPosts = await getFriendsPosts();
+            } else {
+                fetchedPosts = await getAllPosts();
+            }
+            
             if (!fetchedPosts) {
                 throw new Error("No data received from API");
             }
@@ -141,7 +152,7 @@ export default function Feed() {
 
             setPosts(fetchedPosts);
             setLastUpdated(new Date());
-            console.log(`Successfully fetched ${fetchedPosts.length} posts`);
+            console.log(`Successfully fetched ${fetchedPosts.length} ${currentFeedId} posts`);
 
             // Debug: Log the structure of the first post
             if (fetchedPosts.length > 0) {
@@ -151,12 +162,12 @@ export default function Feed() {
             console.error("Error fetching posts:", error);
             const errorMessage = error.message || "Failed to load posts";
             setError(errorMessage);
-            showToast("Failed to load posts", "danger");
+            showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
             setPosts([]);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [currentFeed.id, currentFeed.name]);
 
     const sortedPosts = posts.sort((a, b) => {
         const dateA = new Date(a.metadata?.createdAt || 0);
@@ -361,14 +372,19 @@ export default function Feed() {
         }
 
         if (posts.length === 0) {
+            const isFriendsFeed = currentFeed.id === "friends";
             return (
                 <View style={styles.emptyContainer}>
-                    <Ionicons name="newspaper-outline" size={50} color={ThemedColor.caption} />
+                    <Ionicons 
+                        name={isFriendsFeed ? "people-outline" : "newspaper-outline"} 
+                        size={50} 
+                        color={ThemedColor.caption} 
+                    />
                     <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
-                        No posts yet
+                        {isFriendsFeed ? "No posts from friends yet" : "No posts yet"}
                     </ThemedText>
                     <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
-                        Pull down to refresh
+                        {isFriendsFeed ? "Add friends to see their posts here" : "Pull down to refresh"}
                     </ThemedText>
                 </View>
             );

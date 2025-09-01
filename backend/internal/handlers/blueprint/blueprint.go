@@ -216,6 +216,26 @@ func (h *Handler) GetUserSubscribedBlueprintsHuma(ctx context.Context, input *Ge
 	return &GetUserSubscribedBlueprintsOutput{Body: blueprints}, nil
 }
 
+func (h *Handler) GetBlueprintsByCreatorHuma(ctx context.Context, input *GetBlueprintsByCreatorInput) (*GetBlueprintsByCreatorOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	creatorID, err := primitive.ObjectIDFromHex(input.CreatorID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid creator ID format", err)
+	}
+
+	blueprints, err := h.service.GetBlueprintsByCreator(creatorID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get blueprints by creator", err)
+	}
+
+	return &GetBlueprintsByCreatorOutput{Body: blueprints}, nil
+}
+
 func (h *Handler) GetBlueprintByCategoryHuma(ctx context.Context, input *GetBlueprintByCategoryInput) (*GetBlueprintByCategoryOutput, error) {
 	blueprintGroups, err := h.service.GetBlueprintByCategory()
 	if err != nil {

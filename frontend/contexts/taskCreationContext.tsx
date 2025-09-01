@@ -64,7 +64,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [startTime, setStartTime] = useState<Date | null>(null);
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [reminders, setReminders] = useState<Reminder[]>([]);
-    const [isPublic, setIsPublic] = useState(false);
+    const [isPublic, setIsPublic] = useState(true);
     const [isBlueprint, setIsBlueprint] = useState(false);
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
@@ -216,7 +216,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         const defaultStartDate = getDefaultStartDate(isBlueprint);
         setStartDateWithReminder(defaultStartDate);
         setReminders([]);
-        setIsPublic(false);
+        setIsPublic(true);
         // Don't reset isBlueprint here as it should persist
         setShowAdvanced(false);
     };
@@ -252,7 +252,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 triggerTime: new Date(reminder.triggerTime),
             })) || []
         );
-        setIsPublic(taskData.public || false);
+        setIsPublic(taskData.public !== undefined ? taskData.public : true);
         setBlueprintStateInternal(taskData.isBlueprint || false);
     };
 

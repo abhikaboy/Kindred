@@ -63,6 +63,21 @@ export const getAllPosts = async (): Promise<PostDocumentAPI[]> => {
 };
 
 /**
+ * Get friends posts (chronologically ordered)
+ */
+export const getFriendsPosts = async (): Promise<PostDocumentAPI[]> => {
+    const { data, error } = await client.GET("/v1/user/posts/friends", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get friends posts: ${JSON.stringify(error)}`);
+    }
+    
+    return data?.posts || [];
+};
+
+/**
  * Get post by ID
  * @param postId
  */
@@ -243,7 +258,7 @@ export const createPostToBackend = async (
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
     blueprintId?: string, 
     isPublic: boolean = false
-) => {
+): Promise<PostDocumentAPI> => {
     try {
         const result = await createPost(images, caption, taskReference, blueprintId, isPublic);
         return result;
@@ -265,4 +280,20 @@ export const getPostsFromBackend = async () => {
 
 export const addReaction = async (postId: string, emoji: string) => {
     return await toggleReaction(postId, emoji);
+};
+
+export const getPostsByBlueprint = async (blueprintId: string): Promise<PostDocumentAPI[]> => {
+    const response = await client.GET("/v1/user/posts/blueprint/{blueprintId}", {
+        params: {
+            path: { blueprintId },
+            header: { Authorization: "" }
+        }
+    });
+    
+    if (response.error) {
+        console.error("Error fetching posts by blueprint:", response.error);
+        throw new Error("Failed to fetch posts by blueprint");
+    }
+    
+    return response.data?.posts || [];
 };

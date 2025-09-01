@@ -16,6 +16,9 @@ import * as Sharing from 'expo-sharing';
 import * as SMS from 'expo-sms';
 import { getBlueprintById } from "@/api/blueprint";
 import { useTasks } from "@/contexts/tasksContext";
+import TaskTabs from "@/components/inputs/TaskTabs";
+import ConditionalView from "@/components/ui/ConditionalView";
+import BlueprintGallery from "@/components/profile/BlueprintGallery";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
@@ -26,6 +29,8 @@ export default function BlueprintDetailScreen() {
 
     const { selectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe, setSelectedBlueprint } = useBlueprints();
     const { fetchWorkspaces } = useTasks();
+    
+    const [activeTab, setActiveTab] = useState(0);
     useEffect(() => {
         const fetchBlueprint = async () => {
             const blueprint = await getBlueprintById(id as string);
@@ -123,15 +128,23 @@ export default function BlueprintDetailScreen() {
                     ))}
                 </View>
 
-                <View style={{ gap: 12, paddingBottom: 24 }}>
-                    {selectedBlueprint?.categories?.length > 0 ? (
-                        selectedBlueprint?.categories?.map((category, index) => (
-                            <Category key={index} id={category.id} name={category.name} tasks={category.tasks as any} onLongPress={() => {}} onPress={() => {}} viewOnly/>
-                        ))
-                    ) : (
-                        <ThemedText type="default">No categories</ThemedText>
-                    )}
-                </View>
+                <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+                <ConditionalView condition={activeTab === 0}>
+                    <View style={{ gap: 12, paddingBottom: 24 }}>
+                        {selectedBlueprint?.categories?.length > 0 ? (
+                            selectedBlueprint?.categories?.map((category, index) => (
+                                <Category key={index} id={category.id} name={category.name} tasks={category.tasks as any} onLongPress={() => {}} onPress={() => {}} viewOnly/>
+                            ))
+                        ) : (
+                            <ThemedText type="default">No categories</ThemedText>
+                        )}
+                    </View>
+                </ConditionalView>
+
+                <ConditionalView condition={activeTab === 1}>
+                    <BlueprintGallery blueprintId={selectedBlueprint.id} />
+                </ConditionalView>
             </View>
         </ParallaxScrollView>
     );

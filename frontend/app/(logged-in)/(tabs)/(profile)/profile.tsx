@@ -19,6 +19,7 @@ import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
+import BlueprintSection from "@/components/profile/BlueprintSection";
 import { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
 
@@ -85,6 +86,14 @@ export default function Profile() {
                 <TodayStats userId={user?._id} />
 
                 <WeeklyActivity userid={user?._id} displayName={user?.display_name} />
+
+                {user?._id && (
+                    <BlueprintSection 
+                        userId={user._id} 
+                        title="My Blueprints"
+                        showViewAll={true}
+                    />
+                )}
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 

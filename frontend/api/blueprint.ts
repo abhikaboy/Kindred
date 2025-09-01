@@ -365,3 +365,23 @@ export const getBlueprintsByCategory = async (): Promise<BlueprintCategoryGroup[
 
     return data || [];
 };
+
+/**
+ * Get blueprints created by a specific user
+ * @param creatorId - The ID of the user who created the blueprints
+ * @returns 
+ */
+export const getBlueprintsByCreator = async (creatorId: string): Promise<BlueprintDocumentWithoutSubscribers[]> => {
+    const { data, error } = await client.GET("/v1/user/blueprints/creator/{creatorId}", {
+        params: {
+            path: { creatorId },
+            ...withAuthHeaders({})
+        }
+    });
+
+    if (error) {
+        throw new Error(`Failed to get blueprints by creator: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
