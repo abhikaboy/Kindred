@@ -314,24 +314,24 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]types.UserExtendedRef
 	ctx := context.Background()
 
 	var friends []types.UserExtendedReference
-	pipeline := bson.D{
-		{Key: "$match", Value: bson.M{"_id": userID}},
-		{Key: "$lookup", Value: bson.M{
+	pipeline := bson.A{
+		bson.D{{Key: "$match", Value: bson.M{"_id": userID}}},
+		bson.D{{Key: "$lookup", Value: bson.M{
 			"from":         "users",
 			"localField":   "friends",
 			"foreignField": "_id",
 			"as":           "friends",
-		}},
-		{Key: "$unwind", Value: "$friends"},
-		{Key: "$replaceRoot", Value: bson.M{
+		}}},
+		bson.D{{Key: "$unwind", Value: "$friends"}},
+		bson.D{{Key: "$replaceRoot", Value: bson.M{
 			"newRoot": "$friends",
-		}},
-		{Key: "$project", Value: bson.M{
+		}}},
+		bson.D{{Key: "$project", Value: bson.M{
 			"_id":             1,
 			"display_name":    1,
 			"handle":          1,
 			"profile_picture": 1,
-		}},
+		}}},
 	}
 	cursor, err := s.Users.Aggregate(ctx, pipeline)
 	if err != nil {
