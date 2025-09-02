@@ -153,6 +153,7 @@ func (p *ImageProcessor) applyExifOrientation(imageData []byte, img image.Image)
 	log.Printf("EXIF orientation: %d", orientation)
 
 	// Apply orientation transformation
+	// EXIF orientation values and their correct transformations:
 	switch orientation {
 	case 1:
 		// Normal orientation - no change needed
@@ -167,17 +168,17 @@ func (p *ImageProcessor) applyExifOrientation(imageData []byte, img image.Image)
 		// Flip vertical
 		return imaging.FlipV(img), nil
 	case 5:
-		// Rotate 90° CCW and flip horizontal
-		return imaging.FlipH(imaging.Rotate270(img)), nil
-	case 6:
-		// Rotate 90° CW
-		return imaging.Rotate90(img), nil
-	case 7:
 		// Rotate 90° CW and flip horizontal
 		return imaging.FlipH(imaging.Rotate90(img)), nil
-	case 8:
-		// Rotate 90° CCW
+	case 6:
+		// Rotate 90° CCW (corrected - was CW but caused upside down images)
 		return imaging.Rotate270(img), nil
+	case 7:
+		// Rotate 90° CCW and flip horizontal
+		return imaging.FlipH(imaging.Rotate270(img)), nil
+	case 8:
+		// Rotate 90° CW (swapped from CCW)
+		return imaging.Rotate90(img), nil
 	default:
 		// Unknown orientation - return original
 		log.Printf("Unknown EXIF orientation: %d", orientation)
