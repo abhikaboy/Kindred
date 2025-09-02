@@ -2360,6 +2360,7 @@ export interface components {
             groups?: string[];
             images: string[];
             isPublic: boolean;
+            size?: components["schemas"]["ImageSize"];
             task?: components["schemas"]["PostTaskExtendedReference"];
         };
         CreateTaskParams: {
@@ -2669,6 +2670,14 @@ export interface components {
             readonly $schema?: string;
             status: string;
         };
+        ImageSize: {
+            /** Format: int64 */
+            bytes: number;
+            /** Format: int64 */
+            height: number;
+            /** Format: int64 */
+            width: number;
+        };
         LoginRequest: {
             /**
              * Format: uri
@@ -2764,6 +2773,7 @@ export interface components {
             reactions: {
                 [key: string]: string[];
             };
+            size?: components["schemas"]["ImageSize"];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReferenceInternal"];
         };
@@ -2784,6 +2794,7 @@ export interface components {
             reactions: {
                 [key: string]: string[];
             };
+            size?: components["schemas"]["ImageSize"];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
         };
@@ -2801,6 +2812,32 @@ export interface components {
             category: components["schemas"]["CategoryExtendedReference"];
             content: string;
             id: string;
+        };
+        ProcessAndUploadImageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            content_type: string;
+            image_data: string;
+        };
+        ProcessAndUploadImageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            format: string;
+            /** Format: int64 */
+            height: number;
+            message: string;
+            processed_at: string;
+            public_url: string;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            width: number;
         };
         ProfileDocument: {
             /**
@@ -3189,6 +3226,7 @@ export interface components {
             readonly $schema?: string;
             caption?: string;
             isPublic?: boolean;
+            size?: components["schemas"]["ImageSize"];
         };
         UpdateProfileDocument: {
             /**
@@ -4363,12 +4401,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    /** @description Base64 encoded image data */
-                    image_data: string;
-                    /** @description Original image MIME type */
-                    content_type: string;
-                };
+                "application/json": components["schemas"]["ProcessAndUploadImageInputBody"];
             };
         };
         responses: {
@@ -4378,15 +4411,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        public_url: string;
-                        processed_at?: string;
-                        width?: number;
-                        height?: number;
-                        size?: number;
-                        format?: string;
-                        message: string;
-                    };
+                    "application/json": components["schemas"]["ProcessAndUploadImageOutputBody"];
                 };
             };
             /** @description Error */

@@ -23,6 +23,7 @@ type CreatePostOutput struct {
 type CreatePostParams struct {
 	Images            []string                         `json:"images" validate:"omitempty,dive,url"`
 	Caption           string                           `json:"caption" validate:"required"`
+	Size              *types.ImageSize                 `json:"size,omitempty"`
 	Task              *types.PostTaskExtendedReference `json:"task,omitempty"`
 	BlueprintID       *string                          `json:"blueprintId,omitempty"`
 	BlueprintIsPublic *bool                            `json:"blueprintIsPublic,omitempty"`
@@ -86,8 +87,9 @@ type UpdatePostOutput struct {
 }
 
 type UpdatePostParams struct {
-	Caption  *string `json:"caption,omitempty"`
-	IsPublic *bool   `json:"isPublic,omitempty"`
+	Caption  *string          `json:"caption,omitempty"`
+	IsPublic *bool            `json:"isPublic,omitempty"`
+	Size     *types.ImageSize `json:"size,omitempty"`
 }
 
 // Get User Groups (for posts)

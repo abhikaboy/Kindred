@@ -8,7 +8,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import type { components } from "@/api/generated/types";
-import { Image } from "expo-image";
+import CachedImage from "../CachedImage";
 import * as Haptics from "expo-haptics";
 import { useTasks } from "@/contexts/tasksContext";
 
@@ -105,7 +105,7 @@ const BlueprintCard = ({
     return (
         <View style={styles.container}>
             <TouchableOpacity onPress={handlePress}>
-                <Image
+                <CachedImage
                     source={banner ? { uri: banner } : blueprintImage}
                     style={{
                         width: "100%",
@@ -113,10 +113,9 @@ const BlueprintCard = ({
                         borderTopLeftRadius: 11,
                         borderTopRightRadius: 11,
                     }}
+                    variant="medium"
                     cachePolicy="disk"
-                    placeholder={require("@/assets/images/icon.png")}
-                    contentFit="cover"
-                    priority="normal"
+                    useLocalPlaceholder={!banner} // Use local placeholder when no banner
                 />
                 <View style={styles.informationContainer}>
                     <ThemedText type="subtitle">{name}</ThemedText>

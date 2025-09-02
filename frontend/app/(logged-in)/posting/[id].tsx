@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, SafeAreaView } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
 import PostCard from "@/components/cards/PostCard";
+import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 import { getPostById } from "@/api/post";
 import { Ionicons } from "@expo/vector-icons";
 import { showToast } from "@/utils/showToast";
@@ -78,9 +79,21 @@ export default function PostDetail() {
 
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, styles.centerContent]}>
-                <ActivityIndicator size="large" color={ThemedColor.primary} />
-                <ThemedText style={[styles.loadingText, { color: ThemedColor.text }]}>Loading post...</ThemedText>
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
+                        <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
+                    <View style={{ width: 24 }} />
+                </View>
+
+                <ScrollView
+                    style={styles.scrollContainer}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}>
+                    <PostCardSkeleton />
+                </ScrollView>
             </SafeAreaView>
         );
     }
@@ -142,6 +155,7 @@ export default function PostDetail() {
                     }
                     comments={post.comments || []}
                     images={post.images || []}
+                    size={post.size}
                     onReactionUpdate={refreshPost}
                     id={post._id}
                 />
@@ -182,10 +196,6 @@ const stylesheet = (ThemedColor: any) =>
         },
         scrollContent: {
             paddingBottom: 20,
-        },
-        loadingText: {
-            fontSize: 16,
-            textAlign: "center",
         },
         errorText: {
             fontSize: 18,

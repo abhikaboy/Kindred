@@ -910,69 +910,25 @@ paths:
                   example: 507f1f77bcf86cd799439011
                 - name: variant
                   in: query
-                  required: false
+                  explode: false
                   schema:
                     type: string
                     examples:
                         - medium
                   example: medium
             requestBody:
-                required: true
                 content:
                     application/json:
                         schema:
-                            type: object
-                            properties:
-                                image_data:
-                                    type: string
-                                    description: Base64 encoded image data
-                                content_type:
-                                    type: string
-                                    description: Original image MIME type
-                                    examples:
-                                        - image/jpeg
-                            required:
-                                - image_data
-                                - content_type
+                            $ref: '#/components/schemas/ProcessAndUploadImageInputBody'
+                required: true
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                type: object
-                                properties:
-                                    public_url:
-                                        type: string
-                                        examples:
-                                            - https://cdn.kindredtodo.com/profiles/507f1f77bcf86cd799439011/uuid.webp
-                                    processed_at:
-                                        type: string
-                                        examples:
-                                            - 2024-01-01T12:00:00Z
-                                    width:
-                                        type: integer
-                                        examples:
-                                            - 800
-                                    height:
-                                        type: integer
-                                        examples:
-                                            - 600
-                                    size:
-                                        type: integer
-                                        examples:
-                                            - 123456
-                                    format:
-                                        type: string
-                                        examples:
-                                            - webp
-                                    message:
-                                        type: string
-                                        examples:
-                                            - Image processed and uploaded successfully
-                                required:
-                                    - public_url
-                                    - message
+                                $ref: '#/components/schemas/ProcessAndUploadImageOutputBody'
                 default:
                     description: Error
                     content:
@@ -5181,6 +5137,8 @@ components:
                         type: string
                 isPublic:
                     type: boolean
+                size:
+                    $ref: '#/components/schemas/ImageSize'
                 task:
                     $ref: '#/components/schemas/PostTaskExtendedReference'
             required:
@@ -5844,6 +5802,23 @@ components:
                         - ok
             required:
                 - status
+        ImageSize:
+            type: object
+            additionalProperties: false
+            properties:
+                bytes:
+                    type: integer
+                    format: int64
+                height:
+                    type: integer
+                    format: int64
+                width:
+                    type: integer
+                    format: int64
+            required:
+                - width
+                - height
+                - bytes
         LoginRequest:
             type: object
             additionalProperties: false
@@ -6045,6 +6020,8 @@ components:
                         type: array
                         items:
                             type: string
+                size:
+                    $ref: '#/components/schemas/ImageSize'
                 task:
                     $ref: '#/components/schemas/PostTaskExtendedReference'
                 user:
@@ -6096,6 +6073,8 @@ components:
                         type: array
                         items:
                             type: string
+                size:
+                    $ref: '#/components/schemas/ImageSize'
                 task:
                     $ref: '#/components/schemas/PostTaskExtendedReference'
                 user:
@@ -6146,6 +6125,76 @@ components:
                 - id
                 - content
                 - category
+        ProcessAndUploadImageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ProcessAndUploadImageInputBody.json
+                    readOnly: true
+                content_type:
+                    type: string
+                    examples:
+                        - image/jpeg
+                image_data:
+                    type: string
+            required:
+                - image_data
+                - content_type
+        ProcessAndUploadImageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ProcessAndUploadImageOutputBody.json
+                    readOnly: true
+                format:
+                    type: string
+                    examples:
+                        - webp
+                height:
+                    type: integer
+                    format: int64
+                    examples:
+                        - 600
+                message:
+                    type: string
+                    examples:
+                        - Image processed and uploaded successfully
+                processed_at:
+                    type: string
+                    examples:
+                        - "2024-01-01T12:00:00Z"
+                public_url:
+                    type: string
+                    examples:
+                        - https://cdn.kindredtodo.com/profiles/507f1f77bcf86cd799439011/uuid.webp
+                size:
+                    type: integer
+                    format: int64
+                    examples:
+                        - 123456
+                width:
+                    type: integer
+                    format: int64
+                    examples:
+                        - 800
+            required:
+                - public_url
+                - processed_at
+                - width
+                - height
+                - size
+                - format
+                - message
         ProfileDocument:
             type: object
             additionalProperties: false
@@ -6979,6 +7028,8 @@ components:
                     type: string
                 isPublic:
                     type: boolean
+                size:
+                    $ref: '#/components/schemas/ImageSize'
         UpdateProfileDocument:
             type: object
             additionalProperties: false

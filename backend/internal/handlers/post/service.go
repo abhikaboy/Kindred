@@ -151,6 +151,10 @@ func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostPar
 		updateDoc["$set"].(bson.M)["metadata.isPublic"] = *updated.IsPublic
 	}
 
+	if updated.Size != nil {
+		updateDoc["$set"].(bson.M)["size"] = *updated.Size
+	}
+
 	_, err := s.Posts.UpdateOne(ctx, filter, updateDoc)
 	return err
 }

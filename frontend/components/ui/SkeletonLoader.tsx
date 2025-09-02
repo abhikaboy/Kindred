@@ -247,8 +247,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     postCardSkeleton: {
-        padding: 16,
-        marginBottom: 16,
+        padding: 2,
         borderRadius: 16,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -261,6 +260,7 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "flex-start",
         marginBottom: 12,
+        padding: 12,
     },
     postCardUserInfo: {
         flexDirection: "row",
@@ -275,11 +275,13 @@ const styles = StyleSheet.create({
     },
     postCardCaption: {
         marginBottom: 12,
+        padding: 12,
     },
     postCardFooter: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        padding: 12,
     },
     postCardReactions: {
         flexDirection: "row",

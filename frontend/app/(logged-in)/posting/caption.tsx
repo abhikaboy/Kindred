@@ -8,7 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createPostToBackend } from "@/api/post";
-import { uploadImageSmart } from "@/api/upload";
+import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
 import { Icons } from "@/constants/Icons";
 import { ObjectId } from "bson";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,26 +33,38 @@ export default function Caption() {
         });
     };
 
-    const uploadPhotos = async (photoUris: string[]) => {
+    const uploadPhotos = async (photoUris: string[]): Promise<{ urls: string[]; sizeInfo?: { width: number; height: number; bytes: number } }> => {
         if (!hasActualPhotos) {
-            return [];
+            return { urls: [] };
         }
         const uploadedUrls = [];
+        let sizeInfo: { width: number; height: number; bytes: number } | undefined;
+        
         for (let i = 0; i < photoUris.length; i++) {
             try {
-                const publicUrl = await uploadImageSmart(
+                const result = await uploadImageSmart(
                     "post",
                     taskInfo?.id || new ObjectId().toString(),
                     photoUris[i],
-                    { variant: "large" }
-                );
-                uploadedUrls.push(publicUrl);
+                    { variant: "large", returnFullResult: true }
+                ) as ImageUploadResult;
+                
+                uploadedUrls.push(result.public_url);
+                
+                // Use the size info from the first image (primary image)
+                if (i === 0) {
+                    sizeInfo = {
+                        width: result.width,
+                        height: result.height,
+                        bytes: result.size
+                    };
+                }
             } catch (error) {
                 console.error(`Failed to upload photo ${i + 1}:`, error);
                 throw new Error(`Failed to upload photo ${i + 1}. Please try again.`);
             }
         }
-        return uploadedUrls;
+        return { urls: uploadedUrls, sizeInfo };
     };
     const handlePost = async () => {
         if (!data.caption.trim()) {
@@ -63,7 +75,7 @@ export default function Caption() {
         setIsPosting(true);
 
         try {
-            const photoUrls = await uploadPhotos(hasActualPhotos ? photos : []);
+            const uploadResult = await uploadPhotos(hasActualPhotos ? photos : []);
             const taskReference = taskInfo
                 ? {
                       id: taskInfo.id,
@@ -75,7 +87,14 @@ export default function Caption() {
                   }
                 : undefined;
 
-            const result = await createPostToBackend(photoUrls, data.caption, taskReference, undefined, taskInfo?.public ?? false);
+            const result = await createPostToBackend(
+                uploadResult.urls, 
+                data.caption, 
+                taskReference, 
+                undefined, 
+                taskInfo?.public ?? false,
+                uploadResult.sizeInfo
+            );
 
             // Update user stats locally if available
             if (result.userStats) {

@@ -12,6 +12,15 @@ export interface ProfilePictureUploadResult {
     key: string;
 }
 
+export interface ImageUploadResult {
+    public_url: string;
+    width: number;
+    height: number;
+    size: number; // bytes
+    format?: string;
+    processed_at?: string;
+}
+
 /**
  * Get MIME type from file URI
  */
@@ -119,7 +128,8 @@ export async function uploadProfilePicture(userId: string, imageUri: string, fil
  * @returns Promise with the public URL of the uploaded image
  */
 export async function uploadProfilePictureSmart(userId: string, imageUri: string): Promise<string> {
-    return uploadImageSmart("profile", userId, imageUri, { variant: "medium" });
+    const result = await uploadImageSmart("profile", userId, imageUri, { variant: "medium" });
+    return typeof result === 'string' ? result : result.public_url;
 }
 
 /**
@@ -135,7 +145,7 @@ export async function uploadAndProcessImage(
     resourceId: string,
     imageUri: string,
     variant: string = "medium"
-): Promise<string> {
+): Promise<ImageUploadResult> {
     try {
         // Step 1: Convert image URI to base64
         console.log("Converting image to base64...");
@@ -184,7 +194,14 @@ export async function uploadAndProcessImage(
         }
 
         console.log("Image processed successfully:", processData);
-        return processData.public_url;
+        return {
+            public_url: processData.public_url,
+            width: processData.width,
+            height: processData.height,
+            size: processData.size,
+            format: processData.format,
+            processed_at: processData.processed_at
+        };
     } catch (error) {
         console.error("Image processing failed:", error);
         throw error;
@@ -292,9 +309,10 @@ export async function uploadImageSmart(
     options: {
         variant?: 'thumbnail' | 'medium' | 'large' | 'original';
         fallbackToLegacy?: boolean;
+        returnFullResult?: boolean;
     } = {}
-): Promise<string> {
-    const { variant, fallbackToLegacy = true } = options;
+): Promise<string | ImageUploadResult> {
+    const { variant, fallbackToLegacy = true, returnFullResult = false } = options;
     
     try {
         // Determine optimal variant based on resource type
@@ -317,7 +335,8 @@ export async function uploadImageSmart(
 
         // Try the new processing endpoint first
         try {
-            return await uploadAndProcessImage(resourceType, resourceId, imageUri, selectedVariant);
+            const result = await uploadAndProcessImage(resourceType, resourceId, imageUri, selectedVariant);
+            return returnFullResult ? result : result.public_url;
         } catch (processingError) {
             console.warn("Processing upload failed, falling back to legacy upload:", processingError);
             
@@ -327,7 +346,18 @@ export async function uploadImageSmart(
             
             // Fallback to legacy upload
             const fileType = getMimeTypeFromUri(imageUri);
-            return await uploadImage(resourceType, resourceId, imageUri, fileType);
+            const legacyUrl = await uploadImage(resourceType, resourceId, imageUri, fileType);
+            
+            // For legacy uploads, we don't have size info, so return just the URL or a basic result
+            if (returnFullResult) {
+                return {
+                    public_url: legacyUrl,
+                    width: 0, // Unknown for legacy uploads
+                    height: 0, // Unknown for legacy uploads  
+                    size: 0 // Unknown for legacy uploads
+                };
+            }
+            return legacyUrl;
         }
     } catch (error) {
         console.error("Smart upload failed:", error);
@@ -343,5 +373,6 @@ export async function uploadImageSmart(
  * @returns Promise with the public URL of the uploaded image
  */
 export async function uploadBlueprintBanner(blueprintId: string, imageUri: string, fileType: string): Promise<string> {
-    return uploadImageSmart("blueprint", blueprintId, imageUri, { variant: "large" });
+    const result = await uploadImageSmart("blueprint", blueprintId, imageUri, { variant: "large" });
+    return typeof result === 'string' ? result : result.public_url;
 }

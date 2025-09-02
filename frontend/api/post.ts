@@ -27,7 +27,8 @@ export const createPost = async (
     caption: string,
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
     blueprintId?: string,
-    isPublic: boolean = true
+    isPublic: boolean = true,
+    size?: { width: number; height: number; bytes: number }
 ): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {    
     const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
@@ -36,7 +37,8 @@ export const createPost = async (
             caption, 
             task: taskReference,  
             blueprintId, 
-            isPublic 
+            isPublic,
+            size
         },
     });
 
@@ -238,15 +240,17 @@ export const deletePost = async (postId: string): Promise<void> => {
  * @param postId 
  * @param caption 
  * @param isPublic 
+ * @param size 
  */
 export const updatePost = async (
     postId: string, 
     caption?: string, 
-    isPublic?: boolean
+    isPublic?: boolean,
+    size?: { width: number; height: number; bytes: number }
 ): Promise<void> => {
     const { error } = await client.PATCH("/v1/user/posts/{id}", {
         params: withAuthHeaders({ path: { id: postId } }),
-        body: { caption, isPublic },
+        body: { caption, isPublic, size },
     });
 
     if (error) {
@@ -260,10 +264,11 @@ export const createPostToBackend = async (
     caption: string, 
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
     blueprintId?: string, 
-    isPublic: boolean = false
+    isPublic: boolean = false,
+    size?: { width: number; height: number; bytes: number }
 ): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
     try {
-        const result = await createPost(images, caption, taskReference, blueprintId, isPublic);
+        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size);
         return result;
     } catch (error) {
         console.log(`Failed to create post to backend: ${JSON.stringify(error)}`);

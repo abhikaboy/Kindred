@@ -174,7 +174,6 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
                             variant="thumbnail"
                             cachePolicy="disk"
                             transition={100}
-                            placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                         />
                     </TouchableOpacity>
                 );
