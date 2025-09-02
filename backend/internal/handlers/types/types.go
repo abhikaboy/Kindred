@@ -177,12 +177,19 @@ type ActivityDay struct {
 	Level int `bson:"level" json:"level"`
 }
 
+type ImageSize struct {
+	Width  int `bson:"width" json:"width"`
+	Height int `bson:"height" json:"height"`
+	Bytes  int `bson:"bytes" json:"bytes"`
+}
+
 type PostDocument struct {
 	ID   primitive.ObjectID            `bson:"_id" json:"_id"`
 	User UserExtendedReferenceInternal `bson:"user" json:"user"`
 
-	Images  []string `bson:"images" json:"images"`
-	Caption string   `bson:"caption" json:"caption"`
+	Images  []string   `bson:"images" json:"images"`
+	Caption string     `bson:"caption" json:"caption"`
+	Size    *ImageSize `bson:"size,omitempty" json:"size,omitempty"`
 
 	Category  *CategoryExtendedReference  `bson:"category,omitempty" json:"category,omitempty"`
 	Task      *PostTaskExtendedReference  `bson:"task,omitempty" json:"task,omitempty"`
@@ -354,6 +361,7 @@ type PostDocumentAPI struct {
 
 	Images    []string                    `json:"images"`
 	Caption   string                      `json:"caption"`
+	Size      *ImageSize                  `json:"size,omitempty"`
 	Category  *CategoryExtendedReference  `json:"category,omitempty"`
 	Task      *PostTaskExtendedReference  `json:"task,omitempty"`
 	Blueprint *EnhancedBlueprintReference `json:"blueprint,omitempty"`
@@ -391,6 +399,7 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		User:      *p.User.ToAPI(),
 		Images:    p.Images,
 		Caption:   p.Caption,
+		Size:      p.Size,
 		Category:  p.Category,
 		Task:      p.Task,
 		Blueprint: p.Blueprint,

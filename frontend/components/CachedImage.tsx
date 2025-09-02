@@ -1,12 +1,14 @@
 import React from 'react';
 import { Image, ImageProps, ImageSource } from 'expo-image';
 import { View, StyleSheet } from 'react-native';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface CachedImageProps extends Omit<ImageProps, 'source'> {
   source: ImageSource;
   fallbackSource?: ImageSource;
   cachePolicy?: 'memory' | 'disk' | 'memory-disk';
   variant?: 'thumbnail' | 'medium' | 'large' | 'original';
+  useLocalPlaceholder?: boolean; // New prop to enable local placeholders
 }
 
 const CachedImage: React.FC<CachedImageProps> = ({
@@ -15,9 +17,11 @@ const CachedImage: React.FC<CachedImageProps> = ({
   placeholder,
   cachePolicy = 'memory-disk',
   variant = 'medium',
+  useLocalPlaceholder = true,
   style,
   ...props
 }) => {
+  const themeColors = useThemeColor();
   // Optimize URL for CDN and add query parameters for future image processing
   const getOptimizedURL = (url: string) => {
     if (!url || typeof url !== 'string') {
@@ -59,10 +63,23 @@ const CachedImage: React.FC<CachedImageProps> = ({
     uri: getOptimizedURL((source as any)?.uri || '')
   };
 
+  // Get the appropriate placeholder based on theme
+  const getLocalPlaceholder = () => {
+    if (!useLocalPlaceholder) return placeholder;
+    
+    // Use theme-appropriate placeholder
+    const isDark = themeColors.background === '#000000' || themeColors.background === '#1a1a1a';
+    return isDark 
+      ? require('@/assets/images/placeholder dark.jpg')
+      : require('@/assets/images/placeholder light.jpg');
+  };
+
+  const finalPlaceholder = placeholder || getLocalPlaceholder();
+
   return (
     <Image
       source={optimizedSource}
-      placeholder={placeholder}
+      placeholder={finalPlaceholder}
       contentFit="cover"
       transition={200}
       cachePolicy={cachePolicy}

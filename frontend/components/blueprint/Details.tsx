@@ -9,6 +9,7 @@ import * as ImagePicker from "expo-image-picker";
 import { uploadImageSmart } from "@/api/upload";
 import { Ionicons } from "@expo/vector-icons";
 import { ObjectId } from "bson";
+import CachedImage from "../CachedImage";
 
 // Common habit categories
 const HABIT_CATEGORIES = [
@@ -189,7 +190,7 @@ const Details = ({ data, onUpdate }: Props) => {
 
                 {displayImage ? (
                     <View style={styles.imageContainer}>
-                        <Image source={{ uri: displayImage }} style={styles.bannerImage} resizeMode="cover" />
+                        <CachedImage source={{ uri: displayImage }} style={styles.bannerImage} variant="large" cachePolicy="memory-disk" />
                         <View style={styles.imageOverlay}>
                             <TouchableOpacity
                                 onPress={pickImage}

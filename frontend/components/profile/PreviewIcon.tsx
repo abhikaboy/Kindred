@@ -1,6 +1,6 @@
 import { StyleSheet, View } from "react-native";
-import { Image  } from "expo-image";
 import React from "react";
+import CachedImage from "../CachedImage";
 type Size = "small" | "smallMedium" | "medium" | "large" ;
 
 type Props = {
@@ -17,15 +17,12 @@ const sizeOfIcon = {
 const PreviewIcon = ({ icon, size }: Props) => {
     return (
         <View>
-            <Image 
-            source={{ uri: icon }}
-            style={{ width: sizeOfIcon[size], height: sizeOfIcon[size], borderRadius: 100 }}
-            contentFit="cover"
-            placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
-            cachePolicy="memory"
-            decodeFormat="rgb"
-            allowDownscaling={true}
-        />
+            <CachedImage 
+                source={{ uri: icon }}
+                style={{ width: sizeOfIcon[size], height: sizeOfIcon[size], borderRadius: 100 }}
+                variant="thumbnail"
+                cachePolicy="memory-disk"
+            />
         </View>
     );
 };

@@ -5,7 +5,7 @@ import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import {
     StyleSheet,
@@ -36,6 +36,11 @@ type PostData = {
     };
     images: string[];
     caption: string;
+    size?: {
+        width: number;
+        height: number;
+        bytes: number;
+    };
     task?: {
         id: string;
         content: string;
@@ -64,6 +69,7 @@ export default function Feed() {
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -201,14 +207,18 @@ export default function Feed() {
             setPosts([]);
         } finally {
             setLoading(false);
+            setInitialLoading(false);
         }
     }, [currentFeed.id, currentFeed.name]);
 
-    const sortedPosts = posts.sort((a, b) => {
-        const dateA = new Date(a.metadata?.createdAt || 0);
-        const dateB = new Date(b.metadata?.createdAt || 0);
-        return dateB.getTime() - dateA.getTime(); 
-    });
+    // Memoize sorted posts to prevent unnecessary recalculations
+    const sortedPosts = useMemo(() => {
+        return posts.sort((a, b) => {
+            const dateA = new Date(a.metadata?.createdAt || 0);
+            const dateB = new Date(b.metadata?.createdAt || 0);
+            return dateB.getTime() - dateA.getTime(); 
+        });
+    }, [posts]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -223,15 +233,27 @@ export default function Feed() {
         }
     }, [fetchPosts, currentFeed.id]);
 
-    // Load blueprints on component mount
+    // Load blueprints and posts in parallel on component mount
     useEffect(() => {
-        fetchSubscribedBlueprints();
-    }, [fetchSubscribedBlueprints]);
+        const initializeFeed = async () => {
+            // Run both API calls in parallel for faster initial load
+            await Promise.all([
+                fetchSubscribedBlueprints(),
+                fetchPosts(currentFeed.id)
+            ]);
+        };
+        
+        initializeFeed();
+    }, []); // Only run once on mount
 
-    // Load posts on component mount and when feed changes
+    // Load posts when feed changes (but not on initial mount)
     useEffect(() => {
+        // Skip if this is the initial render (posts already loaded above)
+        if (posts.length > 0 || loading) {
+            return;
+        }
         fetchPosts(currentFeed.id);
-    }, [currentFeed.id, fetchPosts]);
+    }, [currentFeed.id]);
 
     const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
         setCurrentFeed(feed);
@@ -329,6 +351,7 @@ export default function Feed() {
                 }
                 comments={post.comments || []}
                 images={post.images || []}
+                size={post.size}
                 onReactionUpdate={() => refreshSinglePost(post._id)}
                 onHeightChange={(imageHeight) => handlePostHeightChange(post._id, imageHeight)}
                 id={post._id}
@@ -366,14 +389,16 @@ export default function Feed() {
                 </View>
             </View>
         );
-    }, [ThemedColor.text, router, availableFeeds, currentFeed.id, handleFeedChange, renderFeedTab]);
+    }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
 
     const renderEmptyComponent = useCallback(() => {
         if (loading) {
             return (
-                <View style={styles.loadingContainer}>
+                <>
                     <PostCardSkeleton />
-                </View>
+                    <PostCardSkeleton />
+                <PostCardSkeleton />
+                </>
             );
         }
 
@@ -507,10 +532,21 @@ export default function Feed() {
                 contentContainerStyle={styles.flatListContent}
             >
                 {renderHeader()}
-                {loading || error || posts.length === 0 ? (
+                {initialLoading ? (
+                    // Show skeleton immediately on initial load
+                    <>
+                        <PostCardSkeleton />
+                        <PostCardSkeleton />
+                        <PostCardSkeleton />
+                    </>
+                ) : loading || error || posts.length === 0 ? (
                     renderEmptyComponent()
                 ) : (
-                    sortedPosts.map((post) => renderPost(post))
+                    sortedPosts.map((post) => (
+                        <React.Fragment key={post._id}>
+                            {renderPost(post)}
+                        </React.Fragment>
+                    ))
                 )}
             </ScrollView>
         </View>

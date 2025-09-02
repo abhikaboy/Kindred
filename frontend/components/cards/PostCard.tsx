@@ -25,9 +25,12 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
-import { toggleReaction } from "@/api/post";
+import { toggleReaction, updatePost } from "@/api/post";
 import { useQueryClient } from '@tanstack/react-query';
 import { useTasks } from "@/contexts/tasksContext";
+import type { components } from "@/api/generated/types";
+
+type ImageSize = components["schemas"]["ImageSize"];
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -61,11 +64,12 @@ type Props = {
     comments?: CommentProps[];
     category?: string;
     taskName?: string;
+    size?: ImageSize;
     onReactionUpdate?: () => void;
     onHeightChange?: (height: number) => void;
 };
 
-const PostCard = ({
+const PostCard = React.memo(({
     icon,
     name,
     username,
@@ -81,6 +85,7 @@ const PostCard = ({
     category,
     taskName,
     id,
+    size,
     onHeightChange,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
@@ -90,14 +95,43 @@ const PostCard = ({
     const [currentComments, setCurrentComments] = useState(comments || []);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
-    const [imageHeight, setImageHeight] = useState<number>(0);
+    const [imageHeight, setImageHeight] = useState<number>(512);
     const queryClient = useQueryClient();
-    const screenWidth = Dimensions.get("window").width;
+    const screenWidth = useMemo(() => Dimensions.get("window").width, []);
     const { fetchWorkspaces } = useTasks();
 
+    // Memoize stringified reactions to avoid expensive JSON operations on every render
+    const reactionsStringified = useMemo(() => JSON.stringify(reactions), [reactions]);
+    const localReactionsStringified = useMemo(() => JSON.stringify(localReactions), [localReactions]);
+    
+    // Memoize size values to prevent unnecessary recalculations
+    const memoizedSize = useMemo(() => size, [size?.width, size?.height, size?.bytes]);
+    
+    // Memoize images array to prevent unnecessary recalculations
+    const memoizedImages = useMemo(() => images, [images?.join(',')]);
+    
+    // Memoize the first image URL for calculations
+    const firstImageUrl = useMemo(() => memoizedImages?.[0], [memoizedImages]);
+    
     useEffect(() => {
-        if (JSON.stringify(reactions) !== JSON.stringify(localReactions)) {
-            setLocalReactions(reactions);
+        // Only update localReactions if the reactions prop has genuinely changed
+        // and we don't have pending local changes that would be overwritten
+        if (reactionsStringified !== localReactionsStringified) {
+            // Check if we have any local changes that haven't been persisted yet
+            const hasLocalChanges = localReactions.some(localReaction => {
+                const propReaction = reactions.find(r => r.emoji === localReaction.emoji);
+                if (!propReaction) {
+                    // Local reaction exists but not in props - this is a local addition
+                    return true;
+                }
+                // Check if counts differ - this could be a local change
+                return propReaction.count !== localReaction.count;
+            });
+            
+            // Only update if there are no local changes, or if this is the initial load
+            if (!hasLocalChanges || localReactions.length === 0) {
+                setLocalReactions(reactions);
+            }
         }
     }, [reactions]);
 
@@ -105,18 +139,38 @@ const PostCard = ({
         setCurrentComments(comments || []);
     }, [comments]);
 
-    // Calculate image height when images change
+    // Calculate image height when images or size data changes
     useEffect(() => {
-        if (images && images.length > 0) {
-            calculateImageHeight(images[0]);
+        if (memoizedImages && memoizedImages.length > 0) {
+            // Check if we have valid size information
+            if (memoizedSize && memoizedSize.width > 0 && memoizedSize.height > 0) {
+                // Use the provided size information to calculate height
+                const aspectRatio = memoizedSize.width / memoizedSize.height;
+                const calculatedHeight = screenWidth / aspectRatio;
+                
+                // Constrain height between 0.5x and 1.5x screen width
+                const minHeight = screenWidth * 0.5;
+                const maxHeight = screenWidth * 1.5;
+                const constrainedHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
+                
+                setImageHeight(constrainedHeight);
+                onHeightChange?.(constrainedHeight);
+            } else {
+                // Fallback to blocking image size calculation only when size data is missing/invalid
+                console.log('No valid size data available, falling back to image size calculation for post:', id);
+                const timeoutId = setTimeout(() => {
+                    calculateImageHeight(firstImageUrl);
+                }, 0);
+                return () => clearTimeout(timeoutId);
+            }
         } else {
-            setImageHeight(0);
-            onHeightChange?.(0);
+            setImageHeight(512);
+            onHeightChange?.(512);
         }
-    }, [images]);
+    }, [memoizedImages, memoizedSize, screenWidth, firstImageUrl]);
 
     const calculateImageHeight = useCallback((imageUri: string) => {
-        RNImage.getSize(imageUri, (width, height) => {
+        RNImage.getSize(imageUri, async (width, height) => {
             const aspectRatio = width / height;
             const calculatedHeight = screenWidth / aspectRatio;
             
@@ -127,6 +181,26 @@ const PostCard = ({
             
             setImageHeight(constrainedHeight);
             onHeightChange?.(constrainedHeight);
+            
+            // Update the post with the computed size information for future requests
+            if (id && width > 0 && height > 0) {
+                try {
+                    // Estimate file size (this is approximate since we don't have the actual file)
+                    // Using a rough estimate based on image dimensions
+                    const estimatedBytes = Math.round(width * height * 0.5); // Rough estimate for compressed image
+                    
+                    await updatePost(id, undefined, undefined, {
+                        width,
+                        height,
+                        bytes: estimatedBytes
+                    });
+                    
+                    console.log(`Updated post ${id} with size information: ${width}x${height}`);
+                } catch (error) {
+                    console.error('Failed to update post with size information:', error);
+                    // Don't throw - this is a background optimization, not critical
+                }
+            }
         }, (error) => {
             console.error('Error getting image size:', error);
             // Fallback to default height
@@ -134,7 +208,7 @@ const PostCard = ({
             setImageHeight(fallbackHeight);
             onHeightChange?.(fallbackHeight);
         });
-    }, [screenWidth, onHeightChange]);
+    }, [screenWidth, onHeightChange, id]);
 
     const screenHeight = Dimensions.get("window").height;
 
@@ -319,7 +393,7 @@ const PostCard = ({
                                 console.log("Navigating to user:", userId);
                                 router.push(`/account/${userId}`);
                             }}>
-                            <Image source={{ uri: icon }} style={styles.userIcon} contentFit="cover" placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"} />
+                            <CachedImage source={{ uri: icon }} style={styles.userIcon} variant="thumbnail" cachePolicy="memory-disk" />
                             <View style={styles.userDetails}>
                                 <ThemedText type="default" style={styles.userName}>
                                     {name}
@@ -333,17 +407,16 @@ const PostCard = ({
                             {formatTime(time)}
                         </ThemedText>
                     </View>
-                    {images && images.length > 0 && (
+                    {memoizedImages && memoizedImages.length > 0 && (
                         <View style={styles.imageContainer}>
-                            {images.length === 1 ? (
+                            {memoizedImages.length === 1 ? (
                                 // Single image - no counter needed
                                 <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                                                            <CachedImage 
-                                            source={{ uri: images[0] }} 
+                                        <CachedImage 
+                                            source={{ uri: memoizedImages[0] }} 
                                             style={[styles.image, { height: imageHeight }]}
                                             variant="large"
                                             cachePolicy="memory-disk"
-                                            placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                                         />
                                 </TouchableOpacity>
                             ) : (
@@ -355,7 +428,7 @@ const PostCard = ({
                                         style={styles.carousel}
                                         snapEnabled={true}
                                         pagingEnabled={true}
-                                        data={images}
+                                        data={memoizedImages}
                                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                                         renderItem={({ item, index }) => (
                                             <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
@@ -363,8 +436,8 @@ const PostCard = ({
                                                     source={{ uri: item }} 
                                                     style={[styles.image, { height: imageHeight }]}
                                                     variant="large"
+                                                    useLocalPlaceholder
                                                     cachePolicy="memory-disk"
-                                                    placeholder={"https://adexusa.com/wp-content/uploads/2022/11/Floor-Square-en-rWt2QxfUBxF2UvRz.jpg"}
                                                 />
                                             </TouchableOpacity>
                                         )}
@@ -373,13 +446,13 @@ const PostCard = ({
                                     <View style={styles.imageCounter}>
                                         <View style={styles.imageCounterBackground}>
                                             <ThemedText style={styles.imageCounterText}>
-                                                {currentImageIndex + 1}/{images.length}
+                                                {currentImageIndex + 1}/{memoizedImages.length}
                                             </ThemedText>
                                         </View>
                                     </View>
 
                                     <View style={styles.dotIndicators}>
-                                        {images.map((_, index) => (
+                                        {memoizedImages.map((_, index) => (
                                             <View
                                                 key={index}
                                                 style={[
@@ -478,7 +551,7 @@ const PostCard = ({
                             style={styles.modalContainer}
                             onPress={() => setModalVisible(false)}>
                             <View style={styles.modalContent}>
-                                <RNImage source={{ uri: images[modalIndex] }} style={styles.popupImage} />
+                                <RNImage source={{ uri: memoizedImages[modalIndex] }} style={styles.popupImage} />
                             </View>
                         </TouchableOpacity>
                     </Modal>
@@ -550,7 +623,7 @@ const PostCard = ({
             </View>
         </KeyboardAvoidingView>
     );
-};
+});
 
 
 const stylesheet = (ThemedColor: any) =>

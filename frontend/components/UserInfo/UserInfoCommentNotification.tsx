@@ -4,6 +4,7 @@ import { ThemedText } from "../ThemedText";
 import PreviewIcon from "../profile/PreviewIcon";
 import { getThemedColor } from "@/constants/Colors";
 import { router } from "expo-router";
+import CachedImage from "../CachedImage";
 
 type Props = {
     name: string;
@@ -83,7 +84,7 @@ const UserInfoEncouragementNotification = ({ name, userId, comment, icon, time, 
             </View>
 
             <View style={styles.iconContainer}>
-                <Image source={{ uri: image }} style={{ width: 50, height: 50, borderRadius: 3 }} />
+                <CachedImage source={{ uri: image }} style={{ width: 50, height: 50, borderRadius: 3 }} variant="thumbnail" cachePolicy="memory-disk" />
             </View>
         </View>
     );
