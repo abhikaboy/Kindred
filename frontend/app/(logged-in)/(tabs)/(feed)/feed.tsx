@@ -253,7 +253,7 @@ export default function Feed() {
             return;
         }
         fetchPosts(currentFeed.id);
-    }, [currentFeed.id]);
+    }, [currentFeed.id, currentFeed.name]);
 
     const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
         setCurrentFeed(feed);

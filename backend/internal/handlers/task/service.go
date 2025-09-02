@@ -366,6 +366,21 @@ func (s *Service) DeleteTask(categoryId primitive.ObjectID, id primitive.ObjectI
 
 }
 
+// DeleteTemplateTask removes a template task by ID from the TemplateTasks collection
+func (s *Service) DeleteTemplateTask(templateID primitive.ObjectID) error {
+	ctx := context.Background()
+	result, err := s.TemplateTasks.DeleteOne(ctx, bson.M{"_id": templateID})
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("template task not found")
+	}
+
+	return nil
+}
+
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.ObjectID, id primitive.ObjectID, newStatus bool) error {
 	ctx := context.Background()

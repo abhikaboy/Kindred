@@ -78,9 +78,10 @@ type CompleteTaskOutput struct {
 
 // Delete Task
 type DeleteTaskInput struct {
-	Authorization string `header:"Authorization" required:"true"`
-	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
-	Category      string `path:"category" example:"507f1f77bcf86cd799439011"`
+	Authorization   string `header:"Authorization" required:"true"`
+	ID              string `path:"id" example:"507f1f77bcf86cd799439011"`
+	Category        string `path:"category" example:"507f1f77bcf86cd799439011"`
+	DeleteRecurring bool   `query:"deleteRecurring" example:"false" doc:"Optional. If true, also delete the recurring template to stop future instances. Defaults to false."`
 }
 
 type DeleteTaskOutput struct {

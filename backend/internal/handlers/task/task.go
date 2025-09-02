@@ -138,12 +138,110 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		task.StartDate = &now
 	}
 
+	// Handle recurring task template creation if this is a recurring task
+	if task.Recurring {
+		templateID := primitive.NewObjectID()
+		task.TemplateID = &templateID
+
+		err := h.handleRecurringTaskCreation(task, taskParams, categoryID, taskParams.Deadline, taskParams.StartTime, taskParams.StartDate, taskParams.Reminders)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Failed to create recurring task template", err)
+		}
+	}
+
 	doc, err := h.service.CreateTask(categoryID, &task)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to create task", err)
 	}
 
 	return &CreateTaskOutput{Body: *doc}, nil
+}
+
+// handleRecurringTaskCreation creates a template task for recurring tasks
+func (h *Handler) handleRecurringTaskCreation(task TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time, reminders []*Reminder) error {
+	if !task.Recurring {
+		return nil
+	}
+
+	if params.RecurFrequency == "" {
+		return fmt.Errorf("invalid recurring frequency")
+	}
+	if params.RecurDetails == nil {
+		return fmt.Errorf("recurring details are required")
+	}
+
+	recurType := "OCCURRENCE"
+
+	// if we have a deadline with no start information
+	if params.Deadline != nil {
+		recurType = "DEADLINE"
+		if params.StartTime != nil || params.StartDate != nil {
+			recurType = "WINDOW"
+		}
+	}
+
+	baseTime := xutils.NowUTC()
+	if params.Deadline != nil {
+		baseTime = *params.Deadline
+	} else if params.StartTime != nil {
+		baseTime = *params.StartTime
+	}
+
+	// filter out non relative reminders
+	relativeReminders := make([]*Reminder, 0)
+	for _, reminder := range reminders {
+		if reminder.Type == "RELATIVE" {
+			relativeReminders = append(relativeReminders, reminder)
+		}
+	}
+
+	// Create a template for the recurring task
+	template_doc := TemplateTaskDocument{
+		CategoryID:     categoryId,
+		ID:             *task.TemplateID, // Use the template ID that was set
+		Content:        params.Content,
+		Priority:       params.Priority,
+		Value:          params.Value,
+		Public:         params.Public,
+		RecurType:      recurType,
+		RecurFrequency: params.RecurFrequency,
+		RecurDetails:   params.RecurDetails,
+
+		Deadline:      deadline,
+		StartTime:     startTime,
+		StartDate:     startDate,
+		LastGenerated: &baseTime,
+		Reminders:     relativeReminders,
+	}
+
+	var next_occurence time.Time
+	var err error
+
+	if recurType == "OCCURRENCE" {
+		next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+		if err != nil {
+			return fmt.Errorf("error creating OCCURRENCE template task: %w", err)
+		}
+	} else if recurType == "DEADLINE" {
+		next_occurence, err = h.service.ComputeNextDeadline(&template_doc)
+		if err != nil {
+			return fmt.Errorf("error creating DEADLINE template task: %w", err)
+		}
+	} else if recurType == "WINDOW" {
+		next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
+		if err != nil {
+			return fmt.Errorf("error creating WINDOW template task: %w", err)
+		}
+	}
+
+	template_doc.NextGenerated = &next_occurence
+
+	_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
+	if err != nil {
+		return fmt.Errorf("error creating template task: %w", err)
+	}
+
+	return nil
 }
 
 func (h *Handler) GetTasks(ctx context.Context, input *GetTasksInput) (*GetTasksOutput, error) {
@@ -278,18 +376,50 @@ func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*Dele
 	}
 
 	// Extract user_id from context (set by auth middleware)
-	_, err = auth.RequireAuth(ctx)
+	userIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// If deleteRecurring is true, get the task first to retrieve its template ID
+	var templateID *primitive.ObjectID
+	if input.DeleteRecurring {
+		task, err := h.service.GetTaskByID(id, userID)
+		if err != nil {
+			return nil, huma.Error404NotFound("Task not found", err)
+		}
+
+		if task.TemplateID != nil {
+			templateID = task.TemplateID
+		}
+	}
+
+	// Delete the task
 	err = h.service.DeleteTask(categoryID, id)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to delete task", err)
 	}
 
+	// If requested and template exists, delete the recurring template as well
+	if templateID != nil {
+		err = h.service.DeleteTemplateTask(*templateID)
+		if err != nil {
+			// Log the error but don't fail the entire operation since the task was already deleted
+			fmt.Printf("Warning: Failed to delete template task %s: %v\n", templateID.Hex(), err)
+		}
+	}
+
 	resp := &DeleteTaskOutput{}
-	resp.Body.Message = "Task deleted successfully"
+	message := "Task deleted successfully"
+	if templateID != nil {
+		message = "Task and recurring template deleted successfully"
+	}
+	resp.Body.Message = message
 	return resp, nil
 }
 
