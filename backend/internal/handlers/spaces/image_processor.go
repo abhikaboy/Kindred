@@ -11,6 +11,7 @@ import (
 	"log"
 
 	"github.com/disintegration/imaging"
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 // ImageVariant defines the processing parameters for different image sizes
@@ -62,10 +63,19 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageData []byte, var
 
 	log.Printf("Original image: %dx%d, format: %s", img.Bounds().Dx(), img.Bounds().Dy(), format)
 
+	// Apply EXIF orientation correction
+	orientedImg, err := p.applyExifOrientation(imageData, img)
+	if err != nil {
+		log.Printf("Warning: failed to apply EXIF orientation: %v", err)
+		orientedImg = img // Use original image if EXIF processing fails
+	}
+
+	log.Printf("After orientation correction: %dx%d", orientedImg.Bounds().Dx(), orientedImg.Bounds().Dy())
+
 	// Resize if needed
-	processedImg := img
+	processedImg := orientedImg
 	if config.MaxWidth > 0 || config.MaxHeight > 0 {
-		processedImg = p.resizeImage(img, config.MaxWidth, config.MaxHeight)
+		processedImg = p.resizeImage(orientedImg, config.MaxWidth, config.MaxHeight)
 	}
 
 	// Convert to desired format
@@ -116,6 +126,63 @@ func (p *ImageProcessor) resizeImage(img image.Image, maxWidth, maxHeight int) i
 	}
 
 	return img
+}
+
+// applyExifOrientation reads EXIF data and applies the correct orientation to the image
+func (p *ImageProcessor) applyExifOrientation(imageData []byte, img image.Image) (image.Image, error) {
+	// Try to decode EXIF data
+	reader := bytes.NewReader(imageData)
+	exifData, err := exif.Decode(reader)
+	if err != nil {
+		// No EXIF data or failed to decode - return original image
+		return img, nil
+	}
+
+	// Get orientation tag
+	orientationTag, err := exifData.Get(exif.Orientation)
+	if err != nil {
+		// No orientation tag - return original image
+		return img, nil
+	}
+
+	orientation, err := orientationTag.Int(0)
+	if err != nil {
+		return img, fmt.Errorf("failed to read orientation value: %w", err)
+	}
+
+	log.Printf("EXIF orientation: %d", orientation)
+
+	// Apply orientation transformation
+	switch orientation {
+	case 1:
+		// Normal orientation - no change needed
+		return img, nil
+	case 2:
+		// Flip horizontal
+		return imaging.FlipH(img), nil
+	case 3:
+		// Rotate 180°
+		return imaging.Rotate180(img), nil
+	case 4:
+		// Flip vertical
+		return imaging.FlipV(img), nil
+	case 5:
+		// Rotate 90° CCW and flip horizontal
+		return imaging.FlipH(imaging.Rotate270(img)), nil
+	case 6:
+		// Rotate 90° CW
+		return imaging.Rotate90(img), nil
+	case 7:
+		// Rotate 90° CW and flip horizontal
+		return imaging.FlipH(imaging.Rotate90(img)), nil
+	case 8:
+		// Rotate 90° CCW
+		return imaging.Rotate270(img), nil
+	default:
+		// Unknown orientation - return original
+		log.Printf("Unknown EXIF orientation: %d", orientation)
+		return img, nil
+	}
 }
 
 // encodeImage encodes an image to the specified format
