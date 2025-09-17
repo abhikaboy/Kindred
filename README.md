@@ -4,7 +4,7 @@
 
 # Tech Stack
 
--   **Backend:** Go, Fiber, Websockets
+-   **Backend:** Go, Fiber, Websockets + Genkit
 -   **Frontend**: React Native, TypeScript, Expo SDK 52
 -   **Database**: MongoDB Atlas
 
@@ -53,3 +53,4 @@ nix develop --impure
 ```
 
 <!-- markdownlint-enable MD013 -->
+
