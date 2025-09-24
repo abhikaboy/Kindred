@@ -6,6 +6,14 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
+type GenerateTaskInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Description   string `json:"description"`
+}
+type GenerateTaskOutput struct {
+	Body CreateTaskParams `json:"body"`
+}
+
 // Input/Output types for task operations
 
 // Get Tasks by User

@@ -4,7 +4,6 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { loginWithToken } from "@/api/auth";
 import { router } from "expo-router";
-import { useSafeAsync } from "@/hooks/useSafeAsync";
 
 interface User {
     id: string;
@@ -82,7 +81,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<any | null>(null);
-    const safeAsync = useSafeAsync();
 
     // Add these for rate limiting
     const lastFetchTime = useRef<number>(0);
@@ -177,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastFetchTime.current = now;
 
         const fetchPromise = (async () => {
-            const { result, error } = await safeAsync(async () => {
+            try {
                 console.log("fetching auth data pt 1");
                 const authData = await getAuthData();
                 console.log("authData: ", authData);
@@ -190,23 +188,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const user = await loginWithToken();
                     console.log("user successfully logged in!: ", user);
                     setUser(user);
+                    // Clear the promise reference when done
+                    fetchPromiseRef.current = null;
                     return user;
                 }
 
                 console.log("No auth data found, returning null");
                 logout();
                 return null;
-            });
-
-            if (error) {
+            } catch (error) {
                 console.error("Error fetching auth data:", error);
                 logout();
                 return null;
             }
 
-            // Clear the promise reference when done
-            fetchPromiseRef.current = null;
-            return result;
         })();
 
         fetchPromiseRef.current = fetchPromise;

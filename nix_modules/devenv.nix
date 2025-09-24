@@ -10,6 +10,14 @@
       shells.default = {
         enterShell = ''
           printf "\033[0;1;36mKINDRED DEVELOPMENT ENVIRONMENT\033[0m\n"
+          export GOTOOLCHAIN=auto
+          # Install Genkit CLI if not already available
+          if ! command -v genkit &> /dev/null; then
+            echo "Installing Genkit CLI..."
+            curl -sL cli.genkit.dev | bash
+            export PATH="$HOME/.local/bin:$PATH"
+          fi
+          
           env-help
         '';
 

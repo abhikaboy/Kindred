@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "genkit": {
+      "command": "genkit",
+      "args": [
+        "mcp",
+        "--no-update-notification"
+      ]
+    }
+  }
+}
