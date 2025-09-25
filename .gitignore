@@ -11,3 +11,4 @@ node_modules
 
 frontend/ios/sentry.properties
 sentry.properties
+backend/.genkit
