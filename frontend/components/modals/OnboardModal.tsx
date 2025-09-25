@@ -170,7 +170,7 @@ export const OnboardModal = (props: Props) => {
                             Welcome to Kindred 👋
                         </ThemedText>
                         <ThemedText type="caption" style={{ color: "#B8b8b8" }}>
-                            Connected Api: {process.env.EXPO_PUBLIC_API_URL}
+                            Connected Api: {process.env.EXPO_PUBLIC_URL}
                         </ThemedText>
                     </View>
                     <View style={{ width: "100%", gap: 20, alignItems: "center" }}>

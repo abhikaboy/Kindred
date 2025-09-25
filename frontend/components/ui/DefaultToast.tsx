@@ -4,11 +4,10 @@ import { ToastableBodyParams, hideToastable } from "react-native-toastable";
 import { ThemedText } from "../ThemedText";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { PanGestureHandler, PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Reanimated, {
     useSharedValue,
     useAnimatedStyle,
-    useAnimatedGestureHandler,
     runOnJS,
     withSpring,
     withTiming,
@@ -22,12 +21,12 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
     const translateY = useSharedValue(0);
     const opacity = useSharedValue(1);
 
-    const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, { startX: number; startY: number }>({
-        onStart: (_, context) => {
+    const panGesture = Gesture.Pan()
+        .onStart((_, context) => {
             context.startX = translateX.value;
             context.startY = translateY.value;
-        },
-        onActive: (event, context) => {
+        })
+        .onUpdate((event, context) => {
             // Track both horizontal and vertical movement
             translateX.value = context.startX + event.translationX;
             translateY.value = context.startY + event.translationY;
@@ -37,8 +36,8 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
             const verticalProgress = Math.abs(translateY.value) / (screenHeight * 0.2);
             const maxProgress = Math.max(horizontalProgress, verticalProgress);
             opacity.value = Math.max(0.3, 1 - maxProgress);
-        },
-        onEnd: (event) => {
+        })
+        .onEnd((event) => {
             const horizontalThreshold = screenWidth * 0.25; // 25% of screen width
             const verticalThreshold = screenHeight * 0.15; // 15% of screen height
             const velocityX = event.velocityX;
@@ -71,8 +70,7 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
                 translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
                 opacity.value = withSpring(1, { damping: 20, stiffness: 300 });
             }
-        },
-    });
+        });
 
     const animatedStyle = useAnimatedStyle(() => {
         return {
@@ -147,7 +145,7 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
     });
 
     return (
-        <PanGestureHandler onGestureEvent={gestureHandler} enabled={true}>
+        <GestureDetector gesture={panGesture}>
             <Reanimated.View style={animatedStyle as any}>
                 <View style={styles.container}>
                     <View style={styles.toastBody}>
@@ -155,6 +153,6 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
                     </View>
                 </View>
             </Reanimated.View>
-        </PanGestureHandler>
+        </GestureDetector>
     );
 }

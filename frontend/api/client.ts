@@ -11,6 +11,9 @@ const baseClient = createClient<paths>({
 // Add request interceptor for authentication
 baseClient.use({
     async onRequest({ request }) {
+        console.log("🚀 Making request to:", request.url);
+        console.log("🚀 Request method:", request.method);
+        console.log("🚀 Request headers:", Object.fromEntries(request.headers.entries()));
 
         try {
             const authData = await SecureStore.getItemAsync("auth_data");
@@ -18,24 +21,29 @@ baseClient.use({
             if (authData) {
                 const parsed = JSON.parse(authData);
 
-
                 const { access_token, refresh_token } = parsed;
                 if (access_token) {
                     request.headers.set("Authorization", `Bearer ${access_token}`);
                 } else {
+                    console.log("No access token found");
                 }
 
                 if (refresh_token) {
                     request.headers.set("refresh_token", refresh_token);
                 } else {
+                    console.log("No refresh token found");
                 }
             } else {
+                console.log("No auth data found for request");
             }
         } catch (error) {
+            console.error("Error in request interceptor:", error);
         }
 
         request.headers.set("Content-Type", "application/json");
-
+        
+        console.log("🚀 Final request headers:", Object.fromEntries(request.headers.entries()));
+        
         return request;
     },
 

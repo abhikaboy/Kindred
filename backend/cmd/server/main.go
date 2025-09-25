@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/config"
+	"github.com/abhikaboy/Kindred/internal/gemini"
 	"github.com/abhikaboy/Kindred/internal/server"
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
 	"github.com/abhikaboy/Kindred/internal/twillio"
@@ -79,6 +80,11 @@ func run(stderr io.Writer, args []string) {
 	// API Server Setup
 	api, fiberApp := server.New(db.Collections, db.Stream)
 	fmt.Printf("After New")
+
+	// Gemini Setup
+	geminiService := gemini.InitGenkit()
+
+	fmt.Printf("Gemini schema: %+v\n", geminiService.Genkit)
 
 	// Handle OpenAPI generation if flag is set
 	if *generateOpenAPIFlag {
@@ -198,17 +204,17 @@ func killProcessOnPort(port int) error {
 func generateOpenAPISpec(api huma.API, outputPath string) error {
 	// Get the OpenAPI spec from Huma
 	spec := api.OpenAPI()
-	
+
 	// Marshal to YAML
 	yamlData, err := yaml.Marshal(spec)
 	if err != nil {
 		return fmt.Errorf("failed to marshal OpenAPI spec to YAML: %w", err)
 	}
-	
+
 	// Write to file
 	if err := os.WriteFile(outputPath, yamlData, 0644); err != nil {
 		return fmt.Errorf("failed to write OpenAPI spec to file: %w", err)
 	}
-	
+
 	return nil
 }

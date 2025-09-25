@@ -1,19 +1,25 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import React from "react";
-import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import { loginWithToken } from "@/api/auth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTypedMutation } from "@/hooks/useTypedAPI";
+import { components } from "@/api/generated/types";
 import { router } from "expo-router";
+import client from "@/api/client";
 
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    appleAccountID: string;
+// Use types from generated schema
+type SafeUser = components["schemas"]["SafeUser"];
+type LoginRequestApple = components["schemas"]["LoginRequestApple"];
+type RegisterRequestApple = components["schemas"]["RegisterRequestApple"];
+
+interface AuthData {
+    access_token: string;
+    refresh_token: string;
 }
 
-async function saveAuthData(authData) {
+async function saveAuthData(authData: AuthData): Promise<boolean> {
     try {
+        console.log("Saving auth data!: ", authData);
         await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
         return true;
     } catch (error) {
@@ -22,10 +28,11 @@ async function saveAuthData(authData) {
     }
 }
 
-async function getAuthData() {
+async function getAuthData(): Promise<AuthData | null> {
     console.warn("Requested Auth Data");
     try {
         const authDataString = await SecureStore.getItemAsync("auth_data");
+        console.log("authDataString: ", authDataString);
         return authDataString ? JSON.parse(authDataString) : null;
     } catch (error) {
         console.error("Error retrieving auth data:", error);
@@ -33,118 +40,127 @@ async function getAuthData() {
     }
 }
 
-async function getUserByAppleAccountID(appleAccountID: string): Promise<Error | User> {
-    console.warn("Signing in Manually with Apple Account ID: ", appleAccountID);
-    const url = process.env.EXPO_PUBLIC_API_URL + "/auth/login/apple";
-    const response = await axios.post(url, {
-        apple_id: appleAccountID,
-    });
-
-    // validate the response is okay
-    if (response.status > 300) {
-        // What was the error?
-        console.log(response);
-        // let res = response.data;
-        alert(
-            "Unable to complete operation" + " status code: " + response.statusText + " response: " + response.status
-        );
-        throw Error(
-            "Unable to complete operation" + " status code: " + response.statusText + " response: " + response.status
-        );
-    }
-
-    const access_token: string = response.headers["access_token"];
-    const refresh_token: string = response.headers["refresh_token"];
-
-    await saveAuthData({ access_token, refresh_token });
-
-    axios.defaults.headers.common["Authorization"] = "Bearer " + access_token;
-    axios.defaults.headers.common["refresh_token"] = refresh_token;
-
-    console.warn("response.data: ", access_token, refresh_token);
-
-    const user = response.data;
-    return user;
-}
-
+// This function is now replaced by useAppleLoginMutation hook
 interface AuthContextType {
-    user: any | null;
-    login: (appleAccountID: string) => void;
-    register: (email: string, appleAccountID: string) => any;
+    user: SafeUser | null;
+    login: (appleAccountID: string) => Promise<SafeUser | void>;
+    register: (email: string, appleAccountID: string) => Promise<any>;
     logout: () => void;
     refresh: () => void;
-    fetchAuthData: () => any | null;
-    updateUser: (updates: Partial<any>) => void;
+    fetchAuthData: () => Promise<SafeUser | null>;
+    updateUser: (updates: Partial<SafeUser>) => void;
+    isLoading: boolean;
+    isError: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<any | null>(null);
+    const [user, setUser] = useState<SafeUser | null>(null);
+    const queryClient = useQueryClient();
 
     // Add these for rate limiting
     const lastFetchTime = useRef<number>(0);
     const fetchPromiseRef = useRef<Promise<any> | null>(null);
 
-    async function register(email: string, appleAccountID: string) {
-        const url = process.env.EXPO_PUBLIC_API_URL;
-        console.log(url);
+    // Apple login mutation
+    const appleLoginMutation = useTypedMutation("post", "/v1/auth/login/apple");
+
+    // Apple register mutation  
+    const appleRegisterMutation = useTypedMutation("post", "/v1/auth/register/apple");
+
+    // Login with token query - we'll use this for automatic authentication
+    const loginWithTokenMutation = useTypedMutation("post", "/v1/user/login");
+
+    async function register(email: string, appleAccountID: string): Promise<any> {
         try {
-            const response = await fetch(`${url}/auth/register/apple`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
+            const result = await appleRegisterMutation.mutateAsync({
+                body: {
                     apple_id: appleAccountID,
                     email: email,
-                    password: appleAccountID,
-                }),
+                }
             });
 
-            let res = await response.json();
-            if (!response.ok) {
-                alert("Unable to complete operation" + " status code: " + res.body);
-                throw Error("Unable to complete operation" + " status code: " + res.body);
-            }
-            return await response.json();
-        } catch (e: any) {
-            console.log(e);
+            console.log("Registration successful:", result);
+            return result;
+        } catch (error) {
+            console.error("Registration failed:", error);
+            alert("Unable to complete registration. Please try again.");
+            throw error;
         }
     }
 
-    async function login(appleAccountID: string) {
+    async function login(appleAccountID: string): Promise<SafeUser | void> {
         console.log(appleAccountID);
         console.log("Logging in...");
-        const userRes = await getUserByAppleAccountID(appleAccountID);
-        console.log(userRes);
+        console.log(process.env.EXPO_PUBLIC_URL + "/api")
+        console.log(process.env.EXPO_PUBLIC_URL + "/api/v1/auth/login/apple")
+        
+        try {
+            console.log("About to make POST request...");
+            console.log("Request body:", { apple_id: appleAccountID });
+            
+            const result = await client.POST("/v1/auth/login/apple", {
+                body: {
+                    apple_id: appleAccountID,
+                }
+            });
 
-        if (userRes) {
-            setUser(userRes);
-            // get the token and refresh token from the response
-            return userRes;
-        } else {
+            console.log("Raw result from client.POST:", result);
+            console.log("Result data:", result.data);
+            console.log("Result error:", result.error);
+            console.log("Result response:", result.response);
+            
+            if (result.error) {
+                console.log("Error details:", JSON.stringify(result.error, null, 2));
+                throw new Error(`Login failed: ${JSON.stringify(result.error)}`);
+            }
+            
+            if (result.data) {
+                const userData = result.data as SafeUser;
+                setUser(userData);
+                
+                // Save tokens if they exist in response headers
+                console.log(result.response?.headers);
+                if (result.response?.headers) {
+                    const accessToken = result.response.headers.get('access_token');
+                    const refreshToken = result.response.headers.get('refresh_token');
+                    
+                    if (accessToken && refreshToken) {
+                        await saveAuthData({ 
+                            access_token: accessToken, 
+                            refresh_token: refreshToken 
+                        });
+                    }
+                }
+                
+                return userData;
+            }
+            
+            console.log("No data or error in response - this is unexpected");
+        } catch (error) {
+            console.error("Login failed with exception:", error);
+            console.error("Error stack:", error.stack);
             alert("Looks like we couldn't find your account, try to register instead!");
-            // Need more helpful error handling
-            throw new Error("Could not login");
+            throw error;
         }
     }
 
     function logout() {
         setUser(null);
         SecureStore.deleteItemAsync("auth_data");
-        axios.defaults.headers.common["Authorization"] = "";
-        axios.defaults.headers.common["refresh_token"] = "";
+        // Clear React Query cache
+        queryClient.clear();
         console.log("logging out");
     }
 
     async function refresh() {
         if (user) {
-            await login(user.appleAccountID);
+            await fetchAuthData();
         }
     }
 
-    async function fetchAuthData() {
+    async function fetchAuthData(): Promise<SafeUser | null> {
         const now = Date.now();
         const timeSinceLastFetch = now - lastFetchTime.current;
 
@@ -154,12 +170,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const rateLimit = 2000;
-        // Increase rate limit to 5 seconds to be more aggressive about preventing calls
         if (timeSinceLastFetch < rateLimit) {
             const remainingTime = rateLimit - timeSinceLastFetch;
             console.log(`Rate limiting fetchAuthData, waiting ${remainingTime}ms before next call`);
 
-            const promise = new Promise((resolve) => {
+            const promise = new Promise<SafeUser | null>((resolve) => {
                 setTimeout(() => {
                     fetchPromiseRef.current = null;
                     resolve(fetchAuthData());
@@ -174,23 +189,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn("Authenticating with Saved Login");
         lastFetchTime.current = now;
 
-        const fetchPromise = (async () => {
+        const fetchPromise = (async (): Promise<SafeUser | null> => {
             try {
                 console.log("fetching auth data pt 1");
                 const authData = await getAuthData();
                 console.log("authData: ", authData);
 
                 if (authData) {
-                    axios.defaults.headers.common["Authorization"] = "Bearer " + authData.access_token;
-                    axios.defaults.headers.common["refresh_token"] = authData.refresh_token;
-
                     console.log("fetching auth data pt 2");
-                    const user = await loginWithToken();
-                    console.log("user successfully logged in!: ", user);
-                    setUser(user);
-                    // Clear the promise reference when done
-                    fetchPromiseRef.current = null;
-                    return user;
+
+                    try {
+                        const result = await client.POST("/v1/user/login", {
+                            params: {
+                                header: {
+                                    Authorization: `Bearer ${authData.access_token}`,
+                                }
+                            }
+                        });
+                        
+                        if (result.error) {
+                            throw new Error(`Token login failed: ${JSON.stringify(result.error)}`);
+                        }
+                        
+                        if (result.data) {
+                            const userData = result.data as SafeUser;
+                            console.log("user successfully logged in!: ", userData);
+                            setUser(userData);
+                            
+                            // Update tokens if provided in response headers
+                            if (result.response?.headers) {
+                                const accessToken = result.response.headers.get('access_token');
+                                const refreshToken = result.response.headers.get('refresh_token');
+                                
+                                if (accessToken && refreshToken) {
+                                    await saveAuthData({ 
+                                        access_token: accessToken, 
+                                        refresh_token: refreshToken 
+                                    });
+                                }
+                            }
+                            
+                            fetchPromiseRef.current = null;
+                            return userData;
+                        }
+                    } catch (tokenError) {
+                        console.error("Token login failed:", tokenError);
+                        logout();
+                        return null;
+                    }
                 }
 
                 console.log("No auth data found, returning null");
@@ -201,19 +247,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 logout();
                 return null;
             }
-
         })();
 
         fetchPromiseRef.current = fetchPromise;
         return fetchPromise;
     }
 
-    function updateUser(updates: Partial<any>) {
-        setUser((prevUser) => ({ ...prevUser, ...updates }));
+    function updateUser(updates: Partial<SafeUser>) {
+        setUser((prevUser) => prevUser ? ({ ...prevUser, ...updates }) : null);
     }
 
     return (
-        <AuthContext.Provider value={{ user, register, login, logout, refresh, fetchAuthData, updateUser }}>
+        <AuthContext.Provider 
+            value={{ 
+                user, 
+                register, 
+                login, 
+                logout, 
+                refresh, 
+                fetchAuthData, 
+                updateUser,
+                isLoading: appleLoginMutation.isPending || appleRegisterMutation.isPending || loginWithTokenMutation.isPending,
+                isError: appleLoginMutation.isError || appleRegisterMutation.isError || loginWithTokenMutation.isError
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );

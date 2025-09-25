@@ -62,7 +62,7 @@
               ${pkgs.gum}/bin/gum spin --spinner dot --title "go mod tidy" -- go mod tidy
               ${pkgs.rubyPackages.dotenv}/bin/dotenv -i -f ""$DEVENV_ROOT"/.env" -- \
               ${pkgs.watchexec}/bin/watchexec -r -e go -- \
-              go run cmd/server/main.go
+              genkit start -- go run cmd/server/main.go
             '';
           };
           "backend-test" = {
