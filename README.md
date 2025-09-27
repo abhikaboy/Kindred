@@ -1,6 +1,7 @@
 
-![Kindred](https://github.com/user-attachments/assets/c52989d1-49bb-4b67-a710-e8475f5bb32b)
-![Foreward2](https://github.com/user-attachments/assets/cbff5414-65f9-4336-8db7-ab69ddf43baa)
+<img width="1920" height="1080" alt="Kindred Cover" src="https://github.com/user-attachments/assets/983c1d19-cd20-426a-9623-f698528654bc" />
+<img width="1740" height="3013" alt="Foreward" src="https://github.com/user-attachments/assets/f5feca73-673d-4b27-bdd9-6034c9439c4a" />
+
 
 # Tech Stack
 
@@ -53,4 +54,5 @@ nix develop --impure
 ```
 
 <!-- markdownlint-enable MD013 -->
+
 
