@@ -52,8 +52,8 @@ const ThemedSwitch = ({ value, onPress, style, duration = 400, trackColors = { o
 const switchStyles = StyleSheet.create({
     track: {
         alignItems: "flex-start",
-        width: 50,
-        height: 30,
+        width: 48,
+        height: 24,
         padding: 3,
         boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.1)",
     },

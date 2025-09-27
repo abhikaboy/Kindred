@@ -17,22 +17,26 @@ import (
 // CheckinSchedule defines the time-to-message and title mapping for daily checkins
 // Times are specific moments in the day (hour:minute format)
 type CheckinInfo struct {
-	Title   string // Title template with %s for user display name
-	Message string // Message template with %d for scheduled tasks, %d for deadline tasks
+	Title    string // Title template with %s for user display name
+	Message  string // Message template with %d for scheduled tasks, %d for deadline tasks
+	SendTask bool   // Whether to send a task with the checkin
 }
 
 var CheckinSchedule = map[time.Time]CheckinInfo{
-	time.Date(0, 1, 1, 8+4, 0, 0, 0, time.UTC): {
-		Title:   "Good Morning ☀️",
-		Message: "How are you feeling, %s? You have %d tasks on deck and %d deadlines today",
-	},
 	time.Date(0, 1, 1, 12+4, 0, 0, 0, time.UTC): {
-		Title:   "Midday Check-in ☀️",
-		Message: "How are you feeling, %s? You have %d tasks on deck and %d deadlines today",
+		Title:    "Midday Check-in ☀️",
+		Message:  "How are you feeling, %s? You have %d tasks on deck and %d deadlines today",
+		SendTask: false,
+	},
+	time.Date(0, 1, 1, 3+4, 1, 0, 0, time.UTC): {
+		Title:    "Evening Check-in 🌙",
+		Message:  "Hey %s, how's %s going?",
+		SendTask: true,
 	},
 	time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC): {
-		Title:   "Wind Down Time 🌙",
-		Message: "How are you feeling, %s? You have %d tasks on deck and %d deadlines currently",
+		Title:    "Wind Down Time 🌙",
+		Message:  "How are you feeling, %s? You have %d tasks on deck and %d deadlines currently",
+		SendTask: false,
 	},
 }
 
@@ -84,8 +88,19 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 			taskCounts = &TaskCounts{ScheduledToday: 0, DeadlineToday: 0}
 		}
 
-		// Personalize the message with the user's display name and task counts (title is static)
-		personalizedMessage := fmt.Sprintf(checkinInfo.Message, user.DisplayName, taskCounts.ScheduledToday, taskCounts.DeadlineToday)
+		var personalizedMessage string
+		if checkinInfo.SendTask {
+			task, err := h.service.GetRandomTaskForToday(user.ID)
+			if err != nil {
+				slog.Error("Error getting random task for user", "user_id", user.ID, "error", err)
+				personalizedMessage = fmt.Sprintf(checkinInfo.Message, user.DisplayName, "")
+			} else {
+				personalizedMessage = fmt.Sprintf(checkinInfo.Message, user.DisplayName, task.Content)
+			}
+		} else {
+			// Personalize the message with the user's display name and task counts (title is static)
+			personalizedMessage = fmt.Sprintf(checkinInfo.Message, user.DisplayName, taskCounts.ScheduledToday, taskCounts.DeadlineToday)
+		}
 
 		notifications = append(notifications, xutils.Notification{
 			Token:   user.PushToken,

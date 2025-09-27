@@ -50,6 +50,9 @@ jobs:
                   # Twillio Configuration
                   TWILLIO_SG_TOKEN=${{ secrets.TWILLIO_SG_TOKEN }}
 
+                  # Gemini Configuration
+                  GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+
                   # Auth Configuration
                   AUTH_SECRET=${{ secrets.AUTH_SECRET }}
                   EOF

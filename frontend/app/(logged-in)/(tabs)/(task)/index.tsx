@@ -40,13 +40,35 @@ const Home = (props: Props) => {
     let ThemedColor = useThemeColor();
 
     const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks, fetchingWorkspaces } = useTasks();
-    const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks } = useTasks();
+    const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks, getRecentWorkspaces } = useTasks();
     const [creating, setCreating] = useState(false);
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
+
+    // Get recent workspaces and create a display list
+    const recentWorkspaceNames = getRecentWorkspaces();
+    
+    // Create a display list: recent workspaces first, then other workspaces up to 6 total
+    const displayWorkspaces = React.useMemo(() => {
+        if (!workspaces || workspaces.length === 0) return [];
+        
+        // Get recent workspaces that still exist
+        const recentWorkspaces = recentWorkspaceNames
+            .map(name => workspaces.find(ws => ws.name === name))
+            .filter(Boolean);
+        
+        // Get non-recent workspaces
+        const otherWorkspaces = workspaces.filter(
+            ws => !recentWorkspaceNames.includes(ws.name)
+        );
+        
+        // Combine and limit to 6
+        const combined = [...recentWorkspaces, ...otherWorkspaces];
+        return combined.slice(0, 6);
+    }, [workspaces, recentWorkspaceNames]);
 
     useEffect(() => {
         if (!user || !workspaces) return;
@@ -99,9 +121,18 @@ const Home = (props: Props) => {
 
                 <ConditionalView condition={selected === ""}>
                     <View style={styles.headerContainer}>
-                        <ThemedText type="title" style={styles.title}>
-                            Welcome {user?.display_name}! ☀️
-                        </ThemedText>
+                        <View style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}>
+                            <ThemedText type="title" style={styles.title}>
+                                Welcome {user?.display_name}! ☀️
+                            </ThemedText>
+                            <TouchableOpacity onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/settings")}>
+                                <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
+                            </TouchableOpacity>
+                        </View>
 
                         <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>
                             <MotiView style={{ gap: 16, marginTop: 24 }}>
@@ -131,7 +162,7 @@ const Home = (props: Props) => {
                                             style={{
                                                 width: 12,
                                                 height: 12,
-                                                backgroundColor: "#FFD700",
+                                                backgroundColor: ThemedColor.error,
                                                 borderRadius: 12,
                                                 position: "absolute",
                                                 right: 0,
@@ -144,12 +175,6 @@ const Home = (props: Props) => {
                                     </BasicCard>
                                 </TouchableOpacity>
                                 <DashboardCards drawerRef={drawerRef} />
-                                <PrimaryButton
-                                    title="Try!"
-                                    onPress={() => {
-                                        Sentry.showFeedbackWidget();
-                                    }}
-                                />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView 
                                     horizontal={false}
@@ -158,7 +183,7 @@ const Home = (props: Props) => {
                                     <ConditionalView condition={workspaces.length > 0} key="workspaces-container">
                                         <View style={styles.workspacesGrid}>
                                             <Skeleton.Group key="workspaces-skeleton" show={fetchingWorkspaces}>
-                                                {workspaces.slice(0, 6).map((workspace, index) => (
+                                                {displayWorkspaces.map((workspace, index) => (
                                                     <Skeleton
                                                         key={workspace.name}
                                                         colors={[ThemedColor.lightened, ThemedColor.lightened + "50"]}>

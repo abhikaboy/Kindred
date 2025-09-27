@@ -17,9 +17,8 @@ import Animated, {
     useSharedValue,
     withSpring,
     runOnJS,
-    useAnimatedGestureHandler,
 } from "react-native-reanimated";
-import { PanGestureHandler } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 type Props = {
     visible: boolean;
@@ -59,29 +58,28 @@ const CreateModal = (props: Props) => {
     // Define snap points - we'll use percentages for flexibility
     const snapPoints = useMemo(() => ["25%", "90%"], [screen]);
 
-    const gestureHandler = useAnimatedGestureHandler({
-        onStart: (_, ctx: any) => {
-            ctx.startX = translateX.value;
-        },
-        onActive: (event, ctx) => {
+    const panGesture = Gesture.Pan()
+        .onStart((_, context) => {
+            context.startX = translateX.value;
+        })
+        .onUpdate((event, context) => {
             if (screen !== Screen.STANDARD) {
                 // Only allow right swipe (back) when not on standard screen
                 if (event.translationX > 0) {
-                    translateX.value = ctx.startX + event.translationX;
+                    translateX.value = context.startX + event.translationX;
                 }
             }
-        },
-        onEnd: (event) => {
+        })
+        .onEnd((event) => {
             if (event.translationX > 100 && screen !== Screen.STANDARD) {
                 // If swiped right more than 100 units, go back
                 runOnJS(setScreen)(Screen.STANDARD);
                 translateX.value = 0;
             } else {
-                // Reset position
+                // Spring back to original position
                 translateX.value = withSpring(0);
             }
-        },
-    });
+        });
 
     const animatedStyle = useAnimatedStyle(() => {
         return {
@@ -194,11 +192,11 @@ const CreateModal = (props: Props) => {
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
             enablePanDownToClose={true}>
             <BottomSheetView style={[styles.container, { backgroundColor: ThemedColor.background }]}>
-                <PanGestureHandler onGestureEvent={gestureHandler}>
+                <GestureDetector gesture={panGesture}>
                     <Animated.View style={[{ flex: 1 }, animatedStyle]}>
                         {currentScreenComponent}
                     </Animated.View>
-                </PanGestureHandler>
+                </GestureDetector>
             </BottomSheetView>
         </BottomSheetModal>
     );

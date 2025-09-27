@@ -5,11 +5,10 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import ProgressBar from "./ProgressBar";
 import Entypo from "@expo/vector-icons/Entypo";
 import { hideToastable, ToastableBodyParams } from "react-native-toastable";
-import { PanGestureHandler, PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Reanimated, {
     useSharedValue,
     useAnimatedStyle,
-    useAnimatedGestureHandler,
     runOnJS,
     withSpring,
     withTiming,
@@ -28,29 +27,40 @@ interface TaskToastProps extends ToastableBodyParams {
         public?: boolean;
     };
 }
+
 export default function TaskToast(props: TaskToastProps) {
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const opacity = useSharedValue(1);
+    const startX = useSharedValue(0);
+    const startY = useSharedValue(0);
+    const router = useRouter();
 
-    const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-        onStart: (_, context) => {
-            context.startX = translateX.value;
-            context.startY = translateY.value;
-        },
-        onActive: (event, context) => {
+    // Reset values on component mount
+    React.useEffect(() => {
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
+    }, []);
+
+    const panGesture = Gesture.Pan()
+        .onBegin(() => {
+            startX.value = translateX.value;
+            startY.value = translateY.value;
+        })
+        .onUpdate((event) => {
             // Track both horizontal and vertical movement
-            translateX.value = context.startX + event.translationX;
-            translateY.value = context.startY + event.translationY;
+            translateX.value = startX.value + event.translationX;
+            translateY.value = startY.value + event.translationY;
 
             // Update opacity based on swipe distance (either direction)
             const horizontalProgress = Math.abs(translateX.value) / (screenWidth * 0.3);
             const verticalProgress = Math.abs(translateY.value) / (screenHeight * 0.2);
             const maxProgress = Math.max(horizontalProgress, verticalProgress);
             opacity.value = Math.max(0.3, 1 - maxProgress);
-        },
-        onEnd: (event) => {
+        })
+        .onEnd((event) => {
             const horizontalThreshold = screenWidth * 0.25; // 25% of screen width
             const verticalThreshold = screenHeight * 0.15; // 15% of screen height
             const velocityX = event.velocityX;
@@ -83,8 +93,7 @@ export default function TaskToast(props: TaskToastProps) {
                 translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
                 opacity.value = withSpring(1, { damping: 20, stiffness: 300 });
             }
-        },
-    });
+        });
 
     const animatedStyle = useAnimatedStyle(() => {
         return {
@@ -92,11 +101,6 @@ export default function TaskToast(props: TaskToastProps) {
             opacity: opacity.value,
         };
     });
-    translateX.value = 0;
-    translateY.value = 0;
-    opacity.value = 1;
-
-    const router = useRouter();
 
     const handleNavigateToCamera = () => {
         const taskInfo = props.taskData
@@ -118,9 +122,10 @@ export default function TaskToast(props: TaskToastProps) {
                 : {},
         });
     };
+
     return (
-        <PanGestureHandler onGestureEvent={gestureHandler} enabled={true}>
-            <Reanimated.View style={[animatedStyle]}>
+        <GestureDetector gesture={panGesture}>
+            <Reanimated.View style={animatedStyle as any}>
                 <Animated.View
                     style={{
                         backgroundColor: ThemedColor.lightened,
@@ -148,6 +153,6 @@ export default function TaskToast(props: TaskToastProps) {
                     <ProgressBar start={0} bar={ThemedColor.success} />
                 </Animated.View>
             </Reanimated.View>
-        </PanGestureHandler>
+        </GestureDetector>
     );
 }

@@ -616,6 +616,89 @@ func (s *Service) GetRecurringTasksWithPastDeadlines() ([]TemplateTaskDocument, 
 	return results, nil
 }
 
+// GetRandomTaskForToday returns a random task that is assigned for today
+// A task is considered "for today" if:
+// - Start date is today
+// - Deadline is today
+// - Neither start date nor deadline are set (any time tasks)
+func (s *Service) GetRandomTaskForToday(userID primitive.ObjectID) (*TaskDocument, error) {
+	ctx := context.Background()
+
+	// Get today's date range (start and end of day in UTC)
+	now := time.Now().UTC()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	// Pipeline to find tasks for the user that are "for today"
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{"user": userID},
+		},
+		{
+			"$unwind": "$tasks",
+		},
+		{
+			"$match": bson.M{
+				"$or": []bson.M{
+					// Start date is today
+					{
+						"$and": []bson.M{
+							{"tasks.startDate": bson.M{"$ne": nil}},
+							{"tasks.startDate": bson.M{"$gte": startOfDay}},
+							{"tasks.startDate": bson.M{"$lte": endOfDay}},
+						},
+					},
+					// Deadline is today
+					{
+						"$and": []bson.M{
+							{"tasks.deadline": bson.M{"$ne": nil}},
+							{"tasks.deadline": bson.M{"$gte": startOfDay}},
+							{"tasks.deadline": bson.M{"$lte": endOfDay}},
+						},
+					},
+					// Neither start date nor deadline are set
+					{
+						"$and": []bson.M{
+							{"tasks.startDate": nil},
+							{"tasks.deadline": nil},
+						},
+					},
+				},
+			},
+		},
+		{
+			"$set": bson.M{
+				"tasks.userID":     "$user",
+				"tasks.categoryID": "$_id",
+			},
+		},
+		{
+			"$replaceRoot": bson.M{"newRoot": "$tasks"},
+		},
+		// Add random sampling to get a random task
+		{
+			"$sample": bson.M{"size": 1},
+		},
+	}
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate tasks for today: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var task TaskDocument
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(&task); err != nil {
+			return nil, fmt.Errorf("failed to decode task: %w", err)
+		}
+		return &task, nil
+	}
+
+	// No tasks found for today
+	return nil, mongo.ErrNoDocuments
+}
+
 func (s *Service) DeleteTaskByID(id primitive.ObjectID) error {
 	ctx := context.Background()
 

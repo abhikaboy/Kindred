@@ -7,6 +7,7 @@ import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI } from "@/api/category";
 import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 
@@ -45,6 +46,9 @@ type TaskContextType = {
     futureTasks: Task[];
     allTasks: Task[];
     windowTasks: Task[];
+    recentWorkspaces: string[];
+    getRecentWorkspaces: () => string[];
+    clearRecentWorkspaces: () => Promise<void>;
 };
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
@@ -55,8 +59,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
     const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
+    const [recentWorkspaces, setRecentWorkspaces] = useState<string[]>([]);
 
     const [showConfetti, setShowConfetti] = useState(false);
+    
+    // Constants for recent workspaces
+    const RECENT_WORKSPACES_KEY = `recent_workspaces_${user?._id || 'default'}`;
+    const MAX_RECENT_WORKSPACES = 6;
 
     const unnestedTasks = useMemo(() => {
         let res = workspaces
@@ -271,6 +280,84 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     };
 
     /**
+     * Load recent workspaces from AsyncStorage
+     */
+    const loadRecentWorkspaces = async () => {
+        try {
+            const storedRecents = await AsyncStorage.getItem(RECENT_WORKSPACES_KEY);
+            if (storedRecents) {
+                const parsedRecents = JSON.parse(storedRecents);
+                setRecentWorkspaces(parsedRecents);
+            }
+        } catch (error) {
+            console.error('Error loading recent workspaces:', error);
+        }
+    };
+
+    /**
+     * Add a workspace to recent workspaces
+     * @param workspaceName - The name of the workspace to add
+     */
+    const addToRecentWorkspaces = async (workspaceName: string) => {
+        if (!workspaceName || workspaceName.trim() === '') return;
+
+        try {
+            let updatedRecents = [...recentWorkspaces];
+            
+            // Remove the workspace if it already exists to avoid duplicates
+            updatedRecents = updatedRecents.filter(name => name !== workspaceName);
+            
+            // Add to the beginning of the array
+            updatedRecents.unshift(workspaceName);
+            
+            // Limit to MAX_RECENT_WORKSPACES
+            updatedRecents = updatedRecents.slice(0, MAX_RECENT_WORKSPACES);
+            
+            // Save to AsyncStorage
+            await AsyncStorage.setItem(RECENT_WORKSPACES_KEY, JSON.stringify(updatedRecents));
+            
+            // Update state
+            setRecentWorkspaces(updatedRecents);
+        } catch (error) {
+            console.error('Error adding to recent workspaces:', error);
+        }
+    };
+
+    /**
+     * Get recent workspaces
+     * @returns Array of recent workspace names
+     */
+    const getRecentWorkspaces = () => {
+        return recentWorkspaces;
+    };
+
+    /**
+     * Clear all recent workspaces
+     */
+    const clearRecentWorkspaces = async () => {
+        try {
+            await AsyncStorage.removeItem(RECENT_WORKSPACES_KEY);
+            setRecentWorkspaces([]);
+        } catch (error) {
+            console.error('Error clearing recent workspaces:', error);
+        }
+    };
+
+    /**
+     * Custom setSelected function that also adds to recent workspaces
+     * @param workspaceName - The name of the workspace to select
+     */
+    const handleSetSelected = async (workspaceName: string) => {
+        // First set the selected workspace
+        setSelected(workspaceName);
+        
+        // Then add to recent workspaces (but not if it's empty)
+        if (workspaceName && workspaceName.trim() !== '') {
+            await addToRecentWorkspaces(workspaceName);
+        }
+    };
+
+    /**
      * Renames a workspace by updating all its categories on the server and locally
      * @param oldName - The current name of the workspace
      * @param newName - The new name for the workspace
@@ -382,6 +469,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setSelectedCategory({ label: "", id: "", special: false });
     }, [selected]);
 
+    // Load recent workspaces on mount
+    useEffect(() => {
+        if (user?._id) {
+            loadRecentWorkspaces();
+        }
+    }, [user?._id]);
+
     return (
         <TaskContext.Provider
             value={{
@@ -390,7 +484,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 getWorkspace,
                 fetchWorkspaces,
                 selected,
-                setSelected,
+                setSelected: handleSetSelected,
                 categories,
                 addToCategory,
                 addToWorkspace,
@@ -417,6 +511,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 allTasks,
                 fetchingWorkspaces,
                 windowTasks,
+                recentWorkspaces,
+                getRecentWorkspaces,
+                clearRecentWorkspaces,
             }}>
             {children}
         </TaskContext.Provider>

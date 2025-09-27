@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -30,8 +30,19 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
     const [encouragementMessage, setEncouragementMessage] = useState("");
+    const isMountedRef = useRef(true);
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
+
+    // Track mounted state and reset when modal opens
+    useEffect(() => {
+        if (visible) {
+            isMountedRef.current = true;
+        }
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, [visible]);
 
     // Get encouragements left from user data
     const encouragementsLeft = user?.encouragements || 0;
@@ -59,19 +70,35 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             // Make the API call
             await createEncouragementAPI(encouragementData);
 
+            // Only update state if component is still mounted
+            if (!isMountedRef.current) return;
+
             // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);
             updateUser({ encouragements: newCount });
 
-            // Clear message and close modal
-            setEncouragementMessage("");
-            setVisible(false);
-
-            // Show success message
-            Alert.alert("Success", "Encouragement sent successfully!");
+            // Show success message first, then close modal
+            Alert.alert(
+                "Success", 
+                "Encouragement sent successfully!",
+                [
+                    {
+                        text: "OK",
+                        onPress: () => {
+                            // Clear message and close modal after user dismisses alert
+                            if (isMountedRef.current) {
+                                setEncouragementMessage("");
+                                setVisible(false);
+                            }
+                        }
+                    }
+                ]
+            );
         } catch (error) {
             console.error("Error sending encouragement:", error);
-            Alert.alert("Error", "Failed to send encouragement. Please try again.");
+            if (isMountedRef.current) {
+                Alert.alert("Error", "Failed to send encouragement. Please try again.");
+            }
         }
     };
 
@@ -81,17 +108,13 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 {/* Task Card */}
                 <View style={styles.taskCardContainer}>
                     {task && (
-                        <View
-                            style={[
-                                styles.taskCard,
-                                { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary },
-                            ]}>
+                        <View style={styles.taskCardStyled}>
                             <View style={styles.taskCardContent}>
-                                <ThemedText type="default" style={[styles.taskText, { color: ThemedColor.text }]}>
+                                <ThemedText type="default" style={styles.taskTextStyled}>
                                     {task.content}
                                 </ThemedText>
                                 <View style={styles.taskCardRight}>
-                                    <ThemedText type="caption" style={[styles.taskValue, { color: ThemedColor.text }]}>
+                                    <ThemedText type="caption" style={styles.taskValueStyled}>
                                         {task.value}
                                     </ThemedText>
                                     <Octicons name="flame" size={24} color={ThemedColor.error} />
@@ -102,12 +125,12 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 </View>
 
                 {/* Title */}
-                <ThemedText type="defaultSemiBold" style={[styles.title, { color: ThemedColor.text }]}>
+                <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
                     Encourage {encouragementConfig?.userHandle || "User"}
                 </ThemedText>
 
                 {/* Description */}
-                <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.text }]}>
+                <ThemedText type="lightBody" style={styles.descriptionStyled}>
                     {encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement
                 </ThemedText>
 
@@ -120,13 +143,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         onChangeText={setEncouragementMessage}
                         multiline={true}
                         numberOfLines={4}
-                        style={[
-                            styles.textInput,
-                            {
-                                color: ThemedColor.text,
-                                borderColor: ThemedColor.tertiary,
-                            },
-                        ]}
+                        style={styles.textInputStyled}
                     />
                 </View>
 
@@ -138,7 +155,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         disabled={!encouragementMessage.trim() || encouragementsLeft === 0}
                         style={styles.sendButton}
                     />
-                    <ThemedText type="caption" style={[styles.counter, { color: ThemedColor.text }]}>
+                    <ThemedText type="caption" style={styles.counterStyled}>
                         {encouragementsLeft} Encouragements Left Today
                     </ThemedText>
                 </View>
@@ -167,6 +184,17 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             justifyContent: "center",
             boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
         },
+        taskCardStyled: {
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderRadius: 16,
+            borderWidth: 1,
+            minHeight: 55,
+            justifyContent: "center",
+            backgroundColor: ThemedColor.lightened,
+            borderColor: ThemedColor.tertiary,
+            boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
+        },
         taskCardContent: {
             flexDirection: "row",
             alignItems: "center",
@@ -176,6 +204,11 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             flex: 1,
             textAlign: "left",
         },
+        taskTextStyled: {
+            flex: 1,
+            textAlign: "left",
+            color: ThemedColor.text,
+        },
         taskCardRight: {
             flexDirection: "row",
             alignItems: "center",
@@ -184,17 +217,35 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         taskValue: {
             fontSize: 12,
         },
+        taskValueStyled: {
+            fontSize: 12,
+            color: ThemedColor.text,
+        },
         title: {
             fontSize: 24,
             fontWeight: "600",
             textAlign: "center",
             marginBottom: 24,
         },
+        titleStyled: {
+            fontSize: 24,
+            fontWeight: "600",
+            textAlign: "center",
+            marginBottom: 24,
+            color: ThemedColor.text,
+        },
         description: {
             fontSize: 16,
             textAlign: "center",
             marginBottom: 24,
             lineHeight: 24,
+        },
+        descriptionStyled: {
+            fontSize: 16,
+            textAlign: "center",
+            marginBottom: 24,
+            lineHeight: 24,
+            color: ThemedColor.text,
         },
         inputContainer: {
             marginBottom: 24,
@@ -210,6 +261,18 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             minHeight: 80,
             textAlignVertical: "top",
         },
+        textInputStyled: {
+            padding: 16,
+            borderRadius: 12,
+            borderWidth: 1,
+            fontSize: 16,
+            fontFamily: "Outfit",
+            fontWeight: "400",
+            minHeight: 80,
+            textAlignVertical: "top",
+            color: ThemedColor.text,
+            borderColor: ThemedColor.tertiary,
+        },
         buttonContainer: {
             gap: 12,
             alignItems: "center",
@@ -222,5 +285,10 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         counter: {
             fontSize: 12,
             textAlign: "center",
+        },
+        counterStyled: {
+            fontSize: 12,
+            textAlign: "center",
+            color: ThemedColor.text,
         },
     });

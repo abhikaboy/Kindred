@@ -24,15 +24,34 @@ function getErrorHistory() {
 
 async function request(method: string, url: string, body?: any) {
     console.log(
-        "Method: " + method + " URL: " + process.env.EXPO_PUBLIC_API_URL + url + " Body: " + JSON.stringify(body)
+        "Method: " + method + " URL: " + process.env.EXPO_PUBLIC_URL + url + " Body: " + JSON.stringify(body)
     );
+    
+    // Get auth data from SecureStore and prepare headers
+    let headers: any = {
+        "Content-Type": "application/json",
+    };
+    
+    try {
+        const authData = await SecureStore.getItemAsync("auth_data");
+        if (authData) {
+            const parsed = JSON.parse(authData);
+            if (parsed.access_token) {
+                headers["Authorization"] = `Bearer ${parsed.access_token}`;
+            }
+            if (parsed.refresh_token) {
+                headers["refresh_token"] = parsed.refresh_token;
+            }
+        }
+    } catch (error) {
+        console.log("Error getting auth data for request:", error);
+    }
+    
     try {
         let response = await axios({
-            url: process.env.EXPO_PUBLIC_API_URL + url,
+            url: process.env.EXPO_PUBLIC_URL + "/api/v1" + url,
             method: method,
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: headers,
             data: body,
         });
 
@@ -53,12 +72,14 @@ async function request(method: string, url: string, body?: any) {
         } else {
             console.log("Refresh token not found in response");
         }
-        // set the new tokens in the secure storage in the authData object
-        const authData = {
-            access_token: access_response,
-            refresh_token: refresh_response,
-        };
-        await SecureStore.setItemAsync("authData", JSON.stringify(authData));
+        // Only save auth data if we actually received new tokens
+        if (access_response || refresh_response) {
+            const authData = {
+                access_token: access_response,
+                refresh_token: refresh_response,
+            };
+            await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
+        }
 
         // Update request history only for successful requests
         setRequestHistory([
