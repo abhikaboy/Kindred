@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { View, StyleSheet, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -30,8 +30,19 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
     const [congratulationMessage, setCongratulationMessage] = useState("");
+    const isMountedRef = useRef(true);
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
+
+    // Track mounted state and reset when modal opens
+    useEffect(() => {
+        if (visible) {
+            isMountedRef.current = true;
+        }
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, [visible]);
 
     // Get congratulations left from user data
     const congratulationsLeft = user?.congratulations || 0;
@@ -59,19 +70,35 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             // Make the API call
             await createCongratulationAPI(congratulationData);
 
+            // Only update state if component is still mounted
+            if (!isMountedRef.current) return;
+
             // Update user's congratulation count locally
             const newCount = Math.max(0, congratulationsLeft - 1);
             updateUser({ congratulations: newCount });
 
-            // Clear message and close modal
-            setCongratulationMessage("");
-            setVisible(false);
-
-            // Show success message
-            Alert.alert("Success", "Congratulation sent successfully!");
+            // Show success message first, then close modal
+            Alert.alert(
+                "Success", 
+                "Congratulation sent successfully!",
+                [
+                    {
+                        text: "OK",
+                        onPress: () => {
+                            // Clear message and close modal after user dismisses alert
+                            if (isMountedRef.current) {
+                                setCongratulationMessage("");
+                                setVisible(false);
+                            }
+                        }
+                    }
+                ]
+            );
         } catch (error) {
             console.error("Error sending congratulation:", error);
-            Alert.alert("Error", "Failed to send congratulation. Please try again.");
+            if (isMountedRef.current) {
+                Alert.alert("Error", "Failed to send congratulation. Please try again.");
+            }
         }
     };
 

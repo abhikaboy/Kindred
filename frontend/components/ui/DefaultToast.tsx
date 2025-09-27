@@ -20,16 +20,25 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const opacity = useSharedValue(1);
+    const startX = useSharedValue(0);
+    const startY = useSharedValue(0);
+
+    // Reset values on component mount
+    React.useEffect(() => {
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
+    }, []);
 
     const panGesture = Gesture.Pan()
-        .onStart((_, context) => {
-            context.startX = translateX.value;
-            context.startY = translateY.value;
+        .onBegin(() => {
+            startX.value = translateX.value;
+            startY.value = translateY.value;
         })
-        .onUpdate((event, context) => {
+        .onUpdate((event) => {
             // Track both horizontal and vertical movement
-            translateX.value = context.startX + event.translationX;
-            translateY.value = context.startY + event.translationY;
+            translateX.value = startX.value + event.translationX;
+            translateY.value = startY.value + event.translationY;
 
             // Update opacity based on swipe distance (either direction)
             const horizontalProgress = Math.abs(translateX.value) / (screenWidth * 0.3);
@@ -100,13 +109,6 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
             icon: "info",
         },
     };
-
-    // Reset values on component mount
-    React.useEffect(() => {
-        translateX.value = 0;
-        translateY.value = 0;
-        opacity.value = 1;
-    }, []);
 
     const styles = StyleSheet.create({
         container: {

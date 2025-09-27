@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from "react-native";
+import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import CachedImage from "@/components/CachedImage";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -109,17 +110,16 @@ export default function Encouragements() {
                             <View key={encouragement.id} style={styles.encouragementItem}>
                                 {/* User Avatar and Info */}
                                 <View style={styles.userSection}>
-                                    <Image
+                                    <CachedImage
                                         source={{ uri: encouragement.sender.picture }}
+                                        fallbackSource={require("@/assets/images/head.png")}
+                                        variant="thumbnail"
+                                        cachePolicy="memory-disk"
                                         style={styles.userAvatar}
-                                        defaultSource={require("@/assets/images/head.png")}
                                     />
                                     <View style={styles.userInfo}>
                                         <ThemedText type="default" style={styles.userName}>
                                             {encouragement.sender.name}
-                                        </ThemedText>
-                                        <ThemedText type="caption" style={styles.timeText}>
-                                            {formatTime(encouragement.timestamp)}
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -131,11 +131,11 @@ export default function Encouragements() {
 
                                     {/* Task Info */}
                                     <View style={styles.taskInfo}>
-                                        <ThemedText type="default" style={styles.categoryText}>
+                                        <ThemedText type="default" style={{...styles.categoryText, maxWidth: "0%"} }>
                                             {encouragement.categoryName}
                                         </ThemedText>
                                         <View style={styles.dot} />
-                                        <ThemedText type="default" style={styles.taskName}>
+                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}}>
                                             {encouragement.taskName}
                                         </ThemedText>
                                     </View>
@@ -144,6 +144,9 @@ export default function Encouragements() {
                                     <View style={styles.messageContainer}>
                                         <ThemedText type="lightBody" style={styles.messageText}>
                                             {encouragement.message}
+                                        </ThemedText>
+                                        <ThemedText type="caption" style={styles.timeText}>
+                                            {formatTime(encouragement.timestamp)}
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -215,11 +218,8 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         encouragementItem: {
             flexDirection: "row",
-            gap: 24,
-            alignItems: "flex-start",
         },
         userSection: {
-            alignItems: "center",
             gap: 8,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
@@ -234,19 +234,17 @@ const createStyles = (ThemedColor: any, insets: any) =>
             backgroundColor: ThemedColor.tertiary,
         },
         userInfo: {
-            alignItems: "center",
             width: Dimensions.get("window").width * 0.2,
         },
         userName: {
             color: ThemedColor.text,
             fontSize: 14,
-            textAlign: "center",
             width: Dimensions.get("window").width * 0.2,
         },
         timeText: {
             color: ThemedColor.caption,
-            fontSize: 10,
-            textAlign: "center",
+            fontSize: 12,
+            marginTop: 12,
         },
         encouragementCard: {
             flex: 1,
@@ -263,11 +261,13 @@ const createStyles = (ThemedColor: any, insets: any) =>
             flexDirection: "row",
             alignItems: "center",
             gap: 8,
-            marginBottom: 12,
+            marginBottom: 4,
+            textAlign: "left",
         },
         categoryText: {
             color: ThemedColor.primary,
             fontSize: 16,
+            textAlign: "left",
         },
         dot: {
             width: 4,
@@ -285,7 +285,7 @@ const createStyles = (ThemedColor: any, insets: any) =>
         messageText: {
             color: ThemedColor.text,
             fontSize: 16,
-            lineHeight: 24,
+            lineHeight: 20,
         },
         unreadDot: {
             position: "absolute",

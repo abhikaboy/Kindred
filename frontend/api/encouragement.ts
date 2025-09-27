@@ -56,8 +56,9 @@ export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count:
     const { request } = useRequest();
 
     // Use direct request since OpenAPI spec is missing request body definition
+    // The request body should be: { id: ["id1", "id2", ...] }
     const response = await request("PATCH", "/user/encouragements/mark-read", {
-        body: { id: ids },
+        id: ids
     });
 
     return response;

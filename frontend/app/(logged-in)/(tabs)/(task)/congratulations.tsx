@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from "react-native";
+import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import CachedImage from "@/components/CachedImage";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -109,17 +110,16 @@ export default function Congratulations() {
                             <View key={congratulation.id} style={styles.congratulationItem}>
                                 {/* User Avatar and Info */}
                                 <View style={styles.userSection}>
-                                    <Image
+                                    <CachedImage
                                         source={{ uri: congratulation.sender.picture }}
+                                        fallbackSource={require("@/assets/images/head.png")}
+                                        variant="thumbnail"
+                                        cachePolicy="memory-disk"
                                         style={styles.userAvatar}
-                                        defaultSource={require("@/assets/images/head.png")}
                                     />
                                     <View style={styles.userInfo}>
                                         <ThemedText type="default" style={styles.userName}>
                                             {congratulation.sender.name}
-                                        </ThemedText>
-                                        <ThemedText type="caption" style={styles.timeText}>
-                                            {formatTime(congratulation.timestamp)}
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -131,11 +131,11 @@ export default function Congratulations() {
 
                                     {/* Task Info */}
                                     <View style={styles.taskInfo}>
-                                        <ThemedText type="default" style={styles.categoryText}>
+                                        <ThemedText type="default" style={{...styles.categoryText, maxWidth: "60%"} }>
                                             {congratulation.categoryName}
                                         </ThemedText>
                                         <View style={styles.dot} />
-                                        <ThemedText type="default" style={styles.taskName}>
+                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}}>
                                             {congratulation.taskName}
                                         </ThemedText>
                                     </View>
@@ -144,6 +144,9 @@ export default function Congratulations() {
                                     <View style={styles.messageContainer}>
                                         <ThemedText type="lightBody" style={styles.messageText}>
                                             {congratulation.message}
+                                        </ThemedText>
+                                        <ThemedText type="caption" style={styles.timeText}>
+                                            {formatTime(congratulation.timestamp)}
                                         </ThemedText>
                                     </View>
                                 </View>
@@ -187,8 +190,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         },
         scrollContent: {
             paddingHorizontal: HORIZONTAL_PADDING,
-            paddingTop: 20,
-            paddingBottom: insets.bottom + 20,
+            paddingVertical: insets.bottom,
         },
         loadingContainer: {
             flex: 1,
@@ -201,92 +203,97 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
             justifyContent: "center",
             alignItems: "center",
             paddingTop: 100,
+            gap: 8,
         },
         emptyText: {
-            fontSize: 20,
             color: ThemedColor.text,
-            marginBottom: 8,
+            textAlign: "center",
         },
         emptySubtext: {
-            fontSize: 16,
             color: ThemedColor.caption,
             textAlign: "center",
-            lineHeight: 24,
         },
         congratulationsList: {
             gap: 16,
         },
         congratulationItem: {
-            gap: 12,
+            flexDirection: "row",
         },
         userSection: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
+            gap: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 2,
         },
         userAvatar: {
-            width: 40,
-            height: 40,
-            borderRadius: 20,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: ThemedColor.tertiary,
         },
         userInfo: {
-            flex: 1,
+            width: Dimensions.get("window").width * 0.2,
         },
         userName: {
-            fontSize: 16,
             color: ThemedColor.text,
-            fontWeight: "600",
+            fontSize: 14,
+            width: Dimensions.get("window").width * 0.2,
         },
         timeText: {
-            fontSize: 14,
             color: ThemedColor.caption,
-            marginTop: 2,
+            fontSize: 12,
+            marginTop: 12,
         },
         congratulationCard: {
+            flex: 1,
             backgroundColor: ThemedColor.lightened,
             borderRadius: 12,
             padding: 16,
-            borderWidth: 1,
-            borderColor: ThemedColor.tertiary,
-            position: "relative",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 2,
         },
         unreadDot: {
             position: "absolute",
-            top: 12,
-            right: 12,
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            top: 0,
+            right: 0,
+            width: 12,
+            height: 12,
+            borderRadius: 12,
             backgroundColor: ThemedColor.error,
         },
         taskInfo: {
             flexDirection: "row",
             alignItems: "center",
-            marginBottom: 8,
+            gap: 8,
+            marginBottom: 4,
+            textAlign: "left",
         },
         categoryText: {
-            fontSize: 14,
-            color: ThemedColor.text,
-            fontWeight: "500",
+            color: ThemedColor.primary,
+            fontSize: 16,
+            textAlign: "left",
         },
         dot: {
             width: 4,
             height: 4,
             borderRadius: 2,
             backgroundColor: ThemedColor.caption,
-            marginHorizontal: 8,
         },
         taskName: {
-            fontSize: 14,
             color: ThemedColor.text,
-            fontWeight: "500",
+            fontSize: 16,
         },
         messageContainer: {
             marginTop: 4,
         },
         messageText: {
-            fontSize: 16,
             color: ThemedColor.text,
-            lineHeight: 24,
+            fontSize: 16,
+            lineHeight: 20,
         },
     });

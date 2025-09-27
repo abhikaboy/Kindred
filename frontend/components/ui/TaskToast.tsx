@@ -27,21 +27,32 @@ interface TaskToastProps extends ToastableBodyParams {
         public?: boolean;
     };
 }
+
 export default function TaskToast(props: TaskToastProps) {
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
     const opacity = useSharedValue(1);
+    const startX = useSharedValue(0);
+    const startY = useSharedValue(0);
+    const router = useRouter();
+
+    // Reset values on component mount
+    React.useEffect(() => {
+        translateX.value = 0;
+        translateY.value = 0;
+        opacity.value = 1;
+    }, []);
 
     const panGesture = Gesture.Pan()
-        .onStart((_, context) => {
-            context.startX = translateX.value;
-            context.startY = translateY.value;
+        .onBegin(() => {
+            startX.value = translateX.value;
+            startY.value = translateY.value;
         })
-        .onUpdate((event, context) => {
+        .onUpdate((event) => {
             // Track both horizontal and vertical movement
-            translateX.value = context.startX + event.translationX;
-            translateY.value = context.startY + event.translationY;
+            translateX.value = startX.value + event.translationX;
+            translateY.value = startY.value + event.translationY;
 
             // Update opacity based on swipe distance (either direction)
             const horizontalProgress = Math.abs(translateX.value) / (screenWidth * 0.3);
@@ -90,11 +101,6 @@ export default function TaskToast(props: TaskToastProps) {
             opacity: opacity.value,
         };
     });
-    translateX.value = 0;
-    translateY.value = 0;
-    opacity.value = 1;
-
-    const router = useRouter();
 
     const handleNavigateToCamera = () => {
         const taskInfo = props.taskData
@@ -116,9 +122,10 @@ export default function TaskToast(props: TaskToastProps) {
                 : {},
         });
     };
+
     return (
         <GestureDetector gesture={panGesture}>
-            <Reanimated.View style={[animatedStyle]}>
+            <Reanimated.View style={animatedStyle as any}>
                 <Animated.View
                     style={{
                         backgroundColor: ThemedColor.lightened,
