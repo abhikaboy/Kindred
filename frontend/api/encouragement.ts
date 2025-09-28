@@ -53,13 +53,17 @@ export const getEncouragementsAPI = async (): Promise<EncouragementDocument[]> =
  * @param ids - Array of encouragement IDs to mark as read
  */
 export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count: number; message: string }> => {
+    console.log("🎆 DEBUG - markEncouragementsReadAPI called with ids:", ids);
+    console.log("🎆 DEBUG - ids type:", typeof ids, "length:", ids.length);
+    
     const { request } = useRequest();
 
+    const requestBody = { body: { id: ids } };
+    console.log("🎆 DEBUG - Request body being sent:", JSON.stringify(requestBody, null, 2));
+    
     // Use direct request since OpenAPI spec is missing request body definition
-    // The request body should be: { id: ["id1", "id2", ...] }
-    const response = await request("PATCH", "/user/encouragements/mark-read", {
-        id: ids
-    });
+    // The request body should be: { body: { id: ["id1", "id2", ...] } }
+    const response = await request("PATCH", "/user/encouragements/mark-read", requestBody);
 
     return response;
 };

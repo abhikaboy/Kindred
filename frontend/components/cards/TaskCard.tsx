@@ -14,7 +14,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { isAfter, formatDistanceToNow, parseISO } from "date-fns";
+import { isAfter, formatDistanceToNow, parseISO, isBefore } from "date-fns";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -126,6 +126,30 @@ const TaskCard = ({
         }
     }, [isOverdue, task?.deadline]);
 
+    // Check if task has upcoming deadline (not overdue)
+    const hasUpcomingDeadline = useMemo(() => {
+        if (!task?.deadline || isOverdue) return false;
+        try {
+            const deadlineDate = parseISO(task.deadline);
+            return isBefore(new Date(), deadlineDate);
+        } catch (error) {
+            console.error("Error parsing upcoming deadline:", error);
+            return false;
+        }
+    }, [task?.deadline, isOverdue]);
+
+    // Calculate upcoming deadline duration
+    const upcomingDeadlineDuration = useMemo(() => {
+        if (!hasUpcomingDeadline || !task?.deadline) return "";
+        try {
+            const deadlineDate = parseISO(task.deadline);
+            return formatDistanceToNow(deadlineDate, { addSuffix: true });
+        } catch (error) {
+            console.error("Error calculating upcoming deadline duration:", error);
+            return "";
+        }
+    }, [hasUpcomingDeadline, task?.deadline]);
+
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
             case "none":
@@ -179,7 +203,6 @@ const TaskCard = ({
                         backgroundColor: ThemedColor.lightened,
                         borderWidth: 1,
                         borderColor: showRedOutline ? ThemedColor.error : ThemedColor.tertiary,
-                        minHeight: height,
                     },
                 ]}
                 disabled={!redirect && !encourage && !congratulate}
@@ -188,10 +211,20 @@ const TaskCard = ({
                 <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />
 
                 <View style={styles.row}>
-                    <ThemedText numberOfLines={1} ellipsizeMode="tail" style={styles.content} type="default">
+                    <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
                         {content}
+                        {isOverdue && overdueDuration && (
+                            <ThemedText type="default" style={{ color: ThemedColor.error }}>
+                                {" "}(Due {overdueDuration} ago)
+                            </ThemedText>
+                        )}
+                        {hasUpcomingDeadline && upcomingDeadlineDuration && (
+                            <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                                {" "}({upcomingDeadlineDuration})
+                            </ThemedText>
+                        )}
                     </ThemedText>
-                    <View style={styles.row}>
+                    <View style={styles.iconRow}>
                         <ConditionalView condition={!encourage}>
                             <ConditionalView condition={isRunningState}>
                                 <MaterialIcons name="timer" size={20} color={ThemedColor.caption} />
@@ -203,23 +236,10 @@ const TaskCard = ({
                             {value}
                         </ThemedText> */}
                             
-                            {/* Show warning icon and overdue duration if task is overdue */}
-                            <ConditionalView condition={isOverdue}>
-                                <View style={styles.overdueContainer}>
-                                    {overdueDuration && (
-                                        <ThemedText type="caption" style={[styles.overdueText, { color: ThemedColor.error }]}>
-                                            Due {overdueDuration} ago
-                                        </ThemedText>
-                                    )}
-                                </View>
-                            </ConditionalView>
-                            
-                            {/* Show priority dot only if not overdue */}
-                            <ConditionalView condition={!isOverdue}>
-                                <View
-                                    style={[styles.circle, { backgroundColor: getPriorityColor(PRIORITY_MAP[priority]) }]}
-                                />
-                            </ConditionalView>
+                            {/* Show priority dot */}
+                            <View
+                                style={[styles.circle, { backgroundColor: getPriorityColor(PRIORITY_MAP[priority]) }]}
+                            />
                         </ConditionalView>
                         <ConditionalView condition={encourage}>
                             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -277,16 +297,17 @@ export default TaskCard;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
         borderRadius: 16,
         justifyContent: "center",
     },
     row: {
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "space-between",
         gap: 6,
-        height: 20,
+        minHeight: 20,
     },
     circle: {
         width: 10,
@@ -295,12 +316,15 @@ const styles = StyleSheet.create({
     },
     content: {
         textAlign: "left",
+        flex: 1,
+        lineHeight: 24,
+        maxWidth: "90%",
     },
-    overdueContainer: {
+    iconRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
-    },
-    overdueText: {
+        gap: 6,
+        minHeight: 20,
+        height: "100%"
     },
 });

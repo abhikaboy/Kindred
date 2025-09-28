@@ -26,6 +26,9 @@ async function request(method: string, url: string, body?: any) {
     console.log(
         "Method: " + method + " URL: " + process.env.EXPO_PUBLIC_URL + url + " Body: " + JSON.stringify(body)
     );
+    console.log("🔍 DEBUG - Request body type:", typeof body);
+    console.log("🔍 DEBUG - Request body keys:", body ? Object.keys(body) : 'no body');
+    console.log("🔍 DEBUG - Request body stringified:", JSON.stringify(body, null, 2));
     
     // Get auth data from SecureStore and prepare headers
     let headers: any = {
@@ -48,12 +51,14 @@ async function request(method: string, url: string, body?: any) {
     }
     
     try {
-        let response = await axios({
+        const axiosConfig = {
             url: process.env.EXPO_PUBLIC_URL + "/api/v1" + url,
             method: method,
             headers: headers,
             data: body,
-        });
+        };
+        console.log("🚀 DEBUG - Axios config:", JSON.stringify(axiosConfig, null, 2));
+        let response = await axios(axiosConfig);
 
         // console.log("Response: " + JSON.stringify(response.data));
 

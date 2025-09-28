@@ -71,9 +71,13 @@ type DeleteCongratulationOutput struct {
 
 // Mark Congratulations as Read
 type MarkCongratulationsReadInput struct {
-	Authorization string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	ID            []string `json:"id" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of congratulation IDs to mark as read" validate:"required"`
+	Authorization string                        `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                        `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          MarkCongratulationsReadParams `json:"body"`
+}
+
+type MarkCongratulationsReadParams struct {
+	ID []string `json:"id" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of congratulation IDs to mark as read" validate:"required"`
 }
 
 type MarkCongratulationsReadOutput struct {
