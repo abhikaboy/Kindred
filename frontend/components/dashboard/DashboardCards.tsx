@@ -6,6 +6,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { DrawerLayout } from "react-native-gesture-handler";
+import TodaySection from "./TodaySection";
 
 type Props = {
     drawerRef?: React.RefObject<DrawerLayout>;
@@ -85,6 +86,8 @@ const DashboardCards = (props: Props) => {
                     }}
                 />
             </View>
+            
+            <TodaySection />
         </View>
     );
 };

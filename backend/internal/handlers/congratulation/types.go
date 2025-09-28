@@ -77,7 +77,7 @@ type MarkCongratulationsReadInput struct {
 }
 
 type MarkCongratulationsReadParams struct {
-	ID []string `json:"id" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of congratulation IDs to mark as read" validate:"required"`
+	ID []string `json:"id" validate:"required" doc:"List of congratulation IDs to mark as read"`
 }
 
 type MarkCongratulationsReadOutput struct {
