@@ -32,12 +32,12 @@ export const OnboardingBackground = () => {
       Animated.sequence([
         Animated.timing(circle1Anim, {
           toValue: 1,
-          duration: 8000,
+          duration: 12000,
           useNativeDriver: false, // Must be false for SVG transforms
         }),
         Animated.timing(circle1Anim, {
           toValue: 0,
-          duration: 8000,
+          duration: 12000,
           useNativeDriver: false,
         }),
       ])
@@ -48,12 +48,12 @@ export const OnboardingBackground = () => {
       Animated.sequence([
         Animated.timing(circle2Anim, {
           toValue: 1,
-          duration: 5500,
+          duration: 8500,
           useNativeDriver: false,
         }),
         Animated.timing(circle2Anim, {
           toValue: 0,
-          duration: 5500,
+          duration: 8500,
           useNativeDriver: false,
         }),
       ])
@@ -64,12 +64,12 @@ export const OnboardingBackground = () => {
       Animated.sequence([
         Animated.timing(circle3Anim, {
           toValue: 1,
-          duration: 9000,
+          duration: 13500,
           useNativeDriver: false,
         }),
         Animated.timing(circle3Anim, {
           toValue: 0,
-          duration: 9000,
+          duration: 13500,
           useNativeDriver: false,
         }),
       ])
@@ -80,12 +80,12 @@ export const OnboardingBackground = () => {
       Animated.sequence([
         Animated.timing(pathAnim, {
           toValue: 1,
-          duration: 6500,
+          duration: 10000,
           useNativeDriver: false,
         }),
         Animated.timing(pathAnim, {
           toValue: 0,
-          duration: 6500,
+          duration: 10000,
           useNativeDriver: false,
         }),
       ])
@@ -96,12 +96,12 @@ export const OnboardingBackground = () => {
       Animated.sequence([
         Animated.timing(triangleAnim, {
           toValue: 1,
-          duration: 7000,
+          duration: 11000,
           useNativeDriver: false,
         }),
         Animated.timing(triangleAnim, {
           toValue: 0,
-          duration: 7000,
+          duration: 11000,
           useNativeDriver: false,
         }),
       ])
@@ -112,12 +112,12 @@ export const OnboardingBackground = () => {
       Animated.sequence([
         Animated.timing(diamondAnim, {
           toValue: 1,
-          duration: 4500,
+          duration: 7000,
           useNativeDriver: false,
         }),
         Animated.timing(diamondAnim, {
           toValue: 0,
-          duration: 4500,
+          duration: 7000,
           useNativeDriver: false,
         }),
       ])

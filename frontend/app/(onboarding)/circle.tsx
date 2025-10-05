@@ -56,17 +56,17 @@ const CircleOnboarding = (props: Props) => {
         Animated.loop(
             Animated.timing(circleRotation, {
                 toValue: 1,
-                duration: 20000, // 20 seconds for one full rotation
+                duration: 30000, // 30 seconds for one full rotation
                 useNativeDriver: false, // Must be false for SVG transforms
             })
         ).start();
 
-        // Label switching animation - changes every 1/4 rotation (5 seconds)
+        // Label switching animation - changes every 1/4 rotation (7.5 seconds)
         Animated.loop(
             Animated.sequence([
                 Animated.timing(labelIndex, {
                     toValue: 4,
-                    duration: 20000, // 20 seconds for full cycle (5 seconds per label)
+                    duration: 30000, // 30 seconds for full cycle (7.5 seconds per label)
                     useNativeDriver: false,
                 }),
                 Animated.timing(labelIndex, {
