@@ -1944,16 +1944,20 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AcceptConnectionOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Connection request accepted successfully */
             message: string;
         };
         ActivateTaskOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ActivateTaskOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task activation status updated successfully */
             message: string;
         };
         ActivityDay: {
@@ -1968,6 +1972,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ActivityDocument.json
              */
             readonly $schema?: string;
             _id: string;
@@ -1986,15 +1991,18 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AddCommentOutputBody.json
              */
             readonly $schema?: string;
             comment: components["schemas"]["CommentDocumentAPI"];
+            /** @example Comment added successfully */
             message: string;
         };
         AddCommentParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AddCommentParams.json
              */
             readonly $schema?: string;
             content: string;
@@ -2004,14 +2012,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AddMemberOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Member added successfully */
             message: string;
         };
         AddMemberParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AddMemberParams.json
              */
             readonly $schema?: string;
             userId: string;
@@ -2020,15 +2031,19 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AddReactionOutputBody.json
              */
             readonly $schema?: string;
+            /** @example true */
             added: boolean;
+            /** @example Reaction added successfully */
             message: string;
         };
         AddReactionParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AddReactionParams.json
              */
             readonly $schema?: string;
             emoji: string;
@@ -2036,11 +2051,15 @@ export interface components {
         BlueprintCategoryGroup: {
             /** @description List of blueprints in this category */
             blueprints: components["schemas"]["BlueprintDocument"][];
-            /** @description Category name (maps from aggregation _id) */
+            /**
+             * @description Category name (maps from aggregation _id)
+             * @example productivity
+             */
             category: string;
             /**
              * Format: int64
              * @description Number of blueprints in this category
+             * @example 5
              */
             count: number;
         };
@@ -2048,66 +2067,143 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BlueprintDocument.json
              */
             readonly $schema?: string;
-            /** @description Banner image URL */
+            /**
+             * @description Banner image URL
+             * @example https://example.com/banner.jpg
+             */
             banner: string;
-            /** @description Categories associated with the blueprint */
+            /**
+             * @description Categories associated with the blueprint
+             * @example [
+             *       {
+             *         "id": "507f1f77bcf86cd799439011",
+             *         "lastEdited": "2023-01-01T00:00:00Z",
+             *         "name": "Productivity",
+             *         "user": "507f1f77bcf86cd799439012",
+             *         "workspaceName": "Personal"
+             *       }
+             *     ]
+             */
             categories: components["schemas"]["CategoryDocument"][];
-            /** @description Category of the blueprint */
+            /**
+             * @description Category of the blueprint
+             * @example productivity
+             */
             category: string;
-            /** @description Description of the blueprint */
+            /**
+             * @description Description of the blueprint
+             * @example A comprehensive morning routine
+             */
             description: string;
-            /** @description Expected duration */
+            /**
+             * @description Expected duration
+             * @example 30m
+             */
             duration: string;
-            /** @description Unique identifier for the blueprint */
+            /**
+             * @description Unique identifier for the blueprint
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description Name of the blueprint */
+            /**
+             * @description Name of the blueprint
+             * @example Morning Routine
+             */
             name: string;
             /** @description Owner information */
             owner: components["schemas"]["UserExtendedReference"];
-            /** @description List of subscriber user IDs */
+            /**
+             * @description List of subscriber user IDs
+             * @example [
+             *       "507f1f77bcf86cd799439012"
+             *     ]
+             */
             subscribers: string[];
             /**
              * Format: int64
              * @description Number of subscribers
+             * @example 42
              */
             subscribersCount: number;
-            /** @description Tags associated with the blueprint */
+            /**
+             * @description Tags associated with the blueprint
+             * @example [
+             *       "productivity",
+             *       "morning"
+             *     ]
+             */
             tags: string[];
             /**
              * Format: date-time
              * @description Creation timestamp
+             * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
         };
         BlueprintDocumentWithoutSubscribers: {
-            /** @description Banner image URL */
+            /**
+             * @description Banner image URL
+             * @example https://example.com/banner.jpg
+             */
             banner: string;
-            /** @description Categories associated with the blueprint */
+            /**
+             * @description Categories associated with the blueprint
+             * @example [
+             *       {
+             *         "id": "507f1f77bcf86cd799439011",
+             *         "name": "Productivity"
+             *       }
+             *     ]
+             */
             categories: components["schemas"]["CategoryDocument"][];
-            /** @description Category of the blueprint */
+            /**
+             * @description Category of the blueprint
+             * @example productivity
+             */
             category: string;
-            /** @description Description of the blueprint */
+            /**
+             * @description Description of the blueprint
+             * @example A comprehensive morning routine
+             */
             description: string;
-            /** @description Expected duration */
+            /**
+             * @description Expected duration
+             * @example 30m
+             */
             duration: string;
-            /** @description Unique identifier for the blueprint */
+            /**
+             * @description Unique identifier for the blueprint
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description Name of the blueprint */
+            /**
+             * @description Name of the blueprint
+             * @example Morning Routine
+             */
             name: string;
             /** @description Owner information */
             owner: components["schemas"]["UserExtendedReference"];
             /**
              * Format: int64
              * @description Number of subscribers
+             * @example 42
              */
             subscribersCount: number;
-            /** @description Tags associated with the blueprint */
+            /**
+             * @description Tags associated with the blueprint
+             * @example [
+             *       "productivity",
+             *       "morning"
+             *     ]
+             */
             tags: string[];
             /**
              * Format: date-time
              * @description Creation timestamp
+             * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
         };
@@ -2115,6 +2211,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CategoryDocument.json
              */
             readonly $schema?: string;
             blueprintId?: string;
@@ -2164,6 +2261,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CompleteTaskDocument.json
              */
             readonly $schema?: string;
             timeCompleted: string;
@@ -2173,64 +2271,100 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CompleteTaskOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task completed successfully */
             message: string;
         };
         ConfirmImageUploadInputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ConfirmImageUploadInputBody.json
              */
             readonly $schema?: string;
+            /** @example https://kindred.nyc3.digitaloceanspaces.com/profiles/507f1f77bcf86cd799439011/uuid.jpg */
             public_url: string;
         };
         ConfirmImageUploadOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ConfirmImageUploadOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Image upload confirmed successfully */
             message: string;
         };
         CongratulationDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CongratulationDocument.json
              */
             readonly $schema?: string;
-            /** @description Category name */
+            /**
+             * @description Category name
+             * @example Work
+             */
             categoryName: string;
-            /** @description Unique identifier for the congratulation */
+            /**
+             * @description Unique identifier for the congratulation
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description Congratulation message */
+            /**
+             * @description Congratulation message
+             * @example Congratulations on completing your task!
+             */
             message: string;
-            /** @description Whether the congratulation has been read */
+            /**
+             * @description Whether the congratulation has been read
+             * @example false
+             */
             read: boolean;
-            /** @description Receiver user ID */
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
             receiver: string;
             /** @description Sender information */
             sender: components["schemas"]["CongratulationSender"];
-            /** @description Task name */
+            /**
+             * @description Task name
+             * @example Complete project proposal
+             */
             taskName: string;
             /**
              * Format: date-time
              * @description Creation timestamp
+             * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
         };
         CongratulationSender: {
-            /** @description Sender's user ID */
+            /**
+             * @description Sender's user ID
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description Sender's name */
+            /**
+             * @description Sender's name
+             * @example John Doe
+             */
             name: string;
-            /** @description Sender's profile picture URL */
+            /**
+             * @description Sender's profile picture URL
+             * @example https://example.com/avatar.jpg
+             */
             picture: string;
         };
         ConnectionDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ConnectionDocument.json
              */
             readonly $schema?: string;
             /**
@@ -2243,7 +2377,10 @@ export interface components {
              * @description When relationship was created
              */
             created_at: string;
-            /** @description Relationship ID */
+            /**
+             * @description Relationship ID
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
             /** @description Receiver user ID */
             receiver_id: string;
@@ -2255,40 +2392,86 @@ export interface components {
             users: string[];
         };
         ConnectionUser: {
-            /** @description User ID */
+            /**
+             * @description User ID
+             * @example 507f1f77bcf86cd799439011
+             */
             _id: string;
-            /** @description User handle */
+            /**
+             * @description User handle
+             * @example johndoe
+             */
             handle: string;
-            /** @description User name */
+            /**
+             * @description User name
+             * @example John Doe
+             */
             name: string;
-            /** @description Profile picture URL */
+            /**
+             * @description Profile picture URL
+             * @example https://example.com/avatar.jpg
+             */
             picture: string;
         };
         CreateBlueprintParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateBlueprintParams.json
              */
             readonly $schema?: string;
-            /** @description Banner image URL for the blueprint */
+            /**
+             * @description Banner image URL for the blueprint
+             * @example https://example.com/banner.jpg
+             */
             banner: string;
-            /** @description Categories associated with the blueprint */
+            /**
+             * @description Categories associated with the blueprint
+             * @example [
+             *       {
+             *         "id": "507f1f77bcf86cd799439011",
+             *         "lastEdited": "2023-01-01T00:00:00Z",
+             *         "name": "Productivity",
+             *         "user": "507f1f77bcf86cd799439012",
+             *         "workspaceName": "Personal"
+             *       }
+             *     ]
+             */
             categories: components["schemas"]["CategoryDocument"][];
-            /** @description Category of the blueprint */
+            /**
+             * @description Category of the blueprint
+             * @example productivity
+             */
             category: string;
-            /** @description Description of the blueprint */
+            /**
+             * @description Description of the blueprint
+             * @example A comprehensive morning routine to start your day right
+             */
             description: string;
-            /** @description Expected duration to complete the blueprint */
+            /**
+             * @description Expected duration to complete the blueprint
+             * @example 30m
+             */
             duration: string;
-            /** @description Name of the blueprint */
+            /**
+             * @description Name of the blueprint
+             * @example Morning Routine
+             */
             name: string;
-            /** @description Tags associated with the blueprint */
+            /**
+             * @description Tags associated with the blueprint
+             * @example [
+             *       "productivity",
+             *       "morning"
+             *     ]
+             */
             tags: string[];
         };
         CreateCategoryParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateCategoryParams.json
              */
             readonly $schema?: string;
             name?: string;
@@ -2298,45 +2481,76 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateCongratulationParams.json
              */
             readonly $schema?: string;
-            /** @description Category name */
+            /**
+             * @description Category name
+             * @example Work
+             */
             categoryName: string;
-            /** @description Congratulation message */
+            /**
+             * @description Congratulation message
+             * @example Congratulations on completing your task!
+             */
             message: string;
-            /** @description Receiver user ID */
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
             receiver: string;
-            /** @description Task name */
+            /**
+             * @description Task name
+             * @example Complete project proposal
+             */
             taskName: string;
         };
         CreateConnectionParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateConnectionParams.json
              */
             readonly $schema?: string;
-            /** @description Receiver user ID */
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
             receiver_id: string;
         };
         CreateEncouragementParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateEncouragementParams.json
              */
             readonly $schema?: string;
-            /** @description Category name */
+            /**
+             * @description Category name
+             * @example Work
+             */
             categoryName: string;
-            /** @description Encouragement message */
+            /**
+             * @description Encouragement message
+             * @example Great job on completing your task!
+             */
             message: string;
-            /** @description Receiver user ID */
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
             receiver: string;
-            /** @description Task name */
+            /**
+             * @description Task name
+             * @example Complete project proposal
+             */
             taskName: string;
         };
         CreateGroupParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateGroupParams.json
              */
             readonly $schema?: string;
             members?: string[];
@@ -2352,6 +2566,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreatePostParams.json
              */
             readonly $schema?: string;
             blueprintId?: string;
@@ -2367,6 +2582,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTaskParams.json
              */
             readonly $schema?: string;
             active: boolean;
@@ -2393,33 +2609,45 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateWaitlistParams.json
              */
             readonly $schema?: string;
-            /** @description User email address */
+            /**
+             * @description User email address
+             * @example user@example.com
+             */
             email: string;
-            /** @description User full name */
+            /**
+             * @description User full name
+             * @example John Doe
+             */
             name: string;
         };
         DeleteBlueprintOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteBlueprintOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Blueprint deleted successfully */
             message: string;
         };
         DeleteCategoryOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteCategoryOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Category deleted successfully */
             message: string;
         };
         DeleteCommentOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteCommentOutputBody.json
              */
             readonly $schema?: string;
             message: string;
@@ -2428,115 +2656,165 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteCongratulationOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Congratulation deleted successfully */
             message: string;
         };
         DeleteConnectionOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteConnectionOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Connection deleted successfully */
             message: string;
         };
         DeleteEncouragementOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteEncouragementOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Encouragement deleted successfully */
             message: string;
         };
         DeleteGroupOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteGroupOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Group deleted successfully */
             message: string;
         };
         DeleteNotificationOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteNotificationOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Notification deleted successfully */
             message: string;
         };
         DeletePostOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeletePostOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Post deleted successfully */
             message: string;
         };
         DeleteProfileOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteProfileOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Profile deleted successfully */
             message: string;
         };
         DeleteTaskOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteTaskOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task deleted successfully */
             message: string;
         };
         DeleteWaitlistOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteWaitlistOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Waitlist entry deleted successfully */
             message: string;
+            /** @example success */
             status: string;
         };
         DeleteWorkspaceOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteWorkspaceOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Workspace deleted successfully */
             message: string;
         };
         EncouragementDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/EncouragementDocument.json
              */
             readonly $schema?: string;
-            /** @description Category name */
+            /**
+             * @description Category name
+             * @example Work
+             */
             categoryName: string;
-            /** @description Unique identifier for the encouragement */
+            /**
+             * @description Unique identifier for the encouragement
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description Encouragement message */
+            /**
+             * @description Encouragement message
+             * @example Great job on completing your task!
+             */
             message: string;
-            /** @description Whether the encouragement has been read */
+            /**
+             * @description Whether the encouragement has been read
+             * @example false
+             */
             read: boolean;
-            /** @description Receiver user ID */
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
             receiver: string;
             /** @description Sender information */
             sender: components["schemas"]["EncouragementSender"];
-            /** @description Task name */
+            /**
+             * @description Task name
+             * @example Complete project proposal
+             */
             taskName: string;
             /**
              * Format: date-time
              * @description Creation timestamp
+             * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
         };
         EncouragementSender: {
-            /** @description Sender's user ID */
+            /**
+             * @description Sender's user ID
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description Sender's name */
+            /**
+             * @description Sender's name
+             * @example John Doe
+             */
             name: string;
-            /** @description Sender's profile picture URL */
+            /**
+             * @description Sender's profile picture URL
+             * @example https://example.com/avatar.jpg
+             */
             picture: string;
         };
         EnhancedBlueprintReference: {
@@ -2555,28 +2833,38 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ErrorModel.json
              */
             readonly $schema?: string;
-            /** @description A human-readable explanation specific to this occurrence of the problem. */
+            /**
+             * @description A human-readable explanation specific to this occurrence of the problem.
+             * @example Property foo is required but is missing.
+             */
             detail?: string;
             /** @description Optional list of individual error details */
             errors?: components["schemas"]["ErrorDetail"][];
             /**
              * Format: uri
              * @description A URI reference that identifies the specific occurrence of the problem.
+             * @example https://example.com/error-log/abc123
              */
             instance?: string;
             /**
              * Format: int64
              * @description HTTP status code
+             * @example 400
              */
             status?: number;
-            /** @description A short, human-readable summary of the problem type. This value should not change between occurrences of the error. */
+            /**
+             * @description A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+             * @example Bad Request
+             */
             title?: string;
             /**
              * Format: uri
              * @description A URI reference to human-readable documentation for the error.
              * @default about:blank
+             * @example https://example.com/errors/example
              */
             type: string;
         };
@@ -2584,17 +2872,23 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GenerateImageUploadURLOutputBody.json
              */
             readonly $schema?: string;
+            /** @example profiles/507f1f77bcf86cd799439011/uuid.jpg */
             key: string;
+            /** @example Upload URL generated successfully */
             message: string;
+            /** @example https://kindred.nyc3.digitaloceanspaces.com/profiles/507f1f77bcf86cd799439011/uuid.jpg */
             public_url: string;
+            /** @example https://presigned-upload-url... */
             upload_url: string;
         };
         GetFriendsPostsOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetFriendsPostsOutputBody.json
              */
             readonly $schema?: string;
             posts: components["schemas"]["PostDocumentAPI"][];
@@ -2603,6 +2897,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetGroupsOutputBody.json
              */
             readonly $schema?: string;
             groups: components["schemas"]["GroupDocumentAPI"][];
@@ -2611,6 +2906,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetNotificationsOutputBody.json
              */
             readonly $schema?: string;
             notifications: components["schemas"]["NotificationDocument"][];
@@ -2623,6 +2919,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetPostsByBlueprintOutputBody.json
              */
             readonly $schema?: string;
             posts: components["schemas"]["PostDocumentAPI"][];
@@ -2631,6 +2928,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetPostsOutputBody.json
              */
             readonly $schema?: string;
             posts: components["schemas"]["PostDocumentAPI"][];
@@ -2639,6 +2937,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetUserGroupsOutputBody.json
              */
             readonly $schema?: string;
             groups: components["schemas"]["GroupDocumentAPI"][];
@@ -2647,6 +2946,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GroupDocumentAPI.json
              */
             readonly $schema?: string;
             _id: string;
@@ -2666,8 +2966,10 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/HealthOutputBody.json
              */
             readonly $schema?: string;
+            /** @example ok */
             status: string;
         };
         ImageSize: {
@@ -2682,6 +2984,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LoginRequest.json
              */
             readonly $schema?: string;
             email: string;
@@ -2691,6 +2994,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LoginRequestApple.json
              */
             readonly $schema?: string;
             apple_id: string;
@@ -2699,55 +3003,68 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogoutOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Logout Successful */
             message: string;
         };
         MarkAllNotificationsReadOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkAllNotificationsReadOutputBody.json
              */
             readonly $schema?: string;
+            /** @example All notifications marked as read successfully */
             message: string;
         };
         MarkCongratulationsReadOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkCongratulationsReadOutputBody.json
              */
             readonly $schema?: string;
             /**
              * Format: int64
              * @description Number of congratulations marked as read
+             * @example 2
              */
             count: number;
+            /** @example Congratulations marked as read successfully */
             message: string;
         };
         MarkEncouragementsReadOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkEncouragementsReadOutputBody.json
              */
             readonly $schema?: string;
             /**
              * Format: int64
              * @description Number of encouragements marked as read
+             * @example 2
              */
             count: number;
+            /** @example Encouragements marked as read successfully */
             message: string;
         };
         MarkNotificationsReadOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkNotificationsReadOutputBody.json
              */
             readonly $schema?: string;
             /**
              * Format: int64
              * @description Number of notifications marked as read
+             * @example 2
              */
             count: number;
+            /** @example Notifications marked as read successfully */
             message: string;
         };
         NotificationDocument: {
@@ -2781,6 +3098,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PostDocumentAPI.json
              */
             readonly $schema?: string;
             _id: string;
@@ -2817,8 +3135,10 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProcessAndUploadImageInputBody.json
              */
             readonly $schema?: string;
+            /** @example image/jpeg */
             content_type: string;
             image_data: string;
         };
@@ -2826,23 +3146,38 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProcessAndUploadImageOutputBody.json
              */
             readonly $schema?: string;
+            /** @example webp */
             format: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @example 600
+             */
             height: number;
+            /** @example Image processed and uploaded successfully */
             message: string;
+            /** @example 2024-01-01T12:00:00Z */
             processed_at: string;
+            /** @example https://cdn.kindredtodo.com/profiles/507f1f77bcf86cd799439011/uuid.webp */
             public_url: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @example 123456
+             */
             size: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @example 800
+             */
             width: number;
         };
         ProfileDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProfileDocument.json
              */
             readonly $schema?: string;
             display_name: string;
@@ -2874,14 +3209,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RegisterOutputBody.json
              */
             readonly $schema?: string;
+            /** @example User Created Successfully */
             message: string;
         };
         RegisterRequest: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RegisterRequest.json
              */
             readonly $schema?: string;
             email: string;
@@ -2891,6 +3229,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RegisterRequestApple.json
              */
             readonly $schema?: string;
             apple_id: string;
@@ -2917,14 +3256,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RemoveMemberOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Member removed successfully */
             message: string;
         };
         RemoveMemberParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RemoveMemberParams.json
              */
             readonly $schema?: string;
             userId: string;
@@ -2933,22 +3275,27 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RenameWorkspaceInputBody.json
              */
             readonly $schema?: string;
+            /** @example new-workspace */
             newName: string;
         };
         RenameWorkspaceOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RenameWorkspaceOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Workspace renamed successfully */
             message: string;
         };
         SafeUser: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SafeUser.json
              */
             readonly $schema?: string;
             _id: string;
@@ -2976,14 +3323,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SubscribeToBlueprintOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Subscribed to blueprint successfully */
             message: string;
         };
         TaskDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TaskDocument.json
              */
             readonly $schema?: string;
             active: boolean;
@@ -3020,6 +3370,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TemplateTaskDocument.json
              */
             readonly $schema?: string;
             blueprintId?: string;
@@ -3054,43 +3405,87 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TestOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Authorized! */
             message: string;
         };
         UnsubscribeFromBlueprintOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnsubscribeFromBlueprintOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Unsubscribed from blueprint successfully */
             message: string;
         };
         UpdateBlueprintDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateBlueprintDocument.json
              */
             readonly $schema?: string;
-            /** @description New banner image URL */
+            /**
+             * @description New banner image URL
+             * @example https://example.com/new-banner.jpg
+             */
             banner?: string;
-            /** @description Updated categories associated with the blueprint */
+            /**
+             * @description Updated categories associated with the blueprint
+             * @example [
+             *       {
+             *         "id": "507f1f77bcf86cd799439011",
+             *         "lastEdited": "2023-01-01T00:00:00Z",
+             *         "name": "Productivity",
+             *         "user": "507f1f77bcf86cd799439012",
+             *         "workspaceName": "Personal"
+             *       }
+             *     ]
+             */
             categories?: components["schemas"]["CategoryDocument"][];
-            /** @description Updated category of the blueprint */
+            /**
+             * @description Updated category of the blueprint
+             * @example productivity
+             */
             category?: string;
-            /** @description New description */
+            /**
+             * @description New description
+             * @example An updated comprehensive morning routine
+             */
             description?: string;
-            /** @description Updated expected duration */
+            /**
+             * @description Updated expected duration
+             * @example 45m
+             */
             duration?: string;
-            /** @description New name for the blueprint */
+            /**
+             * @description New name for the blueprint
+             * @example Updated Morning Routine
+             */
             name?: string;
-            /** @description Updated subscriber list */
+            /**
+             * @description Updated subscriber list
+             * @example [
+             *       "507f1f77bcf86cd799439012"
+             *     ]
+             */
             subscribers?: string[];
-            /** @description Updated tags */
+            /**
+             * @description Updated tags
+             * @example [
+             *       "productivity",
+             *       "morning",
+             *       "health"
+             *     ]
+             */
             tags?: string[];
             /**
              * Format: date-time
              * @description Update timestamp
+             * @example 2023-01-02T00:00:00Z
              */
             timestamp?: string;
         };
@@ -3098,14 +3493,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateBlueprintOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Blueprint updated successfully */
             message: string;
         };
         UpdateCategoryDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateCategoryDocument.json
              */
             readonly $schema?: string;
             blueprintId?: string;
@@ -3116,27 +3514,43 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateCategoryOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Category updated successfully */
             message: string;
         };
         UpdateCongratulationDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateCongratulationDocument.json
              */
             readonly $schema?: string;
-            /** @description New category name */
+            /**
+             * @description New category name
+             * @example Updated Work
+             */
             categoryName?: string;
-            /** @description New message */
+            /**
+             * @description New message
+             * @example Updated congratulation message
+             */
             message?: string;
-            /** @description Read status */
+            /**
+             * @description Read status
+             * @example true
+             */
             read?: boolean;
-            /** @description New task name */
+            /**
+             * @description New task name
+             * @example Updated task name
+             */
             taskName?: string;
             /**
              * Format: date-time
              * @description Update timestamp
+             * @example 2023-01-02T00:00:00Z
              */
             timestamp?: string;
         };
@@ -3144,14 +3558,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateCongratulationOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Congratulation updated successfully */
             message: string;
         };
         UpdateConnectionDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateConnectionDocument.json
              */
             readonly $schema?: string;
             /** Format: date-time */
@@ -3162,27 +3579,43 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateConnectionOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Connection updated successfully */
             message: string;
         };
         UpdateEncouragementDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateEncouragementDocument.json
              */
             readonly $schema?: string;
-            /** @description New category name */
+            /**
+             * @description New category name
+             * @example Updated Work
+             */
             categoryName?: string;
-            /** @description New message */
+            /**
+             * @description New message
+             * @example Updated encouragement message
+             */
             message?: string;
-            /** @description Read status */
+            /**
+             * @description Read status
+             * @example true
+             */
             read?: boolean;
-            /** @description New task name */
+            /**
+             * @description New task name
+             * @example Updated task name
+             */
             taskName?: string;
             /**
              * Format: date-time
              * @description Update timestamp
+             * @example 2023-01-02T00:00:00Z
              */
             timestamp?: string;
         };
@@ -3190,22 +3623,27 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateEncouragementOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Encouragement updated successfully */
             message: string;
         };
         UpdateGroupOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateGroupOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Group updated successfully */
             message: string;
         };
         UpdateGroupParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateGroupParams.json
              */
             readonly $schema?: string;
             name?: string;
@@ -3214,14 +3652,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdatePostOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Post updated successfully */
             message: string;
         };
         UpdatePostParams: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdatePostParams.json
              */
             readonly $schema?: string;
             caption?: string;
@@ -3232,6 +3673,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateProfileDocument.json
              */
             readonly $schema?: string;
             display_name?: string;
@@ -3242,22 +3684,27 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateProfileOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Profile updated successfully */
             message: string;
         };
         UpdatePushTokenOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdatePushTokenOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Push Token Updated Successfully */
             message: string;
         };
         UpdatePushTokenRequest: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdatePushTokenRequest.json
              */
             readonly $schema?: string;
             push_token: string;
@@ -3266,6 +3713,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskChecklistDocument.json
              */
             readonly $schema?: string;
             checklist: components["schemas"]["ChecklistItem"][];
@@ -3274,14 +3722,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskChecklistOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task checklist updated successfully */
             message: string;
         };
         UpdateTaskDeadlineDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskDeadlineDocument.json
              */
             readonly $schema?: string;
             /** Format: date-time */
@@ -3291,14 +3742,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskDeadlineOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task deadline updated successfully */
             message: string;
         };
         UpdateTaskDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskDocument.json
              */
             readonly $schema?: string;
             active: boolean;
@@ -3325,6 +3779,7 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskNotesDocument.json
              */
             readonly $schema?: string;
             notes: string;
@@ -3333,22 +3788,27 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskNotesOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task notes updated successfully */
             message: string;
         };
         UpdateTaskOutputBody: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task updated successfully */
             message: string;
         };
         UpdateTaskReminderDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskReminderDocument.json
              */
             readonly $schema?: string;
             reminders?: components["schemas"]["Reminder"][];
@@ -3357,14 +3817,17 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskReminderOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task reminders updated successfully */
             message: string;
         };
         UpdateTaskStartDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskStartDocument.json
              */
             readonly $schema?: string;
             /** Format: date-time */
@@ -3376,18 +3839,32 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskStartOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Task start date/time updated successfully */
             message: string;
         };
         UserExtendedReference: {
-            /** @description User ID */
+            /**
+             * @description User ID
+             * @example 507f1f77bcf86cd799439011
+             */
             _id: string;
-            /** @description User display name */
+            /**
+             * @description User display name
+             * @example John Doe
+             */
             display_name: string;
-            /** @description User handle */
+            /**
+             * @description User handle
+             * @example johndoe
+             */
             handle: string;
-            /** @description Profile picture URL */
+            /**
+             * @description Profile picture URL
+             * @example https://example.com/avatar.jpg
+             */
             profile_picture: string;
         };
         UserExtendedReferenceInternal: {
@@ -3406,17 +3883,28 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WaitlistDocument.json
              */
             readonly $schema?: string;
-            /** @description User email address */
+            /**
+             * @description User email address
+             * @example user@example.com
+             */
             email: string;
-            /** @description Unique waitlist entry identifier */
+            /**
+             * @description Unique waitlist entry identifier
+             * @example 507f1f77bcf86cd799439011
+             */
             id: string;
-            /** @description User full name */
+            /**
+             * @description User full name
+             * @example John Doe
+             */
             name: string;
             /**
              * Format: date-time
              * @description Entry creation timestamp
+             * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
         };
@@ -3424,8 +3912,10 @@ export interface components {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WelcomeOutputBody.json
              */
             readonly $schema?: string;
+            /** @example Welcome to Kindred! */
             message: string;
         };
         WorkspaceResult: {

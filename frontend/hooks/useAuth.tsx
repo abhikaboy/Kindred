@@ -45,6 +45,8 @@ interface AuthContextType {
     user: SafeUser | null;
     login: (appleAccountID: string) => Promise<SafeUser | void>;
     register: (email: string, appleAccountID: string) => Promise<any>;
+    registerWithGoogle: (email: string, googleID: string) => Promise<any>;
+    loginWithGoogle: (googleID: string) => Promise<SafeUser | void>;
     logout: () => void;
     refresh: () => void;
     fetchAuthData: () => Promise<SafeUser | null>;
@@ -69,6 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Apple register mutation  
     const appleRegisterMutation = useTypedMutation("post", "/v1/auth/register/apple");
 
+    // Google login and register mutations
+    const googleLoginMutation = useTypedMutation("post", "/v1/auth/login/google" as any);
+    const googleRegisterMutation = useTypedMutation("post", "/v1/auth/register/google" as any);
+
     // Login with token query - we'll use this for automatic authentication
     const loginWithTokenMutation = useTypedMutation("post", "/v1/user/login");
 
@@ -86,6 +92,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Registration failed:", error);
             alert("Unable to complete registration. Please try again.");
+            throw error;
+        }
+    }
+
+    async function registerWithGoogle(email: string, googleID: string): Promise<any> {
+        try {
+            const result = await googleRegisterMutation.mutateAsync({
+                body: {
+                    google_id: googleID,
+                    email: email,
+                } as any
+            });
+
+            console.log("Google registration successful:", result);
+            return result;
+        } catch (error) {
+            console.error("Google registration failed:", error);
             throw error;
         }
     }
@@ -142,6 +165,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error("Login failed with exception:", error);
             console.error("Error stack:", error.stack);
             alert("Looks like we couldn't find your account, try to register instead!");
+            throw error;
+        }
+    }
+
+    async function loginWithGoogle(googleID: string): Promise<SafeUser | void> {
+        console.log("Google login with ID:", googleID);
+        
+        try {
+            console.log("About to make POST request to Google login endpoint...");
+            console.log("Request body:", { google_id: googleID });
+            
+            const result = await client.POST("/v1/auth/login/google" as any, {
+                body: {
+                    google_id: googleID,
+                } as any
+            });
+
+            console.log("Raw result from client.POST:", result);
+            console.log("Result data:", result.data);
+            console.log("Result error:", result.error);
+            console.log("Result response:", result.response);
+            
+            if (result.error) {
+                console.log("Error details:", JSON.stringify(result.error, null, 2));
+                throw new Error(`Google login failed: ${JSON.stringify(result.error)}`);
+            }
+            
+            if (result.data) {
+                const userData = result.data as SafeUser;
+                setUser(userData);
+                
+                // Save tokens if they exist in response headers
+                console.log(result.response?.headers);
+                if (result.response?.headers) {
+                    const accessToken = result.response.headers.get('access_token');
+                    const refreshToken = result.response.headers.get('refresh_token');
+                    
+                    if (accessToken && refreshToken) {
+                        await saveAuthData({ 
+                            access_token: accessToken, 
+                            refresh_token: refreshToken 
+                        });
+                    }
+                }
+                
+                return userData;
+            }
+            
+            console.log("No data or error in response - this is unexpected");
+        } catch (error) {
+            console.error("Google login failed with exception:", error);
+            console.error("Error stack:", error.stack);
+            alert("Looks like we couldn't find your Google account, try to register instead!");
             throw error;
         }
     }
@@ -262,13 +338,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             value={{ 
                 user, 
                 register, 
-                login, 
+                login,
+                registerWithGoogle,
+                loginWithGoogle,
                 logout, 
                 refresh, 
                 fetchAuthData, 
                 updateUser,
-                isLoading: appleLoginMutation.isPending || appleRegisterMutation.isPending || loginWithTokenMutation.isPending,
-                isError: appleLoginMutation.isError || appleRegisterMutation.isError || loginWithTokenMutation.isError
+                isLoading: appleLoginMutation.isPending || appleRegisterMutation.isPending || googleLoginMutation.isPending || googleRegisterMutation.isPending || loginWithTokenMutation.isPending,
+                isError: appleLoginMutation.isError || appleRegisterMutation.isError || googleLoginMutation.isError || googleRegisterMutation.isError || loginWithTokenMutation.isError
             }}
         >
             {children}

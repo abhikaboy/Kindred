@@ -152,7 +152,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         console.log("subscribedBlueprints", subscribedBlueprints);
         const blueprintWorkspaces : BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
             return {
-                name: `[${blueprint.owner.display_name}] ${blueprint.name}`,
+                name: blueprint.name,
                 categories: [],
                 blueprintDetails: blueprint,
                 isBlueprint: true

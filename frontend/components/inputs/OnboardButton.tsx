@@ -22,7 +22,7 @@ const OnboardButton = ({ onPress, disabled }: Props) => {
                 backgroundColor: disabled ? ThemedColor.disabled : ThemedColor.primary,
                 borderRadius: 400,
             }}>
-            <AntDesign name="arrowright" size={24} color="white" />
+            <AntDesign name="arrow-right" size={16} color="white" />
         </TouchableOpacity>
     );
 };

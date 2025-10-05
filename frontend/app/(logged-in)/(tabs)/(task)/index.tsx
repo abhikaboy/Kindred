@@ -129,9 +129,6 @@ const Home = (props: Props) => {
                             <ThemedText type="title" style={styles.title}>
                                 Welcome {user?.display_name}! ☀️
                             </ThemedText>
-                            <TouchableOpacity onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/settings")}>
-                                <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
-                            </TouchableOpacity>
                         </View>
 
                         <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>

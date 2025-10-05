@@ -7,12 +7,13 @@ type Props = {
     style?: ViewStyle;
     ghost?: boolean;
     outline?: boolean;
+    dottedOutline?: boolean;
     disabled?: boolean;
     children?: React.ReactNode;
     textStyle?: TextStyle;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline, disabled, children, textStyle }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, disabled, children, textStyle }: Props) {
     let ThemedColor = useThemeColor();
 
     return (
@@ -22,15 +23,16 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
             style={[
                 {
                     width: "100%",
-                    backgroundColor: ghost
+                    backgroundColor: ghost || dottedOutline
                         ? "transparent"
                         : outline
                           ? ThemedColor.lightened + "20"
                           : ThemedColor.primary,
                     borderRadius: 12,
                     paddingVertical: 16,
-                    borderWidth: outline ? 1 : 0,
-                    borderColor: outline ? ThemedColor.primary : "transparent",
+                    borderWidth: outline || dottedOutline ? 1 : 0,
+                    borderColor: outline || dottedOutline ? ThemedColor.primary : "transparent",
+                    borderStyle: dottedOutline ? "dashed" : "solid",
                     opacity: disabled ? 0.5 : 1,
                 },
                 style,
@@ -38,7 +40,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
             {children}
             <Text
                 style={{
-                    color: ghost || outline ? ThemedColor.primary : ThemedColor.buttonText,
+                    color: ghost || outline || dottedOutline ? ThemedColor.primary : ThemedColor.buttonText,
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,

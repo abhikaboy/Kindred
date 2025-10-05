@@ -54,6 +54,23 @@ export const Drawer = ({ close }) => {
             </View>
             <TouchableOpacity
                 style={{
+                    paddingTop: 12,
+                    width: "100%",
+                    paddingBottom: 16,
+                    paddingHorizontal: HORIZONTAL_PADDING,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                }}
+                onPress={() => {
+                    close();
+                    router.push("/(logged-in)/(tabs)/(task)/settings");
+                }}>
+                <ThemedText type="default">Settings</ThemedText>
+                <Ionicons name="settings-outline" size={20} color={ThemedColor.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={{
                     paddingTop: 4,
                     width: "100%",
                     paddingBottom: 16,
@@ -86,7 +103,7 @@ export const Drawer = ({ close }) => {
                     selected={selected == "" ? "Home" : selected}
                     onPress={() => {
                         setSelected("");
-                        router.navigate("/(logged-in)/(tabs)/(task)/");
+                        router.navigate("/(logged-in)/(tabs)/(task)");
                         close();
                     }}
                     onLongPress={() => {}}
@@ -132,7 +149,7 @@ export const Drawer = ({ close }) => {
                     <DrawerItem
                         onPress={() => {
                             setSelected(workspace.name);
-                            router.navigate("/(logged-in)/(tabs)/(task)/");
+                            router.navigate("/(logged-in)/(tabs)/(task)");
                             close();
                         }}
                         onLongPress={() => {

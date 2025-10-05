@@ -4,6 +4,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as StoreReview from 'expo-store-review';
 
@@ -12,6 +13,7 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function Settings() {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const { logout } = useAuth();
     
     // State for all toggle switches
     const [settings, setSettings] = useState({
@@ -82,6 +84,24 @@ export default function Settings() {
                 'Unable to open review at this time. Please try again later.'
             );
         }
+    };
+
+    const handleLogout = () => {
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Logout', 
+                    style: 'destructive',
+                    onPress: () => {
+                        logout();
+                        router.replace('/login');
+                    }
+                }
+            ]
+        );
     };
 
     const styles = createStyles(ThemedColor, screenWidth);
@@ -206,6 +226,17 @@ export default function Settings() {
                             <Ionicons name="star-outline" size={24} color={ThemedColor.text} />
                         </View>
                     </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={styles.logoutItem} 
+                        onPress={handleLogout}
+                        activeOpacity={0.7}
+                    >
+                        <ThemedText type="lightBody" style={styles.logoutLabel}>
+                            Logout
+                        </ThemedText>
+                        <Ionicons name="log-out-outline" size={24} color={ThemedColor.destructive} />
+                    </TouchableOpacity>
                 </View>
             </View>
         </ThemedView>
@@ -292,6 +323,17 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+        },
+        logoutItem: {
+            paddingVertical: 15,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: ThemedColor.tertiary,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        },
+        logoutLabel: {
+            color: ThemedColor.destructive,
         },
     });
 };

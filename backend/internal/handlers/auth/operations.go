@@ -52,6 +52,16 @@ type RegisterWithAppleInput struct {
 	Body RegisterRequestApple `json:"body"`
 }
 
+// Google Login Operation Types
+type LoginWithGoogleInput struct {
+	Body LoginRequestGoogle `json:"body"`
+}
+
+// Google Register Operation Types
+type RegisterWithGoogleInput struct {
+	Body RegisterRequestGoogle `json:"body"`
+}
+
 // Test Operation Types
 type TestInput struct {
 	Authorization string `header:"Authorization" required:"true"`
@@ -147,6 +157,34 @@ func RegisterRegisterWithAppleOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
 		return handler.RegisterWithAppleHuma(ctx, input)
+	})
+}
+
+// RegisterLoginWithGoogleOperation registers the Google login endpoint
+func RegisterLoginWithGoogleOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "login-google",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/login/google",
+		Summary:     "Login with Google",
+		Description: "Authenticate user with Google ID",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *LoginWithGoogleInput) (*LoginOutput, error) {
+		return handler.LoginWithGoogleHuma(ctx, input)
+	})
+}
+
+// RegisterRegisterWithGoogleOperation registers the Google register endpoint
+func RegisterRegisterWithGoogleOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "register-google",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/register/google",
+		Summary:     "Register with Google",
+		Description: "Register a new user with Google ID",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *RegisterWithGoogleInput) (*RegisterOutput, error) {
+		return handler.RegisterWithGoogleHuma(ctx, input)
 	})
 }
 

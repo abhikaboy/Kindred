@@ -9,6 +9,7 @@ import { BlurView } from "expo-blur";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
+import useGoogleAuth from "@/hooks/useGoogleAuth";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import {
     AppleAuthenticationButton,
@@ -23,10 +24,51 @@ type Props = {
 };
 
 export const OnboardModal = (props: Props) => {
-    const { register, login } = useAuth();
+    const { register, login, registerWithGoogle, loginWithGoogle } = useAuth();
     const { mode, visible, setVisible } = props;
     const router = useRouter();
     const ThemedColor = useThemeColor();
+
+    // Google authentication hook
+    const { signInAsync: googleSignInAsync, loading: googleLoading } = useGoogleAuth({
+        onSuccess: async (result) => {
+            if (result.user && result.user.id && result.user.email) {
+                try {
+                    if (mode === "register") {
+                        await registerWithGoogle(result.user.email, result.user.id);
+                        router.replace({
+                            pathname: "/(onboarding)/phone",
+                            params: {
+                                initialFirstName: result.user.given_name || "",
+                                initialLastName: result.user.family_name || "",
+                                initialPhoneNumber: "",
+                            },
+                        });
+                    } else {
+                        await loginWithGoogle(result.user.id);
+                        router.push("/(logged-in)/(tabs)/(task)");
+                    }
+                    setVisible(false);
+                } catch (error) {
+                    console.error('Google authentication error:', error);
+                    if (mode === "register") {
+                        // Try login if registration fails (user might already exist)
+                        try {
+                            await loginWithGoogle(result.user.id);
+                            router.push("/(logged-in)/(tabs)/(task)");
+                            setVisible(false);
+                        } catch (loginError) {
+                            console.error('Google login fallback failed:', loginError);
+                        }
+                    }
+                }
+            }
+        },
+        onError: (error) => {
+            console.error('Google auth error:', error);
+            alert('Google authentication failed. Please try again.');
+        }
+    });
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -78,7 +120,7 @@ export const OnboardModal = (props: Props) => {
             if (!email || !firstName || !lastName) {
                 console.log("We think you already have an accout: trying to log in instead");
                 await login(appleAccountID);
-                router.push("/(logged-in)/(tabs)");
+                router.push("/(logged-in)/(tabs)/(task)");
             } else {
                 let data = await register(email, appleAccountID);
                 console.log(data);
@@ -116,7 +158,7 @@ export const OnboardModal = (props: Props) => {
 
             await login(appleAccountID);
 
-            router.push("/(logged-in)/(tabs)");
+            router.push("/(logged-in)/(tabs)/(task)");
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("they cancelled");
@@ -157,51 +199,58 @@ export const OnboardModal = (props: Props) => {
                     },
                 ]}>
                 <BlurView style={styles.blurContainer} intensity={0}>
-                    <View>
-                        <ThemedText
-                            type="default"
-                            style={{
-                                fontFamily: "Outfit",
-                                fontSize: 24,
-                                textAlign: "center",
-                                fontWeight: "600",
-                                color: ThemedColor.text,
-                            }}>
-                            Welcome to Kindred 👋
+                    <View style={styles.headerSection}>
+                        <ThemedText type="title" style={styles.welcomeTitle}>
+                            Register for Kindred
                         </ThemedText>
-                        <ThemedText type="caption" style={{ color: "#B8b8b8" }}>
-                            Connected Api: {process.env.EXPO_PUBLIC_URL}
+                        <ThemedText type="lightBody" style={styles.subtitle}>
+                            Select which workspaces you'd like to start off with
                         </ThemedText>
                     </View>
-                    <View style={{ width: "100%", gap: 20, alignItems: "center" }}>
-                        <View
-                            style={{
-                                width: "90%",
-                                gap: 12,
-                            }}>
-                            <PrimaryButton title="Continue with Phone" onPress={() => setVisible(false)} />
-                            <PrimaryButton
-                                title="Continue with Email"
-                                onPress={() => setVisible(false)}
-                                ghost
-                                style={{
-                                    backgroundColor: "#854DFF00",
-                                }}
-                            />
-                        </View>
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                maxWidth: "100%",
-                                justifyContent: "space-evenly",
-                                alignItems: "center",
-                                gap: 12,
-                            }}>
-                            <View style={styles.divider} />
-                            <ThemedText> or </ThemedText>
-                            <View style={styles.divider} />
-                        </View>
+                    
+                    <View style={styles.buttonSection}>
+                        <PrimaryButton
+                            title="Continue with Phone Number"
+                            onPress={() => {
+                                setVisible(false);
+                                router.push("/(onboarding)/productivity");
+                            }}
+                            dottedOutline
+                            style={styles.phoneButton}
+                        />
+                        
+                        <PrimaryButton
+                            title="Continue with Email"
+                            onPress={() => {
+                                setVisible(false);
+                                router.push("/(onboarding)/productivity");
+                            }}
+                            dottedOutline
+                            style={styles.emailButton}
+                        />
+                        
+                        <PrimaryButton
+                            title={mode === "register" ? "Sign Up with Google" : "Sign In with Google"}
+                            onPress={async () => {
+                                try {
+                                    await googleSignInAsync();
+                                } catch (error) {
+                                    console.error('Google sign in failed:', error);
+                                }
+                            }}
+                            style={styles.googleButton}
+                            textStyle={styles.googleButtonText}
+                        />
+                        
                         <AppleAuthenticationButton
+                            buttonType={
+                                mode === "register" 
+                                    ? AppleAuthenticationButtonType.SIGN_UP
+                                    : AppleAuthenticationButtonType.SIGN_IN
+                            }
+                            buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+                            cornerRadius={10}
+                            style={styles.appleButton}
                             onPress={() => {
                                 if (mode === "register") {
                                     apple_regiser();
@@ -209,26 +258,6 @@ export const OnboardModal = (props: Props) => {
                                     apple_login();
                                 }
                                 setVisible(false);
-                            }}
-                            buttonType={AppleAuthenticationButtonType.SIGN_IN}
-                            buttonStyle={AppleAuthenticationButtonStyle.WHITE_OUTLINE}
-                            cornerRadius={12}
-                            style={{
-                                width: "90%",
-                                height: 48,
-                                alignItems: "center",
-                                padding: 4,
-                            }}
-                        />
-                        <PrimaryButton
-                            title="Continue with Google"
-                            onPress={() => setVisible(false)}
-                            ghost
-                            style={{
-                                backgroundColor: "#854DFF00",
-                                borderRadius: 12,
-                                borderColor: ThemedColor.text,
-                                width: "90%",
                             }}
                         />
                     </View>
@@ -241,26 +270,73 @@ export const OnboardModal = (props: Props) => {
 const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
         blurContainer: {
-            paddingBottom: Dimensions.get("screen").height * 0.1,
+            paddingHorizontal: 24,
+            paddingTop: 32,
+            paddingBottom: 40,
             height: "100%",
-            gap: 32,
+            justifyContent: "space-between",
             alignItems: "center",
             flex: 1,
         },
-        divider: {
-            width: "38%",
-            borderStyle: "solid",
-            borderColor: ThemedColor.text,
-            borderWidth: 0.5,
-            height: 1,
+        headerSection: {
+            alignItems: "flex-start",
+            gap: 12,
+            marginBottom: 8,
+            width: "100%",
         },
-        outlineButton: {
-            width: "50%",
-            backgroundColor: ThemedColor.text + "20",
-            borderColor: ThemedColor.text,
-            borderWidth: 1,
-            paddingVertical: 8,
-            alignItems: "center",
-            borderRadius: 24,
+        welcomeTitle: {
+            fontSize: 32,
+            fontWeight: "400",
+            textAlign: "left",
+            color: ThemedColor.text,
+            fontFamily: "Fraunces",
+            lineHeight: 38,
+        },
+        subtitle: {
+            textAlign: "left",
+            color: ThemedColor.caption,
+            fontSize: 16,
+            lineHeight: 22,
+        },
+        buttonSection: {
+            width: "100%",
+            gap: 16,
+            flex: 1,
+            justifyContent: "center",
+        },
+        phoneButton: {
+            width: "100%",
+            borderRadius: 8,
+            paddingVertical: 20,
+        },
+        emailButton: {
+            width: "100%",
+            borderRadius: 8,
+            paddingVertical: 20,
+        },
+        googleButton: {
+            width: "100%",
+            backgroundColor: "white",
+            borderRadius: 10,
+            paddingVertical: 15,
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 3,
+        },
+        appleButton: {
+            width: "100%",
+            height: 54,
+            borderRadius: 10,
+        },
+        googleButtonText: {
+            color: "rgba(0,0,0,0.54)",
+            fontSize: 20,
+            fontWeight: "500",
+            fontFamily: "Outfit",
         },
     });

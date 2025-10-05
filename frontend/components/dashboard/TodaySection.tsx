@@ -5,7 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import TaskCard from "@/components/cards/TaskCard";
+import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { Task } from "@/contexts/tasksContext";
 
 const TodaySection = () => {
@@ -13,29 +13,40 @@ const TodaySection = () => {
     const styles = stylesheet(ThemedColor);
     const { startTodayTasks, dueTodayTasks } = useTasks();
 
-    // Combine and limit to 3 tasks
-    const todayTasks = [...dueTodayTasks, ...startTodayTasks].slice(0, 3);
+    // Get total count and limit display to 3 tasks
+    const allTodayTasks = [...dueTodayTasks, ...startTodayTasks];
+    const todayTasks = allTodayTasks.slice(0, 3);
+    const totalCount = allTodayTasks.length;
+    const displayCount = todayTasks.length;
 
     const handleHeaderPress = () => {
         router.push("/(logged-in)/(tabs)/(task)/today");
     };
 
-    if (todayTasks.length === 0) {
+    if (totalCount === 0) {
         return null; // Don't show section if no tasks
     }
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity onPress={handleHeaderPress} style={styles.header}>
-                <ThemedText type="subtitle">Today</ThemedText>
-                <View style={styles.viewAllButton}>
-                    <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
+            <View style={styles.headerContainer}>
+                <View style={styles.headerTop}>
+                    <ThemedText type="subtitle">Today</ThemedText>
+                    <TouchableOpacity onPress={handleHeaderPress} style={styles.viewAllButton}>
+                        <ThemedText type="caption" style={styles.seeAllText}>See all</ThemedText>
+                        <Ionicons name="chevron-forward" size={20} color={ThemedColor.caption} />
+                    </TouchableOpacity>
                 </View>
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.tasksContainer}>
                 {todayTasks.map((task, index) => (
-                    <TaskCard key={task._id || index} task={task} />
+                    <SwipableTaskCard 
+                        key={task._id || index} 
+                        redirect={true}
+                        categoryId={task.categoryID}
+                        task={task}
+                    />
                 ))}
             </View>
         </View>
@@ -48,14 +59,27 @@ const stylesheet = (ThemedColor: any) =>
             width: "100%",
             marginBottom: 4,
         },
-        header: {
+        headerContainer: {
+            marginBottom: 8,
+        },
+        headerTop: {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 16,
+            marginBottom: 4,
         },
         viewAllButton: {
+            flexDirection: "row",
+            alignItems: "center",
             padding: 4,
+            gap: 4,
+        },
+        seeAllText: {
+            color: ThemedColor.caption,
+        },
+        countText: {
+            color: ThemedColor.caption,
+            marginTop: 12,
         },
         tasksContainer: {
             gap: 12,

@@ -43,18 +43,27 @@ type LoginRequestGoogle struct {
 }
 
 type RegisterRequestApple struct {
-	AppleID string `validate:"required" json:"apple_id"`
-	Email   string `validate:"required,email" json:"email"`
+	AppleID        string `validate:"required" json:"apple_id"`
+	Email          string `validate:"required,email" json:"email"`
+	DisplayName    string `validate:"required" json:"display_name"`
+	Handle         string `validate:"required" json:"handle"`
+	ProfilePicture string `validate:"required" json:"profile_picture"`
 }
 
 type RegisterRequestGoogle struct {
-	GoogleID string `validate:"required" json:"google_id"`
-	Email    string `validate:"required,email" json:"email"`
+	GoogleID       string `validate:"required" json:"google_id"`
+	Email          string `validate:"required,email" json:"email"`
+	DisplayName    string `validate:"required" json:"display_name"`
+	Handle         string `validate:"required" json:"handle"`
+	ProfilePicture string `validate:"required" json:"profile_picture"`
 }
 
 type RegisterRequest struct {
-	Email    string `validate:"required,email" json:"email"`
-	Password string `validate:"required,min=8" json:"password"`
+	Email          string `validate:"required,email" json:"email"`
+	Password       string `validate:"required,min=8" json:"password"`
+	DisplayName    string `validate:"required" json:"display_name"`
+	Handle         string `validate:"required" json:"handle"`
+	ProfilePicture string `validate:"required" json:"profile_picture"`
 }
 
 type UpdatePushTokenRequest struct {

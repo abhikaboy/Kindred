@@ -124,12 +124,12 @@ const Comment = ({
             repliesByRoot[rootParentId].push(reply);
         });
 
-        // sort replies within each root group by time
+        // sort replies within each root group by time (chronologically - oldest first)
         Object.keys(repliesByRoot).forEach((rootId) => {
             repliesByRoot[rootId].sort((a, b) => {
                 const timeA = new Date(a.metadata.createdAt).getTime();
                 const timeB = new Date(b.metadata.createdAt).getTime();
-                return timeB - timeA;
+                return timeA - timeB; // Changed to ascending order for chronological display
             });
         });
 

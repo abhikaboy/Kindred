@@ -92,6 +92,62 @@ func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWith
 	return h.RegisterWithContext(ctxWithApple, registerInput)
 }
 
+// LoginWithGoogleHuma handles Google login
+func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogleInput) (*LoginOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	// database call to find the user and verify credentials and get count
+	id, count, user, err := h.service.LoginFromGoogle(input.Body.GoogleID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Google login failed", err)
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Token generation failed", err)
+	}
+
+	resp := &LoginOutput{}
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
+	resp.Body = types.SafeUser{
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
+	}
+
+	return resp, nil
+}
+
+// RegisterWithGoogleHuma handles Google registration
+func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWithGoogleInput) (*RegisterOutput, error) {
+	// Convert to regular register input and add Google ID to context
+	ctxWithGoogle := context.WithValue(ctx, "google_id", input.Body.GoogleID)
+
+	registerInput := &RegisterInput{
+		Body: RegisterRequest{
+			Email:    input.Body.Email,
+			Password: "", // Google registration doesn't require password
+		},
+	}
+
+	return h.RegisterWithContext(ctxWithGoogle, registerInput)
+}
+
 // RegisterWithContext handles registration with context (used for Apple/Google)
 func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput) (*RegisterOutput, error) {
 	errs := xvalidator.Validator.Validate(&input.Body)
@@ -130,9 +186,10 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		TasksComplete:  0,
 		RecentActivity: make([]types.ActivityDocument, 0),
 
-		DisplayName:     "Default Username",
-		Handle:          "@default",
-		ProfilePicture:  "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg",
+		DisplayName:    input.Body.DisplayName,
+		Handle:         input.Body.Handle,
+		ProfilePicture: input.Body.ProfilePicture,
+
 		Encouragements:  2,
 		Congratulations: 2,
 		Streak:          0,
