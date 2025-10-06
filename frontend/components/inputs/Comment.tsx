@@ -1,13 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
     View,
     StyleSheet,
     TouchableOpacity,
-    ScrollView,
     Platform,
     Alert,
     Keyboard,
-    KeyboardAvoidingView,
     Dimensions,
 } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
@@ -15,7 +13,7 @@ import { ThemedText } from "../ThemedText";
 import SendButton from "./SendButton";
 import CommentInput from "./CommentInput";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { BottomSheetView, BottomSheetModal } from "@gorhom/bottom-sheet";
+import { BottomSheetView, BottomSheetModal, BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { addComment, deleteComment } from "@/api/post";
 import { showToast } from "@/utils/showToast";
 import { router } from "expo-router";
@@ -145,15 +143,17 @@ const Comment = ({
         return result;
     };
 
-    // get the sorted comments
-    const sortedComments = sortCommentsHierarchically(
-        localComments.filter((comment) => !deletingComments.has(comment.id))
-    );
+    // get the sorted comments - memoized for performance
+    const sortedComments = useMemo(() => {
+        return sortCommentsHierarchically(
+            localComments.filter((comment) => !deletingComments.has(comment.id))
+        );
+    }, [localComments, deletingComments]);
 
-    // gets the time to show in how long ago a comment was made
-    const getTimeAgo = (createdAt: string): number => {
+    // gets the time to show in how long ago a comment was made - memoized
+    const getTimeAgo = useCallback((createdAt: string): number => {
         return Math.abs(new Date().getTime() - new Date(createdAt).getTime()) / 36e5;
-    };
+    }, []);
 
     // permission check
     const canDeleteComment = (commentUserId: string): boolean => {
@@ -193,8 +193,8 @@ const Comment = ({
         }
     };
 
-    // handles replying
-    const handleReply = (commentId: string, userName: string) => {
+    // handles replying - memoized
+    const handleReply = useCallback((commentId: string, userName: string) => {
         const rootParentId = findRootParent(commentId, localComments);
 
         setReplyingTo({
@@ -205,7 +205,7 @@ const Comment = ({
 
         setCommentText(`@${userName} `);
         setAutoFocusInput(true);
-    };
+    }, [localComments]);
 
     // handle deleting
     const handleDeleteComment = (commentId: string, commentUserId: string) => {
@@ -278,80 +278,82 @@ const Comment = ({
         ]);
     };
 
+    // Render comment item - memoized
+    const renderCommentItem = useCallback(({ item: comment }: { item: CommentProps }) => {
+        const canDelete = canDeleteComment(comment.user._id);
+        const isDeleting = deletingComments.has(comment.id);
+
+        return (
+            <TouchableOpacity
+                style={[
+                    styles.commentItem,
+                    comment.parentId && styles.replyComment,
+                    isDeleting && styles.deletingComment,
+                ]}
+                onLongPress={
+                    canDelete && !isDeleting
+                        ? () => handleLongPress(comment.id, comment.user._id)
+                        : undefined
+                }
+                onPress={() => {
+                    onClose();
+                    router.push(`/account/${comment.user._id}`);
+                }}
+                delayLongPress={500}
+                activeOpacity={isDeleting ? 1 : 0.7}>
+                <UserInfoRowComment
+                    name={comment.user.display_name}
+                    content={comment.content}
+                    icon={comment.user.profile_picture}
+                    time={getTimeAgo(comment.metadata.createdAt)}
+                    id={comment.id}
+                    onReply={!isDeleting ? handleReply : undefined}
+                />
+                {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}
+            </TouchableOpacity>
+        );
+    }, [deletingComments, currentUserId, postOwnerId, handleReply, onClose]);
+
+    // Empty list component
+    const ListEmptyComponent = useCallback(() => (
+        <View style={styles.emptyContainer}>
+            <ThemedText style={{ color: ThemedColor.caption }}>
+                No comments yet. Be the first to comment!
+            </ThemedText>
+        </View>
+    ), [ThemedColor]);
+
     return (
         <BottomSheetView style={styles.modalContainer}>
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <ThemedText style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
+            <View style={styles.header}>
+                <ThemedText style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
+            </View>
+            <BottomSheetFlatList
+                data={sortedComments}
+                renderItem={renderCommentItem}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={ListEmptyComponent}
+                contentContainerStyle={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                windowSize={10}
+                initialNumToRender={10}
+                style={styles.flatList}
+            />
+            <View style={styles.inputContainer}>
+                <View style={styles.inputRow}>
+                    <CommentInput
+                        autoFocus={autoFocusInput}
+                        placeHolder={replyingTo ? `Reply to ${replyingTo.name}...` : "Leave a comment"}
+                        onChangeText={setCommentText}
+                        onSubmit={handleSubmitComment}
+                        value={commentText}
+                    />
+                    <SendButton onSend={handleSubmitComment} />
                 </View>
-                <ScrollView
-                    style={{
-                        maxHeight: Dimensions.get("window").height * (isKeyboardVisible ? 0.37 : 0.6),
-                    }}
-                    contentContainerStyle={styles.contentContainer}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled">
-                    {sortedComments.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <ThemedText style={{ color: ThemedColor.caption }}>
-                                No comments yet. Be the first to comment!
-                            </ThemedText>
-                        </View>
-                    ) : (
-                        sortedComments.map((comment, index) => {
-                            const canDelete = canDeleteComment(comment.user._id);
-                            const isDeleting = deletingComments.has(comment.id);
-
-                            return (
-                                <TouchableOpacity
-                                    key={comment.id}
-                                    style={[
-                                        styles.commentItem,
-                                        comment.parentId && styles.replyComment,
-                                        isDeleting && styles.deletingComment,
-                                    ]}
-                                    onLongPress={
-                                        canDelete && !isDeleting
-                                            ? () => handleLongPress(comment.id, comment.user._id)
-                                            : undefined
-                                    }
-                                    onPress={async () => {
-                                        onClose();
-                                        router.push(`/account/${comment.user._id}`);
-                                    }}
-                                    delayLongPress={500}
-                                    activeOpacity={isDeleting ? 1 : 0.7}>
-                                    <UserInfoRowComment
-                                        name={comment.user.display_name}
-                                        content={comment.content}
-                                        icon={comment.user.profile_picture}
-                                        time={getTimeAgo(comment.metadata.createdAt)}
-                                        id={comment.id} // Pass comment ID for proper threading
-                                        onReply={!isDeleting ? handleReply : undefined}
-                                    />
-                                    {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}
-                                </TouchableOpacity>
-                            );
-                        })
-                    )}
-                </ScrollView>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
-                    style={{ flexDirection: "column", justifyContent: "flex-end" }}>
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputRow}>
-                            <CommentInput
-                                autoFocus={autoFocusInput}
-                                placeHolder={replyingTo ? `Reply to ${replyingTo.name}...` : "Leave a comment"}
-                                onChangeText={setCommentText}
-                                onSubmit={handleSubmitComment}
-                                value={commentText}
-                            />
-                            <SendButton onSend={handleSubmitComment} />
-                        </View>
-                    </View>
-                </KeyboardAvoidingView>
             </View>
         </BottomSheetView>
     );
@@ -362,10 +364,8 @@ const stylesheet = (ThemedColor: any) =>
         modalContainer: {
             flex: 1,
             backgroundColor: ThemedColor.background,
-        },
-        container: {
-            flex: 1,
             paddingHorizontal: 16,
+            height: '100%',
         },
         header: {
             alignItems: "center",
@@ -379,8 +379,10 @@ const stylesheet = (ThemedColor: any) =>
             fontWeight: "600",
             color: ThemedColor.text,
         },
+        flatList: {
+            flex: 1,
+        },
         contentContainer: {
-            paddingBottom: 20,
             flexGrow: 1,
         },
         commentItem: {
@@ -418,6 +420,7 @@ const stylesheet = (ThemedColor: any) =>
             justifyContent: "center",
             alignItems: "center",
             paddingVertical: 40,
+            minHeight: 200,
         },
     });
 

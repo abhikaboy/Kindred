@@ -47,8 +47,9 @@ const PhoneOnboarding = (props: Props) => {
 
     const handleContinue = () => {
         // Store phone number in onboarding context
+        const fullPhoneNumber = `${countryCode}${phoneNumber}`;
         updateOnboardingData({ 
-            email: `${phoneNumber}@temp.com` // Temporary - will be replaced with actual email
+            phone: fullPhoneNumber
         });
         router.push("/(onboarding)/name");
     };

@@ -85,75 +85,88 @@ const PhotoOnboarding = (props: Props) => {
         }
     };
 
-    const handleContinue = async () => {
+    const handleContinue = () => {
         if (!selectedImage) {
             showToast('Please select a profile photo to continue', 'warning');
             return;
         }
         
         setIsUploading(true);
-        try {
-            // Use a default placeholder during registration
-            const defaultPicture = "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg";
-            updateProfilePicture(defaultPicture);
-            
-            // Wait for state to update
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Register the user first (this creates the user account with an ID)
-            console.log('Registering user...');
-            await registerWithEmail();
-            
-            // Wait a moment for auth state to update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Now upload the actual profile picture with the real user ID
-            if (user?._id) {
-                console.log('Uploading profile picture with user ID:', user._id);
-                const profilePictureUrl = await uploadImageSmart(
-                    "profile",
-                    user._id,
-                    selectedImage,
-                    { variant: "medium" }
-                );
-                
+        
+        // Default placeholder for registration
+        const defaultPicture = "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg";
+        
+        // Update profile picture state and chain registration
+        Promise.resolve(updateProfilePicture(defaultPicture))
+            .then(() => {
+                console.log('Registering user with placeholder image...');
+                return registerWithEmail(defaultPicture);
+            })
+            .then(() => {
+                console.log('User registered successfully, waiting for auth state...');
+                showToast('Account created successfully! 🎉', 'success');
+                // Wait longer for auth state to update (3 seconds with retry logic)
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 15; // 15 attempts * 200ms = 3 seconds max
+                    
+                    const checkUser = () => {
+                        attempts++;
+                        if (user?._id) {
+                            console.log('User ID found after', attempts, 'attempts');
+                            resolve(user._id);
+                        } else if (attempts >= maxAttempts) {
+                            reject(new Error('User ID not available after registration'));
+                        } else {
+                            setTimeout(checkUser, 200);
+                        }
+                    };
+                    
+                    checkUser();
+                });
+            })
+            .then((userId) => {
+                console.log('Uploading actual profile picture with user ID:', userId);
+                return uploadImageSmart("profile", userId as string, selectedImage, { variant: "medium" });
+            })
+            .then((profilePictureUrl) => {
                 const uploadedUrl = typeof profilePictureUrl === 'string' 
                     ? profilePictureUrl 
                     : profilePictureUrl.public_url;
                 
                 console.log('Profile picture uploaded:', uploadedUrl);
-                
-                // Update the profile with the actual CDN URL
-                // This will be handled by the profile update endpoint
                 updateProfilePicture(uploadedUrl);
-            }
-            
-            // Navigation will be handled by auth state change
-            router.replace('/(logged-in)/(tabs)/(task)' as any);
-        } catch (error: any) {
-            console.error('Registration error:', error);
-            
-            // Extract meaningful error message
-            let errorMessage = 'Unable to create account. Please try again.';
-            
-            if (error.message) {
-                if (error.message.includes('upload') || error.message.includes('image')) {
-                    errorMessage = 'Failed to upload profile picture. Please try again.';
-                } else {
-                    errorMessage = error.message;
+                showToast('Profile picture uploaded! ✨', 'success');
+                
+                // Navigate to notifications screen
+                router.push('/(onboarding)/notifications');
+            })
+            .catch((error: any) => {
+                console.error('Registration or upload error:', error);
+                
+                let errorMessage = 'Unable to create account. Please try again.';
+                
+                if (error.message) {
+                    if (error.message.includes('upload') || error.message.includes('image')) {
+                        errorMessage = 'Failed to upload profile picture. Please try again.';
+                    } else if (error.message.includes('User ID')) {
+                        errorMessage = 'Registration completed but profile update failed. Please update your photo in settings.';
+                    } else {
+                        errorMessage = error.message;
+                    }
+                } else if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                } else if (error.toString().includes('email')) {
+                    errorMessage = 'This email is already registered. Please use a different email.';
+                } else if (error.toString().includes('handle')) {
+                    errorMessage = 'This handle is already taken. Please choose a different one.';
                 }
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.toString().includes('email')) {
-                errorMessage = 'This email is already registered. Please use a different email.';
-            } else if (error.toString().includes('handle')) {
-                errorMessage = 'This handle is already taken. Please choose a different one.';
-            }
-            
-            showToast(errorMessage, 'danger');
-        } finally {
-            setIsUploading(false);
-        }
+                
+                showToast(errorMessage, 'danger');
+            })
+            .finally(() => {
+                setIsUploading(false);
+            });
     };
 
     const handleSkip = () => {

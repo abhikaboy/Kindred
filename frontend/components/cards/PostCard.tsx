@@ -96,6 +96,7 @@ const PostCard = React.memo(({
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
     const [imageHeight, setImageHeight] = useState<number>(512);
+    const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
     const queryClient = useQueryClient();
     const screenWidth = useMemo(() => Dimensions.get("window").width, []);
     const { fetchWorkspaces } = useTasks();
@@ -214,10 +215,8 @@ const PostCard = React.memo(({
 
     // Define snap points
     const snapPoints = useMemo(() => {
-        const baseHeight = screenHeight * 0.6; // 50% of screen
-        const maxHeight = screenHeight * 0.6; // 90% of screen (for keyboard)
-
-        return [baseHeight, maxHeight];
+        // const baseHeight = screenHeight * 0.1; // 70% of screen
+        // return [baseHeight];
     }, [screenHeight]);
 
     const mergeReactions = (): SlackReaction[] => {
@@ -253,7 +252,16 @@ const PostCard = React.memo(({
     };
 
     const renderBackdrop = useCallback(
-        (props) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+        (props) => (
+            <BottomSheetBackdrop
+                {...props}
+                disappearsOnIndex={-1}
+                appearsOnIndex={0}
+                opacity={0.5}
+                enableTouchThrough={false}
+                pressBehavior="close"
+            />
+        ),
         []
     );
 
@@ -266,6 +274,7 @@ const PostCard = React.memo(({
 
     const handleSheetChanges = useCallback((index: number) => {
         console.log("handleSheetChanges", index);
+        setIsBottomSheetOpen(index !== -1);
     }, []);
 
     const handleCommentAdded = (newComment: any) => {
@@ -375,9 +384,8 @@ const PostCard = React.memo(({
     const styles = stylesheet(ThemedColor);
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-            <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
-                <View style={styles.content}>
+        <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
+            <View style={styles.content}>
                     <View style={styles.header}>
                         <TouchableOpacity
                             style={styles.userInfo}
@@ -561,8 +569,7 @@ const PostCard = React.memo(({
                 <BottomSheetModal
                     ref={bottomSheetModalRef}
                     onChange={handleSheetChanges}
-                    enableDynamicSizing={true}
-                    snapPoints={snapPoints}
+                    snapPoints={["50%"]}
                     index={0}
                     enablePanDownToClose={true}
                     enableDismissOnClose={true}
@@ -620,8 +627,7 @@ const PostCard = React.memo(({
                         categoryName: category || "General",
                     }}
                 />
-            </View>
-        </KeyboardAvoidingView>
+        </View>
     );
 });
 

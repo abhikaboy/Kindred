@@ -59,7 +59,8 @@ type RegisterRequestGoogle struct {
 }
 
 type RegisterRequest struct {
-	Email          string `validate:"required,email" json:"email"`
+	Email          string `json:"email"`
+	Phone          string `json:"phone"`
 	Password       string `validate:"required,min=8" json:"password"`
 	DisplayName    string `validate:"required" json:"display_name"`
 	Handle         string `validate:"required" json:"handle"`

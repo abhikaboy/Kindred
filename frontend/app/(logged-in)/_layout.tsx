@@ -136,10 +136,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         // Cleanup function
         return () => {
             if (notificationListener.current) {
-                Notifications.removeNotificationSubscription(notificationListener.current);
+                notificationListener.current.remove();
             }
             if (responseListener.current) {
-                Notifications.removeNotificationSubscription(responseListener.current);
+                responseListener.current.remove();
             }
         };
     }, [user]); // Only run when user changes

@@ -321,7 +321,24 @@ export default function Feed() {
         );
     };
 
+    // Memoize time calculation outside of render
+    const calculatePostTime = useCallback((createdAt: string) => {
+        return Math.abs(new Date().getTime() - new Date(createdAt).getTime()) / 36e5;
+    }, []);
+
+    // Memoize reactions transformation
+    const transformReactions = useCallback((reactions: { [emoji: string]: string[] }) => {
+        return Object.entries(reactions).map(([emoji, userIds]) => ({
+            emoji,
+            count: userIds.length,
+            ids: userIds,
+        }));
+    }, []);
+
     const renderPost = useCallback((post: PostData) => {
+        const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
+        const postReactions = post.reactions ? transformReactions(post.reactions) : [];
+        
         return (
             <PostCard
                 icon={post.user?.profile_picture || ""}
@@ -329,26 +346,13 @@ export default function Feed() {
                 username={post.user?.handle || "unknown"}
                 userId={post.user?._id || ""}
                 caption={post.caption || ""}
-                time={
-                    post.metadata?.createdAt
-                        ? Math.abs(new Date().getTime() - new Date(post.metadata.createdAt).getTime()) /
-                          36e5
-                        : 0
-                }
+                time={postTime}
                 priority="low"
                 points={0}
                 timeTaken={0}
                 category={post.task?.category?.name}
                 taskName={post.task?.content}
-                reactions={
-                    post.reactions
-                        ? Object.entries(post.reactions).map(([emoji, userIds]) => ({
-                              emoji,
-                              count: userIds.length,
-                              ids: userIds,
-                          }))
-                        : []
-                }
+                reactions={postReactions}
                 comments={post.comments || []}
                 images={post.images || []}
                 size={post.size}
@@ -357,7 +361,7 @@ export default function Feed() {
                 id={post._id}
             />
         );
-    }, [refreshSinglePost, handlePostHeightChange]);
+    }, [refreshSinglePost, handlePostHeightChange, calculatePostTime, transformReactions]);
 
     const renderHeader = useCallback(() => {
         return (

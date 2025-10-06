@@ -28,9 +28,14 @@ var CheckinSchedule = map[time.Time]CheckinInfo{
 		Message:  "How are you feeling, %s? You have %d tasks on deck and %d deadlines today",
 		SendTask: false,
 	},
-	time.Date(0, 1, 1, 3+4, 1, 0, 0, time.UTC): {
+	time.Date(0, 1, 1, 13+4, 1, 0, 0, time.UTC): {
+		Title:    "Afternoon Check-in 🌙",
+		Message:  "Hey %s, how's \"%s\" going?",
+		SendTask: true,
+	},
+	time.Date(0, 1, 1, 18+4, 1, 0, 0, time.UTC): {
 		Title:    "Evening Check-in 🌙",
-		Message:  "Hey %s, how's %s going?",
+		Message:  "Hey %s, how's \"%s\" going?",
 		SendTask: true,
 	},
 	time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC): {

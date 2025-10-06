@@ -175,6 +175,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 
 	user := User{
 		Email:        input.Body.Email,
+		Phone:        input.Body.Phone,
 		Password:     input.Body.Password,
 		ID:           id,
 		RefreshToken: refresh,

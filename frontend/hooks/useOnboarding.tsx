@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 // Onboarding data interface
 export interface OnboardingData {
     email: string;
+    phone: string;
     password: string;
     displayName: string;
     handle: string;
@@ -49,7 +50,7 @@ interface OnboardingContextType {
     validateAll: () => boolean;
     
     // Registration
-    registerWithEmail: () => Promise<void>;
+    registerWithEmail: (profilePictureUrl?: string) => Promise<void>;
     registerWithApple: () => Promise<void>;
     registerWithGoogle: () => Promise<void>;
     
@@ -61,6 +62,7 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 
 const initialData: OnboardingData = {
     email: '',
+    phone: '',
     password: '',
     displayName: '',
     handle: '',
@@ -83,8 +85,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     // Validation functions
     const validateEmail = (email: string): string | null => {
+        // Email is optional - if empty, it's valid
         if (!email) {
-            return 'Email is required';
+            return null;
         }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
@@ -222,13 +225,40 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     };
 
     // Registration functions
-    const registerWithEmail = async () => {
-        // Validate all fields including profile picture
-        if (!onboardingData.profilePicture) {
+    const registerWithEmail = async (profilePictureUrl?: string) => {
+        // Use provided URL or fall back to state
+        const profilePic = profilePictureUrl || onboardingData.profilePicture;
+        
+        if (!profilePic) {
             throw new Error('Profile picture is required. Please select an image first.');
         }
         
-        if (!validateAll()) {
+        // Validate required fields (email is optional, profile picture passed as param)
+        const errors: ValidationErrors = {};
+        
+        // Email is optional, only validate if provided
+        if (onboardingData.email) {
+            const emailError = validateEmail(onboardingData.email);
+            if (emailError) errors.email = emailError;
+        }
+        
+        const passwordError = validatePassword(onboardingData.password);
+        if (passwordError) errors.password = passwordError;
+        
+        const displayNameError = validateDisplayName(onboardingData.displayName);
+        if (displayNameError) errors.displayName = displayNameError;
+        
+        const handleError = validateHandle(onboardingData.handle);
+        if (handleError) errors.handle = handleError;
+        
+        // Only validate profile picture from state if not provided as parameter
+        if (!profilePictureUrl) {
+            const profilePictureError = validateProfilePicture(onboardingData.profilePicture);
+            if (profilePictureError) errors.profilePicture = profilePictureError;
+        }
+        
+        if (Object.keys(errors).length > 0) {
+            console.error('Validation errors:', errors);
             throw new Error('Validation failed. Please check all fields.');
         }
 
@@ -236,18 +266,20 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         try {
             console.log('Registering with data:', {
                 email: onboardingData.email,
+                phone: onboardingData.phone,
                 display_name: onboardingData.displayName,
                 handle: onboardingData.handle,
-                profile_picture: onboardingData.profilePicture,
+                profile_picture: profilePic,
             });
             
             await emailRegisterMutation.mutateAsync({
                 body: {
-                    email: onboardingData.email,
+                    email: onboardingData.email || "",
+                    phone: onboardingData.phone || "",
                     password: onboardingData.password,
                     display_name: onboardingData.displayName,
                     handle: onboardingData.handle,
-                    profile_picture: onboardingData.profilePicture,
+                    profile_picture: profilePic,
                 }
             });
             
