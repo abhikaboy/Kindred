@@ -15,7 +15,7 @@ type Props = {
 
 const AdvancedOption = ({ icon, label, screen, goTo, showUnconfigured, configured }: Props) => {
     const ThemedColor = useThemeColor();
-    // if we should only show configured and we are confugred then dont show
+    // if we should only show configured and we are NOT configured then dont show
     if (!showUnconfigured && !configured) {
         return null;
     }

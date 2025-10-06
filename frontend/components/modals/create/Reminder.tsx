@@ -1,8 +1,7 @@
-import { View, ScrollView, Dimensions } from "react-native";
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, ScrollView, Dimensions, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
-import { TouchableOpacity } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import SuggestedTag from "@/components/inputs/SuggestedTag";
@@ -11,7 +10,7 @@ import { useTaskCreation } from "@/contexts/taskCreationContext";
 import Dropdown from "@/components/inputs/Dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
-import { combineDateAndTime, copyTime } from "@/utils/timeUtils";
+import { combineDateAndTime } from "@/utils/timeUtils";
 import { add, Duration, sub, addHours, addMinutes } from "date-fns";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
@@ -236,46 +235,72 @@ const Reminder = ({ goToStandard, onSubmit }: Props) => {
     const ThemedColor = useThemeColor();
     const { startTime, startDate, deadline, setReminders } = useTaskCreation();
 
-    const [number, setNumber] = React.useState(1);
-    const [unit, setUnit] = React.useState<"minutes" | "hours" | "days">("minutes");
-    const [type, setType] = React.useState<{ label: string; id: string } | null>(null);
-    const [reminderType, setReminderType] = React.useState<"relative" | "absolute">("relative");
-    const [time, setTime] = React.useState<Date | null>(null);
-    const [date, setDate] = React.useState<Date | null>(null);
+    // State for reminder configuration
+    const [number, setNumber] = useState(1);
+    const [unit, setUnit] = useState<"minutes" | "hours" | "days">("minutes");
+    const [type, setType] = useState<{ label: string; id: string } | null>(null);
+    const [reminderType, setReminderType] = useState<"relative" | "absolute">("relative");
+    const [time, setTime] = useState<Date | null>(null);
+    const [date, setDate] = useState<Date | null>(null);
+
+    // State for type options and dropdown options
+    const [typeOptions, setTypeOptions] = useState<string[]>([]);
+    const [dropdownOptions, setDropdownOptions] = useState<{ label: string; id: string }[]>([]);
+    
     // Max values for each unit
-    const unitMax: Record<string, number> = {
+    const unitMax: Record<string, number> = useMemo(() => ({
         minutes: 59,
         hours: 23,
         days: 30,
-    };
+    }), []);
 
-    // Type options based on available times
-    const typeOptions = [
-        ...(startTime || startDate ? ["Before start time", "After start time"] : []),
-        ...(deadline ? ["Before deadline", "After deadline"] : []),
-    ];
-    const dropdownOptions = typeOptions.map((opt) => ({ label: opt, id: opt }));
-
-    // Ensure selected type is valid
-    React.useEffect(() => {
-        if (!typeOptions.find((opt) => type?.id === opt)) {
-            setType(dropdownOptions[0] || null);
+    // Update type options based on available times
+    useEffect(() => {
+        const options: string[] = [];
+        
+        if (startTime || startDate) {
+            options.push("Before start time", "After start time");
         }
+        
+        if (deadline) {
+            options.push("Before deadline", "After deadline");
+        }
+        
+        setTypeOptions(options);
     }, [startTime, startDate, deadline]);
 
+    // Update dropdown options when type options change
+    useEffect(() => {
+        const options = typeOptions.map((opt) => ({ label: opt, id: opt }));
+        setDropdownOptions(options);
+    }, [typeOptions]);
+
+    // Ensure selected type is valid and set first option when options become available
+    useEffect(() => {
+        if (dropdownOptions.length > 0) {
+            // If no type is selected, or the current type is invalid, select the first option
+            if (!type || !typeOptions.includes(type.id)) {
+                setType(dropdownOptions[0]);
+            }
+        } else {
+            // No options available, clear the type
+            setType(null);
+        }
+    }, [dropdownOptions, typeOptions, type]);
+
     // Ensure number is within range if unit changes
-    React.useEffect(() => {
+    useEffect(() => {
         if (number > unitMax[unit]) {
             setNumber(unitMax[unit]);
         }
-    }, [unit]);
+    }, [unit, number, unitMax]);
 
     // If there are no type options, select Absolute
-    React.useEffect(() => {
+    useEffect(() => {
         if (typeOptions.length === 0) {
             setReminderType("absolute");
         }
-    }, [typeOptions.length]);
+    }, [typeOptions]);
 
     return (
         <View style={{ gap: 24, display: "flex", flexDirection: "column", height: "100%" }}>

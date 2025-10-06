@@ -6,8 +6,8 @@ import { useTasks } from "@/contexts/tasksContext";
 import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
-import CreateModal from "@/components/modals/CreateModal";
 import EditCategory from "@/components/modals/edit/EditCategory";
+import { useCreateModal } from "@/contexts/createModalContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Category } from "../../../../components/category";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -27,8 +27,8 @@ const Workspace = (props: Props) => {
     let ThemedColor = useThemeColor();
     const { categories, selected, showConfetti } = useTasks();
     const insets = useSafeAreaInsets();
+    const { openModal } = useCreateModal();
 
-    const [creating, setCreating] = useState(false);
     const [editing, setEditing] = useState(false);
     const [reordering, setReordering] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
@@ -80,7 +80,6 @@ const Workspace = (props: Props) => {
                     />
                 </View>
             </ConditionalView>
-            <CreateModal visible={creating} setVisible={setCreating} />
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <DefaultModal visible={reordering} setVisible={setReordering}>
                 <ReorderCategories hide={() => setReordering(false)} />
@@ -169,7 +168,7 @@ const Workspace = (props: Props) => {
                             <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                                 <ThemedText type="lightBody">This workspace is empty!</ThemedText>
                                 <TouchableOpacity
-                                    onPress={() => setCreating(true)}
+                                    onPress={() => openModal()}
                                     style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
                                     <ThemedText type="defaultSemiBold">+</ThemedText>
                                 </TouchableOpacity>
@@ -196,14 +195,14 @@ const Workspace = (props: Props) => {
                                                     setFocusedCategory(categoryId);
                                                 }}
                                                 onPress={(categoryId) => {
-                                                    setCreating(true);
+                                                    openModal();
                                                     setFocusedCategory(categoryId);
                                                 }}
                                             />
                                         );
                                     })}
                                 <TouchableOpacity
-                                    onPress={() => setCreating(true)}
+                                    onPress={() => openModal()}
                                     style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
                                     <ThemedText type="defaultSemiBold">+</ThemedText>
                                 </TouchableOpacity>

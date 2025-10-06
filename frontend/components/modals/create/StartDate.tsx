@@ -18,6 +18,7 @@ type Props = {
 const StartDate = ({ goToStandard, onSubmit }: Props) => {
     const ThemedColor = useThemeColor();
     const { startDate, setStartDate } = useTaskCreation();
+    
     return (
         <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
@@ -37,7 +38,8 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
                     caption={new Date().toLocaleDateString()}
                     tag="Today"
                     onPress={() => {
-                        setStartDate(new Date());
+                        const newDate = new Date();
+                        setStartDate(newDate);
                         goToStandard();
                     }}
                 />
@@ -45,7 +47,8 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
                     caption={new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()}
                     tag="Tomorrow"
                     onPress={() => {
-                        setStartDate(new Date(Date.now() + 24 * 60 * 60 * 1000));
+                        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                        setStartDate(tomorrow);
                         goToStandard();
                     }}
                 />
@@ -53,7 +56,8 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
                     caption={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                     tag="In a Week"
                     onPress={() => {
-                        setStartDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+                        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                        setStartDate(nextWeek);
                         goToStandard();
                     }}
                 />

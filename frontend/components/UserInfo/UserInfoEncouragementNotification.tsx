@@ -11,9 +11,10 @@ type Props = {
     taskName: string;
     icon: string;
     time: number;
+    referenceId: string; // Post ID to navigate to
 };
 
-const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time }: Props) => {
+const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time, referenceId }: Props) => {
     const getTimeLabel = (timestamp: number) => {
         const currentTime = Date.now();
         const notificationDate = new Date(timestamp);
@@ -64,9 +65,15 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time 
     };
 
     const timeLabel = getTimeLabel(time);
+    
+    const handleNotificationPress = () => {
+        // Navigate to the post that was encouraged
+        router.push(`/post/${referenceId}`);
+    };
+
     return (
-        <View style={styles.container}>
-            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)}>
+        <TouchableOpacity style={styles.container} onPress={handleNotificationPress} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)} activeOpacity={0.7}>
                 <PreviewIcon size={"smallMedium"} icon={icon} />
             </TouchableOpacity>
 
@@ -92,7 +99,7 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time 
                     />
                 </Svg>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 

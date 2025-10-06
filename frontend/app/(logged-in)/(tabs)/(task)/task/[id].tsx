@@ -33,7 +33,8 @@ import { RecurDetails } from "@/api/types";
 import Feather from "@expo/vector-icons/Feather";
 import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
-import CreateModal, { Screen } from "@/components/modals/CreateModal";
+import { Screen } from "@/components/modals/CreateModal";
+import { useCreateModal } from "@/contexts/createModalContext";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
 import { Picker } from "@react-native-picker/picker";
@@ -50,12 +51,12 @@ export default function Task() {
     let ThemedColor = useThemeColor();
     const { task } = useTasks();
     const { loadTaskData } = useTaskCreation();
+    const { openModal } = useCreateModal();
     const [isRunning, setIsRunning] = useState(false);
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
     const [localNotes, setLocalNotes] = useState("");
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [hours, setHours] = useState(0);
     const [minutes, setMinutes] = useState(0);
@@ -295,7 +296,11 @@ export default function Task() {
                             if (task) {
                                 console.log("task", task);
                                 loadTaskData(task);
-                                setShowEditModal(true);
+                                openModal({
+                                    edit: true,
+                                    categoryId: categoryId as string,
+                                    screen: Screen.DEADLINE
+                                });
                             }
                         }}>
                         <Feather name="edit" size={24} color={ThemedColor.text} />
@@ -496,14 +501,6 @@ export default function Task() {
                     </View>
                 </View>
             </PagerView>
-
-            <CreateModal
-                visible={showEditModal}
-                setVisible={setShowEditModal}
-                edit={true}
-                categoryId={categoryId as string}
-                screen={Screen.DEADLINE}
-            />
 
             <DeadlineBottomSheetModal
                 visible={showDeadlineModal}

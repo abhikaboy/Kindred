@@ -21,6 +21,8 @@ import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 import { MotiView } from "moti";
 import { Skeleton } from "moti/skeleton";
 import { ThemedView } from "@/components/ThemedView";
+import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
+import CreateModal from "@/components/modals/CreateModal";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -174,7 +176,31 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         return <Redirect href="/login" />;
     }
 
-    return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />;
+    return (
+        <CreateModalProvider>
+            <LayoutContent />
+        </CreateModalProvider>
+    );
+};
+
+// Separate component to use the CreateModal context
+const LayoutContent = () => {
+    const ThemedColor = useThemeColor();
+    const { visible, setVisible, modalConfig } = useCreateModal();
+
+    return (
+        <>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />
+            <CreateModal 
+                visible={visible} 
+                setVisible={setVisible}
+                edit={modalConfig.edit}
+                screen={modalConfig.screen}
+                categoryId={modalConfig.categoryId}
+                isBlueprint={modalConfig.isBlueprint}
+            />
+        </>
+    );
 };
 
 export default layout;

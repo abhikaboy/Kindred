@@ -255,13 +255,29 @@ func (s *Service) UpdatePartialTask(
 	return nil, err
 }
 
+// TaskCompletionResult contains information about the task completion
+type TaskCompletionResult struct {
+	StreakChanged bool
+	CurrentStreak int
+	TasksComplete float64
+}
+
 func (s *Service) CompleteTask(
 	userId primitive.ObjectID,
 	id primitive.ObjectID,
 	categoryId primitive.ObjectID,
-	completed CompleteTaskDocument) error {
+	completed CompleteTaskDocument) (*TaskCompletionResult, error) {
 
 	ctx := context.Background()
+
+	// Get user's current streak and tasks_complete before completion
+	var userBefore types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userBefore)
+	if err != nil {
+		return nil, err
+	}
+
+	// Move task to completed-tasks collection
 	pipeline := getTasksByUserPipeline(userId)
 	pipeline = append(pipeline,
 		bson.D{
@@ -291,9 +307,35 @@ func (s *Service) CompleteTask(
 			}},
 		},
 	)
-	_, err := s.Tasks.Aggregate(ctx, pipeline)
+	_, err = s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
 
-	return err
+	// Update user's tasks_complete count
+	_, err = s.Users.UpdateOne(ctx,
+		bson.M{"_id": userId},
+		bson.M{"$inc": bson.M{"tasks_complete": 1}},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get user's current streak and tasks_complete after completion
+	var userAfter types.User
+	err = s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userAfter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if streak changed
+	streakChanged := userAfter.Streak != userBefore.Streak
+
+	return &TaskCompletionResult{
+		StreakChanged: streakChanged,
+		CurrentStreak: userAfter.Streak,
+		TasksComplete: userAfter.TasksComplete,
+	}, nil
 }
 
 func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, categoryId primitive.ObjectID, id primitive.ObjectID) error {
@@ -1101,12 +1143,33 @@ func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.Ob
 		"tasks.$[t].lastEdited": xutils.NowUTC(),
 	}
 
-	// Only update fields that are provided
-	if update.StartDate != nil {
-		updateFields["tasks.$[t].startDate"] = update.StartDate
-	}
-	if update.StartTime != nil {
+	// Combine StartDate and StartTime if both are provided
+	// StartTime from the time picker includes the current date, but we want to use the date from StartDate
+	if update.StartTime != nil && update.StartDate != nil {
+		// Extract time components (hour, minute, second) from StartTime
+		hour, min, sec := update.StartTime.Clock()
+
+		// Combine the date from StartDate with the time from StartTime
+		combinedDateTime := time.Date(
+			update.StartDate.Year(),
+			update.StartDate.Month(),
+			update.StartDate.Day(),
+			hour, min, sec, 0,
+			update.StartDate.Location(),
+		)
+
+		// Update StartDate to include the time
+		updateFields["tasks.$[t].startDate"] = combinedDateTime
+		// Keep StartTime as well for potential future use/display
 		updateFields["tasks.$[t].startTime"] = update.StartTime
+	} else {
+		// Only update fields that are provided individually
+		if update.StartDate != nil {
+			updateFields["tasks.$[t].startDate"] = update.StartDate
+		}
+		if update.StartTime != nil {
+			updateFields["tasks.$[t].startTime"] = update.StartTime
+		}
 	}
 
 	_, err := s.Tasks.UpdateOne(

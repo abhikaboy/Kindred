@@ -7,8 +7,8 @@ import { useTasks } from "@/contexts/tasksContext";
 import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
-import CreateModal from "@/components/modals/CreateModal";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
+import { useCreateModal } from "@/contexts/createModalContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ConditionalView from "@/components/ui/ConditionalView";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -41,7 +41,7 @@ const Home = (props: Props) => {
 
     const { fetchWorkspaces, selected, workspaces, setSelected, dueTodayTasks, fetchingWorkspaces } = useTasks();
     const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks, getRecentWorkspaces } = useTasks();
-    const [creating, setCreating] = useState(false);
+    const { openModal } = useCreateModal();
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
 
     const insets = useSafeAreaInsets();
@@ -110,7 +110,6 @@ const Home = (props: Props) => {
             onDrawerOpen={() => setIsDrawerOpen(true)}
             onDrawerClose={() => setIsDrawerOpen(false)}>
                 
-            <CreateModal visible={creating} setVisible={setCreating} />
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
             
             

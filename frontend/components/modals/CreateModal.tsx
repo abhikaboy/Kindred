@@ -11,14 +11,8 @@ import StartDate from "./create/StartDate";
 import StartTime from "./create/StartTime";
 import Reminder from "./create/Reminder";
 import Collaborators from "./create/Collaborators";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    runOnJS,
-} from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
 
 type Props = {
     visible: boolean;
@@ -49,43 +43,15 @@ export enum Screen {
 const CreateModal = (props: Props) => {
     const [screen, setScreen] = useState(props.screen || Screen.STANDARD);
     const ThemedColor = useThemeColor();
-    const translateX = useSharedValue(0);
-
+    
+    // Get task creation context values to include in memoization dependencies
+    const { taskName, startDate, startTime, deadline, reminders, recurring } = useTaskCreation();
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
     // Define snap points - we'll use percentages for flexibility
-    const snapPoints = useMemo(() => ["25%", "90%"], [screen]);
-
-    const panGesture = Gesture.Pan()
-        .onStart((_, context) => {
-            context.startX = translateX.value;
-        })
-        .onUpdate((event, context) => {
-            if (screen !== Screen.STANDARD) {
-                // Only allow right swipe (back) when not on standard screen
-                if (event.translationX > 0) {
-                    translateX.value = context.startX + event.translationX;
-                }
-            }
-        })
-        .onEnd((event) => {
-            if (event.translationX > 100 && screen !== Screen.STANDARD) {
-                // If swiped right more than 100 units, go back
-                runOnJS(setScreen)(Screen.STANDARD);
-                translateX.value = 0;
-            } else {
-                // Spring back to original position
-                translateX.value = withSpring(0);
-            }
-        });
-
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [{ translateX: translateX.value }],
-        };
-    });
+    const snapPoints = useMemo(() => ["90%"], []);
 
     const goToScreen = useCallback((newScreen: Screen) => {
         setScreen(newScreen);
@@ -123,7 +89,6 @@ const CreateModal = (props: Props) => {
         if (!props.visible) {
             const timer = setTimeout(() => {
                 setScreen(Screen.STANDARD);
-                translateX.value = 0;
             }, 300);
             return () => clearTimeout(timer);
         }
@@ -147,6 +112,7 @@ const CreateModal = (props: Props) => {
     const screenProps = useMemo(() => ({ goToStandard }), [goToStandard]);
 
     // Memoize the screen component to prevent recreation on every render
+    // Include task creation context values in dependencies to ensure updates are reflected
     const currentScreenComponent = useMemo(() => {
         switch (screen) {
             case Screen.STANDARD:
@@ -178,26 +144,41 @@ const CreateModal = (props: Props) => {
             default:
                 return null;
         }
-    }, [screen, screenProps, goToScreen, props.edit, props.categoryId, props.isBlueprint, hideModal, goToStandard]);
+    }, [
+        screen, 
+        screenProps, 
+        goToScreen, 
+        props.edit, 
+        props.categoryId, 
+        props.isBlueprint, 
+        hideModal, 
+        goToStandard,
+        // Include task creation context values to ensure Standard component updates when these change
+        taskName,
+        startDate,
+        startTime,
+        deadline,
+        reminders,
+        recurring,
+    ]);
 
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
-            index={1}
-            enableDynamicSizing={true}
+            index={0}
             snapPoints={snapPoints}
             onChange={handleSheetChanges}
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
-            enablePanDownToClose={true}>
-            <BottomSheetView style={[styles.container, { backgroundColor: ThemedColor.background }]}>
-                <GestureDetector gesture={panGesture}>
-                    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
-                        {currentScreenComponent}
-                    </Animated.View>
-                </GestureDetector>
-            </BottomSheetView>
+            enablePanDownToClose={true}
+            keyboardBehavior="interactive"
+            android_keyboardInputMode="adjustResize">
+            <BottomSheetScrollView 
+                style={[styles.container, { backgroundColor: ThemedColor.background }]}
+                contentContainerStyle={{ flexGrow: 1 }}>
+                {currentScreenComponent}
+            </BottomSheetScrollView>
         </BottomSheetModal>
     );
 };

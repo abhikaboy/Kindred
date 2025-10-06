@@ -70,8 +70,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                 timeCompleted: new Date().toISOString(),
                 timeTaken: new Date().toISOString(),
             });
-            console.log("res");
-            console.log(res);
+            console.log("Task completion result:", res);
 
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
@@ -92,7 +91,16 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
             console.log("🔍 FINAL CATEGORY NAME BEING USED:", finalCategoryName);
             console.log("🔍 TASK DATA BEING SENT TO TOAST:", JSON.stringify(taskData, null, 2));
 
-            if (task.public) {
+            // Show streak notification if streak changed
+            if (res.streakChanged) {
+                showToastable({
+                    title: "🔥 Streak increased!",
+                    status: "success",
+                    position: "top",
+                    message: `You're on a ${res.currentStreak} day streak! Keep it going! 🎉`,
+                    duration: 3000,
+                });
+            } else if (task.public) {
                 showToastable({
                     title: "Task completed!",
                     status: "success",

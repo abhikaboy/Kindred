@@ -39,6 +39,7 @@ type ProcessedNotification = {
     taskName?: string;
     image?: string;
     read: boolean;
+    referenceId: string; // Post ID or Task ID that the notification references
 };
 
 // Extract NotificationItem component
@@ -61,6 +62,7 @@ const NotificationItem = ({
                     icon={notification.icon}
                     time={notification.time}
                     image={notification.image || Icons.coffee}
+                    referenceId={notification.referenceId}
                 />
             ) : notification.type === "encouragement" ? (
                 <UserInfoEncouragementNotification
@@ -69,6 +71,7 @@ const NotificationItem = ({
                     taskName={notification.taskName || "Task"}
                     icon={notification.icon}
                     time={notification.time}
+                    referenceId={notification.referenceId}
                 />
             ) : (
                 <UserInfoEncouragementNotification
@@ -77,6 +80,7 @@ const NotificationItem = ({
                     taskName={notification.taskName || "Task"}
                     icon={notification.icon}
                     time={notification.time}
+                    referenceId={notification.referenceId}
                 />
             )}
         </View>
@@ -226,7 +230,8 @@ const Notifications = () => {
             content: notification.content,
             taskName: taskName || undefined,
             image: notification.user.profile_picture || Icons.coffee,
-            read: notification.read
+            read: notification.read,
+            referenceId: notification.reference_id
         };
     };
 

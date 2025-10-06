@@ -16,8 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { isSameDay, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
-import CreateModal, { Screen } from "@/components/modals/CreateModal";
-
+import { Screen } from "@/components/modals/CreateModal";
+import { useCreateModal } from "@/contexts/createModalContext";
 import TaskSection from "@/components/task/TaskSection";
 
 type Props = {};
@@ -40,9 +40,9 @@ const Daily = (props: Props) => {
     const params = useLocalSearchParams();
     const { setSelected } = useTasks();
     const { loadTaskData } = useTaskCreation();
+    const { openModal } = useCreateModal();
     
-    // State for scheduling modal
-    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    // State for scheduling
     const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
     const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
     
@@ -216,7 +216,11 @@ const Daily = (props: Props) => {
         setSelectedTaskForScheduling(task);
         setSchedulingType(type);
         loadTaskData(task);
-        setShowScheduleModal(true);
+        openModal({
+            edit: true,
+            categoryId: task.categoryID || "",
+            screen: type === 'deadline' ? Screen.DEADLINE : Screen.STARTDATE
+        });
     };
 
     // Function to handle task completion
@@ -329,15 +333,6 @@ const Daily = (props: Props) => {
                     />
                 </ScrollView>
             </View>
-            
-            {/* Quick Schedule Modal */}
-            <CreateModal
-                visible={showScheduleModal}
-                setVisible={setShowScheduleModal}
-                edit={true}
-                categoryId={selectedTaskForScheduling?.categoryID || ""}
-                screen={schedulingType === 'deadline' ? Screen.DEADLINE : Screen.STARTDATE}
-            />
         </DrawerLayout>
     );
 };

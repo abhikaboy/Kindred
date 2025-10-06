@@ -13,9 +13,10 @@ type Props = {
     icon: string;
     time: number;
     image: string;
+    referenceId: string; // Post ID to navigate to
 };
 
-const UserInfoEncouragementNotification = ({ name, userId, comment, icon, time, image }: Props) => {
+const UserInfoCommentNotification = ({ name, userId, comment, icon, time, image, referenceId }: Props) => {
     const getTimeLabel = (timestamp: number) => {
         const currentTime = Date.now();
         const notificationDate = new Date(timestamp);
@@ -68,15 +69,21 @@ const UserInfoEncouragementNotification = ({ name, userId, comment, icon, time, 
 
     const timeLabel = getTimeLabel(time);
 
+    const handleNotificationPress = () => {
+        // Navigate to the post that was commented on
+        router.push(`/posting/${referenceId}`);
+    };
+
     return (
-        <View style={styles.container}>
-            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)}>
+        <TouchableOpacity style={styles.container} onPress={handleNotificationPress} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)} activeOpacity={0.7}>
                 <PreviewIcon size={"smallMedium"} icon={icon} />
             </TouchableOpacity>
 
             <View style={styles.textContainer}>
                 <ThemedText numberOfLines={0} ellipsizeMode="tail" type="smallerDefault" style={styles.text}>
-                    <ThemedText type="smallerDefault" > {comment} on your recent post</ThemedText>
+                    <ThemedText type="smallerDefaultSemiBold">{name}</ThemedText>
+                    <ThemedText type="smallerDefault"> {comment} on your recent post</ThemedText>
                 </ThemedText>
                 <ThemedText type="caption">
                 {timeLabel}
@@ -86,11 +93,11 @@ const UserInfoEncouragementNotification = ({ name, userId, comment, icon, time, 
             <View style={styles.iconContainer}>
                 <CachedImage source={{ uri: image }} style={{ width: 50, height: 50, borderRadius: 3 }} variant="thumbnail" cachePolicy="memory-disk" />
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 
-export default UserInfoEncouragementNotification;
+export default UserInfoCommentNotification;
 
 const styles = StyleSheet.create({
     container: {

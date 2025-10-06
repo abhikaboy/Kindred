@@ -68,10 +68,10 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
 
-    // Set the blueprint flag when component mounts - only once
+    // Set the blueprint flag when component mounts or when the prop changes
     useEffect(() => {
         setIsBlueprint(isBlueprint);
-    }, []); // Empty dependency array - only run once on mount
+    }, [isBlueprint, setIsBlueprint]); // Run when isBlueprint prop changes
 
     useEffect(() => {
         if (screen && edit) {
@@ -110,6 +110,13 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     }, [edit, categoryId, categories]);
 
     const createPost = async () => {
+        console.log('createPost called with context values:', {
+            startDate: startDate,
+            startTime: startTime,
+            deadline: deadline,
+            taskName: taskName
+        });
+        
         if (availableCategories.length === 0) return;
         
         if (isBlueprint) {
@@ -166,6 +173,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             postBody.recurFrequency = recurFrequency;
             postBody.recurDetails = recurDetails as RecurDetails;
         }
+        
+        console.log('POST body:', JSON.stringify(postBody, null, 2));
         const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody);
 
         addToCategory(selectedCategory.id, response);
@@ -510,16 +519,30 @@ const AdvancedOptionList = ({
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
 }) => {
-    const { startDate, startTime, deadline, reminders, recurring, recurFrequency } = useTaskCreation();
+    const { startDate, startTime, deadline, reminders, recurring, recurFrequency, isBlueprint: isBlueprintMode } = useTaskCreation();
+    
+    // Check if start date is the blueprint default date (Jan 1, 1970 at midnight)
+    // Only consider it as "not configured" if we're in blueprint mode AND it matches the exact default
+    const isBlueprintDefaultDate = isBlueprintMode && startDate && 
+        startDate.getFullYear() === 1970 && 
+        startDate.getMonth() === 0 && 
+        startDate.getDate() === 1 &&
+        startDate.getHours() === 0 &&
+        startDate.getMinutes() === 0 &&
+        startDate.getSeconds() === 0;
+    
+    // Start date is configured if it exists AND (we're not in blueprint mode OR it's not the default date)
+    const startDateConfigured = startDate !== null && !isBlueprintDefaultDate;
+    
     return (
         <View style={{ gap: 12, marginTop: 4 }}>
             <AdvancedOption
                 icon="calendar"
-                label={startDate ? "Start Date: " + startDate.toLocaleDateString() : "Set Start Date"}
+                label={startDate ? "Start Date: " + startDate.toLocaleDateString() : "Set Start Date " + startDate?.toISOString()}
                 screen={Screen.STARTDATE}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
-                configured={startDate !== null}
+                configured={startDateConfigured}
             />
             <AdvancedOption
                 icon="time"
@@ -543,15 +566,23 @@ const AdvancedOptionList = ({
                 screen={Screen.RECURRING}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
-                configured={reminders.length > 0}
+                configured={recurring}
             />
             <AdvancedOption
                 icon="alarm"
-                label={reminders.length > 0 ? "Reminders: " + reminders.length : "Add Reminder"}
+                label={
+                    reminders.length > 0
+                        ? reminders.length === 1
+                            ? `Reminder: ${reminders[0].triggerTime.toLocaleString()}`
+                            : `Reminders: ${reminders
+                                  .map((r) => r.triggerTime.toLocaleTimeString())
+                                  .join(", ")}`
+                        : "Add Reminder"
+                }
                 screen={Screen.REMINDER}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
-                configured={recurring}
+                configured={reminders.length > 0}
             />
             <AdvancedOption
                 icon="people"

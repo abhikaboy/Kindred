@@ -80,7 +80,10 @@ type CompleteTaskInput struct {
 
 type CompleteTaskOutput struct {
 	Body struct {
-		Message string `json:"message" example:"Task completed successfully"`
+		Message       string  `json:"message" example:"Task completed successfully"`
+		StreakChanged bool    `json:"streakChanged" example:"true" doc:"Indicates if the user's streak increased"`
+		CurrentStreak int     `json:"currentStreak" example:"5" doc:"The user's current streak count"`
+		TasksComplete float64 `json:"tasksComplete" example:"42" doc:"Total tasks completed by user"`
 	}
 }
 

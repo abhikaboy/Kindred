@@ -132,10 +132,43 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		LastEdited:     time.Now(),
 	}
 
-	// Set default StartDate to today if not provided
-	if task.StartDate == nil {
+	// Combine StartDate and StartTime if both are provided
+	// StartTime from the time picker includes the current date, but we want to use the date from StartDate
+	if task.StartTime != nil && task.StartDate != nil {
+		// Extract time components (hour, minute, second) from StartTime
+		hour, min, sec := task.StartTime.Clock()
+
+		// Combine the date from StartDate with the time from StartTime
+		combinedDateTime := time.Date(
+			task.StartDate.Year(),
+			task.StartDate.Month(),
+			task.StartDate.Day(),
+			hour, min, sec, 0,
+			task.StartDate.Location(),
+		)
+
+		// Update StartDate to include the time
+		task.StartDate = &combinedDateTime
+		// Keep StartTime as well for potential future use/display
+	} else if task.StartDate == nil {
+		// Set default StartDate to today if not provided at all
 		now := time.Now()
-		task.StartDate = &now
+
+		// If we have a StartTime, combine it with today's date
+		if task.StartTime != nil {
+			hour, min, sec := task.StartTime.Clock()
+			combinedDateTime := time.Date(
+				now.Year(),
+				now.Month(),
+				now.Day(),
+				hour, min, sec, 0,
+				now.Location(),
+			)
+			task.StartDate = &combinedDateTime
+		} else {
+			// No time specified, just use today's date
+			task.StartDate = &now
+		}
 	}
 
 	// Handle recurring task template creation if this is a recurring task
@@ -340,8 +373,8 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	// Use the CompleteTask service method instead
-	err = h.service.CompleteTask(userObjID, id, categoryID, input.Body)
+	// Use the CompleteTask service method and get streak info
+	result, err := h.service.CompleteTask(userObjID, id, categoryID, input.Body)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to complete task", err)
 	}
@@ -357,6 +390,9 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 
 	resp := &CompleteTaskOutput{}
 	resp.Body.Message = "Task completed successfully"
+	resp.Body.StreakChanged = result.StreakChanged
+	resp.Body.CurrentStreak = result.CurrentStreak
+	resp.Body.TasksComplete = result.TasksComplete
 	return resp, nil
 }
 

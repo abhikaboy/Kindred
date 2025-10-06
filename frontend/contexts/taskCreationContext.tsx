@@ -69,14 +69,40 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
 
+    // Helper function to create a unique key for a reminder
+    const getReminderKey = (reminder: Reminder): string => {
+        return `${reminder.triggerTime.getTime()}-${reminder.type}-${reminder.beforeDeadline}-${reminder.beforeStart}`;
+    };
+
+    // Helper function to add reminders without duplicates
+    const addRemindersUnique = (existingReminders: Reminder[], newReminders: Reminder[]): Reminder[] => {
+        // Create a Map using unique keys
+        const reminderMap = new Map<string, Reminder>();
+        
+        // Add existing reminders
+        existingReminders.forEach(reminder => {
+            const key = getReminderKey(reminder);
+            reminderMap.set(key, reminder);
+        });
+        
+        // Add new reminders (will overwrite if key exists, ensuring no duplicates)
+        newReminders.forEach(reminder => {
+            const key = getReminderKey(reminder);
+            reminderMap.set(key, reminder);
+        });
+        
+        // Convert back to array
+        return Array.from(reminderMap.values());
+    };
+
     // Function to get default start date based on blueprint mode
-    const getDefaultStartDate = (isBlueprintMode: boolean): Date | null => {
-        if (isBlueprintMode) {
+    const getDefaultStartDate = (isBlueprintMode: boolean | undefined): Date | null => {
+        if (isBlueprintMode === true) {
             // Return January 1, 1970 for blueprint mode
             const defaultDate = new Date(1970, 0, 1); // Month is 0-indexed, so 0 = January
             return defaultDate;
         }
-        // Return null for normal mode (no default date)
+        // Return null for normal mode (no default date) or undefined
         return null;
     };
 
@@ -87,10 +113,13 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
 
     // Custom setIsBlueprint function that also sets the start date
     const setIsBlueprintWithStartDate = (isBlueprintMode: boolean) => {
-        setBlueprintStateInternal(isBlueprintMode);
-        // Set the start date based on blueprint mode
-        const defaultStartDate = getDefaultStartDate(isBlueprintMode);
-        setStartDateWithReminder(defaultStartDate);
+        // Only update start date if blueprint mode is actually changing
+        if (isBlueprint !== isBlueprintMode) {
+            setBlueprintStateInternal(isBlueprintMode);
+            // Set the start date based on blueprint mode
+            const defaultStartDate = getDefaultStartDate(isBlueprintMode);
+            setStartDateWithReminder(defaultStartDate);
+        }
     };
 
     // Wrap setDeadline to auto-add 1h-before reminder
@@ -99,17 +128,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         if (deadline) {
             const reminder = getDeadlineReminder(deadline);
             if (reminder) {
-                setReminders((prev) => {
-                    // Avoid duplicate reminders for the same triggerTime/type
-                    const exists = prev.some(
-                        (r) =>
-                            r.type === reminder.type &&
-                            r.beforeDeadline &&
-                            Math.abs(r.triggerTime.getTime() - reminder.triggerTime.getTime()) < 60000
-                    );
-                    if (!exists) return [...prev, reminder];
-                    return prev;
-                });
+                setReminders((prev) => addRemindersUnique(prev, [reminder]));
             }
         }
     };
@@ -117,36 +136,17 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     // Wrap setStartDate to auto-add absolute reminder and 15-min before reminder
     const setStartDateWithReminder = (startDate: Date | null) => {
         setStartDate(startDate);
+        
         if (startDate) {
             const atStartReminder = getStartDateReminder(startDate, startTime);
             const beforeStartReminder = getStartTimeReminder(startDate, startTime);
 
             setReminders((prev) => {
-                let newReminders = [...prev];
-
-                // Add "at start time" reminder
-                if (atStartReminder) {
-                    const existsAtStart = prev.some(
-                        (r) =>
-                            r.type === atStartReminder.type &&
-                            !r.beforeDeadline &&
-                            !r.beforeStart &&
-                            Math.abs(r.triggerTime.getTime() - atStartReminder.triggerTime.getTime()) < 60000
-                    );
-                    if (!existsAtStart) newReminders.push(atStartReminder);
-                }
-
-                // Add "15 minutes before start" reminder
-                if (beforeStartReminder) {
-                    const existsBeforeStart = prev.some(
-                        (r) =>
-                            r.beforeStart &&
-                            Math.abs(r.triggerTime.getTime() - beforeStartReminder.triggerTime.getTime()) < 60000
-                    );
-                    if (!existsBeforeStart) newReminders.push(beforeStartReminder);
-                }
-
-                return newReminders;
+                const newReminders = [];
+                if (atStartReminder) newReminders.push(atStartReminder);
+                if (beforeStartReminder) newReminders.push(beforeStartReminder);
+                
+                return addRemindersUnique(prev, newReminders);
             });
         }
     };
@@ -166,19 +166,12 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                         !r.beforeStart // Remove old "before start" reminders
                 );
 
-                const newReminders = [...filtered];
-
-                // Add updated "at start time" reminder
-                if (atStartReminder) {
-                    newReminders.push(atStartReminder);
-                }
-
-                // Add updated "15 minutes before start" reminder
-                if (beforeStartReminder) {
-                    newReminders.push(beforeStartReminder);
-                }
-
-                return newReminders;
+                // Add updated reminders using deduplication
+                const newReminders = [];
+                if (atStartReminder) newReminders.push(atStartReminder);
+                if (beforeStartReminder) newReminders.push(beforeStartReminder);
+                
+                return addRemindersUnique(filtered, newReminders);
             });
         }
     };

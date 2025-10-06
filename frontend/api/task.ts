@@ -92,19 +92,30 @@ export const updateNotesAPI = async (categoryId: string, taskId: string, notes: 
 };
 
 /**
+ * Result from marking a task as completed
+ */
+export interface TaskCompletionResult {
+    message: string;
+    streakChanged: boolean;
+    currentStreak: number;
+    tasksComplete: number;
+}
+
+/**
  * Mark a task as completed
  * API: Makes POST request to complete the task
  * Frontend: The task is marked as completed in TaskContext
  * @param categoryId - The ID of the category the task belongs to
  * @param taskId - The ID of the task to complete
  * @param completeData - The completion data
+ * @returns TaskCompletionResult containing streak information
  */
 export const markAsCompletedAPI = async (
     categoryId: string,
     taskId: string,
     completeData: CompleteTaskDocument
-): Promise<void> => {
-    const { error } = await client.POST("/v1/user/tasks/complete/{category}/{id}", {
+): Promise<TaskCompletionResult> => {
+    const { data, error } = await client.POST("/v1/user/tasks/complete/{category}/{id}", {
         params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
         body: completeData,
     });
@@ -112,6 +123,13 @@ export const markAsCompletedAPI = async (
     if (error) {
         throw new Error(`Failed to complete task: ${JSON.stringify(error)}`);
     }
+
+    if (!data) {
+        throw new Error("No response data from task completion");
+    }
+
+    // Cast to TaskCompletionResult since the API schema may not be regenerated yet
+    return data as unknown as TaskCompletionResult;
 };
 
 /**
