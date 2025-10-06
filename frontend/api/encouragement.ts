@@ -2,7 +2,7 @@ import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import * as SecureStore from "expo-secure-store";
-import { useRequest } from "@/hooks/useRequest";
+import axios from "axios";
 
 // Extract the type definitions from the generated types
 type EncouragementDocument = components["schemas"]["EncouragementDocument"];
@@ -54,18 +54,46 @@ export const getEncouragementsAPI = async (): Promise<EncouragementDocument[]> =
  */
 export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count: number; message: string }> => {
     console.log("🎆 DEBUG - markEncouragementsReadAPI called with ids:", ids);
-    console.log("🎆 DEBUG - ids type:", typeof ids, "length:", ids.length);
     
-    const { request } = useRequest();
-
-    const requestBody = { body: { id: ids } };
+    // Get auth data from SecureStore
+    let headers: any = {
+        "Content-Type": "application/json",
+    };
+    
+    try {
+        const authData = await SecureStore.getItemAsync("auth_data");
+        if (authData) {
+            const parsed = JSON.parse(authData);
+            if (parsed.access_token) {
+                headers["Authorization"] = `Bearer ${parsed.access_token}`;
+            }
+            if (parsed.refresh_token) {
+                headers["refresh_token"] = parsed.refresh_token;
+            }
+        }
+    } catch (error) {
+        console.log("Error getting auth data for request:", error);
+    }
+    
+    // ✅ CORRECT: Send { id: [...] } directly, not { body: { id: [...] } }
+    const requestBody = { id: ids };
     console.log("🎆 DEBUG - Request body being sent:", JSON.stringify(requestBody, null, 2));
     
-    // Use direct request since OpenAPI spec is missing request body definition
-    // The request body should be: { body: { id: ["id1", "id2", ...] } }
-    const response = await request("PATCH", "/user/encouragements/mark-read", requestBody);
-
-    return response;
+    try {
+        // ✅ Use axios directly instead of useRequest() hook
+        const response = await axios({
+            url: process.env.EXPO_PUBLIC_URL + "/api/v1/user/encouragements/mark-read",
+            method: "PATCH",
+            headers: headers,
+            data: requestBody,
+        });
+        
+        console.log("✅ Mark as read successful:", response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error("❌ Mark as read failed:", error.response?.data || error.message);
+        throw new Error(`Failed to mark encouragements as read: ${JSON.stringify(error.response?.data || error.message)}`);
+    }
 };
 
 /**
