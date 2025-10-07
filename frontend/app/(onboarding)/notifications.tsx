@@ -65,9 +65,7 @@ const NotificationsOnboarding = (props: Props) => {
                         }
                     ]}
                 >
-                    <ThemedText style={styles.welcomeText}>
-                        Welcome!
-                    </ThemedText>
+
                 </Animated.View>
 
                 {/* Main Text Section - Centered */}
@@ -80,6 +78,9 @@ const NotificationsOnboarding = (props: Props) => {
                         }
                     ]}
                 >
+                    <ThemedText style={styles.welcomeText}>
+                        Welcome!
+                    </ThemedText>
                     <ThemedText style={styles.mainText}>
                         You've joined the{'\n'}
                         <ThemedText style={[styles.mainText, { color: '#854dff' }]}>
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         letterSpacing: -1,
         color: '#000000',
+        marginBottom: 24,
     },
     mainTextContainer: {
         flex: 1,

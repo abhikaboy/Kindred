@@ -96,7 +96,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
     }, [verifyOTPError]);
 
     const handleVerify = async () => {
-        if (otpCode.length === 6 && onboardingData.phone) {
+        if (otpCode.length === 4 && onboardingData.phone) {
             try {
                 await verifyOTP(onboardingData.phone, otpCode);
             } catch (error) {
@@ -129,7 +129,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
         return `••• ${phone.slice(-4)}`;
     };
 
-    const isCodeComplete = otpCode.length === 6;
+    const isCodeComplete = otpCode.length === 4;
 
     return (
         <ThemedView style={styles.mainContainer}>
@@ -187,7 +187,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
                         ) : (
                             <>
                                 <OtpInput
-                                    numberOfDigits={6}
+                                    numberOfDigits={4}
                                     onTextChange={setOtpCode}
                                     onFilled={handleVerify}
                                     theme={{
@@ -195,18 +195,16 @@ const VerifyPhoneOnboarding = (props: Props) => {
                                         pinCodeContainerStyle: {
                                             backgroundColor: ThemedColor.lightened,
                                             borderRadius: 16,
-                                            width: screenWidth * 0.13,
-                                            height: screenWidth * 0.15,
+                                            width: screenWidth * 0.18,
+                                            height: screenWidth * 0.20,
                                             borderWidth: 2,
                                             borderColor: verifyOTPError 
                                                 ? '#ff3b30' 
-                                                : isVerified 
-                                                    ? '#34c759'
                                                     : 'transparent',
                                         },
                                         pinCodeTextStyle: {
                                             color: ThemedColor.text,
-                                            fontSize: 24,
+                                            fontSize: 28,
                                             fontFamily: 'Outfit',
                                             fontWeight: '600',
                                         },
@@ -228,7 +226,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
                                 {isVerified && (
                                     <View style={styles.successContainer}>
                                         <ThemedText style={styles.successText}>
-                                            ✓ Verified successfully!
+                                            Verified successfully!
                                         </ThemedText>
                                     </View>
                                 )}

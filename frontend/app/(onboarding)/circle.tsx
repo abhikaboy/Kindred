@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, Animated } from "react-native";
+import { Dimensions, StyleSheet, View, Animated, Easing } from "react-native";
 import React, { useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -52,21 +52,59 @@ const CircleOnboarding = (props: Props) => {
             useNativeDriver: true,
         }).start();
 
-        // Continuous rotation for the circle and label switching
+        // Exponential easing where it starts fast and slows down
+        // Using out-expo easing for smooth deceleration
+        const exponentialEasing = Easing.out(Easing.exp);
+
+        // Create sequence of 4 quarter rotations, each with exponential easing
+        const quarterRotationDuration = 5000; // 5 seconds per quarter rotation
+        
         Animated.loop(
-            Animated.timing(circleRotation, {
-                toValue: 1,
-                duration: 30000, // 30 seconds for one full rotation
-                useNativeDriver: false, // Must be false for SVG transforms
-            })
+            Animated.sequence([
+                // First quarter (0 to 0.25)
+                Animated.timing(circleRotation, {
+                    toValue: 0.25,
+                    duration: quarterRotationDuration,
+                    easing: exponentialEasing,
+                    useNativeDriver: false,
+                }),
+                // Second quarter (0.25 to 0.5)
+                Animated.timing(circleRotation, {
+                    toValue: 0.5,
+                    duration: quarterRotationDuration,
+                    easing: exponentialEasing,
+                    useNativeDriver: false,
+                }),
+                // Third quarter (0.5 to 0.75)
+                Animated.timing(circleRotation, {
+                    toValue: 0.75,
+                    duration: quarterRotationDuration,
+                    easing: exponentialEasing,
+                    useNativeDriver: false,
+                }),
+                // Fourth quarter (0.75 to 1)
+                Animated.timing(circleRotation, {
+                    toValue: 1,
+                    duration: quarterRotationDuration,
+                    easing: exponentialEasing,
+                    useNativeDriver: false,
+                }),
+                // Reset to 0 instantly for seamless loop
+                Animated.timing(circleRotation, {
+                    toValue: 0,
+                    duration: 0,
+                    useNativeDriver: false,
+                }),
+            ])
         ).start();
 
-        // Label switching animation - changes every 1/4 rotation (7.5 seconds)
+        // Label switching animation - synchronized with quarter rotations
         Animated.loop(
             Animated.sequence([
                 Animated.timing(labelIndex, {
                     toValue: 4,
-                    duration: 30000, // 30 seconds for full cycle (7.5 seconds per label)
+                    duration: quarterRotationDuration * 4, // 20 seconds total
+                    easing: Easing.linear, // Linear for smooth interpolation between labels
                     useNativeDriver: false,
                 }),
                 Animated.timing(labelIndex, {
@@ -86,14 +124,11 @@ const CircleOnboarding = (props: Props) => {
         "congratulations &"
     ];
 
-    // Get current label index (0-3)
-    const currentLabelIndex = Math.floor(labelIndex.__getValue()) % 4;
-
     return (
         <ThemedView style={styles.mainContainer}>
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
-                <OnboardingBackground />
+                <OnboardingBackground variant="green" />
             </View>
 
             {/* Main content */}
