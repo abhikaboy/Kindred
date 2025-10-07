@@ -14,6 +14,7 @@ export default function OnboardingLayout() {
                 }}
             >
                 <Stack.Screen name="phone" />
+                <Stack.Screen name="verify-phone" />
                 <Stack.Screen name="password" />
                 <Stack.Screen name="productivity" />
                 <Stack.Screen name="positivity" />

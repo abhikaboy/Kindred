@@ -344,3 +344,51 @@ func RequireAuthFromHuma(ctx context.Context) (string, error) {
 	slog.Error("❌ REQUIRE AUTH HUMA: User not found in context")
 	return "", fmt.Errorf("user not authenticated")
 }
+
+// SendOTPHuma handles sending OTP via Sinch
+func (h *Handler) SendOTPHuma(ctx context.Context, input *SendOTPInput) (*SendOTPOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	// Call the service method which handles the async Sinch API call
+	verificationID, err := h.service.SendOTP(ctx, input.Body.PhoneNumber)
+	if err != nil {
+		slog.Error("Failed to send OTP", "error", err, "phone", input.Body.PhoneNumber)
+		return nil, huma.Error500InternalServerError("Failed to send OTP", err)
+	}
+
+	resp := &SendOTPOutput{}
+	resp.Body.Message = "OTP sent successfully"
+	resp.Body.VerificationID = verificationID
+
+	return resp, nil
+}
+
+// VerifyOTPHuma handles verifying OTP code via Sinch
+func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*VerifyOTPOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	// Call the service method which handles the async Sinch API call
+	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
+	if err != nil {
+		slog.Error("Failed to verify OTP", "error", err, "phone", input.Body.PhoneNumber)
+		return nil, huma.Error500InternalServerError("Failed to verify OTP", err)
+	}
+
+	resp := &VerifyOTPOutput{}
+	resp.Body.Valid = valid
+	resp.Body.Status = status
+
+	if valid {
+		resp.Body.Message = "OTP verified successfully"
+	} else {
+		resp.Body.Message = "OTP verification failed"
+	}
+
+	return resp, nil
+}

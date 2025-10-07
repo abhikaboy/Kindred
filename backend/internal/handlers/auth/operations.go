@@ -90,6 +90,31 @@ type UpdatePushTokenOutput struct {
 	}
 }
 
+// Send OTP Operation Types
+type SendOTPInput struct {
+	Body SendOTPRequest `json:"body"`
+}
+
+type SendOTPOutput struct {
+	Body struct {
+		Message        string `json:"message" example:"OTP sent successfully"`
+		VerificationID string `json:"verification_id,omitempty"`
+	}
+}
+
+// Verify OTP Operation Types
+type VerifyOTPInput struct {
+	Body VerifyOTPRequest `json:"body"`
+}
+
+type VerifyOTPOutput struct {
+	Body struct {
+		Message string `json:"message" example:"OTP verified successfully"`
+		Valid   bool   `json:"valid"`
+		Status  string `json:"status,omitempty"`
+	}
+}
+
 // RegisterLoginOperation registers the login endpoint
 func RegisterLoginOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
@@ -240,5 +265,33 @@ func RegisterUpdatePushTokenOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *UpdatePushTokenInput) (*UpdatePushTokenOutput, error) {
 		return handler.UpdatePushTokenHuma(ctx, input)
+	})
+}
+
+// RegisterSendOTPOperation registers the send OTP endpoint
+func RegisterSendOTPOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "send-otp",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/send-otp",
+		Summary:     "Send OTP",
+		Description: "Send OTP verification code to phone number via SMS",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *SendOTPInput) (*SendOTPOutput, error) {
+		return handler.SendOTPHuma(ctx, input)
+	})
+}
+
+// RegisterVerifyOTPOperation registers the verify OTP endpoint
+func RegisterVerifyOTPOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "verify-otp",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/verify-otp",
+		Summary:     "Verify OTP",
+		Description: "Verify OTP code sent to phone number",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *VerifyOTPInput) (*VerifyOTPOutput, error) {
+		return handler.VerifyOTPHuma(ctx, input)
 	})
 }

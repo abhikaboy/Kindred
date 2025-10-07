@@ -8,6 +8,7 @@ type Config struct {
 	Auth    `envPrefix:"AUTH_"`
 	DO      `envPrefix:"DO_"`
 	Twillio `envPrefix:"TWILLIO_"`
+	Sinch   `envPrefix:"SINCH_"`
 }
 
 func Load() (Config, error) {

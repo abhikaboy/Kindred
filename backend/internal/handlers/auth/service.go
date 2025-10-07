@@ -194,3 +194,22 @@ func (s *Service) UpdatePushToken(user_id primitive.ObjectID, push_token string)
 	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$set": bson.M{"push_token": push_token}})
 	return err
 }
+
+/*
+	Send OTP via Sinch SMS verification API
+	This method makes an async/non-blocking HTTP request to Sinch
+*/
+
+func (s *Service) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
+	return s.sendOTPAsync(ctx, phoneNumber)
+}
+
+/*
+	Verify OTP via Sinch SMS verification API
+	This method makes an async/non-blocking HTTP request to Sinch
+	Returns: valid (bool), status (string), error
+*/
+
+func (s *Service) VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, string, error) {
+	return s.verifyOTPAsync(ctx, phoneNumber, code)
+}

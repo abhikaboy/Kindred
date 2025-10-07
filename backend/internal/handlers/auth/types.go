@@ -70,3 +70,12 @@ type RegisterRequest struct {
 type UpdatePushTokenRequest struct {
 	PushToken string `validate:"required" json:"push_token" bson:"push_token"`
 }
+
+type SendOTPRequest struct {
+	PhoneNumber string `validate:"required" json:"phone_number"`
+}
+
+type VerifyOTPRequest struct {
+	PhoneNumber string `validate:"required" json:"phone_number"`
+	Code        string `validate:"required" json:"code"`
+}

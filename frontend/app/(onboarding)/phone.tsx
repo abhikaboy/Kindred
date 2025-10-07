@@ -51,7 +51,7 @@ const PhoneOnboarding = (props: Props) => {
         updateOnboardingData({ 
             phone: fullPhoneNumber
         });
-        router.push("/(onboarding)/name");
+        router.push("/(onboarding)/verify-phone");
     };
 
     const formatPhoneNumber = (text: string) => {
