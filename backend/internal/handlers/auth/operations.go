@@ -18,6 +18,11 @@ type LoginOutput struct {
 	Body         SafeUser `json:"body"`
 }
 
+// Phone Login Operation Types
+type LoginWithPhoneInput struct {
+	Body LoginRequestPhone `json:"body"`
+}
+
 // Register Operation Types
 type RegisterInput struct {
 	Body RegisterRequest `json:"body"`
@@ -126,6 +131,20 @@ func RegisterLoginOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *LoginInput) (*LoginOutput, error) {
 		return handler.LoginHuma(ctx, input)
+	})
+}
+
+// RegisterLoginWithPhoneOperation registers the phone login endpoint
+func RegisterLoginWithPhoneOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "login-phone",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/login/phone",
+		Summary:     "User login with phone",
+		Description: "Authenticate user with phone number and password",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *LoginWithPhoneInput) (*LoginOutput, error) {
+		return handler.LoginWithPhoneHuma(ctx, input)
 	})
 }
 

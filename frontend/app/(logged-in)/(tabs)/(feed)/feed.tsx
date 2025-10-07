@@ -12,7 +12,6 @@ import {
     View,
     Dimensions,
     TouchableOpacity,
-    ScrollView,
     Image,
     Animated,
     RefreshControl,
@@ -73,7 +72,6 @@ export default function Feed() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-    const [postHeights, setPostHeights] = useState<{[key: string]: number}>({});
     
     // Pagination state
     const [offset, setOffset] = useState(0);
@@ -98,11 +96,8 @@ export default function Feed() {
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
-    const scrollViewRef = useRef<ScrollView>(null);
-
-    // Base post height (without images) - adjust based on your PostCard layout
-    const BASE_POST_HEIGHT = 200; // Header + caption + reactions + padding
-    const HEADER_HEIGHT = 120; // Header component height
+    const flatListRef = useRef<FlatList>(null);
+    const isInitialMount = useRef(true);
 
     const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
         setPosts((prevPosts) => prevPosts.map((post) => (post._id === postId ? { ...post, ...updatedPost } : post)));
@@ -120,14 +115,6 @@ export default function Feed() {
         },
         [updatePostInFeed]
     );
-
-    // Handle post height changes
-    const handlePostHeightChange = useCallback((postId: string, imageHeight: number) => {
-        setPostHeights(prev => ({
-            ...prev,
-            [postId]: imageHeight
-        }));
-    }, []);
 
     // Start loading animation when loading state changes
     useEffect(() => {
@@ -265,8 +252,9 @@ export default function Feed() {
     }, [loadingMore, hasMore, loading, currentFeed.id, offset]);
 
     // Memoize sorted posts to prevent unnecessary recalculations
+    // Use spread to avoid mutating the original array
     const sortedPosts = useMemo(() => {
-        return posts.sort((a, b) => {
+        return [...posts].sort((a, b) => {
             const dateA = new Date(a.metadata?.createdAt || 0);
             const dateB = new Date(b.metadata?.createdAt || 0);
             return dateB.getTime() - dateA.getTime(); 
@@ -297,16 +285,19 @@ export default function Feed() {
         };
         
         initializeFeed();
+        isInitialMount.current = false;
     }, []); // Only run once on mount
 
-    // Load posts when feed changes (but not on initial mount)
+    // Load posts when feed changes (skip initial mount)
     useEffect(() => {
         // Skip if this is the initial render (posts already loaded above)
-        if (posts.length > 0 || loading) {
+        if (isInitialMount.current) {
             return;
         }
+        
+        // Fetch posts for the new feed
         fetchPosts(currentFeed.id);
-    }, [currentFeed.id, currentFeed.name]);
+    }, [currentFeed.id]);
 
     const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
         setCurrentFeed(feed);
@@ -330,8 +321,6 @@ export default function Feed() {
         [headerOpacity, headerTranslateY]
     );
 
-
-
     const handleScroll = useCallback(
         (event: any) => {
             const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -354,20 +343,11 @@ export default function Feed() {
                 animateHeader(false);
             }
 
-            // Check if user has scrolled to the end
-            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-            const paddingToBottom = 20; // Trigger slightly before the absolute end
-            const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-
-            if (isCloseToBottom && hasMore && !loadingMore && !loading) {
-                loadMorePosts();
-            }
-
             scrollY.setValue(currentScrollY);
             lastScrollY.current = currentScrollY;
             lastScrollTime.current = currentTime;
         },
-        [scrollY, showAnimatedHeader, animateHeader, hasMore, loadingMore, loading, loadMorePosts]
+        [scrollY, showAnimatedHeader, animateHeader]
     );
 
     const renderFeedTab = ({ item }: { item: { name: string; id: string } }) => {
@@ -397,7 +377,7 @@ export default function Feed() {
         }));
     }, []);
 
-    const renderPost = useCallback((post: PostData) => {
+    const renderPost = useCallback(({ item: post }: { item: PostData }) => {
         const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
         const postReactions = post.reactions ? transformReactions(post.reactions) : [];
         
@@ -419,11 +399,10 @@ export default function Feed() {
                 images={post.images || []}
                 size={post.size}
                 onReactionUpdate={() => refreshSinglePost(post._id)}
-                onHeightChange={(imageHeight) => handlePostHeightChange(post._id, imageHeight)}
                 id={post._id}
             />
         );
-    }, [refreshSinglePost, handlePostHeightChange, calculatePostTime, transformReactions]);
+    }, [refreshSinglePost, calculatePostTime, transformReactions]);
 
     const renderHeader = useCallback(() => {
         return (
@@ -458,16 +437,6 @@ export default function Feed() {
     }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
 
     const renderEmptyComponent = useCallback(() => {
-        if (loading) {
-            return (
-                <>
-                    <PostCardSkeleton />
-                    <PostCardSkeleton />
-                <PostCardSkeleton />
-                </>
-            );
-        }
-
         if (error) {
             return (
                 <View style={styles.errorContainer}>
@@ -484,20 +453,17 @@ export default function Feed() {
             );
         }
 
-        if (posts.length === 0) {
+        if (posts.length === 0 && !loading) {
             const isFriendsFeed = currentFeed.id === "friends";
             const isBlueprintFeed = currentFeed.id.startsWith("blueprint-");
             
-            let iconName: any = "newspaper-outline";
             let emptyText = "No posts yet";
             let emptySubtext = "Pull down to refresh";
             
             if (isFriendsFeed) {
-                iconName = "people-outline";
                 emptyText = "No posts from friends yet";
                 emptySubtext = "Add friends to see their posts here";
             } else if (isBlueprintFeed) {
-                iconName = "document-text-outline";
                 emptyText = `No posts in ${currentFeed.name} yet`;
                 emptySubtext = "Create posts using this blueprint to see them here";
             }
@@ -514,27 +480,49 @@ export default function Feed() {
             );
         }
 
-        return null;
-    }, [loading, error, posts.length, loadingRotation, ThemedColor, fetchPosts, currentFeed.id, currentFeed.name]);
-
-    const keyExtractor = useCallback((item: PostData) => item._id || Math.random().toString(), []);
-
-    // Calculate getItemLayout with dynamic heights
-    const getItemLayout = useCallback((data: any, index: number) => {
-        let offset = HEADER_HEIGHT; // Start with header height
-        
-        // Add heights of all previous items
-        for (let i = 0; i < index; i++) {
-            const postId = sortedPosts[i]?._id;
-            const postHeight = postHeights[postId] || BASE_POST_HEIGHT;
-            offset += postHeight;
+        // Show skeleton for initial loading
+        if (initialLoading) {
+            return (
+                <View>
+                    <PostCardSkeleton />
+                    <PostCardSkeleton />
+                    <PostCardSkeleton />
+                </View>
+            );
         }
-        
-        const postId = sortedPosts[index]?._id;
-        const length = postHeights[postId] || BASE_POST_HEIGHT;
-        
-        return { length, offset, index };
-    }, [sortedPosts, postHeights, BASE_POST_HEIGHT, HEADER_HEIGHT]);
+
+        return null;
+    }, [loading, initialLoading, error, posts.length, ThemedColor, fetchPosts, currentFeed.id, currentFeed.name]);
+
+    const renderFooter = useCallback(() => {
+        if (loadingMore) {
+            return (
+                <View style={styles.loadingMoreContainer}>
+                    <PostCardSkeleton />
+                </View>
+            );
+        }
+
+        if (!hasMore && posts.length > 0) {
+            return (
+                <View style={styles.endOfFeedContainer}>
+                    <ThemedText style={styles.endOfFeedText}>
+                        You've reached the end! 🎉
+                    </ThemedText>
+                </View>
+            );
+        }
+
+        return null;
+    }, [loadingMore, hasMore, posts.length]);
+
+    const keyExtractor = useCallback((item: PostData) => item._id, []);
+
+    const handleEndReached = useCallback(() => {
+        if (hasMore && !loadingMore && !loading && posts.length > 0) {
+            loadMorePosts();
+        }
+    }, [hasMore, loadingMore, loading, posts.length, loadMorePosts]);
 
     return (
         <View style={styles.container}>
@@ -580,8 +568,11 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
-            <ScrollView
-                ref={scrollViewRef}
+            <FlatList
+                ref={flatListRef}
+                data={sortedPosts}
+                keyExtractor={keyExtractor}
+                renderItem={renderPost}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
@@ -596,41 +587,17 @@ export default function Feed() {
                     />
                 }
                 contentContainerStyle={styles.flatListContent}
-            >
-                {renderHeader()}
-                {initialLoading ? (
-                    // Show skeleton immediately on initial load
-                    <>
-                        <PostCardSkeleton />
-                        <PostCardSkeleton />
-                        <PostCardSkeleton />
-                    </>
-                ) : loading || error || posts.length === 0 ? (
-                    renderEmptyComponent()
-                ) : (
-                    <>
-                        {sortedPosts.map((post) => (
-                            <React.Fragment key={post._id}>
-                                {renderPost(post)}
-                            </React.Fragment>
-                        ))}
-                        {/* Loading indicator at bottom when fetching more posts */}
-                        {loadingMore && (
-                            <View style={styles.loadingMoreContainer}>
-                                <PostCardSkeleton />
-                            </View>
-                        )}
-                        {/* End of feed indicator */}
-                        {!hasMore && posts.length > 0 && (
-                            <View style={styles.endOfFeedContainer}>
-                                <ThemedText style={styles.endOfFeedText}>
-                                    You've reached the end! 🎉
-                                </ThemedText>
-                            </View>
-                        )}
-                    </>
-                )}
-            </ScrollView>
+                ListHeaderComponent={renderHeader}
+                ListEmptyComponent={renderEmptyComponent}
+                ListFooterComponent={renderFooter}
+                onEndReached={handleEndReached}
+                onEndReachedThreshold={0.5}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={3}
+                updateCellsBatchingPeriod={50}
+                initialNumToRender={3}
+                windowSize={5}
+            />
         </View>
     );
 }

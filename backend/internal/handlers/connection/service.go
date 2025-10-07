@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,8 +17,9 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Connections: collections["friend-requests"],
-		Users:       collections["users"],
+		Connections:         collections["friend-requests"],
+		Users:               collections["users"],
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 
@@ -259,9 +261,10 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		return fmt.Errorf("failed to add user to friend's friends list: %v", err)
 	}
 
-	// Get accepter's name for the notification
+	// Get accepter's details for the notification
 	var accepterUser struct {
-		Name string `bson:"display_name"`
+		Name           string  `bson:"display_name"`
+		ProfilePicture *string `bson:"profile_picture"`
 	}
 	err = s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&accepterUser)
 	if err != nil {
@@ -272,6 +275,18 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		err = s.sendFriendRequestAcceptedNotification(otherUserID, accepterUser.Name)
 		if err != nil {
 			slog.Error("Failed to send friend request accepted notification", "error", err, "requester_id", otherUserID)
+			// Don't fail the request if notification fails
+		}
+
+		// Create database notification with accepter's profile picture as thumbnail
+		notificationContent := fmt.Sprintf("%s accepted your friend request", accepterUser.Name)
+		var thumbnail string
+		if accepterUser.ProfilePicture != nil {
+			thumbnail = *accepterUser.ProfilePicture
+		}
+		err = s.NotificationService.CreateNotification(userID, otherUserID, notificationContent, notifications.NotificationTypeFriendRequestAccepted, connectionID, thumbnail)
+		if err != nil {
+			slog.Error("Failed to create friend request accepted notification in database", "error", err, "requester_id", otherUserID)
 			// Don't fail the request if notification fails
 		}
 	}

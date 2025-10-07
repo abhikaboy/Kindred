@@ -99,6 +99,22 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 	return &user.ID, &user.Count, &user, nil
 }
 
+func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitive.ObjectID, *float64, *User, error) {
+
+	var user User
+	err := s.users.FindOne(context.Background(), bson.M{"phone": phoneNumber}).Decode(&user)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+	}
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if user.Password != password {
+		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
+	}
+	return &user.ID, &user.Count, &user, nil
+}
+
 func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64, *User, error) {
 
 	var user User

@@ -54,6 +54,47 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 	return resp, nil
 }
 
+// LoginWithPhoneHuma handles user login with phone/password
+func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneInput) (*LoginOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	// database call to find the user and verify credentials and get count
+	id, count, user, err := h.service.LoginFromPhone(input.Body.PhoneNumber, input.Body.Password)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Login failed", err)
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Token generation failed", err)
+	}
+
+	resp := &LoginOutput{}
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
+	resp.Body = types.SafeUser{
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
+	}
+
+	return resp, nil
+}
+
 // LoginWithTokenHuma handles login with existing token (PROTECTED ROUTE)
 func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenInput) (*LoginOutput, error) {
 	// Extract user_id from context (set by auth middleware)

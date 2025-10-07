@@ -34,6 +34,11 @@ type LoginRequest struct {
 	Password string `validate:"required,min=8" json:"password"`
 }
 
+type LoginRequestPhone struct {
+	PhoneNumber string `validate:"required" json:"phone_number"`
+	Password    string `validate:"required,min=8" json:"password"`
+}
+
 type LoginRequestApple struct {
 	AppleID string `validate:"required" json:"apple_id"`
 }

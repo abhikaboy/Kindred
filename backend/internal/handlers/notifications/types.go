@@ -22,9 +22,10 @@ type Handler struct {
 type NotificationType string
 
 const (
-	NotificationTypeEncouragement  NotificationType = "ENCOURAGEMENT"
-	NotificationTypeComment        NotificationType = "COMMENT"
-	NotificationTypeCongratulation NotificationType = "CONGRATULATION"
+	NotificationTypeEncouragement         NotificationType = "ENCOURAGEMENT"
+	NotificationTypeComment               NotificationType = "COMMENT"
+	NotificationTypeCongratulation        NotificationType = "CONGRATULATION"
+	NotificationTypeFriendRequestAccepted NotificationType = "FRIEND_REQUEST_ACCEPTED"
 )
 
 // NotificationDocument represents a notification stored in the database
@@ -37,6 +38,7 @@ type NotificationDocument struct {
 	NotificationType NotificationType   `bson:"notificationType" json:"notificationType"`
 	ReferenceID      primitive.ObjectID `bson:"reference_id" json:"reference_id"`
 	Read             bool               `bson:"read" json:"read"`
+	Thumbnail        string             `bson:"thumbnail,omitempty" json:"thumbnail,omitempty" doc:"Optional thumbnail image URL for the notification"`
 }
 
 // UserReference represents the user who should receive the notification
@@ -53,6 +55,7 @@ type CreateNotificationRequest struct {
 	UserID           primitive.ObjectID `json:"user_id" validate:"required"`
 	NotificationType NotificationType   `json:"notification_type" validate:"required"`
 	ReferenceID      primitive.ObjectID `json:"reference_id" validate:"required"`
+	Thumbnail        string             `json:"thumbnail,omitempty"`
 }
 
 // UpdateNotificationRequest represents data for updating notification read status

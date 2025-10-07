@@ -74,7 +74,7 @@ export const OnboardModal = (props: Props) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
     // Define snap points
-    const snapPoints = useMemo(() => ["60%"], []);
+    const snapPoints = useMemo(() => ["50%"], []);
 
     // Handle visibility changes
     useEffect(() => {
@@ -171,7 +171,7 @@ export const OnboardModal = (props: Props) => {
     const styles = useStyles(ThemedColor);
     return (
         <BottomSheetModal
-            ref={bottomSheetModalRef}
+        ref={bottomSheetModalRef}
             index={0}
             snapPoints={snapPoints}
             onChange={handleSheetChanges}
@@ -201,10 +201,7 @@ export const OnboardModal = (props: Props) => {
                 <BlurView style={styles.blurContainer} intensity={0}>
                     <View style={styles.headerSection}>
                         <ThemedText type="title" style={styles.welcomeTitle}>
-                            Register for Kindred
-                        </ThemedText>
-                        <ThemedText type="lightBody" style={styles.subtitle}>
-                            Select which workspaces you'd like to start off with
+                            {mode === "login" ? "Login to Kindred" : "Register for Kindred"}
                         </ThemedText>
                     </View>
                     
@@ -213,20 +210,14 @@ export const OnboardModal = (props: Props) => {
                             title="Continue with Phone Number"
                             onPress={() => {
                                 setVisible(false);
-                                router.push("/(onboarding)/productivity");
+                                if (mode === "login") {
+                                    router.push("/login-phone");
+                                } else {
+                                    router.push("/(onboarding)/productivity");
+                                }
                             }}
-                            dottedOutline
                             style={styles.phoneButton}
-                        />
-                        
-                        <PrimaryButton
-                            title="Continue with Email"
-                            onPress={() => {
-                                setVisible(false);
-                                router.push("/(onboarding)/productivity");
-                            }}
-                            dottedOutline
-                            style={styles.emailButton}
+                            textStyle={styles.phoneButtonText}
                         />
                         
                         <PrimaryButton
@@ -292,27 +283,31 @@ const useStyles = (ThemedColor: any) =>
             fontFamily: "Fraunces",
             lineHeight: 38,
         },
-        subtitle: {
-            textAlign: "left",
-            color: ThemedColor.caption,
-            fontSize: 16,
-            lineHeight: 22,
-        },
         buttonSection: {
             width: "100%",
-            gap: 16,
+            gap: 12,
             flex: 1,
             justifyContent: "center",
         },
         phoneButton: {
             width: "100%",
-            borderRadius: 8,
-            paddingVertical: 20,
+            backgroundColor: "white",
+            borderRadius: 10,
+            paddingVertical: 15,
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 3,
         },
-        emailButton: {
-            width: "100%",
-            borderRadius: 8,
-            paddingVertical: 20,
+        phoneButtonText: {
+            color: "rgba(0,0,0,0.54)",
+            fontSize: 20,
+            fontWeight: "500",
+            fontFamily: "Outfit",
         },
         googleButton: {
             width: "100%",

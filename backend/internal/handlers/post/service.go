@@ -441,9 +441,13 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 			slog.Error("Failed to send comment notification", "error", err, "post_owner_id", post.User.ID)
 		}
 
-		// Create notification in the database
+		// Create notification in the database with thumbnail (first image from post if available)
 		notificationContent := fmt.Sprintf("%s commented on your post: \"%s\"", comment.User.DisplayName, comment.Content)
-		err = s.NotificationService.CreateNotification(comment.User.ID, post.User.ID, notificationContent, notifications.NotificationTypeComment, post.ID)
+		var thumbnail string
+		if len(post.Images) > 0 {
+			thumbnail = post.Images[0]
+		}
+		err = s.NotificationService.CreateNotification(comment.User.ID, post.User.ID, notificationContent, notifications.NotificationTypeComment, post.ID, thumbnail)
 		if err != nil {
 			// Log error but don't fail the operation since comment was already created
 			slog.Error("Failed to create comment notification in database", "error", err, "post_owner_id", post.User.ID)

@@ -17,6 +17,7 @@ type Props = {
     textStyle?: StyleProp<TextStyle>;
     textArea?: boolean;
     useBottomSheetInput?: boolean; // New prop to determine input type
+    secureTextEntry?: boolean; // New prop for password fields
 };
 
 const ThemedInput = forwardRef<any, Props>(
@@ -52,6 +53,7 @@ const ThemedInput = forwardRef<any, Props>(
             onBlur: props?.onBlur,
             value: props.value,
             style: inputStyle,
+            secureTextEntry: props.secureTextEntry,
         };
 
         return (

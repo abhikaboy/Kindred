@@ -48,6 +48,7 @@ func AuthMiddlewareForServer(collections map[string]*mongo.Collection) func(http
 // RegisterAuthOperations registers all auth operations with Huma
 func RegisterAuthOperations(api huma.API, handler *Handler) {
 	RegisterLoginOperation(api, handler)
+	RegisterLoginWithPhoneOperation(api, handler)
 	RegisterRegisterOperation(api, handler)
 	RegisterLogoutOperation(api, handler)
 	RegisterLoginWithAppleOperation(api, handler)

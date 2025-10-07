@@ -38,7 +38,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 }
 
 // CreateNotification adds a new notification to the database
-func (s *Service) CreateNotification(userID primitive.ObjectID, receiverID primitive.ObjectID, content string, notificationType NotificationType, referenceID primitive.ObjectID) error {
+func (s *Service) CreateNotification(userID primitive.ObjectID, receiverID primitive.ObjectID, content string, notificationType NotificationType, referenceID primitive.ObjectID, thumbnail ...string) error {
 	if s.Notifications == nil {
 		return fmt.Errorf("notifications collection not available")
 	}
@@ -69,12 +69,17 @@ func (s *Service) CreateNotification(userID primitive.ObjectID, receiverID primi
 		Read:             false,
 	}
 
+	// Add thumbnail if provided
+	if len(thumbnail) > 0 && thumbnail[0] != "" {
+		notification.Thumbnail = thumbnail[0]
+	}
+
 	_, err = s.Notifications.InsertOne(ctx, notification)
 	if err != nil {
 		return fmt.Errorf("failed to create notification: %w", err)
 	}
 
-	slog.Info("Notification created", "user_id", userID, "type", notificationType, "reference_id", referenceID)
+	slog.Info("Notification created", "user_id", userID, "type", notificationType, "reference_id", referenceID, "has_thumbnail", len(thumbnail) > 0)
 	return nil
 }
 
