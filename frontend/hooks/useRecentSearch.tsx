@@ -2,9 +2,20 @@ import { useEffect, useState } from "react";
 import asyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAsync } from "../hooks/useSafeAsync";
 
+export interface RecentSearchItem {
+    id: string;
+    type: 'user' | 'blueprint' | 'text';
+    display_name?: string;
+    handle?: string;
+    name?: string;
+    profile_picture?: string;
+    banner?: string;
+    text?: string; // For legacy text searches
+}
+
 export function useRecentSearch(searchSet: string = "") {
     // two functions, append recent and get recents
-    const [recents, setRecents] = useState<string[]>([]);
+    const [recents, setRecents] = useState<RecentSearchItem[]>([]);
     const MAX_RECENTS = 6;
     const safeAsync = useSafeAsync();
 
@@ -19,8 +30,18 @@ export function useRecentSearch(searchSet: string = "") {
                 const recents = await asyncStorage.getItem(searchSet);
                 if (recents) {
                     console.log("found recent searches");
-                    console.log(recents);
-                    return JSON.parse(recents);
+                    const parsed = JSON.parse(recents);
+                    
+                    // Migrate old string-based recents to new format
+                    if (parsed.length > 0 && typeof parsed[0] === 'string') {
+                        return parsed.map((text: string) => ({
+                            id: text,
+                            type: 'text' as const,
+                            text
+                        }));
+                    }
+                    
+                    return parsed;
                 } else {
                     console.log("didn't find search set");
                     return [];
@@ -38,27 +59,37 @@ export function useRecentSearch(searchSet: string = "") {
         loadRecents();
     }, [searchSet]);
 
-    const appendSearch = async (search: string) => {
-        if (searchSet.trim() === "" || search.trim() === "") {
+    const appendSearch = async (search: RecentSearchItem | string) => {
+        if (searchSet.trim() === "") {
             return;
         }
-        let filtered = await recents;
-        if ((await recents).includes(search)) {
-            filtered = (await recents).filter((item) => item !== search);
+        
+        // Convert string to RecentSearchItem for backwards compatibility
+        const searchItem: RecentSearchItem = typeof search === 'string' 
+            ? { id: search, type: 'text', text: search }
+            : search;
+        
+        if (!searchItem.id || (searchItem.type === 'text' && !searchItem.text?.trim())) {
+            return;
         }
-        let newRecents = [search, ...(await filtered)];
+        
+        let filtered = recents;
+        // Remove duplicate by id
+        filtered = filtered.filter((item) => item.id !== searchItem.id);
+        
+        let newRecents = [searchItem, ...filtered];
         newRecents = newRecents.slice(0, MAX_RECENTS);
         console.log(newRecents);
         asyncStorage.setItem(searchSet, JSON.stringify(newRecents));
         setRecents(newRecents);
     };
 
-    const deleteRecent = async (term: string) => {
-        if (searchSet.trim() === "" || term.trim() === "") {
+    const deleteRecent = async (id: string) => {
+        if (searchSet.trim() === "" || id.trim() === "") {
             return;
         }
-        let filtered = await recents;
-        filtered = filtered.filter((item) => item !== term);
+        let filtered = recents;
+        filtered = filtered.filter((item) => item.id !== id);
         asyncStorage.setItem(searchSet, JSON.stringify(filtered));
         console.log(filtered);
         setRecents(filtered);

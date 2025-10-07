@@ -71,9 +71,9 @@ type DeleteEncouragementOutput struct {
 
 // Mark Encouragements as Read
 type MarkEncouragementsReadInput struct {
-	Authorization string                     `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken  string                     `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	Body          MarkEncouragementsReadBody `json:"body"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          MarkEncouragementsReadBody
 }
 
 type MarkEncouragementsReadBody struct {

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Touchable, Image } from "react-native";
 import { ThemedText } from "./ThemedText";
-import { useRecentSearch } from "@/hooks/useRecentSearch";
+import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { IconSymbol } from "./ui/IconSymbol";
 import Octicons from "@expo/vector-icons/Octicons";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -50,7 +50,7 @@ export function SearchBox({
     const [inputHeight, setInputHeight] = useState(0);
     const inputRef = useRef<TextInput>(null);
     let ThemedColor = useThemeColor();
-    const [recentItems, setRecentItems] = useState<string[]>([]);
+    const [recentItems, setRecentItems] = useState<RecentSearchItem[]>([]);
 
     async function fetchRecents() {
         if (recent) {
@@ -62,8 +62,8 @@ export function SearchBox({
         setRecentItems([]);
         if (setFocused) setFocused(false);
     }
-    async function deleteRecentItem(term: string) {
-        deleteRecent(term).then(() => fetchRecents());
+    async function deleteRecentItem(id: string) {
+        deleteRecent(id).then(() => fetchRecents());
     }
 
     const clear = () => {
@@ -120,23 +120,75 @@ export function SearchBox({
             </View>
             {recent && recentItems.length > 0 && (
                 <View style={{ ...styles.recentsContainer, top: inputHeight }}>
-                    {recentItems.map((term: string, index: number) => {
+                    {recentItems.map((item: RecentSearchItem, index: number) => {
+                        const displayText = item.type === 'user' 
+                            ? item.display_name 
+                            : item.type === 'blueprint'
+                            ? item.name
+                            : item.text;
+                        const subtitle = item.type === 'user' 
+                            ? `@${item.handle}` 
+                            : item.type === 'blueprint'
+                            ? 'Blueprint'
+                            : null;
+                        
+                        const imageUri = item.type === 'user' 
+                            ? item.profile_picture 
+                            : item.type === 'blueprint'
+                            ? item.banner
+                            : null;
+                        
+                        const isUser = item.type === 'user';
+                        const isBlueprint = item.type === 'blueprint';
+                        const isText = item.type === 'text';
+                        
                         return (
                             <TouchableOpacity
-                                key={index}
+                                key={item.id}
                                 style={styles.recent}
                                 onPress={() => {
-                                    inputRef.current?.blur();
-                                    onSubmit();
-                                    appendSearch(term);
-                                    clearRecents();
-                                    onChangeText(term);
+                                    if (isText) {
+                                        inputRef.current?.blur();
+                                        onChangeText(item.text || '');
+                                        onSubmit();
+                                        clearRecents();
+                                    } else if (onSelectSuggestion) {
+                                        // Convert to AutocompleteSuggestion and trigger selection
+                                        onSelectSuggestion({
+                                            id: item.id,
+                                            display_name: item.display_name,
+                                            handle: item.handle,
+                                            name: item.name,
+                                            profile_picture: item.profile_picture,
+                                            banner: item.banner,
+                                            type: item.type as 'user' | 'blueprint'
+                                        });
+                                        clearRecents();
+                                    }
                                 }}>
-                                <View style={{ flexDirection: "row", gap: 10 }}>
-                                    <Octicons name="search" size={20} color={ThemedColor.text} />
-                                    <ThemedText>{term}</ThemedText>
+                                <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
+                                    {isText ? (
+                                        <Octicons name="search" size={20} color={ThemedColor.text} />
+                                    ) : imageUri ? (
+                                        <Image 
+                                            source={{ uri: imageUri }} 
+                                            style={isUser ? styles.userImage : styles.blueprintImage}
+                                        />
+                                    ) : (
+                                        <View style={isUser ? styles.placeholderUser : styles.placeholderBlueprint}>
+                                            <Octicons 
+                                                name={isUser ? "person" : "package"} 
+                                                size={16} 
+                                                color={ThemedColor.background} 
+                                            />
+                                        </View>
+                                    )}
+                                    <View style={{ flex: 1 }}>
+                                        <ThemedText style={{ fontWeight: isText ? '400' : '600' }}>{displayText}</ThemedText>
+                                        {subtitle && <ThemedText style={{ fontSize: 12, opacity: 0.7 }}>{subtitle}</ThemedText>}
+                                    </View>
                                 </View>
-                                <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => deleteRecentItem(term)}>
+                                <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => deleteRecentItem(item.id)}>
                                     <Entypo name="cross" size={20} color={ThemedColor.text} />
                                 </TouchableOpacity>
                             </TouchableOpacity>

@@ -76,10 +76,10 @@ func RegisterMarkCongratulationsReadOperation(api huma.API, handler *Handler) {
 
 // Register all congratulation operations
 func RegisterCongratulationOperations(api huma.API, handler *Handler) {
+	RegisterMarkCongratulationsReadOperation(api, handler)
 	RegisterCreateCongratulationOperation(api, handler)
 	RegisterGetCongratulationsOperation(api, handler)
 	RegisterGetCongratulationOperation(api, handler)
 	RegisterUpdateCongratulationOperation(api, handler)
 	RegisterDeleteCongratulationOperation(api, handler)
-	RegisterMarkCongratulationsReadOperation(api, handler)
-} 
+}

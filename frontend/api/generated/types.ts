@@ -204,6 +204,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/login/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login with Google
+         * @description Authenticate user with Google ID
+         */
+        post: operations["login-google"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -264,6 +284,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/register/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register with Google
+         * @description Register a new user with Google ID
+         */
+        post: operations["register-google"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/send-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send OTP
+         * @description Send OTP verification code to phone number via SMS
+         */
+        post: operations["send-otp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/verify-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify OTP
+         * @description Verify OTP code sent to phone number
+         */
+        post: operations["verify-otp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/blueprints": {
         parameters: {
             query?: never;
@@ -296,6 +376,26 @@ export interface paths {
          * @description Retrieve a specific blueprint by its ID
          */
         get: operations["get-blueprint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/blueprints/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Autocomplete blueprints
+         * @description Get autocomplete suggestions for blueprints
+         */
+        get: operations["autocomplete-blueprints"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1564,6 +1664,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/profiles/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Autocomplete profiles
+         * @description Get autocomplete suggestions for user profiles
+         */
+        get: operations["autocomplete-profiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/profiles/search": {
         parameters: {
             query?: never;
@@ -2274,8 +2394,25 @@ export interface components {
              * @example https://example.com/schemas/CompleteTaskOutputBody.json
              */
             readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description The user's current streak count
+             * @example 5
+             */
+            currentStreak: number;
             /** @example Task completed successfully */
             message: string;
+            /**
+             * @description Indicates if the user's streak increased
+             * @example true
+             */
+            streakChanged: boolean;
+            /**
+             * Format: double
+             * @description Total tasks completed by user
+             * @example 42
+             */
+            tasksComplete: number;
         };
         ConfirmImageUploadInputBody: {
             /**
@@ -2999,6 +3136,15 @@ export interface components {
             readonly $schema?: string;
             apple_id: string;
         };
+        LoginRequestGoogle: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LoginRequestGoogle.json
+             */
+            readonly $schema?: string;
+            google_id: string;
+        };
         LogoutOutputBody: {
             /**
              * Format: uri
@@ -3034,6 +3180,26 @@ export interface components {
             count: number;
             /** @example Congratulations marked as read successfully */
             message: string;
+        };
+        MarkCongratulationsReadParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkCongratulationsReadParams.json
+             */
+            readonly $schema?: string;
+            /** @description List of congratulation IDs to mark as read */
+            id: string[];
+        };
+        MarkEncouragementsReadBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkEncouragementsReadBody.json
+             */
+            readonly $schema?: string;
+            /** @description List of encouragement IDs to mark as read */
+            id: string[];
         };
         MarkEncouragementsReadOutputBody: {
             /**
@@ -3222,8 +3388,12 @@ export interface components {
              * @example https://example.com/schemas/RegisterRequest.json
              */
             readonly $schema?: string;
+            display_name: string;
             email: string;
+            handle: string;
             password: string;
+            phone: string;
+            profile_picture: string;
         };
         RegisterRequestApple: {
             /**
@@ -3233,7 +3403,23 @@ export interface components {
              */
             readonly $schema?: string;
             apple_id: string;
+            display_name: string;
             email: string;
+            handle: string;
+            profile_picture: string;
+        };
+        RegisterRequestGoogle: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RegisterRequestGoogle.json
+             */
+            readonly $schema?: string;
+            display_name: string;
+            email: string;
+            google_id: string;
+            handle: string;
+            profile_picture: string;
         };
         RelationshipInfo: {
             request_id?: string;
@@ -3318,6 +3504,26 @@ export interface components {
             streakEligible: boolean;
             /** Format: double */
             tasks_complete: number;
+        };
+        SendOTPOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SendOTPOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example OTP sent successfully */
+            message: string;
+            verification_id?: string;
+        };
+        SendOTPRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SendOTPRequest.json
+             */
+            readonly $schema?: string;
+            phone_number: string;
         };
         SubscribeToBlueprintOutputBody: {
             /**
@@ -3879,6 +4085,28 @@ export interface components {
             id: string;
             profile_picture: string;
         };
+        VerifyOTPOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/VerifyOTPOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example OTP verified successfully */
+            message: string;
+            status?: string;
+            valid: boolean;
+        };
+        VerifyOTPRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/VerifyOTPRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
+            phone_number: string;
+        };
         WaitlistDocument: {
             /**
              * Format: uri
@@ -4267,6 +4495,41 @@ export interface operations {
             };
         };
     };
+    "login-google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequestGoogle"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeUser"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     logout: {
         parameters: {
             query?: never;
@@ -4368,6 +4631,107 @@ export interface operations {
             };
         };
     };
+    "register-google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequestGoogle"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "send-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendOTPRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendOTPOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "verify-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyOTPRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyOTPOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-blueprints": {
         parameters: {
             query?: never;
@@ -4416,6 +4780,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlueprintDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "autocomplete-blueprints": {
+        parameters: {
+            query?: {
+                /** @example morn */
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocument"][];
                 };
             };
             /** @description Error */
@@ -5803,7 +6199,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkCongratulationsReadParams"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -6353,7 +6753,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkEncouragementsReadBody"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -7219,6 +7623,43 @@ export interface operations {
             };
         };
     };
+    "autocomplete-profiles": {
+        parameters: {
+            query?: {
+                /** @example joh */
+                query?: string;
+            };
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "search-profiles": {
         parameters: {
             query?: {
@@ -7368,7 +7809,13 @@ export interface operations {
     };
     "delete-task": {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Optional. If true, also delete the recurring template to stop future instances. Defaults to false.
+                 * @example false
+                 */
+                deleteRecurring?: boolean;
+            };
             header: {
                 Authorization: string;
             };

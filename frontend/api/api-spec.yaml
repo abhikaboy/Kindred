@@ -341,6 +341,39 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/login/google:
+        post:
+            tags:
+                - auth
+            summary: Login with Google
+            description: Authenticate user with Google ID
+            operationId: login-google
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginRequestGoogle'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    headers:
+                        access_token:
+                            schema:
+                                type: string
+                        refresh_token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SafeUser'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/auth/logout:
         post:
             tags:
@@ -433,6 +466,91 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/register/google:
+        post:
+            tags:
+                - auth
+            summary: Register with Google
+            description: Register a new user with Google ID
+            operationId: register-google
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RegisterRequestGoogle'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    headers:
+                        access_token:
+                            schema:
+                                type: string
+                        refresh_token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RegisterOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/send-otp:
+        post:
+            tags:
+                - auth
+            summary: Send OTP
+            description: Send OTP verification code to phone number via SMS
+            operationId: send-otp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendOTPRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SendOTPOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/verify-otp:
+        post:
+            tags:
+                - auth
+            summary: Verify OTP
+            description: Verify OTP code sent to phone number
+            operationId: verify-otp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/VerifyOTPRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/VerifyOTPOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/blueprints:
         get:
             tags:
@@ -478,6 +596,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/BlueprintDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/blueprints/autocomplete:
+        get:
+            tags:
+                - blueprints
+            summary: Autocomplete blueprints
+            description: Get autocomplete suggestions for blueprints
+            operationId: autocomplete-blueprints
+            parameters:
+                - name: query
+                  in: query
+                  explode: false
+                  schema:
+                    type: string
+                    examples:
+                        - morn
+                    minLength: 2
+                  example: morn
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/BlueprintDocument'
                 default:
                     description: Error
                     content:
@@ -1912,6 +2062,12 @@ paths:
                   schema:
                     type: string
                     description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MarkCongratulationsReadParams'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -2529,6 +2685,12 @@ paths:
                   schema:
                     type: string
                     description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MarkEncouragementsReadBody'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -3389,6 +3551,52 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/profiles/autocomplete:
+        get:
+            tags:
+                - profiles
+            summary: Autocomplete profiles
+            description: Get autocomplete suggestions for user profiles
+            operationId: autocomplete-profiles
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: query
+                  in: query
+                  explode: false
+                  schema:
+                    type: string
+                    examples:
+                        - joh
+                    minLength: 2
+                  example: joh
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ProfileDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/profiles/search:
         get:
             tags:
@@ -3586,6 +3794,16 @@ paths:
                     examples:
                         - 507f1f77bcf86cd799439011
                   example: 507f1f77bcf86cd799439011
+                - name: deleteRecurring
+                  in: query
+                  description: Optional. If true, also delete the recurring template to stop future instances. Defaults to false.
+                  explode: false
+                  schema:
+                    type: boolean
+                    description: Optional. If true, also delete the recurring template to stop future instances. Defaults to false.
+                    examples:
+                        - false
+                  example: false
             responses:
                 "200":
                     description: OK
@@ -4714,12 +4932,32 @@ components:
                     examples:
                         - https://example.com/schemas/CompleteTaskOutputBody.json
                     readOnly: true
+                currentStreak:
+                    type: integer
+                    description: The user's current streak count
+                    format: int64
+                    examples:
+                        - 5
                 message:
                     type: string
                     examples:
                         - Task completed successfully
+                streakChanged:
+                    type: boolean
+                    description: Indicates if the user's streak increased
+                    examples:
+                        - true
+                tasksComplete:
+                    type: number
+                    description: Total tasks completed by user
+                    format: double
+                    examples:
+                        - 42
             required:
                 - message
+                - streakChanged
+                - currentStreak
+                - tasksComplete
         ConfirmImageUploadInputBody:
             type: object
             additionalProperties: false
@@ -5852,6 +6090,21 @@ components:
                     type: string
             required:
                 - apple_id
+        LoginRequestGoogle:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LoginRequestGoogle.json
+                    readOnly: true
+                google_id:
+                    type: string
+            required:
+                - google_id
         LogoutOutputBody:
             type: object
             additionalProperties: false
@@ -5910,6 +6163,42 @@ components:
             required:
                 - message
                 - count
+        MarkCongratulationsReadParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MarkCongratulationsReadParams.json
+                    readOnly: true
+                id:
+                    type: array
+                    description: List of congratulation IDs to mark as read
+                    items:
+                        type: string
+            required:
+                - id
+        MarkEncouragementsReadBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MarkEncouragementsReadBody.json
+                    readOnly: true
+                id:
+                    type: array
+                    description: List of encouragement IDs to mark as read
+                    items:
+                        type: string
+            required:
+                - id
         MarkEncouragementsReadOutputBody:
             type: object
             additionalProperties: false
@@ -6303,13 +6592,25 @@ components:
                     examples:
                         - https://example.com/schemas/RegisterRequest.json
                     readOnly: true
+                display_name:
+                    type: string
                 email:
+                    type: string
+                handle:
                     type: string
                 password:
                     type: string
+                phone:
+                    type: string
+                profile_picture:
+                    type: string
             required:
                 - email
+                - phone
                 - password
+                - display_name
+                - handle
+                - profile_picture
         RegisterRequestApple:
             type: object
             additionalProperties: false
@@ -6323,11 +6624,47 @@ components:
                     readOnly: true
                 apple_id:
                     type: string
+                display_name:
+                    type: string
                 email:
+                    type: string
+                handle:
+                    type: string
+                profile_picture:
                     type: string
             required:
                 - apple_id
                 - email
+                - display_name
+                - handle
+                - profile_picture
+        RegisterRequestGoogle:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RegisterRequestGoogle.json
+                    readOnly: true
+                display_name:
+                    type: string
+                email:
+                    type: string
+                google_id:
+                    type: string
+                handle:
+                    type: string
+                profile_picture:
+                    type: string
+            required:
+                - google_id
+                - email
+                - display_name
+                - handle
+                - profile_picture
         RelationshipInfo:
             type: object
             additionalProperties: false
@@ -6504,6 +6841,40 @@ components:
                 - streakEligible
                 - points
                 - posts_made
+        SendOTPOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SendOTPOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - OTP sent successfully
+                verification_id:
+                    type: string
+            required:
+                - message
+        SendOTPRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SendOTPRequest.json
+                    readOnly: true
+                phone_number:
+                    type: string
+            required:
+                - phone_number
         SubscribeToBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -7395,6 +7766,46 @@ components:
                 - display_name
                 - handle
                 - profile_picture
+        VerifyOTPOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/VerifyOTPOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - OTP verified successfully
+                status:
+                    type: string
+                valid:
+                    type: boolean
+            required:
+                - message
+                - valid
+        VerifyOTPRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/VerifyOTPRequest.json
+                    readOnly: true
+                code:
+                    type: string
+                phone_number:
+                    type: string
+            required:
+                - phone_number
+                - code
         WaitlistDocument:
             type: object
             additionalProperties: false

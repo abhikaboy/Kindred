@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchResults } from "@/components/search/SearchResults";
 import { ExplorePage } from "@/components/search/ExplorePage";
 import { useRouter } from "expo-router";
+import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -109,6 +110,7 @@ const Search = (props: Props) => {
     const ThemedColor = useThemeColor();
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const router = useRouter();
+    const { appendSearch } = useRecentSearch("search-page");
 
     const opacity = useSharedValue(1);
     const focusStyle = useAnimatedStyle(() => {
@@ -246,6 +248,18 @@ const Search = (props: Props) => {
         setShowAutocomplete(false);
         setAutocompleteSuggestions([]);
         
+        // Save to recent searches with full data
+        const recentItem: RecentSearchItem = {
+            id: suggestion.id,
+            type: suggestion.type,
+            display_name: suggestion.display_name,
+            handle: suggestion.handle,
+            name: suggestion.name,
+            profile_picture: suggestion.profile_picture,
+            banner: suggestion.banner,
+        };
+        appendSearch(recentItem);
+        
         if (suggestion.type === 'user') {
             // Navigate to user profile
             router.push(`/account/${suggestion.id}`);
@@ -253,7 +267,7 @@ const Search = (props: Props) => {
             // Navigate to blueprint
             router.push(`/blueprint/${suggestion.id}`);
         }
-    }, [router]);
+    }, [router, appendSearch]);
 
     // Memoize the onSubmit callback
     const handleSubmit = useCallback(() => {
