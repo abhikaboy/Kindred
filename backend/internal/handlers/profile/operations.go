@@ -76,6 +76,17 @@ type SearchProfilesOutput struct {
 	Body []ProfileDocument `json:"body"`
 }
 
+// Autocomplete Profiles
+type AutocompleteProfilesInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Query         string `query:"query" example:"joh" minLength:"2"`
+}
+
+type AutocompleteProfilesOutput struct {
+	Body []ProfileDocument `json:"body"`
+}
+
 // Note: Image upload functionality moved to centralized /v1/uploads endpoints
 // Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead
 
@@ -156,6 +167,17 @@ func RegisterSearchProfilesOperation(api huma.API, handler *Handler) {
 		Description: "Search for user profiles by query string",
 		Tags:        []string{"profiles"},
 	}, handler.SearchProfilesHuma)
+}
+
+func RegisterAutocompleteProfilesOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "autocomplete-profiles",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/profiles/autocomplete",
+		Summary:     "Autocomplete profiles",
+		Description: "Get autocomplete suggestions for user profiles",
+		Tags:        []string{"profiles"},
+	}, handler.AutocompleteProfilesHuma)
 }
 
 // Note: Profile picture upload operations moved to centralized upload service

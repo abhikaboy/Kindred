@@ -98,6 +98,14 @@ type SearchBlueprintsOutput struct {
 	Body []BlueprintDocument `json:"body"`
 }
 
+type AutocompleteBlueprintsInput struct {
+	Query string `query:"query" example:"morn" minLength:"2"`
+}
+
+type AutocompleteBlueprintsOutput struct {
+	Body []BlueprintDocument `json:"body"`
+}
+
 // Get User Subscribed Blueprints
 type GetUserSubscribedBlueprintsInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`

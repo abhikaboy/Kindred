@@ -96,6 +96,17 @@ func RegisterSearchBlueprintsOperation(api huma.API, handler *Handler) {
 	}, handler.SearchBlueprintsHuma)
 }
 
+func RegisterAutocompleteBlueprintsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "autocomplete-blueprints",
+		Method:      http.MethodGet,
+		Path:        "/v1/blueprints/autocomplete",
+		Summary:     "Autocomplete blueprints",
+		Description: "Get autocomplete suggestions for blueprints",
+		Tags:        []string{"blueprints"},
+	}, handler.AutocompleteBlueprintsHuma)
+}
+
 func RegisterGetUserSubscribedBlueprintsOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user-subscribed-blueprints",
@@ -132,6 +143,7 @@ func RegisterGetBlueprintsByCreatorOperation(api huma.API, handler *Handler) {
 // Register all blueprint operations
 func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSearchBlueprintsOperation(api, handler)
+	RegisterAutocompleteBlueprintsOperation(api, handler)
 	RegisterGetBlueprintByCategoryOperation(api, handler)
 	RegisterGetBlueprintsByCreatorOperation(api, handler)
 	RegisterCreateBlueprintOperation(api, handler)

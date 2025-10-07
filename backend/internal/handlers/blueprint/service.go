@@ -369,6 +369,85 @@ func (s *Service) SearchBlueprints(query string) ([]BlueprintDocument, error) {
 	return results, nil
 }
 
+func (s *Service) AutocompleteBlueprints(query string) ([]BlueprintDocument, error) {
+	ctx := context.Background()
+
+	cursor, err := s.Blueprints.Aggregate(ctx, mongo.Pipeline{
+		bson.D{
+			{"$search", bson.D{
+				{"index", "blueprints_text"},
+				{"compound", bson.D{
+					{"should", bson.A{
+						// Autocomplete on name with higher boost
+						bson.D{
+							{"autocomplete", bson.D{
+								{"query", query},
+								{"path", "name"},
+								{"tokenOrder", "sequential"},
+								{"fuzzy", bson.D{
+									{"maxEdits", 1},
+									{"prefixLength", 1},
+								}},
+								{"score", bson.D{
+									{"boost", bson.D{
+										{"value", 2},
+									}},
+								}},
+							}},
+						},
+						// Autocomplete on owner.handle
+						bson.D{
+							{"autocomplete", bson.D{
+								{"query", query},
+								{"path", "owner.handle"},
+								{"tokenOrder", "sequential"},
+								{"fuzzy", bson.D{
+									{"maxEdits", 1},
+									{"prefixLength", 1},
+								}},
+								{"score", bson.D{
+									{"boost", bson.D{
+										{"value", 1},
+									}},
+								}},
+							}},
+						},
+					}},
+				}},
+			}},
+		},
+		bson.D{
+			{"$addFields", bson.D{
+				{"score", bson.D{
+					{"$meta", "searchScore"},
+				}},
+			}},
+		},
+		bson.D{
+			{"$sort", bson.D{{"score", -1}}},
+		},
+		bson.D{
+			{"$limit", 10},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var internalResults []BlueprintDocumentInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
+		return nil, err
+	}
+
+	results := make([]BlueprintDocument, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
+	}
+
+	return results, nil
+}
+
 // GetUserSubscribedBlueprints fetches all blueprints that a user is subscribed to
 func (s *Service) GetUserSubscribedBlueprints(userID primitive.ObjectID) ([]BlueprintDocumentWithoutSubscribers, error) {
 	ctx := context.Background()

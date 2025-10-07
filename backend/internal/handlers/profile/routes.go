@@ -24,6 +24,7 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 func RegisterProfileOperations(api huma.API, handler *Handler) {
 	RegisterGetProfilesOperation(api, handler)
 	RegisterSearchProfilesOperation(api, handler)
+	RegisterAutocompleteProfilesOperation(api, handler)
 	RegisterGetProfileByEmailOperation(api, handler)
 	RegisterGetProfileByPhoneOperation(api, handler)
 	RegisterGetProfileOperation(api, handler)

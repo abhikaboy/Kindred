@@ -82,6 +82,23 @@ export const searchProfiles = async (query?: string): Promise<ProfileDocument[]>
 };
 
 /**
+ * Autocomplete profiles (type-safe)
+ */
+export const autocompleteProfiles = async (query: string): Promise<ProfileDocument[]> => {
+    if (query.length < 2) return [];
+    
+    const { data, error } = await client.GET("/v1/user/profiles/autocomplete", {
+        params: withAuthHeaders({ query: { query } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to autocomplete profiles: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
+
+/**
  * Update profile (type-safe)
  */
 export const updateProfile = async (id: string, updateData: UpdateProfileDocument): Promise<void> => {

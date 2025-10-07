@@ -249,5 +249,43 @@ func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesI
 	return resp, nil
 }
 
+func (h *Handler) AutocompleteProfilesHuma(ctx context.Context, input *AutocompleteProfilesInput) (*AutocompleteProfilesOutput, error) {
+	// Extract user_id from context for authorization
+	authenticatedUserID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	// Convert authenticated user ID to ObjectID
+	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid authenticated user ID", err)
+	}
+
+	// Require minimum query length for autocomplete
+	if len(input.Query) < 2 {
+		return &AutocompleteProfilesOutput{Body: []ProfileDocument{}}, nil
+	}
+
+	profiles, err := h.service.AutocompleteProfiles(input.Query)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to autocomplete profiles", err)
+	}
+
+	// Add relationship information to each profile
+	for i := range profiles {
+		relationship, err := h.service.CheckRelationship(authUserID, profiles[i].ID)
+		if err != nil {
+			relationship = &RelationshipInfo{
+				Status: RelationshipNone,
+			}
+		}
+		profiles[i].Relationship = relationship
+	}
+
+	resp := &AutocompleteProfilesOutput{Body: profiles}
+	return resp, nil
+}
+
 // Note: Profile picture upload functionality moved to centralized upload service
 // Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead

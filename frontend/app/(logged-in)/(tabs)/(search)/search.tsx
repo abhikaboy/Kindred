@@ -10,15 +10,16 @@ import {
 import React, { useEffect, useCallback, useMemo, useRef, useReducer } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { SearchBox } from "@/components/SearchBox";
+import { SearchBox, AutocompleteSuggestion } from "@/components/SearchBox";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { getBlueprintsByCategoryFromBackend, searchBlueprintsFromBackend } from "@/api/blueprint";
-import { searchProfiles } from "@/api/profile";
+import { getBlueprintsByCategoryFromBackend, searchBlueprintsFromBackend, autocompleteBlueprintsFromBackend } from "@/api/blueprint";
+import { searchProfiles, autocompleteProfiles } from "@/api/profile";
 import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchResults } from "@/components/search/SearchResults";
 import { ExplorePage } from "@/components/search/ExplorePage";
+import { useRouter } from "expo-router";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -90,7 +91,7 @@ const Search = (props: Props) => {
     const [categoryGroups, setCategoryGroups] = React.useState<BlueprintCategoryGroup[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [activeTab, setActiveTab] = React.useState(0);
+    const [activeTab, setActiveTab] = React.useState(1); // Default to Users tab (index 1)
 
     const [state, dispatch] = useReducer(searchReducer, {
         mode: 'categories',
@@ -103,7 +104,11 @@ const Search = (props: Props) => {
     const { searchTerm, searchResults, userResults, mode, error: searchError } = state;
 
     const [focused, setFocused] = React.useState(false);
+    const [autocompleteSuggestions, setAutocompleteSuggestions] = React.useState<AutocompleteSuggestion[]>([]);
+    const [showAutocomplete, setShowAutocomplete] = React.useState(false);
     const ThemedColor = useThemeColor();
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const router = useRouter();
 
     const opacity = useSharedValue(1);
     const focusStyle = useAnimatedStyle(() => {
@@ -132,7 +137,36 @@ const Search = (props: Props) => {
         loadBlueprintsByCategory();
     }, [loadBlueprintsByCategory]);
 
-    // Update the search function to handle both blueprints and users
+    // Autocomplete function with debouncing - only fetch, don't update main results
+    const handleAutocomplete = useCallback(async (query: string) => {
+        if (!query.trim() || query.trim().length < 2) {
+            setAutocompleteSuggestions([]);
+            setShowAutocomplete(false);
+            return;
+        }
+
+        try {
+            // Prioritize users for autocomplete
+            const userResults = await autocompleteProfiles(query);
+            
+            // Convert to autocomplete suggestions format
+            const suggestions: AutocompleteSuggestion[] = userResults.map(user => ({
+                id: user.id,
+                display_name: user.display_name,
+                handle: user.handle,
+                profile_picture: user.profile_picture,
+                type: 'user' as const
+            }));
+
+            setAutocompleteSuggestions(suggestions);
+            setShowAutocomplete(true);
+        } catch (error) {
+            console.error('Autocomplete error:', error);
+            setAutocompleteSuggestions([]);
+        }
+    }, []);
+
+    // Full search function for submit
     const handleSearch = useCallback(async (query: string) => {
         if (!query.trim()) {
             dispatch({ type: 'CLEAR_SEARCH' });
@@ -159,9 +193,13 @@ const Search = (props: Props) => {
         }
     }, []);
 
-    // Search is now only triggered on submit, not on every character change
-
     const onSubmit = useCallback(() => {
+        // Clear debounce timer and autocomplete on submit
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+        setShowAutocomplete(false);
+        setAutocompleteSuggestions([]);
         handleSearch(searchTerm);
     }, [handleSearch, searchTerm]);
 
@@ -180,10 +218,42 @@ const Search = (props: Props) => {
         }
     }, [loadBlueprintsByCategory]);
 
-    // Memoize the onChangeText callback to prevent unnecessary re-renders
+    // Memoize the onChangeText callback with debounced autocomplete
     const handleSearchTermChange = useCallback((text: string) => {
         dispatch({ type: 'SET_SEARCH_TERM', payload: text });
-    }, []);
+        
+        // Clear existing timer
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+
+        // Set new timer for autocomplete (300ms delay)
+        if (text.trim().length >= 2) {
+            debounceTimerRef.current = setTimeout(() => {
+                handleAutocomplete(text);
+            }, 300);
+        } else {
+            setAutocompleteSuggestions([]);
+            setShowAutocomplete(false);
+            if (text.trim().length === 0) {
+                dispatch({ type: 'CLEAR_SEARCH' });
+            }
+        }
+    }, [handleAutocomplete]);
+
+    // Handle selecting an autocomplete suggestion
+    const handleSelectSuggestion = useCallback((suggestion: AutocompleteSuggestion) => {
+        setShowAutocomplete(false);
+        setAutocompleteSuggestions([]);
+        
+        if (suggestion.type === 'user') {
+            // Navigate to user profile
+            router.push(`/account/${suggestion.id}`);
+        } else {
+            // Navigate to blueprint
+            router.push(`/blueprint/${suggestion.id}`);
+        }
+    }, [router]);
 
     // Memoize the onSubmit callback
     const handleSubmit = useCallback(() => {
@@ -193,6 +263,15 @@ const Search = (props: Props) => {
     // Memoize the setFocused callback
     const handleSetFocused = useCallback((focused: boolean) => {
         setFocused(focused);
+    }, []);
+
+    // Cleanup debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+        };
     }, []);
 
     // Error state
@@ -212,9 +291,12 @@ const Search = (props: Props) => {
                     placeholder={"Search for a user or blueprint!"}
                     onChangeText={handleSearchTermChange}
                     onSubmit={handleSubmit}
-                    recent={true}
+                    recent={!showAutocomplete}
                     name={"search-page"}
                     setFocused={handleSetFocused}
+                    autocompleteSuggestions={autocompleteSuggestions}
+                    onSelectSuggestion={handleSelectSuggestion}
+                    showAutocomplete={showAutocomplete}
                 />
             </View>
 

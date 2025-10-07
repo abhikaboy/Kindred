@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Touchable } from "react-native";
+import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Touchable, Image } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch } from "@/hooks/useRecentSearch";
 import { IconSymbol } from "./ui/IconSymbol";
@@ -8,6 +8,17 @@ import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Keyboard } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+
+export interface AutocompleteSuggestion {
+    id: string;
+    display_name?: string;
+    handle?: string;
+    name?: string;
+    profile_picture?: string;
+    banner?: string;
+    type: 'user' | 'blueprint';
+}
+
 interface SearchBoxProps extends TextInputProps {
     value: string;
     recent?: boolean;
@@ -16,6 +27,9 @@ interface SearchBoxProps extends TextInputProps {
     onChangeText: (text: string) => void;
     icon?: React.ReactNode;
     setFocused?: (focused: boolean) => void;
+    autocompleteSuggestions?: AutocompleteSuggestion[];
+    onSelectSuggestion?: (suggestion: AutocompleteSuggestion) => void;
+    showAutocomplete?: boolean;
 }
 
 export function SearchBox({
@@ -27,6 +41,9 @@ export function SearchBox({
     recent,
     name,
     setFocused,
+    autocompleteSuggestions = [],
+    onSelectSuggestion,
+    showAutocomplete = false,
     ...rest
 }: SearchBoxProps) {
     const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
@@ -101,7 +118,7 @@ export function SearchBox({
                     <Octicons name="search" size={24} color={ThemedColor.text} />
                 )}
             </View>
-            {recent && (
+            {recent && recentItems.length > 0 && (
                 <View style={{ ...styles.recentsContainer, top: inputHeight }}>
                     {recentItems.map((term: string, index: number) => {
                         return (
@@ -122,6 +139,58 @@ export function SearchBox({
                                 <TouchableOpacity style={{ paddingRight: 16 }} onPress={() => deleteRecentItem(term)}>
                                     <Entypo name="cross" size={20} color={ThemedColor.text} />
                                 </TouchableOpacity>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            )}
+            {showAutocomplete && autocompleteSuggestions.length > 0 && (
+                <View style={{ ...styles.recentsContainer, top: inputHeight }}>
+                    {autocompleteSuggestions.map((suggestion: AutocompleteSuggestion) => {
+                        const displayText = suggestion.type === 'user' 
+                            ? suggestion.display_name 
+                            : suggestion.name;
+                        const subtitle = suggestion.type === 'user' 
+                            ? `@${suggestion.handle}` 
+                            : 'Blueprint';
+                        
+                        // Get the image to display
+                        const imageUri = suggestion.type === 'user' 
+                            ? suggestion.profile_picture 
+                            : suggestion.banner;
+                        
+                        // For users, use circular image; for blueprints, use rounded rectangle
+                        const isUser = suggestion.type === 'user';
+                        
+                        return (
+                            <TouchableOpacity
+                                key={suggestion.id}
+                                style={styles.recent}
+                                onPress={() => {
+                                    if (onSelectSuggestion) {
+                                        onSelectSuggestion(suggestion);
+                                    }
+                                }}>
+                                <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
+                                    {imageUri ? (
+                                        <Image 
+                                            source={{ uri: imageUri }} 
+                                            style={isUser ? styles.userImage : styles.blueprintImage}
+                                        />
+                                    ) : (
+                                        <View style={isUser ? styles.placeholderUser : styles.placeholderBlueprint}>
+                                            <Octicons 
+                                                name={isUser ? "person" : "package"} 
+                                                size={16} 
+                                                color={ThemedColor.background} 
+                                            />
+                                        </View>
+                                    )}
+                                    <View style={{ flex: 1 }}>
+                                        <ThemedText style={{ fontWeight: '600' }}>{displayText}</ThemedText>
+                                        <ThemedText style={{ fontSize: 12, opacity: 0.7 }}>{subtitle}</ThemedText>
+                                    </View>
+                                </View>
                             </TouchableOpacity>
                         );
                     })}
@@ -174,5 +243,31 @@ const useStyles = (ThemedColor: any) =>
         icon: {
             marginLeft: 8,
             resizeMode: "contain",
+        },
+        userImage: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+        },
+        blueprintImage: {
+            width: 56,
+            height: 40,
+            borderRadius: 8,
+        },
+        placeholderUser: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: ThemedColor.primary,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        placeholderBlueprint: {
+            width: 56,
+            height: 40,
+            borderRadius: 8,
+            backgroundColor: ThemedColor.primary,
+            justifyContent: 'center',
+            alignItems: 'center',
         },
     });

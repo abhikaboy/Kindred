@@ -89,20 +89,35 @@ var SearchIndexes = []SearchIndex{
 		Model: mongo.SearchIndexModel{
 			Definition: bson.D{
 				{Key: "mappings", Value: bson.D{
-					{Key: "dynamic", Value: true},
+					{Key: "dynamic", Value: false},
 					{Key: "fields", Value: bson.D{
+						// Full-text search fields
 						{Key: "display_name", Value: bson.D{
 							{Key: "type", Value: "string"},
 							{Key: "analyzer", Value: "lucene.standard"},
-						},
-						},
+						}},
 						{Key: "handle", Value: bson.D{
 							{Key: "type", Value: "string"},
 							{Key: "analyzer", Value: "lucene.standard"},
-						},
-						},
-					},
-					},
+						}},
+						// Autocomplete fields
+						{Key: "display_name", Value: bson.D{
+							{Key: "type", Value: "autocomplete"},
+							{Key: "analyzer", Value: "lucene.standard"},
+							{Key: "tokenization", Value: "edgeGram"},
+							{Key: "minGrams", Value: 2},
+							{Key: "maxGrams", Value: 15},
+							{Key: "foldDiacritics", Value: true},
+						}},
+						{Key: "handle", Value: bson.D{
+							{Key: "type", Value: "autocomplete"},
+							{Key: "analyzer", Value: "lucene.standard"},
+							{Key: "tokenization", Value: "edgeGram"},
+							{Key: "minGrams", Value: 2},
+							{Key: "maxGrams", Value: 15},
+							{Key: "foldDiacritics", Value: true},
+						}},
+					}},
 				}}},
 			Options: options.SearchIndexes().SetName("display_name_text"),
 		},
@@ -112,8 +127,9 @@ var SearchIndexes = []SearchIndex{
 		Model: mongo.SearchIndexModel{
 			Definition: bson.D{
 				{Key: "mappings", Value: bson.D{
-					{Key: "dynamic", Value: true},
+					{Key: "dynamic", Value: false},
 					{Key: "fields", Value: bson.D{
+						// Full-text search fields
 						{Key: "name", Value: bson.D{
 							{Key: "type", Value: "string"},
 							{Key: "analyzer", Value: "lucene.standard"},
@@ -129,6 +145,23 @@ var SearchIndexes = []SearchIndex{
 						{Key: "owner.handle", Value: bson.D{
 							{Key: "type", Value: "string"},
 							{Key: "analyzer", Value: "lucene.standard"},
+						}},
+						// Autocomplete fields
+						{Key: "name", Value: bson.D{
+							{Key: "type", Value: "autocomplete"},
+							{Key: "analyzer", Value: "lucene.standard"},
+							{Key: "tokenization", Value: "edgeGram"},
+							{Key: "minGrams", Value: 2},
+							{Key: "maxGrams", Value: 15},
+							{Key: "foldDiacritics", Value: true},
+						}},
+						{Key: "owner.handle", Value: bson.D{
+							{Key: "type", Value: "autocomplete"},
+							{Key: "analyzer", Value: "lucene.standard"},
+							{Key: "tokenization", Value: "edgeGram"},
+							{Key: "minGrams", Value: 2},
+							{Key: "maxGrams", Value: 15},
+							{Key: "foldDiacritics", Value: true},
 						}},
 					}},
 				}},

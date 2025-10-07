@@ -57,7 +57,7 @@ const CircleOnboarding = (props: Props) => {
         const exponentialEasing = Easing.out(Easing.exp);
 
         // Create sequence of 4 quarter rotations, each with exponential easing
-        const quarterRotationDuration = 5000; // 5 seconds per quarter rotation
+        const quarterRotationDuration = 4000; // 4 seconds per quarter rotation
         
         Animated.loop(
             Animated.sequence([
@@ -103,7 +103,7 @@ const CircleOnboarding = (props: Props) => {
             Animated.sequence([
                 Animated.timing(labelIndex, {
                     toValue: 4,
-                    duration: quarterRotationDuration * 4, // 20 seconds total
+                    duration: quarterRotationDuration * 4, // 16 seconds total
                     easing: Easing.linear, // Linear for smooth interpolation between labels
                     useNativeDriver: false,
                 }),

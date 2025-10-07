@@ -196,6 +196,19 @@ func (h *Handler) SearchBlueprintsHuma(ctx context.Context, input *SearchBluepri
 	return &SearchBlueprintsOutput{Body: blueprints}, nil
 }
 
+func (h *Handler) AutocompleteBlueprintsHuma(ctx context.Context, input *AutocompleteBlueprintsInput) (*AutocompleteBlueprintsOutput, error) {
+	// Require minimum query length for autocomplete
+	if len(input.Query) < 2 {
+		return &AutocompleteBlueprintsOutput{Body: []BlueprintDocument{}}, nil
+	}
+
+	blueprints, err := h.service.AutocompleteBlueprints(input.Query)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to autocomplete blueprints", err)
+	}
+	return &AutocompleteBlueprintsOutput{Body: blueprints}, nil
+}
+
 func (h *Handler) GetUserSubscribedBlueprintsHuma(ctx context.Context, input *GetUserSubscribedBlueprintsInput) (*GetUserSubscribedBlueprintsOutput, error) {
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)

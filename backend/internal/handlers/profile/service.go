@@ -168,6 +168,91 @@ func (s *Service) SearchProfiles(query string) ([]ProfileDocument, error) {
 	return results, nil
 }
 
+func (s *Service) AutocompleteProfiles(query string) ([]ProfileDocument, error) {
+	ctx := context.Background()
+
+	var results = make([]ProfileDocument, 0)
+
+	pipeline := mongo.Pipeline{
+		// $search stage using autocomplete
+		bson.D{
+			{Key: "$search", Value: bson.D{
+				{Key: "index", Value: "display_name_text"},
+				{Key: "compound", Value: bson.D{
+					{Key: "should", Value: bson.A{
+						// Autocomplete on display_name with higher boost
+						bson.D{
+							{Key: "autocomplete", Value: bson.D{
+								{Key: "query", Value: query},
+								{Key: "path", Value: "display_name"},
+								{Key: "tokenOrder", Value: "sequential"},
+								{Key: "fuzzy", Value: bson.D{
+									{Key: "maxEdits", Value: 1},
+									{Key: "prefixLength", Value: 1},
+								}},
+								{Key: "score", Value: bson.D{
+									{Key: "boost", Value: bson.D{
+										{Key: "value", Value: 2},
+									}},
+								}},
+							}},
+						},
+						// Autocomplete on handle
+						bson.D{
+							{Key: "autocomplete", Value: bson.D{
+								{Key: "query", Value: query},
+								{Key: "path", Value: "handle"},
+								{Key: "tokenOrder", Value: "sequential"},
+								{Key: "fuzzy", Value: bson.D{
+									{Key: "maxEdits", Value: 1},
+									{Key: "prefixLength", Value: 1},
+								}},
+								{Key: "score", Value: bson.D{
+									{Key: "boost", Value: bson.D{
+										{Key: "value", Value: 1},
+									}},
+								}},
+							}},
+						},
+					}},
+				}},
+			}},
+		},
+		// Add search score
+		bson.D{
+			{Key: "$addFields", Value: bson.D{
+				{Key: "score", Value: bson.D{
+					{Key: "$meta", Value: "searchScore"},
+				}},
+			}},
+		},
+		// Sort by score
+		bson.D{
+			{Key: "$sort", Value: bson.D{
+				{Key: "score", Value: -1},
+			}},
+		},
+		// Limit results for autocomplete
+		bson.D{
+			{Key: "$limit", Value: 10},
+		},
+	}
+
+	cursor, err := s.Profiles.Aggregate(ctx, pipeline)
+	if err == mongo.ErrNoDocuments {
+		return []ProfileDocument{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 // UpdatePartialProfile updates only specified fields of a Profile document by ObjectID.
 func (s *Service) UpdatePartialProfile(id primitive.ObjectID, updated UpdateProfileDocument) error {
 	ctx := context.Background()

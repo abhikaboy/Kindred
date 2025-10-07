@@ -173,6 +173,28 @@ export async function searchBlueprintsFromBackend(query: string) {
 }
 
 /**
+ * Autocomplete blueprints
+ */
+export async function autocompleteBlueprintsFromBackend(query: string) {
+    if (query.length < 2) return [];
+    
+    try {
+        const { data, error } = await client.GET("/v1/blueprints/autocomplete", {
+            params: { query: { query } },
+        });
+
+        if (error) {
+            throw new Error(`Failed to autocomplete blueprints: ${JSON.stringify(error)}`);
+        }
+
+        return data || [];
+    } catch (error) {
+        console.error("Failed to autocomplete blueprints:", error);
+        throw error;
+    }
+}
+
+/**
  * Get blueprints by category from backend
  * @returns 
  */
