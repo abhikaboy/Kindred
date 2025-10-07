@@ -74,6 +74,11 @@ export default function Feed() {
     const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
     const [postHeights, setPostHeights] = useState<{[key: string]: number}>({});
+    
+    // Pagination state
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Feed switching state
     const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
@@ -167,37 +172,46 @@ export default function Feed() {
         }
     }, []);
 
-    const fetchPosts = useCallback(async (feedId?: string) => {
+    const fetchPosts = useCallback(async (feedId?: string, resetPagination = true) => {
         setLoading(true);
         setError(null);
         try {
             const currentFeedId = feedId || currentFeed.id;
-            let fetchedPosts;
+            let result;
             
             if (currentFeedId === "friends") {
-                fetchedPosts = await getFriendsPosts();
+                result = await getFriendsPosts(8, 0);
             } else if (currentFeedId.startsWith("blueprint-")) {
                 // Extract blueprint ID from feed ID
                 const blueprintId = currentFeedId.replace("blueprint-", "");
-                fetchedPosts = await getPostsByBlueprint(blueprintId);
+                const fetchedPosts = await getPostsByBlueprint(blueprintId);
+                // Blueprint posts don't support pagination yet, wrap in result format
+                result = {
+                    posts: fetchedPosts,
+                    total: fetchedPosts.length,
+                    hasMore: false,
+                    nextOffset: 0
+                };
             } else {
-                fetchedPosts = await getAllPosts();
+                result = await getAllPosts(8, 0);
             }
             
-            if (!fetchedPosts) {
+            if (!result || !result.posts) {
                 throw new Error("No data received from API");
             }
-            if (!Array.isArray(fetchedPosts)) {
+            if (!Array.isArray(result.posts)) {
                 throw new Error("API response is not an array");
             }
 
-            setPosts(fetchedPosts);
+            setPosts(result.posts);
+            setOffset(result.nextOffset);
+            setHasMore(result.hasMore);
             setLastUpdated(new Date());
-            console.log(`Successfully fetched ${fetchedPosts.length} ${currentFeedId} posts`);
+            console.log(`Successfully fetched ${result.posts.length} ${currentFeedId} posts (hasMore: ${result.hasMore})`);
 
             // Debug: Log the structure of the first post
-            if (fetchedPosts.length > 0) {
-                console.log("Sample post structure:", JSON.stringify(fetchedPosts[0], null, 2));
+            if (result.posts.length > 0) {
+                console.log("Sample post structure:", JSON.stringify(result.posts[0], null, 2));
             }
         } catch (error) {
             console.error("Error fetching posts:", error);
@@ -205,11 +219,50 @@ export default function Feed() {
             setError(errorMessage);
             showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
             setPosts([]);
+            setHasMore(false);
         } finally {
             setLoading(false);
             setInitialLoading(false);
         }
     }, [currentFeed.id, currentFeed.name]);
+
+    // Load more posts when scrolling to the end
+    const loadMorePosts = useCallback(async () => {
+        if (loadingMore || !hasMore || loading) {
+            return;
+        }
+
+        setLoadingMore(true);
+        try {
+            const currentFeedId = currentFeed.id;
+            let result;
+            
+            if (currentFeedId === "friends") {
+                result = await getFriendsPosts(8, offset);
+            } else if (currentFeedId.startsWith("blueprint-")) {
+                // Blueprint posts don't support pagination
+                setLoadingMore(false);
+                return;
+            } else {
+                result = await getAllPosts(8, offset);
+            }
+            
+            if (!result || !result.posts) {
+                throw new Error("No data received from API");
+            }
+
+            // Append new posts to existing posts
+            setPosts(prevPosts => [...prevPosts, ...result.posts]);
+            setOffset(result.nextOffset);
+            setHasMore(result.hasMore);
+            console.log(`Loaded ${result.posts.length} more posts (hasMore: ${result.hasMore}, nextOffset: ${result.nextOffset})`);
+        } catch (error) {
+            console.error("Error loading more posts:", error);
+            showToast("Failed to load more posts", "danger");
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [loadingMore, hasMore, loading, currentFeed.id, offset]);
 
     // Memoize sorted posts to prevent unnecessary recalculations
     const sortedPosts = useMemo(() => {
@@ -301,11 +354,20 @@ export default function Feed() {
                 animateHeader(false);
             }
 
+            // Check if user has scrolled to the end
+            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+            const paddingToBottom = 20; // Trigger slightly before the absolute end
+            const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+            if (isCloseToBottom && hasMore && !loadingMore && !loading) {
+                loadMorePosts();
+            }
+
             scrollY.setValue(currentScrollY);
             lastScrollY.current = currentScrollY;
             lastScrollTime.current = currentTime;
         },
-        [scrollY, showAnimatedHeader, animateHeader]
+        [scrollY, showAnimatedHeader, animateHeader, hasMore, loadingMore, loading, loadMorePosts]
     );
 
     const renderFeedTab = ({ item }: { item: { name: string; id: string } }) => {
@@ -546,11 +608,27 @@ export default function Feed() {
                 ) : loading || error || posts.length === 0 ? (
                     renderEmptyComponent()
                 ) : (
-                    sortedPosts.map((post) => (
-                        <React.Fragment key={post._id}>
-                            {renderPost(post)}
-                        </React.Fragment>
-                    ))
+                    <>
+                        {sortedPosts.map((post) => (
+                            <React.Fragment key={post._id}>
+                                {renderPost(post)}
+                            </React.Fragment>
+                        ))}
+                        {/* Loading indicator at bottom when fetching more posts */}
+                        {loadingMore && (
+                            <View style={styles.loadingMoreContainer}>
+                                <PostCardSkeleton />
+                            </View>
+                        )}
+                        {/* End of feed indicator */}
+                        {!hasMore && posts.length > 0 && (
+                            <View style={styles.endOfFeedContainer}>
+                                <ThemedText style={styles.endOfFeedText}>
+                                    You've reached the end! 🎉
+                                </ThemedText>
+                            </View>
+                        )}
+                    </>
                 )}
             </ScrollView>
         </View>
@@ -667,6 +745,19 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             fontWeight: "bold",
             marginTop: 10,
             textAlign: "center",
+        },
+        loadingMoreContainer: {
+            paddingVertical: 20,
+            alignItems: "center",
+        },
+        endOfFeedContainer: {
+            paddingVertical: 32,
+            alignItems: "center",
+        },
+        endOfFeedText: {
+            fontSize: 16,
+            color: ThemedColor.caption,
+            fontWeight: "500",
         },
         retryButton: {
             marginTop: 15,

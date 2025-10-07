@@ -34,22 +34,32 @@ type CreatePostParams struct {
 // Get Posts (all)
 type GetPostsInput struct {
 	Authorization string `header:"Authorization" required:"true"`
+	Limit         int    `query:"limit" default:"8" minimum:"1" maximum:"50" doc:"Number of posts to return (default: 8)"`
+	Offset        int    `query:"offset" default:"0" minimum:"0" doc:"Number of posts to skip (default: 0)"`
 }
 
 type GetPostsOutput struct {
 	Body struct {
-		Posts []types.PostDocumentAPI `json:"posts"`
+		Posts      []types.PostDocumentAPI `json:"posts"`
+		Total      int                     `json:"total" doc:"Total number of posts available"`
+		HasMore    bool                    `json:"hasMore" doc:"Whether there are more posts to fetch"`
+		NextOffset int                     `json:"nextOffset" doc:"Offset for the next page"`
 	} `json:"body"`
 }
 
 // Get Friends Posts
 type GetFriendsPostsInput struct {
 	Authorization string `header:"Authorization" required:"true"`
+	Limit         int    `query:"limit" default:"8" minimum:"1" maximum:"50" doc:"Number of posts to return (default: 8)"`
+	Offset        int    `query:"offset" default:"0" minimum:"0" doc:"Number of posts to skip (default: 0)"`
 }
 
 type GetFriendsPostsOutput struct {
 	Body struct {
-		Posts []types.PostDocumentAPI `json:"posts"`
+		Posts      []types.PostDocumentAPI `json:"posts"`
+		Total      int                     `json:"total" doc:"Total number of posts available"`
+		HasMore    bool                    `json:"hasMore" doc:"Whether there are more posts to fetch"`
+		NextOffset int                     `json:"nextOffset" doc:"Offset for the next page"`
 	} `json:"body"`
 }
 

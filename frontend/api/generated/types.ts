@@ -3028,7 +3028,19 @@ export interface components {
              * @example https://example.com/schemas/GetFriendsPostsOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Whether there are more posts to fetch */
+            hasMore: boolean;
+            /**
+             * Format: int64
+             * @description Offset for the next page
+             */
+            nextOffset: number;
             posts: components["schemas"]["PostDocumentAPI"][];
+            /**
+             * Format: int64
+             * @description Total number of posts available
+             */
+            total: number;
         };
         GetGroupsOutputBody: {
             /**
@@ -3068,7 +3080,19 @@ export interface components {
              * @example https://example.com/schemas/GetPostsOutputBody.json
              */
             readonly $schema?: string;
+            /** @description Whether there are more posts to fetch */
+            hasMore: boolean;
+            /**
+             * Format: int64
+             * @description Offset for the next page
+             */
+            nextOffset: number;
             posts: components["schemas"]["PostDocumentAPI"][];
+            /**
+             * Format: int64
+             * @description Total number of posts available
+             */
+            total: number;
         };
         GetUserGroupsOutputBody: {
             /**
@@ -7212,7 +7236,12 @@ export interface operations {
     };
     "get-posts": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Number of posts to return (default: 8) */
+                limit?: number;
+                /** @description Number of posts to skip (default: 0) */
+                offset?: number;
+            };
             header: {
                 Authorization: string;
             };
@@ -7531,7 +7560,12 @@ export interface operations {
     };
     "get-friends-posts": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Number of posts to return (default: 8) */
+                limit?: number;
+                /** @description Number of posts to skip (default: 0) */
+                offset?: number;
+            };
             header: {
                 Authorization: string;
             };

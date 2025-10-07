@@ -53,33 +53,69 @@ export const createPost = async (
 };
 
 /**
- * Get all posts
+ * Response type for paginated posts
  */
-export const getAllPosts = async (): Promise<PostDocumentAPI[]> => {
+export interface PaginatedPostsResponse {
+    posts: PostDocumentAPI[];
+    total: number;
+    hasMore: boolean;
+    nextOffset: number;
+}
+
+/**
+ * Get all posts with pagination
+ * @param limit - Number of posts to return (default: 8)
+ * @param offset - Number of posts to skip (default: 0)
+ */
+export const getAllPosts = async (limit: number = 8, offset: number = 0): Promise<PaginatedPostsResponse> => {
     const { data, error } = await client.GET("/v1/user/posts", {
-        params: withAuthHeaders({}),
+        params: withAuthHeaders({
+            query: { limit, offset }
+        }),
     });
 
     if (error) {
         throw new Error(`Failed to get posts: ${JSON.stringify(error)}`);
     }
     
-    return data?.posts || [];
+    // @ts-ignore - OpenAPI types not yet regenerated with pagination fields
+    return {
+        posts: data?.posts || [],
+        // @ts-ignore
+        total: data?.total || 0,
+        // @ts-ignore
+        hasMore: data?.hasMore || false,
+        // @ts-ignore
+        nextOffset: data?.nextOffset || 0,
+    };
 };
 
 /**
- * Get friends posts (chronologically ordered)
+ * Get friends posts (chronologically ordered) with pagination
+ * @param limit - Number of posts to return (default: 8)
+ * @param offset - Number of posts to skip (default: 0)
  */
-export const getFriendsPosts = async (): Promise<PostDocumentAPI[]> => {
+export const getFriendsPosts = async (limit: number = 8, offset: number = 0): Promise<PaginatedPostsResponse> => {
     const { data, error } = await client.GET("/v1/user/posts/friends", {
-        params: withAuthHeaders({}),
+        params: withAuthHeaders({
+            query: { limit, offset }
+        }),
     });
 
     if (error) {
         throw new Error(`Failed to get friends posts: ${JSON.stringify(error)}`);
     }
     
-    return data?.posts || [];
+    // @ts-ignore - OpenAPI types not yet regenerated with pagination fields
+    return {
+        posts: data?.posts || [],
+        // @ts-ignore
+        total: data?.total || 0,
+        // @ts-ignore
+        hasMore: data?.hasMore || false,
+        // @ts-ignore
+        nextOffset: data?.nextOffset || 0,
+    };
 };
 
 /**
@@ -276,9 +312,9 @@ export const createPostToBackend = async (
     }
 };
 
-export const getPostsFromBackend = async () => {
+export const getPostsFromBackend = async (limit: number = 8, offset: number = 0) => {
     try {
-        const result = await getAllPosts();
+        const result = await getAllPosts(limit, offset);
         return result;
     } catch (error) {
         console.log(`Failed to get all posts from backend: ${JSON.stringify(error)}`);

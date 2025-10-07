@@ -106,7 +106,17 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 }
 
 func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetPostsOutput, error) {
-	posts, err := h.service.GetAllPosts()
+	// Set defaults if not provided
+	limit := input.Limit
+	if limit <= 0 {
+		limit = 8
+	}
+	offset := input.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	posts, total, err := h.service.GetAllPosts(limit, offset)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to get posts", err)
 	}
@@ -119,6 +129,9 @@ func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetP
 
 	output := &GetPostsOutput{}
 	output.Body.Posts = apiPosts
+	output.Body.Total = total
+	output.Body.HasMore = offset+len(apiPosts) < total
+	output.Body.NextOffset = offset + len(apiPosts)
 
 	return output, nil
 }
@@ -135,7 +148,17 @@ func (h *Handler) GetFriendsPostsHuma(ctx context.Context, input *GetFriendsPost
 		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
-	posts, err := h.service.GetFriendsPosts(userID)
+	// Set defaults if not provided
+	limit := input.Limit
+	if limit <= 0 {
+		limit = 8
+	}
+	offset := input.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	posts, total, err := h.service.GetFriendsPosts(userID, limit, offset)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to get friends posts", err)
 	}
@@ -147,6 +170,9 @@ func (h *Handler) GetFriendsPostsHuma(ctx context.Context, input *GetFriendsPost
 
 	output := &GetFriendsPostsOutput{}
 	output.Body.Posts = apiPosts
+	output.Body.Total = total
+	output.Body.HasMore = offset+len(apiPosts) < total
+	output.Body.NextOffset = offset + len(apiPosts)
 
 	return output, nil
 }

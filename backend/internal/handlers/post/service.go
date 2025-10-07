@@ -32,8 +32,8 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
-// GetAllPosts fetches all Post documents from MongoDB
-func (s *Service) GetAllPosts() ([]types.PostDocument, error) {
+// GetAllPosts fetches all Post documents from MongoDB with pagination
+func (s *Service) GetAllPosts(limit, offset int) ([]types.PostDocument, int, error) {
 	ctx := context.Background()
 
 	filter := bson.M{
@@ -41,18 +41,35 @@ func (s *Service) GetAllPosts() ([]types.PostDocument, error) {
 		"metadata.isPublic":  true,
 	}
 
-	cursor, err := s.Posts.Find(ctx, filter)
+	// Get total count
+	total, err := s.Posts.CountDocuments(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	// Set default limit if not provided
+	if limit <= 0 {
+		limit = 8
+	}
+
+	// Find with pagination
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "metadata.createdAt", Value: -1}}). // Sort by newest first
+		SetLimit(int64(limit)).
+		SetSkip(int64(offset))
+
+	cursor, err := s.Posts.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
 	var results []types.PostDocument
 	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return results, nil
+	return results, int(total), nil
 }
 
 // GetPostByID returns a single Post document by its ObjectID
@@ -192,11 +209,82 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 	return results, nil
 }
 
-// GetFriendsPosts fetches posts from the user's friends using aggregation pipeline, ordered chronologically (newest first)
-func (s *Service) GetFriendsPosts(userID primitive.ObjectID) ([]types.PostDocument, error) {
+// GetFriendsPosts fetches posts from the user's friends using aggregation pipeline, ordered chronologically (newest first) with pagination
+func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) ([]types.PostDocument, int, error) {
 	ctx := context.Background()
 
-	// Use aggregation pipeline with $lookup operations
+	// Set default limit if not provided
+	if limit <= 0 {
+		limit = 8
+	}
+
+	// First, get the total count of friends' posts
+	countPipeline := mongo.Pipeline{
+		// Stage 1: Match the specific user
+		{{Key: "$match", Value: bson.M{"_id": userID}}},
+
+		// Stage 2: Lookup friends from users collection based on friends array
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "users",
+			"localField":   "friends",
+			"foreignField": "_id",
+			"as":           "friendsData",
+		}}},
+
+		// Stage 3: Extract friend IDs for posts lookup
+		{{Key: "$project", Value: bson.M{
+			"friendIds": "$friends",
+		}}},
+
+		// Stage 4: Lookup posts from friends
+		{{Key: "$lookup", Value: bson.M{
+			"from": "posts",
+			"let":  bson.M{"friendIds": "$friendIds"},
+			"pipeline": mongo.Pipeline{
+				// Match posts from friends that are public and not deleted
+				{{Key: "$match", Value: bson.M{
+					"$expr": bson.M{
+						"$and": []bson.M{
+							{"$in": []interface{}{
+								bson.M{"$toObjectId": "$user._id"},
+								"$$friendIds",
+							}},
+							{"$eq": []interface{}{"$metadata.isDeleted", false}},
+							{"$eq": []interface{}{"$metadata.isPublic", true}},
+						},
+					},
+				}}},
+			},
+			"as": "friendsPosts",
+		}}},
+
+		// Stage 5: Count the posts
+		{{Key: "$project", Value: bson.M{
+			"total": bson.M{"$size": "$friendsPosts"},
+		}}},
+	}
+
+	countCursor, err := s.Users.Aggregate(ctx, countPipeline)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count friends posts: %w", err)
+	}
+	defer countCursor.Close(ctx)
+
+	var countResult []bson.M
+	if err := countCursor.All(ctx, &countResult); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode count result: %w", err)
+	}
+
+	total := 0
+	if len(countResult) > 0 {
+		if t, ok := countResult[0]["total"].(int32); ok {
+			total = int(t)
+		} else if t, ok := countResult[0]["total"].(int64); ok {
+			total = int(t)
+		}
+	}
+
+	// Now get the paginated posts
 	pipeline := mongo.Pipeline{
 		// Stage 1: Match the specific user
 		{{Key: "$match", Value: bson.M{"_id": userID}}},
@@ -234,6 +322,9 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID) ([]types.PostDocume
 				}}},
 				// Sort by creation date (newest first)
 				{{Key: "$sort", Value: bson.M{"metadata.createdAt": -1}}},
+				// Add pagination
+				{{Key: "$skip", Value: offset}},
+				{{Key: "$limit", Value: limit}},
 			},
 			"as": "friendsPosts",
 		}}},
@@ -249,16 +340,16 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID) ([]types.PostDocume
 
 	cursor, err := s.Users.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute aggregation pipeline: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute aggregation pipeline: %w", err)
 	}
 	defer cursor.Close(ctx)
 
 	var results []types.PostDocument
 	if err := cursor.All(ctx, &results); err != nil {
-		return nil, fmt.Errorf("failed to decode aggregation results: %w", err)
+		return nil, 0, fmt.Errorf("failed to decode aggregation results: %w", err)
 	}
 
-	return results, nil
+	return results, total, nil
 }
 
 // GetUserGroups fetches all groups where the user is a creator or member
