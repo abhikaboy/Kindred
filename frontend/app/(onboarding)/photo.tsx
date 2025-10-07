@@ -22,7 +22,7 @@ type Props = {};
 const PhotoOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { onboardingData, updateProfilePicture, validationErrors, registerWithEmail, isLoading } = useOnboarding();
+    const { onboardingData, updateProfilePicture, validationErrors, registerWithEmail, registerWithApple, isLoading } = useOnboarding();
     const { user } = useAuth();
     
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -115,7 +115,13 @@ const PhotoOnboarding = (props: Props) => {
             
             // Step 4: Register the user with the uploaded profile picture URL
             console.log('Registering user with uploaded profile picture...');
-            await registerWithEmail(uploadedUrl);
+            
+            // Check if this is an Apple registration or email registration
+            if (onboardingData.appleId) {
+                await registerWithApple(uploadedUrl);
+            } else {
+                await registerWithEmail(uploadedUrl);
+            }
             
             console.log('User registered successfully!');
             showToast('Account created successfully! 🎉', 'success');
@@ -157,7 +163,13 @@ const PhotoOnboarding = (props: Props) => {
         
         try {
             console.log('Registering user with default profile picture...');
-            await registerWithEmail(defaultPicture);
+            
+            // Check if this is an Apple registration or email registration
+            if (onboardingData.appleId) {
+                await registerWithApple(defaultPicture);
+            } else {
+                await registerWithEmail(defaultPicture);
+            }
             
             console.log('User registered successfully!');
             showToast('Account created successfully! 🎉', 'success');

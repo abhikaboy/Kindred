@@ -50,7 +50,13 @@ const NameOnboarding = (props: Props) => {
         setShowErrors(true);
         
         if (!validationErrors.displayName && !validationErrors.handle && isValid) {
-            router.push("/(onboarding)/password");
+            // If Apple ID is present, skip password screen and go directly to photo
+            // Apple users don't need a password
+            if (onboardingData.appleId) {
+                router.push("/(onboarding)/photo");
+            } else {
+                router.push("/(onboarding)/password");
+            }
         }
     };
 

@@ -10,6 +10,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import useGoogleAuth from "@/hooks/useGoogleAuth";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import {
     AppleAuthenticationButton,
@@ -25,6 +26,7 @@ type Props = {
 
 export const OnboardModal = (props: Props) => {
     const { register, login, registerWithGoogle, loginWithGoogle } = useAuth();
+    const { updateOnboardingData, updateAppleId, updateGoogleId } = useOnboarding();
     const { mode, visible, setVisible } = props;
     const router = useRouter();
     const ThemedColor = useThemeColor();
@@ -117,22 +119,26 @@ export const OnboardModal = (props: Props) => {
             const email = credential.email;
             const firstName = credential.fullName?.givenName;
             const lastName = credential.fullName?.familyName;
+            
             if (!email || !firstName || !lastName) {
-                console.log("We think you already have an accout: trying to log in instead");
+                console.log("We think you already have an account: trying to log in instead");
                 await login(appleAccountID);
                 router.push("/(logged-in)/(tabs)/(task)");
             } else {
-                let data = await register(email, appleAccountID);
-                console.log(data);
-
-                router.replace({
-                    pathname: "/(onboarding)/phone",
-                    params: {
-                        initialFirstName: "",
-                        initialLastName: "",
-                        initialPhoneNumber: "",
-                    },
+                // Pre-fill onboarding data with Apple credentials
+                // Don't create account yet - wait until user completes onboarding
+                const displayName = `${firstName} ${lastName}`.trim();
+                updateOnboardingData({
+                    email: email,
+                    displayName: displayName,
+                    appleId: appleAccountID,
                 });
+                
+                console.log('Pre-filled onboarding data with Apple credentials');
+                
+                // Navigate directly to name screen (skip phone/OTP for Apple users)
+                router.replace("/(onboarding)/name");
+                setVisible(false);
             }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {

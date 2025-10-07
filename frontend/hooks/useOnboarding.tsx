@@ -51,7 +51,7 @@ interface OnboardingContextType {
     
     // Registration
     registerWithEmail: (profilePictureUrl?: string) => Promise<void>;
-    registerWithApple: () => Promise<void>;
+    registerWithApple: (profilePictureUrl?: string) => Promise<void>;
     registerWithGoogle: () => Promise<void>;
     
     // Reset
@@ -300,30 +300,65 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const registerWithApple = async () => {
+    const registerWithApple = async (profilePictureUrl?: string) => {
+        // Use provided URL or fall back to state
+        const profilePic = profilePictureUrl || onboardingData.profilePicture;
+        
+        if (!profilePic) {
+            throw new Error('Profile picture is required. Please select an image first.');
+        }
+        
         if (!onboardingData.appleId) {
             throw new Error('Apple ID is required');
         }
         
-        if (!validateAll()) {
+        // Validate required fields for Apple registration
+        const errors: ValidationErrors = {};
+        
+        const displayNameError = validateDisplayName(onboardingData.displayName);
+        if (displayNameError) errors.displayName = displayNameError;
+        
+        const handleError = validateHandle(onboardingData.handle);
+        if (handleError) errors.handle = handleError;
+        
+        // Email is required for Apple
+        const emailError = validateEmail(onboardingData.email);
+        if (emailError) errors.email = emailError;
+        
+        if (Object.keys(errors).length > 0) {
+            console.error('Validation errors:', errors);
             throw new Error('Validation failed. Please check all fields.');
         }
 
         setIsLoading(true);
         try {
-            await register(onboardingData.email, onboardingData.appleId);
+            console.log('Registering with Apple data:', {
+                apple_id: onboardingData.appleId,
+                email: onboardingData.email,
+                display_name: onboardingData.displayName,
+                handle: onboardingData.handle,
+                profile_picture: profilePic,
+            });
             
-            // Also send the profile data
-            await appleRegisterMutation.mutateAsync({
+            // Register with Apple - send all data at once
+            const result = await appleRegisterMutation.mutateAsync({
                 body: {
                     apple_id: onboardingData.appleId,
                     email: onboardingData.email,
                     display_name: onboardingData.displayName,
                     handle: onboardingData.handle,
-                    profile_picture: onboardingData.profilePicture,
+                    profile_picture: profilePic,
                 }
             });
             
+            console.log('Apple registration successful, result:', result);
+            
+            // After successful registration, log the user in automatically
+            // The registration endpoint returns tokens in headers just like login
+            console.log('Fetching user data after registration...');
+            await fetchAuthData();
+            
+            // Reset after successful registration and login
             reset();
         } catch (error) {
             console.error('Apple registration failed:', error);
