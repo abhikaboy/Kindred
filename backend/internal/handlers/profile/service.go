@@ -177,7 +177,7 @@ func (s *Service) AutocompleteProfiles(query string) ([]ProfileDocument, error) 
 		// $search stage using autocomplete
 		bson.D{
 			{Key: "$search", Value: bson.D{
-				{Key: "index", Value: "display_name_text"},
+				{Key: "index", Value: "user_search"},
 				{Key: "compound", Value: bson.D{
 					{Key: "should", Value: bson.A{
 						// Autocomplete on display_name with higher boost
