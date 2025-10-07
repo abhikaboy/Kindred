@@ -55,6 +55,10 @@ jobs:
 
                   # Auth Configuration
                   AUTH_SECRET=${{ secrets.AUTH_SECRET }}
+
+                  # Sinch Configuration
+                  SINCH_APPLICATION_KEY=${{ secrets.SINCH_APPLICATION_KEY }}
+                  SINCH_APPLICATION_SECRET=${{ secrets.SINCH_APPLICATION_SECRET }}
                   EOF
 
             - name: Log in to the Container registry
