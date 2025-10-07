@@ -433,3 +433,31 @@ func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*Ve
 
 	return resp, nil
 }
+
+// DeleteAccountHuma handles account deletion (PROTECTED ROUTE)
+func (h *Handler) DeleteAccountHuma(ctx context.Context, input *DeleteAccountInput) (*DeleteAccountOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	// Convert user_id to ObjectID
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	// Call service method to delete account and all associated data
+	err = h.service.DeleteAccount(ctx, user_id_obj)
+	if err != nil {
+		slog.Error("Failed to delete account", "error", err, "user_id", user_id)
+		return nil, huma.Error500InternalServerError("Failed to delete account", err)
+	}
+
+	resp := &DeleteAccountOutput{}
+	resp.Body.Message = "Account deleted successfully"
+
+	slog.Info("Account deleted", "user_id", user_id)
+	return resp, nil
+}

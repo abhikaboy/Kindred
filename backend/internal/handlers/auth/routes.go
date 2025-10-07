@@ -60,4 +60,5 @@ func RegisterAuthOperations(api huma.API, handler *Handler) {
 	RegisterUpdatePushTokenOperation(api, handler)
 	RegisterSendOTPOperation(api, handler)
 	RegisterVerifyOTPOperation(api, handler)
+	RegisterDeleteAccountOperation(api, handler)
 }

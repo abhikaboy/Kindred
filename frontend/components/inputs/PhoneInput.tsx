@@ -13,10 +13,11 @@ type Props = {
     onChangeText: (text: string) => void;
     placeholder?: string;
     autoFocus?: boolean;
+    forceTheme?: "light" | "dark"; // Force a specific theme
 };
 
-export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567", autoFocus = false }: Props) => {
-    const ThemedColor = useThemeColor();
+export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567", autoFocus = false, forceTheme }: Props) => {
+    const ThemedColor = useThemeColor(forceTheme);
     const [show, setShow] = useState(false);
     const [countryCode, setCountryCode] = useState("+1");
     const [phoneNumber, setPhoneNumber] = useState("");

@@ -140,12 +140,15 @@ const login = (props: Props) => {
                             setVisible(true);
                         }} 
                     />
-                    <ThemedText style={{ textAlign: "center", alignItems: "flex-end" }}>
-                        Already have an account?{" "}
+                    <ThemedText style={{ textAlign: "center", alignItems: "center" }}>
+                        <Text style={{ color: "#000" }}>    
+                            Already have an account?{" "}
+                        </Text>
+                            
                         <TouchableOpacity
                             style={{
-                                alignSelf: "flex-end",
-                                alignItems: "flex-end",
+                                alignSelf: "center",
+                                alignItems: "center",
                             }}
                             onPress={() => {
                                 setMode("login");

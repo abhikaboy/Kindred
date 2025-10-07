@@ -55,7 +55,7 @@ const LoginPhone = () => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ flex: 1 }}>
+            style={{ flex: 1, backgroundColor: ThemedColor.background }}>
             <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
                 keyboardShouldPersistTaps="handled"
@@ -79,6 +79,7 @@ const LoginPhone = () => {
                                 value={phoneNumber}
                                 onChangeText={setPhoneNumber}
                                 placeholder="(555) 123-4567"
+                                forceTheme="light"
                             />
                             <ThemedInput
                                 value={password}
@@ -86,6 +87,7 @@ const LoginPhone = () => {
                                 placeHolder="Password"
                                 textStyle={styles.inputText}
                                 secureTextEntry={true}
+                                forceTheme="light"
                             />
                         </View>
 

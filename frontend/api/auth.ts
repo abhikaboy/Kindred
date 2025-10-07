@@ -70,3 +70,18 @@ export const updatePushToken = async (pushToken: string): Promise<void> => {
         throw new Error("Failed to update push token. Please try again later.");
     }
 };
+
+/**
+ * Delete the user's account
+ * API: Makes DELETE request to permanently delete the user account and all associated data
+ * @throws {Error} When the request fails
+ */
+export const deleteAccount = async (): Promise<void> => {
+    try {
+        const { request } = useRequest();
+        return await request("DELETE", "/user/account");
+    } catch (error) {
+        console.error("Account deletion failed:", error);
+        throw new Error("Failed to delete account. Please try again later.");
+    }
+};

@@ -18,11 +18,12 @@ type Props = {
     textArea?: boolean;
     useBottomSheetInput?: boolean; // New prop to determine input type
     secureTextEntry?: boolean; // New prop for password fields
+    forceTheme?: "light" | "dark"; // Force a specific theme
 };
 
 const ThemedInput = forwardRef<any, Props>(
     function ThemedInput(props, ref) {
-        let ThemedColor = useThemeColor();
+        let ThemedColor = useThemeColor(props.forceTheme);
 
         const inputStyle: StyleProp<TextStyle> = {
             backgroundColor: props.ghost ? "transparent" : ThemedColor.lightened,

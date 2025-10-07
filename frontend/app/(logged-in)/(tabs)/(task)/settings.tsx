@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as StoreReview from 'expo-store-review';
+import { deleteAccount } from '@/api/auth';
+import { showToast } from '@/utils/showToast';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -84,6 +86,31 @@ export default function Settings() {
                 'Unable to open review at this time. Please try again later.'
             );
         }
+    };
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'Are you sure you want to permanently delete your account? This action cannot be undone and will delete all your data including tasks, categories, and friend connections.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Delete Account', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteAccount();
+                            showToast('Account deleted successfully', 'success');
+                            logout();
+                            router.replace('/login');
+                        } catch (error) {
+                            console.error('Delete account error:', error);
+                            showToast('Failed to delete account', 'danger');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const handleLogout = () => {
@@ -228,14 +255,25 @@ export default function Settings() {
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
+                        style={styles.deleteAccountItem} 
+                        onPress={handleDeleteAccount}
+                        activeOpacity={0.7}
+                    >
+                        <ThemedText type="lightBody"> 
+                            Delete Account
+                        </ThemedText>
+                        <Ionicons name="trash-outline" size={24} color={ThemedColor.error} />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
                         style={styles.logoutItem} 
                         onPress={handleLogout}
                         activeOpacity={0.7}
                     >
-                        <ThemedText type="lightBody" style={styles.logoutLabel}>
+                        <ThemedText type="lightBody">
                             Logout
                         </ThemedText>
-                        <Ionicons name="log-out-outline" size={24} color={ThemedColor.destructive} />
+                        <Ionicons name="log-out-outline" size={24} color={ThemedColor.error} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -320,6 +358,14 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
             color: ThemedColor.text,
         },
         rateRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        },
+        deleteAccountItem: {
+            paddingVertical: 15,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: ThemedColor.tertiary,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',

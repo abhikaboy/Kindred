@@ -229,3 +229,70 @@ func (s *Service) SendOTP(ctx context.Context, phoneNumber string) (string, erro
 func (s *Service) VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, string, error) {
 	return s.verifyOTPAsync(ctx, phoneNumber, code)
 }
+
+/*
+	Delete a user account and all associated data
+	This includes:
+	- Removing user from friends lists of all their friends
+	- Deleting all connection documents where user is involved
+	- Deleting all categories (and their tasks) belonging to the user
+	- Deleting all template tasks belonging to the user
+	- Finally, deleting the user document itself
+*/
+
+func (s *Service) DeleteAccount(ctx context.Context, userID primitive.ObjectID) error {
+	// 1. Remove user from friends lists of all users
+	_, err := s.users.UpdateMany(
+		ctx,
+		bson.M{"friends": userID},
+		bson.M{"$pull": bson.M{"friends": userID}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to remove user from friends lists: %w", err)
+	}
+
+	// 2. Delete all connection documents where user is involved
+	connectionsCollection := s.users.Database().Collection("friend-requests")
+	_, err = connectionsCollection.DeleteMany(
+		ctx,
+		bson.M{"users": userID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete connection documents: %w", err)
+	}
+
+	// 3. Delete all categories (and their tasks) belonging to the user
+	categoriesCollection := s.users.Database().Collection("categories")
+	_, err = categoriesCollection.DeleteMany(
+		ctx,
+		bson.M{"user": userID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete user categories: %w", err)
+	}
+
+	// 4. Delete all template tasks belonging to the user
+	templateTasksCollection := s.users.Database().Collection("template-tasks")
+	_, err = templateTasksCollection.DeleteMany(
+		ctx,
+		bson.M{"user": userID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete user template tasks: %w", err)
+	}
+
+	// 5. Delete the user document itself
+	result, err := s.users.DeleteOne(
+		ctx,
+		bson.M{"_id": userID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete user account: %w", err)
+	}
+
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}

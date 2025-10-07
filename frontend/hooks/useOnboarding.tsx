@@ -76,7 +76,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [isLoading, setIsLoading] = useState(false);
     
-    const { register, registerWithGoogle: authRegisterWithGoogle } = useAuth();
+    const { register, registerWithGoogle: authRegisterWithGoogle, fetchAuthData } = useAuth();
     
     // Mutations
     const emailRegisterMutation = useTypedMutation("post", "/v1/auth/register" as any);
@@ -272,7 +272,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 profile_picture: profilePic,
             });
             
-            await emailRegisterMutation.mutateAsync({
+            const result = await emailRegisterMutation.mutateAsync({
                 body: {
                     email: onboardingData.email || "",
                     phone: onboardingData.phone || "",
@@ -283,7 +283,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 }
             });
             
-            // Reset after successful registration
+            console.log('Registration successful, result:', result);
+            
+            // After successful registration, log the user in automatically
+            // The registration endpoint returns tokens in headers just like login
+            console.log('Fetching user data after registration...');
+            await fetchAuthData();
+            
+            // Reset after successful registration and login
             reset();
         } catch (error) {
             console.error('Email registration failed:', error);

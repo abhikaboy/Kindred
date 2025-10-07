@@ -120,6 +120,17 @@ type VerifyOTPOutput struct {
 	}
 }
 
+// Delete Account Operation Types
+type DeleteAccountInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+}
+
+type DeleteAccountOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Account deleted successfully"`
+	}
+}
+
 // RegisterLoginOperation registers the login endpoint
 func RegisterLoginOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
@@ -312,5 +323,19 @@ func RegisterVerifyOTPOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *VerifyOTPInput) (*VerifyOTPOutput, error) {
 		return handler.VerifyOTPHuma(ctx, input)
+	})
+}
+
+// RegisterDeleteAccountOperation registers the delete account endpoint
+func RegisterDeleteAccountOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "delete-account",
+		Method:      http.MethodDelete,
+		Path:        "/v1/user/account",
+		Summary:     "Delete user account",
+		Description: "Permanently delete user account and all associated data including categories, tasks, friend connections, and notifications",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *DeleteAccountInput) (*DeleteAccountOutput, error) {
+		return handler.DeleteAccountHuma(ctx, input)
 	})
 }

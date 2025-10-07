@@ -216,8 +216,6 @@ export const OnboardModal = (props: Props) => {
                                     router.push("/(onboarding)/productivity");
                                 }
                             }}
-                            style={styles.phoneButton}
-                            textStyle={styles.phoneButtonText}
                         />
                         
                         <PrimaryButton
