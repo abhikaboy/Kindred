@@ -23,14 +23,40 @@ type SearchIndex struct {
 Indexes to be applied to the database.
 */
 var Indexes = []Index{
+	// Separate partial unique indexes for each auth method
+	// These only enforce uniqueness when the field exists and is not empty
+	// Using $gt: "" (greater than empty string) to exclude empty strings
 	{
 		Collection: "users",
-		Model: mongo.IndexModel{Keys: bson.D{
-			{Key: "apple_id", Value: 1},
-			{Key: "email", Value: 1},
-			{Key: "google_id", Value: 1},
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "email", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetPartialFilterExpression(bson.D{
+					{Key: "email", Value: bson.D{{Key: "$gt", Value: ""}}},
+				}),
 		},
-			Options: options.Index().SetUnique(true),
+	},
+	{
+		Collection: "users",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "apple_id", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetPartialFilterExpression(bson.D{
+					{Key: "apple_id", Value: bson.D{{Key: "$gt", Value: ""}}},
+				}),
+		},
+	},
+	{
+		Collection: "users",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "google_id", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetPartialFilterExpression(bson.D{
+					{Key: "google_id", Value: bson.D{{Key: "$gt", Value: ""}}},
+				}),
 		},
 	},
 	{

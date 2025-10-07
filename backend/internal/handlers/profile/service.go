@@ -142,7 +142,7 @@ func (s *Service) SearchProfiles(query string) ([]ProfileDocument, error) {
 		bson.D{
 			{Key: "$addFields", Value: bson.D{
 				{Key: "score", Value: bson.D{
-					{Key: "$meta", Value: "textScore"},
+					{Key: "$meta", Value: "searchScore"},
 				}},
 			}},
 		},
