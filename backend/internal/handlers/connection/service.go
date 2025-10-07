@@ -127,6 +127,10 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 		return nil, err
 	}
 
+	// Cast the inserted ID to ObjectID and update the internal document
+	id := result.InsertedID.(primitive.ObjectID)
+	r.ID = id
+
 	// Send push notification to receiver
 	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.Name)
 	if err != nil {
@@ -134,9 +138,18 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 		// Don't fail the request if notification fails
 	}
 
-	// Cast the inserted ID to ObjectID and update the internal document
-	id := result.InsertedID.(primitive.ObjectID)
-	r.ID = id
+	// Create database notification for friend request
+	notificationContent := fmt.Sprintf("%s sent you a friend request", r.Requester.Name)
+	var thumbnail string
+	if r.Requester.Picture != nil {
+		thumbnail = *r.Requester.Picture
+	}
+	err = s.NotificationService.CreateNotification(r.Requester.ID, r.ReceiverID, notificationContent, notifications.NotificationTypeFriendRequest, id, thumbnail)
+	if err != nil {
+		slog.Error("Failed to create friend request notification in database", "error", err, "receiver_id", r.ReceiverID)
+		// Don't fail the request if notification fails
+	}
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Connection inserted", slog.String("id", id.Hex()))
 
 	return r.ToAPI(), nil

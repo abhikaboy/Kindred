@@ -10,7 +10,11 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
+import client from "@/api/client";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import { components } from "@/api/generated/types";
+
+type SafeUser = components["schemas"]["SafeUser"];
 
 const { width, height } = Dimensions.get("screen");
 
@@ -18,7 +22,7 @@ const LoginPhone = () => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { login } = useAuth();
+    const { loginWithPhone } = useAuth();
 
     const [phoneNumber, setPhoneNumber] = useState("");
     const [password, setPassword] = useState("");
@@ -35,13 +39,14 @@ const LoginPhone = () => {
         setError("");
         
         try {
-            // For now, using the existing login which expects email
-            // TODO: Update to use phone login endpoint when available
-            await login(phoneNumber);
+            // Call the phone login function (same as Apple login)
+            await loginWithPhone(phoneNumber, password);
+            
+            // Navigate to main app (same as Apple login)
             router.push("/(logged-in)/(tabs)/(task)");
         } catch (err) {
             console.error("Login failed:", err);
-            setError("Login failed. Please check your credentials and try again.");
+            setError("Invalid phone number or password. Please try again.");
         } finally {
             setLoading(false);
         }

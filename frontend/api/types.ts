@@ -149,11 +149,15 @@ export interface NotificationDocument {
     /** @description Notification timestamp */
     time: string;
     /** @description Type of notification */
-    notificationType: "ENCOURAGEMENT" | "COMMENT" | "CONGRATULATION";
+    notificationType: "ENCOURAGEMENT" | "COMMENT" | "CONGRATULATION" | "FRIEND_REQUEST" | "FRIEND_REQUEST_ACCEPTED";
     /** @description Reference ID (e.g., post ID, task ID) */
     reference_id: string;
     /** @description Whether notification has been read */
     read: boolean;
+    /** @description Optional thumbnail image URL */
+    thumbnail?: string;
+    /** @description Receiver ID */
+    receiver: string;
 }
 
 export interface NotificationsResponse {

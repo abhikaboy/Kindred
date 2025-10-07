@@ -44,6 +44,7 @@ async function getAuthData(): Promise<AuthData | null> {
 interface AuthContextType {
     user: SafeUser | null;
     login: (appleAccountID: string) => Promise<SafeUser | void>;
+    loginWithPhone: (phoneNumber: string, password: string) => Promise<SafeUser | void>;
     register: (email: string, appleAccountID: string) => Promise<any>;
     registerWithGoogle: (email: string, googleID: string) => Promise<any>;
     loginWithGoogle: (googleID: string) => Promise<SafeUser | void>;
@@ -222,6 +223,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    async function loginWithPhone(phoneNumber: string, password: string): Promise<SafeUser | void> {
+        console.log("Phone login with number:", phoneNumber);
+        
+        try {
+            console.log("About to make POST request to phone login endpoint...");
+            console.log("Request body:", { phone_number: phoneNumber, password: "***" });
+            
+            const result = await client.POST("/v1/auth/login/phone" as any, {
+                body: {
+                    phone_number: phoneNumber,
+                    password: password,
+                } as any
+            });
+
+            console.log("Raw result from client.POST:", result);
+            console.log("Result data:", result.data);
+            console.log("Result error:", result.error);
+            console.log("Result response:", result.response);
+            
+            if (result.error) {
+                console.log("Error details:", JSON.stringify(result.error, null, 2));
+                throw new Error(`Phone login failed: ${JSON.stringify(result.error)}`);
+            }
+            
+            if (result.data) {
+                const userData = result.data as SafeUser;
+                setUser(userData);
+                
+                // Save tokens if they exist in response headers
+                console.log(result.response?.headers);
+                if (result.response?.headers) {
+                    const accessToken = result.response.headers.get('access_token');
+                    const refreshToken = result.response.headers.get('refresh_token');
+                    
+                    if (accessToken && refreshToken) {
+                        await saveAuthData({ 
+                            access_token: accessToken, 
+                            refresh_token: refreshToken 
+                        });
+                    }
+                }
+                
+                return userData;
+            }
+            
+            console.log("No data or error in response - this is unexpected");
+        } catch (error) {
+            console.error("Phone login failed with exception:", error);
+            console.error("Error stack:", error.stack);
+            alert("Looks like we couldn't find your account, try to register instead!");
+            throw error;
+        }
+    }
+
     function logout() {
         setUser(null);
         SecureStore.deleteItemAsync("auth_data");
@@ -339,6 +394,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 user, 
                 register, 
                 login,
+                loginWithPhone,
                 registerWithGoogle,
                 loginWithGoogle,
                 logout, 

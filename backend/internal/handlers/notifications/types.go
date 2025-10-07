@@ -25,6 +25,7 @@ const (
 	NotificationTypeEncouragement         NotificationType = "ENCOURAGEMENT"
 	NotificationTypeComment               NotificationType = "COMMENT"
 	NotificationTypeCongratulation        NotificationType = "CONGRATULATION"
+	NotificationTypeFriendRequest         NotificationType = "FRIEND_REQUEST"
 	NotificationTypeFriendRequestAccepted NotificationType = "FRIEND_REQUEST_ACCEPTED"
 )
 

@@ -7,14 +7,13 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
+import UserInfoFriendNotification from "@/components/UserInfo/UserInfoFriendNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { getConnectionsByReceiverAPI } from "@/api/connection";
 import { useNotifications } from "@/hooks/useNotifications";
-import type { components } from "@/api/generated/types";
+import type { NotificationDocument } from "@/api/types";
 import { showToast } from "@/utils/showToast";
-
-type NotificationDocument = components["schemas"]["NotificationDocument"];
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -30,7 +29,7 @@ type FollowRequestProps = {
 
 type ProcessedNotification = {
     id: string;
-    type: "comment" | "encouragement" | "congratulation";
+    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted";
     name: string;
     userId: string;
     time: number;
@@ -40,6 +39,7 @@ type ProcessedNotification = {
     image?: string;
     read: boolean;
     referenceId: string; // Post ID or Task ID that the notification references
+    thumbnail?: string; // Optional thumbnail for friend notifications
 };
 
 // Extract NotificationItem component
@@ -73,7 +73,7 @@ const NotificationItem = ({
                     time={notification.time}
                     referenceId={notification.referenceId}
                 />
-            ) : (
+            ) : notification.type === "congratulation" ? (
                 <UserInfoEncouragementNotification
                     name={notification.name}
                     userId={notification.userId}
@@ -82,7 +82,17 @@ const NotificationItem = ({
                     time={notification.time}
                     referenceId={notification.referenceId}
                 />
-            )}
+            ) : notification.type === "friend_request" || notification.type === "friend_request_accepted" ? (
+                <UserInfoFriendNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    icon={notification.icon}
+                    time={notification.time}
+                    message={notification.content}
+                    referenceId={notification.referenceId}
+                    thumbnail={notification.thumbnail}
+                />
+            ) : null}
         </View>
     );
 };
@@ -222,7 +232,7 @@ const Notifications = () => {
 
         return {
             id: notification.id,
-            type: notification.notificationType.toLowerCase() as "comment" | "encouragement" | "congratulation",
+            type: notification.notificationType.toLowerCase() as "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted",
             name: notification.user.display_name,
             userId: notification.user.id,
             time: notificationTime,
@@ -231,7 +241,8 @@ const Notifications = () => {
             taskName: taskName || undefined,
             image: notification.user.profile_picture || Icons.coffee,
             read: notification.read,
-            referenceId: notification.reference_id
+            referenceId: notification.reference_id,
+            thumbnail: notification.thumbnail
         };
     };
 
