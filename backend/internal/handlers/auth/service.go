@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 /*
@@ -93,9 +94,13 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if user.Password != password {
+
+	// Compare the hashed password with the provided password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
+
 	return &user.ID, &user.Count, &user, nil
 }
 
@@ -109,9 +114,13 @@ func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitiv
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if user.Password != password {
+
+	// Compare the hashed password with the provided password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
+
 	return &user.ID, &user.Count, &user, nil
 }
 

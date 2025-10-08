@@ -11,6 +11,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // LoginHuma handles user login with email/password
@@ -222,10 +223,20 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		googleid = ""
 	}
 
+	// Hash the password before storing it
+	hashedPassword := ""
+	if input.Body.Password != "" {
+		hashedBytes, err := bcrypt.GenerateFromPassword([]byte(input.Body.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Password hashing failed", err)
+		}
+		hashedPassword = string(hashedBytes)
+	}
+
 	user := User{
 		Email:        input.Body.Email,
 		Phone:        input.Body.Phone,
-		Password:     input.Body.Password,
+		Password:     hashedPassword, // Store the hashed password
 		ID:           id,
 		RefreshToken: refresh,
 		TokenUsed:    false,

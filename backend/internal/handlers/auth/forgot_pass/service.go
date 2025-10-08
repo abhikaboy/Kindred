@@ -17,6 +17,7 @@ import (
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"golang.org/x/crypto/bcrypt"
 )
 
 /*
@@ -166,9 +167,15 @@ func (s *Service) ChangePassword(email, newPass string) error {
 		return ErrUnauthorized
 	}
 
-	// Update user’s password in the users collection
+	// Hash the new password before storing it
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Update user's password in the users collection
 	userFilter := bson.M{"email": email}
-	userUpdate := bson.M{"$set": bson.M{"password": newPass}} // should hash this
+	userUpdate := bson.M{"$set": bson.M{"password": string(hashedPassword)}}
 
 	_, err = s.users.UpdateOne(ctx, userFilter, userUpdate, options.Update().SetUpsert(false))
 	if err != nil {
