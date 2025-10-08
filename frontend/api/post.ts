@@ -140,7 +140,8 @@ export const getPostById = async (postId: string): Promise<PostDocumentAPI> => {
  * @param userId 
  */
 export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
-    const { data, error } = await client.GET("/v1/{userId}/posts", {
+    // @ts-ignore - Path updated to /v1/user/{userId}/posts but OpenAPI spec needs regeneration
+    const { data, error } = await client.GET("/v1/user/{userId}/posts", {
         params: withAuthHeaders({ path: { userId } }),
     });
 
@@ -148,7 +149,7 @@ export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
         throw new Error(`Failed to get user posts: ${JSON.stringify(error)}`);
     }
 
-    return data || [];
+    return (data as PostDocument[]) || [];
 };
 
 /**

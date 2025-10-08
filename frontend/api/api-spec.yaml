@@ -4,42 +4,6 @@ info:
     description: Kindred API built with Huma v2 and Fiber
     version: 1.0.0
 paths:
-    /v1/{userId}/posts:
-        get:
-            tags:
-                - posts
-            summary: Get User's posts
-            description: Get posts of a user
-            operationId: get-user-posts
-            parameters:
-                - name: Authorization
-                  in: header
-                  required: true
-                  schema:
-                    type: string
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                    examples:
-                        - 507f1f77bcf86cd799439011
-                  example: 507f1f77bcf86cd799439011
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/PostDocument'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
     /v1/activity:
         get:
             tags:
@@ -1211,6 +1175,42 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TestOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/{userId}/posts:
+        get:
+            tags:
+                - posts
+            summary: Get User's posts
+            description: Get posts of a user
+            operationId: get-user-posts
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/PostDocument'
                 default:
                     description: Error
                     content:

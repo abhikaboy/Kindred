@@ -122,7 +122,7 @@ func RegisterGetUserPosts(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user-posts",
 		Method:      http.MethodGet,
-		Path:        "/v1/{userId}/posts",
+		Path:        "/v1/user/{userId}/posts",
 		Summary:     "Get User's posts",
 		Description: "Get posts of a user",
 		Tags:        []string{"posts"},

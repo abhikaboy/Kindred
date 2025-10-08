@@ -4,26 +4,6 @@
  */
 
 export interface paths {
-    "/v1/{userId}/posts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get User's posts
-         * @description Get posts of a user
-         */
-        get: operations["get-user-posts"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/activity": {
         parameters: {
             query?: never;
@@ -760,6 +740,26 @@ export interface paths {
          * @description Test endpoint for authenticated users
          */
         get: operations["auth-test-slash"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/{userId}/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get User's posts
+         * @description Get posts of a user
+         */
+        get: operations["get-user-posts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4245,40 +4245,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    "get-user-posts": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path: {
-                /** @example 507f1f77bcf86cd799439011 */
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PostDocument"][];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     "get-activities": {
         parameters: {
             query?: never;
@@ -5518,6 +5484,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TestOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-posts": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostDocument"][];
                 };
             };
             /** @description Error */
