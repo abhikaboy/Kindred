@@ -149,7 +149,8 @@ export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
         throw new Error(`Failed to get user posts: ${JSON.stringify(error)}`);
     }
 
-    return (data as PostDocument[]) || [];
+    // @ts-ignore - Backend returns { body: PostDocument[] } (lowercase b per JSON tag)
+    return (data?.body as PostDocument[]) || [];
 };
 
 /**

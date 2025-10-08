@@ -191,7 +191,7 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 	ctx := context.Background()
 
 	filter := bson.M{
-		"user._id":           userID.Hex(),
+		"user._id":           userID,
 		"metadata.isDeleted": false,
 	}
 
