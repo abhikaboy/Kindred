@@ -224,6 +224,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/login/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * User login with phone
+         * @description Authenticate user with phone number and password
+         */
+        post: operations["login-phone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -743,6 +763,26 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete user account
+         * @description Permanently delete user account and all associated data including categories, tasks, friend connections, and notifications
+         */
+        delete: operations["delete-account"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2760,6 +2800,16 @@ export interface components {
              */
             name: string;
         };
+        DeleteAccountOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeleteAccountOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Account deleted successfully */
+            message: string;
+        };
         DeleteBlueprintOutputBody: {
             /**
              * Format: uri
@@ -3169,6 +3219,16 @@ export interface components {
             readonly $schema?: string;
             google_id: string;
         };
+        LoginRequestPhone: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LoginRequestPhone.json
+             */
+            readonly $schema?: string;
+            password: string;
+            phone_number: string;
+        };
         LogoutOutputBody: {
             /**
              * Format: uri
@@ -3264,6 +3324,8 @@ export interface components {
             read: boolean;
             receiver: string;
             reference_id: string;
+            /** @description Optional thumbnail image URL for the notification */
+            thumbnail?: string;
             /** Format: date-time */
             time: string;
             user: components["schemas"]["UserReference"];
@@ -4191,7 +4253,7 @@ export interface operations {
             };
             path: {
                 /** @example 507f1f77bcf86cd799439011 */
-                id: string;
+                userId: string;
             };
             cookie?: never;
         };
@@ -4529,6 +4591,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LoginRequestGoogle"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeUser"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "login-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequestPhone"];
             };
         };
         responses: {
@@ -5421,6 +5518,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TestOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-account": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteAccountOutputBody"];
                 };
             };
             /** @description Error */

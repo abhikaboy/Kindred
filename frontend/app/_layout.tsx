@@ -12,6 +12,7 @@ import { Accelerometer } from "expo-sensors";
 
 // Import components and contexts after the core modules
 import { AuthProvider } from "@/hooks/useAuth";
+import { OnboardingProvider } from "@/hooks/useOnboarding";
 import { TasksProvider } from "@/contexts/tasksContext";
 import { TaskCreationProvider } from "@/contexts/taskCreationContext";
 import BackButton from "@/components/BackButton";
@@ -129,29 +130,31 @@ export default Sentry.wrap(function RootLayout() {
         <QueryClientProvider client={queryClient}>
             <AnimatePresence>
                 <AuthProvider>
-                    <TasksProvider>
-                        <TaskCreationProvider>
-                            <BlueprintCreationProvider>
-                                <DrawerProvider>
-                                    <GestureHandlerRootView style={{ flex: 1 }}>
-                                        <BottomSheetModalProvider>
-                                            <Toastable
-                                                statusMap={{
-                                                    success: ThemedColor.success,
-                                                    danger: ThemedColor.danger,
-                                                    warning: ThemedColor.warning,
-                                                    info: ThemedColor.primary,
-                                                }}
-                                                offset={top}
-                                            />
-                                            <Slot />
-                                            <StatusBar style="light" />
-                                        </BottomSheetModalProvider>
-                                    </GestureHandlerRootView>
-                                </DrawerProvider>
-                            </BlueprintCreationProvider>
-                        </TaskCreationProvider>
-                    </TasksProvider>
+                    <OnboardingProvider>
+                        <TasksProvider>
+                            <TaskCreationProvider>
+                                <BlueprintCreationProvider>
+                                    <DrawerProvider>
+                                        <GestureHandlerRootView style={{ flex: 1 }}>
+                                            <BottomSheetModalProvider>
+                                                <Toastable
+                                                    statusMap={{
+                                                        success: ThemedColor.success,
+                                                        danger: ThemedColor.danger,
+                                                        warning: ThemedColor.warning,
+                                                        info: ThemedColor.primary,
+                                                    }}
+                                                    offset={top}
+                                                />
+                                                <Slot />
+                                                <StatusBar style="light" />
+                                            </BottomSheetModalProvider>
+                                        </GestureHandlerRootView>
+                                    </DrawerProvider>
+                                </BlueprintCreationProvider>
+                            </TaskCreationProvider>
+                        </TasksProvider>
+                    </OnboardingProvider>
                 </AuthProvider>
             </AnimatePresence>
         </QueryClientProvider>

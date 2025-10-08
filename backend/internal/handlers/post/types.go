@@ -76,7 +76,7 @@ type GetPostOutput struct {
 // Get User's posts
 type GetUserPostsInput struct {
 	Authorization string `header:"Authorization" required:"true"`
-	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+	ID            string `path:"userId" example:"507f1f77bcf86cd799439011"`
 }
 
 type GetUserPostsOutput struct {

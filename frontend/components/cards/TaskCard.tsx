@@ -14,7 +14,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { isAfter, formatDistanceToNow, parseISO, isBefore } from "date-fns";
+import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays } from "date-fns";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -102,53 +102,76 @@ const TaskCard = ({
         // checkTimerState();
     }, [id]);
 
-    // Check if task is overdue
-    const isOverdue = useMemo(() => {
-        if (!task?.deadline) return false;
-        try {
-            const deadlineDate = parseISO(task.deadline);
-            return isAfter(new Date(), deadlineDate);
-        } catch (error) {
-            console.error("Error parsing deadline:", error);
-            return false;
+    // Calculate date display text and color
+    const dateDisplay = useMemo(() => {
+        const now = new Date();
+        
+        // Priority 1: Show deadline if it exists
+        if (task?.deadline) {
+            try {
+                const deadlineDate = parseISO(task.deadline);
+                const isOverdue = isAfter(now, deadlineDate);
+                
+                if (isOverdue) {
+                    const duration = formatDistanceToNow(deadlineDate, { addSuffix: false });
+                    return {
+                        text: `Due ${duration} ago`,
+                        color: 'error' as const
+                    };
+                } else {
+                    // Format: "due in X days"
+                    let text = formatDistanceToNow(deadlineDate, { addSuffix: true });
+                    // Replace "in" with "due in"
+                    text = text.replace(/^in /, 'due in ');
+                    return {
+                        text: `(${text})`,
+                        color: 'caption' as const
+                    };
+                }
+            } catch (error) {
+                console.error("Error parsing deadline:", error);
+                return null;
+            }
         }
-    }, [task?.deadline]);
-
-    // Calculate overdue duration
-    const overdueDuration = useMemo(() => {
-        if (!isOverdue || !task?.deadline) return "";
-        try {
-            const deadlineDate = parseISO(task.deadline);
-            return formatDistanceToNow(deadlineDate, { addSuffix: false });
-        } catch (error) {
-            console.error("Error calculating overdue duration:", error);
-            return "";
+        
+        // Priority 2: Show start date if it exists and no deadline
+        if (task?.startDate && !task?.deadline) {
+            try {
+                const startDate = parseISO(task.startDate);
+                
+                if (isToday(startDate)) {
+                    return {
+                        text: '(today)',
+                        color: 'caption' as const
+                    };
+                } else if (isTomorrow(startDate)) {
+                    return {
+                        text: '(tomorrow)',
+                        color: 'caption' as const
+                    };
+                } else if (isAfter(now, startDate)) {
+                    // Start date was in the past
+                    const duration = formatDistanceToNow(startDate, { addSuffix: false });
+                    return {
+                        text: `(${duration} ago)`,
+                        color: 'caption' as const
+                    };
+                } else {
+                    // Start date is in the future
+                    const duration = formatDistanceToNow(startDate, { addSuffix: true });
+                    return {
+                        text: `(${duration})`,
+                        color: 'caption' as const
+                    };
+                }
+            } catch (error) {
+                console.error("Error parsing start date:", error);
+                return null;
+            }
         }
-    }, [isOverdue, task?.deadline]);
-
-    // Check if task has upcoming deadline (not overdue)
-    const hasUpcomingDeadline = useMemo(() => {
-        if (!task?.deadline || isOverdue) return false;
-        try {
-            const deadlineDate = parseISO(task.deadline);
-            return isBefore(new Date(), deadlineDate);
-        } catch (error) {
-            console.error("Error parsing upcoming deadline:", error);
-            return false;
-        }
-    }, [task?.deadline, isOverdue]);
-
-    // Calculate upcoming deadline duration
-    const upcomingDeadlineDuration = useMemo(() => {
-        if (!hasUpcomingDeadline || !task?.deadline) return "";
-        try {
-            const deadlineDate = parseISO(task.deadline);
-            return formatDistanceToNow(deadlineDate, { addSuffix: true });
-        } catch (error) {
-            console.error("Error calculating upcoming deadline duration:", error);
-            return "";
-        }
-    }, [hasUpcomingDeadline, task?.deadline]);
+        
+        return null;
+    }, [task?.deadline, task?.startDate]);
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
@@ -213,14 +236,9 @@ const TaskCard = ({
                 <View style={styles.row}>
                     <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
                         {content}
-                        {isOverdue && overdueDuration && (
-                            <ThemedText type="default" style={{ color: ThemedColor.error }}>
-                                {" "}(Due {overdueDuration} ago)
-                            </ThemedText>
-                        )}
-                        {hasUpcomingDeadline && upcomingDeadlineDuration && (
-                            <ThemedText type="default" style={{ color: ThemedColor.caption }}>
-                                {" "}({upcomingDeadlineDuration})
+                        {dateDisplay && (
+                            <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                {" "}{dateDisplay.text}
                             </ThemedText>
                         )}
                     </ThemedText>

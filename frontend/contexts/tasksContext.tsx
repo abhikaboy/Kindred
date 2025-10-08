@@ -22,6 +22,7 @@ type TaskContextType = {
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
     addWorkspace: (name: string, category: Categories) => void;
+    updateTask: (categoryId: string, taskId: string, updates: Partial<Task>) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
     removeWorkspace: (name: string) => void;
@@ -186,6 +187,53 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let categoriesCopy = categories.slice();
         categoriesCopy.find((category) => category.id === categoryId).tasks.push(task);
         setCategories(categoriesCopy);
+    };
+
+    /**
+     * Updates a task in the workspaces and categories (optimistic update)
+     * @param categoryId - The ID of the category containing the task
+     * @param taskId - The ID of the task to update
+     * @param updates - Partial task object with fields to update
+     */
+    const updateTask = (categoryId: string, taskId: string, updates: Partial<Task>) => {
+        // Update workspaces state
+        let workspacesCopy = workspaces.slice();
+        workspacesCopy.forEach((workspace) => {
+            workspace.categories.forEach((category) => {
+                if (category.id === categoryId) {
+                    const taskIndex = category.tasks.findIndex((t) => t.id === taskId);
+                    if (taskIndex !== -1) {
+                        category.tasks[taskIndex] = {
+                            ...category.tasks[taskIndex],
+                            ...updates,
+                        };
+                    }
+                }
+            });
+        });
+        setWorkSpaces(workspacesCopy);
+
+        // Update categories state
+        let categoriesCopy = categories.slice();
+        const category = categoriesCopy.find((category) => category.id === categoryId);
+        if (category) {
+            const taskIndex = category.tasks.findIndex((t) => t.id === taskId);
+            if (taskIndex !== -1) {
+                category.tasks[taskIndex] = {
+                    ...category.tasks[taskIndex],
+                    ...updates,
+                };
+            }
+            setCategories(categoriesCopy);
+        }
+
+        // Update the selected task if it's the one being edited
+        if (task && task.id === taskId) {
+            setTask({
+                ...task,
+                ...updates,
+            });
+        }
     };
 
     /**
@@ -487,6 +535,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setSelected: handleSetSelected,
                 categories,
                 addToCategory,
+                updateTask,
                 addToWorkspace,
                 addWorkspace,
                 removeFromCategory,

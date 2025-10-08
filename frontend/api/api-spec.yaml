@@ -17,7 +17,7 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: id
+                - name: userId
                   in: path
                   required: true
                   schema:
@@ -353,6 +353,39 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/LoginRequestGoogle'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    headers:
+                        access_token:
+                            schema:
+                                type: string
+                        refresh_token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SafeUser'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/login/phone:
+        post:
+            tags:
+                - auth
+            summary: User login with phone
+            description: Authenticate user with phone number and password
+            operationId: login-phone
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginRequestPhone'
                 required: true
             responses:
                 "200":
@@ -1178,6 +1211,34 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/TestOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/account:
+        delete:
+            tags:
+                - auth
+            summary: Delete user account
+            description: Permanently delete user account and all associated data including categories, tasks, friend connections, and notifications
+            operationId: delete-account
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeleteAccountOutputBody'
                 default:
                     description: Error
                     content:
@@ -5504,6 +5565,23 @@ components:
             required:
                 - email
                 - name
+        DeleteAccountOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DeleteAccountOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Account deleted successfully
+            required:
+                - message
         DeleteBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -6175,6 +6253,24 @@ components:
                     type: string
             required:
                 - google_id
+        LoginRequestPhone:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LoginRequestPhone.json
+                    readOnly: true
+                password:
+                    type: string
+                phone_number:
+                    type: string
+            required:
+                - phone_number
+                - password
         LogoutOutputBody:
             type: object
             additionalProperties: false
@@ -6333,6 +6429,9 @@ components:
                     type: string
                 reference_id:
                     type: string
+                thumbnail:
+                    type: string
+                    description: Optional thumbnail image URL for the notification
                 time:
                     type: string
                     format: date-time

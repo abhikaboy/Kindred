@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
-import { deletePost, getAllPosts } from "@/api/post";
+import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
 import { showToast } from "@/utils/showToast";
@@ -36,12 +36,19 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
             }
 
             try {
-                const posts = await getAllPosts();
+                let posts;
+                
+                // If userId is provided, fetch all posts for that user without pagination
+                // Otherwise, fetch all posts (this case is for backward compatibility)
+                if (userId) {
+                    posts = await getUserPosts(userId);
+                } else {
+                    // Fallback to getAllPosts with a large limit for backward compatibility
+                    const response = await getAllPosts(10000, 0);
+                    posts = response.posts;
+                }
 
                 const postImageData: PostImage[] = posts
-                    .filter((post) => {
-                        return !userId || post.user._id === userId;
-                    })
                     .filter((post) => {
                         return post.images && post.images.length > 0;
                     })

@@ -20,6 +20,7 @@ import type { components } from "@/api/generated/types";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { updateTaskAPI } from "@/api/task";
 import { ObjectId } from "bson";
+import type { RecurDetails } from "@/api/types";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -35,7 +36,7 @@ type Props = {
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
-    const { categories, addToCategory, selectedCategory, setCreateCategory, task } = useTasks();
+    const { categories, addToCategory, updateTask, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
         taskName,
@@ -210,7 +211,41 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         // Use the selected category from the dropdown, or fall back to the original task category
         const targetCategoryId = selectedCategory?.id || task.categoryID;
         
-        await updateTaskAPI(targetCategoryId, task.id, updateData);
+        // Optimistic update - update the task locally before the API call
+        const defaultRecurDetails: RecurDetails = {
+            every: 1,
+            daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+            behavior: "ROLLING",
+        };
+        
+        updateTask(targetCategoryId, task.id, {
+            content: taskName,
+            priority: priority,
+            value: value,
+            recurring: recurring,
+            public: isPublic,
+            active: task.active || false,
+            recurDetails: (recurring ? recurDetails : defaultRecurDetails) as RecurDetails,
+            startDate: startDate?.toISOString() || "",
+            startTime: startTime?.toISOString() || "",
+            deadline: deadline?.toISOString() || "",
+            reminders: reminders.map(reminder => ({
+                ...reminder,
+                triggerTime: reminder.triggerTime.toISOString()
+            })),
+            notes: task.notes || "",
+            checklist: task.checklist || [],
+        });
+        
+        try {
+            // Make the API call
+            await updateTaskAPI(targetCategoryId, task.id, updateData);
+        } catch (error) {
+            console.error("Failed to update task:", error);
+            // In a production app, you might want to revert the optimistic update here
+            // or show an error message to the user
+        }
+        
         resetTaskCreation();
     };
 
