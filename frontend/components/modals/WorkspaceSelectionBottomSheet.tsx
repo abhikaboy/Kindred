@@ -7,6 +7,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { createCategory } from "@/api/category";
 import { useTasks } from "@/contexts/tasksContext";
 import { showToast } from "@/utils/showToast";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/hooks/useAuth";
 
 interface WorkspaceOption {
     name: string;
@@ -60,6 +62,7 @@ export default function WorkspaceSelectionBottomSheet({
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const { addWorkspace, fetchWorkspaces } = useTasks();
+    const { user } = useAuth();
     
     const [selectedWorkspaces, setSelectedWorkspaces] = useState<string[]>([]);
     const [isCreating, setIsCreating] = useState(false);
@@ -79,6 +82,16 @@ export default function WorkspaceSelectionBottomSheet({
         bottomSheetModalRef.current?.dismiss();
         onClose();
     }, [onClose]);
+
+    const markQuickSetupComplete = useCallback(async () => {
+        if (!user?._id) return;
+        try {
+            const key = `${user._id}-quicksetup`;
+            await AsyncStorage.setItem(key, "true");
+        } catch (error) {
+            console.error("Error saving quick setup status:", error);
+        }
+    }, [user]);
 
     const toggleWorkspace = useCallback((workspaceName: string) => {
         setSelectedWorkspaces((prev) => {
@@ -140,6 +153,9 @@ export default function WorkspaceSelectionBottomSheet({
             // Refresh workspaces list
             await fetchWorkspaces();
             
+            // Mark quick setup as complete
+            await markQuickSetupComplete();
+            
             // Close the modal and call completion handler
             handleDismiss();
             onComplete();
@@ -149,12 +165,14 @@ export default function WorkspaceSelectionBottomSheet({
         } finally {
             setIsCreating(false);
         }
-    }, [selectedWorkspaces, addWorkspace, fetchWorkspaces, handleDismiss, onComplete]);
+    }, [selectedWorkspaces, addWorkspace, fetchWorkspaces, handleDismiss, onComplete, markQuickSetupComplete]);
 
-    const handleSkip = useCallback(() => {
+    const handleSkip = useCallback(async () => {
+        // Mark quick setup as complete even when skipping
+        await markQuickSetupComplete();
         handleDismiss();
         onComplete();
-    }, [handleDismiss, onComplete]);
+    }, [handleDismiss, onComplete, markQuickSetupComplete]);
 
     const renderBackdrop = useCallback(
         (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,

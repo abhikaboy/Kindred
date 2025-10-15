@@ -35,6 +35,7 @@ import Octicons from "@expo/vector-icons/Octicons";
 import { getEncouragementsAPI } from "@/api/encouragement";
 import { getCongratulationsAPI } from "@/api/congratulation";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Props = {};
 
@@ -49,7 +50,7 @@ const Home = (props: Props) => {
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
     const [encouragementCount, setEncouragementCount] = useState(0);
     const [congratulationCount, setCongratulationCount] = useState(0);
-    const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(true); // For now, always show it
+    const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(false);
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -76,6 +77,27 @@ const Home = (props: Props) => {
         const combined = [...recentWorkspaces, ...otherWorkspaces];
         return combined.slice(0, 6);
     }, [workspaces, recentWorkspaceNames]);
+
+    // Check if user has completed quick setup
+    useEffect(() => {
+        const checkQuickSetup = async () => {
+            if (!user?._id) return;
+            
+            try {
+                const key = `${user._id}-quicksetup`;
+                const hasCompletedSetup = await AsyncStorage.getItem(key);
+                
+                // Show modal only if they haven't completed setup
+                if (!hasCompletedSetup) {
+                    setShowWorkspaceSelection(true);
+                }
+            } catch (error) {
+                console.error("Error checking quick setup status:", error);
+            }
+        };
+
+        checkQuickSetup();
+    }, [user?._id]);
 
     useEffect(() => {
         if (!user || !workspaces) return;
