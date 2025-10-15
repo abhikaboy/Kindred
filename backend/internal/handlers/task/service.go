@@ -328,8 +328,13 @@ func (s *Service) CompleteTask(
 		return nil, err
 	}
 
-	// Check if streak changed
-	streakChanged := userAfter.Streak != userBefore.Streak
+	// Check if user was streak eligible (first task of the day)
+	// This indicates the streak would increase, even though we don't update it here
+	streakChanged := userBefore.StreakEligible
+
+	if streakChanged {
+		userAfter.Streak = userAfter.Streak + 1
+	}
 
 	return &TaskCompletionResult{
 		StreakChanged: streakChanged,
