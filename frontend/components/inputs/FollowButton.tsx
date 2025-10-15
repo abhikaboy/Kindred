@@ -2,7 +2,7 @@ import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from "
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
-import { createConnectionAPI, deleteConnectionAPI } from "@/api/connection";
+import { createConnectionAPI, deleteConnectionAPI, acceptConnectionAPI } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
 import * as Haptics from "expo-haptics";
@@ -97,13 +97,20 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                     break;
 
                 case "accept":
-                    // Accept connection request - this would need a new API endpoint
-                    showToast("Accept functionality coming soon!", "info");
+                    // Accept connection request
+                    if (profile.relationship?.request_id) {
+                        await acceptConnectionAPI(profile.relationship.request_id);
+                        onRelationshipChange?.("connected");
+                        showToast("Friend request accepted!", "success");
+                    } else {
+                        console.error("No request_id found for acceptance");
+                        showToast("Unable to accept request", "danger");
+                    }
                     break;
 
                 case "edit":
-                    // Navigate to edit profile - this would need navigation logic
-                    showToast("Edit profile functionality coming soon!", "info");
+                    // Navigate to edit profile
+                    router.push("/(logged-in)/(tabs)/(profile)/edit");
                     break;
 
                 default:

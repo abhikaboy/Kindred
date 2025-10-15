@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useTypedMutation } from './useTypedAPI';
-import { useAuth } from './useAuth';
+import { useAuth, saveAuthData, getAuthData } from './useAuth';
+import { setupDefaultWorkspace } from '@/api/category';
 
 // Onboarding data interface
 export interface OnboardingData {
@@ -283,15 +284,48 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 }
             });
             
-            console.log('Registration successful, result:', result);
+            console.log('✅ Registration API call successful, result:', result);
+            console.log('📋 Result type:', typeof result);
+            console.log('📋 Result keys:', result ? Object.keys(result) : 'null/undefined');
+            
+            // Check if tokens were automatically saved by useRequest hook
+            console.log('🔍 Checking for saved auth tokens...');
+            const savedAuthData = await getAuthData();
+            console.log('💾 Saved auth data after registration:', savedAuthData ? 'Tokens found' : 'NO TOKENS FOUND');
+            if (savedAuthData) {
+                console.log('🔑 Access token exists:', !!savedAuthData.access_token);
+                console.log('🔑 Refresh token exists:', !!savedAuthData.refresh_token);
+            }
             
             // After successful registration, log the user in automatically
-            // The registration endpoint returns tokens in headers just like login
-            console.log('Fetching user data after registration...');
-            await fetchAuthData();
+            console.log('🚀 Starting fetchAuthData to log user in...');
+            const userData = await fetchAuthData();
+            console.log('👤 fetchAuthData returned:', userData ? 'User data received' : 'NULL - LOGIN FAILED');
+            
+            if (!userData) {
+                console.error('❌ Failed to fetch user data after registration');
+                console.error('❌ This means tokens were not saved or token login failed');
+                throw new Error('Registration succeeded but failed to log in automatically');
+            }
+            
+            console.log('✅ User registered and logged in successfully!');
+            console.log('👤 User ID:', userData._id);
+            console.log('👤 User display name:', userData.display_name);
+            
+            // Create initial "Kindred Guide" workspace with starter tasks for new users
+            try {
+                console.log('🌺 Setting up Kindred Guide workspace with starter tasks...');
+                await setupDefaultWorkspace();
+                console.log('✅ Kindred Guide workspace created successfully with starter tasks');
+            } catch (error) {
+                console.error('⚠️ Failed to setup Kindred Guide workspace:', error);
+                // Don't fail registration if workspace creation fails
+            }
             
             // Reset after successful registration and login
+            console.log('🧹 Resetting onboarding state...');
             reset();
+            console.log('✅ Registration flow complete!');
         } catch (error) {
             console.error('Email registration failed:', error);
             throw error;
@@ -353,10 +387,41 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             
             console.log('Apple registration successful, result:', result);
             
+            // Save tokens from registration response headers
+            if (result && typeof result === 'object' && 'response' in result) {
+                const response = (result as any).response;
+                if (response?.headers) {
+                    const accessToken = response.headers.get('access_token');
+                    const refreshToken = response.headers.get('refresh_token');
+                    
+                    if (accessToken && refreshToken) {
+                        await saveAuthData({ 
+                            access_token: accessToken, 
+                            refresh_token: refreshToken 
+                        });
+                        console.log('Auth tokens saved successfully after Apple registration');
+                    } else {
+                        console.warn('No tokens found in Apple registration response headers');
+                    }
+                }
+            }
+            
             // After successful registration, log the user in automatically
             // The registration endpoint returns tokens in headers just like login
             console.log('Fetching user data after registration...');
-            await fetchAuthData();
+            const userData = await fetchAuthData();
+            
+            // Create initial "Kindred Guide" workspace with starter tasks for new users
+            if (userData) {
+                try {
+                    console.log('🌺 Setting up Kindred Guide workspace with starter tasks...');
+                    await setupDefaultWorkspace();
+                    console.log('✅ Kindred Guide workspace created successfully with starter tasks');
+                } catch (error) {
+                    console.error('⚠️ Failed to setup Kindred Guide workspace:', error);
+                    // Don't fail registration if workspace creation fails
+                }
+            }
             
             // Reset after successful registration and login
             reset();
@@ -391,6 +456,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                     profile_picture: onboardingData.profilePicture,
                 }
             });
+            
+            // Create initial "Kindred Guide" workspace with starter tasks for new users
+            try {
+                console.log('🌺 Setting up Kindred Guide workspace with starter tasks...');
+                await setupDefaultWorkspace();
+                console.log('✅ Kindred Guide workspace created successfully with starter tasks');
+            } catch (error) {
+                console.error('⚠️ Failed to setup Kindred Guide workspace:', error);
+                // Don't fail registration if workspace creation fails
+            }
             
             reset();
         } catch (error) {

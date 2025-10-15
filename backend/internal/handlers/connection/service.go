@@ -131,22 +131,10 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
 
-	// Send push notification to receiver
+	// Send push notification to receiver (no database notification)
 	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.Name)
 	if err != nil {
 		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", r.ReceiverID)
-		// Don't fail the request if notification fails
-	}
-
-	// Create database notification for friend request
-	notificationContent := fmt.Sprintf("%s sent you a friend request", r.Requester.Name)
-	var thumbnail string
-	if r.Requester.Picture != nil {
-		thumbnail = *r.Requester.Picture
-	}
-	err = s.NotificationService.CreateNotification(r.Requester.ID, r.ReceiverID, notificationContent, notifications.NotificationTypeFriendRequest, id, thumbnail)
-	if err != nil {
-		slog.Error("Failed to create friend request notification in database", "error", err, "receiver_id", r.ReceiverID)
 		// Don't fail the request if notification fails
 	}
 
@@ -276,30 +264,17 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 
 	// Get accepter's details for the notification
 	var accepterUser struct {
-		Name           string  `bson:"display_name"`
-		ProfilePicture *string `bson:"profile_picture"`
+		Name string `bson:"display_name"`
 	}
 	err = s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&accepterUser)
 	if err != nil {
 		slog.Error("Failed to get accepter user details for notification", "error", err, "user_id", userID)
 		// Don't fail the request if we can't get user details for notification
 	} else {
-		// Send push notification to requester
+		// Send push notification to requester (no database notification)
 		err = s.sendFriendRequestAcceptedNotification(otherUserID, accepterUser.Name)
 		if err != nil {
 			slog.Error("Failed to send friend request accepted notification", "error", err, "requester_id", otherUserID)
-			// Don't fail the request if notification fails
-		}
-
-		// Create database notification with accepter's profile picture as thumbnail
-		notificationContent := fmt.Sprintf("%s accepted your friend request", accepterUser.Name)
-		var thumbnail string
-		if accepterUser.ProfilePicture != nil {
-			thumbnail = *accepterUser.ProfilePicture
-		}
-		err = s.NotificationService.CreateNotification(userID, otherUserID, notificationContent, notifications.NotificationTypeFriendRequestAccepted, connectionID, thumbnail)
-		if err != nil {
-			slog.Error("Failed to create friend request accepted notification in database", "error", err, "requester_id", otherUserID)
 			// Don't fail the request if notification fails
 		}
 	}
@@ -493,6 +468,13 @@ func (s *Service) CreateConnectionRequest(requesterID, receiverID primitive.Obje
 	_, err = s.Connections.InsertOne(ctx, relationship)
 	if err != nil {
 		return nil, err
+	}
+
+	// Send push notification to receiver (no database notification)
+	err = s.sendFriendRequestNotification(receiverID, requester.Name)
+	if err != nil {
+		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", receiverID)
+		// Don't fail the request if notification fails
 	}
 
 	return relationship.ToAPI(), nil

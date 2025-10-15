@@ -61,7 +61,7 @@ const NotificationItem = ({
                     comment={notification.content}
                     icon={notification.icon}
                     time={notification.time}
-                    image={notification.image || Icons.coffee}
+                    image={notification.thumbnail || notification.image || Icons.coffee}
                     referenceId={notification.referenceId}
                 />
             ) : notification.type === "encouragement" ? (

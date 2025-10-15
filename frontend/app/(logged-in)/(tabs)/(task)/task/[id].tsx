@@ -38,6 +38,7 @@ import { useCreateModal } from "@/contexts/createModalContext";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
 import { Picker } from "@react-native-picker/picker";
+import { useTaskCompletion } from "@/hooks/useTaskCompletion";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -70,6 +71,14 @@ export default function Task() {
     const pagerViewRef = useRef<PagerView>(null);
 
     const safeAsync = useSafeAsync();
+    
+    // Task completion hook
+    const { markTaskAsCompleted, isCompleting } = useTaskCompletion({
+        onSuccess: () => {
+            // Navigate back after completion
+            router.back();
+        }
+    });
 
     // Function to refresh task data after edit
     const refreshTaskData = () => {
@@ -240,6 +249,21 @@ export default function Task() {
         pagerViewRef.current?.setPage(index);
     };
 
+    const handleMarkAsCompleted = () => {
+        if (task && categoryId && id) {
+            markTaskAsCompleted(
+                categoryId as string,
+                id as string,
+                {
+                    id: task.id,
+                    content: task.content,
+                    value: task.value,
+                    public: task.public,
+                }
+            );
+        }
+    };
+
     return (
         <ThemedView
             style={{
@@ -306,7 +330,8 @@ export default function Task() {
                         <Feather name="edit" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
-                <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} />
+                <View style={{ paddingBottom: 16 }} />
+                {/* <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} /> */}
             </View>
 
             {/* PagerView Content */}
@@ -463,13 +488,24 @@ export default function Task() {
                                         ))}
                                     </DataCard>
                                 </ConditionalView>
+                                <View key="mark-complete" style={{ marginTop: 0 }}>
+                                    <PrimaryButton
+                                        title={isCompleting ? "Completing..." : "Mark as Completed"}
+                                        outline
+                                        style={{
+                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                        }}
+                                        onPress={handleMarkAsCompleted}
+                                        disabled={isCompleting}
+                                    />
+                                </View>
                             </View>
                         </KeyboardAvoidingView>
                     </ScrollView>
                 </View>
 
                 {/* Timer Tab */}
-                <View key="1">
+                {/* <View key="1">
                     <View
                         style={{
                             display: "flex",
@@ -499,7 +535,7 @@ export default function Task() {
                             }}
                         />
                     </View>
-                </View>
+                </View> */}
             </PagerView>
 
             <DeadlineBottomSheetModal

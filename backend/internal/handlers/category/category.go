@@ -222,3 +222,221 @@ func (h *Handler) GetWorkspaces(ctx context.Context, input *GetWorkspacesInput) 
 
 	return &GetWorkspacesOutput{Body: workspaces}, nil
 }
+
+func (h *Handler) SetupDefaultWorkspace(ctx context.Context, input *SetupDefaultWorkspaceInput) (*SetupDefaultWorkspaceOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	// Create the Kindred Guide workspace with multiple categories
+	workspaceName := "🌺 Kindred Guide"
+	now := xutils.NowUTC()
+
+	// Define categories with their respective tasks
+	categories := []struct {
+		name  string
+		tasks []task.TaskDocument
+	}{
+		{
+			name: "Starting",
+			tasks: []task.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Swipe to mark a task as complete",
+					Priority:   1,
+					Value:      1,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Tap to view details about a task",
+					Priority:   1,
+					Value:      1,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Click the plus sign next to category to create a new task",
+					Priority:   1,
+					Value:      1,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+			},
+		},
+		{
+			name: "Tasks",
+			tasks: []task.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Set a task with a deadline",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Create a task with a reminder",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Swipe to make your first post",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     true,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+			},
+		},
+		{
+			name: "Blueprint",
+			tasks: []task.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Explore Blueprints to find pre-made habit routines",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Subscribe to a Blueprint to add it to your workspaces",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+			},
+		},
+		{
+			name: "Social",
+			tasks: []task.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Add your friends!",
+					Priority:   3,
+					Value:      3,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Share Kindred!",
+					Priority:   3,
+					Value:      3,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     user_id_obj,
+				},
+			},
+		},
+	}
+
+	// Create each category with its tasks
+	var createdCategories []CategoryDocument
+	totalTasks := 0
+
+	for _, cat := range categories {
+		categoryDoc := CategoryDocument{
+			ID:            primitive.NewObjectID(),
+			Name:          cat.name,
+			WorkspaceName: workspaceName,
+			User:          user_id_obj,
+			Tasks:         cat.tasks,
+			LastEdited:    now,
+		}
+
+		// Set CategoryID for all tasks in this category
+		for i := range categoryDoc.Tasks {
+			categoryDoc.Tasks[i].CategoryID = categoryDoc.ID
+		}
+
+		_, err = h.service.CreateCategory(&categoryDoc)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to create category",
+				slog.String("categoryName", cat.name),
+				slog.String("error", err.Error()))
+			continue // Continue creating other categories even if one fails
+		}
+
+		createdCategories = append(createdCategories, categoryDoc)
+		totalTasks += len(cat.tasks)
+	}
+
+	if len(createdCategories) == 0 {
+		return nil, huma.Error500InternalServerError("Failed to create any categories", err)
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Default workspace created with multiple categories",
+		slog.String("userId", user_id),
+		slog.String("workspace", workspaceName),
+		slog.Int("categoriesCreated", len(createdCategories)),
+		slog.Int("totalTasks", totalTasks))
+
+	// Return the first category as the response
+	return &SetupDefaultWorkspaceOutput{Body: createdCategories[0]}, nil
+}

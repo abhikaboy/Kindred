@@ -39,17 +39,23 @@ export default function Profile() {
     type TaskDocument = components["schemas"]["TaskDocument"];
 
     const tasks = useMemo(() => {
-        // Combine start today and due today tasks, filter for public tasks
-        const todayTasks = [...startTodayTasks, ...dueTodayTasks, ...windowTasks]
-            .filter(task => task.public)
-            .map(task => ({ 
-                id: task.id,
-                content: task.content,
-                value: task.value,
-                priority: task.priority as 1 | 2 | 3,
-                encourage: false, 
-                categoryName: (task as any).categoryName || task.categoryID 
-            }));
+        // Combine and deduplicate by task ID to prevent duplicates
+        const uniqueTasks = Array.from(
+            new Map(
+                [...startTodayTasks, ...dueTodayTasks, ...windowTasks]
+                    .filter(task => task.public)
+                    .map(task => [task.id, task])  // Create [id, task] pairs for Map
+            ).values()  // Get unique tasks only
+        );
+        
+        const todayTasks = uniqueTasks.map(task => ({ 
+            id: task.id,
+            content: task.content,
+            value: task.value,
+            priority: task.priority as 1 | 2 | 3,
+            encourage: false, 
+            categoryName: (task as any).categoryName || task.categoryID 
+        }));
 
         return {
             todayTasks,
@@ -76,7 +82,7 @@ export default function Profile() {
                 backgroundColor={ThemedColor.background}
                 headerHeight={HEADER_HEIGHT}
             />
-            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} />
+            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} userId={user?._id} />
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>

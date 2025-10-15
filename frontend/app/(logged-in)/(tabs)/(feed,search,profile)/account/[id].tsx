@@ -113,6 +113,24 @@ export default function Profile() {
         return <ActivityIndicator />;
     }
 
+    // Handle account not found
+    if (!profile || !profile.id) {
+        return (
+            <Animated.ScrollView
+                ref={scrollRef}
+                scrollEventThrottle={16}
+                style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
+                <ParallaxBanner
+                    scrollRef={scrollRef}
+                    backgroundImage={Icons.luffy}
+                    backgroundColor={ThemedColor.background}
+                    headerHeight={HEADER_HEIGHT}
+                />
+                <ProfileHeader displayName="Account not found" handle="" />
+            </Animated.ScrollView>
+        );
+    }
+
     return (
         <Animated.ScrollView
             ref={scrollRef}
@@ -124,7 +142,7 @@ export default function Profile() {
                 backgroundColor={ThemedColor.background}
                 headerHeight={HEADER_HEIGHT}
             />
-            <ProfileHeader displayName={profile?.display_name || ""} handle={profile?.handle || ""} />
+            <ProfileHeader displayName={profile?.display_name || ""} handle={profile?.handle || ""} userId={profile?.id} />
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>

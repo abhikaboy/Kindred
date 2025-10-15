@@ -17,7 +17,7 @@ interface AuthData {
     refresh_token: string;
 }
 
-async function saveAuthData(authData: AuthData): Promise<boolean> {
+export async function saveAuthData(authData: AuthData): Promise<boolean> {
     try {
         console.log("Saving auth data!: ", authData);
         await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
@@ -28,7 +28,7 @@ async function saveAuthData(authData: AuthData): Promise<boolean> {
     }
 }
 
-async function getAuthData(): Promise<AuthData | null> {
+export async function getAuthData(): Promise<AuthData | null> {
     console.warn("Requested Auth Data");
     try {
         const authDataString = await SecureStore.getItemAsync("auth_data");
@@ -322,14 +322,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const fetchPromise = (async (): Promise<SafeUser | null> => {
             try {
-                console.log("fetching auth data pt 1");
+                console.log("🔐 fetchAuthData: Step 1 - Getting stored auth tokens");
                 const authData = await getAuthData();
-                console.log("authData: ", authData);
-
+                console.log("🔐 fetchAuthData: Auth data retrieved:", authData ? 'Tokens exist' : 'NO TOKENS');
+                
                 if (authData) {
-                    console.log("fetching auth data pt 2");
+                    console.log("🔐 fetchAuthData: Step 2 - Attempting token login");
+                    console.log("🔐 Access token preview:", authData.access_token?.substring(0, 20) + '...');
 
                     try {
+                        console.log("🔐 Making POST to /v1/user/login with Bearer token");
                         const result = await client.POST("/v1/user/login", {
                             params: {
                                 header: {
@@ -338,13 +340,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             }
                         });
                         
+                        console.log("🔐 Token login response received");
+                        console.log("🔐 Has error:", !!result.error);
+                        console.log("🔐 Has data:", !!result.data);
+                        
                         if (result.error) {
+                            console.error("❌ Token login failed with error:", JSON.stringify(result.error));
                             throw new Error(`Token login failed: ${JSON.stringify(result.error)}`);
                         }
                         
                         if (result.data) {
                             const userData = result.data as SafeUser;
-                            console.log("user successfully logged in!: ", userData);
+                            console.log("✅ Token login successful!");
+                            console.log("👤 User ID:", userData._id);
+                            console.log("👤 Display name:", userData.display_name);
                             setUser(userData);
                             
                             // Update tokens if provided in response headers
@@ -353,6 +362,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 const refreshToken = result.response.headers.get('refresh_token');
                                 
                                 if (accessToken && refreshToken) {
+                                    console.log("🔄 Updating tokens from login response");
                                     await saveAuthData({ 
                                         access_token: accessToken, 
                                         refresh_token: refreshToken 
@@ -363,14 +373,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             fetchPromiseRef.current = null;
                             return userData;
                         }
+                        
+                        console.error("❌ Token login returned no data and no error - unexpected state");
                     } catch (tokenError) {
-                        console.error("Token login failed:", tokenError);
+                        console.error("❌ Token login exception:", tokenError);
+                        console.error("❌ Error details:", tokenError.message);
                         logout();
                         return null;
                     }
                 }
 
-                console.log("No auth data found, returning null");
+                console.warn("⚠️ No auth data found in storage, returning null");
                 logout();
                 return null;
             } catch (error) {

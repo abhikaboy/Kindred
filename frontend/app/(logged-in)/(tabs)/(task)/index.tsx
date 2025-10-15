@@ -23,6 +23,7 @@ import { Skeleton } from "moti/skeleton";
 import { useNavigation, useRouter } from "expo-router";
 import BasicCard from "@/components/cards/BasicCard";
 import DashboardCards from "@/components/dashboard/DashboardCards";
+import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
 // import Sparkle from "@/assets/icons/sparkle.svg";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -31,6 +32,9 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import * as Sentry from "@sentry/react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Octicons from "@expo/vector-icons/Octicons";
+import { getEncouragementsAPI } from "@/api/encouragement";
+import { getCongratulationsAPI } from "@/api/congratulation";
+import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 
 type Props = {};
 
@@ -43,6 +47,9 @@ const Home = (props: Props) => {
     const { startTodayTasks, pastStartTasks, pastDueTasks, futureTasks, allTasks, getRecentWorkspaces } = useTasks();
     const { openModal } = useCreateModal();
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
+    const [encouragementCount, setEncouragementCount] = useState(0);
+    const [congratulationCount, setCongratulationCount] = useState(0);
+    const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(true); // For now, always show it
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -87,6 +94,29 @@ const Home = (props: Props) => {
         loadWorkspaces();
     }, [user]);
 
+    // Fetch encouragement and congratulation counts
+    useEffect(() => {
+        const fetchCounts = async () => {
+            try {
+                const [encouragements, congratulations] = await Promise.all([
+                    getEncouragementsAPI(),
+                    getCongratulationsAPI()
+                ]);
+                
+                // Count unread items
+                const unreadEncouragements = encouragements.filter(item => !item.read).length;
+                const unreadCongratulations = congratulations.filter(item => !item.read).length;
+                
+                setEncouragementCount(unreadEncouragements);
+                setCongratulationCount(unreadCongratulations);
+            } catch (error) {
+                console.error("Error fetching encouragement/congratulation counts:", error);
+            }
+        };
+
+        fetchCounts();
+    }, []);
+
     const drawerRef = useRef<DrawerLayout>(null);
 
     if (selected == "Today") {
@@ -112,6 +142,14 @@ const Home = (props: Props) => {
                 
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
             
+            <WorkspaceSelectionBottomSheet
+                isVisible={showWorkspaceSelection}
+                onClose={() => setShowWorkspaceSelection(false)}
+                onComplete={() => {
+                    setShowWorkspaceSelection(false);
+                    // Optionally refresh the workspace list or navigate somewhere
+                }}
+            />
             
             <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
@@ -135,38 +173,42 @@ const Home = (props: Props) => {
                                 <TouchableOpacity
                                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
                                     <BasicCard>
-                                        <View
-                                            style={{
-                                                width: 12,
-                                                height: 12,
-                                                backgroundColor: ThemedColor.error,
-                                                borderRadius: 12,
-                                                position: "absolute",
-                                                right: 0,
-                                            }}
-                                        />
+                                        {encouragementCount > 0 && (
+                                            <View
+                                                style={{
+                                                    width: 12,
+                                                    height: 12,
+                                                    backgroundColor: ThemedColor.error,
+                                                    borderRadius: 12,
+                                                    position: "absolute",
+                                                    right: 0,
+                                                }}
+                                            />
+                                        )}
                                         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                             <ThemedText type="default">Encouragements</ThemedText>
-                                            <ThemedText type="default">2</ThemedText>
+                                            <ThemedText type="default">{encouragementCount}</ThemedText>
                                         </View>
                                     </BasicCard>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}>
                                     <BasicCard>
-                                        <View
-                                            style={{
-                                                width: 12,
-                                                height: 12,
-                                                backgroundColor: ThemedColor.error,
-                                                borderRadius: 12,
-                                                position: "absolute",
-                                                right: 0,
-                                            }}
-                                        />
+                                        {congratulationCount > 0 && (
+                                            <View
+                                                style={{
+                                                    width: 12,
+                                                    height: 12,
+                                                    backgroundColor: ThemedColor.error,
+                                                    borderRadius: 12,
+                                                    position: "absolute",
+                                                    right: 0,
+                                                }}
+                                            />
+                                        )}
                                         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                             <ThemedText type="default">Congratulations</ThemedText>
-                                            <ThemedText type="default">1</ThemedText>
+                                            <ThemedText type="default">{congratulationCount}</ThemedText>
                                         </View>
                                     </BasicCard>
                                 </TouchableOpacity>
@@ -218,6 +260,10 @@ const Home = (props: Props) => {
                                         ]}>
                                         <ThemedText type="lightBody">+ Create Workspace</ThemedText>
                                     </TouchableOpacity>
+                                    <View style={{ paddingBottom: 64, paddingTop: 16 }}>
+                                        <BottomDashboardCards />
+                                    </View>
+
                                 </ScrollView>
                             </MotiView>
                         </ScrollView>

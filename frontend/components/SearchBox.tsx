@@ -127,7 +127,7 @@ export function SearchBox({
                             ? item.name
                             : item.text;
                         const subtitle = item.type === 'user' 
-                            ? `@${item.handle}` 
+                            ? item.handle 
                             : item.type === 'blueprint'
                             ? 'Blueprint'
                             : null;
@@ -203,7 +203,7 @@ export function SearchBox({
                             ? suggestion.display_name 
                             : suggestion.name;
                         const subtitle = suggestion.type === 'user' 
-                            ? `@${suggestion.handle}` 
+                            ? suggestion.handle 
                             : 'Blueprint';
                         
                         // Get the image to display

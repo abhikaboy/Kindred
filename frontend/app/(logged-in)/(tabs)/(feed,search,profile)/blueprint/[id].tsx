@@ -31,25 +31,65 @@ export default function BlueprintDetailScreen() {
     const { fetchWorkspaces } = useTasks();
     
     const [activeTab, setActiveTab] = useState(0);
+    const [isLoadingBlueprint, setIsLoadingBlueprint] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [currentSubscriberCount, setCurrentSubscriberCount] = useState(0);
+
+    // Fetch blueprint data when ID changes
     useEffect(() => {
         const fetchBlueprint = async () => {
-            const blueprint = await getBlueprintById(id as string);
-            setSelectedBlueprint(blueprint);
+            if (!id) {
+                setLoadError("No blueprint ID provided");
+                setIsLoadingBlueprint(false);
+                return;
+            }
+
+            try {
+                setIsLoadingBlueprint(true);
+                setLoadError(null);
+                const blueprint = await getBlueprintById(id as string);
+                setSelectedBlueprint(blueprint);
+            } catch (error) {
+                console.error("Error fetching blueprint:", error);
+                setLoadError("Failed to load blueprint");
+            } finally {
+                setIsLoadingBlueprint(false);
+            }
         };
         fetchBlueprint();
     }, [id]);
 
-    if (!selectedBlueprint) {
+    // Update local state when selectedBlueprint changes
+    useEffect(() => {
+        if (selectedBlueprint) {
+            setIsSubscribed(getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []));
+            setIsLoading(getIsLoading(selectedBlueprint.id));
+            setCurrentSubscriberCount(getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscribersCount));
+        }
+    }, [selectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount]);
+
+    // Show loading state
+    if (isLoadingBlueprint) {
         return (
             <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ThemedText type="subtitle">Navigate back to the home page.</ThemedText>
+                <ThemedText type="subtitle">Loading blueprint...</ThemedText>
             </ThemedView>
         );
     }
 
-    const [isSubscribed, setIsSubscribed] = useState(getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []));
-    const [isLoading, setIsLoading] = useState(getIsLoading(selectedBlueprint.id));
-    const currentSubscriberCount = getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscribersCount);
+    // Show error state
+    if (loadError || !selectedBlueprint) {
+        return (
+            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ThemedText type="subtitle">{loadError || "Blueprint not found"}</ThemedText>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+                    <ThemedText type="default" style={{ color: ThemedColor.primary }}>Go Back</ThemedText>
+                </TouchableOpacity>
+            </ThemedView>
+        );
+    }
 
     const onSubscribePress = async () => {
         setIsLoading(true);

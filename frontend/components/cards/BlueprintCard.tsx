@@ -66,13 +66,7 @@ const BlueprintCard = ({
             categories,
             category,
         });
-        router.push({
-            pathname: "/(logged-in)/(tabs)/(profile)/blueprint/[id]",
-            params: {
-                id: id,
-                name: name,
-            },
-        });
+        router.push(`/blueprint/${id}`);
     };
 
     const onSubscribePress = async () => {

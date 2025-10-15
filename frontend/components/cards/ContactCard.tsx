@@ -28,7 +28,7 @@ const ContactCard = ({ name, icon, handle, following, id }: Props) => {
                         {name}
                     </ThemedText>
                     <ThemedText style={{ textAlign: "center" }} type="caption">
-                        @{handle}
+                        {handle}
                     </ThemedText>
                 </View>
                 {id && <FollowButton connectionType={connectionType} followeeid={id} />}

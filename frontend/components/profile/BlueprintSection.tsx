@@ -97,14 +97,10 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
         />
     );
 
-    const renderEmptyState = () => (
-        <View style={styles.emptyState}>
-            <MaterialIcons name="lightbulb-outline" size={48} color={ThemedColor.caption} />
-            <ThemedText type="caption" style={styles.emptyText}>
-                No blueprints created yet
-            </ThemedText>
-        </View>
-    );
+    // Don't render anything if there are no blueprints and not loading
+    if (!loading && !error && blueprints.length === 0) {
+        return null;
+    }
 
     return (
         <View style={styles.container}>
@@ -120,7 +116,18 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
             </View>
 
             {loading ? (
-                renderSkeletonCards()
+                <FlatList
+                    data={[1, 2, 3]}
+                    renderItem={() => (
+                        <View style={styles.cardContainer}>
+                            <BlueprintCardSkeleton />
+                        </View>
+                    )}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalList}
+                    keyExtractor={(item) => item.toString()}
+                />
             ) : error ? (
                 <View style={styles.errorState}>
                     <MaterialIcons name="error-outline" size={24} color={ThemedColor.destructive} />
@@ -133,7 +140,7 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
                         </ThemedText>
                     </TouchableOpacity>
                 </View>
-            ) : blueprints.length > 0 ? (
+            ) : (
                 <FlatList
                     data={blueprints}
                     renderItem={renderBlueprintCard}
@@ -142,8 +149,6 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
                     contentContainerStyle={styles.horizontalList}
                     keyExtractor={(item) => item.id}
                 />
-            ) : (
-                renderEmptyState()
             )}
         </View>
     );

@@ -75,7 +75,7 @@ export default function Friends() {
                 icon={item.profile_picture}
                 id={item._id}
                 right={
-                    <ThemedText type="lightBody" style={styles.arrowIcon}>
+                    <ThemedText type="defaultSemiBold" style={styles.arrowIcon}>
                         →
                     </ThemedText>
                 }
@@ -258,9 +258,10 @@ const styles = StyleSheet.create({
     },
     friendItem: {
         marginBottom: 12,
+        paddingVertical: 4,
     },
     arrowIcon: {
-        fontSize: 14,
+        fontSize: 16,
     },
     emptyContainer: {
         alignItems: "center",

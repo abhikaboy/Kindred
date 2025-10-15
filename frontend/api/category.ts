@@ -19,8 +19,9 @@ type WorkspaceResult = components["schemas"]["WorkspaceResult"];
  * Frontend: The response is used to update the categories state in TaskContext
  * @param name - The name of the category to create
  * @param workspaceName - The name of the workspace to add the category to
+ * @param silent - If true, suppresses success toast notifications (useful for batch operations)
  */
-export const createCategory = async (name: string, workspaceName: string): Promise<CategoryDocument> => {
+export const createCategory = async (name: string, workspaceName: string, silent: boolean = false): Promise<CategoryDocument> => {
     const { data, error } = await client.POST("/v1/user/categories", {
         params: withAuthHeaders({}),
         body: { name, workspaceName },
@@ -155,4 +156,20 @@ export const renameWorkspace = async (oldWorkspaceName: string, newWorkspaceName
  */
 export const renameCategory = async (categoryId: string, newCategoryName: string): Promise<void> => {
     return updateCategory(categoryId, { name: newCategoryName });
+};
+
+/**
+ * Setup default workspace with starter tasks
+ * Creates the "🌺 Kindred Guide" workspace with onboarding tasks for new users
+ */
+export const setupDefaultWorkspace = async (): Promise<CategoryDocument> => {
+    const { data, error } = await (client.POST as any)("/v1/user/setup-default-workspace", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to setup default workspace: ${JSON.stringify(error)}`);
+    }
+
+    return data;
 };

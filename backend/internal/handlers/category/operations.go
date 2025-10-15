@@ -104,6 +104,15 @@ type RenameWorkspaceOutput struct {
 	}
 }
 
+// Setup Default Workspace
+type SetupDefaultWorkspaceInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type SetupDefaultWorkspaceOutput struct {
+	Body CategoryDocument `json:"body"`
+}
+
 // Operation registrations
 
 func RegisterCreateCategoryOperation(api huma.API, handler *Handler) {
@@ -203,4 +212,15 @@ func RegisterRenameWorkspaceOperation(api huma.API, handler *Handler) {
 		Description: "Rename a workspace by updating all its categories",
 		Tags:        []string{"categories"},
 	}, handler.RenameWorkspace)
+}
+
+func RegisterSetupDefaultWorkspaceOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "setup-default-workspace",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/setup-default-workspace",
+		Summary:     "Setup default workspace",
+		Description: "Create the Kindred Guide workspace with starter tasks for new users",
+		Tags:        []string{"categories", "workspaces", "onboarding"},
+	}, handler.SetupDefaultWorkspace)
 }

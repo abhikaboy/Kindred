@@ -57,12 +57,25 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
                         const dateB = new Date(b.metadata?.createdAt || 0);
                         return dateB.getTime() - dateA.getTime();
                     })
-                    .map((post) => ({
-                        imageUrl: post.images[0],
-                        postId: post._id,
-                        postUserId: post.user._id,
-                    }));
+                    .map((post) => {
+                        const postUserId = post.user?._id || userId || "";
+                        console.log("ProfileGallery: Mapping post", {
+                            postId: post._id,
+                            hasUser: !!post.user,
+                            postUserIdFromPost: post.user?._id,
+                            userIdProp: userId,
+                            finalPostUserId: postUserId
+                        });
+                        return {
+                            imageUrl: post.images[0],
+                            postId: post._id,
+                            // Use post.user._id if available, otherwise fall back to userId prop
+                            // This handles cases where the API doesn't populate the user field
+                            postUserId: postUserId,
+                        };
+                    });
 
+                console.log("ProfileGallery: Total post images:", postImageData.length);
                 setPostImages(postImageData);
             } catch (error) {
                 console.error("Error fetching post images:", error);
@@ -81,14 +94,26 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
     };
 
     const canDeletePost = (postUserId: string) => {
-        if (!user?._id) return false;
-        return user._id === postUserId;
+        if (!user?._id) {
+            console.log("ProfileGallery: No user._id found");
+            return false;
+        }
+        const canDelete = user._id === postUserId;
+        console.log("ProfileGallery canDeletePost:", { 
+            userId: user._id, 
+            postUserId, 
+            canDelete,
+            match: user._id === postUserId 
+        });
+        return canDelete;
     };
 
     const showPostOptions = (postId: string, postUserId: string) => {
         if (postId.startsWith("legacy-")) {
             return;
         }
+
+        console.log("ProfileGallery showPostOptions called with:", { postId, postUserId, currentUserId: user?._id });
 
         const options = [];
 
@@ -98,11 +123,14 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
         });
 
         if (canDeletePost(postUserId)) {
+            console.log("ProfileGallery: Adding Delete Post option");
             options.push({
                 text: "Delete Post",
                 style: "destructive" as const,
                 onPress: () => showDeleteConfirmation(postId),
             });
+        } else {
+            console.log("ProfileGallery: NOT adding Delete Post option");
         }
 
         options.push({
@@ -110,6 +138,7 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
             style: "cancel" as const,
         });
 
+        console.log("ProfileGallery: Showing alert with options:", options.map(o => o.text));
         Alert.alert("Post Options", "", options);
     };
 

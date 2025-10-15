@@ -96,7 +96,7 @@ const login = (props: Props) => {
                         fontSize: 20,
                         fontStyle: "italic",
                     }}>
-                    social productivity
+                    human centered productivity
                 </ThemedText>
                 <Image
                     source={require("../assets/images/Checkmark.png")}

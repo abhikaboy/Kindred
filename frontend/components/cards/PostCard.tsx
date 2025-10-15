@@ -16,6 +16,7 @@ import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import Carousel from "react-native-reanimated-carousel";
+import { Directions } from "react-native-gesture-handler";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -431,15 +432,24 @@ const PostCard = React.memo(({
                                 <View style={styles.carouselContainer}>
                                     <Carousel
                                         loop={false}
+                                        vertical={false}
                                         width={Dimensions.get("window").width}
                                         height={imageHeight}
                                         style={styles.carousel}
-                                        snapEnabled={true}
-                                        pagingEnabled={true}
                                         data={memoizedImages}
                                         onSnapToItem={(index) => setCurrentImageIndex(index)}
+                                        scrollAnimationDuration={300}
+                                        enabled={memoizedImages.length > 1}
+                                        windowSize={2}
+                                        onConfigurePanGesture={(panGesture) => {
+                                            panGesture.activeOffsetX([-5, 5]).failOffsetY([-20, 20]);
+                                        }}
                                         renderItem={({ item, index }) => (
-                                            <TouchableOpacity onLongPress={() => openModal(index)} activeOpacity={1}>
+                                            <TouchableOpacity 
+                                                onLongPress={() => openModal(index)} 
+                                                activeOpacity={1}
+                                                style={{ width: Dimensions.get("window").width }}
+                                            >
                                                 <CachedImage 
                                                     source={{ uri: item }} 
                                                     style={[styles.image, { height: imageHeight }]}

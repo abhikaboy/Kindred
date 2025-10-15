@@ -126,32 +126,32 @@ export default function TaskToast(props: TaskToastProps) {
     return (
         <GestureDetector gesture={panGesture}>
             <Reanimated.View style={animatedStyle as any}>
-                <Animated.View
-                    style={{
-                        backgroundColor: ThemedColor.lightened,
-                        borderRadius: 12,
-                        boxShadow: `0px 4px 16px 0px #00000050`,
-                        flexDirection: "column",
-                        padding: 0,
-                    }}>
-                    <View
+                <TouchableOpacity activeOpacity={0.8} onPress={handleNavigateToCamera}>
+                    <Animated.View
                         style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: 12,
-                            padding: 20,
+                            backgroundColor: ThemedColor.lightened,
+                            borderRadius: 12,
+                            boxShadow: `0px 4px 16px 0px #00000050`,
+                            flexDirection: "column",
+                            padding: 0,
                         }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "80%" }}>
-                            <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
-                            <ThemedText>{props.message}</ThemedText>
-                        </View>
-                        <TouchableOpacity onPress={handleNavigateToCamera}>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 12,
+                                padding: 20,
+                            }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "80%" }}>
+                                <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
+                                <ThemedText>{props.message}</ThemedText>
+                            </View>
                             <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
-                        </TouchableOpacity>
-                    </View>
-                    <ProgressBar start={0} bar={ThemedColor.success} />
-                </Animated.View>
+                        </View>
+                        <ProgressBar start={0} bar={ThemedColor.success} />
+                    </Animated.View>
+                </TouchableOpacity>
             </Reanimated.View>
         </GestureDetector>
     );

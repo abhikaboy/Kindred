@@ -7,12 +7,17 @@ import (
 )
 
 type Service struct {
-	users  *mongo.Collection
-	config config.Config
+	users      *mongo.Collection
+	categories *mongo.Collection
+	config     config.Config
 }
 
 func newService(collections map[string]*mongo.Collection, config config.Config) *Service {
-	return &Service{collections["users"], config}
+	return &Service{
+		users:      collections["users"],
+		categories: collections["categories"],
+		config:     config,
+	}
 }
 
 type Handler struct {

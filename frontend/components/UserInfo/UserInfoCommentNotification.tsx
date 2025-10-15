@@ -82,7 +82,6 @@ const UserInfoCommentNotification = ({ name, userId, comment, icon, time, image,
 
             <View style={styles.textContainer}>
                 <ThemedText numberOfLines={0} ellipsizeMode="tail" type="smallerDefault" style={styles.text}>
-                    <ThemedText type="smallerDefaultSemiBold">{name}</ThemedText>
                     <ThemedText type="smallerDefault"> {comment} on your recent post</ThemedText>
                 </ThemedText>
                 <ThemedText type="caption">

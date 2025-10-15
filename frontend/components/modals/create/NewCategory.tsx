@@ -94,9 +94,11 @@ const NewCategory = ({ goToStandard, isBlueprint = false }: Props) => {
                 }}>
                 <PrimaryButton
                     title="Create Category"
-                    onPress={() => {
-                        createCategory();
-                        goToStandard();
+                    onPress={async () => {
+                        const success = await createCategory();
+                        if (success) {
+                            goToStandard();
+                        }
                     }}
                 />
             </View>

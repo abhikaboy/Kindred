@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -266,6 +267,19 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	if err != nil {
 		return nil, huma.Error400BadRequest("User creation failed", err)
 	}
+
+	// Setup default workspace with starter tasks for the new user
+	go func() {
+		// Use a background context with timeout for workspace setup
+		setupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := h.service.SetupDefaultWorkspace(setupCtx, id); err != nil {
+			slog.LogAttrs(setupCtx, slog.LevelError, "Failed to setup default workspace for new user",
+				slog.String("userId", id.Hex()),
+				slog.String("error", err.Error()))
+		}
+	}()
 
 	resp := &RegisterOutput{}
 	resp.AccessToken = access

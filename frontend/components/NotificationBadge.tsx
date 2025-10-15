@@ -16,7 +16,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({ showZero =
     }
 
     return (
-        <View style={[styles.badge, { backgroundColor: themedColor.destructive }]}>
+        <View style={[styles.badge, { backgroundColor: themedColor.error }]}>
             <Text style={[styles.badgeText, { color: 'white' }]}>
                 {unreadCount > 99 ? '99+' : unreadCount.toString()}
             </Text>

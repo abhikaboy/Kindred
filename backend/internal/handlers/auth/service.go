@@ -2,11 +2,12 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
-	"errors"
-
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
@@ -209,6 +210,206 @@ func (s *Service) GetUser(user_id string) (*SafeUser, error) {
 func (s *Service) CreateUser(user User) error {
 	_, err := s.users.InsertOne(context.Background(), user)
 	return err
+}
+
+/*
+	Setup default workspace with starter tasks for a new user
+*/
+
+func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.ObjectID) error {
+	// Import the task package to create tasks
+	workspaceName := "🌺 Kindred Guide"
+	now := time.Now().UTC()
+
+	// Define categories with their respective tasks
+	categoriesData := []struct {
+		name  string
+		tasks []types.TaskDocument
+	}{
+		{
+			name: "Starting",
+			tasks: []types.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Swipe to mark a task as complete",
+					Priority:   1,
+					Value:      1,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Tap to view details about a task",
+					Priority:   1,
+					Value:      1,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Click the plus sign next to category to create a new task",
+					Priority:   1,
+					Value:      1,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+			},
+		},
+		{
+			name: "Tasks",
+			tasks: []types.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Set a task with a deadline",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Create a task with a reminder",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Swipe to make your first post",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     true,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+			},
+		},
+		{
+			name: "Blueprint",
+			tasks: []types.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Explore Blueprints to find pre-made habit routines",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Subscribe to a Blueprint to add it to your workspaces",
+					Priority:   2,
+					Value:      2,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+			},
+		},
+		{
+			name: "Social",
+			tasks: []types.TaskDocument{
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Add your friends!",
+					Priority:   3,
+					Value:      3,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+				{
+					ID:         primitive.NewObjectID(),
+					Content:    "Share Kindred!",
+					Priority:   3,
+					Value:      3,
+					Active:     true,
+					Public:     false,
+					Recurring:  false,
+					Timestamp:  now,
+					LastEdited: now,
+					StartDate:  &now,
+					UserID:     userID,
+				},
+			},
+		},
+	}
+
+	// Create each category with its tasks
+	for _, cat := range categoriesData {
+		categoryDoc := types.CategoryDocument{
+			ID:            primitive.NewObjectID(),
+			Name:          cat.name,
+			WorkspaceName: workspaceName,
+			User:          userID,
+			Tasks:         cat.tasks,
+			LastEdited:    now,
+		}
+
+		// Set CategoryID for all tasks in this category
+		for i := range categoryDoc.Tasks {
+			categoryDoc.Tasks[i].CategoryID = categoryDoc.ID
+		}
+
+		_, err := s.categories.InsertOne(ctx, categoryDoc)
+		if err != nil {
+			// Log error but continue creating other categories
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to create category during workspace setup",
+				slog.String("categoryName", cat.name),
+				slog.String("userId", userID.Hex()),
+				slog.String("error", err.Error()))
+			continue
+		}
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Default workspace setup completed",
+		slog.String("userId", userID.Hex()),
+		slog.String("workspace", workspaceName))
+
+	return nil
 }
 
 /*
