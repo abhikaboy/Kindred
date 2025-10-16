@@ -7,6 +7,8 @@ import (
 )
 
 type GeminiService struct {
-	Genkit   *genkit.Genkit
-	TaskFlow *core.Flow[GenerateTaskParams, *task.CreateTaskParams, struct{}]
+	Genkit                *genkit.Genkit
+	TaskFlow              *core.Flow[GenerateTaskParams, *task.CreateTaskParams, struct{}]
+	TaskFromImageFlow     *core.Flow[GenerateTaskFromImageParams, GenerateTaskFromImageOutput, struct{}]
+	MultiTaskFromTextFlow *core.Flow[MultiTaskFromTextInput, MultiTaskFromTextOutput, struct{}]
 }

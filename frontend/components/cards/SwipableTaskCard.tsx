@@ -60,6 +60,8 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                 status: "danger",
                 position: "top",
                 message: "Error deleting task",
+                swipeDirection: "up",
+                renderContent: (props) => <DefaultToast {...props} />,
             });
         }
     };
@@ -99,6 +101,8 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                     position: "top",
                     message: `You're on a ${res.currentStreak} day streak! Keep it going! 🎉`,
                     duration: 3000,
+                    swipeDirection: "up",
+                    renderContent: (props) => <DefaultToast {...props} />,
                 });
             } else if (task.public) {
                 showToastable({
@@ -125,6 +129,8 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                 status: "danger",
                 position: "top",
                 message: "Failed to complete task",
+                swipeDirection: "up",
+                renderContent: (props) => <DefaultToast {...props} />,
             });
         }
     };

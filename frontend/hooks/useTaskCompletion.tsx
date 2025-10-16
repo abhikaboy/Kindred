@@ -5,6 +5,7 @@ import { markAsCompletedAPI } from '@/api/task';
 import { useTasks } from '@/contexts/tasksContext';
 import { showToastable } from 'react-native-toastable';
 import TaskToast from '@/components/ui/TaskToast';
+import DefaultToast from '@/components/ui/DefaultToast';
 
 interface TaskCompletionData {
     id: string;
@@ -117,6 +118,8 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 status: "danger",
                 position: "top",
                 message: "Error completing task",
+                swipeDirection: "up",
+                renderContent: (props) => <DefaultToast {...props} />,
             });
             options?.onError?.(error);
         } finally {

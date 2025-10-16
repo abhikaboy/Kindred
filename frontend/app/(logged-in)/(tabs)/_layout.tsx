@@ -64,6 +64,7 @@ export default function TabLayout() {
     const hideTabBarScreens = [
         // "/blueprint",
         "/blueprint/create",
+        "/voice",
         // Add other screen paths where you want to hide tabs
     ];
 

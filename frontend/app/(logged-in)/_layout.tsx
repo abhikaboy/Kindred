@@ -23,6 +23,7 @@ import { Skeleton } from "moti/skeleton";
 import { ThemedView } from "@/components/ThemedView";
 import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
 import CreateModal from "@/components/modals/CreateModal";
+import DefaultToast from "@/components/ui/DefaultToast";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -116,6 +117,8 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     position: "top",
                     offset: 100,
                     duration: 3000,
+                    swipeDirection: "up",
+                    renderContent: (props) => <DefaultToast {...props} />,
                 });
             }
         };

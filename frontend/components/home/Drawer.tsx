@@ -135,6 +135,15 @@ export const Drawer = ({ close }) => {
                     }}
                     onLongPress={() => {}}
                 />
+                <DrawerItem
+                    title="Voice Dump"
+                    selected={selected}
+                    onPress={() => {
+                        router.navigate("/(logged-in)/(tabs)/(task)/voice");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
                 <View
                     style={{
                         paddingHorizontal: HORIZONTAL_PADDING,

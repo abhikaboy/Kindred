@@ -60,6 +60,8 @@ export default function SchedulableTaskCard({
                 status: "danger",
                 position: "top",
                 message: "Error deleting task",
+                swipeDirection: "up",
+                renderContent: (props) => <DefaultToast {...props} />,
             });
         }
     };

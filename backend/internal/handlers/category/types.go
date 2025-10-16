@@ -7,8 +7,8 @@ import (
 )
 
 type CreateCategoryParams struct {
-	Name          string `bson:"name,omitempty" json:"name,omitempty"`
-	WorkspaceName string `bson:"workspaceName,omitempty" json:"workspaceName,omitempty"`
+	Name          string `bson:"name" json:"name"`
+	WorkspaceName string `bson:"workspaceName" json:"workspaceName"`
 }
 
 type CategoryDocument = types.CategoryDocument

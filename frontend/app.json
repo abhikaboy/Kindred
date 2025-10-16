@@ -70,6 +70,14 @@
       "expo-font",
       "expo-web-browser",
       [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to use the microphone to generate tasks.",
+          "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",

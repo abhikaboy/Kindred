@@ -30,8 +30,30 @@ func InitGenkit() *GeminiService {
 			return resp, nil
 		})
 
+	generateTaskFromImageFlow := genkit.DefineFlow(g, "generateTaskFromImageFlow",
+		func(ctx context.Context, input GenerateTaskFromImageParams) (GenerateTaskFromImageOutput, error) {
+			prompt := fmt.Sprintf(`Generate a set of categories and tasks based on the following image- Each task should belong to a category. The current time is %s.`, time.Now().UTC().Format(time.RFC3339))
+			resp, _, err := genkit.GenerateData[GenerateTaskFromImageOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewMediaPart("image/jpeg", input.Image), ai.NewTextPart(prompt))))
+			if err != nil {
+				return GenerateTaskFromImageOutput{}, err
+			}
+			return *resp, nil
+		})
+
+	multiTaskFromTextFlow := genkit.DefineFlow(g, "multiTaskFromTextFlow",
+		func(ctx context.Context, input MultiTaskFromTextInput) (MultiTaskFromTextOutput, error) {
+			prompt := fmt.Sprintf(`Generate a set of categories and tasks based on the following text- Each task should belong to a category. The current time is %s.`, time.Now().UTC().Format(time.RFC3339))
+			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewTextPart(input.Text))))
+			if err != nil {
+				return MultiTaskFromTextOutput{}, err
+			}
+			return *resp, nil
+		})
+
 	return &GeminiService{
-		Genkit:   g,
-		TaskFlow: generateTaskFlow,
+		Genkit:                g,
+		TaskFlow:              generateTaskFlow,
+		TaskFromImageFlow:     generateTaskFromImageFlow,
+		MultiTaskFromTextFlow: multiTaskFromTextFlow,
 	}
 }
