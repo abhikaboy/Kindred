@@ -43,14 +43,14 @@ const VerifyPhoneOnboarding = (props: Props) => {
         Animated.parallel([
             Animated.timing(fadeAnimation, {
                 toValue: 1,
-                duration: 800,
-                delay: 200,
+                duration: 640,
+                delay: 160,
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnimation, {
                 toValue: 0,
-                duration: 800,
-                delay: 200,
+                duration: 640,
+                delay: 160,
                 useNativeDriver: true,
             }),
         ]).start();

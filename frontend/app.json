@@ -29,7 +29,9 @@
         "NSContactsUsageDescription": "To find who else is on Kindred to connect with them!",
         "NSCameraUsageDescription": "This app needs access to camera to take photos for your profile and posts.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select photos for your profile and posts.",
-        "NSPhotoLibraryAddUsageDescription": "This app needs access to save photos to your photo library."
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to save photos to your photo library.",
+        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone to generate tasks."
       },
       "entitlements": {
         "aps-environment": "development"
@@ -42,7 +44,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.kindred.kindredtsl"
     },
     "web": {
       "bundler": "metro",
@@ -74,7 +81,9 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to use the microphone to generate tasks.",
           "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
         }
       ],
       [

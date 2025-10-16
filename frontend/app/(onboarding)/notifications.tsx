@@ -25,14 +25,14 @@ const NotificationsOnboarding = (props: Props) => {
         Animated.parallel([
             Animated.timing(fadeAnimation, {
                 toValue: 1,
-                duration: 1000,
-                delay: 300,
+                duration: 800,
+                delay: 240,
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnimation, {
                 toValue: 0,
-                duration: 1000,
-                delay: 300,
+                duration: 800,
+                delay: 240,
                 useNativeDriver: true,
             }),
         ]).start();

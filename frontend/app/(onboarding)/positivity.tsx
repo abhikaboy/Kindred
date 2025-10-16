@@ -32,14 +32,14 @@ const PositivityOnboarding = (props: Props) => {
         Animated.parallel([
             Animated.timing(fadeAnimation, {
                 toValue: 1,
-                duration: 1200,
-                delay: 300,
+                duration: 960,
+                delay: 240,
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnimation, {
                 toValue: 0,
-                duration: 1200,
-                delay: 300,
+                duration: 960,
+                delay: 240,
                 useNativeDriver: true,
             }),
         ]).start();
@@ -49,34 +49,34 @@ const PositivityOnboarding = (props: Props) => {
         const positivityTimeout = setTimeout(() => {
             Animated.timing(positivityFade, {
                 toValue: 1,
-                duration: 800,
+                duration: 640,
                 useNativeDriver: true,
             }).start();
-        }, 2000);
+        }, 1600);
 
         // "connection" appears after 4 seconds
         const connectionTimeout = setTimeout(() => {
             Animated.timing(connectionFade, {
                 toValue: 1,
-                duration: 800,
+                duration: 640,
                 useNativeDriver: true,
             }).start();
-        }, 3000);
+        }, 2400);
 
         // "happiness" appears after 6 seconds
         const happinessTimeout = setTimeout(() => {
             Animated.timing(happinessFade, {
                 toValue: 1,
-                duration: 800,
+                duration: 640,
                 useNativeDriver: true,
             }).start();
-        }, 4000);
+        }, 3200);
 
         // Button fade in after all animations
         Animated.timing(buttonFadeAnimation, {
             toValue: 1,
-            duration: 800,
-            delay: 5000, // Start after happiness appears
+            duration: 640,
+            delay: 4000, // Start after happiness appears
             useNativeDriver: true,
         }).start();
 

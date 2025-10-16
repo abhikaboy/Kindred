@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v2"
@@ -201,15 +202,51 @@ func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWit
 
 // RegisterWithContext handles registration with context (used for Apple/Google)
 func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput) (*RegisterOutput, error) {
+	// Log registration attempt (without sensitive data)
+	slog.LogAttrs(ctx, slog.LevelInfo, "Registration attempt",
+		slog.String("email", input.Body.Email),
+		slog.String("handle", input.Body.Handle),
+		slog.String("displayName", input.Body.DisplayName),
+		slog.Bool("hasPassword", input.Body.Password != ""),
+		slog.Bool("hasProfilePicture", input.Body.ProfilePicture != ""),
+	)
+
+	// Validate input
 	errs := xvalidator.Validator.Validate(&input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		// Build detailed validation error messages
+		var errorMessages []string
+		for _, e := range errs {
+			switch e.Tag {
+			case "required":
+				errorMessages = append(errorMessages, fmt.Sprintf("%s is required", e.FailedField))
+			case "min":
+				errorMessages = append(errorMessages, fmt.Sprintf("%s must be at least 8 characters", e.FailedField))
+			case "email":
+				errorMessages = append(errorMessages, fmt.Sprintf("%s must be a valid email address", e.FailedField))
+			default:
+				errorMessages = append(errorMessages, fmt.Sprintf("%s validation failed: %s", e.FailedField, e.Tag))
+			}
+		}
+		
+		slog.LogAttrs(ctx, slog.LevelWarn, "Registration validation failed",
+			slog.Any("errors", errs),
+			slog.String("email", input.Body.Email),
+		)
+		
+		return nil, huma.Error400BadRequest(
+			fmt.Sprintf("Validation failed: %s", strings.Join(errorMessages, "; ")),
+			fmt.Errorf("validation errors: %v", errs),
+		)
 	}
 
 	id := primitive.NewObjectID()
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), 0) // new users use count = 0
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during registration",
+			slog.String("error", err.Error()),
+		)
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
 
@@ -229,6 +266,9 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	if input.Body.Password != "" {
 		hashedBytes, err := bcrypt.GenerateFromPassword([]byte(input.Body.Password), bcrypt.DefaultCost)
 		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Password hashing failed during registration",
+				slog.String("error", err.Error()),
+			)
 			return nil, huma.Error500InternalServerError("Password hashing failed", err)
 		}
 		hashedPassword = string(hashedBytes)
@@ -265,7 +305,28 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 
 	err = h.service.CreateUser(user)
 	if err != nil {
-		return nil, huma.Error400BadRequest("User creation failed", err)
+		// Check for duplicate key errors
+		if xmongo.IsDuplicateKeyError(err) {
+			field, message := xmongo.ExtractDuplicateField(err)
+			slog.LogAttrs(ctx, slog.LevelWarn, "Duplicate user registration attempt",
+				slog.String("field", field),
+				slog.String("email", input.Body.Email),
+				slog.String("handle", input.Body.Handle),
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error400BadRequest(message, err)
+		}
+		
+		// Log other database errors
+		slog.LogAttrs(ctx, slog.LevelError, "User creation failed",
+			slog.String("email", input.Body.Email),
+			slog.String("handle", input.Body.Handle),
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error500InternalServerError(
+			fmt.Sprintf("Failed to create user: %s", err.Error()),
+			err,
+		)
 	}
 
 	// Setup default workspace with starter tasks for the new user
@@ -280,6 +341,12 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 				slog.String("error", err.Error()))
 		}
 	}()
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "User registered successfully",
+		slog.String("userId", id.Hex()),
+		slog.String("email", input.Body.Email),
+		slog.String("handle", input.Body.Handle),
+	)
 
 	resp := &RegisterOutput{}
 	resp.AccessToken = access

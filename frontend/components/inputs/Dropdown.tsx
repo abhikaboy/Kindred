@@ -53,7 +53,7 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
         return {
             borderBottomLeftRadius: expanded.value ? 0 : 12,
             borderBottomRightRadius: expanded.value ? 0 : 12,
-            borderBottomWidth: expanded.value ? 1 : 0,
+            borderBottomWidth: expanded.value  ? 1 : 0,
             borderBottomColor: expanded.value ? ThemedColor.disabled : ThemedColor.tertiary,
         };
     });
@@ -64,7 +64,7 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
         <Animated.View
             style={{
                 borderRadius: 12,
-                borderWidth: ghost ? 0 : 1,
+                borderWidth: 1,
                 borderColor: ghost ? "transparent" : ThemedColor.tertiary,
                 width: width || "50%",
                 shadowColor: ThemedColor.text,
@@ -110,9 +110,8 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                     entering={reducedMotion ? null : FadeInUp}
                     exiting={reducedMotion ? null : FadeOut}
                     style={{
-                        borderWidth: 0.5,
-                        borderColor: ThemedColor.tertiary,
-                        borderTopWidth: 0,
+                        borderWidth: ghost ? 0 : 0.5,
+                        borderColor: ghost ? "transparent" : ThemedColor.tertiary,
                         borderBottomLeftRadius: 12,
                         backgroundColor: ThemedColor.background,
                         borderBottomRightRadius: 12,
@@ -132,7 +131,6 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                                 style={{
                                     backgroundColor: ThemedColor.background,
                                     padding: 8,
-                                    paddingHorizontal: HORIZONTAL_PADDING,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
                                     borderRadius: 12,
@@ -144,7 +142,6 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                     
                     <View style={{
                         borderColor: ThemedColor.tertiary,
-                        borderTopWidth: 1,
                         borderBottomLeftRadius: 12,
                         backgroundColor: ThemedColor.background,
                         borderBottomRightRadius: 12,
@@ -163,12 +160,10 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                                 Haptics.selectionAsync();
                             }}
                             style={{
-                                backgroundColor: ThemedColor.background,
-                                padding: 8,
-                                paddingHorizontal: HORIZONTAL_PADDING,
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                borderRadius: 12,
+                                    backgroundColor: ThemedColor.background,
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    borderRadius: 12,
                                 }}>
                                 <ThemedText type="lightBody">{item.label}</ThemedText>
                             </AnimatedTouchableOpacity>

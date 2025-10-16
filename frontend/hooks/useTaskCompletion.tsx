@@ -68,47 +68,36 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
 
             // Show streak notification if streak changed
             const newStreakInfo = (res as any)?.newStreakInfo;
+            
+            // Build title and message based on streak status
+            let title = "Task completed!";
+            let message = `Congrats! Click here to post and document your task!`;
+            
             if (newStreakInfo) {
                 const { oldStreak, newStreak } = newStreakInfo;
                 const streakIncreased = newStreak > oldStreak;
                 const isFirstCompletion = oldStreak === 0 && newStreak === 1;
 
                 if (streakIncreased || isFirstCompletion) {
-                    showToastable({
-                        title: isFirstCompletion
-                            ? "🎉 Streak started!"
-                            : `🔥 ${newStreak} day streak!`,
-                        status: "success",
-                        position: "top",
-                        swipeDirection: "up",
-                        duration: 3000,
-                        message: isFirstCompletion
-                            ? "You've started your streak! Keep it going!"
-                            : `Keep it up! You're on a ${newStreak} day streak!`,
-                        renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
-                    });
-                } else {
-                    showToastable({
-                        title: "Task completed!",
-                        status: "success",
-                        position: "top",
-                        swipeDirection: "up",
-                        duration: 5000,
-                        message: `Congrats! Click here to post and document your task!`,
-                        renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
-                    });
+                    if (isFirstCompletion) {
+                        title = "🎉 Task completed - Streak started!";
+                        message = "You've started your streak! Click here to post and document your task!";
+                    } else {
+                        title = `🔥 Task completed - ${newStreak} day streak!`;
+                        message = `Keep it up! You're on a ${newStreak} day streak! Click here to post!`;
+                    }
                 }
-            } else {
-                showToastable({
-                    title: "Task completed!",
-                    status: "success",
-                    position: "top",
-                    swipeDirection: "up",
-                    duration: 5000,
-                    message: `Congrats! Click here to post and document your task!`,
-                    renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
-                });
             }
+            
+            showToastable({
+                title,
+                status: "success",
+                position: "top",
+                swipeDirection: "up",
+                duration: 5000,
+                message,
+                renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
+            });
 
             options?.onSuccess?.();
         } catch (error) {

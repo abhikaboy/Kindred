@@ -20,7 +20,7 @@ export default function SendButton({ onSend }: Props) {
                     paddingVertical: 15,
                     paddingHorizontal: 25,
                 }}>
-                <AntDesign name="arrowup" size={16} color="white" />
+                <AntDesign name="arrow-up" size={16} color="white" />
             </TouchableOpacity>
         </View>
     );

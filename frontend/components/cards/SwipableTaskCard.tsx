@@ -93,23 +93,22 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
             console.log("🔍 FINAL CATEGORY NAME BEING USED:", finalCategoryName);
             console.log("🔍 TASK DATA BEING SENT TO TOAST:", JSON.stringify(taskData, null, 2));
 
-            // Show streak notification if streak changed
+            // Build title and message based on streak status
+            let title = "Task completed!";
+            let message = "Congrats! Click here to post and document your task!";
+            
             if (res.streakChanged) {
+                title = `🔥 Task completed - ${res.currentStreak} day streak!`;
+                message = `Keep it up! You're on a ${res.currentStreak} day streak! Click here to post!`;
+            }
+
+            // Show completion toast with streak info included if applicable
+            if (task.public) {
                 showToastable({
-                    title: "🔥 Streak increased!",
+                    title,
                     status: "success",
                     position: "top",
-                    message: `You're on a ${res.currentStreak} day streak! Keep it going! 🎉`,
-                    duration: 3000,
-                    swipeDirection: "up",
-                    renderContent: (props) => <DefaultToast {...props} />,
-                });
-            } else if (task.public) {
-                showToastable({
-                    title: "Task completed!",
-                    status: "success",
-                    position: "top",
-                    message: "Congrats! Click here to post and document your task!",
+                    message,
                     onPress: () => {
                         console.log("pressed");
                     },

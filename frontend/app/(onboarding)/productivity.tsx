@@ -27,14 +27,14 @@ const ProductivityOnboarding = (props: Props) => {
         Animated.parallel([
             Animated.timing(fadeAnimation, {
                 toValue: 1,
-                duration: 1200,
-                delay: 300,
+                duration: 960,
+                delay: 240,
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnimation, {
                 toValue: 0,
-                duration: 1200,
-                delay: 300,
+                duration: 960,
+                delay: 240,
                 useNativeDriver: true,
             }),
         ]).start();
@@ -42,8 +42,8 @@ const ProductivityOnboarding = (props: Props) => {
         // Button fade in after text animation completes
         Animated.timing(buttonFadeAnimation, {
             toValue: 1,
-            duration: 800,
-            delay: 1500, // Start after text animation (300ms + 1200ms)
+            duration: 640,
+            delay: 1200, // Start after text animation (240ms + 960ms)
             useNativeDriver: true,
         }).start();
 
@@ -52,12 +52,12 @@ const ProductivityOnboarding = (props: Props) => {
             Animated.sequence([
                 Animated.timing(fadeAnimation, {
                     toValue: 0.85,
-                    duration: 3000,
+                    duration: 2400,
                     useNativeDriver: true,
                 }),
                 Animated.timing(fadeAnimation, {
                     toValue: 1,
-                    duration: 3000,
+                    duration: 2400,
                     useNativeDriver: true,
                 }),
             ]),
@@ -67,7 +67,7 @@ const ProductivityOnboarding = (props: Props) => {
         // Start breathing effect after initial fade in
         const timeout = setTimeout(() => {
             breathingAnimation.start();
-        }, 1500);
+        }, 1200);
 
         return () => {
             clearTimeout(timeout);

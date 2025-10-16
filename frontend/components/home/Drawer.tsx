@@ -139,7 +139,7 @@ export const Drawer = ({ close }) => {
                     title="Voice Dump"
                     selected={selected}
                     onPress={() => {
-                        router.navigate("/(logged-in)/(tabs)/(task)/voice");
+                        router.push("/voice");
                         close();
                     }}
                     onLongPress={() => {}}

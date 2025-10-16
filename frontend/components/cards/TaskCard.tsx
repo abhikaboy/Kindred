@@ -9,7 +9,6 @@ import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
 import { useTasks } from "@/contexts/tasksContext";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
@@ -38,6 +37,7 @@ interface Props {
     task?: Task;
     height?: number;
     showRedOutline?: boolean; // Add red outline when categoryId is not configured
+    detailed?: boolean; // Controls whether to show date labels like "(today)" or "(tomorrow)"
     encouragementConfig?: {
         userHandle?: string;
         receiverId: string;
@@ -62,6 +62,7 @@ const TaskCard = ({
     task,
     height = Dimensions.get("window").height * 0.07,
     showRedOutline = false,
+    detailed = true,
     encouragementConfig,
     congratulationConfig,
 }: Props) => {
@@ -104,6 +105,9 @@ const TaskCard = ({
 
     // Calculate date display text and color
     const dateDisplay = useMemo(() => {
+        // If detailed is false, don't show any date labels
+        if (!detailed) return null;
+        
         const now = new Date();
         
         // Priority 1: Show deadline if it exists
@@ -171,7 +175,7 @@ const TaskCard = ({
         }
         
         return null;
-    }, [task?.deadline, task?.startDate]);
+    }, [task?.deadline, task?.startDate, detailed]);
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {

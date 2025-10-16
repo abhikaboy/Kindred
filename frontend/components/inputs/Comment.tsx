@@ -409,6 +409,7 @@ const stylesheet = (ThemedColor: any) =>
             borderTopWidth: 1,
             borderTopColor: ThemedColor.tertiary,
             backgroundColor: ThemedColor.background,
+            height: "16%",
         },
         inputRow: {
             flexDirection: "row",
@@ -420,7 +421,7 @@ const stylesheet = (ThemedColor: any) =>
             justifyContent: "center",
             alignItems: "center",
             paddingVertical: 40,
-            minHeight: 200,
+            minHeight: 240,
         },
     });
 

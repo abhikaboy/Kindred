@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useTypedMutation } from './useTypedAPI';
 import { useAuth, saveAuthData, getAuthData } from './useAuth';
-import { setupDefaultWorkspace } from '@/api/category';
 
 // Onboarding data interface
 export interface OnboardingData {
@@ -312,23 +311,34 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             console.log('👤 User ID:', userData._id);
             console.log('👤 User display name:', userData.display_name);
             
-            // Create initial "Kindred Guide" workspace with starter tasks for new users
-            try {
-                console.log('🌺 Setting up Kindred Guide workspace with starter tasks...');
-                await setupDefaultWorkspace();
-                console.log('✅ Kindred Guide workspace created successfully with starter tasks');
-            } catch (error) {
-                console.error('⚠️ Failed to setup Kindred Guide workspace:', error);
-                // Don't fail registration if workspace creation fails
-            }
+            // Note: Default workspace is created automatically by the backend during registration
+            // No need to call setupDefaultWorkspace() here
             
             // Reset after successful registration and login
             console.log('🧹 Resetting onboarding state...');
             reset();
             console.log('✅ Registration flow complete!');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Email registration failed:', error);
-            throw error;
+            
+            // Extract error message from backend response
+            let errorMessage = 'Registration failed. Please try again.';
+            
+            // openapi-fetch returns errors in a specific format
+            if (error?.message) {
+                errorMessage = error.message;
+            } else if (error?.error?.message) {
+                errorMessage = error.error.message;
+            } else if (error?.detail) {
+                errorMessage = error.detail;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            }
+            
+            console.error('❌ Registration error message:', errorMessage);
+            
+            // Throw error with the backend message so the UI can display it
+            throw new Error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -411,23 +421,32 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             console.log('Fetching user data after registration...');
             const userData = await fetchAuthData();
             
-            // Create initial "Kindred Guide" workspace with starter tasks for new users
-            if (userData) {
-                try {
-                    console.log('🌺 Setting up Kindred Guide workspace with starter tasks...');
-                    await setupDefaultWorkspace();
-                    console.log('✅ Kindred Guide workspace created successfully with starter tasks');
-                } catch (error) {
-                    console.error('⚠️ Failed to setup Kindred Guide workspace:', error);
-                    // Don't fail registration if workspace creation fails
-                }
-            }
+            // Note: Default workspace is created automatically by the backend during registration
+            // No need to call setupDefaultWorkspace() here
             
             // Reset after successful registration and login
             reset();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Apple registration failed:', error);
-            throw error;
+            
+            // Extract error message from backend response
+            let errorMessage = 'Apple registration failed. Please try again.';
+            
+            // openapi-fetch returns errors in a specific format
+            if (error?.message) {
+                errorMessage = error.message;
+            } else if (error?.error?.message) {
+                errorMessage = error.error.message;
+            } else if (error?.detail) {
+                errorMessage = error.detail;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            }
+            
+            console.error('❌ Apple registration error message:', errorMessage);
+            
+            // Throw error with the backend message so the UI can display it
+            throw new Error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -457,15 +476,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 }
             });
             
-            // Create initial "Kindred Guide" workspace with starter tasks for new users
-            try {
-                console.log('🌺 Setting up Kindred Guide workspace with starter tasks...');
-                await setupDefaultWorkspace();
-                console.log('✅ Kindred Guide workspace created successfully with starter tasks');
-            } catch (error) {
-                console.error('⚠️ Failed to setup Kindred Guide workspace:', error);
-                // Don't fail registration if workspace creation fails
-            }
+            // Note: Default workspace is created automatically by the backend during registration
+            // No need to call setupDefaultWorkspace() here
             
             reset();
         } catch (error) {

@@ -32,14 +32,14 @@ const CircleOnboarding = (props: Props) => {
         Animated.parallel([
             Animated.timing(fadeAnimation, {
                 toValue: 1,
-                duration: 1200,
-                delay: 300,
+                duration: 960,
+                delay: 240,
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnimation, {
                 toValue: 0,
-                duration: 1200,
-                delay: 300,
+                duration: 960,
+                delay: 240,
                 useNativeDriver: true,
             }),
         ]).start();
@@ -47,8 +47,8 @@ const CircleOnboarding = (props: Props) => {
         // Button fade in after text animation completes
         Animated.timing(buttonFadeAnimation, {
             toValue: 1,
-            duration: 800,
-            delay: 1500,
+            duration: 640,
+            delay: 1200,
             useNativeDriver: true,
         }).start();
 
