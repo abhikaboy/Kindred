@@ -83,7 +83,8 @@
           "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
-          ]
+          ],
+          "iosDeploymentTarget": "13.0"
         }
       ],
       [
@@ -91,7 +92,8 @@
         {
           "url": "https://sentry.io/",
           "project": "react-native",
-          "organization": "kindred-gy"
+          "organization": "kindred-gy",
+          "setCommits": false
         }
       ]
     ],
