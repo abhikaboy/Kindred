@@ -38,6 +38,7 @@ interface Props {
     height?: number;
     showRedOutline?: boolean; // Add red outline when categoryId is not configured
     detailed?: boolean; // Controls whether to show date labels like "(today)" or "(tomorrow)"
+    inlineComponent?: React.ReactNode; // Optional component to render inline below the content text
     encouragementConfig?: {
         userHandle?: string;
         receiverId: string;
@@ -55,6 +56,7 @@ const TaskCard = ({
     value,
     priority,
     redirect = false,
+    inlineComponent,
     id,
     categoryId,
     encourage = false,
@@ -238,14 +240,17 @@ const TaskCard = ({
                 <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />
 
                 <View style={styles.row}>
-                    <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
-                        {content}
-                        {dateDisplay && (
-                            <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
-                                {" "}{dateDisplay.text}
-                            </ThemedText>
-                        )}
-                    </ThemedText>
+                    <View style={styles.contentContainer}>
+                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                            {content}
+                            {dateDisplay && (
+                                <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                    {" "}{dateDisplay.text}
+                                </ThemedText>
+                            )}
+                        </ThemedText>
+                        {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
+                    </View>
                     <View style={styles.iconRow}>
                         <ConditionalView condition={!encourage}>
                             <ConditionalView condition={isRunningState}>
@@ -336,11 +341,20 @@ const styles = StyleSheet.create({
         height: 10,
         borderRadius: 10,
     },
+    contentContainer: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        width: "90%",
+        margin: "auto",
+        gap: 6,
+    },
     content: {
         textAlign: "left",
-        flex: 1,
         lineHeight: 24,
-        maxWidth: "90%",
+    },
+    inlineWrapper: {
+        marginTop: 2,
     },
     iconRow: {
         flexDirection: "row",

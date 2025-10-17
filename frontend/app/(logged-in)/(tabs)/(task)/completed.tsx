@@ -234,33 +234,35 @@ const CompletedTasks = () => {
                                     
                                     <View style={styles.tasksContainer}>
                                         {tasks.map((task) => (
-                                            <View key={task.id} style={styles.taskCardWrapper}>
-                                                <TaskCard
-                                                    redirect={true}
-                                                    categoryId={task.categoryID}
-                                                    content={task.content}
-                                                    value={task.value}
-                                                    priority={1}
-                                                    id={task.id}
-                                                    task={task as any}
-                                                />
-                                                {task.timeCompleted && (
-                                                    <View style={styles.completionTimeContainer}>
-                                                        <Feather 
-                                                            name="check-circle" 
-                                                            size={12} 
-                                                            color={ThemedColor.success} 
-                                                        />
-                                                        <ThemedText type="caption" style={styles.completionTime}>
-                                                            Completed at {new Date(task.timeCompleted).toLocaleTimeString("en-US", {
-                                                                hour: "numeric",
-                                                                minute: "2-digit",
-                                                                hour12: true
-                                                            })}
-                                                        </ThemedText>
-                                                    </View>
-                                                )}
-                                            </View>
+                                            <TaskCard
+                                                key={task.id}
+                                                redirect={true}
+                                                categoryId={task.categoryID}
+                                                content={task.content}
+                                                value={task.value}
+                                                priority={1}
+                                                id={task.id}
+                                                task={task as any}
+                                                detailed={false}
+                                                inlineComponent={
+                                                    task.timeCompleted ? (
+                                                        <View style={styles.completionTimeContainer}>
+                                                            <Feather 
+                                                                name="check-circle" 
+                                                                size={12} 
+                                                                color={ThemedColor.success} 
+                                                            />
+                                                            <ThemedText type="caption" style={styles.completionTime}>
+                                                                {new Date(task.timeCompleted).toLocaleTimeString("en-US", {
+                                                                    hour: "numeric",
+                                                                    minute: "2-digit",
+                                                                    hour12: true
+                                                                })}
+                                                            </ThemedText>
+                                                        </View>
+                                                    ) : undefined
+                                                }
+                                            />
                                         ))}
                                     </View>
                                 </View>
@@ -382,14 +384,10 @@ const styles = StyleSheet.create({
     tasksContainer: {
         gap: 16,
     },
-    taskCardWrapper: {
-        gap: 8,
-    },
     completionTimeContainer: {
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
-        paddingLeft: 4,
     },
     completionTime: {
         fontSize: 12,
