@@ -654,12 +654,38 @@ func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTask
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	tasks, err := h.service.GetCompletedTasks(userObjID)
+	// Use default values if not provided
+	page := input.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := input.Limit
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	tasks, totalCount, err := h.service.GetCompletedTasks(userObjID, page, limit)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
 	}
 
-	return &GetCompletedTasksOutput{Body: tasks}, nil
+	// Calculate total pages
+	totalPages := int(totalCount) / limit
+	if int(totalCount)%limit > 0 {
+		totalPages++
+	}
+
+	output := &GetCompletedTasksOutput{}
+	output.Body.Tasks = tasks
+	output.Body.Page = page
+	output.Body.Limit = limit
+	output.Body.Total = totalCount
+	output.Body.TotalPages = totalPages
+
+	return output, nil
 }
 
 // Specialized update handlers

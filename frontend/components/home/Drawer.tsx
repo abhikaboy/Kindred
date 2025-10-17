@@ -7,6 +7,7 @@ import { Dimensions, StyleSheet } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import EditWorkspace from "../modals/edit/EditWorkspace";
 import CreateWorkspaceBottomSheetModal from "../modals/CreateWorkspaceBottomSheetModal";
+import QuickImportBottomSheet from "../modals/QuickImportBottomSheet";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -18,6 +19,7 @@ export const Drawer = ({ close }) => {
     const [creating, setCreating] = React.useState(false);
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
+    const [showQuickImport, setShowQuickImport] = React.useState(false);
 
 
     const handleCreateBlueprint = () => {
@@ -31,6 +33,9 @@ export const Drawer = ({ close }) => {
             <CreateWorkspaceBottomSheetModal visible={creating} setVisible={setCreating} />
 
             <EditWorkspace editing={editing} setEditing={setEditing} id={focusedWorkspace} />
+
+            {/* Quick Import Bottom Sheet */}
+            <QuickImportBottomSheet isVisible={showQuickImport} onClose={() => setShowQuickImport(false)} />
 
             <View
                 style={{
@@ -144,6 +149,14 @@ export const Drawer = ({ close }) => {
                     }}
                     onLongPress={() => {}}
                 />
+                <DrawerItem
+                    title="Import"
+                    selected={selected}
+                    onPress={() => {
+                        setShowQuickImport(true);
+                    }}
+                    onLongPress={() => {}}
+                />
                 <View
                     style={{
                         paddingHorizontal: HORIZONTAL_PADDING,
@@ -224,7 +237,10 @@ export const Drawer = ({ close }) => {
                     <DrawerItem
                         title="Completed Tasks"
                         selected={selected}
-                        onPress={() => setSelected("Completed Tasks")}
+                        onPress={() => {
+                            router.navigate("/(logged-in)/(tabs)/(task)/completed");
+                            close();
+                        }}
                         onLongPress={() => {}}
                     />
                 </View>

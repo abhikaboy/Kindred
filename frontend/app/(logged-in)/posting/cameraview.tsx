@@ -292,6 +292,12 @@ export default function Posting() {
                                         name={flash === "off" ? "flash-outline" : "flash"}
                                         size={32}
                                         color={ThemedColor.background === "#000" ? "#fff" : "#000"}
+                                        style={{ opacity: 0 }}
+                                    />
+                                    <Ionicons
+                                        name={flash === "off" ? "flash-outline" : "flash"}
+                                        size={32}
+                                        color={ThemedColor.background === "#000" ? "#fff" : "#000"}
                                         onPress={() => setFlash(flash === "off" ? "on" : "off")}
                                     />
                                     <View

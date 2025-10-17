@@ -1096,19 +1096,36 @@ func (s *Service) GetTemplateByID(id primitive.ObjectID) (*TemplateTaskDocument,
 	return &template, err
 }
 
-func (s *Service) GetCompletedTasks(userId primitive.ObjectID) ([]TaskDocument, error) {
+func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit int) ([]TaskDocument, int64, error) {
 	ctx := context.Background()
-	cursor, err := s.CompletedTasks.Find(ctx, bson.M{"userID": userId})
+
+	// Calculate skip value for pagination
+	skip := (page - 1) * limit
+
+	// Get total count of completed tasks for this user
+	totalCount, err := s.CompletedTasks.CountDocuments(ctx, bson.M{"userID": userId})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	// Sort by timeCompleted in descending order (most recent first)
+	// Add pagination with limit and skip
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "timeCompleted", Value: -1}}).
+		SetLimit(int64(limit)).
+		SetSkip(int64(skip))
+
+	cursor, err := s.CompletedTasks.Find(ctx, bson.M{"userID": userId}, findOptions)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
 	var results []TaskDocument
 	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return results, nil
+	return results, totalCount, nil
 }
 
 // Specialized update methods for targeted operations

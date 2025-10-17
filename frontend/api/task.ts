@@ -217,20 +217,61 @@ export const updateTaskAPI = async (
 };
 
 /**
- * Get completed tasks
- * API: Makes GET request to retrieve completed tasks
- * Frontend: Used to get statistics for TodayStats component
+ * Response type for paginated completed tasks
  */
-export const getCompletedTasksAPI = async (): Promise<TaskDocument[]> => {
-    const { data, error } = await client.GET("/v1/user/tasks/completed", {
-        params: withAuthHeaders({}),
-    });
+export interface PaginatedCompletedTasksResponse {
+    tasks: TaskDocument[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
 
-    if (error) {
-        throw new Error(`Failed to get completed tasks: ${JSON.stringify(error)}`);
+/**
+ * Get completed tasks with pagination
+ * API: Makes GET request to retrieve completed tasks
+ * Frontend: Used to get statistics for TodayStats component and completed tasks page
+ * @param page - Page number (1-indexed, default: 1)
+ * @param limit - Number of tasks per page (default: 20, max: 100)
+ */
+export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20): Promise<PaginatedCompletedTasksResponse> => {
+    console.log(`getCompletedTasksAPI called with page=${page}, limit=${limit}`);
+    
+    try {
+        const { data, error } = await client.GET("/v1/user/tasks/completed", {
+            params: withAuthHeaders({
+                query: { page, limit },
+            }),
+        });
+
+        if (error) {
+            console.error("API Error:", error);
+            throw new Error(`Failed to get completed tasks: ${JSON.stringify(error)}`);
+        }
+
+        console.log("API Response data:", data);
+
+        // Type assertion since the generated types may not be up to date
+        // The backend returns the data structure directly
+        const response = (data as any);
+        
+        if (!response) {
+            console.warn("No data returned from API, using defaults");
+            return { tasks: [], page: 1, limit: 20, total: 0, totalPages: 0 };
+        }
+
+        // Handle the response structure - it should have tasks, page, limit, total, totalPages
+        return {
+            tasks: Array.isArray(response.tasks) ? response.tasks : [],
+            page: response.page || page,
+            limit: response.limit || limit,
+            total: response.total || 0,
+            totalPages: response.totalPages || 0,
+        };
+    } catch (err) {
+        console.error("Exception in getCompletedTasksAPI:", err);
+        throw err;
     }
-
-    return data || [];
 };
 
 /**
@@ -239,13 +280,15 @@ export const getCompletedTasksAPI = async (): Promise<TaskDocument[]> => {
  */
 export const getTodayCompletedTasksCount = async (): Promise<number> => {
     try {
-        const completedTasks = await getCompletedTasksAPI();
+        // Fetch with a reasonable limit for today's tasks
+        const response = await getCompletedTasksAPI(1, 100);
+        const completedTasks = response.tasks;
         const today = new Date();
         const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         
-        const todayCompletedTasks = completedTasks.filter(task => {
-            if (task.timeCompleted) {
-                const completedDate = new Date(task.timeCompleted);
+        const todayCompletedTasks = completedTasks.filter((task: any) => {
+            if ((task as any).timeCompleted) {
+                const completedDate = new Date((task as any).timeCompleted);
                 return completedDate >= todayStart;
             }
             return false;
@@ -261,10 +304,12 @@ export const getTodayCompletedTasksCount = async (): Promise<number> => {
 /**
  * Get total points from completed tasks
  * Helper function to calculate total points from completed tasks
+ * Note: This fetches all tasks by requesting a large page size
  */
 export const getTotalPointsFromCompletedTasks = async (): Promise<number> => {
     try {
-        const completedTasks = await getCompletedTasksAPI();
+        const response = await getCompletedTasksAPI(1, 100);
+        const completedTasks = response.tasks;
         return completedTasks.reduce((total, task) => total + (task.value || 0), 0);
     } catch (error) {
         console.error('Error getting total points from completed tasks:', error);

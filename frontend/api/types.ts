@@ -73,6 +73,10 @@ export interface Task {
     notes?: string;
     checklist?: ChecklistItem[];
     reminders?: Reminder[];
+    
+    // Completion tracking fields (only populated for completed tasks)
+    timeCompleted?: string;
+    timeTaken?: string;
 }
 
 export interface Categories {

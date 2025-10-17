@@ -57,6 +57,10 @@ type TaskDocument struct {
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
+
+	// Completion tracking fields (only populated for completed tasks)
+	TimeCompleted *time.Time `bson:"timeCompleted,omitempty" json:"timeCompleted,omitempty"`
+	TimeTaken     *string    `bson:"timeTaken,omitempty" json:"timeTaken,omitempty"`
 }
 
 /*

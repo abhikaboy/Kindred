@@ -229,15 +229,23 @@ type UpdateTaskReminderOutput struct {
 }
 
 // Get Completed Tasks
-// Input for fetching completed tasks for a user
-// Output is a list of TaskDocument
+// Input for fetching completed tasks for a user with pagination
+// Output is a list of TaskDocument with pagination metadata
 
 type GetCompletedTasksInput struct {
 	Authorization string `header:"Authorization" required:"true"`
+	Page          int    `query:"page" default:"1" minimum:"1" doc:"Page number (1-indexed)"`
+	Limit         int    `query:"limit" default:"20" minimum:"1" maximum:"100" doc:"Number of tasks per page"`
 }
 
 type GetCompletedTasksOutput struct {
-	Body []TaskDocument `json:"body"`
+	Body struct {
+		Tasks      []TaskDocument `json:"tasks" doc:"List of completed tasks"`
+		Page       int            `json:"page" doc:"Current page number"`
+		Limit      int            `json:"limit" doc:"Tasks per page"`
+		Total      int64          `json:"total" doc:"Total number of completed tasks"`
+		TotalPages int            `json:"totalPages" doc:"Total number of pages"`
+	} `json:"body"`
 }
 
 // Operation registrations
