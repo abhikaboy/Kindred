@@ -123,8 +123,8 @@ export const OnboardModal = (props: Props) => {
             console.log('DEBUG - Apple credential email:', credential.email);
             console.log('DEBUG - Email after fallback:', email);
             
-            // Temporarily bypassed for testing - normally checks: !email || !firstName || !lastName
-            if (false) {
+            // If Apple doesn't provide name/email, user is signing in again (not first time)
+            if (!email || email === "user@gmail.com" || !firstName || !lastName) {
                 console.log("We think you already have an account: trying to log in instead");
                 await login(appleAccountID);
                 router.push("/(logged-in)/(tabs)/(task)");
@@ -223,7 +223,7 @@ export const OnboardModal = (props: Props) => {
                                 if (mode === "login") {
                                     router.push("/login-phone");
                                 } else {
-                                    router.push("/(onboarding)/productivity");
+                                    router.push("/(onboarding)/phone");
                                 }
                             }}
                         />

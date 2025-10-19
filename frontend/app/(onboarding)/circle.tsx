@@ -8,6 +8,7 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import OnboardButton from "@/components/inputs/OnboardButton";
 import Svg, { Circle, Path, G } from 'react-native-svg';
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -255,9 +256,11 @@ const CircleOnboarding = (props: Props) => {
             <Animated.View style={{ zIndex: 1, opacity: buttonFadeAnimation }}>
                 <OnboardButton
                     disabled={false}
-                    onPress={() => {
-                        // Navigate to the phone screen
-                        router.push("/(onboarding)/phone");
+                    onPress={async () => {
+                        // Mark onboarding as seen
+                        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+                        // Navigate to login page
+                        router.push("/login");
                     }}
                 />
             </Animated.View>

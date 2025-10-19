@@ -10,6 +10,7 @@ import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
 import * as Notifications from "expo-notifications";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     registerForPushNotificationsAsync,
     addNotificationListener,
@@ -54,6 +55,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 const layout = ({ children }: { children: React.ReactNode }) => {
     const { user, fetchAuthData } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
+    const [redirectPath, setRedirectPath] = useState<string | null>(null);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
@@ -61,17 +63,42 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
 
-    // Handle initial authentication - only run once
+    // Handle initial authentication and routing - only run once
     useEffect(() => {
         if (authInitialized.current) return;
 
         const initializeAuth = async () => {
             try {
                 setIsLoading(true);
-                await fetchAuthData();
+                const userData = await fetchAuthData();
+                
+                // Check if we got a user back
+                if (!userData) {
+                    console.log('No user data returned from fetchAuthData');
+                    // Check if user has seen onboarding before redirecting to login
+                    const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+                    console.log('hasSeenOnboarding:', hasSeenOnboarding);
+                    if (!hasSeenOnboarding) {
+                        console.log('Redirecting to productivity onboarding');
+                        setRedirectPath("/(onboarding)/productivity");
+                    } else {
+                        console.log('Redirecting to login');
+                        setRedirectPath("/login");
+                    }
+                } else {
+                    console.log('User authenticated, staying in app');
+                }
             } catch (error) {
-                console.error("Authentication failed:", error);
-                router.replace("/login");
+                console.error("Authentication failed with error:", error);
+                
+                // Check if user has seen onboarding before redirecting to login
+                const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+                console.log('Auth error, hasSeenOnboarding:', hasSeenOnboarding);
+                if (!hasSeenOnboarding) {
+                    setRedirectPath("/(onboarding)/productivity");
+                } else {
+                    setRedirectPath("/login");
+                }
             } finally {
                 setIsLoading(false);
                 authInitialized.current = true;
@@ -80,20 +107,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         initializeAuth();
     }, []); // Empty dependency array is correct here
-
-    // Handle authentication state changes
-    useEffect(() => {
-        if (!authInitialized.current) return;
-
-        // If auth was initialized but no user, redirect to login
-        if (!user) {
-            router.replace("/login");
-            return;
-        }
-
-        // User is authenticated, stop loading
-        setIsLoading(false);
-    }, [user, router]);
 
     // Push notification setup - only run when user is authenticated
     useEffect(() => {
@@ -174,9 +187,33 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         );
     }
 
-    // If no user after loading, redirect will be handled by the useEffect above
+    // If no user after loading, redirect based on onboarding status
     if (!user) {
-        return <Redirect href="/login" />;
+        if (redirectPath) {
+            return <Redirect href={redirectPath as any} />;
+        }
+        // Still determining redirect path
+        return (
+            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <MotiView
+                    from={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{
+                        type: "timing",
+                        duration: 500,
+                    }}
+                    exit={{ opacity: 0, scale: 0.9 }}>
+                    <Image
+                        source={require("@/assets/splash-icon.png")}
+                        style={{
+                            width: 120,
+                            height: 120,
+                            resizeMode: "contain",
+                        }}
+                    />
+                </MotiView>
+            </ThemedView>
+        );
     }
 
     return (
