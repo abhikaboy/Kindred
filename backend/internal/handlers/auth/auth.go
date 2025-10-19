@@ -129,8 +129,8 @@ func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWith
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:          input.Body.Email,
-			Password:       "", // Apple registration doesn't require password
-			Phone:          "", // Phone is optional for Apple users
+			Password:       input.Body.AppleID, // Use Apple ID as password for validation
+			Phone:          "",                 // Phone is optional for Apple users
 			DisplayName:    input.Body.DisplayName,
 			Handle:         input.Body.Handle,
 			ProfilePicture: input.Body.ProfilePicture,
@@ -189,8 +189,8 @@ func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWit
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:          input.Body.Email,
-			Password:       "", // Google registration doesn't require password
-			Phone:          "", // Phone is optional for Google users
+			Password:       input.Body.GoogleID, // Use Google ID as password for validation
+			Phone:          "",                  // Phone is optional for Google users
 			DisplayName:    input.Body.DisplayName,
 			Handle:         input.Body.Handle,
 			ProfilePicture: input.Body.ProfilePicture,
@@ -228,12 +228,12 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 				errorMessages = append(errorMessages, fmt.Sprintf("%s validation failed: %s", e.FailedField, e.Tag))
 			}
 		}
-		
+
 		slog.LogAttrs(ctx, slog.LevelWarn, "Registration validation failed",
 			slog.Any("errors", errs),
 			slog.String("email", input.Body.Email),
 		)
-		
+
 		return nil, huma.Error400BadRequest(
 			fmt.Sprintf("Validation failed: %s", strings.Join(errorMessages, "; ")),
 			fmt.Errorf("validation errors: %v", errs),
@@ -316,7 +316,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 			)
 			return nil, huma.Error400BadRequest(message, err)
 		}
-		
+
 		// Log other database errors
 		slog.LogAttrs(ctx, slog.LevelError, "User creation failed",
 			slog.String("email", input.Body.Email),

@@ -21,6 +21,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { router } from "expo-router";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 import { DrawerProvider } from "@/contexts/drawerContext";
+import { FocusModeProvider } from "@/contexts/focusModeContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -131,29 +132,31 @@ export default Sentry.wrap(function RootLayout() {
             <AnimatePresence>
                 <AuthProvider>
                     <OnboardingProvider>
-                        <TasksProvider>
-                            <TaskCreationProvider>
-                                <BlueprintCreationProvider>
-                                    <DrawerProvider>
-                                        <GestureHandlerRootView style={{ flex: 1 }}>
-                                            <BottomSheetModalProvider>
-                                                <Toastable
-                                                    statusMap={{
-                                                        success: ThemedColor.success,
-                                                        danger: ThemedColor.danger,
-                                                        warning: ThemedColor.warning,
-                                                        info: ThemedColor.primary,
-                                                    }}
-                                                    offset={top}
-                                                />
-                                                <Slot />
-                                                <StatusBar style="light" />
-                                            </BottomSheetModalProvider>
-                                        </GestureHandlerRootView>
-                                    </DrawerProvider>
-                                </BlueprintCreationProvider>
-                            </TaskCreationProvider>
-                        </TasksProvider>
+                        <FocusModeProvider>
+                            <TasksProvider>
+                                <TaskCreationProvider>
+                                    <BlueprintCreationProvider>
+                                        <DrawerProvider>
+                                            <GestureHandlerRootView style={{ flex: 1 }}>
+                                                <BottomSheetModalProvider>
+                                                    <Toastable
+                                                        statusMap={{
+                                                            success: ThemedColor.success,
+                                                            danger: ThemedColor.danger,
+                                                            warning: ThemedColor.warning,
+                                                            info: ThemedColor.primary,
+                                                        }}
+                                                        offset={top}
+                                                    />
+                                                    <Slot />
+                                                    <StatusBar style="light" />
+                                                </BottomSheetModalProvider>
+                                            </GestureHandlerRootView>
+                                        </DrawerProvider>
+                                    </BlueprintCreationProvider>
+                                </TaskCreationProvider>
+                            </TasksProvider>
+                        </FocusModeProvider>
                     </OnboardingProvider>
                 </AuthProvider>
             </AnimatePresence>

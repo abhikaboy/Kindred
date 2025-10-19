@@ -376,6 +376,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
         setIsLoading(true);
         try {
+            console.log('DEBUG - Full onboardingData:', onboardingData);
+            console.log('DEBUG - Email value:', onboardingData.email);
+            console.log('DEBUG - Email type:', typeof onboardingData.email);
             console.log('Registering with Apple data:', {
                 apple_id: onboardingData.appleId,
                 email: onboardingData.email,
@@ -384,7 +387,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 profile_picture: profilePic,
             });
             
-            // Register with Apple - send all data at once
+            // Register with Apple - send all data at once (no password field for Apple registration)
             const result = await appleRegisterMutation.mutateAsync({
                 body: {
                     apple_id: onboardingData.appleId,

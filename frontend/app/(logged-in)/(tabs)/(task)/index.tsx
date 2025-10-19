@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
+import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity, Switch } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -36,6 +36,7 @@ import { getEncouragementsAPI } from "@/api/encouragement";
 import { getCongratulationsAPI } from "@/api/congratulation";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusMode } from "@/contexts/focusModeContext";
 
 type Props = {};
 
@@ -51,6 +52,7 @@ const Home = (props: Props) => {
     const [encouragementCount, setEncouragementCount] = useState(0);
     const [congratulationCount, setCongratulationCount] = useState(0);
     const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(false);
+    const { focusMode, toggleFocusMode } = useFocusMode();
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -174,9 +176,9 @@ const Home = (props: Props) => {
             />
             
             <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-                <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
-                    <Feather name="menu" size={24} color={ThemedColor.caption} />
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
+                        <Feather name="menu" size={24} color={ThemedColor.caption} />
+                    </TouchableOpacity>
 
                 <ConditionalView condition={selected === ""}>
                     <View style={styles.headerContainer}>
@@ -234,6 +236,18 @@ const Home = (props: Props) => {
                                         </View>
                                     </BasicCard>
                                 </TouchableOpacity>
+                                <BasicCard>
+                                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                        <ThemedText type="default">Focus</ThemedText>
+                                        <Switch
+                                            value={focusMode}
+                                            onValueChange={toggleFocusMode}
+                                            trackColor={{ false: ThemedColor.caption + "40", true: ThemedColor.primary }}
+                                            thumbColor={focusMode ? ThemedColor.tint : "#f4f3f4"}
+                                            ios_backgroundColor={ThemedColor.caption + "40"}
+                                        />
+                                    </View>
+                                </BasicCard>
                                 <DashboardCards drawerRef={drawerRef} />
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>
                                 <ScrollView 

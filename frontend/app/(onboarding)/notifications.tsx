@@ -39,12 +39,12 @@ const NotificationsOnboarding = (props: Props) => {
     }, []);
 
     const handleContinue = () => {
-        // Navigate to the main app without requesting permissions
-        router.replace('/(logged-in)/(tabs)/(task)' as any);
+        // Navigate to the accomplishment screen
+        router.push('/(onboarding)/accomplishment');
     };
 
     const handleSkip = () => {
-        router.replace('/(logged-in)/(tabs)/(task)' as any);
+        router.push('/(onboarding)/accomplishment');
     };
 
     return (

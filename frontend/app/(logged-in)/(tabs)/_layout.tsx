@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Dimensions, Platform, TouchableOpacity, View, Animated } from "react-native";
 import { usePathname } from "expo-router";
@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
+import { useFocusMode } from "@/contexts/focusModeContext";
 
 // Custom tab button components
 const TasksTabButton = (props: any) => {
@@ -22,23 +23,44 @@ const TasksTabButton = (props: any) => {
 };
 
 const FeedTabButton = (props: any) => {
+    const { focusMode } = useFocusMode();
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
     const isSelected = currentIndex === 1; // Feed is the second tab
+    
+    // Disable button when focus mode is enabled
+    if (focusMode) {
+        return null;
+    }
+    
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
 const SearchTabButton = (props: any) => {
+    const { focusMode } = useFocusMode();
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
     const isSelected = currentIndex === 2; // Search is the third tab
+    
+    // Disable button when focus mode is enabled
+    if (focusMode) {
+        return null;
+    }
+    
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
 const ProfileTabButton = (props: any) => {
+    const { focusMode } = useFocusMode();
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
     const isSelected = currentIndex === 3; // Profile is the fourth tab
+    
+    // Disable button when focus mode is enabled
+    if (focusMode) {
+        return null;
+    }
+    
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
@@ -49,12 +71,24 @@ export const unstable_settings = {
 export default function TabLayout() {
     let ThemedColor = useThemeColor();
     const pathname = usePathname();
+    const router = useRouter();
     const { isDrawerOpen } = useDrawer();
+    const { focusMode } = useFocusMode();
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
     };
+
+    // Redirect to task tab if focus mode is enabled and user is on a non-task tab
+    useEffect(() => {
+        if (focusMode) {
+            const isOnTaskTab = pathname.includes("/(task)");
+            if (!isOnTaskTab) {
+                router.replace("/(logged-in)/(tabs)/(task)/" as any);
+            }
+        }
+    }, [focusMode, pathname]);
 
     // Create animated value for tab bar visibility
     const tabBarOpacity = React.useRef(new Animated.Value(1)).current;
@@ -68,7 +102,7 @@ export default function TabLayout() {
         // Add other screen paths where you want to hide tabs
     ];
 
-    const shouldHideTabBar = hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen;
+    const shouldHideTabBar = hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen || focusMode;
 
     // Animate tab bar visibility
     useEffect(() => {
