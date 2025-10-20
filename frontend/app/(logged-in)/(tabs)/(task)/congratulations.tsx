@@ -38,13 +38,19 @@ export default function Congratulations() {
         try {
             setLoading(true);
             const data = await getCongratulationsAPI();
-            setCongratulations(data);
+            
+            // Sort by timestamp in reverse chronological order (newest first)
+            const sortedData = [...data].sort((a, b) => {
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            });
+            
+            setCongratulations(sortedData);
 
             // Mark all congratulations as read
-            if (data.length > 0) {
+            if (sortedData.length > 0) {
                 try {
                     // Get IDs of unread congratulations
-                    const unreadIds = data.filter((con) => !con.read).map((con) => con.id);
+                    const unreadIds = sortedData.filter((con) => !con.read).map((con) => con.id);
 
                     if (unreadIds.length > 0) {
                         await markCongratulationsReadAPI(unreadIds);
@@ -131,11 +137,11 @@ export default function Congratulations() {
 
                                     {/* Task Info */}
                                     <View style={styles.taskInfo}>
-                                        <ThemedText type="default" style={{...styles.categoryText, maxWidth: "60%"} }>
+                                        <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
                                             {congratulation.categoryName}
                                         </ThemedText>
                                         <View style={styles.dot} />
-                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}}>
+                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}} numberOfLines={1}>
                                             {congratulation.taskName}
                                         </ThemedText>
                                     </View>
@@ -271,22 +277,24 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
             alignItems: "center",
             gap: 8,
             marginBottom: 4,
-            textAlign: "left",
+            flexWrap: "nowrap",
         },
         categoryText: {
             color: ThemedColor.primary,
             fontSize: 16,
-            textAlign: "left",
+            flexShrink: 1,
         },
         dot: {
             width: 4,
             height: 4,
             borderRadius: 2,
             backgroundColor: ThemedColor.caption,
+            flexShrink: 0,
         },
         taskName: {
             color: ThemedColor.text,
             fontSize: 16,
+            flexShrink: 1,
         },
         messageContainer: {
             marginTop: 4,

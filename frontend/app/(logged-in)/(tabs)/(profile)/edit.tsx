@@ -8,10 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Svg, { Path, Rect } from "react-native-svg";
 import InputGroup from "@/components/inputs/InputGroup";
-import * as ImagePicker from "expo-image-picker";
 import { uploadImageSmart } from "@/api/upload";
 import { updateProfile } from "@/api/profile";
 import { router } from "expo-router";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -28,32 +28,15 @@ const Edit = () => {
     const [pushNotifications, setPushNotifications] = useState(false);
     const [todaysTasks, setTodaysTasks] = useState(false);
 
+    const { pickImage: pickImageFromLibrary } = useMediaLibrary();
+
     const pickImage = async () => {
-        try {
-            // Request permissions
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-            if (status !== "granted") {
-                alert("Sorry, we need camera roll permissions to make this work!");
-                return;
-            }
-
-            // Launch image picker
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.6,
-            });
-
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const imageUri = result.assets[0].uri;
-                setSelectedImage(imageUri);
-                console.log("Selected image:", imageUri);
-            }
-        } catch (error) {
-            console.error("Image picker error:", error);
-            alert("Failed to pick image. Please try again.");
+        const result = await pickImageFromLibrary();
+        
+        if (result && !result.canceled && result.assets && result.assets.length > 0) {
+            const imageUri = result.assets[0].uri;
+            setSelectedImage(imageUri);
+            console.log("Selected image:", imageUri);
         }
     };
 

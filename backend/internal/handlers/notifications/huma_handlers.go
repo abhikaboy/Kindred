@@ -70,43 +70,42 @@ func (h *Handler) GetNotificationsHuma(ctx context.Context, input *GetNotificati
 
 // MarkNotificationsReadHuma handles PATCH /v1/notifications/read
 func (h *Handler) MarkNotificationsReadHuma(ctx context.Context, input *MarkNotificationsReadInput) (*MarkNotificationsReadOutput, error) {
-	// Validate input
-	errs := xvalidator.Validator.Validate(input)
-	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
-	}
-
 	// Extract user_id from context (set by auth middleware)
 	_, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
+	// Add explicit validation
+	errs := xvalidator.Validator.Validate(input)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	if len(input.Body.ID) == 0 {
+		return nil, huma.Error400BadRequest("No IDs provided", fmt.Errorf("id array cannot be empty"))
+	}
+
 	// Convert string IDs to ObjectIDs
-	var notificationIDs []primitive.ObjectID
-	for _, idStr := range input.NotificationIDs {
+	objectIDs := make([]primitive.ObjectID, len(input.Body.ID))
+	for i, idStr := range input.Body.ID {
 		id, err := primitive.ObjectIDFromHex(idStr)
 		if err != nil {
-			return nil, huma.Error400BadRequest("Invalid notification ID format", err)
+			return nil, huma.Error400BadRequest("Invalid ID format", fmt.Errorf("invalid ID at index %d: %s", i, idStr))
 		}
-		notificationIDs = append(notificationIDs, id)
+		objectIDs[i] = id
 	}
 
 	// Mark notifications as read
-	err = h.service.MarkNotificationsAsRead(notificationIDs)
+	err = h.service.MarkNotificationsAsRead(objectIDs)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to mark notifications as read", err)
 	}
 
-	return &MarkNotificationsReadOutput{
-		Body: struct {
-			Message string `json:"message" example:"Notifications marked as read successfully"`
-			Count   int    `json:"count" example:"2" doc:"Number of notifications marked as read"`
-		}{
-			Message: "Notifications marked as read successfully",
-			Count:   len(notificationIDs),
-		},
-	}, nil
+	resp := &MarkNotificationsReadOutput{}
+	resp.Body.Message = "Notifications marked as read successfully"
+	resp.Body.Count = len(objectIDs)
+	return resp, nil
 }
 
 // MarkAllNotificationsReadHuma handles PATCH /v1/notifications/read-all

@@ -175,7 +175,7 @@ const Home = (props: Props) => {
                 }}
             />
             
-            <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+            <ThemedView style={[styles.container, { paddingTop: insets.top, paddingBottom: focusMode ? 0 : Dimensions.get("screen").height * 0.12 }]}>
                     <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                         <Feather name="menu" size={24} color={ThemedColor.caption} />
                     </TouchableOpacity>
@@ -336,7 +336,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingBottom: Dimensions.get("screen").height * 0.12,
     },
     headerContainer: {
         paddingBottom: 24,

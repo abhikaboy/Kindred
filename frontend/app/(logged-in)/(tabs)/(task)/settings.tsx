@@ -21,8 +21,7 @@ export default function Settings() {
     const [settings, setSettings] = useState({
         friendActivity: true,
         nearDeadlines: true,
-        receiveEncouragements: true,
-        receiveCongrats: true,
+        showTaskDetails: true,
         recentWorkspaces: true,
     });
 
@@ -187,24 +186,11 @@ export default function Settings() {
 
                     <View style={styles.settingRow}>
                         <ThemedText type="lightBody" style={styles.settingLabel}>
-                            Recieve Encouragements
+                            Show Task Details
                         </ThemedText>
                         <Switch
-                            value={settings.receiveEncouragements}
-                            onValueChange={() => handleToggle('receiveEncouragements')}
-                            trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                            thumbColor={'#ffffff'}
-                            ios_backgroundColor={ThemedColor.tertiary}
-                        />
-                    </View>
-
-                    <View style={styles.settingRow}>
-                        <ThemedText type="lightBody" style={styles.settingLabel}>
-                            Recieve Congrats
-                        </ThemedText>
-                        <Switch
-                            value={settings.receiveCongrats}
-                            onValueChange={() => handleToggle('receiveCongrats')}
+                            value={settings.showTaskDetails}
+                            onValueChange={() => handleToggle('showTaskDetails')}
                             trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
                             thumbColor={'#ffffff'}
                             ios_backgroundColor={ThemedColor.tertiary}

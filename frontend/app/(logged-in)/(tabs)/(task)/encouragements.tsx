@@ -38,13 +38,19 @@ export default function Encouragements() {
         try {
             setLoading(true);
             const data = await getEncouragementsAPI();
-            setEncouragements(data);
+            
+            // Sort by timestamp in reverse chronological order (newest first)
+            const sortedData = [...data].sort((a, b) => {
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            });
+            
+            setEncouragements(sortedData);
 
             // Mark all encouragements as read
-            if (data.length > 0) {
+            if (sortedData.length > 0) {
                 try {
                     // Get IDs of unread encouragements
-                    const unreadIds = data.filter((enc) => !enc.read).map((enc) => enc.id);
+                    const unreadIds = sortedData.filter((enc) => !enc.read).map((enc) => enc.id);
 
                     if (unreadIds.length > 0) {
                         await markEncouragementsReadAPI(unreadIds);
@@ -131,11 +137,11 @@ export default function Encouragements() {
 
                                     {/* Task Info */}
                                     <View style={styles.taskInfo}>
-                                        <ThemedText type="default" style={{...styles.categoryText, maxWidth: "0%"} }>
+                                        <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
                                             {encouragement.categoryName}
                                         </ThemedText>
                                         <View style={styles.dot} />
-                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}}>
+                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}} numberOfLines={1}>
                                             {encouragement.taskName}
                                         </ThemedText>
                                     </View>
@@ -262,22 +268,24 @@ const createStyles = (ThemedColor: any, insets: any) =>
             alignItems: "center",
             gap: 8,
             marginBottom: 4,
-            textAlign: "left",
+            flexWrap: "nowrap",
         },
         categoryText: {
             color: ThemedColor.primary,
             fontSize: 16,
-            textAlign: "left",
+            flexShrink: 1,
         },
         dot: {
             width: 4,
             height: 4,
             borderRadius: 2,
             backgroundColor: ThemedColor.caption,
+            flexShrink: 0,
         },
         taskName: {
             color: ThemedColor.text,
             fontSize: 16,
+            flexShrink: 1,
         },
         messageContainer: {
             marginTop: 4,

@@ -90,16 +90,20 @@ type GetNotificationsOutput struct {
 
 // Mark Notifications as Read
 type MarkNotificationsReadInput struct {
-	Authorization   string   `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
-	RefreshToken    string   `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
-	NotificationIDs []string `json:"notification_ids" validate:"required" example:"[\"507f1f77bcf86cd799439011\",\"507f1f77bcf86cd799439012\"]" doc:"List of notification IDs to mark as read"`
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          MarkNotificationsReadBody
+}
+
+type MarkNotificationsReadBody struct {
+	ID []string `json:"id" validate:"required" doc:"List of notification IDs to mark as read"`
 }
 
 type MarkNotificationsReadOutput struct {
 	Body struct {
 		Message string `json:"message" example:"Notifications marked as read successfully"`
 		Count   int    `json:"count" example:"2" doc:"Number of notifications marked as read"`
-	} `json:"body"`
+	}
 }
 
 // Mark All Notifications as Read

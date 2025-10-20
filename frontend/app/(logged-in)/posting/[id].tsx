@@ -8,15 +8,26 @@ import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 import { getPostById } from "@/api/post";
 import { Ionicons } from "@expo/vector-icons";
 import { showToast } from "@/utils/showToast";
+import { useNavigation } from "expo-router";
 
 export default function PostDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
+    const navigation = useNavigation();
 
     const [post, setPost] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const handleBack = () => {
+        if (navigation.canGoBack()) {
+            router.back();
+        } else {
+            // No navigation stack, go to feed
+            router.replace("/(logged-in)/(tabs)/(feed)/" as any);
+        }
+    };
 
     useEffect(() => {
         const fetchPost = async () => {
@@ -81,7 +92,7 @@ export default function PostDetail() {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
+                    <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
                         <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
@@ -107,7 +118,7 @@ export default function PostDetail() {
                 </ThemedText>
                 <TouchableOpacity
                     style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
-                    onPress={() => router.back()}>
+                    onPress={handleBack}>
                     <ThemedText style={styles.retryButtonText}>Go Back</ThemedText>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -117,7 +128,7 @@ export default function PostDetail() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
+                <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
                     <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>

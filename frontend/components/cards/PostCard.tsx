@@ -8,6 +8,7 @@ import {
     Platform,
     KeyboardAvoidingView,
     Image as RNImage,
+    Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import CachedImage from "../CachedImage";
@@ -26,10 +27,14 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
-import { toggleReaction, updatePost } from "@/api/post";
+import { toggleReaction, updatePost, deletePost } from "@/api/post";
 import { useQueryClient } from '@tanstack/react-query';
 import { useTasks } from "@/contexts/tasksContext";
 import type { components } from "@/api/generated/types";
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { showToast } from "@/utils/showToast";
+import * as Clipboard from 'expo-clipboard';
+import * as SMS from 'expo-sms';
 
 type ImageSize = components["schemas"]["ImageSize"];
 
@@ -382,6 +387,152 @@ const PostCard = React.memo(({
         setCongratulateModalVisible(true);
     };
 
+    const handleCopyLink = async () => {
+        if (!id) return;
+        
+        try {
+            const postLink = `kindred://posting/${id}`;
+            await Clipboard.setStringAsync(postLink);
+            showToast('Link copied to clipboard!', 'success');
+        } catch (error) {
+            console.error('Error copying link:', error);
+            showToast('Failed to copy link', 'danger');
+        }
+    };
+
+    const handleSharePost = async () => {
+        if (!id) return;
+        
+        try {
+            await SMS.sendSMSAsync(
+                [], 
+                `Check out this post on Kindred! kindred://posting/${id}`
+            );
+        } catch (error) {
+            console.error('Error sharing post:', error);
+            showToast('Failed to share post', 'danger');
+        }
+    };
+
+    const showPostOptions = () => {
+        if (!id) {
+            return;
+        }
+
+        const isOwnPost = user?._id === userId;
+        
+        const options = [];
+
+        options.push({
+            text: "View Post",
+            onPress: () => router.push(`/(logged-in)/posting/${id}`),
+        });
+
+        options.push({
+            text: "Copy Link",
+            onPress: handleCopyLink,
+        });
+
+        options.push({
+            text: "Share",
+            onPress: handleSharePost,
+        });
+
+        if (isOwnPost) {
+            options.push({
+                text: "Delete Post",
+                style: "destructive" as const,
+                onPress: () => showDeleteConfirmation(),
+            });
+        } else {
+            options.push({
+                text: "Report Post",
+                style: "destructive" as const,
+                onPress: () => handleReportPost(),
+            });
+        }
+
+        options.push({
+            text: "Cancel",
+            style: "cancel" as const,
+        });
+
+        Alert.alert("Post Options", "", options);
+    };
+
+    const showDeleteConfirmation = () => {
+        Alert.alert(
+            "Delete Post",
+            "Are you sure you want to delete this post? This action cannot be undone.",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: handleDeletePost,
+                },
+            ]
+        );
+    };
+
+    const handleDeletePost = async () => {
+        if (!id) {
+            return;
+        }
+
+        try {
+            await deletePost(id);
+            showToast("Post deleted successfully", "success");
+            
+            // Invalidate queries to refresh the feed
+            queryClient.invalidateQueries({ queryKey: ['posts'] });
+            queryClient.invalidateQueries({ queryKey: ['friendsPosts'] });
+            queryClient.invalidateQueries({ queryKey: ['userPosts', userId] });
+            
+        } catch (error) {
+            console.error("Error deleting post:", error);
+            showToast("Failed to delete post", "danger");
+        }
+    };
+
+    const handleReportPost = () => {
+        Alert.alert(
+            "Report Post",
+            "Why are you reporting this post?",
+            [
+                {
+                    text: "Inappropriate content",
+                    onPress: () => submitReport("inappropriate"),
+                },
+                {
+                    text: "Spam",
+                    onPress: () => submitReport("spam"),
+                },
+                {
+                    text: "Harassment",
+                    onPress: () => submitReport("harassment"),
+                },
+                {
+                    text: "Other",
+                    onPress: () => submitReport("other"),
+                },
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+            ]
+        );
+    };
+
+    const submitReport = async (reason: string) => {
+        // TODO: Implement report submission to backend
+        console.log(`Reporting post ${id} for: ${reason}`);
+        showToast("Report submitted. Thank you for helping keep Kindred safe.", "info");
+    };
+
     const styles = stylesheet(ThemedColor);
 
     return (
@@ -412,9 +563,22 @@ const PostCard = React.memo(({
                                 </ThemedText>
                             </View>
                         </TouchableOpacity>
-                        <ThemedText type="caption" style={styles.timeText}>
-                            {formatTime(time)}
-                        </ThemedText>
+                        <View style={styles.timeAndMenu}>
+                            <TouchableOpacity
+                                onPress={showPostOptions}
+                                style={styles.menuButton}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons 
+                                    name="ellipsis-horizontal" 
+                                    size={20} 
+                                    color={ThemedColor.caption} 
+                                />
+                            </TouchableOpacity>
+                            <ThemedText type="caption" style={styles.timeText}>
+                                {formatTime(time)}
+                            </ThemedText>
+                        </View>
                     </View>
                     {memoizedImages && memoizedImages.length > 0 && (
                         <View style={styles.imageContainer}>
@@ -685,11 +849,18 @@ const stylesheet = (ThemedColor: any) =>
             fontWeight: "300",
             color: ThemedColor.caption,
         },
+        timeAndMenu: {
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+        },
         timeText: {
             fontSize: 12,
             fontWeight: "400",
             color: ThemedColor.caption,
-            width: 48,
+        },
+        menuButton: {
+            padding: 2,
         },
         categorySection: {
             flexDirection: "row",

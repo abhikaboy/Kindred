@@ -5,11 +5,11 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import Dropdown from "@/components/inputs/Dropdown";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
-import * as ImagePicker from "expo-image-picker";
 import { uploadImageSmart } from "@/api/upload";
 import { Ionicons } from "@expo/vector-icons";
 import { ObjectId } from "bson";
 import CachedImage from "../CachedImage";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 
 // Common habit categories
 const HABIT_CATEGORIES = [
@@ -40,6 +40,8 @@ const Details = ({ data, onUpdate }: Props) => {
     const [isUploading, setIsUploading] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
     const [showCustomCategory, setShowCustomCategory] = useState(false);
+    
+    const { pickImage: pickImageFromLibrary } = useMediaLibrary();
     
     // Initialize selected category
     const [selectedCategory, setSelectedCategory] = useState(() => {
@@ -80,31 +82,15 @@ const Details = ({ data, onUpdate }: Props) => {
     };
 
     const pickImage = async () => {
-        try {
-            // Request permissions
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const result = await pickImageFromLibrary({
+            aspect: [16, 9], // Banner aspect ratio
+            quality: 0.8,
+        });
 
-            if (status !== "granted") {
-                Alert.alert("Permission Required", "Sorry, we need camera roll permissions to select a banner image!");
-                return;
-            }
-
-            // Launch image picker
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [16, 9], // Banner aspect ratio
-                quality: 0.8,
-            });
-
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const imageUri = result.assets[0].uri;
-                setSelectedImageUri(imageUri);
-                await uploadBannerImage(imageUri);
-            }
-        } catch (error) {
-            console.error("Image picker error:", error);
-            Alert.alert("Error", "Failed to pick image. Please try again.");
+        if (result && !result.canceled && result.assets && result.assets.length > 0) {
+            const imageUri = result.assets[0].uri;
+            setSelectedImageUri(imageUri);
+            await uploadBannerImage(imageUri);
         }
     };
 

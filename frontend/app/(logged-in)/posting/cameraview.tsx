@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { router, useLocalSearchParams } from "expo-router";
 import { BlurView } from "expo-blur";
-import * as ImagePicker from "expo-image-picker";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 
 export default function Posting() {
     const insets = useSafeAreaInsets();
@@ -24,6 +24,8 @@ export default function Posting() {
     const [viewMode, setViewMode] = useState<"camera" | "preview">("camera");
     const flatListRef = useRef<FlatList>(null);
     let ThemedColor = useThemeColor();
+
+    const { pickImage: pickImageFromLibrary } = useMediaLibrary();
 
     const params = useLocalSearchParams();
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
@@ -51,12 +53,12 @@ export default function Posting() {
     };
 
     const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.5,
+        const result = await pickImageFromLibrary({
             allowsMultipleSelection: true,
+            quality: 0.5,
         });
-        if (!result.canceled && result.assets && result.assets.length > 0) {
+        
+        if (result && !result.canceled && result.assets && result.assets.length > 0) {
             const newPhotos = result.assets.map((asset) => asset.uri);
             const previousLength = photos.length;
             setPhotos([...photos, ...newPhotos]);

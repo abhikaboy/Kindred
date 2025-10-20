@@ -8,12 +8,12 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import * as ImagePicker from 'expo-image-picker';
 import Svg, { Path, Rect } from "react-native-svg";
 import { showToast } from "@/utils/showToast";
 import { uploadImageSmart } from "@/api/upload";
 import { useAuth } from "@/hooks/useAuth";
 import { ObjectId } from "bson";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -27,6 +27,8 @@ const PhotoOnboarding = (props: Props) => {
     
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+
+    const { pickImage: pickImageFromLibrary } = useMediaLibrary();
 
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -48,41 +50,14 @@ const PhotoOnboarding = (props: Props) => {
                 useNativeDriver: true,
             }),
         ]).start();
-
-        // Request permissions
-        (async () => {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                showToast('Camera roll permissions are needed to select a photo', 'warning');
-            }
-        })();
     }, []);
 
     const pickImage = async () => {
-        try {
-            // Request permissions
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-            if (status !== "granted") {
-                showToast("Camera roll permissions are required to select a photo", "warning");
-                return;
-            }
-
-            // Launch image picker
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.6,
-            });
-
-            if (!result.canceled && result.assets[0]) {
-                const uri = result.assets[0].uri;
-                setSelectedImage(uri);
-            }
-        } catch (error) {
-            console.error('Error picking image:', error);
-            showToast("Failed to pick image. Please try again.", "danger");
+        const result = await pickImageFromLibrary();
+        
+        if (result && !result.canceled && result.assets && result.assets[0]) {
+            const uri = result.assets[0].uri;
+            setSelectedImage(uri);
         }
     };
 
@@ -156,7 +131,7 @@ const PhotoOnboarding = (props: Props) => {
 
     const handleSkip = async () => {
         // Set a default profile picture and register directly
-        const defaultPicture = "https://i.pinimg.com/736x/bd/46/35/bd463547b9ae986ba4d44d717828eb09.jpg";
+        const defaultPicture = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
         updateProfilePicture(defaultPicture);
         
         setIsUploading(true);

@@ -80,16 +80,6 @@ export default function TabLayout() {
         setModalVisible(!modalVisible);
     };
 
-    // Redirect to task tab if focus mode is enabled and user is on a non-task tab
-    useEffect(() => {
-        if (focusMode) {
-            const isOnTaskTab = pathname.includes("/(task)");
-            if (!isOnTaskTab) {
-                router.replace("/(logged-in)/(tabs)/(task)/" as any);
-            }
-        }
-    }, [focusMode, pathname]);
-
     // Create animated value for tab bar visibility
     const tabBarOpacity = React.useRef(new Animated.Value(1)).current;
     const tabBarTranslateY = React.useRef(new Animated.Value(0)).current;
