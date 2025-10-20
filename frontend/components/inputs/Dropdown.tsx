@@ -14,6 +14,7 @@ import Animated, {
     FadeOutDown,
     useAnimatedStyle,
     useSharedValue,
+    withTiming,
 } from "react-native-reanimated";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import * as Haptics from "expo-haptics";
@@ -58,6 +59,18 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
         };
     });
 
+    const arrowRotation = useAnimatedStyle(() => {
+        return {
+            transform: [
+                {
+                    rotate: withTiming(expanded.value ? '180deg' : '0deg', {
+                        duration: 200,
+                    }),
+                },
+            ],
+        };
+    });
+
     const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
     const AnimatedArrow = Animated.createAnimatedComponent(Entypo);
     return (
@@ -87,23 +100,12 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                     },
                 ]}>
                 <ThemedText type="lightBody">{selected.label || "Select a Category"}</ThemedText>
-                {expandedState ? (
-                    <AnimatedArrow
-                        name="chevron-down"
-                        size={16}
-                        color={ThemedColor.text}
-                        entering={FadeIn}
-                        exiting={FadeOut}
-                    />
-                ) : (
-                    <AnimatedArrow
-                        name="chevron-up"
-                        size={16}
-                        color={ThemedColor.text}
-                        entering={FadeIn}
-                        exiting={FadeOut}
-                    />
-                )}
+                <AnimatedArrow
+                    name="chevron-up"
+                    size={16}
+                    color={ThemedColor.text}
+                    style={arrowRotation}
+                />
             </AnimatedTouchableOpacity>
             {expandedState && (
                 <Animated.View

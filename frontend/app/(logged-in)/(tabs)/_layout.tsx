@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Dimensions, Platform, TouchableOpacity, View, Animated } from "react-native";
 import { usePathname } from "expo-router";
 
@@ -13,6 +13,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
+import { useTasks } from "@/contexts/tasksContext";
 
 // Custom tab button components
 const TasksTabButton = (props: any) => {
@@ -74,11 +75,17 @@ export default function TabLayout() {
     const router = useRouter();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
+    const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
     };
+
+    // Calculate total tasks for today
+    const todayTaskCount = useMemo(() => {
+        return startTodayTasks.length + dueTodayTasks.length + windowTasks.length;
+    }, [startTodayTasks, dueTodayTasks, windowTasks]);
 
     // Create animated value for tab bar visibility
     const tabBarOpacity = React.useRef(new Animated.Value(1)).current;
@@ -185,7 +192,7 @@ export default function TabLayout() {
                 options={{
                     title: "Tasks",
                     tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
-                    tabBarBadge: 1,
+                    tabBarBadge: todayTaskCount > 0 ? todayTaskCount : undefined,
                     tabBarButton: TasksTabButton,
                     tabBarAccessibilityLabel: "Tasks",
                 }}

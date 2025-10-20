@@ -117,7 +117,7 @@ export default function Friends() {
 
                 {/* Friends Section */}
                 <View style={styles.contentContainer}>
-                    <ThemedText type="caption" style={[styles.sectionHeader, { color: ThemedColor.secondaryText }]}>
+                    <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
                         FRIENDS
                     </ThemedText>
                     
@@ -185,7 +185,7 @@ export default function Friends() {
             <View style={styles.contentContainer}>
                 {/* Friends Section */}
                 <View style={styles.section}>
-                    <ThemedText type="caption" style={[styles.sectionHeader, { color: ThemedColor.secondaryText }]}>
+                    <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
                         FRIENDS
                     </ThemedText>
                     
@@ -242,6 +242,7 @@ const styles = StyleSheet.create({
     contentContainer: {
         flex: 1,
         paddingHorizontal: 20,
+        paddingBottom: Dimensions.get("window").height * 0.1,
     },
     section: {
         flex: 1,

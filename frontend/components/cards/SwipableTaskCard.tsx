@@ -43,15 +43,6 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
         try {
             const res = await removeFromCategoryAPI(categoryId, taskId);
             removeFromCategory(categoryId, taskId);
-            showToastable({
-                title: "Task deleted!",
-                status: "danger",
-                position: "top",
-                swipeDirection: "up",
-                duration: 2500,
-                message: "Task deleted!",
-                renderContent: (props) => <DefaultToast {...props} />,
-            });
             console.log(res);
         } catch (error) {
             console.log(error);

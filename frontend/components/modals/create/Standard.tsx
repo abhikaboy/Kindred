@@ -1,4 +1,4 @@
-import { Dimensions, Keyboard, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Dimensions, Keyboard, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect } from "react";
 import ThemedInput from "../../inputs/ThemedInput";
 import Dropdown from "../../inputs/Dropdown";
@@ -120,11 +120,14 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         
         if (availableCategories.length === 0) return;
         
+        // Trim trailing newlines and whitespace from task name
+        const trimmedTaskName = taskName.replace(/[\n\r]+$/g, '').trim();
+        
         if (isBlueprint) {
             // For blueprint mode, create task locally with proper TaskDocument structure
             const newTask: components["schemas"]["TaskDocument"] = {
                 id: new ObjectId().toString(), // Temporary ID for local use
-                content: taskName,
+                content: trimmedTaskName,
                 priority: priority,
                 value: value,
                 recurring: recurring,
@@ -154,7 +157,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         
         // Normal mode - create task via API
         let postBody: CreateTaskParams = {
-            content: taskName,
+            content: trimmedTaskName,
             priority: priority,
             value: value,
             recurring: recurring,
@@ -185,8 +188,11 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     const updatePost = async () => {
         if (!task) return;
         
+        // Trim trailing newlines and whitespace from task name
+        const trimmedTaskName = taskName.replace(/[\n\r]+$/g, '').trim();
+        
         const updateData: components["schemas"]["UpdateTaskDocument"] = {
-            content: taskName,
+            content: trimmedTaskName,
             priority: priority,
             value: value,
             recurring: recurring,
@@ -219,7 +225,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         };
         
         updateTask(targetCategoryId, task.id, {
-            content: taskName,
+            content: trimmedTaskName,
             priority: priority,
             value: value,
             recurring: recurring,
@@ -261,7 +267,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     }
 
     return (
-        <View style={{ gap: 8, flexDirection: "column", display: "flex" }} onTouchStart={() => Keyboard.dismiss()}>
+        <View style={{ gap: 8, flexDirection: "column", display: "flex" }} >
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
                 <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}></View>
             </View>
@@ -320,32 +326,35 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
             </View>
-            <ThemedInput
-                ghost
-                autofocus={taskName.length === 0}
-                ref={nameRef as React.Ref<React.ElementRef<typeof BottomSheetTextInput>>}
-                placeHolder="Enter the Task Name"
-                onSubmit={() => {
-                    createPost();
-                    hide();
-                }}
-                onBlur={() => {
-                    nameRef.current?.blur();
-                    Keyboard.dismiss();
-                }}
-                onChangeText={(text) => {
-                    setTaskName(text);
-                }}
-                value={taskName}
-                setValue={setTaskName}
-                textStyle={{
-                    fontSize: 24,
-                    fontFamily: "Outfit",
-                    fontWeight: 500,
-                    letterSpacing: -0.2,
-                }}
-            />
-            <PrimaryOptionRow />
+            <View onStartShouldSetResponder={() => true}>
+                <ThemedInput
+                    ghost
+                    autofocus={taskName.length === 0}
+                    ref={nameRef as React.Ref<React.ElementRef<typeof BottomSheetTextInput>>}
+                    placeHolder="Enter the Task Name"
+                    textArea
+                    onSubmit={() => {
+                        createPost();
+                        hide();
+                    }}
+                    onBlur={() => {
+                        nameRef.current?.blur();
+                        Keyboard.dismiss();
+                    }}
+                    onChangeText={(text) => {
+                        setTaskName(text);
+                    }}
+                    value={taskName}
+                    setValue={setTaskName}
+                    textStyle={{
+                        fontSize: 24,
+                        fontFamily: "Outfit",
+                        fontWeight: 500,
+                        letterSpacing: -0.2,
+                    }}
+                />
+            </View>
+            <PrimaryOptionRow goTo={goTo} />
             <AdvancedOptionList goTo={goTo} showUnconfigured={false} />
             <TouchableOpacity
                 onPress={() => {
@@ -373,14 +382,15 @@ export default Standard;
 
 const styles = StyleSheet.create({});
 
-const PrimaryOptionRow = () => {
+const PrimaryOptionRow = ({ goTo }: { goTo: (screen: Screen) => void }) => {
     const ThemedColor = useThemeColor();
     const [showPriority, setShowPriority] = useState(false);
-    const { priority, setPriority, value, setValue, isPublic, setIsPublic } = useTaskCreation();
+    const { priority, setPriority, value, setValue, isPublic, setIsPublic, deadline } = useTaskCreation();
     return (
-        <View
-            style={{
-                flexDirection: "row",
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
                 gap: 8,
                 alignItems: "center",
                 marginTop: Dimensions.get("screen").height * 0.05,
@@ -391,7 +401,7 @@ const PrimaryOptionRow = () => {
                 priority={priority}
                 setPriority={setPriority}
             />
-            <DifficultyPopover value={value} setValue={setValue} />
+            <DeadlineQuickAccess goTo={goTo} />
             <TouchableOpacity
                 onPress={() => {
                     setIsPublic(!isPublic);
@@ -410,7 +420,8 @@ const PrimaryOptionRow = () => {
                 <Feather name={isPublic ? "eye" : "eye-off"} size={20} color={ThemedColor.text} />
                 <ThemedText type="lightBody">{isPublic ? "Public" : "Private"}</ThemedText>
             </TouchableOpacity>
-        </View>
+            <DifficultyPopover value={value} setValue={setValue} />
+        </ScrollView>
     );
 };
 
@@ -544,6 +555,42 @@ const DifficultyPopover = ({ value, setValue }: { value: number; setValue: (valu
             </ThemedText>
             <ThemedSlider setStep={setValue} width={0.7} />
         </Popover>
+    );
+};
+
+const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
+    const ThemedColor = useThemeColor();
+    const { deadline } = useTaskCreation();
+    const ICON_SIZE = 20;
+    
+    // Hide the button when deadline is set
+    if (deadline) {
+        return null;
+    }
+    
+    return (
+        <TouchableOpacity
+            onPress={() => goTo(Screen.DEADLINE)}
+            style={{
+                backgroundColor: ThemedColor.background,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ThemedColor.tertiary,
+                flexDirection: "row",
+                gap: 4,
+                padding: 12,
+            }}>
+            <Feather 
+                name="alert-circle" 
+                size={ICON_SIZE} 
+                color={ThemedColor.text} 
+            />
+            <ThemedText type="lightBody">
+                Deadline
+            </ThemedText>
+        </TouchableOpacity>
     );
 };
 

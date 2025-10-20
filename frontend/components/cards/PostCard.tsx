@@ -17,7 +17,7 @@ import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import Carousel from "react-native-reanimated-carousel";
-import { Directions } from "react-native-gesture-handler";
+import { Directions, GestureDetector, Gesture } from "react-native-gesture-handler";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -35,8 +35,191 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { showToast } from "@/utils/showToast";
 import * as Clipboard from 'expo-clipboard';
 import * as SMS from 'expo-sms';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 
 type ImageSize = components["schemas"]["ImageSize"];
+
+/* 
+ * PINCH-TO-ZOOM FEATURE - CURRENTLY DISABLED
+ * To re-enable: uncomment this component and update the usage below
+ * 
+// PinchableImage component for Instagram-like pinch-to-zoom
+const PinchableImage = ({ source, style, onLongPress }: { source: any; style: any; onLongPress: () => void }) => {
+    const scale = useSharedValue(1);
+    const savedScale = useSharedValue(1);
+    const translateX = useSharedValue(0);
+    const translateY = useSharedValue(0);
+    const savedTranslateX = useSharedValue(0);
+    const savedTranslateY = useSharedValue(0);
+    const focalX = useSharedValue(0);
+    const focalY = useSharedValue(0);
+    
+    // Memoize screen dimensions to prevent repeated calls
+    const screenWidth = useMemo(() => Dimensions.get('window').width, []);
+
+    const pinchGesture = Gesture.Pinch()
+        .onStart((e) => {
+            'worklet';
+            try {
+                savedScale.value = scale.value;
+                savedTranslateX.value = translateX.value;
+                savedTranslateY.value = translateY.value;
+                // Store focal point with safety checks
+                focalX.value = e.focalX ?? 0;
+                focalY.value = e.focalY ?? 0;
+            } catch (error) {
+                // Fail silently to prevent crashes
+                console.log('Pinch gesture start error:', error);
+            }
+        })
+        .onUpdate((e) => {
+            'worklet';
+            try {
+                // Clamp scale between 0.5 and 4 to prevent extreme values
+                const newScale = Math.max(0.5, Math.min(4, savedScale.value * e.scale));
+                scale.value = newScale;
+                
+                // Calculate translation to zoom into focal point
+                const deltaScale = newScale - savedScale.value;
+                const centerX = screenWidth / 2;
+                const centerY = screenWidth / 2;
+                
+                // Add bounds checking to prevent NaN values
+                const focalXValue = isFinite(focalX.value) ? focalX.value : centerX;
+                const focalYValue = isFinite(focalY.value) ? focalY.value : centerY;
+                
+                const newTranslateX = savedTranslateX.value + (centerX - focalXValue) * deltaScale;
+                const newTranslateY = savedTranslateY.value + (centerY - focalYValue) * deltaScale;
+                
+                // Only update if values are finite
+                if (isFinite(newTranslateX)) translateX.value = newTranslateX;
+                if (isFinite(newTranslateY)) translateY.value = newTranslateY;
+            } catch (error) {
+                // Fail silently to prevent crashes
+                console.log('Pinch gesture update error:', error);
+            }
+        })
+        .onEnd(() => {
+            'worklet';
+            try {
+                // Always reset to normal when pinch ends
+                scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+                translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
+                translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+                savedScale.value = 1;
+                savedTranslateX.value = 0;
+                savedTranslateY.value = 0;
+            } catch (error) {
+                // Fail silently to prevent crashes
+                console.log('Pinch gesture end error:', error);
+            }
+        });
+
+    const panGesture = Gesture.Pan()
+        .maxPointers(1)
+        .onStart(() => {
+            'worklet';
+            try {
+                savedTranslateX.value = translateX.value;
+                savedTranslateY.value = translateY.value;
+            } catch (error) {
+                console.log('Pan gesture start error:', error);
+            }
+        })
+        .onUpdate((e) => {
+            'worklet';
+            try {
+                // Only allow panning when zoomed in
+                if (scale.value > 1.1) {
+                    const newTranslateX = savedTranslateX.value + (e.translationX ?? 0);
+                    const newTranslateY = savedTranslateY.value + (e.translationY ?? 0);
+                    
+                    // Add reasonable bounds to prevent excessive panning
+                    const maxTranslate = screenWidth * scale.value;
+                    translateX.value = Math.max(-maxTranslate, Math.min(maxTranslate, newTranslateX));
+                    translateY.value = Math.max(-maxTranslate, Math.min(maxTranslate, newTranslateY));
+                }
+            } catch (error) {
+                console.log('Pan gesture update error:', error);
+            }
+        })
+        .onEnd(() => {
+            'worklet';
+            try {
+                savedTranslateX.value = translateX.value;
+                savedTranslateY.value = translateY.value;
+            } catch (error) {
+                console.log('Pan gesture end error:', error);
+            }
+        });
+
+    // Combine pinch and pan gestures
+    const composed = Gesture.Simultaneous(pinchGesture, panGesture);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        'worklet';
+        try {
+            return {
+                transform: [
+                    { translateX: isFinite(translateX.value) ? translateX.value : 0 },
+                    { translateY: isFinite(translateY.value) ? translateY.value : 0 },
+                    { scale: isFinite(scale.value) ? scale.value : 1 },
+                ] as any,
+            };
+        } catch (error) {
+            // Return default transform if error occurs
+            return {
+                transform: [
+                    { translateX: 0 },
+                    { translateY: 0 },
+                    { scale: 1 },
+                ] as any,
+            };
+        }
+    });
+
+    return (
+        <GestureDetector gesture={composed}>
+            <Animated.View style={[{ width: '100%', height: '100%' }, animatedStyle]}>
+                <TouchableOpacity 
+                    onLongPress={onLongPress}
+                    activeOpacity={1}
+                    style={{ width: '100%', height: '100%' }}
+                    delayLongPress={500}
+                >
+                    <CachedImage 
+                        source={source}
+                        style={style}
+                        variant="large"
+                        useLocalPlaceholder
+                        cachePolicy="memory-disk"
+                    />
+                </TouchableOpacity>
+            </Animated.View>
+        </GestureDetector>
+    );
+};
+*/
+
+// Simple image component without pinch-to-zoom (current active version)
+const SimpleImage = ({ source, style, onLongPress }: { source: any; style: any; onLongPress: () => void }) => {
+    return (
+        <TouchableOpacity 
+            onLongPress={onLongPress}
+            activeOpacity={1}
+            style={{ width: '100%', height: '100%' }}
+            delayLongPress={500}
+        >
+            <CachedImage 
+                source={source}
+                style={style}
+                variant="large"
+                useLocalPlaceholder
+                cachePolicy="memory-disk"
+            />
+        </TouchableOpacity>
+    );
+};
 
 // SparkleIcon component
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -584,14 +767,13 @@ const PostCard = React.memo(({
                         <View style={styles.imageContainer}>
                             {memoizedImages.length === 1 ? (
                                 // Single image - no counter needed
-                                <TouchableOpacity onLongPress={() => openModal(0)} activeOpacity={1}>
-                                        <CachedImage 
-                                            source={{ uri: memoizedImages[0] }} 
-                                            style={[styles.image, { height: imageHeight }]}
-                                            variant="large"
-                                            cachePolicy="memory-disk"
-                                        />
-                                </TouchableOpacity>
+                                <View style={{ width: Dimensions.get("window").width, height: imageHeight }}>
+                                    <SimpleImage
+                                        source={{ uri: memoizedImages[0] }}
+                                        style={[styles.image, { height: imageHeight }]}
+                                        onLongPress={() => openModal(0)}
+                                    />
+                                </View>
                             ) : (
                                 <View style={styles.carouselContainer}>
                                     <Carousel
@@ -606,22 +788,16 @@ const PostCard = React.memo(({
                                         enabled={memoizedImages.length > 1}
                                         windowSize={2}
                                         onConfigurePanGesture={(panGesture) => {
-                                            panGesture.activeOffsetX([-5, 5]).failOffsetY([-20, 20]);
+                                            panGesture.activeOffsetX([-10, 10]).failOffsetY([-30, 30]).maxPointers(1);
                                         }}
                                         renderItem={({ item, index }) => (
-                                            <TouchableOpacity 
-                                                onLongPress={() => openModal(index)} 
-                                                activeOpacity={1}
-                                                style={{ width: Dimensions.get("window").width }}
-                                            >
-                                                <CachedImage 
-                                                    source={{ uri: item }} 
+                                            <View style={{ width: Dimensions.get("window").width, height: imageHeight }}>
+                                                <SimpleImage
+                                                    source={{ uri: item }}
                                                     style={[styles.image, { height: imageHeight }]}
-                                                    variant="large"
-                                                    useLocalPlaceholder
-                                                    cachePolicy="memory-disk"
+                                                    onLongPress={() => openModal(index)}
                                                 />
-                                            </TouchableOpacity>
+                                            </View>
                                         )}
                                     />
 
