@@ -22,12 +22,12 @@ export default function ProfileStats({
 
     return (
         <View style={styles.statsContainer}>
-            <View style={{ width: "50%" }}>
+            <View style={{ width: "49%" }}>
                 {profile && <FollowButton profile={profile} onRelationshipChange={onRelationshipChange} />}
             </View>
             <View
                 style={{
-                    width: "50%",
+                    width: "49%",
                     backgroundColor: ThemedColor.lightened,
                     borderRadius: 12,
                     alignItems: "center",
@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
         display: "flex",
         flexDirection: "row",
         width: "100%",
-        gap: 4,
+        gap: 8,
     },
 });

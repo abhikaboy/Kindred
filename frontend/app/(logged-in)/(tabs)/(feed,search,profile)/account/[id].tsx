@@ -1,8 +1,9 @@
-import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity, ActivityIndicator, useColorScheme } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Icons } from "@/constants/Icons";
+import { SvgUri } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -32,6 +33,7 @@ export default function Profile() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { setSelectedBlueprint } = useBlueprints();
+    const colorScheme = useColorScheme();
 
     type TaskDocument = components["schemas"]["TaskDocument"];
     type ProfileDocument = components["schemas"]["ProfileDocument"];
@@ -108,6 +110,13 @@ export default function Profile() {
             });
         }
     };
+
+    // Check if user can view personal content (friends or self)
+    const canViewPersonalContent = useMemo(() => {
+        if (!profile?.relationship) return false;
+        return profile.relationship.status === "connected" || profile.relationship.status === "self";
+    }, [profile?.relationship]);
+
     const galleryUserId = (id as string) || user?._id;
     if (isLoading) {
         return <ActivityIndicator />;
@@ -153,28 +162,48 @@ export default function Profile() {
                         onRelationshipChange={handleRelationshipChange}
                     />
                 </View>
-
                 <TodayStats userId={profile?.id} />
+                {canViewPersonalContent ? (
+                    <>
 
-                <WeeklyActivity userid={profile?.id} />
+                        <WeeklyActivity userid={profile?.id} />
 
-                {profile?.id && (
-                    <BlueprintSection 
-                        userId={profile.id} 
-                        title={`${profile.display_name}'s Blueprints`}
-                        showViewAll={true}
-                    />
+                        {profile?.id && (
+                            <BlueprintSection 
+                                userId={profile.id} 
+                                title={`${profile.display_name}'s Blueprints`}
+                                showViewAll={true}
+                            />
+                        )}
+
+                        <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+                        <ConditionalView condition={activeTab == 0}>
+                            <TaskList {...tasks} />
+                        </ConditionalView>
+
+                        <ConditionalView condition={activeTab == 1}>
+                            <ProfileGallery userId={galleryUserId} />
+                        </ConditionalView>
+                    </>
+                ) : (
+                    <View style={styles.privateProfileContainer}>
+                        <Image 
+                            source={require('@/assets/images/185.Analysing.png')}
+                            style={[
+                                styles.privateProfileImage,
+                                colorScheme === 'dark' && styles.invertedImage
+                            ]}
+                            resizeMode="contain"
+                        />
+                        <ThemedText type="subtitle" style={{ textAlign: 'center', marginBottom: 8 }}>
+                            This profile is private
+                        </ThemedText>
+                        <ThemedText style={{ textAlign: 'center', opacity: 0.7 }}>
+                            Connect with {profile.display_name} to see their activity, tasks, and posts
+                        </ThemedText>
+                    </View>
                 )}
-
-                <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
-
-                <ConditionalView condition={activeTab == 0}>
-                    <TaskList {...tasks} />
-                </ConditionalView>
-
-                <ConditionalView condition={activeTab == 1}>
-                    <ProfileGallery userId={galleryUserId} />
-                </ConditionalView>
             </View>
         </Animated.ScrollView>
     );
@@ -208,5 +237,20 @@ const styles = StyleSheet.create({
     },
     section: {
         gap: 16,
+    },
+    privateProfileContainer: {
+        paddingVertical: 60,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    privateProfileImage: {
+        width: Dimensions.get("window").width * 0.75,
+        height: Dimensions.get("window").width * 0.75,
+        marginBottom: 24,
+        marginTop: -32,
+    },
+    invertedImage: {
+        tintColor: '#ffffff',
     },
 });
