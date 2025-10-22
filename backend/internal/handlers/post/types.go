@@ -196,5 +196,6 @@ type Service struct {
 	Categories          *mongo.Collection
 	Blueprints          *mongo.Collection
 	Groups              *mongo.Collection
+	Connections         *mongo.Collection
 	NotificationService *notifications.Service
 }

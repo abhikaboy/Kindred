@@ -6,6 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 import {
     ExpoSpeechRecognitionModule,
     useSpeechRecognitionEvent,
@@ -107,8 +108,16 @@ const VoiceDump = (props: Props) => {
                     )}
                 </View>
 
-                {/* Spacer to push microphone to bottom */}
                 <View style={{ flex: 1, minHeight: 200 }} />
+
+                {transcription && !recognizing && (
+                    <View style={styles.generateButtonContainer}>
+                        <PrimaryButton
+                            title="Generate"
+                            onPress={() => router.push("/preview" as any)}
+                        />
+                    </View>
+                )}
 
                 {/* Microphone Button Section */}
                 <View style={styles.microphoneSection}>
@@ -169,6 +178,10 @@ const styles = StyleSheet.create({
     },
     transcriptionText: {
         lineHeight: 24,
+    },
+    generateButtonContainer: {
+        paddingVertical: 16,
+        width: "100%",
     },
     microphoneSection: {
         alignItems: "center",

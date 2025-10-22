@@ -255,17 +255,36 @@ func (h *Handler) GetPostHuma(ctx context.Context, input *GetPostInput) (*GetPos
 
 func (h *Handler) GetUserPostsHuma(ctx context.Context, input *GetUserPostsInput) (*GetUserPostsOutput, error) {
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	viewerIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	userObjID, err := primitive.ObjectIDFromHex(input.ID)
+	// Convert viewer ID to ObjectID
+	viewerID, err := primitive.ObjectIDFromHex(viewerIDStr)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
+		return nil, huma.Error400BadRequest("Invalid viewer ID format", err)
 	}
 
-	posts, err := h.service.GetUserPosts(userObjID)
+	// Convert profile user ID to ObjectID
+	profileUserID, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Check relationship between viewer and profile user
+	canView, err := h.service.CheckRelationship(viewerID, profileUserID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to check relationship", err)
+	}
+
+	// If not authorized to view, return empty posts array (similar to tasks behavior)
+	if !canView {
+		return &GetUserPostsOutput{Body: []types.PostDocument{}}, nil
+	}
+
+	// User is authorized (friend or self), fetch their posts
+	posts, err := h.service.GetUserPosts(profileUserID)
 	if err != nil {
 		return nil, huma.Error404NotFound("Posts not found", err)
 	}

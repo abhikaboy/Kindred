@@ -28,6 +28,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Blueprints:          collections["blueprints"],
 		Categories:          collections["categories"],
 		Groups:              collections["groups"],
+		Connections:         collections["friend-requests"],
 		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
@@ -589,4 +590,46 @@ func (s *Service) sendCommentNotification(postOwnerID primitive.ObjectID, commen
 	}
 
 	return xutils.SendNotification(notification)
+}
+
+// CheckRelationship checks the relationship between two users
+// Returns true if they are friends or if it's the same user
+func (s *Service) CheckRelationship(viewerID, profileUserID primitive.ObjectID) (bool, error) {
+	ctx := context.Background()
+
+	// Check for self - user can always view their own posts
+	if viewerID == profileUserID {
+		return true, nil
+	}
+
+	// Check if users are friends
+	// Sort IDs to match how they're stored in the database
+	sortedIDs := sortUserIDs(viewerID, profileUserID)
+
+	// Query the connections collection
+	var connection struct {
+		Status string `bson:"status"`
+	}
+
+	err := s.Connections.FindOne(ctx, bson.M{"users": sortedIDs}).Decode(&connection)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// No connection found, they're not friends
+			return false, nil
+		}
+		// Some other error occurred
+		return false, err
+	}
+
+	// Check if status is "friends"
+	return connection.Status == "friends", nil
+}
+
+// sortUserIDs sorts two user IDs to ensure consistent ordering
+func sortUserIDs(userA, userB primitive.ObjectID) []primitive.ObjectID {
+	if userA.Hex() < userB.Hex() {
+		return []primitive.ObjectID{userA, userB}
+	}
+	return []primitive.ObjectID{userB, userA}
 }

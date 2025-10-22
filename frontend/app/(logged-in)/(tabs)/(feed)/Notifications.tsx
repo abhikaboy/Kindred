@@ -4,28 +4,18 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoFriendNotification from "@/components/UserInfo/UserInfoFriendNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
-import { getConnectionsByReceiverAPI } from "@/api/connection";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationDocument } from "@/api/types";
-import { showToast } from "@/utils/showToast";
+import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
 const ONE_MONTH = 30 * ONE_DAY;
-
-type FollowRequestProps = {
-    name: string;
-    username: string;
-    icon: string;
-    userId: string;
-    connectionID: string;
-};
 
 type ProcessedNotification = {
     id: string;
@@ -124,82 +114,6 @@ const NotificationSection = ({
     );
 };
 
-// Extract FollowRequestsSection component
-const FollowRequestsSection = ({ styles }: { styles: any }) => {
-    const [requests, setRequests] = useState<FollowRequestProps[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchFollowRequests = async () => {
-        try {
-            console.log("FollowRequestsSection - fetching follow requests");
-            setLoading(true);
-            setError(null);
-            
-            const connections = await getConnectionsByReceiverAPI();
-            console.log("FollowRequestsSection - received connections:", Array.isArray(connections) ? connections.length : connections);
-            
-            // Transform API response to match FollowRequestProps interface
-            const transformedRequests: FollowRequestProps[] = connections.map((connection) => ({
-                name: connection.requester.name,
-                username: connection.requester.handle,
-                icon: connection.requester.picture || Icons.coffee, // fallback icon
-                userId: connection.requester._id,
-                connectionID: connection.id,
-            }));
-            
-            setRequests(transformedRequests);
-        } catch (err) {
-            console.error('Failed to fetch follow requests:', err);
-            setError('Failed to load follow requests');
-            showToast('Failed to load follow requests', 'danger');
-            setRequests([]); // Set empty array on error
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const removeRequest = (connectionID: string) => {
-        setRequests(prev => prev.filter(request => request.connectionID !== connectionID));
-    };
-
-    useEffect(() => {
-        console.log("FollowRequestsSection - mount: running fetchFollowRequests");
-        fetchFollowRequests();
-    }, []);
-
-    // Don't render anything while loading
-    if (loading) return null;
-    
-    // Don't render if there's an error or no requests
-    if (error || requests.length === 0) return null;
-
-    return (
-        <View style={styles.section}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <ThemedText type="subtitle">Friend Requests</ThemedText>
-                {requests.length > 3 && (
-                    <TouchableOpacity onPress={() => router.push("/FollowRequests")}>
-                        <ThemedText type="caption">see all {requests.length}</ThemedText>
-                    </TouchableOpacity>
-                )}
-            </View>
-            {requests.slice(0, 4).map((request, index) => (
-                <View style={styles.listItem} key={`follow-${request.connectionID}`}>
-                    <UserInfoFollowRequest
-                        name={request.name}
-                        icon={request.icon}
-                        username={request.username}
-                        userId={request.userId}
-                        connectionID={request.connectionID}
-                        onRequestHandled={() => removeRequest(request.connectionID)}
-                    />
-                </View>
-            ))}
-        </View>
-    );
-};
-
 const Notifications = () => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
@@ -288,7 +202,7 @@ const Notifications = () => {
                 <ThemedText type="subtitle">Notifications</ThemedText>
             </View>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
-                <FollowRequestsSection styles={styles} />
+                <FollowRequestsSection styles={styles} maxVisible={4} />
                 {error ? (
                     <View style={styles.section}>
                         <ThemedText style={{ textAlign: 'center', color: 'red' }}>{error}</ThemedText>

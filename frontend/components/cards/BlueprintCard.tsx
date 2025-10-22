@@ -112,7 +112,7 @@ const BlueprintCard = ({
                     useLocalPlaceholder={!banner} // Use local placeholder when no banner
                 />
                 <View style={styles.informationContainer}>
-                    <ThemedText type="subtitle">{name}</ThemedText>
+                    <ThemedText type="defaultSemiBold">{name}</ThemedText>
 
                     <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                         <MaterialIcons name="access-alarm" size={20} color={ThemedColor.text} />
@@ -148,13 +148,13 @@ const BlueprintCard = ({
                         ))}
                     </View>
 
-                    <PrimaryButton
+                    {/* <PrimaryButton
                         style={{ width: 100,paddingVertical: 10, paddingHorizontal: 10 }}
                         title={localIsLoading ? "..." : localIsSubscribed ? "Subscribed" : "Subscribe"}
                         onPress={onSubscribePress}
                         outline={localIsSubscribed}
                         disabled={localIsLoading}
-                    />
+                    /> */}
                 </View>
             </TouchableOpacity>
         </View>
@@ -181,7 +181,7 @@ const stylesheet = (ThemedColor: any, large: boolean) =>
             borderWidth: 1,
             borderRadius: 8,
             paddingHorizontal: 10,
-            paddingVertical: 5,
+            paddingVertical: 4,
             marginBottom: 4,
         },
     });

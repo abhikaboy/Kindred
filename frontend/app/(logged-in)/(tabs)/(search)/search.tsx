@@ -21,6 +21,7 @@ import { SearchResults } from "@/components/search/SearchResults";
 import { ExplorePage } from "@/components/search/ExplorePage";
 import { useRouter } from "expo-router";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
+import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -93,6 +94,8 @@ const Search = (props: Props) => {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [activeTab, setActiveTab] = React.useState(1); // Default to Users tab (index 1)
+    const ThemedColor = useThemeColor();
+    const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
 
     const [state, dispatch] = useReducer(searchReducer, {
         mode: 'categories',
@@ -107,8 +110,7 @@ const Search = (props: Props) => {
     const [focused, setFocused] = React.useState(false);
     const [autocompleteSuggestions, setAutocompleteSuggestions] = React.useState<AutocompleteSuggestion[]>([]);
     const [showAutocomplete, setShowAutocomplete] = React.useState(false);
-    const ThemedColor = useThemeColor();
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
     const { appendSearch } = useRecentSearch("search-page");
 
@@ -314,16 +316,18 @@ const Search = (props: Props) => {
                 />
             </View>
 
+
             <ScrollView
                 style={styles.scrollView}
                 refreshControl={
                     <RefreshControl
-                        refreshing={false}
-                        onRefresh={onRefresh}
-                        tintColor={ThemedColor.text}
-                        colors={[ThemedColor.text]}
+                    refreshing={false}
+                    onRefresh={onRefresh}
+                    tintColor={ThemedColor.text}
+                    colors={[ThemedColor.text]}
                     />
                 }>
+                    <FollowRequestsSection styles={styles} />
                 <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
                     {mode === 'categories' ? (
                         <ExplorePage 
@@ -350,22 +354,39 @@ const Search = (props: Props) => {
 
 export default Search;
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    searchContainer: {
-        paddingHorizontal: 16,
-    },
-    scrollView: {
-        paddingVertical: Dimensions.get("screen").height * 0.03,
-    },
-    contentContainer: {
-        gap: 16,
-    },
-});
+const stylesheet = (ThemedColor: any) => {
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+        },
+        centerContainer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+        },
+        searchContainer: {
+            paddingHorizontal: 16,
+        },
+        scrollView: {
+            paddingVertical: Dimensions.get("screen").height * 0.03,
+        },
+        contentContainer: {
+            gap: 16,
+        },
+        friendRequestsSection: {
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 8,
+            gap: 8,
+        },
+        friendRequestsHeader: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 8,
+        },
+        requestItem: {
+            marginVertical: 6,
+        },
+    });
+};
