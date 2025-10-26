@@ -190,6 +190,8 @@ func (s *Service) PrintNextRecurrences(template *TemplateTaskDocument) {
 func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 	return TaskDocument{
 		ID:             primitive.NewObjectID(),
+		UserID:         templateDoc.UserID,
+		CategoryID:     templateDoc.CategoryID,
 		Content:        templateDoc.Content,
 		Value:          templateDoc.Value,
 		Recurring:      true,
@@ -247,6 +249,7 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 
 		// Create a template for the recurring task
 		template_doc := TemplateTaskDocument{
+			UserID:         doc.UserID,
 			CategoryID:     categoryId,
 			ID:             template_id,
 			Content:        params.Content,

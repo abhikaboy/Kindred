@@ -6,6 +6,8 @@ import {
     Pressable,
     Keyboard,
     RefreshControl,
+    TouchableOpacity,
+    Alert,
 } from "react-native";
 import React, { useEffect, useCallback, useMemo, useRef, useReducer } from "react";
 import { ThemedView } from "@/components/ThemedView";
@@ -14,7 +16,7 @@ import { SearchBox, AutocompleteSuggestion } from "@/components/SearchBox";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getBlueprintsByCategoryFromBackend, searchBlueprintsFromBackend, autocompleteBlueprintsFromBackend } from "@/api/blueprint";
-import { searchProfiles, autocompleteProfiles } from "@/api/profile";
+import { searchProfiles, autocompleteProfiles, findUsersByPhoneNumbers } from "@/api/profile";
 import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchResults } from "@/components/search/SearchResults";
@@ -22,6 +24,8 @@ import { ExplorePage } from "@/components/search/ExplorePage";
 import { useRouter } from "expo-router";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
+import { useContacts } from "@/hooks/useContacts";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -96,6 +100,7 @@ const Search = (props: Props) => {
     const [activeTab, setActiveTab] = React.useState(1); // Default to Users tab (index 1)
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
+    const { getContacts, isLoading: isLoadingContacts } = useContacts();
 
     const [state, dispatch] = useReducer(searchReducer, {
         mode: 'categories',
@@ -290,6 +295,57 @@ const Search = (props: Props) => {
         };
     }, []);
 
+    // Handle contacts import
+    const handleAddContacts = useCallback(async () => {
+        try {
+            const contactsResponse = await getContacts();
+            
+            if (contactsResponse.numbers.length === 0) {
+                Alert.alert(
+                    'No Contacts Found',
+                    'No phone numbers were found in your contacts.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+
+            console.log('Contacts response:', contactsResponse);
+            console.log(`Total phone numbers: ${contactsResponse.numbers.length}`);
+
+            // Find matching users in the database (efficient single query)
+            const matchedUsers = await findUsersByPhoneNumbers(contactsResponse.numbers);
+            
+            console.log(`Found ${matchedUsers.length} matching users on Kindred:`, matchedUsers);
+
+            if (matchedUsers.length > 0) {
+                Alert.alert(
+                    'Friends Found!',
+                    `Found ${matchedUsers.length} of your contacts on Kindred! Check the search results.`,
+                    [{ text: 'View', onPress: () => {
+                        // Update search results to show matched users
+                        dispatch({ 
+                            type: 'SEARCH_SUCCESS', 
+                            payload: { 
+                                blueprints: [], 
+                                users: matchedUsers as any
+                            } 
+                        });
+                        setActiveTab(1); // Switch to Users tab
+                    }}, { text: 'Close' }]
+                );
+            } else {
+                Alert.alert(
+                    'No Matches Yet',
+                    `We checked ${contactsResponse.numbers.length} contacts but didn't find any matches. We'll notify you when your friends join Kindred!`,
+                    [{ text: 'OK' }]
+                );
+            }
+        } catch (error) {
+            console.error('Error finding users by phone numbers:', error);
+            Alert.alert('Error', 'Failed to find contacts. Please try again.');
+        }
+    }, [getContacts]);
+
     // Error state
     if (error) {
         return (
@@ -316,6 +372,24 @@ const Search = (props: Props) => {
                 />
             </View>
 
+            <View style={styles.contactsButtonContainer}>
+                <TouchableOpacity
+                    style={styles.contactsButton}
+                    onPress={handleAddContacts}
+                    disabled={isLoadingContacts}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons 
+                        name="person-add-outline" 
+                        size={20} 
+                        color={ThemedColor.primary} 
+                        style={styles.contactsButtonIcon}
+                    />
+                    <ThemedText style={styles.contactsButtonText}>
+                        {isLoadingContacts ? "Loading..." : "Add Contacts"}
+                    </ThemedText>
+                </TouchableOpacity>
+            </View>
 
             <ScrollView
                 style={styles.scrollView}
@@ -366,6 +440,31 @@ const stylesheet = (ThemedColor: any) => {
         },
         searchContainer: {
             paddingHorizontal: 16,
+        },
+        contactsButtonContainer: {
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 4,
+        },
+        contactsButton: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: ThemedColor.lightened + "40",
+            borderWidth: 1,
+            borderColor: ThemedColor.primary + "40",
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+        },
+        contactsButtonIcon: {
+            marginRight: 8,
+        },
+        contactsButtonText: {
+            color: ThemedColor.primary,
+            fontSize: 15,
+            fontWeight: "600",
+            fontFamily: "Outfit",
         },
         scrollView: {
             paddingVertical: Dimensions.get("screen").height * 0.03,

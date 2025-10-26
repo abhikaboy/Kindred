@@ -30,5 +30,7 @@ func RegisterProfileOperations(api huma.API, handler *Handler) {
 	RegisterGetProfileOperation(api, handler)
 	RegisterUpdateProfileOperation(api, handler)
 	RegisterDeleteProfileOperation(api, handler)
+	RegisterGetSuggestedUsersOperation(api, handler)
+	RegisterFindUsersByPhoneNumbersOperation(api, handler)
 	// Note: Profile picture upload operations moved to /v1/uploads endpoints
 }

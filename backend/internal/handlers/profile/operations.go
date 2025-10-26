@@ -3,6 +3,7 @@ package Profile
 import (
 	"net/http"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -85,6 +86,24 @@ type AutocompleteProfilesInput struct {
 
 type AutocompleteProfilesOutput struct {
 	Body []ProfileDocument `json:"body"`
+}
+
+// Get Suggested Users
+type GetSuggestedUsersInput struct{}
+
+type GetSuggestedUsersOutput struct {
+	Body []types.UserExtendedReference `json:"body"`
+}
+
+// Find Users by Phone Numbers
+type FindUsersByPhoneNumbersInput struct {
+	Body struct {
+		Numbers []string `json:"numbers" minItems:"1" maxItems:"1000" doc:"List of phone numbers to search for"`
+	}
+}
+
+type FindUsersByPhoneNumbersOutput struct {
+	Body []types.UserExtendedReference `json:"body"`
 }
 
 // Note: Image upload functionality moved to centralized /v1/uploads endpoints
@@ -178,6 +197,28 @@ func RegisterAutocompleteProfilesOperation(api huma.API, handler *Handler) {
 		Description: "Get autocomplete suggestions for user profiles",
 		Tags:        []string{"profiles"},
 	}, handler.AutocompleteProfilesHuma)
+}
+
+func RegisterGetSuggestedUsersOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-suggested-users",
+		Method:      http.MethodGet,
+		Path:        "/v1/profiles/suggested",
+		Summary:     "Get suggested users",
+		Description: "Get up to 8 suggested users with the most friends",
+		Tags:        []string{"profiles"},
+	}, handler.GetSuggestedUsers)
+}
+
+func RegisterFindUsersByPhoneNumbersOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "find-users-by-phone-numbers",
+		Method:      http.MethodPost,
+		Path:        "/v1/profiles/find-by-phone",
+		Summary:     "Find users by phone numbers",
+		Description: "Efficiently find users matching any of the provided phone numbers using a single database query",
+		Tags:        []string{"profiles"},
+	}, handler.FindUsersByPhoneNumbers)
 }
 
 // Note: Profile picture upload operations moved to centralized upload service

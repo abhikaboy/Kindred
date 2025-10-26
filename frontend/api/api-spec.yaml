@@ -7196,11 +7196,14 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                userID:
+                    type: string
                 value:
                     type: number
                     format: double
             required:
                 - id
+                - userID
                 - categoryID
                 - priority
                 - content

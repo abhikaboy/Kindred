@@ -8,7 +8,6 @@ import NewCategory from "./create/NewCategory";
 import Deadline from "./create/Deadline";
 import Recurring from "./create/Recurring";
 import StartDate from "./create/StartDate";
-import StartTime from "./create/StartTime";
 import Reminder from "./create/Reminder";
 import Collaborators from "./create/Collaborators";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -35,7 +34,6 @@ export enum Screen {
     DEADLINE,
     RECURRING,
     STARTDATE,
-    STARTTIME,
     REMINDER,
     COLLABORATORS,
 }
@@ -135,8 +133,6 @@ const CreateModal = (props: Props) => {
                 return <Recurring {...screenProps} />;
             case Screen.STARTDATE:
                 return <StartDate {...screenProps} />;
-            case Screen.STARTTIME:
-                return <StartTime {...screenProps} />;
             case Screen.REMINDER:
                 return <Reminder {...screenProps} />;
             case Screen.COLLABORATORS:

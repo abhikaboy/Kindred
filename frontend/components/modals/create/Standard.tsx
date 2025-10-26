@@ -620,19 +620,17 @@ const AdvancedOptionList = ({
         <View style={{ gap: 12, marginTop: 4 }}>
             <AdvancedOption
                 icon="calendar"
-                label={startDate ? "Start Date: " + startDate.toLocaleDateString() : "Set Start Date " + startDate?.toISOString()}
+                label={
+                    startDate && startTime 
+                        ? `Start: ${startDate.toLocaleDateString()} ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : startDate 
+                        ? `Start Date: ${startDate.toLocaleDateString()}`
+                        : "Set Start Date & Time"
+                }
                 screen={Screen.STARTDATE}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
                 configured={startDateConfigured}
-            />
-            <AdvancedOption
-                icon="time"
-                label={startTime ? "Start Time: " + startTime.toLocaleTimeString() : "Set Start Time"}
-                screen={Screen.STARTTIME}
-                goTo={goTo}
-                showUnconfigured={showUnconfigured}
-                configured={startTime !== null}
             />
             <AdvancedOption
                 icon="flag"

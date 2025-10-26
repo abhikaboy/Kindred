@@ -597,7 +597,7 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) err
 	return nil
 }
 
-func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TemplateTaskDocument, error) {
+func (s *Service) GetTasksWithStartTimesOlderThanOneDay(userID ...primitive.ObjectID) ([]TemplateTaskDocument, error) {
 	ctx := context.Background()
 
 	inOneDay := xutils.NowUTC()
@@ -616,9 +616,16 @@ func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TemplateTaskDocumen
 	// 	}
 	// Completed tasks should be found using template tasks collection
 
+	matchConditions := bson.M{"nextGenerated": bson.M{"$lte": baseTime.AddDate(0, 0, -1)}}
+
+	// If userID is provided, filter by it
+	if len(userID) > 0 && !userID[0].IsZero() {
+		matchConditions["userID"] = userID[0]
+	}
+
 	templatePipeline :=
 		bson.A{
-			bson.D{{"$match", bson.D{{"nextGenerated", bson.D{{"$lte", baseTime.AddDate(0, 0, -1)}}}}}},
+			bson.D{{Key: "$match", Value: matchConditions}},
 		}
 
 	cursor, err := s.TemplateTasks.Aggregate(ctx, templatePipeline)
@@ -634,7 +641,7 @@ func (s *Service) GetTasksWithStartTimesOlderThanOneDay() ([]TemplateTaskDocumen
 	return results, nil
 }
 
-func (s *Service) GetRecurringTasksWithPastDeadlines() ([]TemplateTaskDocument, error) {
+func (s *Service) GetRecurringTasksWithPastDeadlines(userID ...primitive.ObjectID) ([]TemplateTaskDocument, error) {
 	ctx := context.Background()
 
 	// pipeline :=
@@ -645,9 +652,16 @@ func (s *Service) GetRecurringTasksWithPastDeadlines() ([]TemplateTaskDocument, 
 	// 	  bson.D{{"$match", bson.D{{"deadline", bson.D{{"$lt", xutils.NowUTC()}}}}}},
 	// 	}
 
+	matchConditions := bson.M{"deadline": bson.M{"$lt": xutils.NowUTC()}}
+
+	// If userID is provided, filter by it
+	if len(userID) > 0 && !userID[0].IsZero() {
+		matchConditions["userID"] = userID[0]
+	}
+
 	templatePipeline :=
 		bson.A{
-			bson.D{{"$match", bson.D{{"deadline", bson.D{{"$lt", xutils.NowUTC()}}}}}},
+			bson.D{{Key: "$match", Value: matchConditions}},
 		}
 
 	cursor, err := s.TemplateTasks.Aggregate(ctx, templatePipeline)

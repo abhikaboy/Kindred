@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // NewService receives the map of collections and picks out Jobs
@@ -375,4 +376,103 @@ func (s *Service) convertConnectionToRelationshipInfo(relationship Connection.Co
 	default:
 		return &RelationshipInfo{Status: RelationshipNone}
 	}
+}
+
+// GetSuggestedUsers returns up to 8 users with the most friends
+func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
+	ctx := context.Background()
+
+	pipeline := mongo.Pipeline{
+		// Add a field with the size of the friends array
+		bson.D{
+			{Key: "$addFields", Value: bson.D{
+				{Key: "friendsCount", Value: bson.D{
+					{Key: "$size", Value: "$friends"},
+				}},
+			}},
+		},
+		// Sort by friends count descending
+		bson.D{
+			{Key: "$sort", Value: bson.D{
+				{Key: "friendsCount", Value: -1},
+			}},
+		},
+		// Limit to 8 results
+		bson.D{
+			{Key: "$limit", Value: 8},
+		},
+		// Project only the fields needed for UserExtendedReference
+		bson.D{
+			{Key: "$project", Value: bson.D{
+				{Key: "_id", Value: 1},
+				{Key: "display_name", Value: 1},
+				{Key: "handle", Value: 1},
+				{Key: "profile_picture", Value: 1},
+			}},
+		},
+	}
+
+	cursor, err := s.Profiles.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var internalResults []types.UserExtendedReferenceInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
+		return nil, err
+	}
+
+	// Convert internal to API type
+	results := make([]types.UserExtendedReference, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
+	}
+
+	return results, nil
+}
+
+// FindUsersByPhoneNumbers efficiently finds users matching any of the provided phone numbers
+// Uses a single database query with $in operator to avoid multiple scans
+func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserExtendedReference, error) {
+	ctx := context.Background()
+
+	// Return empty if no phone numbers provided
+	if len(phoneNumbers) == 0 {
+		return []types.UserExtendedReference{}, nil
+	}
+
+	// Use $in operator for efficient single-query lookup
+	filter := bson.M{
+		"phone": bson.M{
+			"$in": phoneNumbers,
+		},
+	}
+
+	// Project only the fields needed for UserExtendedReference
+	projection := bson.M{
+		"_id":             1,
+		"display_name":    1,
+		"handle":          1,
+		"profile_picture": 1,
+	}
+
+	cursor, err := s.Profiles.Find(ctx, filter, options.Find().SetProjection(projection))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var internalResults []types.UserExtendedReferenceInternal
+	if err := cursor.All(ctx, &internalResults); err != nil {
+		return nil, err
+	}
+
+	// Convert internal to API type
+	results := make([]types.UserExtendedReference, len(internalResults))
+	for i, internal := range internalResults {
+		results[i] = *internal.ToAPI()
+	}
+
+	return results, nil
 }

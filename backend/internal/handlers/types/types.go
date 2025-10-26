@@ -84,6 +84,7 @@ type Reminder struct {
 type TemplateTaskDocument struct {
 	ID primitive.ObjectID `bson:"_id" json:"id"`
 
+	UserID        primitive.ObjectID `bson:"userID" json:"userID"`
 	CategoryID    primitive.ObjectID `bson:"categoryID" json:"categoryID"`
 	Priority      int                `bson:"priority" json:"priority"`
 	Content       string             `bson:"content" json:"content"`

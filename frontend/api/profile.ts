@@ -124,3 +124,25 @@ export const deleteProfile = async (id: string): Promise<void> => {
         throw new Error(`Failed to delete profile: ${JSON.stringify(error)}`);
     }
 };
+
+/**
+ * Find users by phone numbers (efficient single-query lookup)
+ */
+export const findUsersByPhoneNumbers = async (phoneNumbers: string[]): Promise<components["schemas"]["UserExtendedReference"][]> => {
+    // Use fetch directly since the OpenAPI types haven't been regenerated yet
+    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || ''}/v1/profiles/find-by-phone`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(await withAuthHeaders({})).headers,
+        },
+        body: JSON.stringify({ numbers: phoneNumbers }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to find users by phone numbers: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data || [];
+};

@@ -209,6 +209,24 @@ func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileBy
 	return resp, nil
 }
 
+func (h *Handler) GetSuggestedUsers(ctx context.Context, input *GetSuggestedUsersInput) (*GetSuggestedUsersOutput, error) {
+	users, err := h.service.GetSuggestedUsers()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get suggested users", err)
+	}
+
+	return &GetSuggestedUsersOutput{Body: users}, nil
+}
+
+func (h *Handler) FindUsersByPhoneNumbers(ctx context.Context, input *FindUsersByPhoneNumbersInput) (*FindUsersByPhoneNumbersOutput, error) {
+	users, err := h.service.FindUsersByPhoneNumbers(input.Body.Numbers)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to find users by phone numbers", err)
+	}
+
+	return &FindUsersByPhoneNumbersOutput{Body: users}, nil
+}
+
 func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
 	// Extract user_id from context for authorization
 	authenticatedUserID, err := auth.RequireAuth(ctx)

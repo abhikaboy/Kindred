@@ -230,6 +230,7 @@ func (h *Handler) handleRecurringTaskCreation(task TaskDocument, params CreateTa
 
 	// Create a template for the recurring task
 	template_doc := TemplateTaskDocument{
+		UserID:         task.UserID,
 		CategoryID:     categoryId,
 		ID:             *task.TemplateID, // Use the template ID that was set
 		Content:        params.Content,
@@ -535,12 +536,17 @@ Get all the tasks with start times that are at least a day older than the curren
 */
 func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(ctx context.Context, input *GetTasksWithStartTimesOlderThanOneDayInput) (*GetTasksWithStartTimesOlderThanOneDayOutput, error) {
 	// Extract user_id from context (set by auth middleware)
-	_, err := auth.RequireAuth(ctx)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay()
+	userObjID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay(userObjID)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
 	}
@@ -550,12 +556,17 @@ func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(ctx context.Context, inp
 
 func (h *Handler) GetRecurringTasksWithPastDeadlines(ctx context.Context, input *GetRecurringTasksWithPastDeadlinesInput) (*GetRecurringTasksWithPastDeadlinesOutput, error) {
 	// Extract user_id from context (set by auth middleware)
-	_, err := auth.RequireAuth(ctx)
+	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
-	tasks, err := h.service.GetRecurringTasksWithPastDeadlines()
+	userObjID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	tasks, err := h.service.GetRecurringTasksWithPastDeadlines(userObjID)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to fetch recurring tasks", err)
 	}
