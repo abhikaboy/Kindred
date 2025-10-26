@@ -4,6 +4,7 @@ import PreviewIcon from "../profile/PreviewIcon";
 import { ThemedText } from "../ThemedText";
 import FollowButton from "../inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useRouter } from "expo-router";
 
 type Props = {
     name: string;
@@ -11,16 +12,24 @@ type Props = {
     handle: string;
     following: boolean;
     id?: string;
+    contactName?: string; // Optional: The name from device contacts
 };
 
-const ContactCard = ({ name, icon, handle, following, id }: Props) => {
+const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) => {
     let ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
+    const router = useRouter();
 
     const connectionType = following ? "friends" : "none";
 
+    const handlePress = () => {
+        if (id) {
+            router.push(`/account/${id}`);
+        }
+    };
+
     return (
-        <TouchableOpacity style={styles.container}>
+        <TouchableOpacity style={styles.container} onPress={handlePress}>
             <PreviewIcon size="large" icon={icon} />
             <View style={{ flexDirection: "column", gap: 8, alignItems: "center" }}>
                 <View>
@@ -28,8 +37,16 @@ const ContactCard = ({ name, icon, handle, following, id }: Props) => {
                         {name}
                     </ThemedText>
                     <ThemedText style={{ textAlign: "center" }} type="caption">
-                        {handle}
+                        {handle} 
                     </ThemedText>
+                    {contactName && (
+                        <ThemedText 
+                            style={{ textAlign: "center", marginTop: 4, fontStyle: "italic" }} 
+                            type="caption"
+                        >
+                            {contactName}
+                        </ThemedText>
+                    )}
                 </View>
                 {id && <FollowButton connectionType={connectionType} followeeid={id} />}
             </View>

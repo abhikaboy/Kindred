@@ -126,23 +126,31 @@ export const deleteProfile = async (id: string): Promise<void> => {
 };
 
 /**
- * Find users by phone numbers (efficient single-query lookup)
+ * User extended reference with phone number for contact matching
  */
-export const findUsersByPhoneNumbers = async (phoneNumbers: string[]): Promise<components["schemas"]["UserExtendedReference"][]> => {
-    // Use fetch directly since the OpenAPI types haven't been regenerated yet
-    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || ''}/v1/profiles/find-by-phone`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(await withAuthHeaders({})).headers,
-        },
-        body: JSON.stringify({ numbers: phoneNumbers }),
+export interface UserExtendedReferenceWithPhone {
+    _id: string;
+    display_name: string;
+    handle: string;
+    profile_picture: string;
+    phone: string;
+}
+
+/**
+ * Find users by phone numbers (efficient single-query lookup)
+ * This uses a single database query with $in operator for optimal performance
+ * Returns users with phone numbers included for contact name mapping
+ */
+export const findUsersByPhoneNumbers = async (phoneNumbers: string[]): Promise<UserExtendedReferenceWithPhone[]> => {
+    // Use the openapi-fetch client with type casting until OpenAPI types are regenerated
+    const { data, error } = await client.POST("/v1/profiles/find-by-phone" as any, {
+        params: withAuthHeaders({}),
+        body: { numbers: phoneNumbers } as any,
     });
 
-    if (!response.ok) {
-        throw new Error(`Failed to find users by phone numbers: ${response.statusText}`);
+    if (error) {
+        throw new Error(`Failed to find users by phone numbers: ${JSON.stringify(error)}`);
     }
 
-    const data = await response.json();
-    return data || [];
+    return (data as any) || [];
 };

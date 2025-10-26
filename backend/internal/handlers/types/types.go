@@ -342,12 +342,30 @@ type UserExtendedReference struct {
 	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
 }
 
+// UserExtendedReferenceWithPhone includes phone number for contact matching
+type UserExtendedReferenceWithPhone struct {
+	ID             string `bson:"_id" json:"_id" example:"507f1f77bcf86cd799439011" doc:"User ID"`
+	DisplayName    string `bson:"display_name" json:"display_name" example:"John Doe" doc:"User display name"`
+	Handle         string `bson:"handle" json:"handle" example:"johndoe" doc:"User handle"`
+	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
+	Phone          string `bson:"phone" json:"phone" example:"+1234567890" doc:"User phone number"`
+}
+
 // Internal version for MongoDB operations
 type UserExtendedReferenceInternal struct {
 	ID             primitive.ObjectID `bson:"_id"`
 	DisplayName    string             `bson:"display_name"`
 	Handle         string             `bson:"handle"`
 	ProfilePicture string             `bson:"profile_picture"`
+}
+
+// Internal version with phone for contact matching
+type UserExtendedReferenceWithPhoneInternal struct {
+	ID             primitive.ObjectID `bson:"_id"`
+	DisplayName    string             `bson:"display_name"`
+	Handle         string             `bson:"handle"`
+	ProfilePicture string             `bson:"profile_picture"`
+	Phone          string             `bson:"phone"`
 }
 
 // Helper function to convert from internal to API type
@@ -357,6 +375,17 @@ func (u *UserExtendedReferenceInternal) ToAPI() *UserExtendedReference {
 		DisplayName:    u.DisplayName,
 		Handle:         u.Handle,
 		ProfilePicture: u.ProfilePicture,
+	}
+}
+
+// Helper function to convert from internal with phone to API type
+func (u *UserExtendedReferenceWithPhoneInternal) ToAPI() *UserExtendedReferenceWithPhone {
+	return &UserExtendedReferenceWithPhone{
+		ID:             u.ID.Hex(),
+		DisplayName:    u.DisplayName,
+		Handle:         u.Handle,
+		ProfilePicture: u.ProfilePicture,
+		Phone:          u.Phone,
 	}
 }
 

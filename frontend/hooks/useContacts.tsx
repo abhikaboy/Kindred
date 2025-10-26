@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import * as Contacts from 'expo-contacts';
-import { Platform, Alert } from 'react-native';
+import { Platform, Alert, Linking } from 'react-native';
 
 export interface ContactInfo {
     id: string;
@@ -11,6 +11,7 @@ export interface ContactInfo {
 
 export interface ContactsResponse {
     numbers: string[];
+    contactsMap: { [phoneNumber: string]: string }; // Map of phone number to contact name
 }
 
 export function useContacts() {
@@ -42,44 +43,74 @@ export function useContacts() {
             }
 
             if (!granted) {
-                Alert.alert(
-                    'Permission Required',
-                    'Please enable contacts permission in your device settings to import contacts.',
-                    [{ text: 'OK' }]
-                );
-                return { numbers: [] };
+                // Show different messages based on permission status
+                const { status } = await Contacts.getPermissionsAsync();
+                
+                if (status === 'denied') {
+                    // Permission was explicitly denied
+                    Alert.alert(
+                        'Contacts Permission Denied',
+                        'To find your friends on Kindred, we need access to your contacts. You can enable this in your device settings.',
+                        [
+                            { text: 'Cancel', style: 'cancel' },
+                            { 
+                                text: 'Open Settings', 
+                                onPress: () => {
+                                    if (Platform.OS === 'ios') {
+                                        Linking.openURL('app-settings:');
+                                    } else {
+                                        Linking.openSettings();
+                                    }
+                                }
+                            }
+                        ]
+                    );
+                } else {
+                    // Permission request was cancelled or not determined
+                    Alert.alert(
+                        'Permission Required',
+                        'Kindred needs access to your contacts to help you find friends who are already using the app.',
+                        [{ text: 'OK' }]
+                    );
+                }
+                return { numbers: [], contactsMap: {} };
             }
 
             // Fetch contacts
             const { data } = await Contacts.getContactsAsync({
                 fields: [
+                    Contacts.Fields.Name,
                     Contacts.Fields.PhoneNumbers,
                 ],
             });
 
             if (!data || data.length === 0) {
-                return { numbers: [] };
+                return { numbers: [], contactsMap: {} };
             }
 
-            // Extract all phone numbers into a flat array
+            // Extract all phone numbers into a flat array and create a map
             const phoneNumbers: string[] = [];
+            const contactsMap: { [phoneNumber: string]: string } = {};
             
             data.forEach(contact => {
+                const contactName = contact.name || 'Unknown';
+                
                 if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
                     contact.phoneNumbers.forEach(phoneNumber => {
                         const number = phoneNumber.number || phoneNumber.digits;
                         if (number) {
                             phoneNumbers.push(number);
+                            contactsMap[number] = contactName;
                         }
                     });
                 }
             });
 
-            return { numbers: phoneNumbers };
+            return { numbers: phoneNumbers, contactsMap };
         } catch (error) {
             console.error('Error fetching contacts:', error);
             Alert.alert('Error', 'Failed to fetch contacts. Please try again.');
-            return { numbers: [] };
+            return { numbers: [], contactsMap: {} };
         } finally {
             setIsLoading(false);
         }

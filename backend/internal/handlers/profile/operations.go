@@ -103,7 +103,7 @@ type FindUsersByPhoneNumbersInput struct {
 }
 
 type FindUsersByPhoneNumbersOutput struct {
-	Body []types.UserExtendedReference `json:"body"`
+	Body []types.UserExtendedReferenceWithPhone `json:"body"`
 }
 
 // Note: Image upload functionality moved to centralized /v1/uploads endpoints

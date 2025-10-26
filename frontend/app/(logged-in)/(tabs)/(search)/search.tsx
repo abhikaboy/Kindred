@@ -6,7 +6,6 @@ import {
     Pressable,
     Keyboard,
     RefreshControl,
-    TouchableOpacity,
     Alert,
 } from "react-native";
 import React, { useEffect, useCallback, useMemo, useRef, useReducer } from "react";
@@ -25,7 +24,11 @@ import { useRouter } from "expo-router";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { useContacts } from "@/hooks/useContacts";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { useMutation } from "@tanstack/react-query";
+import { useMatchedContacts, type MatchedContact } from "@/hooks/useMatchedContacts";
+import { ContactsFromPhone } from "@/components/search/ContactsFromPhone";
+import * as Contacts from 'expo-contacts';
+import BetterTogetherCard from "@/components/cards/BetterTogetherCard";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -101,6 +104,40 @@ const Search = (props: Props) => {
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
+    const { matchedContacts, addMatchedContacts, isLoading: isLoadingMatchedContacts } = useMatchedContacts();
+
+    // Store contacts map ref to access in mutation callback
+    const contactsMapRef = useRef<{ [phoneNumber: string]: string }>({});
+
+    // TanStack Query mutation for finding users by phone numbers
+    const findUsersMutation = useMutation({
+        mutationFn: findUsersByPhoneNumbers,
+        onSuccess: (matchedUsers) => {
+            console.log(`Found ${matchedUsers.length} matching users on Kindred:`, matchedUsers);
+
+            if (matchedUsers.length > 0) {
+                // Map matched users to MatchedContact format with contact names
+                const newMatchedContacts: MatchedContact[] = matchedUsers.map(user => ({
+                    user,
+                    contactName: contactsMapRef.current[user.phone] || 'Unknown',
+                }));
+
+                // Save to AsyncStorage
+                addMatchedContacts(newMatchedContacts);
+
+                Alert.alert(
+                    'Friends Found!',
+                    `Found ${matchedUsers.length} of your contacts on Kindred! Scroll down to see them.`,
+                    [{ text: 'OK' }]
+                );
+            } else {
+            }
+        },
+        onError: (error) => {
+            console.error('Error finding users by phone numbers:', error);
+            Alert.alert('Error', 'Failed to find contacts. Please try again.');
+        },
+    });
 
     const [state, dispatch] = useReducer(searchReducer, {
         mode: 'categories',
@@ -295,56 +332,44 @@ const Search = (props: Props) => {
         };
     }, []);
 
+    // Handle rewards card press
+    const handleRewardsCardPress = useCallback(() => {
+        router.push('/rewards');
+    }, [router]);
+
     // Handle contacts import
     const handleAddContacts = useCallback(async () => {
         try {
             const contactsResponse = await getContacts();
             
+            // If no numbers returned, permission was likely denied or no contacts exist
             if (contactsResponse.numbers.length === 0) {
-                Alert.alert(
-                    'No Contacts Found',
-                    'No phone numbers were found in your contacts.',
-                    [{ text: 'OK' }]
-                );
+                // The hook already shows appropriate alerts for permission issues
+                // Only show this alert if permission was granted but no numbers found
+                const { status } = await Contacts.getPermissionsAsync();
+                if (status === 'granted') {
+                    Alert.alert(
+                        'No Phone Numbers Found',
+                        'We couldn\'t find any phone numbers in your contacts. Make sure your contacts have phone numbers saved.',
+                        [{ text: 'OK' }]
+                    );
+                }
                 return;
             }
 
             console.log('Contacts response:', contactsResponse);
             console.log(`Total phone numbers: ${contactsResponse.numbers.length}`);
 
-            // Find matching users in the database (efficient single query)
-            const matchedUsers = await findUsersByPhoneNumbers(contactsResponse.numbers);
-            
-            console.log(`Found ${matchedUsers.length} matching users on Kindred:`, matchedUsers);
+            // Store contacts map for use in mutation callback
+            contactsMapRef.current = contactsResponse.contactsMap;
 
-            if (matchedUsers.length > 0) {
-                Alert.alert(
-                    'Friends Found!',
-                    `Found ${matchedUsers.length} of your contacts on Kindred! Check the search results.`,
-                    [{ text: 'View', onPress: () => {
-                        // Update search results to show matched users
-                        dispatch({ 
-                            type: 'SEARCH_SUCCESS', 
-                            payload: { 
-                                blueprints: [], 
-                                users: matchedUsers as any
-                            } 
-                        });
-                        setActiveTab(1); // Switch to Users tab
-                    }}, { text: 'Close' }]
-                );
-            } else {
-                Alert.alert(
-                    'No Matches Yet',
-                    `We checked ${contactsResponse.numbers.length} contacts but didn't find any matches. We'll notify you when your friends join Kindred!`,
-                    [{ text: 'OK' }]
-                );
-            }
+            // Use TanStack Query mutation for efficient single-query database lookup
+            findUsersMutation.mutate(contactsResponse.numbers);
         } catch (error) {
-            console.error('Error finding users by phone numbers:', error);
-            Alert.alert('Error', 'Failed to find contacts. Please try again.');
+            console.error('Error getting contacts:', error);
+            Alert.alert('Error', 'Failed to access contacts. Please try again.');
         }
-    }, [getContacts]);
+    }, [getContacts, findUsersMutation]);
 
     // Error state
     if (error) {
@@ -372,24 +397,6 @@ const Search = (props: Props) => {
                 />
             </View>
 
-            <View style={styles.contactsButtonContainer}>
-                <TouchableOpacity
-                    style={styles.contactsButton}
-                    onPress={handleAddContacts}
-                    disabled={isLoadingContacts}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons 
-                        name="person-add-outline" 
-                        size={20} 
-                        color={ThemedColor.primary} 
-                        style={styles.contactsButtonIcon}
-                    />
-                    <ThemedText style={styles.contactsButtonText}>
-                        {isLoadingContacts ? "Loading..." : "Add Contacts"}
-                    </ThemedText>
-                </TouchableOpacity>
-            </View>
 
             <ScrollView
                 style={styles.scrollView}
@@ -401,7 +408,18 @@ const Search = (props: Props) => {
                     colors={[ThemedColor.text]}
                     />
                 }>
+            <View style={styles.betterTogetherContainer}>
+                <BetterTogetherCard 
+                    onSyncContacts={handleAddContacts}
+                    isLoadingContacts={isLoadingContacts}
+                    isFindingFriends={findUsersMutation.isPending}
+                    onCardPress={handleRewardsCardPress}
+                />
+            </View>
                     <FollowRequestsSection styles={styles} />
+                    {!isLoadingMatchedContacts && matchedContacts.length > 0 && mode === 'categories' && (
+                        <ContactsFromPhone contacts={matchedContacts} />
+                    )}
                 <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
                     {mode === 'categories' ? (
                         <ExplorePage 
@@ -441,30 +459,9 @@ const stylesheet = (ThemedColor: any) => {
         searchContainer: {
             paddingHorizontal: 16,
         },
-        contactsButtonContainer: {
+        betterTogetherContainer: {
             paddingHorizontal: 16,
-            paddingTop: 12,
-            paddingBottom: 4,
-        },
-        contactsButton: {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: ThemedColor.lightened + "40",
-            borderWidth: 1,
-            borderColor: ThemedColor.primary + "40",
-            borderRadius: 12,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-        },
-        contactsButtonIcon: {
-            marginRight: 8,
-        },
-        contactsButtonText: {
-            color: ThemedColor.primary,
-            fontSize: 15,
-            fontWeight: "600",
-            fontFamily: "Outfit",
+            paddingBottom: 16,
         },
         scrollView: {
             paddingVertical: Dimensions.get("screen").height * 0.03,

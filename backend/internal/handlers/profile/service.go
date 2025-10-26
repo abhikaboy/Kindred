@@ -434,12 +434,13 @@ func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
 
 // FindUsersByPhoneNumbers efficiently finds users matching any of the provided phone numbers
 // Uses a single database query with $in operator to avoid multiple scans
-func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserExtendedReference, error) {
+// Returns users with phone numbers included for contact name mapping
+func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserExtendedReferenceWithPhone, error) {
 	ctx := context.Background()
 
 	// Return empty if no phone numbers provided
 	if len(phoneNumbers) == 0 {
-		return []types.UserExtendedReference{}, nil
+		return []types.UserExtendedReferenceWithPhone{}, nil
 	}
 
 	// Use $in operator for efficient single-query lookup
@@ -449,12 +450,13 @@ func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserEx
 		},
 	}
 
-	// Project only the fields needed for UserExtendedReference
+	// Project only the fields needed for UserExtendedReferenceWithPhone
 	projection := bson.M{
 		"_id":             1,
 		"display_name":    1,
 		"handle":          1,
 		"profile_picture": 1,
+		"phone":           1, // Include phone to map back to contact names
 	}
 
 	cursor, err := s.Profiles.Find(ctx, filter, options.Find().SetProjection(projection))
@@ -463,13 +465,13 @@ func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserEx
 	}
 	defer cursor.Close(ctx)
 
-	var internalResults []types.UserExtendedReferenceInternal
+	var internalResults []types.UserExtendedReferenceWithPhoneInternal
 	if err := cursor.All(ctx, &internalResults); err != nil {
 		return nil, err
 	}
 
 	// Convert internal to API type
-	results := make([]types.UserExtendedReference, len(internalResults))
+	results := make([]types.UserExtendedReferenceWithPhone, len(internalResults))
 	for i, internal := range internalResults {
 		results[i] = *internal.ToAPI()
 	}
