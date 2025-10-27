@@ -189,7 +189,7 @@ export default function Profile() {
                 ) : (
                     <View style={styles.privateProfileContainer}>
                         <Image 
-                            source={require('@/assets/images/185.Analysing.png')}
+                            source={require('@/assets/images/185-Analysing.png')}
                             style={[
                                 styles.privateProfileImage,
                                 colorScheme === 'dark' && styles.invertedImage

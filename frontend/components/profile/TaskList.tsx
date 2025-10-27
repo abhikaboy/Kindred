@@ -34,7 +34,7 @@ export default function TaskList({
         return (
             <View style={styles.emptyStateContainer}>
                 <Image 
-                    source={require('@/assets/images/211. Coffee.png')}
+                    source={require('@/assets/images/211-Coffee.png')}
                     style={[
                         styles.emptyStateImage,
                         colorScheme === 'dark' && styles.invertedImage

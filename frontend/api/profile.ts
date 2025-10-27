@@ -154,3 +154,25 @@ export const findUsersByPhoneNumbers = async (phoneNumbers: string[]): Promise<U
 
     return (data as any) || [];
 };
+
+/**
+ * User extended reference type from generated types
+ */
+export type UserExtendedReference = components["schemas"]["UserExtendedReference"];
+
+/**
+ * Get suggested users (up to 8 users with the most friends)
+ * This provides user recommendations for connecting with others
+ */
+export const getSuggestedUsers = async (): Promise<UserExtendedReference[]> => {
+    // Use the openapi-fetch client with type casting until OpenAPI types are regenerated
+    const response = await (client as any).GET("/v1/profiles/suggested", {
+        params: withAuthHeaders({}),
+    });
+
+    if (response.error) {
+        throw new Error(`Failed to get suggested users: ${JSON.stringify(response.error)}`);
+    }
+
+    return response.data || [];
+};

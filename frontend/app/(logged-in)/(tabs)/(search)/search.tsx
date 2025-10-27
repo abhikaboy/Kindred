@@ -15,7 +15,7 @@ import { SearchBox, AutocompleteSuggestion } from "@/components/SearchBox";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getBlueprintsByCategoryFromBackend, searchBlueprintsFromBackend, autocompleteBlueprintsFromBackend } from "@/api/blueprint";
-import { searchProfiles, autocompleteProfiles, findUsersByPhoneNumbers } from "@/api/profile";
+import { searchProfiles, autocompleteProfiles, findUsersByPhoneNumbers, getSuggestedUsers } from "@/api/profile";
 import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchResults } from "@/components/search/SearchResults";
@@ -24,9 +24,10 @@ import { useRouter } from "expo-router";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { useContacts } from "@/hooks/useContacts";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMatchedContacts, type MatchedContact } from "@/hooks/useMatchedContacts";
 import { ContactsFromPhone } from "@/components/search/ContactsFromPhone";
+import { SuggestedUsers } from "@/components/search/SuggestedUsers";
 import * as Contacts from 'expo-contacts';
 import BetterTogetherCard from "@/components/cards/BetterTogetherCard";
 
@@ -105,6 +106,14 @@ const Search = (props: Props) => {
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
     const { matchedContacts, addMatchedContacts, isLoading: isLoadingMatchedContacts } = useMatchedContacts();
+
+    // TanStack Query for fetching suggested users
+    const { data: suggestedUsers = [], isLoading: isLoadingSuggestedUsers } = useQuery({
+        queryKey: ['suggestedUsers'],
+        queryFn: getSuggestedUsers,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        refetchOnWindowFocus: false,
+    });
 
     // Store contacts map ref to access in mutation callback
     const contactsMapRef = useRef<{ [phoneNumber: string]: string }>({});
@@ -402,10 +411,10 @@ const Search = (props: Props) => {
                 style={styles.scrollView}
                 refreshControl={
                     <RefreshControl
-                    refreshing={false}
-                    onRefresh={onRefresh}
-                    tintColor={ThemedColor.text}
-                    colors={[ThemedColor.text]}
+                        refreshing={false}
+                        onRefresh={onRefresh}
+                        tintColor={ThemedColor.text}
+                        colors={[ThemedColor.text]}
                     />
                 }>
             <View style={styles.betterTogetherContainer}>
@@ -419,6 +428,9 @@ const Search = (props: Props) => {
                     <FollowRequestsSection styles={styles} />
                     {!isLoadingMatchedContacts && matchedContacts.length > 0 && mode === 'categories' && (
                         <ContactsFromPhone contacts={matchedContacts} />
+                    )}
+                    {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && mode === 'categories' && (
+                        <SuggestedUsers users={suggestedUsers} />
                     )}
                 <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
                     {mode === 'categories' ? (
