@@ -42,6 +42,7 @@ import TutorialCard from "@/components/cards/TutorialCard";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
+import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 
 type Props = {};
 
@@ -214,7 +215,7 @@ const Home = (props: Props) => {
     ];
 
     return (
-        <SpotlightTourProvider steps={tourSteps}>
+        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
             <HomeContent
                 drawerRef={drawerRef}
                 setIsDrawerOpen={setIsDrawerOpen}

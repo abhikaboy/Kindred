@@ -23,6 +23,7 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
+import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 
 type Props = {};
 
@@ -94,7 +95,7 @@ const Workspace = (props: Props) => {
     ];
 
     return (
-        <SpotlightTourProvider steps={tourSteps}>
+        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
             <WorkspaceContent
                 drawerRef={drawerRef}
                 scrollViewRef={scrollViewRef}

@@ -24,6 +24,7 @@ import type { RecurDetails } from "@/api/types";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
+import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -84,7 +85,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     ];
 
     return (
-        <SpotlightTourProvider steps={tourSteps}>
+        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
             <StandardContent
                 hide={hide}
                 goTo={goTo}

@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
+import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -83,7 +84,7 @@ export const Drawer = ({ close }) => {
     ];
 
     return (
-        <SpotlightTourProvider steps={tourSteps}>
+        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
             <DrawerContent
                 close={close}
                 ThemedColor={ThemedColor}
