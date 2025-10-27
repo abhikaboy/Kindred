@@ -296,15 +296,36 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 console.log('🔑 Refresh token exists:', !!savedAuthData.refresh_token);
             }
             
-            // After successful registration, log the user in automatically
+            // After successful registration, log the user in automatically with retry logic
             console.log('🚀 Starting fetchAuthData to log user in...');
-            const userData = await fetchAuthData();
-            console.log('👤 fetchAuthData returned:', userData ? 'User data received' : 'NULL - LOGIN FAILED');
+            
+            let userData = null;
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryDelay = 1000; // 1 second
+            
+            while (!userData && retryCount < maxRetries) {
+                if (retryCount > 0) {
+                    console.log(`🔄 Retry attempt ${retryCount}/${maxRetries} after ${retryDelay}ms delay...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                }
+                
+                userData = await fetchAuthData();
+                console.log(`👤 Attempt ${retryCount + 1}: fetchAuthData returned:`, userData ? 'User data received' : 'NULL');
+                
+                if (!userData) {
+                    retryCount++;
+                    
+                    // Check if tokens exist in storage
+                    const authCheck = await getAuthData();
+                    console.log(`🔍 Token check after attempt ${retryCount}:`, authCheck ? 'Tokens found' : 'NO TOKENS');
+                }
+            }
             
             if (!userData) {
-                console.error('❌ Failed to fetch user data after registration');
+                console.error(`❌ Failed to fetch user data after ${maxRetries} attempts`);
                 console.error('❌ This means tokens were not saved or token login failed');
-                throw new Error('Registration succeeded but failed to log in automatically');
+                throw new Error('Registration succeeded but failed to log in automatically after multiple attempts');
             }
             
             console.log('✅ User registered and logged in successfully!');

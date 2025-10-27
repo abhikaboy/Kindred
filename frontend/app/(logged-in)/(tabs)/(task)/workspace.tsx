@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTasks } from "@/contexts/tasksContext";
@@ -20,6 +20,9 @@ import DefaultModal from "@/components/modals/DefaultModal";
 import ReorderCategories from "@/components/modals/ReorderCategories";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
+import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
+import { useSpotlight } from "@/contexts/SpotlightContext";
+import { TourStepCard } from "@/components/spotlight/TourStepCard";
 
 type Props = {};
 
@@ -28,6 +31,7 @@ const Workspace = (props: Props) => {
     const { categories, selected, showConfetti } = useTasks();
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
+    const { spotlightState, setSpotlightShown } = useSpotlight();
 
     const [editing, setEditing] = useState(false);
     const [reordering, setReordering] = useState(false);
@@ -45,6 +49,110 @@ const Workspace = (props: Props) => {
         const stickyThreshold = 100; // Adjust this value as needed
         setIsHeaderSticky(scrollY > stickyThreshold);
     };
+
+    // Tour steps for workspace
+    const tourSteps: TourStep[] = [
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Workspace Settings ⚙️"
+                    description="Tap the icon next to the workspace title to edit workspace settings, reorder categories, or delete the workspace."
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown("workspaceSpotlight");
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Tasks ✅"
+                    description="This is a task! The colored bar on the left shows its priority. Tap on any task to view or edit its details."
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown("workspaceSpotlight");
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Categories 📂"
+                    description="To make new tasks, click on a category name. Categories help you organize tasks by type or project!"
+                    onNext={() => {
+                        setSpotlightShown("workspaceSpotlight");
+                        next();
+                    }}
+                    isLastStep
+                />
+            ),
+        },
+    ];
+
+    return (
+        <SpotlightTourProvider steps={tourSteps}>
+            <WorkspaceContent
+                drawerRef={drawerRef}
+                scrollViewRef={scrollViewRef}
+                ThemedColor={ThemedColor}
+                categories={categories}
+                selected={selected}
+                showConfetti={showConfetti}
+                insets={insets}
+                openModal={openModal}
+                editing={editing}
+                setEditing={setEditing}
+                reordering={reordering}
+                setReordering={setReordering}
+                focusedCategory={focusedCategory}
+                setFocusedCategory={setFocusedCategory}
+                isHeaderSticky={isHeaderSticky}
+                noCategories={noCategories}
+                setIsDrawerOpen={setIsDrawerOpen}
+                handleScroll={handleScroll}
+                spotlightState={spotlightState}
+            />
+        </SpotlightTourProvider>
+    );
+};
+
+const WorkspaceContent = ({
+    drawerRef,
+    scrollViewRef,
+    ThemedColor,
+    categories,
+    selected,
+    showConfetti,
+    insets,
+    openModal,
+    editing,
+    setEditing,
+    reordering,
+    setReordering,
+    focusedCategory,
+    setFocusedCategory,
+    isHeaderSticky,
+    noCategories,
+    setIsDrawerOpen,
+    handleScroll,
+    spotlightState,
+}: any) => {
+    const { start } = useSpotlightTour();
+
+    useEffect(() => {
+        // Start the tour if we're in the Kindred Guide workspace and haven't shown this spotlight yet
+        if (selected === "🌺 Kindred Guide" && !spotlightState.workspaceSpotlight && spotlightState.menuSpotlight) {
+            const timer = setTimeout(() => {
+                start();
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [start, selected, spotlightState.workspaceSpotlight, spotlightState.menuSpotlight]);
 
     return (
         <DrawerLayout
@@ -137,10 +245,13 @@ const Workspace = (props: Props) => {
                                         alignItems: "center",
                                         justifyContent: "space-between",
                                         paddingBottom: 16,
+                                        width: "100%",
                                     }}>
-                                    <SlidingText type="title" style={styles.title}>
-                                        {selected || "Good Morning! ☀"}
-                                    </SlidingText>
+                                    <AttachStep index={0}>
+                                        <SlidingText type="title" style={styles.title}>
+                                            {selected || "Good Morning! ☀"}
+                                        </SlidingText>
+                                    </AttachStep>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                                         <TouchableOpacity onPress={() => setReordering(true)}>
                                             <Ionicons
@@ -183,7 +294,10 @@ const Workspace = (props: Props) => {
                                 {categories
                                     .sort((a, b) => b.tasks.length - a.tasks.length)
                                     .filter((category) => category.name !== "!-proxy-!")
-                                    .map((category) => {
+                                    .map((category, index) => {
+                                        // Highlight first category header (step 2) and first task (step 1)
+                                        const isFirstCategory = index === 0 && category.tasks.length > 0;
+
                                         return (
                                             <Category
                                                 key={category.id + category.name}
@@ -198,6 +312,8 @@ const Workspace = (props: Props) => {
                                                     openModal();
                                                     setFocusedCategory(categoryId);
                                                 }}
+                                                highlightFirstTask={isFirstCategory}
+                                                highlightCategoryHeader={isFirstCategory}
                                             />
                                         );
                                     })}

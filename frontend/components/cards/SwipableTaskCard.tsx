@@ -24,9 +24,10 @@ type Props = {
     categoryId: string;
     task: Task;
     categoryName?: string;
+    highlightContent?: boolean;
 };
 
-export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName }: Props) {
+export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName, highlightContent = false }: Props) {
     const { removeFromCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
 
@@ -178,6 +179,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                     id={task.id}
                     categoryId={categoryId}
                     task={{ ...task }}
+                    highlightContent={highlightContent}
                 />
             </ReanimatedSwipeable>
         </>

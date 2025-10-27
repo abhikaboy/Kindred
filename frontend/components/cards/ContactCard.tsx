@@ -31,24 +31,23 @@ const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) 
     return (
         <TouchableOpacity style={styles.container} onPress={handlePress}>
             <PreviewIcon size="large" icon={icon} />
-            <View style={{ flexDirection: "column", gap: 8, alignItems: "center" }}>
+            <View style={{ flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
                 <View>
-                    <ThemedText style={{ textAlign: "center" }} type="lightBody">
+                    <ThemedText style={{ textAlign: "left" }} type="lightBody">
                         {name}
                     </ThemedText>
-                    <ThemedText style={{ textAlign: "center" }} type="caption">
+                    <ThemedText style={{ textAlign: "left" }} type="caption">
                         {handle} 
                     </ThemedText>
                     {contactName && (
                         <ThemedText 
-                            style={{ textAlign: "center", marginTop: 4, fontStyle: "italic" }} 
+                            style={{ textAlign: "left", marginTop: 4, fontStyle: "italic" }} 
                             type="caption"
                         >
                             {contactName}
                         </ThemedText>
                     )}
                 </View>
-                {id && <FollowButton connectionType={connectionType} followeeid={id} />}
             </View>
         </TouchableOpacity>
     );
@@ -61,9 +60,13 @@ const useStyles = (ThemedColor: any) =>
         container: {
             flex: 1,
             backgroundColor: ThemedColor.lightened,
-            borderRadius: 10,
-            padding: 24,
-            gap: 12,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary,
+            padding: 12,
+            paddingVertical: 20,
+            minWidth: Dimensions.get("screen").width * 0.3,
+            gap: 16,
             maxWidth: Dimensions.get("screen").width * 0.4,
             alignItems: "center",
             boxShadow: ThemedColor.shadowSmall,

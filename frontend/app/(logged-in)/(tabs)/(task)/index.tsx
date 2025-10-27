@@ -39,6 +39,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTutorial } from "@/hooks/useTutorial";
 import TutorialCard from "@/components/cards/TutorialCard";
+import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
+import { useSpotlight } from "@/contexts/SpotlightContext";
+import { TourStepCard } from "@/components/spotlight/TourStepCard";
 
 type Props = {};
 
@@ -60,6 +63,10 @@ const Home = (props: Props) => {
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
+
+    // Spotlight state management from context
+    const { spotlightState, setSpotlightShown } = useSpotlight();
+
 
     // Get recent workspaces and create a display list
     const recentWorkspaceNames = getRecentWorkspaces();
@@ -92,9 +99,15 @@ const Home = (props: Props) => {
                 const key = `${user._id}-quicksetup`;
                 const hasCompletedSetup = await AsyncStorage.getItem(key);
                 
-                // Show modal only if they haven't completed setup
-                if (!hasCompletedSetup) {
+                // Show modal only if:
+                // 1. They haven't completed setup
+                // 2. They've completed the task spotlight (finished all tours)
+                // 3. They're on the home page (selected === "")
+                if (!hasCompletedSetup && spotlightState.taskSpotlight && selected === "") {
                     setShowWorkspaceSelection(true);
+                } else if (selected !== "") {
+                    // Close modal if user navigates away from home page
+                    setShowWorkspaceSelection(false);
                 }
             } catch (error) {
                 console.error("Error checking quick setup status:", error);
@@ -102,7 +115,7 @@ const Home = (props: Props) => {
         };
 
         checkQuickSetup();
-    }, [user?._id]);
+    }, [user?._id, spotlightState.taskSpotlight, selected]);
 
     useEffect(() => {
         if (!user || !workspaces) return;
@@ -155,6 +168,116 @@ const Home = (props: Props) => {
         return <Workspace />;
     }
 
+    // Tour steps
+    const tourSteps: TourStep[] = [
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Workspaces 📚"
+                    description="Quick access to all your workspaces! Tap here to view and manage your workspaces."
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown('homeSpotlight');
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Community 🤝"
+                    description="This is where encouragements and congratulations from your close friends live!"
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown('homeSpotlight');
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Menu"
+                    description="Tap here to access your workspaces, settings, and more!"
+                    onNext={() => {
+                        drawerRef.current?.openDrawer();
+                        setSpotlightShown('homeSpotlight');
+                        // Increased delay to allow drawer to open before starting next tour
+                        setTimeout(next, 500);
+                    }}
+                    isLastStep
+                />
+            ),
+        },
+    ];
+
+    return (
+        <SpotlightTourProvider steps={tourSteps}>
+            <HomeContent
+                drawerRef={drawerRef}
+                setIsDrawerOpen={setIsDrawerOpen}
+                creatingWorkspace={creatingWorkspace}
+                setCreatingWorkspace={setCreatingWorkspace}
+                showWorkspaceSelection={showWorkspaceSelection}
+                setShowWorkspaceSelection={setShowWorkspaceSelection}
+                user={user}
+                ThemedColor={ThemedColor}
+                insets={insets}
+                focusMode={focusMode}
+                toggleFocusMode={toggleFocusMode}
+                encouragementCount={encouragementCount}
+                congratulationCount={congratulationCount}
+                displayWorkspaces={displayWorkspaces}
+                fetchingWorkspaces={fetchingWorkspaces}
+                workspaces={workspaces}
+                setSelected={setSelected}
+                shouldShowTutorial={shouldShowTutorial}
+                tourSteps={tourSteps}
+                spotlightState={spotlightState}
+            />
+        </SpotlightTourProvider>
+    );
+};
+
+const HomeContent = ({ 
+    drawerRef, 
+    setIsDrawerOpen, 
+    creatingWorkspace, 
+    setCreatingWorkspace,
+    showWorkspaceSelection,
+    setShowWorkspaceSelection,
+    user,
+    ThemedColor,
+    insets,
+    focusMode,
+    toggleFocusMode,
+    encouragementCount,
+    congratulationCount,
+    displayWorkspaces,
+    fetchingWorkspaces,
+    workspaces,
+    setSelected,
+    shouldShowTutorial,
+    tourSteps,
+    spotlightState
+}: any) => {
+    const { start } = useSpotlightTour();
+    const router = useRouter();
+    const { selected } = useTasks();
+
+    useEffect(() => {
+        // Only start the tour if we haven't shown the home spotlight
+        if (!spotlightState.homeSpotlight) {
+            const timer = setTimeout(() => {
+                start();
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [start, spotlightState.homeSpotlight]);
+
     return (
         <DrawerLayout
             ref={drawerRef}
@@ -179,9 +302,11 @@ const Home = (props: Props) => {
             />
             
             <ThemedView style={[styles.container, { paddingTop: insets.top, paddingBottom: focusMode ? 0 : Dimensions.get("screen").height * 0.12 }]}>
-                    <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
-                        <Feather name="menu" size={24} color={ThemedColor.caption} />
-                    </TouchableOpacity>
+                    <AttachStep index={2}>
+                        <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
+                            <Feather name="menu" size={24} color={ThemedColor.caption} />
+                        </TouchableOpacity>
+                    </AttachStep>
 
                 <ConditionalView condition={selected === ""}>
                     <View style={styles.headerContainer}>
@@ -212,84 +337,90 @@ const Home = (props: Props) => {
                                 </BasicCard>
 
                                 {/* Unread Encouragements - show right under Focus if unread */}
-                                {encouragementCount > 0 && (
-                                    <TouchableOpacity
-                                        onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
-                                        <BasicCard>
-                                            <View
-                                                style={{
-                                                    width: 12,
-                                                    height: 12,
-                                                    backgroundColor: ThemedColor.error,
-                                                    borderRadius: 12,
-                                                    position: "absolute",
-                                                    right: 0,
-                                                    top: 0,
-                                                }}
-                                            />
-                                            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                                <ThemedText type="default">Encouragements</ThemedText>
-                                                <ThemedText type="default">{encouragementCount}</ThemedText>
-                                            </View>
-                                        </BasicCard>
-                                    </TouchableOpacity>
-                                )}
+                                <AttachStep index={1}>
+                                    <View style={{ width: '100%', gap: 16 }}>
+                                        {encouragementCount > 0 && (
+                                            <TouchableOpacity
+                                                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
+                                                <BasicCard>
+                                                    <View
+                                                        style={{
+                                                            width: 12,
+                                                            height: 12,
+                                                            backgroundColor: ThemedColor.error,
+                                                            borderRadius: 12,
+                                                            position: "absolute",
+                                                            right: 0,
+                                                            top: 0,
+                                                        }}
+                                                    />
+                                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                        <ThemedText type="default">Encouragements</ThemedText>
+                                                        <ThemedText type="default">{encouragementCount}</ThemedText>
+                                                    </View>
+                                                </BasicCard>
+                                            </TouchableOpacity>
+                                        )}
 
-                                {/* Unread Congratulations - show right under Focus if unread */}
-                                {congratulationCount > 0 && (
-                                    <TouchableOpacity
-                                        onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}>
-                                        <BasicCard>
-                                            <View
-                                                style={{
-                                                    width: 12,
-                                                    height: 12,
-                                                    backgroundColor: ThemedColor.error,
-                                                    borderRadius: 12,
-                                                    position: "absolute",
-                                                    right: 0,
-                                                    top: 0,
-                                                }}
-                                            />
-                                            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                                <ThemedText type="default">Congratulations</ThemedText>
-                                                <ThemedText type="default">{congratulationCount}</ThemedText>
-                                            </View>
-                                        </BasicCard>
-                                    </TouchableOpacity>
-                                )}
+                                        {/* Unread Congratulations - show right under Focus if unread */}
+                                        {congratulationCount > 0 && (
+                                            <TouchableOpacity
+                                                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}>
+                                                <BasicCard>
+                                                    <View
+                                                        style={{
+                                                            width: 12,
+                                                            height: 12,
+                                                            backgroundColor: ThemedColor.error,
+                                                            borderRadius: 12,
+                                                            position: "absolute",
+                                                            right: 0,
+                                                            top: 0,
+                                                        }}
+                                                    />
+                                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                        <ThemedText type="default">Congratulations</ThemedText>
+                                                        <ThemedText type="default">{congratulationCount}</ThemedText>
+                                                    </View>
+                                                </BasicCard>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                </AttachStep>
 
                                 <DashboardCards drawerRef={drawerRef} />
                                 
                                 {/* Encouragements and Congratulations - show after Today if no unread */}
                                 {(encouragementCount === 0 || congratulationCount === 0) && (
-                                    <>
-                                        <ThemedText type="subtitle">Community</ThemedText>
-                                        <View style={{ gap: 16 }}>
-                                            {encouragementCount === 0 && (
-                                                <TouchableOpacity
-                                                    onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
-                                                    <BasicCard>
-                                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                                            <ThemedText type="default">Encouragements</ThemedText>
-                                                            <ThemedText type="default">{encouragementCount}</ThemedText>
-                                                        </View>
-                                                    </BasicCard>
-                                                </TouchableOpacity>
-                                            )}
-                                            {congratulationCount === 0 && (
-                                                <TouchableOpacity
-                                                    onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}>
-                                                    <BasicCard>
-                                                        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                                            <ThemedText type="default">Congratulations</ThemedText>
-                                                            <ThemedText type="default">{congratulationCount}</ThemedText>
-                                                        </View>
-                                                    </BasicCard>
-                                                </TouchableOpacity>
-                                            )}
+                                    <AttachStep index={1} style={{ width: '100%', gap: 16 }}>
+                                        <View style={{ width: '100%', gap: 16 }}>
+                                            <ThemedText type="subtitle">Community</ThemedText>
+                                            <View style={{ width: '100%', gap: 12 }}>
+                                                {encouragementCount === 0 && (
+                                                    <TouchableOpacity
+                                                        onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}>
+                                                        <BasicCard>
+                                                            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                                <ThemedText type="default">Encouragements</ThemedText>
+                                                                <ThemedText type="default">{encouragementCount}</ThemedText>
+                                                            </View>
+                                                        </BasicCard>
+                                                    </TouchableOpacity>
+                                                )}
+                                                {congratulationCount === 0 && (
+                                                    <TouchableOpacity
+                                                        onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}>
+                                                        <BasicCard>
+                                                            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                                <ThemedText type="default">Congratulations</ThemedText>
+                                                                <ThemedText type="default">{congratulationCount}</ThemedText>
+                                                            </View>
+                                                        </BasicCard>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
                                         </View>
-                                    </>
+                                    </AttachStep>
                                 )}
 
                                 <ThemedText type="subtitle">Recent Workspaces</ThemedText>

@@ -21,6 +21,9 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { updateTaskAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
+import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
+import { useSpotlight } from "@/contexts/SpotlightContext";
+import { TourStepCard } from "@/components/spotlight/TourStepCard";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -34,6 +37,68 @@ type Props = {
 };
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
+    const ThemedColor = useThemeColor();
+    const { spotlightState, setSpotlightShown } = useSpotlight();
+
+    // Tour steps for task creation
+    const tourSteps: TourStep[] = [
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Category 📂"
+                    description="This dropdown lets you choose which category the task belongs to. Categories help organize your tasks!"
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown("taskSpotlight");
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Public/Private 👁️"
+                    description="Toggle whether this task is visible on your profile. Public tasks can be seen by friends, private tasks are just for you!"
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown("taskSpotlight");
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Advanced Options ⚙️"
+                    description="Tap here to set start times, reminders, deadlines, and more advanced task settings!"
+                    onNext={() => {
+                        setSpotlightShown("taskSpotlight");
+                        next();
+                    }}
+                    isLastStep
+                />
+            ),
+        },
+    ];
+
+    return (
+        <SpotlightTourProvider steps={tourSteps}>
+            <StandardContent
+                hide={hide}
+                goTo={goTo}
+                edit={edit}
+                categoryId={categoryId}
+                screen={screen}
+                isBlueprint={isBlueprint}
+                spotlightState={spotlightState}
+            />
+        </SpotlightTourProvider>
+    );
+};
+
+const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, spotlightState }: Props & { spotlightState: any }) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, selectedCategory, setCreateCategory, task } = useTasks();
@@ -68,11 +133,23 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         setIsBlueprint,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
+    const { start } = useSpotlightTour();
 
     // Set the blueprint flag when component mounts or when the prop changes
     useEffect(() => {
         setIsBlueprint(isBlueprint);
     }, [isBlueprint, setIsBlueprint]); // Run when isBlueprint prop changes
+
+    // Start the spotlight tour if this is the first time creating a task
+    useEffect(() => {
+        if (!spotlightState.taskSpotlight && spotlightState.workspaceSpotlight && !edit) {
+            const timer = setTimeout(() => {
+                start();
+            }, 800);
+
+            return () => clearTimeout(timer);
+        }
+    }, [start, spotlightState.taskSpotlight, spotlightState.workspaceSpotlight, edit]);
 
     useEffect(() => {
         if (screen && edit) {
@@ -289,23 +366,25 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     gap: 8,
                     zIndex: 1000,
                 }}>
-                <Dropdown
-                    options={[
-                        ...availableCategories
-                            .filter((c) => c.name !== "!-proxy-!")
-                            .map((c) => {
-                                return { label: c.name, id: c.id, special: false };
-                            }),
-                        { label: "+ New Category", id: "", special: true },
-                    ]}
-                    ghost
-                    selected={selectedCategory}
-                    setSelected={setCreateCategory}
-                    onSpecial={() => {
-                        goTo(Screen.NEW_CATEGORY);
-                    }}
-                    width="76%"
-                />
+                <AttachStep index={0} style={{ width: "76%" }}>
+                    <Dropdown
+                        options={[
+                            ...availableCategories
+                                .filter((c) => c.name !== "!-proxy-!")
+                                .map((c) => {
+                                    return { label: c.name, id: c.id, special: false };
+                                }),
+                            { label: "+ New Category", id: "", special: true },
+                        ]}
+                        ghost
+                        selected={selectedCategory}
+                        setSelected={setCreateCategory}
+                        onSpecial={() => {
+                            goTo(Screen.NEW_CATEGORY);
+                        }}
+                        width="100%"
+                    />
+                </AttachStep>
                 <TouchableOpacity
                     style={{
                         borderRadius: 12,
@@ -356,21 +435,23 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             </View>
             <PrimaryOptionRow goTo={goTo} />
             <AdvancedOptionList goTo={goTo} showUnconfigured={false} />
-            <TouchableOpacity
-                onPress={() => {
-                    setShowAdvanced(!showAdvanced);
-                }}
-                style={{
-                    flexDirection: "row",
-                    gap: 16,
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    paddingVertical: 8,
-                    paddingTop: 16,
-                }}>
-                <ThemedText type="lightBody">Advanced Options</ThemedText>
-                <Feather name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={ThemedColor.text} />
-            </TouchableOpacity>
+            <AttachStep index={2}>
+                <TouchableOpacity
+                    onPress={() => {
+                        setShowAdvanced(!showAdvanced);
+                    }}
+                    style={{
+                        flexDirection: "row",
+                        gap: 16,
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingVertical: 8,
+                        paddingTop: 16,
+                    }}>
+                    <ThemedText type="lightBody">Advanced Options</ThemedText>
+                    <Feather name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={ThemedColor.text} />
+                </TouchableOpacity>
+            </AttachStep>
             <ConditionalView condition={showAdvanced}>
                 <AdvancedOptionList goTo={goTo} showUnconfigured={true} />
             </ConditionalView>
@@ -402,24 +483,26 @@ const PrimaryOptionRow = ({ goTo }: { goTo: (screen: Screen) => void }) => {
                 setPriority={setPriority}
             />
             <DeadlineQuickAccess goTo={goTo} />
-            <TouchableOpacity
-                onPress={() => {
-                    setIsPublic(!isPublic);
-                }}
-                style={{
-                    backgroundColor: ThemedColor.background,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
-                    padding: 12,
-                    flexDirection: "row",
-                    gap: 4,
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}>
-                <Feather name={isPublic ? "eye" : "eye-off"} size={20} color={ThemedColor.text} />
-                <ThemedText type="lightBody">{isPublic ? "Public" : "Private"}</ThemedText>
-            </TouchableOpacity>
+            <AttachStep index={1}>
+                <TouchableOpacity
+                    onPress={() => {
+                        setIsPublic(!isPublic);
+                    }}
+                    style={{
+                        backgroundColor: ThemedColor.background,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: ThemedColor.tertiary,
+                        padding: 12,
+                        flexDirection: "row",
+                        gap: 4,
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                    <Feather name={isPublic ? "eye" : "eye-off"} size={20} color={ThemedColor.text} />
+                    <ThemedText type="lightBody">{isPublic ? "Public" : "Private"}</ThemedText>
+                </TouchableOpacity>
+            </AttachStep>
             <DifficultyPopover value={value} setValue={setValue} />
         </ScrollView>
     );

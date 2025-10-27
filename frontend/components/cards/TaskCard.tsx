@@ -14,6 +14,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
 import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays } from "date-fns";
+import { AttachStep } from "react-native-spotlight-tour";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -39,6 +40,7 @@ interface Props {
     showRedOutline?: boolean; // Add red outline when categoryId is not configured
     detailed?: boolean; // Controls whether to show date labels like "(today)" or "(tomorrow)"
     inlineComponent?: React.ReactNode; // Optional component to render inline below the content text
+    highlightContent?: boolean; // Whether to highlight just the task content text
     encouragementConfig?: {
         userHandle?: string;
         receiverId: string;
@@ -65,6 +67,7 @@ const TaskCard = ({
     height = Dimensions.get("window").height * 0.07,
     showRedOutline = false,
     detailed = true,
+    highlightContent = false,
     encouragementConfig,
     congratulationConfig,
 }: Props) => {
@@ -231,7 +234,11 @@ const TaskCard = ({
                     {
                         backgroundColor: ThemedColor.lightened,
                         borderWidth: 1,
-                        borderColor: showRedOutline ? ThemedColor.error : ThemedColor.tertiary,
+                        borderColor: ThemedColor.tertiary,
+                        // borderRightColor: ThemedColor.primary,
+                        // borderRightWidth: 2,
+                        // borderTopRightRadius: 4,
+                        // borderBottomRightRadius: 4,
                     },
                 ]}
                 disabled={!redirect && !encourage && !congratulate}
@@ -241,14 +248,27 @@ const TaskCard = ({
 
                 <View style={styles.row}>
                     <View style={styles.contentContainer}>
-                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
-                            {content}
-                            {dateDisplay && (
-                                <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
-                                    {" "}{dateDisplay.text}
+                        {highlightContent ? (
+                            <AttachStep index={1}>
+                                <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                                    {content}
+                                    {dateDisplay && (
+                                        <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                            {" "}{dateDisplay.text}
+                                        </ThemedText>
+                                    )}
                                 </ThemedText>
-                            )}
-                        </ThemedText>
+                            </AttachStep>
+                        ) : (
+                            <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                                {content}
+                                {dateDisplay && (
+                                    <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                        {" "}{dateDisplay.text}
+                                    </ThemedText>
+                                )}
+                            </ThemedText>
+                        )}
                         {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                     </View>
                     <View style={styles.iconRow}>

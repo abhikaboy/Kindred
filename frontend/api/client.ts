@@ -52,24 +52,27 @@ baseClient.use({
         const access_token = response.headers.get("access_token");
         const refresh_token = response.headers.get("refresh_token");
 
-        if (access_token || refresh_token) {
+        if (access_token && refresh_token) {
+            console.log("📦 Saving tokens from response headers");
             const authData = {
-                access_token: access_token || undefined,
-                refresh_token: refresh_token || undefined,
+                access_token: access_token,
+                refresh_token: refresh_token,
             };
 
             await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
+            console.log("✅ Tokens saved successfully");
 
             // Verify what was actually saved
             const savedData = await SecureStore.getItemAsync("auth_data");
+            console.log("🔍 Verified saved data:", savedData ? "Tokens exist" : "Save failed");
 
             // Update axios defaults for compatibility with existing code
-            if (access_token) {
-                axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
-            }
-            if (refresh_token) {
-                axios.defaults.headers.common["refresh_token"] = refresh_token;
-            }
+            axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+            axios.defaults.headers.common["refresh_token"] = refresh_token;
+        } else if (access_token || refresh_token) {
+            console.warn("⚠️ Incomplete token pair in response headers");
+            console.warn("⚠️ Access token:", access_token ? "exists" : "missing");
+            console.warn("⚠️ Refresh token:", refresh_token ? "exists" : "missing");
         }
 
         return response;

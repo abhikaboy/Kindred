@@ -12,6 +12,9 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
+import { useSpotlight } from "@/contexts/SpotlightContext";
+import { TourStepCard } from "@/components/spotlight/TourStepCard";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -20,12 +23,120 @@ export const Drawer = ({ close }) => {
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
     const [showQuickImport, setShowQuickImport] = React.useState(false);
-
+    const { spotlightState, setSpotlightShown } = useSpotlight();
 
     const handleCreateBlueprint = () => {
         close();
         router.push("/blueprint/create");
     };
+
+    // Tour steps for drawer
+    const tourSteps: TourStep[] = [
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Workspaces 📚"
+                    description="Kindred organizes lists into workspaces. Each workspace can have multiple categories and tasks."
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown('menuSpotlight');
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="New Workspace ✨"
+                    description="The new workspace button is at the top. Tap here to create a new workspace anytime!"
+                    onNext={next}
+                    onSkip={() => {
+                        setSpotlightShown('menuSpotlight');
+                        stop();
+                    }}
+                />
+            ),
+        },
+        {
+            render: ({ next, stop }) => (
+                <TourStepCard
+                    title="Your Workspaces 📝"
+                    description="Current workspaces can be found in 'Personal Workspaces' below. Tap any workspace to view its tasks."
+                    onNext={() => {
+                        setSpotlightShown('menuSpotlight');
+                        
+                        // Check if "🌺 Kindred Guide" workspace exists and select it
+                        const kindredGuide = workspaces.find(w => w.name === "🌺 Kindred Guide");
+                        if (kindredGuide) {
+                            setSelected("🌺 Kindred Guide");
+                            router.navigate("/(logged-in)/(tabs)/(task)");
+                            close();
+                        }
+                        
+                        next();
+                    }}
+                    isLastStep
+                />
+            ),
+        },
+    ];
+
+    return (
+        <SpotlightTourProvider steps={tourSteps}>
+            <DrawerContent
+                close={close}
+                ThemedColor={ThemedColor}
+                workspaces={workspaces}
+                selected={selected}
+                setSelected={setSelected}
+                creating={creating}
+                setCreating={setCreating}
+                editing={editing}
+                setEditing={setEditing}
+                focusedWorkspace={focusedWorkspace}
+                setFocusedWorkspace={setFocusedWorkspace}
+                showQuickImport={showQuickImport}
+                setShowQuickImport={setShowQuickImport}
+                handleCreateBlueprint={handleCreateBlueprint}
+                spotlightState={spotlightState}
+            />
+        </SpotlightTourProvider>
+    );
+};
+
+const DrawerContent = ({
+    close,
+    ThemedColor,
+    workspaces,
+    selected,
+    setSelected,
+    creating,
+    setCreating,
+    editing,
+    setEditing,
+    focusedWorkspace,
+    setFocusedWorkspace,
+    showQuickImport,
+    setShowQuickImport,
+    handleCreateBlueprint,
+    spotlightState
+}: any) => {
+    const { start } = useSpotlightTour();
+
+    useEffect(() => {
+        // Only start the tour if:
+        // 1. We haven't shown the menu spotlight yet
+        // 2. The home spotlight has been completed (so the drawer was opened from the home tour)
+        if (!spotlightState.menuSpotlight && spotlightState.homeSpotlight) {
+            // Increased delay to 800ms to allow drawer animation to complete
+            const timer = setTimeout(() => {
+                start();
+            }, 800);
+
+            return () => clearTimeout(timer);
+        }
+    }, [start, spotlightState.menuSpotlight, spotlightState.homeSpotlight]);
 
     return (
         <View style={styles(ThemedColor).drawerContainer}>
@@ -37,26 +148,28 @@ export const Drawer = ({ close }) => {
             {/* Quick Import Bottom Sheet */}
             <QuickImportBottomSheet isVisible={showQuickImport} onClose={() => setShowQuickImport(false)} />
 
-            <View
-                style={{
-                    paddingTop: 16,
-                    paddingBottom: 16,
-                    paddingHorizontal: HORIZONTAL_PADDING,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    width: "100%",
-                }}>
-                <TouchableOpacity
-                    onPress={() => {
-                        setSelected("");
-                        close();
+            <AttachStep index={0}>
+                <View
+                    style={{
+                        paddingTop: 16,
+                        paddingBottom: 16,
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
                     }}>
-                    <ThemedText type="title">kindred</ThemedText>
-                </TouchableOpacity>
-                <ThemedText type="subtitle_subtle">v0.1.0</ThemedText>
-                {/* <Image source={require("@/assets/images/Checkmark.png")} style={{ width: 32, height: 26 }} /> */}
-            </View>
+                    <TouchableOpacity
+                        onPress={() => {
+                            setSelected("");
+                            close();
+                        }}>
+                        <ThemedText type="title">kindred</ThemedText>
+                    </TouchableOpacity>
+                    <ThemedText type="subtitle_subtle">v0.1.0</ThemedText>
+                    {/* <Image source={require("@/assets/images/Checkmark.png")} style={{ width: 32, height: 26 }} /> */}
+                </View>
+            </AttachStep>
             <TouchableOpacity
                 style={{
                     paddingTop: 12,
@@ -74,20 +187,22 @@ export const Drawer = ({ close }) => {
                 <ThemedText type="default">Settings</ThemedText>
                 <Ionicons name="settings-outline" size={20} color={ThemedColor.text} />
             </TouchableOpacity>
-            <TouchableOpacity
-                style={{
-                    paddingTop: 4,
-                    width: "100%",
-                    paddingBottom: 16,
-                    marginBottom: Dimensions.get("screen").height * 0.01,
-                    paddingHorizontal: HORIZONTAL_PADDING,
-                    borderTopWidth: 0,
-                    borderWidth: 2,
-                    borderColor: ThemedColor.tertiary,
-                }}
-                onPress={() => setCreating(true)}>
-                <ThemedText type="default">+ New Workspace</ThemedText>
-            </TouchableOpacity>
+            <AttachStep index={1} style={{ width: '100%' }}>
+                <TouchableOpacity
+                    style={{
+                        paddingTop: 4,
+                        width: "100%",
+                        paddingBottom: 16,
+                        marginBottom: Dimensions.get("screen").height * 0.01,
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        borderTopWidth: 0,
+                        borderWidth: 2,
+                        borderColor: ThemedColor.tertiary,
+                    }}
+                    onPress={() => setCreating(true)}>
+                    <ThemedText type="default">+ New Workspace</ThemedText>
+                </TouchableOpacity>
+            </AttachStep>
 
             <ScrollView
                 style={{ width: "100%" }}
@@ -157,32 +272,36 @@ export const Drawer = ({ close }) => {
                     }}
                     onLongPress={() => {}}
                 />
-                <View
-                    style={{
-                        paddingHorizontal: HORIZONTAL_PADDING,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
-                    }}>
-                    <Ionicons name="person" size={16} color={ThemedColor.caption} />
-                    <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
-                </View>
-                {workspaces.filter((workspace) => !workspace.isBlueprint).map((workspace) => (
-                    <DrawerItem
-                        onPress={() => {
-                            setSelected(workspace.name);
-                            router.navigate("/(logged-in)/(tabs)/(task)");
-                            close();
-                        }}
-                        onLongPress={() => {
-                            setFocusedWorkspace(workspace.name);
-                            setEditing(true);
-                        }}
-                        key={workspace.name}
-                        title={workspace.name}
-                        selected={selected}
-                    />
-                ))}
+                <AttachStep index={2} style={{ width: '100%' }}>
+                    <View style={{ width: '100%' }}>
+                        <View
+                            style={{
+                                paddingHorizontal: HORIZONTAL_PADDING,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 8,
+                            }}>
+                            <Ionicons name="person" size={16} color={ThemedColor.caption} />
+                            <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
+                        </View>
+                        {workspaces.filter((workspace) => !workspace.isBlueprint).map((workspace) => (
+                            <DrawerItem
+                                onPress={() => {
+                                    setSelected(workspace.name);
+                                    router.navigate("/(logged-in)/(tabs)/(task)");
+                                    close();
+                                }}
+                                onLongPress={() => {
+                                    setFocusedWorkspace(workspace.name);
+                                    setEditing(true);
+                                }}
+                                key={workspace.name}
+                                title={workspace.name}
+                                selected={selected}
+                            />
+                        ))}
+                    </View>
+                </AttachStep>
                 <TouchableOpacity onPress={() => {}}>
                     <View
                         style={{
