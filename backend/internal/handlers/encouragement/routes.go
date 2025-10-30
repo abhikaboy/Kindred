@@ -14,4 +14,4 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 
 	// Register all encouragement operations
 	RegisterEncouragementOperations(api, &handler)
-} 
+}

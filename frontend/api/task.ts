@@ -1,6 +1,7 @@
 import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import logger from "@/utils/logger";
 
 // Extract the type definitions from the generated types
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -235,9 +236,9 @@ export interface PaginatedCompletedTasksResponse {
  * @param limit - Number of tasks per page (default: 20, max: 100)
  */
 export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20): Promise<PaginatedCompletedTasksResponse> => {
-    console.log(`getCompletedTasksAPI called with page=${page}, limit=${limit}`);
-    
     try {
+        logger.log(`Fetching completed tasks: page=${page}, limit=${limit}`);
+        
         const { data, error } = await client.GET("/v1/user/tasks/completed", {
             params: withAuthHeaders({
                 query: { page, limit },
@@ -245,20 +246,20 @@ export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20)
         });
 
         if (error) {
-            console.error("API Error:", error);
+            logger.error("Failed to get completed tasks:", error);
             throw new Error(`Failed to get completed tasks: ${JSON.stringify(error)}`);
         }
-
-        console.log("API Response data:", data);
 
         // Type assertion since the generated types may not be up to date
         // The backend returns the data structure directly
         const response = (data as any);
         
         if (!response) {
-            console.warn("No data returned from API, using defaults");
+            logger.warn("No data returned from completed tasks API");
             return { tasks: [], page: 1, limit: 20, total: 0, totalPages: 0 };
         }
+
+        logger.log(`Completed tasks response: ${response.tasks?.length || 0} tasks`);
 
         // Handle the response structure - it should have tasks, page, limit, total, totalPages
         return {
@@ -269,7 +270,7 @@ export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20)
             totalPages: response.totalPages || 0,
         };
     } catch (err) {
-        console.error("Exception in getCompletedTasksAPI:", err);
+        logger.error("Exception in getCompletedTasksAPI:", err);
         throw err;
     }
 };
@@ -296,7 +297,7 @@ export const getTodayCompletedTasksCount = async (): Promise<number> => {
         
         return todayCompletedTasks.length;
     } catch (error) {
-        console.error('Error getting today completed tasks count:', error);
+        logger.error('Error getting today completed tasks count:', error);
         return 0;
     }
 };
@@ -312,7 +313,7 @@ export const getTotalPointsFromCompletedTasks = async (): Promise<number> => {
         const completedTasks = response.tasks;
         return completedTasks.reduce((total, task) => total + (task.value || 0), 0);
     } catch (error) {
-        console.error('Error getting total points from completed tasks:', error);
+        logger.error('Error getting total points from completed tasks:', error);
         return 0;
     }
 };

@@ -147,10 +147,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const fetchWorkspaces = async () => {
         setFetchingWorkspaces(true);
-        console.log("fetching workspaces via API");
         const data = await fetchUserWorkspaces(user._id);
         const subscribedBlueprints = await getUserSubscribedBlueprints();
-        console.log("subscribedBlueprints", subscribedBlueprints);
         const blueprintWorkspaces : BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
             return {
                 name: blueprint.name,
@@ -159,7 +157,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 isBlueprint: true
             }
         });
-        console.log("blueprintWorkspaces", blueprintWorkspaces);
 
         setWorkSpaces([...data, ...blueprintWorkspaces]);
         setFetchingWorkspaces(false);

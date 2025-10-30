@@ -120,20 +120,20 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 
 	result, err := s.Categories.UpdateOne(ctx, filter, update)
 	if err != nil {
-		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", 
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category",
 			slog.String("categoryID", id.Hex()),
 			slog.String("error", err.Error()))
 		return nil, err
 	}
 
 	if result.MatchedCount == 0 {
-		slog.LogAttrs(ctx, slog.LevelError, "Category not found or user doesn't own it", 
+		slog.LogAttrs(ctx, slog.LevelError, "Category not found or user doesn't own it",
 			slog.String("categoryID", id.Hex()),
 			slog.String("userID", user.Hex()))
 		return nil, fmt.Errorf("category not found or access denied")
 	}
 
-	slog.LogAttrs(ctx, slog.LevelInfo, "Category updated successfully", 
+	slog.LogAttrs(ctx, slog.LevelInfo, "Category updated successfully",
 		slog.String("categoryID", id.Hex()),
 		slog.String("newName", updated.Name))
 
@@ -170,14 +170,14 @@ func (s *Service) RenameWorkspace(oldWorkspaceName string, newWorkspaceName stri
 
 	result, err := s.Categories.UpdateMany(ctx, filter, update)
 	if err != nil {
-		slog.LogAttrs(ctx, slog.LevelError, "Failed to rename workspace", 
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to rename workspace",
 			slog.String("oldName", oldWorkspaceName),
 			slog.String("newName", newWorkspaceName),
 			slog.String("error", err.Error()))
 		return err
 	}
 
-	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace renamed successfully", 
+	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace renamed successfully",
 		slog.String("oldName", oldWorkspaceName),
 		slog.String("newName", newWorkspaceName),
 		slog.Int64("categoriesUpdated", result.ModifiedCount))

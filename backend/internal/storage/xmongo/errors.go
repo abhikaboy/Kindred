@@ -20,9 +20,9 @@ func ExtractDuplicateField(err error) (field string, message string) {
 	if err == nil {
 		return "", ""
 	}
-	
+
 	errMsg := err.Error()
-	
+
 	if strings.Contains(errMsg, "email") {
 		return "email", "An account with this email already exists"
 	}
@@ -35,7 +35,6 @@ func ExtractDuplicateField(err error) (field string, message string) {
 	if strings.Contains(errMsg, "handle") {
 		return "handle", "This handle is already taken"
 	}
-	
+
 	return "unknown", "An account with these credentials already exists"
 }
-

@@ -58,17 +58,17 @@ func TestUploadFlow(t *testing.T) {
 
 	// Parse the JSON response to extract the upload_url
 	var response struct {
-			UploadURL string `json:"upload_url"`
-			Key       string `json:"key"`
-			PublicURL string `json:"public_url"`
-			Message   string `json:"message"`
-		}
-	
+		UploadURL string `json:"upload_url"`
+		Key       string `json:"key"`
+		PublicURL string `json:"public_url"`
+		Message   string `json:"message"`
+	}
+
 	if err := json.Unmarshal(presignedURLBytes, &response); err != nil {
 		t.Fatalf("Failed to parse JSON response: %v", err)
 	}
 
-	slog.Info("Presigned URL:", "url", response.UploadURL, "public_url", response.PublicURL)	
+	slog.Info("Presigned URL:", "url", response.UploadURL, "public_url", response.PublicURL)
 
 	// 4. Upload the image to Digital Ocean Spaces
 	req, err := http.NewRequest(http.MethodPut, response.UploadURL, bytes.NewReader(imageBuffer))

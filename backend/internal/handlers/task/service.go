@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/internal/xcontext"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -72,7 +73,9 @@ func newService(collections map[string]*mongo.Collection) *Service {
 
 // GetAllTasks fetches all Task documents from MongoDB
 func (s *Service) GetAllTasks() ([]TaskDocument, error) {
-	ctx := context.Background()
+	ctx, cancel := xcontext.WithTimeout(context.Background())
+	defer cancel()
+
 	cursor, err := s.Tasks.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -88,9 +91,8 @@ func (s *Service) GetAllTasks() ([]TaskDocument, error) {
 }
 
 func (s *Service) GetTasksByUser(id primitive.ObjectID, sort bson.D) ([]TaskDocument, error) {
-	ctx := context.Background()
-
-	fmt.Println(sort)
+	ctx, cancel := xcontext.WithTimeout(context.Background())
+	defer cancel()
 
 	pipeline := getTasksByUserPipeline(id)
 	pipeline = append(pipeline, sort)
@@ -109,9 +111,8 @@ func (s *Service) GetTasksByUser(id primitive.ObjectID, sort bson.D) ([]TaskDocu
 	return results, nil
 }
 func (s *Service) GetPublicTasks(id primitive.ObjectID, sort bson.D) ([]TaskDocument, error) {
-	ctx := context.Background()
-
-	fmt.Println(sort)
+	ctx, cancel := xcontext.WithTimeout(context.Background())
+	defer cancel()
 
 	pipeline := getTasksByUserPipeline(id)
 	pipeline = append(pipeline, bson.D{
