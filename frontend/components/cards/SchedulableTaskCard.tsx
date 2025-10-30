@@ -1,6 +1,6 @@
 // Wrapper for TaskCard that allows for swiping to schedule
 
-import React from "react";
+import React, { useCallback } from "react";
 
 import TaskCard from "./TaskCard";
 
@@ -25,7 +25,7 @@ type Props = {
     onRightSwipe?: () => void; // Customizable right swipe action
 };
 
-export default function SchedulableTaskCard({ 
+const SchedulableTaskCard = React.memo(function SchedulableTaskCard({ 
     redirect = false, 
     categoryId, 
     task, 
@@ -39,13 +39,11 @@ export default function SchedulableTaskCard({
   Mark as completed function
 */
 
-    const deleteTask = async (categoryId: string, taskId: string) => {
+    const deleteTask = useCallback(async (categoryId: string, taskId: string) => {
         try {
             const res = await removeFromCategoryAPI(categoryId, taskId);
             removeFromCategory(categoryId, taskId);
-            console.log(res);
         } catch (error) {
-            console.log(error);
             showToastable({
                 title: "Error",
                 status: "danger",
@@ -55,16 +53,16 @@ export default function SchedulableTaskCard({
                 renderContent: (props) => <DefaultToast {...props} />,
             });
         }
-    };
+    }, [removeFromCategory]);
 
     // Custom right swipe action - either use provided callback or default delete
-    const handleRightSwipe = () => {
+    const handleRightSwipe = useCallback(() => {
         if (onRightSwipe) {
             onRightSwipe();
         } else {
             deleteTask(categoryId, task.id);
         }
-    };
+    }, [onRightSwipe, deleteTask, categoryId, task.id]);
 
     // Check if categoryId is configured
     const isCategoryConfigured = categoryId && categoryId.trim() !== "";
@@ -97,7 +95,9 @@ export default function SchedulableTaskCard({
             </ReanimatedSwipeable>
         </>
     );
-}
+});
+
+export default SchedulableTaskCard;
 
 function LeftAction(
     prog: SharedValue<number>,

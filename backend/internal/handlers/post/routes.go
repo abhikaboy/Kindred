@@ -14,5 +14,5 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 
 	// Register all post operations
 	RegisterPostOperations(api, &handler)
-	
+
 }

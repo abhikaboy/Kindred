@@ -17,8 +17,8 @@ type GetActivitiesOutput struct {
 
 // Get Activity by ID
 type GetActivityInput struct {
-	ID    string `path:"id" example:"507f1f77bcf86cd799439011"`
-	Year  int    `query:"year" example:"2024"`
+	ID   string `path:"id" example:"507f1f77bcf86cd799439011"`
+	Year int    `query:"year" example:"2024"`
 }
 
 type GetActivityOutput struct {
