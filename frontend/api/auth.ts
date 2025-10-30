@@ -1,5 +1,6 @@
 import { LoginRequest, LoginResponse, RegisterRequest, User } from "./types";
 import { useRequest } from "@/hooks/useRequest";
+import logger from "@/utils/logger";
 
 /**
  * Logs in a user
@@ -14,6 +15,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
         const { request } = useRequest();
         return await request("POST", "/auth/login", credentials);
     } catch (error) {
+        logger.error("Login failed:", error);
         // Re-throw with a more user-friendly message
         throw new Error("Failed to login. Please check your credentials and try again.");
     }
@@ -31,6 +33,7 @@ export const register = async (credentials: RegisterRequest): Promise<void> => {
         const { request } = useRequest();
         return await request("POST", "/auth/register", credentials);
     } catch (error) {
+        logger.error("Registration failed:", error);
         throw new Error("Failed to register. Please try again later.");
     }
 };
@@ -44,8 +47,10 @@ export const register = async (credentials: RegisterRequest): Promise<void> => {
 export const loginWithToken = async (): Promise<User> => {
     try {
         const { request } = useRequest();
+        logger.log("Logging in with token");
         return await request("POST", "/user/login");
     } catch (error) {
+        logger.error("Token login failed:", error);
         throw new Error("Session expired. Please login again.");
     }
 };
@@ -61,6 +66,7 @@ export const updatePushToken = async (pushToken: string): Promise<void> => {
         const { request } = useRequest();
         return await request("POST", "/user/pushtoken", { push_token: pushToken });
     } catch (error) {
+        logger.error("Push token update failed:", error);
         throw new Error("Failed to update push token. Please try again later.");
     }
 };
@@ -75,6 +81,7 @@ export const deleteAccount = async (): Promise<void> => {
         const { request } = useRequest();
         return await request("DELETE", "/user/account");
     } catch (error) {
+        logger.error("Account deletion failed:", error);
         throw new Error("Failed to delete account. Please try again later.");
     }
 };

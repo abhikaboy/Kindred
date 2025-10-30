@@ -3,8 +3,9 @@
  * Only logs in development mode to reduce console noise in production
  */
 
-// @ts-ignore - __DEV__ is a global constant defined by React Native
-const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV === 'development';
+// Check if we're in development mode
+// __DEV__ is a global constant defined by React Native, fallback to NODE_ENV
+const isDev = (typeof __DEV__ !== 'undefined' && __DEV__) || process.env.NODE_ENV === 'development';
 
 export const logger = {
     /**
