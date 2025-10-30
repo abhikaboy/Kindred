@@ -9,6 +9,7 @@ import (
 type Service struct {
 	users      *mongo.Collection
 	categories *mongo.Collection
+	referrals  *mongo.Collection
 	config     config.Config
 }
 
@@ -16,6 +17,7 @@ func newService(collections map[string]*mongo.Collection, config config.Config) 
 	return &Service{
 		users:      collections["users"],
 		categories: collections["categories"],
+		referrals:  collections["referrals"],
 		config:     config,
 	}
 }

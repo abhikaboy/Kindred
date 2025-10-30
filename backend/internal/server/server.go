@@ -16,6 +16,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
+	referral "github.com/abhikaboy/Kindred/internal/handlers/referral"
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
@@ -111,6 +112,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 
 	// Register notification routes
 	notifications.Routes(api, collections)
+
+	// Register referral routes
+	referral.Routes(api, collections)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)

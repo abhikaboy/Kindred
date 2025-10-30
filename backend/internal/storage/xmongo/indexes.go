@@ -67,6 +67,27 @@ var Indexes = []Index{
 			Options: options.Index().SetUnique(true),
 		},
 	},
+	// Referrals collection indexes
+	{
+		Collection: "referrals",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "userId", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+	},
+	{
+		Collection: "referrals",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "referralCode", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+	},
+	{
+		Collection: "referrals",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "referredUsers.userId", Value: 1}},
+		},
+	},
 	// {
 	// 	Collection: "users",
 	// 	Model: mongo.IndexModel{Keys: bson.D{

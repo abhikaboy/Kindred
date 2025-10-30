@@ -101,8 +101,8 @@ const PhotoOnboarding = (props: Props) => {
             console.log('User registered successfully!');
             showToast('Account created successfully! 🎉', 'success');
             
-            // Step 5: Navigate to notifications screen
-            router.push('/(onboarding)/notifications');
+            // Step 5: Navigate to referral screen
+            router.push('/(onboarding)/referral');
             
         } catch (error: any) {
             console.error('Registration or upload error:', error);
@@ -149,8 +149,8 @@ const PhotoOnboarding = (props: Props) => {
             console.log('User registered successfully!');
             showToast('Account created successfully! 🎉', 'success');
             
-            // Navigate to notifications screen
-            router.push('/(onboarding)/notifications');
+            // Navigate to referral screen
+            router.push('/(onboarding)/referral');
             
         } catch (error: any) {
             console.error('Registration error:', error);

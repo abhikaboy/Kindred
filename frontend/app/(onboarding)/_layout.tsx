@@ -21,6 +21,7 @@ export default function OnboardingLayout() {
             <Stack.Screen name="circle" />
             <Stack.Screen name="name" />
             <Stack.Screen name="photo" />
+            <Stack.Screen name="referral" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="accomplishment" />
         </Stack>

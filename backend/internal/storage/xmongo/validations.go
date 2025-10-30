@@ -15,6 +15,7 @@ var (
 			"$jsonSchema": restaurantsValidator,
 		},
 		"passwordResets": pwResetsValidator,
+		"referrals":      bson.M{"$jsonSchema": referralsValidator},
 	}
 
 	defaultValidator = bson.M{
@@ -370,4 +371,105 @@ var (
 				"description": "Name of the menu item",
 			},
 		}}
+
+	referralsValidator = bson.M{
+		"bsonType":             "object",
+		"required":             []string{"_id", "userId", "referralCode", "metadata"},
+		"additionalProperties": false,
+		"properties": bson.M{
+			"_id": bson.M{
+				"bsonType":    "objectId",
+				"description": "Unique identifier for referral document",
+			},
+			"userId": bson.M{
+				"bsonType":    "objectId",
+				"description": "Reference to the user who owns this referral data",
+			},
+			"referralCode": bson.M{
+				"bsonType":    "string",
+				"minLength":   6,
+				"maxLength":   12,
+				"description": "Unique referral code for this user",
+			},
+			"unlocksRemaining": bson.M{
+				"bsonType":    "int",
+				"minimum":     0,
+				"description": "Number of feature unlocks available",
+			},
+			"referredUsers": bson.M{
+				"bsonType": "array",
+				"items": bson.M{
+					"bsonType": "object",
+					"required": []string{"userId", "joinedAt", "rewardGranted"},
+					"properties": bson.M{
+						"userId": bson.M{
+							"bsonType": "objectId",
+						},
+						"joinedAt": bson.M{
+							"bsonType": "date",
+						},
+						"displayName": bson.M{
+							"bsonType": "string",
+						},
+						"handle": bson.M{
+							"bsonType": "string",
+						},
+						"rewardGranted": bson.M{
+							"bsonType": "bool",
+						},
+					},
+				},
+			},
+			"unlockedFeatures": bson.M{
+				"bsonType": "array",
+				"items": bson.M{
+					"bsonType": "object",
+					"required": []string{"featureId", "featureName", "unlockedAt", "unlockedBy", "active"},
+					"properties": bson.M{
+						"featureId": bson.M{
+							"bsonType": "string",
+						},
+						"featureName": bson.M{
+							"bsonType": "string",
+						},
+						"unlockedAt": bson.M{
+							"bsonType": "date",
+						},
+						"unlockedBy": bson.M{
+							"bsonType": "objectId",
+						},
+						"expiresAt": bson.M{
+							"bsonType": []string{"date", "null"},
+						},
+						"active": bson.M{
+							"bsonType": "bool",
+						},
+					},
+				},
+			},
+			"referredBy": bson.M{
+				"bsonType":    []string{"objectId", "null"},
+				"description": "User ID who referred this user",
+			},
+			"metadata": bson.M{
+				"bsonType": "object",
+				"required": []string{"createdAt", "updatedAt", "totalReferred"},
+				"properties": bson.M{
+					"createdAt": bson.M{
+						"bsonType": "date",
+					},
+					"updatedAt": bson.M{
+						"bsonType": "date",
+					},
+					"totalReferred": bson.M{
+						"bsonType": "int",
+						"minimum":  0,
+					},
+					"lastReferralAt": bson.M{
+						"bsonType": []string{"date", "null"},
+					},
+				},
+			},
+		},
+	}
 )

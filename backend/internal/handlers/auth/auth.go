@@ -342,6 +342,19 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		}
 	}()
 
+	// Create referral document for the new user
+	go func() {
+		// Use a background context with timeout for referral document creation
+		referralCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := h.service.CreateReferralDocumentForUser(referralCtx, id); err != nil {
+			slog.LogAttrs(referralCtx, slog.LevelError, "Failed to create referral document for new user",
+				slog.String("userId", id.Hex()),
+				slog.String("error", err.Error()))
+		}
+	}()
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "User registered successfully",
 		slog.String("userId", id.Hex()),
 		slog.String("email", input.Body.Email),

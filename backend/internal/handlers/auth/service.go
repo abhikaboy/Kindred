@@ -2,9 +2,12 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base32"
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -503,6 +506,65 @@ func (s *Service) DeleteAccount(ctx context.Context, userID primitive.ObjectID) 
 	if result.DeletedCount == 0 {
 		return fmt.Errorf("user not found")
 	}
+
+	return nil
+}
+
+/*
+CreateReferralDocumentForUser creates a referral document for a newly registered user
+*/
+func (s *Service) CreateReferralDocumentForUser(ctx context.Context, userID primitive.ObjectID) error {
+	// Only create if referrals collection exists
+	if s.referrals == nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "Referrals collection not available, skipping referral document creation")
+		return nil
+	}
+
+	// Generate referral code using crypto/rand
+	bytes := make([]byte, 6)
+	if _, err := rand.Read(bytes); err != nil {
+		return fmt.Errorf("failed to generate random bytes: %w", err)
+	}
+
+	// Encode to base32 and take first 8 characters
+	code := strings.ToUpper(base32.StdEncoding.EncodeToString(bytes)[:8])
+
+	// Remove ambiguous characters
+	code = strings.Map(func(r rune) rune {
+		switch r {
+		case '0', 'O':
+			return '8'
+		case 'I', '1':
+			return '7'
+		default:
+			return r
+		}
+	}, code)
+
+	now := time.Now()
+	referralDoc := bson.M{
+		"_id":              primitive.NewObjectID(),
+		"userId":           userID,
+		"referralCode":     code,
+		"unlocksRemaining": 0,
+		"referredUsers":    []interface{}{},
+		"unlockedFeatures": []interface{}{},
+		"referredBy":       nil,
+		"metadata": bson.M{
+			"createdAt":     now,
+			"updatedAt":     now,
+			"totalReferred": 0,
+		},
+	}
+
+	_, err := s.referrals.InsertOne(ctx, referralDoc)
+	if err != nil {
+		return fmt.Errorf("failed to create referral document: %w", err)
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Created referral document for new user",
+		slog.String("userId", userID.Hex()),
+		slog.String("referralCode", code))
 
 	return nil
 }
