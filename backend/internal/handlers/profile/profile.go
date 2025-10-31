@@ -219,7 +219,18 @@ func (h *Handler) GetSuggestedUsers(ctx context.Context, input *GetSuggestedUser
 }
 
 func (h *Handler) FindUsersByPhoneNumbers(ctx context.Context, input *FindUsersByPhoneNumbersInput) (*FindUsersByPhoneNumbersOutput, error) {
-	users, err := h.service.FindUsersByPhoneNumbers(input.Body.Numbers)
+	// Get authenticated user ID
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Unauthorized", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	users, err := h.service.FindUsersByPhoneNumbers(input.Body.Numbers, userID)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to find users by phone numbers", err)
 	}

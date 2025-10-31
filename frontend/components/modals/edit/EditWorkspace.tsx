@@ -25,13 +25,17 @@ type Props = {
 
 const EditWorkspace = (props: Props) => {
     const { editing, setEditing, id } = props;
-    const { removeWorkspace, getWorkspace, restoreWorkspace, categories } = useTasks();
+    const { removeWorkspace, getWorkspace, restoreWorkspace, workspaces } = useTasks();
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showReorderModal, setShowReorderModal] = useState(false);
     const [showSortModal, setShowSortModal] = useState(false);
     const [isPublic, setIsPublic] = useState(true);
     const ThemedColor = useThemeColor();
+
+    // Get the categories for the current workspace
+    const currentWorkspace = workspaces.find((ws) => ws.name === id);
+    const workspaceCategories = currentWorkspace?.categories || [];
 
     // Reference to the bottom sheet modals
     const editWorkspaceSheetRef = useRef<BottomSheetModal>(null);
@@ -224,7 +228,7 @@ const EditWorkspace = (props: Props) => {
                 enablePanDownToClose={true}>
                 <BottomSheetView style={{ paddingHorizontal: 20, paddingBottom: 20, flex: 1 }}>
                     <ReorderContent
-                        categories={categories}
+                        categories={workspaceCategories}
                         onSave={() => {
                             setShowReorderModal(false);
                             reorderSheetRef.current?.dismiss();
@@ -268,20 +272,24 @@ const EditWorkspace = (props: Props) => {
 const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () => void }) => {
     const { setWorkSpaces, workspaces, selected } = useTasks();
     const [reorderedCategories, setReorderedCategories] = useState<any[]>(categories);
-    const [reordering, setReordering] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
 
     const handleSave = () => {
-        // Update the workspace with the new category order
-        const workspacesCopy = workspaces.slice();
+        // Create a proper copy of workspaces array
+        const workspacesCopy = [...workspaces];
         const workspaceIndex = workspacesCopy.findIndex((ws) => ws.name === selected);
         
         if (workspaceIndex !== -1) {
-            workspacesCopy[workspaceIndex].categories = reorderedCategories;
+            // Create a new workspace object with updated categories
+            workspacesCopy[workspaceIndex] = {
+                ...workspacesCopy[workspaceIndex],
+                categories: reorderedCategories,
+            };
             setWorkSpaces(workspacesCopy);
         }
         
         onSave();
-        setReordering(false);
+        setHasChanges(false);
     };
 
     return (
@@ -297,10 +305,11 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
                     <DraggableFlatList
                         data={reorderedCategories}
                         onDragBegin={() => {
-                            setReordering(true);
+                            setHasChanges(true);
                         }}
                         onDragEnd={({ data }) => {
                             setReorderedCategories(data);
+                            setHasChanges(true);
                         }}
                         renderItem={({ item, drag, isActive }) => (
                             <TouchableOpacity
@@ -319,9 +328,10 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
                     />
                 </View>
                 <PrimaryButton
-                    title="Save Reordering"
-                    outline={!reordering}
+                    title="Save Order"
+                    outline={!hasChanges}
                     onPress={handleSave}
+                    disabled={!hasChanges}
                 />
             </View>
         </>

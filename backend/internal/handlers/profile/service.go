@@ -435,7 +435,8 @@ func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
 // FindUsersByPhoneNumbers efficiently finds users matching any of the provided phone numbers
 // Uses a single database query with $in operator to avoid multiple scans
 // Returns users with phone numbers included for contact name mapping
-func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserExtendedReferenceWithPhone, error) {
+// Excludes the authenticated user from results
+func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string, excludeUserID primitive.ObjectID) ([]types.UserExtendedReferenceWithPhone, error) {
 	ctx := context.Background()
 
 	// Return empty if no phone numbers provided
@@ -443,10 +444,13 @@ func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string) ([]types.UserEx
 		return []types.UserExtendedReferenceWithPhone{}, nil
 	}
 
-	// Use $in operator for efficient single-query lookup
+	// Use $in operator for efficient single-query lookup, but exclude the authenticated user
 	filter := bson.M{
 		"phone": bson.M{
 			"$in": phoneNumbers,
+		},
+		"_id": bson.M{
+			"$ne": excludeUserID,
 		},
 	}
 
