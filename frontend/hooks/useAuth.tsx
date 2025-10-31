@@ -43,6 +43,7 @@ export async function getAuthData(): Promise<AuthData | null> {
 // This function is now replaced by useAppleLoginMutation hook
 interface AuthContextType {
     user: SafeUser | null;
+    setUser: (user: SafeUser | null) => void;
     login: (appleAccountID: string) => Promise<SafeUser | void>;
     loginWithPhone: (phoneNumber: string, password: string) => Promise<SafeUser | void>;
     register: (email: string, appleAccountID: string) => Promise<any>;
@@ -79,12 +80,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Login with token query - we'll use this for automatic authentication
     const loginWithTokenMutation = useTypedMutation("post", "/v1/user/login");
 
+    // NOTE: This is a legacy function kept for backward compatibility with old components
+    // New code should use the mutations directly from useOnboarding
     async function register(email: string, appleAccountID: string): Promise<any> {
+        // @ts-ignore - Legacy function with incomplete type signature
         try {
             const result = await appleRegisterMutation.mutateAsync({
                 body: {
                     apple_id: appleAccountID,
                     email: email,
+                    // These fields should be provided by the caller but aren't in the old signature
+                    display_name: '',
+                    handle: '',
+                    profile_picture: '',
                 }
             });
 
@@ -404,7 +412,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (
         <AuthContext.Provider 
             value={{ 
-                user, 
+                user,
+                setUser,
                 register, 
                 login,
                 loginWithPhone,

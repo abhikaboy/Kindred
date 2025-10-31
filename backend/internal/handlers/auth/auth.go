@@ -364,7 +364,22 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	resp := &RegisterOutput{}
 	resp.AccessToken = access
 	resp.RefreshToken = refresh
-	resp.Body.Message = "User Created Successfully"
+	resp.Body = types.SafeUser{
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
+	}
 
 	return resp, nil
 }

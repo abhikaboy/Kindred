@@ -387,9 +387,9 @@ var (
 			},
 			"referralCode": bson.M{
 				"bsonType":    "string",
-				"minLength":   6,
-				"maxLength":   12,
-				"description": "Unique referral code for this user",
+				"minLength":   8,
+				"maxLength":   8,
+				"description": "Unique 8-character referral code for this user",
 			},
 			"unlocksRemaining": bson.M{
 				"bsonType":    "int",

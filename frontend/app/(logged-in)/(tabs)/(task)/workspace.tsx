@@ -16,9 +16,8 @@ import SlidingText from "@/components/ui/SlidingText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import DefaultModal from "@/components/modals/DefaultModal";
-import ReorderCategories from "@/components/modals/ReorderCategories";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import EditWorkspace from "@/components/modals/edit/EditWorkspace";
 import { useDrawer } from "@/contexts/drawerContext";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
@@ -35,7 +34,7 @@ const Workspace = (props: Props) => {
     const { spotlightState, setSpotlightShown } = useSpotlight();
 
     const [editing, setEditing] = useState(false);
-    const [reordering, setReordering] = useState(false);
+    const [editingWorkspace, setEditingWorkspace] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
 
@@ -107,8 +106,8 @@ const Workspace = (props: Props) => {
                 openModal={openModal}
                 editing={editing}
                 setEditing={setEditing}
-                reordering={reordering}
-                setReordering={setReordering}
+                editingWorkspace={editingWorkspace}
+                setEditingWorkspace={setEditingWorkspace}
                 focusedCategory={focusedCategory}
                 setFocusedCategory={setFocusedCategory}
                 isHeaderSticky={isHeaderSticky}
@@ -132,8 +131,8 @@ const WorkspaceContent = ({
     openModal,
     editing,
     setEditing,
-    reordering,
-    setReordering,
+    editingWorkspace,
+    setEditingWorkspace,
     focusedCategory,
     setFocusedCategory,
     isHeaderSticky,
@@ -190,9 +189,11 @@ const WorkspaceContent = ({
                 </View>
             </ConditionalView>
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-            <DefaultModal visible={reordering} setVisible={setReordering}>
-                <ReorderCategories hide={() => setReordering(false)} />
-            </DefaultModal>
+            <EditWorkspace 
+                editing={editingWorkspace} 
+                setEditing={setEditingWorkspace} 
+                id={selected} 
+            />
 
             {/* Sticky Header - Only shows when scrolled */}
             <ConditionalView condition={isHeaderSticky && selected !== ""}>
@@ -215,8 +216,8 @@ const WorkspaceContent = ({
                             {selected}
                         </SlidingText>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                            <TouchableOpacity onPress={() => setReordering(true)}>
-                                <Ionicons name="chevron-expand-outline" size={28} color={ThemedColor.text} />
+                            <TouchableOpacity onPress={() => setEditingWorkspace(true)}>
+                                <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -254,10 +255,10 @@ const WorkspaceContent = ({
                                         </SlidingText>
                                     </AttachStep>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                                        <TouchableOpacity onPress={() => setReordering(true)}>
+                                        <TouchableOpacity onPress={() => setEditingWorkspace(true)}>
                                             <Ionicons
-                                                name="chevron-expand-outline"
-                                                size={28}
+                                                name="settings-outline"
+                                                size={24}
                                                 color={ThemedColor.text}
                                             />
                                         </TouchableOpacity>

@@ -1,0 +1,838 @@
+{
+    "$schema": "http://localhost:8080/schemas/GetFeedOutputBody.json",
+    "items": [
+      {
+        "type": "post",
+        "post": {
+          "_id": "6904490f1d58d63121e2db85",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/690448d11d58d63121e2db81/processed-1761888527671086069.jpg"
+          ],
+          "caption": "don’t text the recruiter pls \n",
+          "size": {
+            "width": 551,
+            "height": 1200,
+            "bytes": 65911
+          },
+          "task": {
+            "id": "690448d11d58d63121e2db81",
+            "content": "Sign Offer",
+            "category": {
+              "id": "67effdc04931ee7a9fb63100",
+              "name": "SP26 Co-op Search"
+            }
+          },
+          "reactions": {},
+          "comments": [
+            {
+              "id": "6904519c1d58d63121e2dbf5",
+              "user": {
+                "_id": "67ef139d4931ee7a9fb630fc",
+                "display_name": "lok ye<3",
+                "handle": "@lokye",
+                "profile_picture": "https://i.pinimg.com/736x/41/76/4c/41764ce16ebb6d92a96cd67097768227.jpg"
+              },
+              "content": "Slay!",
+              "metadata": {
+                "createdAt": "2025-10-31T06:05:16.885Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-31T06:05:16.885Z"
+              }
+            },
+            {
+              "id": "6904ecee1d58d63121e2e3c1",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "HELL YAHHHG",
+              "metadata": {
+                "createdAt": "2025-10-31T17:07:58.331Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-31T17:07:58.331Z"
+              }
+            },
+            {
+              "id": "6904ecf21d58d63121e2e3c3",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "DRUNK TEXTTT",
+              "metadata": {
+                "createdAt": "2025-10-31T17:08:02.319Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-31T17:08:02.319Z"
+              }
+            }
+          ],
+          "metadata": {
+            "createdAt": "2025-10-31T05:28:47.798Z",
+            "updatedAt": "2025-10-31T17:08:02.319Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "69026b8c77ba6fb2606a7581",
+          "user": {
+            "_id": "67ef139d4931ee7a9fb630fc",
+            "display_name": "lok ye<3",
+            "handle": "@lokye",
+            "profile_picture": "https://i.pinimg.com/736x/41/76/4c/41764ce16ebb6d92a96cd67097768227.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f1367a2ebca44addd4293f/3e9a709b-0442-445d-ad57-f71336b82af3.jpg"
+          ],
+          "caption": "I finally did it",
+          "size": {
+            "width": 4284,
+            "height": 5712,
+            "bytes": 12235104
+          },
+          "task": {
+            "id": "68f1367a2ebca44addd4293f",
+            "content": "Film DITL",
+            "category": {
+              "id": "68f135c02ebca44addd42935",
+              "name": "General"
+            }
+          },
+          "reactions": {},
+          "comments": [
+            {
+              "id": "690502651d58d63121e2e4dd",
+              "user": {
+                "_id": "67eef59f4931ee7a9fb630e5",
+                "display_name": "beak☕️",
+                "handle": "@beaker",
+                "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+              },
+              "content": "Proof?",
+              "metadata": {
+                "createdAt": "2025-10-31T18:39:33.39Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-31T18:39:33.39Z"
+              }
+            }
+          ],
+          "metadata": {
+            "createdAt": "2025-10-29T19:31:24.889Z",
+            "updatedAt": "2025-10-31T18:39:33.39Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "6901a08677ba6fb2606a6b4c",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/6901a06277ba6fb2606a6b48/processed-1761714310136927727.jpg"
+          ],
+          "caption": "🥀🥀🥀🥀🥀 ts so coooked help me\n",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 96799
+          },
+          "task": {
+            "id": "6901a06277ba6fb2606a6b48",
+            "content": "Do this dang pitch deck",
+            "category": {
+              "id": "68fd43531b0cf4217bff369c",
+              "name": "Pitching"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-29T05:05:10.321Z",
+            "updatedAt": "2025-10-29T05:05:10.321Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": false
+          }
+        }
+      },
+      {
+        "type": "task",
+        "task": {
+          "id": "690508361d58d63121e2e527",
+          "content": "Make Bed",
+          "priority": 1,
+          "value": 1,
+          "public": true,
+          "timestamp": "2025-10-31T15:04:22-04:00",
+          "categoryId": "67eef6084931ee7a9fb630ea",
+          "categoryName": "Miscellaneous",
+          "workspaceName": "🏡 Apartment",
+          "userId": "67eef59f4931ee7a9fb630e5"
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "69018a5777ba6fb2606a6a2a",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fd0a741b0cf4217bff33bd/b2b8d320-088c-4fce-bae0-feac029042a9.jpg",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fd0a741b0cf4217bff33bd/169add50-a2c2-47f4-a93f-801f31bd45fc.jpg"
+          ],
+          "caption": "Finished ts and had a solid view on the way to class\n",
+          "size": {
+            "width": 4284,
+            "height": 5712,
+            "bytes": 12235104
+          },
+          "task": {
+            "id": "68fd0a741b0cf4217bff33bd",
+            "content": "Midpoint Progress Presentation",
+            "category": {
+              "id": "68a67180898992c42f5726d4",
+              "name": "Interaction Design Inquiry"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-29T03:30:31.128Z",
+            "updatedAt": "2025-10-29T03:30:33.047Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fe8208737421b1bc32a520",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fe8182737421b1bc32a519/75d3248e-f599-4729-900e-5791354ee290.png",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fe8182737421b1bc32a519/d6cc7e48-c57b-4070-af7a-33556e502f1b.png"
+          ],
+          "caption": "Blind brunch fr! Went to swings afterwards ",
+          "size": {
+            "width": 1204,
+            "height": 1158,
+            "bytes": 697116
+          },
+          "task": {
+            "id": "68fe8182737421b1bc32a519",
+            "content": "Blind Brunch!",
+            "category": {
+              "id": "68a3e4f4898992c42f5726aa",
+              "name": "Lunch"
+            }
+          },
+          "reactions": {},
+          "comments": [
+            {
+              "id": "68ffb26d34a95b4302726393",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "tag?",
+              "metadata": {
+                "createdAt": "2025-10-27T17:57:01.031Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-27T17:57:01.031Z"
+              }
+            },
+            {
+              "id": "68ffc57c34a95b43027264b5",
+              "user": {
+                "_id": "67eef59f4931ee7a9fb630e5",
+                "display_name": "beak☕️",
+                "handle": "@beaker",
+                "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+              },
+              "content": "@kat should we make it a thing",
+              "parentId": "68ffb26d34a95b4302726393",
+              "metadata": {
+                "createdAt": "2025-10-27T19:18:20.989Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-27T19:18:20.989Z"
+              }
+            },
+            {
+              "id": "69000d7077ba6fb2606a5704",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "@beak☕️ idk prob not in scope bc not enough ppl",
+              "parentId": "68ffb26d34a95b4302726393",
+              "metadata": {
+                "createdAt": "2025-10-28T00:25:20.45Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-28T00:25:20.45Z"
+              }
+            },
+            {
+              "id": "69000d8f77ba6fb2606a5709",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "but could be fun idk i feel like social media platforms it’s j so normal",
+              "metadata": {
+                "createdAt": "2025-10-28T00:25:51.963Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-28T00:25:51.963Z"
+              }
+            }
+          ],
+          "metadata": {
+            "createdAt": "2025-10-26T20:18:16.835Z",
+            "updatedAt": "2025-10-28T00:25:51.963Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fe7848737421b1bc32a49d",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f6e5d444aaf5c04fd317c8/dbc17642-6350-41fa-8fca-dd4a28cdffe2.jpg"
+          ],
+          "caption": "They did his burger super dirty but my Mac was fire we went to pressed\n",
+          "size": {
+            "width": 2316,
+            "height": 3088,
+            "bytes": 3575904
+          },
+          "task": {
+            "id": "68f6e5d444aaf5c04fd317c8",
+            "content": "Brunch with Jack",
+            "category": {
+              "id": "68a3e4f4898992c42f5726aa",
+              "name": "Lunch"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-26T19:36:40.629Z",
+            "updatedAt": "2025-10-26T19:36:42.625Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "task",
+        "task": {
+          "id": "6904e41e1d58d63121e2e34c",
+          "content": "Lunch",
+          "priority": 3,
+          "value": 1,
+          "public": true,
+          "timestamp": "2025-10-31T12:30:22-04:00",
+          "categoryId": "68da0b44a2f9621e93452997",
+          "categoryName": "Food",
+          "workspaceName": "☀️ Daily",
+          "userId": "67eef59f4931ee7a9fb630e5"
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fd47281b0cf4217bff36d8",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fd46f91b0cf4217bff36d4/processed-1761429288025575922.jpg"
+          ],
+          "caption": "Yessssirrre 🐮🐮🐮🐮👉👈👑🦍🦍🦍",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 109707
+          },
+          "task": {
+            "id": "68fd46f91b0cf4217bff36d4",
+            "content": "Explain Problem Space",
+            "category": {
+              "id": "68fd43531b0cf4217bff369c",
+              "name": "Pitching"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-25T21:54:48.172Z",
+            "updatedAt": "2025-10-25T21:54:48.172Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": false
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fd43c21b0cf4217bff36a7",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fd43811b0cf4217bff36a3/processed-1761428418596001025.jpg"
+          ],
+          "caption": "I did it!\n",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 153483
+          },
+          "task": {
+            "id": "68fd43811b0cf4217bff36a3",
+            "content": "Finish Explaining Problem",
+            "category": {
+              "id": "68fd43531b0cf4217bff369c",
+              "name": "Pitching"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-25T21:40:18.794Z",
+            "updatedAt": "2025-10-25T21:40:18.794Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": false
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fd344b1b0cf4217bff35d9",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fd342e1b0cf4217bff35d8/processed-1761424459347348247.jpg"
+          ],
+          "caption": "Promise I did pull yesterday. Doing push today stay tuned !?\n",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 131652
+          },
+          "task": {
+            "id": "68fd342e1b0cf4217bff35d8",
+            "content": "Pull Day",
+            "category": {
+              "id": "68bbc2bee98e1efea9342718",
+              "name": "Fitness❤️‍🔥"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-25T20:34:19.494Z",
+            "updatedAt": "2025-10-25T20:34:19.494Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": false
+          }
+        }
+      },
+      {
+        "type": "task",
+        "task": {
+          "id": "6904602a1d58d63121e2dcb1",
+          "content": "Practice Kindred Pitch",
+          "priority": 3,
+          "value": 1,
+          "public": true,
+          "timestamp": "2025-10-31T03:07:22-04:00",
+          "categoryId": "68abeacf2c78eacf1a1ac43a",
+          "categoryName": "Marketing ",
+          "workspaceName": "🪶Kindred",
+          "userId": "67eef59f4931ee7a9fb630e5"
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fc2f861b0cf4217bff28c1",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f5cf9444aaf5c04fd30e70/processed-1761357702809819102.jpg"
+          ],
+          "caption": "It went well\n",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 108282
+          },
+          "task": {
+            "id": "68f5cf9444aaf5c04fd30e70",
+            "content": "Klaviyo Final Round",
+            "category": {
+              "id": "67effdc04931ee7a9fb63100",
+              "name": "SP26 Co-op Search"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-25T02:01:42.944Z",
+            "updatedAt": "2025-10-25T02:01:42.944Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": false
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68fc1efa1b0cf4217bff27e6",
+          "user": {
+            "_id": "67ef139d4931ee7a9fb630fc",
+            "display_name": "lok ye<3",
+            "handle": "@lokye",
+            "profile_picture": "https://i.pinimg.com/736x/41/76/4c/41764ce16ebb6d92a96cd67097768227.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fc1b721b0cf4217bff27b8/12c13edb-6f3d-4d0e-a9df-b79d06e8301b.jpg",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fc1b721b0cf4217bff27b8/9e420a62-a06e-4a3f-bf20-71c1982fe2f8.jpg",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fc1b721b0cf4217bff27b8/dc4f8259-1fd6-4ffb-8cb4-fd869f8e0ee1.jpg",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fc1b721b0cf4217bff27b8/db48f6dd-067d-4644-a9f3-486d0b20c286.jpg",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68fc1b721b0cf4217bff27b8/ba1bdfbc-ead1-4a25-9b55-a6fc6574f09a.jpg"
+          ],
+          "caption": "I’m tuff",
+          "size": {
+            "width": 3024,
+            "height": 4032,
+            "bytes": 6096384
+          },
+          "task": {
+            "id": "68fc1b721b0cf4217bff27b8",
+            "content": "Brandy",
+            "category": {
+              "id": "68f133e12ebca44addd42908",
+              "name": "Clothes"
+            }
+          },
+          "reactions": {
+            "👔": [
+              "67eef59f4931ee7a9fb630e5"
+            ]
+          },
+          "comments": [
+            {
+              "id": "68ffb2ae34a95b4302726398",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "i can’t see the haul?? it’s not scrolling 😭",
+              "metadata": {
+                "createdAt": "2025-10-27T17:58:06.488Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-27T17:58:06.488Z"
+              }
+            },
+            {
+              "id": "68ffb2ce34a95b430272639d",
+              "user": {
+                "_id": "68e6f970d20b7f184a01b335",
+                "display_name": "kat",
+                "handle": "@kat",
+                "profile_picture": "https://kindred.nyc3.cdn.digitaloceanspaces.com/profiles/68e6f970d20b7f184a01b335/processed-1760548643528036491.jpg"
+              },
+              "content": "nvm",
+              "metadata": {
+                "createdAt": "2025-10-27T17:58:38.176Z",
+                "isDeleted": false,
+                "lastEdited": "2025-10-27T17:58:38.176Z"
+              }
+            }
+          ],
+          "metadata": {
+            "createdAt": "2025-10-25T00:51:06.152Z",
+            "updatedAt": "2025-10-29T03:31:17.496Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68f91f891b0cf4217bff094a",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f7b53644aaf5c04fd31ed3/d40d8e94-9ccd-4290-9302-a1d602530482.jpg",
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f7b53644aaf5c04fd31ed3/da4a8a88-1a29-4383-949a-669f745c29b9.jpg"
+          ],
+          "caption": "CHICKEN MUSHROOM BROCCOLI MATCHA!\n",
+          "size": {
+            "width": 3024,
+            "height": 4032,
+            "bytes": 6096384
+          },
+          "task": {
+            "id": "68f7b53644aaf5c04fd31ed3",
+            "content": "Lunch",
+            "category": {
+              "id": "68da0b44a2f9621e93452997",
+              "name": "Food"
+            }
+          },
+          "reactions": {
+            "🍄": [
+              "67ef139d4931ee7a9fb630fc"
+            ]
+          },
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-22T18:16:41.717Z",
+            "updatedAt": "2025-10-23T05:36:41.659Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "task",
+        "task": {
+          "id": "690431861d58d63121e2da54",
+          "content": "Pull Day",
+          "priority": 1,
+          "value": 1,
+          "public": true,
+          "timestamp": "2025-10-30T23:48:22-04:00",
+          "categoryId": "68bbc2bee98e1efea9342718",
+          "categoryName": "Fitness❤️‍🔥",
+          "workspaceName": "☀️ Daily",
+          "userId": "67eef59f4931ee7a9fb630e5"
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68f8d7fd1b0cf4217bff06e3",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f8d7d01b0cf4217bff06e1/processed-1761138685264890510.jpg"
+          ],
+          "caption": "I highkey haven’t been here in a minute… presented kindred! My prof let me switch my project entirely to work on this and specifically work on branding etc so hype hype\n",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 133305
+          },
+          "task": {
+            "id": "68f8d7d01b0cf4217bff06e1",
+            "content": "Capstone Lecture",
+            "category": {
+              "id": "68a6714a898992c42f5726d1",
+              "name": "Design Capstone"
+            }
+          },
+          "reactions": {
+            "😃": [
+              "68e6f970d20b7f184a01b335"
+            ]
+          },
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-22T13:11:25.455Z",
+            "updatedAt": "2025-10-23T16:25:15.043Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68f7bed644aaf5c04fd31f2d",
+          "user": {
+            "_id": "67eef59f4931ee7a9fb630e5",
+            "display_name": "beak☕️",
+            "handle": "@beaker",
+            "profile_picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f7bec344aaf5c04fd31f2a/processed-1761066709189474236.jpg"
+          ],
+          "caption": "Candy apple matcha soda goes undefeated\n",
+          "size": {
+            "width": 552,
+            "height": 1200,
+            "bytes": 161614
+          },
+          "task": {
+            "id": "68f7bec344aaf5c04fd31f2a",
+            "content": "Capital One Cafe",
+            "category": {
+              "id": "68ab53423a7d503ac3c7e657",
+              "name": "Boston Cafes"
+            }
+          },
+          "reactions": {},
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-21T17:11:50.924Z",
+            "updatedAt": "2025-10-21T17:11:50.924Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": false
+          }
+        }
+      },
+      {
+        "type": "post",
+        "post": {
+          "_id": "68f70dec44aaf5c04fd31925",
+          "user": {
+            "_id": "67ef139d4931ee7a9fb630fc",
+            "display_name": "lok ye<3",
+            "handle": "@lokye",
+            "profile_picture": "https://i.pinimg.com/736x/41/76/4c/41764ce16ebb6d92a96cd67097768227.jpg"
+          },
+          "images": [
+            "https://kindred.nyc3.cdn.digitaloceanspaces.com/posts/68f70d9f44aaf5c04fd31920/processed-1761021420757055499.jpg"
+          ],
+          "caption": "I watched a depressing YouTube video while doing stairmaster",
+          "size": {
+            "width": 1200,
+            "height": 553,
+            "bytes": 86048
+          },
+          "task": {
+            "id": "68f70d9f44aaf5c04fd31920",
+            "content": "Gym",
+            "category": {
+              "id": "68f70d9c44aaf5c04fd3191f",
+              "name": "Health"
+            }
+          },
+          "reactions": {
+            "🏃‍♀️": [
+              "67eef59f4931ee7a9fb630e5"
+            ],
+            "💪": [
+              "67eef59f4931ee7a9fb630e5"
+            ],
+            "🔋": [
+              "67eef59f4931ee7a9fb630e5"
+            ]
+          },
+          "comments": null,
+          "metadata": {
+            "createdAt": "2025-10-21T04:37:00.971Z",
+            "updatedAt": "2025-10-21T04:51:47.974Z",
+            "isPublic": true,
+            "isDeleted": false,
+            "isEdited": true
+          }
+        }
+      },
+      {
+        "type": "task",
+        "task": {
+          "id": "6903fc521d58d63121e2d7aa",
+          "content": "Dinner",
+          "priority": 2,
+          "value": 1,
+          "public": true,
+          "timestamp": "2025-10-30T20:01:22-04:00",
+          "categoryId": "68da0b44a2f9621e93452997",
+          "categoryName": "Food",
+          "workspaceName": "☀️ Daily",
+          "userId": "67eef59f4931ee7a9fb630e5"
+        }
+      }
+    ],
+    "total": 114,
+    "hasMore": true,
+    "nextOffset": 20
+  }

@@ -15,7 +15,6 @@ import { showToast } from "@/utils/showToast";
 export const createWorkspace = async (name: string): Promise<Categories> => {
     try {
         const { request } = useRequest();
-        showToast("Workspace created!", "success");
         return await request("POST", `/user/categories`, {
             name: "!-proxy-!",
             workspaceName: name,

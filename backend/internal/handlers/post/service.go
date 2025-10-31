@@ -380,6 +380,159 @@ func (s *Service) GetUserGroups(userID primitive.ObjectID) ([]types.GroupDocumen
 	return results, nil
 }
 
+// GetFriendsPublicTasks fetches public tasks from the user's friends using aggregation pipeline
+func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset int) ([]bson.M, int, error) {
+	ctx := context.Background()
+
+	// Set default limit if not provided
+	if limit <= 0 {
+		limit = 20
+	}
+
+	// Build aggregation pipeline to get friends' public tasks
+	pipeline := mongo.Pipeline{
+		// Stage 1: Match the specific user
+		{{Key: "$match", Value: bson.M{"_id": userID}}},
+
+		// Stage 2: Lookup friends from users collection based on friends array
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "users",
+			"localField":   "friends",
+			"foreignField": "_id",
+			"as":           "friendsData",
+		}}},
+
+		// Stage 3: Extract friend IDs
+		{{Key: "$project", Value: bson.M{
+			"friendIds": "$friends",
+		}}},
+
+		// Stage 4: Lookup categories owned by friends
+		{{Key: "$lookup", Value: bson.M{
+			"from": "categories",
+			"let":  bson.M{"friendIds": "$friendIds"},
+			"pipeline": mongo.Pipeline{
+				// Match categories owned by friends
+				{{Key: "$match", Value: bson.M{
+					"$expr": bson.M{
+						"$in": []interface{}{"$user", "$$friendIds"},
+					},
+				}}},
+				// Unwind tasks array to work with individual tasks
+				{{Key: "$unwind", Value: "$tasks"}},
+				// Match only public tasks (field is "public" not "isPublic")
+				{{Key: "$match", Value: bson.M{
+					"tasks.public": true,
+				}}},
+				// Sort by task creation timestamp (newest first)
+				{{Key: "$sort", Value: bson.M{"tasks.timestamp": -1}}},
+				// Project the fields we need
+				{{Key: "$project", Value: bson.M{
+					"_id":           "$tasks._id",
+					"content":       "$tasks.content",
+					"priority":      "$tasks.priority",
+					"value":         "$tasks.value",
+					"public":        "$tasks.public",
+					"timestamp":     "$tasks.timestamp",
+					"lastEdited":    "$tasks.lastEdited",
+					"categoryId":    "$_id",
+					"categoryName":  "$name",
+					"workspaceName": "$workspaceName",
+					"userId":        "$user",
+				}}},
+			},
+			"as": "friendsTasks",
+		}}},
+
+		// Stage 5: Unwind the tasks array
+		{{Key: "$unwind", Value: "$friendsTasks"}},
+
+		// Stage 6: Replace root with the task document
+		{{Key: "$replaceRoot", Value: bson.M{
+			"newRoot": "$friendsTasks",
+		}}},
+
+		// Stage 7: Lookup user information for the task owner
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "users",
+			"localField":   "userId",
+			"foreignField": "_id",
+			"as":           "userData",
+		}}},
+
+		// Stage 8: Add user object to the task document
+		{{Key: "$addFields", Value: bson.M{
+			"user": bson.M{
+				"$arrayElemAt": []interface{}{"$userData", 0},
+			},
+		}}},
+
+		// Stage 9: Remove temporary userData field
+		{{Key: "$project", Value: bson.M{
+			"userData": 0,
+		}}},
+
+		// Stage 10: Sort by timestamp
+		{{Key: "$sort", Value: bson.M{"timestamp": -1}}},
+
+		// Stage 11: Apply pagination
+		{{Key: "$facet", Value: bson.M{
+			"metadata": []bson.M{
+				{"$count": "total"},
+			},
+			"data": []bson.M{
+				{"$skip": offset},
+				{"$limit": limit},
+			},
+		}}},
+	}
+
+	cursor, err := s.Users.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get friends public tasks: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode friends public tasks: %w", err)
+	}
+
+	// Extract total count and data from facet result
+	total := 0
+	var tasks []bson.M
+
+	if len(results) > 0 {
+		if metadata, ok := results[0]["metadata"].(primitive.A); ok && len(metadata) > 0 {
+			if metaDoc, ok := metadata[0].(bson.M); ok {
+				if t, ok := metaDoc["total"].(int32); ok {
+					total = int(t)
+				} else if t, ok := metaDoc["total"].(int64); ok {
+					total = int(t)
+				}
+			}
+		}
+
+		if data, ok := results[0]["data"].(primitive.A); ok {
+			for _, item := range data {
+				if taskDoc, ok := item.(bson.M); ok {
+					tasks = append(tasks, taskDoc)
+				}
+			}
+		}
+	}
+
+	slog.Info("Friends public tasks fetched",
+		"userId", userID.Hex(),
+		"count", len(tasks),
+		"total", total,
+		"limit", limit,
+		"offset", offset,
+	)
+
+	return tasks, total, nil
+}
+
 // GetPostsByBlueprint fetches all posts associated with a specific blueprint
 func (s *Service) GetPostsByBlueprint(blueprintID primitive.ObjectID) ([]types.PostDocument, error) {
 	ctx := context.Background()

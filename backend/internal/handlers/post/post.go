@@ -3,6 +3,7 @@ package Post
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -122,8 +123,7 @@ func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetP
 	}
 
 	var apiPosts []types.PostDocumentAPI
-	for i, post := range posts {
-		fmt.Printf("🔄 DEBUG: Converting post %d (ID: %s)\n", i, post.ID.Hex())
+	for _, post := range posts {
 		apiPosts = append(apiPosts, *post.ToAPI())
 	}
 
@@ -173,6 +173,166 @@ func (h *Handler) GetFriendsPostsHuma(ctx context.Context, input *GetFriendsPost
 	output.Body.Total = total
 	output.Body.HasMore = offset+len(apiPosts) < total
 	output.Body.NextOffset = offset + len(apiPosts)
+
+	return output, nil
+}
+
+func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFeedOutput, error) {
+	// Extract user_id from context for authorization
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Set defaults if not provided
+	limit := input.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := input.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Fetch more items than requested to account for interleaving
+	// We want to interleave 1 task per 5 posts, so we need roughly 83% posts and 17% tasks
+	postsNeeded := int(float64(limit) * 0.83)
+	if postsNeeded < 1 {
+		postsNeeded = 1
+	}
+	tasksNeeded := limit - postsNeeded
+
+	// Get friends posts
+	posts, postsTotal, err := h.service.GetFriendsPosts(userID, postsNeeded, offset)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get feed", err)
+	}
+
+	// Get friends' public tasks (with user data from aggregation pipeline)
+	tasks, tasksTotal, err := h.service.GetFriendsPublicTasks(userID, tasksNeeded, offset)
+	if err != nil {
+		tasks = []bson.M{} // Empty tasks if there's an error
+	}
+
+	// Adaptive fetching: if we got fewer posts than expected, fetch more tasks to fill the feed
+	if len(posts) < postsNeeded && len(tasks) < limit {
+		additionalTasksNeeded := limit - len(posts) - len(tasks)
+		if additionalTasksNeeded > 0 {
+			moreTasks, _, err := h.service.GetFriendsPublicTasks(userID, additionalTasksNeeded, len(tasks))
+			if err == nil {
+				tasks = append(tasks, moreTasks...)
+			}
+		}
+	}
+
+	// Adaptive fetching: if we got fewer tasks than expected, fetch more posts to fill the feed
+	if len(tasks) < tasksNeeded && len(posts) < limit {
+		additionalPostsNeeded := limit - len(posts) - len(tasks)
+		if additionalPostsNeeded > 0 {
+			morePosts, _, err := h.service.GetFriendsPosts(userID, additionalPostsNeeded, len(posts))
+			if err == nil {
+				posts = append(posts, morePosts...)
+			}
+		}
+	}
+
+	// Convert posts to API format
+	var apiPosts []types.PostDocumentAPI
+	for _, post := range posts {
+		apiPosts = append(apiPosts, *post.ToAPI())
+	}
+
+	// Convert tasks to FeedTaskData
+	var feedTasks []FeedTaskData
+	for _, task := range tasks {
+		// Extract user data from the task document
+		var taskUser *types.UserExtendedReference
+		if userDoc, ok := task["user"].(bson.M); ok {
+			taskUser = &types.UserExtendedReference{
+				ID:             userDoc["_id"].(primitive.ObjectID).Hex(),
+				Handle:         userDoc["handle"].(string),
+				DisplayName:    userDoc["display_name"].(string),
+				ProfilePicture: userDoc["profile_picture"].(string),
+			}
+		}
+
+		feedTask := FeedTaskData{
+			ID:            task["_id"].(primitive.ObjectID).Hex(),
+			Content:       task["content"].(string),
+			Priority:      int(task["priority"].(int32)),
+			Value:         task["value"].(float64),
+			Public:        task["public"].(bool),
+			Timestamp:     task["timestamp"].(primitive.DateTime).Time().Format(time.RFC3339),
+			CategoryID:    task["categoryId"].(primitive.ObjectID).Hex(),
+			CategoryName:  task["categoryName"].(string),
+			WorkspaceName: task["workspaceName"].(string),
+			User:          taskUser,
+		}
+		feedTasks = append(feedTasks, feedTask)
+	}
+
+	// Interleave posts and tasks: 1 task as 2nd item, then 1 task after every 5 posts
+	var feedItems []FeedItem
+	postIdx := 0
+	taskIdx := 0
+
+	// Add first post if available
+	if postIdx < len(apiPosts) && len(feedItems) < limit {
+		post := apiPosts[postIdx]
+		feedItems = append(feedItems, FeedItem{
+			Type: "post",
+			Post: &post,
+		})
+		postIdx++
+	}
+
+	// Add first task as 2nd item if available
+	if taskIdx < len(feedTasks) && len(feedItems) < limit {
+		task := feedTasks[taskIdx]
+		feedItems = append(feedItems, FeedItem{
+			Type: "task",
+			Task: &task,
+		})
+		taskIdx++
+	}
+
+	// Continue interleaving: 5 posts, then 1 task
+	for len(feedItems) < limit && (postIdx < len(apiPosts) || taskIdx < len(feedTasks)) {
+		// Add up to 5 posts
+		for i := 0; i < 5 && postIdx < len(apiPosts) && len(feedItems) < limit; i++ {
+			post := apiPosts[postIdx]
+			feedItems = append(feedItems, FeedItem{
+				Type: "post",
+				Post: &post,
+			})
+			postIdx++
+		}
+
+		// Add 1 task after 5 posts
+		if taskIdx < len(feedTasks) && len(feedItems) < limit {
+			task := feedTasks[taskIdx]
+			feedItems = append(feedItems, FeedItem{
+				Type: "task",
+				Task: &task,
+			})
+			taskIdx++
+		}
+	}
+
+	// Calculate total items and pagination
+	totalItems := postsTotal + tasksTotal
+	hasMore := offset+len(feedItems) < totalItems
+
+	output := &GetFeedOutput{}
+	output.Body.Items = feedItems
+	output.Body.Total = totalItems
+	output.Body.HasMore = hasMore
+	output.Body.NextOffset = offset + len(feedItems)
 
 	return output, nil
 }
@@ -480,11 +640,6 @@ func (h *Handler) DeleteCommentHuma(ctx context.Context, input *DeleteCommentInp
 	post, err := h.service.GetPostByID(postID)
 	if err != nil {
 		return nil, huma.Error404NotFound("Post not found", err)
-	}
-
-	for i, comment := range post.Comments {
-		fmt.Printf("    [%d] ID: %s, User: %s, Content: %s\n",
-			i, comment.ID.Hex(), comment.User.ID.Hex(), comment.Content)
 	}
 
 	var canDelete bool

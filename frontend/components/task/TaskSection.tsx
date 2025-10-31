@@ -35,7 +35,7 @@ export default function TaskSection({
                     {title}
                 </ThemedText>
                 {description && (
-                    <ThemedText type="lightBody" style={styles.description}>
+                    <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.caption }]}>
                         {description}
                     </ThemedText>
                 )}
@@ -52,7 +52,7 @@ export default function TaskSection({
                 {title}
             </ThemedText>
             {description && (
-                <ThemedText type="lightBody" style={styles.description}>
+                <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.caption }]}>
                     {description}
                 </ThemedText>
             )}

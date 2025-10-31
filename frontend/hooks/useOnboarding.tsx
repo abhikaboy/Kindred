@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useTypedMutation } from './useTypedAPI';
-import { useAuth, saveAuthData, getAuthData } from './useAuth';
+import { useAuth } from './useAuth';
+import client from '@/api/client';
 
 // Onboarding data interface
 export interface OnboardingData {
@@ -76,7 +77,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [isLoading, setIsLoading] = useState(false);
     
-    const { register, registerWithGoogle: authRegisterWithGoogle, fetchAuthData } = useAuth();
+    const { register, registerWithGoogle: authRegisterWithGoogle, setUser } = useAuth();
     
     // Mutations
     const emailRegisterMutation = useTypedMutation("post", "/v1/auth/register" as any);
@@ -272,7 +273,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 profile_picture: profilePic,
             });
             
-            const result = await emailRegisterMutation.mutateAsync({
+            // Use client.POST directly so we can access response headers
+            const result = await client.POST("/v1/auth/register", {
                 body: {
                     email: onboardingData.email || "",
                     phone: onboardingData.phone || "",
@@ -283,52 +285,19 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 }
             });
             
-            console.log('✅ Registration API call successful, result:', result);
-            console.log('📋 Result type:', typeof result);
-            console.log('📋 Result keys:', result ? Object.keys(result) : 'null/undefined');
-            
-            // Check if tokens were automatically saved by useRequest hook
-            console.log('🔍 Checking for saved auth tokens...');
-            const savedAuthData = await getAuthData();
-            console.log('💾 Saved auth data after registration:', savedAuthData ? 'Tokens found' : 'NO TOKENS FOUND');
-            if (savedAuthData) {
-                console.log('🔑 Access token exists:', !!savedAuthData.access_token);
-                console.log('🔑 Refresh token exists:', !!savedAuthData.refresh_token);
+            if (result.error) {
+                console.error('❌ Registration failed:', result.error);
+                throw new Error('Registration failed');
             }
             
-            // After successful registration, log the user in automatically with retry logic
-            console.log('🚀 Starting fetchAuthData to log user in...');
+            console.log('✅ Registration successful!');
             
-            let userData = null;
-            let retryCount = 0;
-            const maxRetries = 3;
-            const retryDelay = 1000; // 1 second
+            // Registration now returns the full user data in the response body!
+            // No need for a separate login call
+            const userData = result.data as any;
+            setUser(userData);
             
-            while (!userData && retryCount < maxRetries) {
-                if (retryCount > 0) {
-                    console.log(`🔄 Retry attempt ${retryCount}/${maxRetries} after ${retryDelay}ms delay...`);
-                    await new Promise(resolve => setTimeout(resolve, retryDelay));
-                }
-                
-                userData = await fetchAuthData();
-                console.log(`👤 Attempt ${retryCount + 1}: fetchAuthData returned:`, userData ? 'User data received' : 'NULL');
-                
-                if (!userData) {
-                    retryCount++;
-                    
-                    // Check if tokens exist in storage
-                    const authCheck = await getAuthData();
-                    console.log(`🔍 Token check after attempt ${retryCount}:`, authCheck ? 'Tokens found' : 'NO TOKENS');
-                }
-            }
-            
-            if (!userData) {
-                console.error(`❌ Failed to fetch user data after ${maxRetries} attempts`);
-                console.error('❌ This means tokens were not saved or token login failed');
-                throw new Error('Registration succeeded but failed to log in automatically after multiple attempts');
-            }
-            
-            console.log('✅ User registered and logged in successfully!');
+            console.log('✅ User registered and logged in!');
             console.log('👤 User ID:', userData._id);
             console.log('👤 User display name:', userData.display_name);
             
@@ -408,8 +377,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 profile_picture: profilePic,
             });
             
-            // Register with Apple - send all data at once (no password field for Apple registration)
-            const result = await appleRegisterMutation.mutateAsync({
+            // Use client.POST directly so we can access response headers
+            const result = await client.POST("/v1/auth/register/apple", {
                 body: {
                     apple_id: onboardingData.appleId,
                     email: onboardingData.email,
@@ -419,37 +388,29 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 }
             });
             
-            console.log('Apple registration successful, result:', result);
-            
-            // Save tokens from registration response headers
-            if (result && typeof result === 'object' && 'response' in result) {
-                const response = (result as any).response;
-                if (response?.headers) {
-                    const accessToken = response.headers.get('access_token');
-                    const refreshToken = response.headers.get('refresh_token');
-                    
-                    if (accessToken && refreshToken) {
-                        await saveAuthData({ 
-                            access_token: accessToken, 
-                            refresh_token: refreshToken 
-                        });
-                        console.log('Auth tokens saved successfully after Apple registration');
-                    } else {
-                        console.warn('No tokens found in Apple registration response headers');
-                    }
-                }
+            if (result.error) {
+                console.error('❌ Apple registration failed:', result.error);
+                throw new Error('Apple registration failed');
             }
             
-            // After successful registration, log the user in automatically
-            // The registration endpoint returns tokens in headers just like login
-            console.log('Fetching user data after registration...');
-            const userData = await fetchAuthData();
+            console.log('✅ Apple registration successful!');
+            
+            // Registration now returns the full user data in the response body!
+            // No need for a separate login call
+            const userData = result.data as any;
+            setUser(userData);
+            
+            console.log('✅ User registered and logged in!');
+            console.log('👤 User ID:', userData._id);
+            console.log('👤 User display name:', userData.display_name);
             
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
             
             // Reset after successful registration and login
+            console.log('🧹 Resetting onboarding state...');
             reset();
+            console.log('✅ Registration flow complete!');
         } catch (error: any) {
             console.error('Apple registration failed:', error);
             

@@ -59,8 +59,8 @@ const ReferralOnboarding = (props: Props) => {
     }, [errorMessage]);
 
     const handleApply = async () => {
-        if (referralCode.length < 6) {
-            setErrorMessage("Please enter a valid referral code");
+        if (referralCode.length !== 8) {
+            setErrorMessage("Referral code must be exactly 8 characters");
             return;
         }
 
@@ -92,14 +92,14 @@ const ReferralOnboarding = (props: Props) => {
         router.back();
     };
 
-    // Format input to uppercase and limit length
+    // Format input to uppercase and limit to exactly 8 characters
     const handleCodeChange = (text: string) => {
-        const formatted = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+        const formatted = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
         setReferralCode(formatted);
         setErrorMessage(""); // Clear error on input change
     };
 
-    const isCodeValid = referralCode.length >= 6;
+    const isCodeValid = referralCode.length === 8;
 
     return (
         <ThemedView style={styles.mainContainer}>
@@ -170,7 +170,7 @@ const ReferralOnboarding = (props: Props) => {
                                 placeholderTextColor={ThemedColor.caption}
                                 autoCapitalize="characters"
                                 autoCorrect={false}
-                                maxLength={12}
+                                maxLength={8}
                                 editable={!isApplying && !isSuccess}
                                 textAlign="center"
                             />

@@ -31,17 +31,10 @@ func (h *Handler) GetReferralInfoHuma(ctx context.Context, input *GetReferralInf
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
+	// GetReferralByUserID auto-creates document if it doesn't exist
 	referral, err := h.service.GetReferralByUserID(userID)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			// Create referral document if it doesn't exist
-			referral, err = h.service.CreateReferralDocument(userID, nil)
-			if err != nil {
-				return nil, huma.Error500InternalServerError("Failed to create referral document", err)
-			}
-		} else {
-			return nil, huma.Error500InternalServerError("Failed to get referral info", err)
-		}
+		return nil, huma.Error500InternalServerError("Failed to get referral info", err)
 	}
 
 	return &GetReferralInfoOutput{Body: *referral}, nil
@@ -154,17 +147,10 @@ func (h *Handler) GetReferralStatsHuma(ctx context.Context, input *GetReferralSt
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
+	// GetReferralByUserID auto-creates document if it doesn't exist
 	referral, err := h.service.GetReferralByUserID(userID)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			// Create and return empty referral
-			referral, err = h.service.CreateReferralDocument(userID, nil)
-			if err != nil {
-				return nil, huma.Error500InternalServerError("Failed to create referral document", err)
-			}
-		} else {
-			return nil, huma.Error500InternalServerError("Failed to get referral stats", err)
-		}
+		return nil, huma.Error500InternalServerError("Failed to get referral stats", err)
 	}
 
 	activeReferrals := 0
@@ -203,4 +189,3 @@ func (h *Handler) GetAvailableFeaturesHuma(ctx context.Context, input *GetAvaila
 		},
 	}, nil
 }
-

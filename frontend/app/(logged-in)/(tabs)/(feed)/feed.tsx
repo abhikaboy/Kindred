@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PostCard from "@/components/cards/PostCard";
+import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -17,7 +18,7 @@ import {
     RefreshControl,
     FlatList,
 } from "react-native";
-import { getAllPosts, getFriendsPosts, getPostsByBlueprint } from "@/api/post";
+import { getAllPosts, getFriendsPosts, getPostsByBlueprint, getFeed, type FeedItem } from "@/api/post";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
@@ -67,6 +68,7 @@ export default function Feed() {
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
+    const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -80,10 +82,11 @@ export default function Feed() {
 
     // Feed switching state
     const [currentFeed, setCurrentFeed] = useState<{ name: string; id: string }>({
-        name: "Friends",
-        id: "friends",
+        name: "Feed",
+        id: "feed",
     });
     const [availableFeeds, setAvailableFeeds] = useState([
+        { name: "Feed", id: "feed" },
         { name: "Friends", id: "friends" },
         { name: "All Posts", id: "all" }
     ]);
@@ -139,6 +142,7 @@ export default function Feed() {
             
             // Create feeds array with base feeds + blueprint feeds
             const baseFeeds = [
+                { name: "Feed", id: "feed" },
                 { name: "Friends", id: "friends" },
                 { name: "All Posts", id: "all" }
             ];
@@ -153,6 +157,7 @@ export default function Feed() {
             console.error("Error fetching subscribed blueprints:", error);
             // Keep the base feeds if blueprint fetch fails
             setAvailableFeeds([
+                { name: "Feed", id: "feed" },
                 { name: "Friends", id: "friends" },
                 { name: "All Posts", id: "all" }
             ]);
@@ -166,7 +171,22 @@ export default function Feed() {
             const currentFeedId = feedId || currentFeed.id;
             let result;
             
-            if (currentFeedId === "friends") {
+            if (currentFeedId === "feed") {
+                // Use the new unified feed endpoint
+                const feedResult = await getFeed(20, 0);
+                setFeedItems(feedResult.items);
+                // Extract posts from feed items for backward compatibility
+                const postsOnly = feedResult.items
+                    .filter(item => item.type === 'post' && item.post)
+                    .map(item => item.post!);
+                setPosts(postsOnly);
+                setOffset(feedResult.nextOffset);
+                setHasMore(feedResult.hasMore);
+                setLastUpdated(new Date());
+                setLoading(false);
+                setInitialLoading(false);
+                return;
+            } else if (currentFeedId === "friends") {
                 result = await getFriendsPosts(8, 0);
             } else if (currentFeedId.startsWith("blueprint-")) {
                 // Extract blueprint ID from feed ID
@@ -191,21 +211,17 @@ export default function Feed() {
             }
 
             setPosts(result.posts);
+            setFeedItems([]); // Clear feed items for non-feed views
             setOffset(result.nextOffset);
             setHasMore(result.hasMore);
             setLastUpdated(new Date());
-            console.log(`Successfully fetched ${result.posts.length} ${currentFeedId} posts (hasMore: ${result.hasMore})`);
-
-            // Debug: Log the structure of the first post
-            if (result.posts.length > 0) {
-                console.log("Sample post structure:", JSON.stringify(result.posts[0], null, 2));
-            }
         } catch (error) {
             console.error("Error fetching posts:", error);
             const errorMessage = error.message || "Failed to load posts";
             setError(errorMessage);
             showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
             setPosts([]);
+            setFeedItems([]);
             setHasMore(false);
         } finally {
             setLoading(false);
@@ -224,7 +240,20 @@ export default function Feed() {
             const currentFeedId = currentFeed.id;
             let result;
             
-            if (currentFeedId === "friends") {
+            if (currentFeedId === "feed") {
+                const feedResult = await getFeed(20, offset);
+                // Append new feed items
+                setFeedItems(prev => [...prev, ...feedResult.items]);
+                // Extract and append posts
+                const postsOnly = feedResult.items
+                    .filter(item => item.type === 'post' && item.post)
+                    .map(item => item.post!);
+                setPosts(prevPosts => [...prevPosts, ...postsOnly]);
+                setOffset(feedResult.nextOffset);
+                setHasMore(feedResult.hasMore);
+                setLoadingMore(false);
+                return;
+            } else if (currentFeedId === "friends") {
                 result = await getFriendsPosts(8, offset);
             } else if (currentFeedId.startsWith("blueprint-")) {
                 // Blueprint posts don't support pagination
@@ -242,7 +271,6 @@ export default function Feed() {
             setPosts(prevPosts => [...prevPosts, ...result.posts]);
             setOffset(result.nextOffset);
             setHasMore(result.hasMore);
-            console.log(`Loaded ${result.posts.length} more posts (hasMore: ${result.hasMore}, nextOffset: ${result.nextOffset})`);
         } catch (error) {
             console.error("Error loading more posts:", error);
             showToast("Failed to load more posts", "danger");
@@ -376,6 +404,49 @@ export default function Feed() {
             ids: userIds,
         }));
     }, []);
+
+    const renderFeedItem = useCallback(({ item }: { item: FeedItem }) => {
+        if (item.type === 'task' && item.task) {
+            // Render task card
+            const task = item.task;
+            return (
+                <TaskFeedCard
+                    taskId={task.id}
+                    content={task.content}
+                    workspaceName={task.workspaceName}
+                    categoryName={task.categoryName}
+                    timestamp={task.timestamp}
+                    priority={task.priority}
+                    value={task.value}
+                    user={task.user}
+                />
+            );
+        } else if (item.type === 'post' && item.post) {
+            // Render post card
+            const post = item.post;
+            const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
+            const postReactions = post.reactions ? transformReactions(post.reactions) : [];
+            
+            return (
+                <PostCard
+                    icon={post.user?.profile_picture || ""}
+                    name={post.user?.display_name || "Unknown"}
+                    username={post.user?.handle || "unknown"}
+                    userId={post.user?._id || ""}
+                    id={post._id}
+                    images={post.images}
+                    caption={post.caption}
+                    size={post.size}
+                    time={postTime}
+                    reactions={postReactions}
+                    comments={post.comments}
+                    category={post.task?.category?.name}
+                    taskName={post.task?.content}
+                />
+            );
+        }
+        return null;
+    }, [calculatePostTime, transformReactions, ThemedColor]);
 
     const renderPost = useCallback(({ item: post }: { item: PostData }) => {
         const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
@@ -570,9 +641,17 @@ export default function Feed() {
 
             <FlatList
                 ref={flatListRef}
-                data={sortedPosts}
-                keyExtractor={keyExtractor}
-                renderItem={renderPost}
+                data={currentFeed.id === 'feed' ? feedItems : sortedPosts}
+                keyExtractor={(item) => {
+                    if (currentFeed.id === 'feed') {
+                        const feedItem = item as FeedItem;
+                        return feedItem.type === 'post' && feedItem.post 
+                            ? `post-${feedItem.post._id}` 
+                            : `task-${feedItem.task?.id}`;
+                    }
+                    return (item as PostData)._id;
+                }}
+                renderItem={currentFeed.id === 'feed' ? renderFeedItem : renderPost}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}

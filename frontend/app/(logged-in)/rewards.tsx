@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, View, ScrollView, Dimensions, Alert, Share } from "react-native";
+import { StyleSheet, View, ScrollView, Dimensions, Alert, Share, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Clipboard from 'expo-clipboard';
+import { useReferral } from "@/hooks/useReferral";
 
 type RewardItem = {
     id: string;
@@ -57,13 +58,17 @@ export default function Rewards() {
     const styles = useStyles(ThemedColor);
     const [copied, setCopied] = useState(false);
 
-    // TODO: Replace with actual user unlock count from API/state
-    const unlocksCount: number = 0; // Can be 0, 1, 2, etc.
-    
-    // TODO: Replace with actual user referral code from API/state
-    const referralCode = "123456"; // 6-digit code
+    // Use referral hook to get real data from backend
+    const {
+        referralCode,
+        unlocksRemaining,
+        isLoadingInfo,
+        infoError,
+    } = useReferral();
 
     const handleCopyCode = async () => {
+        if (!referralCode) return;
+        
         try {
             await Clipboard.setStringAsync(referralCode);
             setCopied(true);
@@ -74,6 +79,8 @@ export default function Rewards() {
     };
 
     const handleShareCode = async () => {
+        if (!referralCode) return;
+        
         try {
             await Share.share({
                 message: `Join me on Kindred! Use my referral code: ${referralCode}`,
@@ -118,17 +125,27 @@ export default function Rewards() {
                         backgroundColor: ThemedColor.lightened,
                         borderColor: ThemedColor.tertiary
                     }]}>
-                        <ThemedText type="defaultSemiBold" style={styles.codeText}>
-                            {referralCode}
-                        </ThemedText>
+                        {isLoadingInfo ? (
+                            <ActivityIndicator size="small" color={ThemedColor.primary} />
+                        ) : infoError ? (
+                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                {infoError}
+                            </ThemedText>
+                        ) : (
+                            <ThemedText type="defaultSemiBold" style={styles.codeText}>
+                                {referralCode || "------"}
+                            </ThemedText>
+                        )}
                     </View>
 
                     <View style={styles.buttonRow}>
                         <TouchableOpacity 
                             style={[styles.actionButton, { 
-                                backgroundColor: ThemedColor.primary 
+                                backgroundColor: ThemedColor.primary,
+                                opacity: (!referralCode || isLoadingInfo) ? 0.5 : 1
                             }]}
                             onPress={handleCopyCode}
+                            disabled={!referralCode || isLoadingInfo}
                         >
                             <Ionicons 
                                 name={copied ? "checkmark" : "copy-outline"} 
@@ -144,9 +161,11 @@ export default function Rewards() {
                             style={[styles.actionButton, { 
                                 backgroundColor: ThemedColor.lightened,
                                 borderColor: ThemedColor.primary,
-                                borderWidth: 1
+                                borderWidth: 1,
+                                opacity: (!referralCode || isLoadingInfo) ? 0.5 : 1
                             }]}
                             onPress={handleShareCode}
+                            disabled={!referralCode || isLoadingInfo}
                         >
                             <Ionicons 
                                 name="share-outline" 
@@ -164,14 +183,14 @@ export default function Rewards() {
                 <View style={styles.unlocksSection}>
                     <ThemedText type="default">
                         You have <ThemedText style={[styles.unlocksCount, { color: ThemedColor.primary }]}>
-                            {unlocksCount} Unlock(s)
+                            {isLoadingInfo ? "..." : unlocksRemaining} Unlock(s)
                         </ThemedText>
                     </ThemedText>
                 </View>
 
 
                 {/* Rewards List */}
-                <View style={[styles.rewardsList, unlocksCount === 0 && styles.lockedOpacity]}>
+                <View style={[styles.rewardsList, unlocksRemaining === 0 && styles.lockedOpacity]}>
                     {REWARDS_DATA.map((reward) => (
                         <View 
                             key={reward.id} 

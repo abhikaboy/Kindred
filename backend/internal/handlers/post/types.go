@@ -63,6 +63,41 @@ type GetFriendsPostsOutput struct {
 	} `json:"body"`
 }
 
+// Get Feed (unified feed endpoint for posts and activities)
+type GetFeedInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Limit         int    `query:"limit" default:"20" minimum:"1" maximum:"50" doc:"Number of feed items to return (default: 20)"`
+	Offset        int    `query:"offset" default:"0" minimum:"0" doc:"Number of feed items to skip (default: 0)"`
+}
+
+type FeedItem struct {
+	Type string                 `json:"type" doc:"Type of feed item: 'post' or 'task'"`
+	Post *types.PostDocumentAPI `json:"post,omitempty" doc:"Post data (only present if type is 'post')"`
+	Task *FeedTaskData          `json:"task,omitempty" doc:"Task data (only present if type is 'task')"`
+}
+
+type FeedTaskData struct {
+	ID            string                       `json:"id"`
+	Content       string                       `json:"content"`
+	Priority      int                          `json:"priority"`
+	Value         float64                      `json:"value"`
+	Public        bool                         `json:"public"`
+	Timestamp     string                       `json:"timestamp"`
+	CategoryID    string                       `json:"categoryId"`
+	CategoryName  string                       `json:"categoryName"`
+	WorkspaceName string                       `json:"workspaceName"`
+	User          *types.UserExtendedReference `json:"user" doc:"User who created the task"`
+}
+
+type GetFeedOutput struct {
+	Body struct {
+		Items      []FeedItem `json:"items" doc:"Mixed feed items containing posts and tasks"`
+		Total      int        `json:"total" doc:"Total number of feed items available"`
+		HasMore    bool       `json:"hasMore" doc:"Whether there are more feed items to fetch"`
+		NextOffset int        `json:"nextOffset" doc:"Offset for the next page"`
+	} `json:"body"`
+}
+
 // Get Post by ID
 type GetPostInput struct {
 	Authorization string `header:"Authorization" required:"true"`

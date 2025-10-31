@@ -14,6 +14,9 @@ type CreatePostParams = components["schemas"]["CreatePostParams"];
 type CommentDocument = components["schemas"]["CommentDocument"];
 type CommentDocumentAPI = components["schemas"]["CommentDocumentAPI"];
 
+// Export Post type for use in other files
+export type Post = PostDocumentAPI;
+
 /**
  * Create a new post
  * @param images 
@@ -109,6 +112,67 @@ export const getFriendsPosts = async (limit: number = 8, offset: number = 0): Pr
     // @ts-ignore - OpenAPI types not yet regenerated with pagination fields
     return {
         posts: data?.posts || [],
+        // @ts-ignore
+        total: data?.total || 0,
+        // @ts-ignore
+        hasMore: data?.hasMore || false,
+        // @ts-ignore
+        nextOffset: data?.nextOffset || 0,
+    };
+};
+
+/**
+ * Get unified feed (posts and activities from friends)
+ * @param limit - Number of feed items to return (default: 20)
+ * @param offset - Number of feed items to skip (default: 0)
+ */
+export interface FeedTask {
+    id: string;
+    content: string;
+    priority: number;
+    value: number;
+    public: boolean;
+    timestamp: string;
+    categoryId: string;
+    categoryName: string;
+    workspaceName: string;
+    user: {
+        _id: string;
+        handle: string;
+        display_name: string;
+        profile_picture: string;
+    };
+}
+
+export interface FeedItem {
+    type: 'post' | 'task';
+    post?: Post;
+    task?: FeedTask;
+}
+
+export interface PaginatedFeedResponse {
+    items: FeedItem[];
+    total: number;
+    hasMore: boolean;
+    nextOffset: number;
+}
+
+export const getFeed = async (limit: number = 20, offset: number = 0): Promise<PaginatedFeedResponse> => {
+    // @ts-ignore - New endpoint not yet in OpenAPI spec
+    const { data, error } = await client.GET("/v1/user/feed", {
+        params: withAuthHeaders({
+            query: { limit, offset }
+        }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get feed: ${JSON.stringify(error)}`);
+    }
+    
+    // @ts-ignore - OpenAPI types not yet regenerated
+    return {
+        // @ts-ignore
+        items: data?.items || [],
         // @ts-ignore
         total: data?.total || 0,
         // @ts-ignore

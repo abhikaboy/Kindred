@@ -145,6 +145,46 @@ const Daily = (props: Props) => {
         });
     }, [allTasks]);
 
+    // Filter upcoming tasks (tasks with future start dates or deadlines)
+    const upcomingTasks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return allTasks.filter((task) => {
+            // Task has a start date in the future
+            if (task.startDate) {
+                const taskStartDate = new Date(task.startDate);
+                taskStartDate.setHours(0, 0, 0, 0);
+                if (taskStartDate > today) {
+                    return true;
+                }
+            }
+            
+            // Task has a deadline in the future (but not a future start date)
+            if (task.deadline && !task.startDate) {
+                const taskDeadline = new Date(task.deadline);
+                taskDeadline.setHours(0, 0, 0, 0);
+                if (taskDeadline > today) {
+                    return true;
+                }
+            }
+            
+            // Task has both, but start date is today or past, and deadline is in the future
+            if (task.startDate && task.deadline) {
+                const taskStartDate = new Date(task.startDate);
+                taskStartDate.setHours(0, 0, 0, 0);
+                const taskDeadline = new Date(task.deadline);
+                taskDeadline.setHours(0, 0, 0, 0);
+                
+                if (taskStartDate <= today && taskDeadline > today) {
+                    return true;
+                }
+            }
+            
+            return false;
+        });
+    }, [allTasks]);
+
     // Filter past tasks (tasks with start date older than today and no deadline)
     const pastTasks = useMemo(() => {
         const today = new Date();
@@ -315,6 +355,12 @@ const Daily = (props: Props) => {
                         title="Overdue Tasks"
                         description=""
                         emptyMessage="No overdue tasks"
+                    />
+                    <TaskSection
+                        tasks={upcomingTasks}
+                        title="Upcoming Tasks"
+                        description="These tasks have future start dates or deadlines."
+                        emptyMessage="No upcoming tasks"
                     />
                     <TaskSection
                         tasks={pastTasks}

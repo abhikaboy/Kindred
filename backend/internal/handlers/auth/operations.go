@@ -29,11 +29,9 @@ type RegisterInput struct {
 }
 
 type RegisterOutput struct {
-	AccessToken  string `header:"access_token"`
-	RefreshToken string `header:"refresh_token"`
-	Body         struct {
-		Message string `json:"message" example:"User Created Successfully"`
-	}
+	AccessToken  string   `header:"access_token"`
+	RefreshToken string   `header:"refresh_token"`
+	Body         SafeUser `json:"body"` // Return full user data like login does
 }
 
 // Logout Operation Types

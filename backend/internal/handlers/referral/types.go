@@ -76,7 +76,7 @@ type GetReferralInfoOutput struct {
 
 type ApplyReferralCodeInput struct {
 	Body struct {
-		ReferralCode string `json:"referralCode" validate:"required,min=6,max=12"`
+		ReferralCode string `json:"referralCode" validate:"required,len=8"`
 	}
 }
 
@@ -140,4 +140,3 @@ type GetAvailableFeaturesOutput struct {
 		Features []FeatureDefinition `json:"features"`
 	}
 }
-

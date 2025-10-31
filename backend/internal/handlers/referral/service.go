@@ -93,12 +93,23 @@ func (s *Service) CreateReferralDocument(userID primitive.ObjectID, referredBy *
 }
 
 // GetReferralByUserID fetches a user's referral document
+// If the document doesn't exist, it creates one automatically
 func (s *Service) GetReferralByUserID(userID primitive.ObjectID) (*ReferralDocument, error) {
 	ctx := context.Background()
 
 	var doc ReferralDocument
 	err := s.Referrals.FindOne(ctx, bson.M{"userId": userID}).Decode(&doc)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// Create referral document if it doesn't exist
+			// This handles existing users who registered before referral system
+			// or cases where document creation failed during registration
+			newDoc, createErr := s.CreateReferralDocument(userID, nil)
+			if createErr != nil {
+				return nil, fmt.Errorf("failed to create referral document: %w", createErr)
+			}
+			return newDoc, nil
+		}
 		return nil, err
 	}
 
@@ -202,10 +213,10 @@ func (s *Service) ApplyReferralCode(newUserID primitive.ObjectID, referralCode s
 func (s *Service) UnlockFeature(userID primitive.ObjectID, featureID string) (*UnlockedFeature, error) {
 	ctx := context.Background()
 
-	// Get user's referral document
+	// Get user's referral document (auto-creates if doesn't exist)
 	referral, err := s.GetReferralByUserID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("referral document not found: %w", err)
+		return nil, fmt.Errorf("failed to get referral document: %w", err)
 	}
 
 	// Check if user has unlocks remaining
@@ -326,4 +337,3 @@ func (s *Service) HasFeatureUnlocked(userID primitive.ObjectID, featureID string
 
 	return false, nil
 }
-

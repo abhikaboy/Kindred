@@ -41,6 +41,17 @@ func RegisterGetFriendsPostsOperation(api huma.API, handler *Handler) {
 	}, handler.GetFriendsPostsHuma)
 }
 
+func RegisterGetFeedOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-feed",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/feed",
+		Summary:     "Get unified feed",
+		Description: "Retrieve a unified feed with posts and activities from friends",
+		Tags:        []string{"feed"},
+	}, handler.GetFeedHuma)
+}
+
 func RegisterGetUserGroupsOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user-groups",
@@ -145,6 +156,7 @@ func RegisterPostOperations(api huma.API, handler *Handler) {
 	RegisterCreatePostOperation(api, handler)
 	RegisterGetPostsOperation(api, handler)
 	RegisterGetFriendsPostsOperation(api, handler)
+	RegisterGetFeedOperation(api, handler)
 	RegisterGetUserGroupsOperation(api, handler)
 	RegisterGetPostsByBlueprintOperation(api, handler)
 	RegisterGetPostOperation(api, handler)
