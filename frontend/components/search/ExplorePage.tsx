@@ -24,14 +24,6 @@ type ExplorePageProps = {
 export const ExplorePage: React.FC<ExplorePageProps> = ({ categoryGroups, focusStyle, loading = false }) => {
     const router = useRouter(); // Initialize router for navigation
 
-    // Mock contacts data - could be moved to props or fetched separately
-    const contacts = [
-        { id: "1", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "2", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-        { id: "3", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "4", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-    ];
-
     // Handle navigation to category page
     const handleSeeAllPress = useCallback(
         (category: string) => {
@@ -111,21 +103,6 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ categoryGroups, focusS
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.categoriesContainer}
             />
-
-            {/* Suggested contacts */}
-            <View style={styles.suggestedSection}>
-                <ThemedText type="subtitle" style={styles.suggestedHeader}>
-                    Suggested For You
-                </ThemedText>
-                <FlatList
-                    data={contacts}
-                    renderItem={renderContacts}
-                    keyExtractor={(item) => item.id}
-                    horizontal={true}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.contactsList}
-                />
-            </View>
         </Animated.View>
     );
 };

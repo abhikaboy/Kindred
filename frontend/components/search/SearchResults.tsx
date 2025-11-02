@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import BlueprintCard from "@/components/cards/BlueprintCard";
-import Animated, { FadeOut } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
 import type { components } from "@/api/generated/types";
 import TaskTabs from "../inputs/TaskTabs";
 import UserInfoRowFollow from "../UserInfo/UserInfoRowFollow";
@@ -25,15 +25,17 @@ const convertToProfile = (profileDoc: ProfileDocument): Profile => {
         profile_picture: profileDoc.profile_picture,
         tasks_complete: profileDoc.tasks_complete,
         friends: profileDoc.friends,
-        relationship: profileDoc.relationship ? {
-            status: profileDoc.relationship.status as RelationshipStatus,
-            request_id: profileDoc.relationship.request_id
-        } : undefined
+        relationship: profileDoc.relationship
+            ? {
+                  status: profileDoc.relationship.status as RelationshipStatus,
+                  request_id: profileDoc.relationship.request_id,
+              }
+            : undefined,
     };
 };
 
 type SearchResultsProps = {
-    mode: 'searching' | 'results' | 'no-results';
+    mode: "searching" | "results" | "no-results";
     searchResults: BlueprintDocument[];
     userResults: ProfileDocument[];
     searchTerm: string;
@@ -49,12 +51,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     searchTerm,
     focusStyle,
     activeTab,
-    setActiveTab
+    setActiveTab,
 }) => {
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
     const router = useRouter();
-    if (mode === 'searching') {
+    if (mode === "searching") {
         return (
             <Animated.View style={[focusStyle]} exiting={FadeOut}>
                 <SearchResultsSkeleton activeTab={activeTab} />
@@ -62,21 +64,20 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
         );
     }
 
-    if (mode === 'results') {
+    if (mode === "results") {
         return (
             <Animated.View style={[focusStyle]} exiting={FadeOut}>
                 <View style={styles.tabsContainer}>
-                    <TaskTabs 
-                        tabs={["Blueprints", "Users"]} 
-                        activeTab={activeTab} 
-                        setActiveTab={setActiveTab} 
-                    />
+                    <TaskTabs tabs={["Blueprints", "Users"]} activeTab={activeTab} setActiveTab={setActiveTab} />
                 </View>
-                
+
                 {activeTab === 0 ? (
-                    // Blueprints tab
-                    <View>
-                        <ThemedText type="subtitle" style={styles.searchResultsHeader}>
+                    <Animated.View
+                        key="blueprints"
+                        entering={FadeIn.duration(200)}
+                        exiting={FadeOut.duration(200)}
+                        layout={Layout.springify()}>
+                        <ThemedText type="default" style={styles.searchResultsHeader}>
                             Results
                         </ThemedText>
                         <View style={styles.searchResultsContainer}>
@@ -86,52 +87,54 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                                 </View>
                             ))}
                         </View>
-                    </View>
+                    </Animated.View>
                 ) : (
-                    // Users tab
-                    <View>
-                        <ThemedText type="subtitle" style={styles.searchResultsHeader}>
+                    <Animated.View
+                        key="users"
+                        entering={FadeIn.duration(200)}
+                        exiting={FadeOut.duration(200)}
+                        layout={Layout.springify()}>
+                        <ThemedText type="default" style={styles.searchResultsHeader}>
                             Results
                         </ThemedText>
                         <View style={styles.searchResultsContainer}>
                             {userResults.map((user) => (
-                                <TouchableOpacity key={user.id} style={styles.searchResultItem} onPress={() => {
-                                    router.push(`/account/${user.id}`);
-                                }}>
+                                <TouchableOpacity
+                                    key={user.id}
+                                    style={styles.searchResultItem}
+                                    onPress={() => router.push(`/account/${user.id}`)}>
                                     <UserInfoRowBase
                                         name={user.display_name}
                                         username={user.handle}
                                         icon={user.profile_picture}
                                         id={user.id}
-                                        right={<View>
-                                            <FollowButton profile={convertToProfile(user)} />
-                                        </View>}
+                                        right={
+                                            <View>
+                                                <FollowButton profile={convertToProfile(user)} />
+                                            </View>
+                                        }
                                     />
                                 </TouchableOpacity>
                             ))}
                         </View>
-                    </View>
+                    </Animated.View>
                 )}
             </Animated.View>
         );
     }
 
-    if (mode === 'no-results') {
+    if (mode === "no-results") {
         return (
             <Animated.View style={[focusStyle]} exiting={FadeOut}>
                 <View style={styles.tabsContainer}>
-                    <TaskTabs 
-                        tabs={["Blueprints", "Users"]} 
-                        activeTab={activeTab} 
-                        setActiveTab={setActiveTab} 
-                    />
+                    <TaskTabs tabs={["Blueprints", "Users"]} activeTab={activeTab} setActiveTab={setActiveTab} />
                 </View>
                 <ThemedText type="subtitle" style={styles.searchResultsHeader}>
                     Results
                 </ThemedText>
                 <View style={styles.noResultsContainer}>
                     <ThemedText style={styles.noResultsText}>
-                        No {activeTab === 0 ? 'blueprints' : 'users'} found for "{searchTerm}"
+                        No {activeTab === 0 ? "blueprints" : "users"} found for "{searchTerm}"
                     </ThemedText>
                 </View>
             </Animated.View>
@@ -141,34 +144,34 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     return null;
 };
 
-const useStyles = (ThemedColor: any) => StyleSheet.create({
-    searchResultsHeader: {
-        paddingHorizontal: 16,
-        marginBottom: 20,
-    },
-    searchingContainer: {
-        padding: 20,
-        alignItems: "center",
-    },
-    searchResultsContainer: {
-        paddingHorizontal: 16,
-    },
-    searchResultItem: {
-        marginBottom: 16,
-        backgroundColor: ThemedColor.background,
-        borderRadius: 16,
-        paddingVertical: 8,    
-    },
-    noResultsContainer: {
-        padding: 20,
-        alignItems: "center",
-    },
-    noResultsText: {
-        textAlign: "center",
-        opacity: 0.7,
-    },
-    tabsContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 4,
-    },
-});
+const useStyles = (ThemedColor: any) =>
+    StyleSheet.create({
+        searchResultsHeader: {
+            paddingHorizontal: 16,
+            marginBottom: 8,
+        },
+        searchingContainer: {
+            padding: 20,
+            alignItems: "center",
+        },
+        searchResultsContainer: {
+            paddingHorizontal: 16,
+        },
+        searchResultItem: {
+            marginBottom: 6,
+            backgroundColor: ThemedColor.background,
+            borderRadius: 16,
+        },
+        noResultsContainer: {
+            padding: 20,
+            alignItems: "center",
+        },
+        noResultsText: {
+            textAlign: "center",
+            opacity: 0.7,
+        },
+        tabsContainer: {
+            paddingHorizontal: 16,
+            paddingBottom: 4,
+        },
+    });

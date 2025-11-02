@@ -5,7 +5,7 @@ export const Colors = {
     light: {
         text: "#13121F",
         header: "#13121F",
-        buttonText: "#fffFFF",
+        buttonText: "#FFFFFF",
         background: "#FFFFFF",
         disabled: "#66666633",
         input: "#66666633",
@@ -25,14 +25,22 @@ export const Colors = {
         tabIconSelected: tintColorDark,
         modalTop: "#696969",
         shadowSmall: "0px 1px 5px 0px #0000001a",
+
+        gradient: [
+            "rgba(255, 255, 255, 1)",
+            "rgba(255, 255, 255, 1)",
+            "rgba(255, 255, 255, 0.75)",
+            "rgba(255, 255, 255, 0.62)",
+            "rgba(255, 255, 255, 0.52)",
+            "rgba(255, 255, 255, 0)",
+        ],
     },
     dark: {
-        text: "#fffFFF",
-        modalTop: "#696969",
+        text: "#FFFFFF",
         header: "#F9EAFF",
         background: "#13121F",
         disabled: "#66666633",
-        buttonText: "#fff",
+        buttonText: "#FFFFFF",
         input: "#66666633",
         primary: "#854DFF",
         primaryPressed: "#2D1E52",
@@ -41,20 +49,35 @@ export const Colors = {
         warning: "#FFFF5C",
         caption: "#919090ff",
         lightened: "#171626",
-        lightenedCard: "#1d1c2eff",
+        lightenedCard: "#1a1929ff",
         tertiary: "#1C1B2A",
         tint: tintColorDark,
         icon: "#9BA1A6",
         tabIconDefault: "#9BA1A6",
         tabIconSelected: tintColorDark,
-        shadowSmall: "0px 1px 5px 0px #ffffff0f",
+        modalTop: "#696969",
+        shadowSmall: "0px 1px 5px 0px #00000038",
+
+        gradient: [
+            "rgba(0, 0, 0, 0.9)",
+            "rgba(0, 0, 0, 0.9)",
+            "rgba(0, 0, 0, 0.6)",
+            "rgba(0, 0, 0, 0.4)",
+            "rgba(0, 0, 0, 0.3)",
+            "rgba(0, 0, 0, 0)",
+        ],
     },
 };
+
 let ThemedColor = Colors.dark;
 
-export const initTheme = (mode: string) => {
+export const initTheme = (mode: keyof typeof Colors) => {
     console.warn("initTheme", mode);
     ThemedColor = Colors[mode];
 };
 
-export const getThemedColor = (color) => Colors[color] ?? Colors["light"];
+export const getThemedColor = (mode: keyof typeof Colors) => Colors[mode] ?? Colors.light;
+
+export const getGradient = (theme: "light" | "dark") => {
+    return Colors[theme].gradient;
+};
