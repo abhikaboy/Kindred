@@ -210,7 +210,7 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 	return results, nil
 }
 
-// GetFriendsPosts fetches posts from the user's friends using aggregation pipeline, ordered chronologically (newest first) with pagination
+// GetFriendsPosts fetches posts from the user's friends using aggregation pipeline with group visibility, ordered chronologically (newest first) with pagination
 func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) ([]types.PostDocument, int, error) {
 	ctx := context.Background()
 
@@ -219,7 +219,70 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		limit = 8
 	}
 
-	// First, get the total count of friends' posts
+	// Get user's groups to check group membership
+	userGroups, err := s.GetUserGroups(userID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get user groups: %w", err)
+	}
+
+	// Extract group IDs
+	var userGroupIDs []primitive.ObjectID
+	for _, group := range userGroups {
+		userGroupIDs = append(userGroupIDs, group.ID)
+	}
+
+	// Build visibility filter
+	// Simple rules:
+	// 1. Post has groups → Show if user is a member of any of those groups
+	// 2. Post has no groups → Show if user is a friend of the creator
+	visibilityConditions := []bson.M{}
+
+	// Rule 1: Post has groups AND user is a member of at least one group
+	if len(userGroupIDs) > 0 {
+		visibilityConditions = append(visibilityConditions, bson.M{
+			"$and": []bson.M{
+				// Post must have groups
+				{"$ne": []interface{}{"$groups", nil}},
+				{"$gt": []interface{}{bson.M{"$size": bson.M{"$ifNull": []interface{}{"$groups", []interface{}{}}}}, 0}},
+				// User must be in at least one of the post's groups
+				{
+					"$gt": []interface{}{
+						bson.M{
+							"$size": bson.M{
+								"$setIntersection": []interface{}{
+									bson.M{"$ifNull": []interface{}{"$groups", []interface{}{}}},
+									userGroupIDs,
+								},
+							},
+						},
+						0,
+					},
+				},
+			},
+		})
+	}
+
+	// Rule 2: Post has no groups (or empty groups array) AND user is a friend of the creator
+	visibilityConditions = append(visibilityConditions, bson.M{
+		"$and": []bson.M{
+			// User must be a friend of the post creator
+			{
+				"$in": []interface{}{
+					bson.M{"$toObjectId": "$user._id"},
+					"$$friendIds",
+				},
+			},
+			// Post must have no groups or empty groups array
+			{
+				"$or": []bson.M{
+					{"$eq": []interface{}{"$groups", nil}},
+					{"$eq": []interface{}{bson.M{"$size": bson.M{"$ifNull": []interface{}{"$groups", []interface{}{}}}}, 0}},
+				},
+			},
+		},
+	})
+
+	// First, get the total count of visible posts
 	countPipeline := mongo.Pipeline{
 		// Stage 1: Match the specific user
 		{{Key: "$match", Value: bson.M{"_id": userID}}},
@@ -237,31 +300,29 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 			"friendIds": "$friends",
 		}}},
 
-		// Stage 4: Lookup posts from friends
+		// Stage 4: Lookup posts with visibility filtering
 		{{Key: "$lookup", Value: bson.M{
 			"from": "posts",
 			"let":  bson.M{"friendIds": "$friendIds"},
 			"pipeline": mongo.Pipeline{
-				// Match posts from friends that are public and not deleted
+				// Match posts that are not deleted and meet visibility criteria
 				{{Key: "$match", Value: bson.M{
 					"$expr": bson.M{
 						"$and": []bson.M{
-							{"$in": []interface{}{
-								bson.M{"$toObjectId": "$user._id"},
-								"$$friendIds",
-							}},
 							{"$eq": []interface{}{"$metadata.isDeleted", false}},
-							{"$eq": []interface{}{"$metadata.isPublic", true}},
+							{
+								"$or": visibilityConditions,
+							},
 						},
 					},
 				}}},
 			},
-			"as": "friendsPosts",
+			"as": "visiblePosts",
 		}}},
 
 		// Stage 5: Count the posts
 		{{Key: "$project", Value: bson.M{
-			"total": bson.M{"$size": "$friendsPosts"},
+			"total": bson.M{"$size": "$visiblePosts"},
 		}}},
 	}
 
@@ -303,21 +364,19 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 			"friendIds": "$friends",
 		}}},
 
-		// Stage 4: Lookup posts from friends
+		// Stage 4: Lookup posts with visibility filtering
 		{{Key: "$lookup", Value: bson.M{
 			"from": "posts",
 			"let":  bson.M{"friendIds": "$friendIds"},
 			"pipeline": mongo.Pipeline{
-				// Match posts from friends that are public and not deleted
+				// Match posts that are not deleted and meet visibility criteria
 				{{Key: "$match", Value: bson.M{
 					"$expr": bson.M{
 						"$and": []bson.M{
-							{"$in": []interface{}{
-								bson.M{"$toObjectId": "$user._id"},
-								"$$friendIds",
-							}},
 							{"$eq": []interface{}{"$metadata.isDeleted", false}},
-							{"$eq": []interface{}{"$metadata.isPublic", true}},
+							{
+								"$or": visibilityConditions,
+							},
 						},
 					},
 				}}},
@@ -327,15 +386,15 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 				{{Key: "$skip", Value: offset}},
 				{{Key: "$limit", Value: limit}},
 			},
-			"as": "friendsPosts",
+			"as": "visiblePosts",
 		}}},
 
 		// Stage 5: Unwind the posts array to get individual posts
-		{{Key: "$unwind", Value: "$friendsPosts"}},
+		{{Key: "$unwind", Value: "$visiblePosts"}},
 
 		// Stage 6: Replace root with the post document
 		{{Key: "$replaceRoot", Value: bson.M{
-			"newRoot": "$friendsPosts",
+			"newRoot": "$visiblePosts",
 		}}},
 	}
 
@@ -424,8 +483,6 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 				{{Key: "$match", Value: bson.M{
 					"tasks.public": true,
 				}}},
-				// Sort by task creation timestamp (newest first)
-				{{Key: "$sort", Value: bson.M{"tasks.timestamp": -1}}},
 				// Project the fields we need
 				{{Key: "$project", Value: bson.M{
 					"_id":           "$tasks._id",
@@ -472,10 +529,18 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 			"userData": 0,
 		}}},
 
-		// Stage 10: Sort by timestamp
-		{{Key: "$sort", Value: bson.M{"timestamp": -1}}},
+		// Stage 10: Add random field for sampling
+		{{Key: "$addFields", Value: bson.M{
+			"randomSort": bson.M{"$rand": bson.M{}},
+		}}},
 
-		// Stage 11: Apply pagination
+		// Stage 11: Sort by random field first, then timestamp for consistency
+		{{Key: "$sort", Value: bson.M{
+			"randomSort": 1,
+			"timestamp":  -1,
+		}}},
+
+		// Stage 12: Apply pagination
 		{{Key: "$facet", Value: bson.M{
 			"metadata": []bson.M{
 				{"$count": "total"},
@@ -522,7 +587,7 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 		}
 	}
 
-	slog.Info("Friends public tasks fetched",
+	slog.Info("Friends public tasks fetched with random sampling",
 		"userId", userID.Hex(),
 		"count", len(tasks),
 		"total", total,
