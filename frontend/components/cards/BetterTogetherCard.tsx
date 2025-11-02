@@ -30,6 +30,8 @@ const BetterTogetherCard = ({ onDismiss, onSyncContacts, isLoadingContacts, isFi
         <View style={[styles.container, { 
             backgroundColor: ThemedColor.lightened,
             shadowColor: colorScheme === 'dark' ? '#ffffff' : '#000000',
+            borderWidth: 1, 
+            borderColor: ThemedColor.tertiary,
         }]}>
             <Pressable style={styles.content} onPress={onCardPress}>
                 <Image
