@@ -113,6 +113,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 		CategoryName: r.CategoryName,
 		TaskName:     r.TaskName,
 		Read:         false, // Default to unread
+		Type:         r.Type,
 	}
 
 	slog.Info("Creating encouragement", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)

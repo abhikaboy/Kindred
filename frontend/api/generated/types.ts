@@ -568,6 +568,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profiles/find-by-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find users by phone numbers
+         * @description Efficiently find users matching any of the provided phone numbers using a single database query
+         */
+        post: operations["find-users-by-phone-numbers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/profiles/phone/{phone}": {
         parameters: {
             query?: never;
@@ -580,6 +600,46 @@ export interface paths {
          * @description Retrieve a user profile by phone number
          */
         get: operations["get-profile-by-phone"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/profiles/suggested": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get suggested users
+         * @description Get up to 8 suggested users with the most friends
+         */
+        get: operations["get-suggested-users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/referrals/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get available features
+         * @description Returns all features that can be unlocked through referrals (public endpoint)
+         */
+        get: operations["get-available-features"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1336,6 +1396,26 @@ export interface paths {
         patch: operations["mark-encouragements-read"];
         trace?: never;
     };
+    "/v1/user/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get unified feed
+         * @description Retrieve a unified feed with posts and activities from friends
+         */
+        get: operations["get-feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/groups": {
         parameters: {
             query?: never;
@@ -1758,6 +1838,106 @@ export interface paths {
          * @description Update user's push notification token
          */
         post: operations["update-push-token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get referral information
+         * @description Returns the current user's referral code, unlocks, and referred users
+         */
+        get: operations["get-referral-info"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/referrals/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a referral code
+         * @description Apply a referral code to your account (only works if you haven't been referred yet)
+         */
+        post: operations["apply-referral-code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/referrals/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get referral statistics
+         * @description Returns detailed statistics about referrals and unlocked features
+         */
+        get: operations["get-referral-stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/referrals/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock a feature
+         * @description Use a referral unlock to activate a premium feature
+         */
+        post: operations["unlock-feature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/setup-default-workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Setup default workspace
+         * @description Create the Kindred Guide workspace with starter tasks for new users
+         */
+        post: operations["setup-default-workspace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2208,6 +2388,26 @@ export interface components {
             readonly $schema?: string;
             emoji: string;
         };
+        ApplyReferralCodeInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApplyReferralCodeInputBody.json
+             */
+            readonly $schema?: string;
+            referralCode: string;
+        };
+        ApplyReferralCodeOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApplyReferralCodeOutputBody.json
+             */
+            readonly $schema?: string;
+            message: string;
+            referrer?: components["schemas"]["ReferrerInfo"];
+            success: boolean;
+        };
         BlueprintCategoryGroup: {
             /** @description List of blueprints in this category */
             blueprints: components["schemas"]["BlueprintDocument"][];
@@ -2519,6 +2719,11 @@ export interface components {
              * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
+            /**
+             * @description Type of congratulation (message or image)
+             * @example message
+             */
+            type: string;
         };
         CongratulationSender: {
             /**
@@ -2651,8 +2856,8 @@ export interface components {
              * @example https://example.com/schemas/CreateCategoryParams.json
              */
             readonly $schema?: string;
-            name?: string;
-            workspaceName?: string;
+            name: string;
+            workspaceName: string;
         };
         CreateCongratulationParams: {
             /**
@@ -2681,6 +2886,11 @@ export interface components {
              * @example Complete project proposal
              */
             taskName: string;
+            /**
+             * @description Type of congratulation (message or image)
+             * @example message
+             */
+            type: string;
         };
         CreateConnectionParams: {
             /**
@@ -2722,6 +2932,11 @@ export interface components {
              * @example Complete project proposal
              */
             taskName: string;
+            /**
+             * @description Type of encouragement (message or image)
+             * @example message
+             */
+            type: string;
         };
         CreateGroupParams: {
             /**
@@ -2986,6 +3201,11 @@ export interface components {
              * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
+            /**
+             * @description Type of encouragement (message or image)
+             * @example message
+             */
+            type: string;
         };
         EncouragementSender: {
             /**
@@ -3055,6 +3275,47 @@ export interface components {
              */
             type: string;
         };
+        FeatureDefinition: {
+            description: string;
+            icon?: string;
+            id: string;
+            name: string;
+            /** Format: int64 */
+            requiredReferrals: number;
+        };
+        FeedItem: {
+            /** @description Post data (only present if type is 'post') */
+            post?: components["schemas"]["PostDocumentAPI"];
+            /** @description Task data (only present if type is 'task') */
+            task?: components["schemas"]["FeedTaskData"];
+            /** @description Type of feed item: 'post' or 'task' */
+            type: string;
+        };
+        FeedTaskData: {
+            categoryId: string;
+            categoryName: string;
+            content: string;
+            id: string;
+            /** Format: int64 */
+            priority: number;
+            public: boolean;
+            timestamp: string;
+            /** @description User who created the task */
+            user: components["schemas"]["UserExtendedReference"];
+            /** Format: double */
+            value: number;
+            workspaceName: string;
+        };
+        FindUsersByPhoneNumbersInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/FindUsersByPhoneNumbersInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description List of phone numbers to search for */
+            numbers: string[];
+        };
         GenerateImageUploadURLOutputBody: {
             /**
              * Format: uri
@@ -3070,6 +3331,67 @@ export interface components {
             public_url: string;
             /** @example https://presigned-upload-url... */
             upload_url: string;
+        };
+        GetAvailableFeaturesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetAvailableFeaturesOutputBody.json
+             */
+            readonly $schema?: string;
+            features: components["schemas"]["FeatureDefinition"][];
+        };
+        GetCompletedTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetCompletedTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Tasks per page
+             */
+            limit: number;
+            /**
+             * Format: int64
+             * @description Current page number
+             */
+            page: number;
+            /** @description List of completed tasks */
+            tasks: components["schemas"]["TaskDocument"][];
+            /**
+             * Format: int64
+             * @description Total number of completed tasks
+             */
+            total: number;
+            /**
+             * Format: int64
+             * @description Total number of pages
+             */
+            totalPages: number;
+        };
+        GetFeedOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetFeedOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Whether there are more feed items to fetch */
+            hasMore: boolean;
+            /** @description Mixed feed items containing posts and tasks */
+            items: components["schemas"]["FeedItem"][];
+            /**
+             * Format: int64
+             * @description Offset for the next page
+             */
+            nextOffset: number;
+            /**
+             * Format: int64
+             * @description Total number of feed items available
+             */
+            total: number;
         };
         GetFriendsPostsOutputBody: {
             /**
@@ -3143,6 +3465,22 @@ export interface components {
              * @description Total number of posts available
              */
             total: number;
+        };
+        GetReferralStatsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetReferralStatsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            activeReferrals: number;
+            referredUsers: components["schemas"]["ReferredUserInfo"][];
+            /** Format: int64 */
+            totalReferrals: number;
+            unlockedFeatures: components["schemas"]["UnlockedFeature"][];
+            /** Format: int64 */
+            unlocksRemaining: number;
         };
         GetUserGroupsOutputBody: {
             /**
@@ -3301,6 +3639,16 @@ export interface components {
             /** @example Encouragements marked as read successfully */
             message: string;
         };
+        MarkNotificationsReadBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkNotificationsReadBody.json
+             */
+            readonly $schema?: string;
+            /** @description List of notification IDs to mark as read */
+            id: string[];
+        };
         MarkNotificationsReadOutputBody: {
             /**
              * Format: uri
@@ -3457,15 +3805,46 @@ export interface components {
             months?: number[];
             reminders?: string[];
         };
-        RegisterOutputBody: {
+        ReferralDocument: {
             /**
              * Format: uri
              * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/RegisterOutputBody.json
+             * @example https://example.com/schemas/ReferralDocument.json
              */
             readonly $schema?: string;
-            /** @example User Created Successfully */
-            message: string;
+            id: string;
+            metadata: components["schemas"]["ReferralMetadata"];
+            referralCode: string;
+            referredBy?: string;
+            referredUsers: components["schemas"]["ReferredUserInfo"][];
+            unlockedFeatures: components["schemas"]["UnlockedFeature"][];
+            /** Format: int64 */
+            unlocksRemaining: number;
+            userId: string;
+        };
+        ReferralMetadata: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastReferralAt?: string;
+            /** Format: int64 */
+            totalReferred: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ReferredUserInfo: {
+            displayName: string;
+            handle: string;
+            /** Format: date-time */
+            joinedAt: string;
+            rewardGranted: boolean;
+            userId: string;
+        };
+        ReferrerInfo: {
+            displayName: string;
+            handle: string;
+            id: string;
+            profilePicture: string;
         };
         RegisterRequest: {
             /**
@@ -3653,6 +4032,9 @@ export interface components {
             startTime?: string;
             templateID?: string;
             /** Format: date-time */
+            timeCompleted?: string;
+            timeTaken?: string;
+            /** Format: date-time */
             timestamp: string;
             userID?: string;
             /** Format: double */
@@ -3690,6 +4072,7 @@ export interface components {
             startDate?: string;
             /** Format: date-time */
             startTime?: string;
+            userID: string;
             /** Format: double */
             value: number;
         };
@@ -3702,6 +4085,37 @@ export interface components {
             readonly $schema?: string;
             /** @example Authorized! */
             message: string;
+        };
+        UnlockFeatureInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnlockFeatureInputBody.json
+             */
+            readonly $schema?: string;
+            featureId: string;
+        };
+        UnlockFeatureOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnlockFeatureOutputBody.json
+             */
+            readonly $schema?: string;
+            feature: components["schemas"]["UnlockedFeature"];
+            success: boolean;
+            /** Format: int64 */
+            unlocksRemaining: number;
+        };
+        UnlockedFeature: {
+            active: boolean;
+            /** Format: date-time */
+            expiresAt?: string;
+            featureId: string;
+            featureName: string;
+            /** Format: date-time */
+            unlockedAt: string;
+            unlockedBy: string;
         };
         UnsubscribeFromBlueprintOutputBody: {
             /**
@@ -4164,6 +4578,33 @@ export interface components {
             Handle: string;
             ID: string;
             ProfilePicture: string;
+        };
+        UserExtendedReferenceWithPhone: {
+            /**
+             * @description User ID
+             * @example 507f1f77bcf86cd799439011
+             */
+            _id: string;
+            /**
+             * @description User display name
+             * @example John Doe
+             */
+            display_name: string;
+            /**
+             * @description User handle
+             * @example johndoe
+             */
+            handle: string;
+            /**
+             * @description User phone number
+             * @example +1234567890
+             */
+            phone: string;
+            /**
+             * @description Profile picture URL
+             * @example https://example.com/avatar.jpg
+             */
+            profile_picture: string;
         };
         UserReference: {
             display_name: string;
@@ -4669,7 +5110,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegisterOutputBody"];
+                    "application/json": components["schemas"]["SafeUser"];
                 };
             };
             /** @description Error */
@@ -4704,7 +5145,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegisterOutputBody"];
+                    "application/json": components["schemas"]["SafeUser"];
                 };
             };
             /** @description Error */
@@ -4739,7 +5180,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegisterOutputBody"];
+                    "application/json": components["schemas"]["SafeUser"];
                 };
             };
             /** @description Error */
@@ -5192,6 +5633,39 @@ export interface operations {
             };
         };
     };
+    "find-users-by-phone-numbers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FindUsersByPhoneNumbersInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtendedReferenceWithPhone"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-profile-by-phone": {
         parameters: {
             query?: never;
@@ -5211,6 +5685,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-suggested-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtendedReference"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-available-features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetAvailableFeaturesOutputBody"];
                 };
             };
             /** @description Error */
@@ -6932,6 +7464,42 @@ export interface operations {
             };
         };
     };
+    "get-feed": {
+        parameters: {
+            query?: {
+                /** @description Number of feed items to return (default: 20) */
+                limit?: number;
+                /** @description Number of feed items to skip (default: 0) */
+                offset?: number;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFeedOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-groups": {
         parameters: {
             query?: never;
@@ -7307,7 +7875,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkNotificationsReadBody"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -7895,6 +8467,161 @@ export interface operations {
             };
         };
     };
+    "get-referral-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "apply-referral-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyReferralCodeInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyReferralCodeOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-referral-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetReferralStatsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "unlock-feature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockFeatureInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnlockFeatureOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "setup-default-workspace": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-tasks-by-user": {
         parameters: {
             query?: {
@@ -8213,7 +8940,12 @@ export interface operations {
     };
     "get-completed-tasks": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page number (1-indexed) */
+                page?: number;
+                /** @description Number of tasks per page */
+                limit?: number;
+            };
             header: {
                 Authorization: string;
             };
@@ -8228,7 +8960,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TaskDocument"][];
+                    "application/json": components["schemas"]["GetCompletedTasksOutputBody"];
                 };
             };
             /** @description Error */

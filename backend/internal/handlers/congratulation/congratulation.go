@@ -44,6 +44,12 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		return nil, huma.Error500InternalServerError("Failed to get sender information", err)
 	}
 
+	// Default type to "message" if not provided
+	congratulationType := input.Body.Type
+	if congratulationType == "" {
+		congratulationType = "message"
+	}
+
 	// Create internal document for database operations
 	internalDoc := CongratulationDocumentInternal{
 		ID:           primitive.NewObjectID(),
@@ -53,6 +59,7 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		CategoryName: input.Body.CategoryName,
 		TaskName:     input.Body.TaskName,
 		Read:         false,
+		Type:         congratulationType,
 	}
 
 	congratulation, err := h.service.CreateCongratulation(&internalDoc)

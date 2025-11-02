@@ -423,7 +423,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/RegisterOutputBody'
+                                $ref: '#/components/schemas/SafeUser'
                 default:
                     description: Error
                     content:
@@ -456,7 +456,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/RegisterOutputBody'
+                                $ref: '#/components/schemas/SafeUser'
                 default:
                     description: Error
                     content:
@@ -489,7 +489,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/RegisterOutputBody'
+                                $ref: '#/components/schemas/SafeUser'
                 default:
                     description: Error
                     content:
@@ -869,6 +869,34 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/profiles/find-by-phone:
+        post:
+            tags:
+                - profiles
+            summary: Find users by phone numbers
+            description: Efficiently find users matching any of the provided phone numbers using a single database query
+            operationId: find-users-by-phone-numbers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FindUsersByPhoneNumbersInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/UserExtendedReferenceWithPhone'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/profiles/phone/{phone}:
         get:
             tags:
@@ -892,6 +920,48 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ProfileDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/profiles/suggested:
+        get:
+            tags:
+                - profiles
+            summary: Get suggested users
+            description: Get up to 8 suggested users with the most friends
+            operationId: get-suggested-users
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/UserExtendedReference'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/referrals/features:
+        get:
+            tags:
+                - referrals
+            summary: Get available features
+            description: Returns all features that can be unlocked through referrals (public endpoint)
+            operationId: get-available-features
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetAvailableFeaturesOutputBody'
                 default:
                     description: Error
                     content:
@@ -2765,6 +2835,53 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/feed:
+        get:
+            tags:
+                - feed
+            summary: Get unified feed
+            description: Retrieve a unified feed with posts and activities from friends
+            operationId: get-feed
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: limit
+                  in: query
+                  description: 'Number of feed items to return (default: 20)'
+                  explode: false
+                  schema:
+                    type: integer
+                    description: 'Number of feed items to return (default: 20)'
+                    format: int64
+                    default: 20
+                    minimum: 1
+                    maximum: 50
+                - name: offset
+                  in: query
+                  description: 'Number of feed items to skip (default: 0)'
+                  explode: false
+                  schema:
+                    type: integer
+                    description: 'Number of feed items to skip (default: 0)'
+                    format: int64
+                    default: 0
+                    minimum: 0
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFeedOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/groups:
         get:
             tags:
@@ -3162,6 +3279,12 @@ paths:
                   schema:
                     type: string
                     description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MarkNotificationsReadBody'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -3777,6 +3900,126 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/referrals:
+        get:
+            tags:
+                - referrals
+            summary: Get referral information
+            description: Returns the current user's referral code, unlocks, and referred users
+            operationId: get-referral-info
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReferralDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/referrals/apply:
+        post:
+            tags:
+                - referrals
+            summary: Apply a referral code
+            description: Apply a referral code to your account (only works if you haven't been referred yet)
+            operationId: apply-referral-code
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ApplyReferralCodeInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApplyReferralCodeOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/referrals/stats:
+        get:
+            tags:
+                - referrals
+            summary: Get referral statistics
+            description: Returns detailed statistics about referrals and unlocked features
+            operationId: get-referral-stats
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetReferralStatsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/referrals/unlock:
+        post:
+            tags:
+                - referrals
+            summary: Unlock a feature
+            description: Use a referral unlock to activate a premium feature
+            operationId: unlock-feature
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UnlockFeatureInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnlockFeatureOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/setup-default-workspace:
+        post:
+            tags:
+                - categories
+                - workspaces
+                - onboarding
+            summary: Setup default workspace
+            description: Create the Kindred Guide workspace with starter tasks for new users
+            operationId: setup-default-workspace
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CategoryDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/:
         get:
             tags:
@@ -4174,15 +4417,34 @@ paths:
                   required: true
                   schema:
                     type: string
+                - name: page
+                  in: query
+                  description: Page number (1-indexed)
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Page number (1-indexed)
+                    format: int64
+                    default: 1
+                    minimum: 1
+                - name: limit
+                  in: query
+                  description: Number of tasks per page
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Number of tasks per page
+                    format: int64
+                    default: 20
+                    minimum: 1
+                    maximum: 100
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/TaskDocument'
+                                $ref: '#/components/schemas/GetCompletedTasksOutputBody'
                 default:
                     description: Error
                     content:
@@ -4689,6 +4951,41 @@ components:
                     type: string
             required:
                 - emoji
+        ApplyReferralCodeInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ApplyReferralCodeInputBody.json
+                    readOnly: true
+                referralCode:
+                    type: string
+            required:
+                - referralCode
+        ApplyReferralCodeOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ApplyReferralCodeOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                referrer:
+                    $ref: '#/components/schemas/ReferrerInfo'
+                success:
+                    type: boolean
+            required:
+                - success
+                - message
         BlueprintCategoryGroup:
             type: object
             additionalProperties: false
@@ -5145,6 +5442,11 @@ components:
                     format: date-time
                     examples:
                         - "2023-01-01T00:00:00Z"
+                type:
+                    type: string
+                    description: Type of congratulation (message or image)
+                    examples:
+                        - message
             required:
                 - id
                 - sender
@@ -5154,6 +5456,7 @@ components:
                 - categoryName
                 - taskName
                 - read
+                - type
         CongratulationSender:
             type: object
             additionalProperties: false
@@ -5329,6 +5632,9 @@ components:
                     type: string
                 workspaceName:
                     type: string
+            required:
+                - name
+                - workspaceName
         CreateCongratulationParams:
             type: object
             additionalProperties: false
@@ -5360,11 +5666,17 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                type:
+                    type: string
+                    description: Type of congratulation (message or image)
+                    examples:
+                        - message
             required:
                 - receiver
                 - message
                 - categoryName
                 - taskName
+                - type
         CreateConnectionParams:
             type: object
             additionalProperties: false
@@ -5414,11 +5726,17 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                type:
+                    type: string
+                    description: Type of encouragement (message or image)
+                    examples:
+                        - message
             required:
                 - receiver
                 - message
                 - categoryName
                 - taskName
+                - type
         CreateGroupParams:
             type: object
             additionalProperties: false
@@ -5856,6 +6174,11 @@ components:
                     format: date-time
                     examples:
                         - "2023-01-01T00:00:00Z"
+                type:
+                    type: string
+                    description: Type of encouragement (message or image)
+                    examples:
+                        - message
             required:
                 - id
                 - sender
@@ -5865,6 +6188,7 @@ components:
                 - categoryName
                 - taskName
                 - read
+                - type
         EncouragementSender:
             type: object
             additionalProperties: false
@@ -5956,6 +6280,99 @@ components:
                     default: about:blank
                     examples:
                         - https://example.com/errors/example
+        FeatureDefinition:
+            type: object
+            additionalProperties: false
+            properties:
+                description:
+                    type: string
+                icon:
+                    type: string
+                id:
+                    type: string
+                name:
+                    type: string
+                requiredReferrals:
+                    type: integer
+                    format: int64
+            required:
+                - id
+                - name
+                - description
+                - requiredReferrals
+        FeedItem:
+            type: object
+            additionalProperties: false
+            properties:
+                post:
+                    description: Post data (only present if type is 'post')
+                    $ref: '#/components/schemas/PostDocumentAPI'
+                task:
+                    description: Task data (only present if type is 'task')
+                    $ref: '#/components/schemas/FeedTaskData'
+                type:
+                    type: string
+                    description: 'Type of feed item: ''post'' or ''task'''
+            required:
+                - type
+        FeedTaskData:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                categoryName:
+                    type: string
+                content:
+                    type: string
+                id:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                public:
+                    type: boolean
+                timestamp:
+                    type: string
+                user:
+                    description: User who created the task
+                    $ref: '#/components/schemas/UserExtendedReference'
+                value:
+                    type: number
+                    format: double
+                workspaceName:
+                    type: string
+            required:
+                - id
+                - content
+                - priority
+                - value
+                - public
+                - timestamp
+                - categoryId
+                - categoryName
+                - workspaceName
+                - user
+        FindUsersByPhoneNumbersInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/FindUsersByPhoneNumbersInputBody.json
+                    readOnly: true
+                numbers:
+                    type: array
+                    description: List of phone numbers to search for
+                    items:
+                        type: string
+                    minItems: 1
+                    maxItems: 1000
+            required:
+                - numbers
         GenerateImageUploadURLOutputBody:
             type: object
             additionalProperties: false
@@ -5988,6 +6405,93 @@ components:
                 - key
                 - public_url
                 - message
+        GetAvailableFeaturesOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetAvailableFeaturesOutputBody.json
+                    readOnly: true
+                features:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FeatureDefinition'
+            required:
+                - features
+        GetCompletedTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetCompletedTasksOutputBody.json
+                    readOnly: true
+                limit:
+                    type: integer
+                    description: Tasks per page
+                    format: int64
+                page:
+                    type: integer
+                    description: Current page number
+                    format: int64
+                tasks:
+                    type: array
+                    description: List of completed tasks
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                total:
+                    type: integer
+                    description: Total number of completed tasks
+                    format: int64
+                totalPages:
+                    type: integer
+                    description: Total number of pages
+                    format: int64
+            required:
+                - tasks
+                - page
+                - limit
+                - total
+                - totalPages
+        GetFeedOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetFeedOutputBody.json
+                    readOnly: true
+                hasMore:
+                    type: boolean
+                    description: Whether there are more feed items to fetch
+                items:
+                    type: array
+                    description: Mixed feed items containing posts and tasks
+                    items:
+                        $ref: '#/components/schemas/FeedItem'
+                nextOffset:
+                    type: integer
+                    description: Offset for the next page
+                    format: int64
+                total:
+                    type: integer
+                    description: Total number of feed items available
+                    format: int64
+            required:
+                - items
+                - total
+                - hasMore
+                - nextOffset
         GetFriendsPostsOutputBody:
             type: object
             additionalProperties: false
@@ -6109,6 +6613,40 @@ components:
                 - total
                 - hasMore
                 - nextOffset
+        GetReferralStatsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetReferralStatsOutputBody.json
+                    readOnly: true
+                activeReferrals:
+                    type: integer
+                    format: int64
+                referredUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ReferredUserInfo'
+                totalReferrals:
+                    type: integer
+                    format: int64
+                unlockedFeatures:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UnlockedFeature'
+                unlocksRemaining:
+                    type: integer
+                    format: int64
+            required:
+                - totalReferrals
+                - activeReferrals
+                - unlocksRemaining
+                - unlockedFeatures
+                - referredUsers
         GetUserGroupsOutputBody:
             type: object
             additionalProperties: false
@@ -6389,6 +6927,24 @@ components:
             required:
                 - message
                 - count
+        MarkNotificationsReadBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MarkNotificationsReadBody.json
+                    readOnly: true
+                id:
+                    type: array
+                    description: List of notification IDs to mark as read
+                    items:
+                        type: string
+            required:
+                - id
         MarkNotificationsReadOutputBody:
             type: object
             additionalProperties: false
@@ -6733,7 +7289,7 @@ components:
                     items:
                         type: string
                         format: date-time
-        RegisterOutputBody:
+        ReferralDocument:
             type: object
             additionalProperties: false
             properties:
@@ -6742,14 +7298,95 @@ components:
                     description: A URL to the JSON Schema for this object.
                     format: uri
                     examples:
-                        - https://example.com/schemas/RegisterOutputBody.json
+                        - https://example.com/schemas/ReferralDocument.json
                     readOnly: true
-                message:
+                id:
                     type: string
-                    examples:
-                        - User Created Successfully
+                metadata:
+                    $ref: '#/components/schemas/ReferralMetadata'
+                referralCode:
+                    type: string
+                referredBy:
+                    type: string
+                referredUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ReferredUserInfo'
+                unlockedFeatures:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UnlockedFeature'
+                unlocksRemaining:
+                    type: integer
+                    format: int64
+                userId:
+                    type: string
             required:
-                - message
+                - id
+                - userId
+                - referralCode
+                - unlocksRemaining
+                - referredUsers
+                - unlockedFeatures
+                - metadata
+        ReferralMetadata:
+            type: object
+            additionalProperties: false
+            properties:
+                createdAt:
+                    type: string
+                    format: date-time
+                lastReferralAt:
+                    type: string
+                    format: date-time
+                totalReferred:
+                    type: integer
+                    format: int64
+                updatedAt:
+                    type: string
+                    format: date-time
+            required:
+                - createdAt
+                - updatedAt
+                - totalReferred
+        ReferredUserInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                displayName:
+                    type: string
+                handle:
+                    type: string
+                joinedAt:
+                    type: string
+                    format: date-time
+                rewardGranted:
+                    type: boolean
+                userId:
+                    type: string
+            required:
+                - userId
+                - joinedAt
+                - displayName
+                - handle
+                - rewardGranted
+        ReferrerInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                displayName:
+                    type: string
+                handle:
+                    type: string
+                id:
+                    type: string
+                profilePicture:
+                    type: string
+            required:
+                - id
+                - displayName
+                - handle
+                - profilePicture
         RegisterRequest:
             type: object
             additionalProperties: false
@@ -7119,6 +7756,11 @@ components:
                     format: date-time
                 templateID:
                     type: string
+                timeCompleted:
+                    type: string
+                    format: date-time
+                timeTaken:
+                    type: string
                 timestamp:
                     type: string
                     format: date-time
@@ -7231,6 +7873,67 @@ components:
                         - Authorized!
             required:
                 - message
+        UnlockFeatureInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UnlockFeatureInputBody.json
+                    readOnly: true
+                featureId:
+                    type: string
+            required:
+                - featureId
+        UnlockFeatureOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UnlockFeatureOutputBody.json
+                    readOnly: true
+                feature:
+                    $ref: '#/components/schemas/UnlockedFeature'
+                success:
+                    type: boolean
+                unlocksRemaining:
+                    type: integer
+                    format: int64
+            required:
+                - success
+                - feature
+                - unlocksRemaining
+        UnlockedFeature:
+            type: object
+            additionalProperties: false
+            properties:
+                active:
+                    type: boolean
+                expiresAt:
+                    type: string
+                    format: date-time
+                featureId:
+                    type: string
+                featureName:
+                    type: string
+                unlockedAt:
+                    type: string
+                    format: date-time
+                unlockedBy:
+                    type: string
+            required:
+                - featureId
+                - featureName
+                - unlockedAt
+                - unlockedBy
+                - active
         UnsubscribeFromBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -7921,6 +8624,41 @@ components:
                 - DisplayName
                 - Handle
                 - ProfilePicture
+        UserExtendedReferenceWithPhone:
+            type: object
+            additionalProperties: false
+            properties:
+                _id:
+                    type: string
+                    description: User ID
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                display_name:
+                    type: string
+                    description: User display name
+                    examples:
+                        - John Doe
+                handle:
+                    type: string
+                    description: User handle
+                    examples:
+                        - johndoe
+                phone:
+                    type: string
+                    description: User phone number
+                    examples:
+                        - "+1234567890"
+                profile_picture:
+                    type: string
+                    description: Profile picture URL
+                    examples:
+                        - https://example.com/avatar.jpg
+            required:
+                - _id
+                - display_name
+                - handle
+                - profile_picture
+                - phone
         UserReference:
             type: object
             additionalProperties: false

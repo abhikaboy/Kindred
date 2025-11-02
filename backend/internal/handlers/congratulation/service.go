@@ -113,6 +113,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		CategoryName: r.CategoryName,
 		TaskName:     r.TaskName,
 		Read:         false, // Default to unread
+		Type:         r.Type,
 	}
 
 	slog.Info("Creating congratulation", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)

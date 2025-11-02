@@ -115,6 +115,7 @@ type CreateEncouragementParams struct {
 	Message      string `json:"message" example:"Great job on completing your task!" doc:"Encouragement message" validate:"required"`
 	CategoryName string `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
 	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
+	Type         string `json:"type" example:"message" doc:"Type of encouragement (message or image)" validate:"omitempty,oneof=message image"`
 }
 
 type EncouragementDocument struct {
@@ -126,6 +127,7 @@ type EncouragementDocument struct {
 	CategoryName string              `bson:"categoryName" json:"categoryName" example:"Work" doc:"Category name"`
 	TaskName     string              `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
 	Read         bool                `bson:"read" json:"read" example:"false" doc:"Whether the encouragement has been read"`
+	Type         string              `bson:"type" json:"type" example:"message" doc:"Type of encouragement (message or image)"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -138,6 +140,7 @@ type EncouragementDocumentInternal struct {
 	CategoryName string                      `bson:"categoryName"`
 	TaskName     string                      `bson:"taskName"`
 	Read         bool                        `bson:"read"`
+	Type         string                      `bson:"type"`
 }
 
 type UpdateEncouragementDocument struct {
@@ -159,6 +162,7 @@ func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 		CategoryName: e.CategoryName,
 		TaskName:     e.TaskName,
 		Read:         e.Read,
+		Type:         e.Type,
 	}
 }
 

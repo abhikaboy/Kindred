@@ -115,6 +115,7 @@ type CreateCongratulationParams struct {
 	Message      string `json:"message" example:"Congratulations on completing your task!" doc:"Congratulation message" validate:"required"`
 	CategoryName string `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
 	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
+	Type         string `json:"type" example:"message" doc:"Type of congratulation (message or image)" validate:"omitempty,oneof=message image"`
 }
 
 type CongratulationDocument struct {
@@ -126,6 +127,7 @@ type CongratulationDocument struct {
 	CategoryName string               `bson:"categoryName" json:"categoryName" example:"Work" doc:"Category name"`
 	TaskName     string               `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
 	Read         bool                 `bson:"read" json:"read" example:"false" doc:"Whether the congratulation has been read"`
+	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message or image)"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -138,6 +140,7 @@ type CongratulationDocumentInternal struct {
 	CategoryName string                       `bson:"categoryName"`
 	TaskName     string                       `bson:"taskName"`
 	Read         bool                         `bson:"read"`
+	Type         string                       `bson:"type"`
 }
 
 type UpdateCongratulationDocument struct {
@@ -159,6 +162,7 @@ func (c *CongratulationDocumentInternal) ToAPI() *CongratulationDocument {
 		CategoryName: c.CategoryName,
 		TaskName:     c.TaskName,
 		Read:         c.Read,
+		Type:         c.Type,
 	}
 }
 

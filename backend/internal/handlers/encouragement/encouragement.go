@@ -44,6 +44,12 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		return nil, huma.Error500InternalServerError("Failed to get sender information", err)
 	}
 
+	// Default type to "message" if not provided
+	encouragementType := input.Body.Type
+	if encouragementType == "" {
+		encouragementType = "message"
+	}
+
 	// Create internal document for database operations
 	internalDoc := EncouragementDocumentInternal{
 		ID:           primitive.NewObjectID(),
@@ -53,6 +59,7 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		CategoryName: input.Body.CategoryName,
 		TaskName:     input.Body.TaskName,
 		Read:         false,
+		Type:         encouragementType,
 	}
 
 	encouragement, err := h.service.CreateEncouragement(&internalDoc)
