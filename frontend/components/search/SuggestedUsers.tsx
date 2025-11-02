@@ -9,15 +9,18 @@ type SuggestedUsersProps = {
 };
 
 export const SuggestedUsers: React.FC<SuggestedUsersProps> = ({ users }) => {
-    const renderUser = useCallback(({ item }: { item: UserExtendedReference }) => (
-        <ContactCard
-            name={item.display_name}
-            icon={item.profile_picture}
-            handle={item.handle}
-            following={false} // We can enhance this later to check actual friendship status
-            id={item._id}
-        />
-    ), []);
+    const renderUser = useCallback(
+        ({ item }: { item: UserExtendedReference }) => (
+            <ContactCard
+                name={item.display_name}
+                icon={item.profile_picture}
+                handle={item.handle}
+                following={false} // We can enhance this later to check actual friendship status
+                id={item._id}
+            />
+        ),
+        []
+    );
 
     if (!users || users.length === 0) {
         return null;
@@ -25,7 +28,7 @@ export const SuggestedUsers: React.FC<SuggestedUsersProps> = ({ users }) => {
 
     return (
         <View style={styles.suggestedUsersSection}>
-            <ThemedText type="subtitle" style={styles.suggestedUsersHeader}>
+            <ThemedText type="defaultSemiBold" style={styles.suggestedUsersHeader}>
                 Suggested Users
             </ThemedText>
             <FlatList
@@ -42,15 +45,15 @@ export const SuggestedUsers: React.FC<SuggestedUsersProps> = ({ users }) => {
 
 const styles = StyleSheet.create({
     suggestedUsersSection: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     suggestedUsersHeader: {
-        marginBottom: 16,
+        marginBottom: 12,
         paddingHorizontal: 16,
     },
     usersList: {
-        gap: 16,
+        gap: 12,
         paddingHorizontal: 16,
+        paddingBottom: 3, 
     },
 });
-

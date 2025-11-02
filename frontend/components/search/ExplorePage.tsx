@@ -1,61 +1,76 @@
 import React, { useCallback } from "react";
-import { View, StyleSheet, FlatList } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import BlueprintCard from "@/components/cards/BlueprintCard";
 import ContactCard from "@/components/cards/ContactCard";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { useRouter } from "expo-router"; // or your navigation library
 import type { components } from "@/api/generated/types";
 import { Icons } from "@/constants/Icons";
 import { CategorySectionSkeleton } from "../ui/SkeletonLoader";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { Href } from "expo-router";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
 
+const ThemedColor = useThemeColor();
 type ExplorePageProps = {
     categoryGroups: BlueprintCategoryGroup[];
     focusStyle: any;
     loading?: boolean;
 };
 
-export const ExplorePage: React.FC<ExplorePageProps> = ({
-    categoryGroups,
-    focusStyle,
-    loading = false
-}) => {
-    // Mock contacts data - could be moved to props or fetched separately
-    const contacts = [
-        { id: "1", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "2", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-        { id: "3", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: true },
-        { id: "4", name: "Abhik Ray", icon: Icons.luffy, handle: "beak", following: false },
-    ];
+export const ExplorePage: React.FC<ExplorePageProps> = ({ categoryGroups, focusStyle, loading = false }) => {
+    const router = useRouter(); // Initialize router for navigation
+
+    // Handle navigation to category page
+    const handleSeeAllPress = useCallback(
+        (category: string) => {
+            // Since the route is at the same level as search
+            router.push(`/category/${category || "uncategorized"}`);
+        },
+        [router]
+    );
 
     // Memoized render functions for performance
-    const renderBlueprint = useCallback(({ item }: { item: BlueprintDocument }) => (
-        <BlueprintCard {...item} />
-    ), []);
+    const renderBlueprint = useCallback(({ item }: { item: BlueprintDocument }) => <BlueprintCard {...item} />, []);
 
-    const renderContacts = useCallback(({ item }) => (
-        <ContactCard name={item.name} icon={item.icon} handle={item.handle} following={item.following} />
-    ), []);
+    const renderContacts = useCallback(
+        ({ item }) => <ContactCard name={item.name} icon={item.icon} handle={item.handle} following={item.following} />,
+        []
+    );
 
     // Memoized category section renderer
-    const renderCategorySection = useCallback(({ item }: { item: BlueprintCategoryGroup }) => (
-        <View style={styles.categorySection}>
-            <ThemedText type="subtitle" style={styles.categoryHeader}>
-                {item.category ? item.category : "Uncategorized"}
-            </ThemedText>
-            <FlatList
-                data={item.blueprints}
-                renderItem={renderBlueprint}
-                keyExtractor={(blueprint) => blueprint.id}
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.blueprintList}
-                ItemSeparatorComponent={() => <View style={{ width: 4 }} />}
-            />
-        </View>
-    ), [renderBlueprint]);
+    const renderCategorySection = useCallback(
+        ({ item }: { item: BlueprintCategoryGroup }) => (
+            <View style={styles.categorySection}>
+                <View style={styles.categoryHeaderContainer}>
+                    <ThemedText type="defaultSemiBold" style={styles.categoryHeader}>
+                        {item.category ? item.category : "Uncategorized"}
+                    </ThemedText>
+                    <TouchableOpacity
+                        onPress={() => handleSeeAllPress(item.category)}
+                        style={styles.seeAllButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <ThemedText type="caption" style={styles.seeAllText}>
+                            See All
+                        </ThemedText>
+                    </TouchableOpacity>
+                </View>
+                <FlatList
+                    data={item.blueprints}
+                    renderItem={renderBlueprint}
+                    keyExtractor={(blueprint) => blueprint.id}
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.blueprintList}
+                    ItemSeparatorComponent={() => <View style={{ width: 4 }} />}
+                />
+            </View>
+        ),
+        [renderBlueprint, handleSeeAllPress]
+    );
 
     if (loading) {
         return (
@@ -88,39 +103,38 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.categoriesContainer}
             />
-
-            {/* Suggested contacts */}
-            <View style={styles.suggestedSection}>
-                <ThemedText type="subtitle" style={styles.suggestedHeader}>
-                    Suggested For You
-                </ThemedText>
-                <FlatList
-                    data={contacts}
-                    renderItem={renderContacts}
-                    keyExtractor={(item) => item.id}
-                    horizontal={true}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.contactsList}
-                />
-            </View>
         </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     categoriesContainer: {
-        gap: 32,
+        gap: 12,
     },
     categorySection: {
+        marginBottom: 2,
+    },
+    categoryHeaderContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
         marginBottom: 8,
     },
     categoryHeader: {
-        marginBottom: 16,
-        paddingHorizontal: 16,
+        flex: 1,
+    },
+    seeAllButton: {
+        padding: 4,
+    },
+    seeAllText: {
+        color: ThemedColor.primary,
+        fontSize: 14,
     },
     blueprintList: {
         paddingHorizontal: 16,
-        gap: 20,
+        paddingVertical: 2,
+        gap: 8,
     },
     suggestedSection: {
         marginTop: 32,

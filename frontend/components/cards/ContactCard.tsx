@@ -59,7 +59,6 @@ const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            backgroundColor: ThemedColor.lightened,
             borderRadius: 12,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,

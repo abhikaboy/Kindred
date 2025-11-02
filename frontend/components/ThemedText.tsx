@@ -75,6 +75,7 @@ const useStyles = (ThemedColor: any, scale: number) =>
         caption: {
             fontSize: 14 * scale,
             fontFamily: "Outfit",
+            fontWeight: "light",
             color: ThemedColor.caption,
         },
         lightBody: {
