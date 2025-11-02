@@ -365,7 +365,6 @@ export default function Task() {
                                         }}
                                         placeholder="Tap to add notes"
                                         style={{
-                                            backgroundColor: ThemedColor.lightened,
                                             paddingVertical: 8,
                                             fontSize: 16,
                                             color: ThemedColor.text,

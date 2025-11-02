@@ -19,7 +19,7 @@ const DashboardCard = (props: Props) => {
     return (
         <TouchableOpacity
             style={{
-                backgroundColor: ThemedColor.lightened,
+                backgroundColor: ThemedColor.lightenedCard,
                 borderRadius: 12,
                 padding: 16,
                 aspectRatio: 1.36,

@@ -65,6 +65,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 message: encouragementMessage.trim(),
                 categoryName: encouragementConfig.categoryName,
                 taskName: task.content,
+                type: "message", // Type of encouragement (message or image)
             };
 
             // Make the API call

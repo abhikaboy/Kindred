@@ -419,14 +419,16 @@ const Search = (props: Props) => {
                             colors={[ThemedColor.text]}
                         />
                     }>
-                    <View style={styles.betterTogetherContainer}>
-                        <BetterTogetherCard
-                            onSyncContacts={handleAddContacts}
-                            isLoadingContacts={isLoadingContacts}
-                            isFindingFriends={findUsersMutation.isPending}
-                            onCardPress={handleRewardsCardPress}
-                        />
-                    </View>
+                    {mode === "categories" && (
+                        <View style={styles.betterTogetherContainer}>
+                            <BetterTogetherCard
+                                onSyncContacts={handleAddContacts}
+                                isLoadingContacts={isLoadingContacts}
+                                isFindingFriends={findUsersMutation.isPending}
+                                onCardPress={handleRewardsCardPress}
+                            />
+                        </View>
+                    )}
                     <FollowRequestsSection styles={styles} />
                     {!isLoadingMatchedContacts && matchedContacts.length > 0 && mode === "categories" && (
                         <ContactsFromPhone contacts={matchedContacts} />

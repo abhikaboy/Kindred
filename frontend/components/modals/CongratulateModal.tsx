@@ -65,6 +65,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 message: congratulationMessage.trim(),
                 categoryName: congratulationConfig.categoryName,
                 taskName: task.content,
+                type: "message", // Type of congratulation (message or image)
             };
 
             // Make the API call

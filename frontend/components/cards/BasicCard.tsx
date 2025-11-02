@@ -11,7 +11,7 @@ const BasicCard = ({ children }: Props) => {
     return (
         <View
             style={{
-                backgroundColor: ThemedColor.lightened,
+                backgroundColor: ThemedColor.lightenedCard,
                 borderRadius: 12,
                 padding: 16,
                 justifyContent: "space-between",

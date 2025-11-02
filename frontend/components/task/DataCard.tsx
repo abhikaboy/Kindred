@@ -16,13 +16,12 @@ const DataCard = (props: Props) => {
     return (
         <View
             style={{
-                backgroundColor: ThemedColor.lightened,
-                padding: 16,
-                paddingBottom: 24,
+                // backgroundColor: ThemedColor.lightenedCard,
+                paddingBottom: 12,
                 gap: 8,
                 borderRadius: 12,
                 height: "auto",
-                boxShadow: ThemedColor.shadowSmall,
+                // boxShadow: ThemedColor.shadowSmall,
             }}>
             <ThemedText type="subtitle">{props.title}</ThemedText>
             {props.content && <ThemedText type="default">{props.content}</ThemedText>}

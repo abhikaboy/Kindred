@@ -89,7 +89,10 @@ type AutocompleteProfilesOutput struct {
 }
 
 // Get Suggested Users
-type GetSuggestedUsersInput struct{}
+type GetSuggestedUsersInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
 
 type GetSuggestedUsersOutput struct {
 	Body []types.UserExtendedReference `json:"body"`
@@ -97,7 +100,9 @@ type GetSuggestedUsersOutput struct {
 
 // Find Users by Phone Numbers
 type FindUsersByPhoneNumbersInput struct {
-	Body struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          struct {
 		Numbers []string `json:"numbers" minItems:"1" maxItems:"1000" doc:"List of phone numbers to search for"`
 	}
 }

@@ -321,8 +321,8 @@ const HomeContent = ({
                             </ThemedText>
                         </View>
 
-                        <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 16 }} showsVerticalScrollIndicator={false}>
-                            <MotiView style={{ gap: 16, marginTop: 24 }}>
+                        <ScrollView style={{ gap: 8 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={false}>
+                            <MotiView style={{ gap: 8, marginTop: 20 }}>
                                 {/* Focus - always visible at the top */}
                                 <BasicCard>
                                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -338,7 +338,7 @@ const HomeContent = ({
                                 </BasicCard>
 
                                 {/* Unread Encouragements - show right under Focus if unread */}
-                                <AttachStep index={1}>
+                                <AttachStep index={1} style={{ width: '100%'}}>
                                     <View style={{ width: '100%', gap: 16 }}>
                                         {encouragementCount > 0 && (
                                             <TouchableOpacity

@@ -232,7 +232,7 @@ const TaskCard = ({
                 style={[
                     styles.container,
                     {
-                        backgroundColor: ThemedColor.lightened,
+                        backgroundColor: ThemedColor.lightenedCard,
                         borderWidth: 1,
                         borderColor: ThemedColor.tertiary,
                         // borderRightColor: ThemedColor.primary,
