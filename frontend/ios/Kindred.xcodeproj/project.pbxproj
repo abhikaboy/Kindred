@@ -392,7 +392,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.lokye.kindredtsl;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl;
 				PRODUCT_NAME = Kindred;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Kindred/Kindred-Bridging-Header.h";
@@ -427,7 +427,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.lokye.kindredtsl;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl;
 				PRODUCT_NAME = Kindred;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "Kindred/Kindred-Bridging-Header.h";

@@ -363,6 +363,7 @@ export default function Task() {
                                             // Debounced API call
                                             updateNotes(text);
                                         }}
+                                        multiline={true}
                                         placeholder="Tap to add notes"
                                         style={{
                                             paddingVertical: 8,
