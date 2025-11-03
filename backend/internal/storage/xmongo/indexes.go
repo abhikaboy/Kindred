@@ -88,6 +88,26 @@ var Indexes = []Index{
 			Keys: bson.D{{Key: "referredUsers.userId", Value: 1}},
 		},
 	},
+	// Encouragements collection indexes
+	// Compound index for efficient lookup of encouragements by task and receiver
+	// This is used when a task is completed to find all encouragers to notify
+	{
+		Collection: "encouragements",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "taskId", Value: 1},
+				{Key: "receiver", Value: 1},
+			},
+			Options: options.Index().SetName("taskId_receiver_idx"),
+		},
+	},
+	// Index for looking up encouragements by receiver (for displaying user's encouragements)
+	{
+		Collection: "encouragements",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "receiver", Value: 1}},
+		},
+	},
 	// {
 	// 	Collection: "users",
 	// 	Model: mongo.IndexModel{Keys: bson.D{

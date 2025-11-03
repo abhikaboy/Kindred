@@ -115,6 +115,7 @@ type CreateEncouragementParams struct {
 	Message      string `json:"message" example:"Great job on completing your task!" doc:"Encouragement message" validate:"required"`
 	CategoryName string `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
 	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
+	TaskID       string `json:"taskId" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged" validate:"required"`
 	Type         string `json:"type" example:"message" doc:"Type of encouragement (message or image)" validate:"omitempty,oneof=message image"`
 }
 
@@ -126,6 +127,7 @@ type EncouragementDocument struct {
 	Timestamp    time.Time           `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Creation timestamp"`
 	CategoryName string              `bson:"categoryName" json:"categoryName" example:"Work" doc:"Category name"`
 	TaskName     string              `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
+	TaskID       string              `bson:"taskId" json:"taskId" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged"`
 	Read         bool                `bson:"read" json:"read" example:"false" doc:"Whether the encouragement has been read"`
 	Type         string              `bson:"type" json:"type" example:"message" doc:"Type of encouragement (message or image)"`
 }
@@ -139,6 +141,7 @@ type EncouragementDocumentInternal struct {
 	Timestamp    time.Time                   `bson:"timestamp"`
 	CategoryName string                      `bson:"categoryName"`
 	TaskName     string                      `bson:"taskName"`
+	TaskID       primitive.ObjectID          `bson:"taskId"`
 	Read         bool                        `bson:"read"`
 	Type         string                      `bson:"type"`
 }
@@ -161,6 +164,7 @@ func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 		Timestamp:    e.Timestamp,
 		CategoryName: e.CategoryName,
 		TaskName:     e.TaskName,
+		TaskID:       e.TaskID.Hex(),
 		Read:         e.Read,
 		Type:         e.Type,
 	}

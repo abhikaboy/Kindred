@@ -104,10 +104,16 @@ Database layer of the application
 */
 
 type Service struct {
-	Users          *mongo.Collection
-	Tasks          *mongo.Collection
-	CompletedTasks *mongo.Collection
-	TemplateTasks  *mongo.Collection
+	Users               *mongo.Collection
+	Tasks               *mongo.Collection
+	CompletedTasks      *mongo.Collection
+	TemplateTasks       *mongo.Collection
+	EncouragementHelper EncouragementServiceInterface
+}
+
+// EncouragementServiceInterface defines the methods we need from the encouragement service
+type EncouragementServiceInterface interface {
+	NotifyEncouragersOfCompletion(taskID, taskOwnerID primitive.ObjectID, taskName string) error
 }
 
 type TaskID struct {

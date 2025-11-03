@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, Modal } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -8,6 +8,10 @@ import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import Octicons from "@expo/vector-icons/Octicons";
 import { createEncouragementAPI } from "@/api/encouragement";
 import { useAuth } from "@/hooks/useAuth";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import { uploadImageSmart } from "@/api/upload";
+import { Images, Gif } from "phosphor-react-native";
+import GifPicker from "./GifPicker";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -30,7 +34,11 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
     const [encouragementMessage, setEncouragementMessage] = useState("");
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
     const isMountedRef = useRef(true);
+    const { pickImage } = useMediaLibrary();
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
 
@@ -38,6 +46,12 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     useEffect(() => {
         if (visible) {
             isMountedRef.current = true;
+        } else {
+            // Reset state when modal closes
+            setEncouragementMessage("");
+            setSelectedImage(null);
+            setIsUploading(false);
+            setShowGifPicker(false);
         }
         return () => {
             isMountedRef.current = false;
@@ -46,6 +60,31 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
     // Get encouragements left from user data
     const encouragementsLeft = user?.encouragements || 0;
+
+    const handleImagePick = async () => {
+        try {
+            const result = await pickImage({
+                allowsEditing: true,
+                quality: 0.7,
+            });
+
+            if (result && !result.canceled && result.assets && result.assets[0]) {
+                const imageUri = result.assets[0].uri;
+                setSelectedImage(imageUri);
+                // Clear message when image is selected
+                setEncouragementMessage("");
+            }
+        } catch (error) {
+            console.error("Error picking image:", error);
+            Alert.alert("Error", "Failed to select image. Please try again.");
+        }
+    };
+
+    const handleGifSelect = (gifUrl: string) => {
+        setSelectedImage(gifUrl);
+        setEncouragementMessage("");
+        setShowGifPicker(false);
+    };
 
     const handleSendEncouragement = async () => {
         if (!encouragementConfig?.receiverId || !task || !encouragementConfig?.categoryName) {
@@ -58,14 +97,53 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             return;
         }
 
+        // Check if either message or image is provided
+        if (!encouragementMessage.trim() && !selectedImage) {
+            Alert.alert("Error", "Please enter a message or select an image");
+            return;
+        }
+
         try {
+            setIsUploading(true);
+
+            let contentToSend = encouragementMessage.trim();
+            let encouragementType = "message";
+
+            // If image is selected, upload it first (unless it's a GIF URL)
+            if (selectedImage) {
+                try {
+                    // Check if it's a URL (GIF from Tenor) or a local file (uploaded image)
+                    if (selectedImage.startsWith('http://') || selectedImage.startsWith('https://')) {
+                        // It's a GIF URL, use it directly
+                        contentToSend = selectedImage;
+                        encouragementType = "image";
+                    } else {
+                        // It's a local image, upload it
+                        const tempId = `encouragement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        
+                        const imageUrl = await uploadImageSmart("encouragement", tempId, selectedImage, {
+                            variant: "large",
+                        });
+                        
+                        contentToSend = typeof imageUrl === 'string' ? imageUrl : imageUrl.public_url;
+                        encouragementType = "image";
+                    }
+                } catch (uploadError) {
+                    console.error("Error uploading image:", uploadError);
+                    setIsUploading(false);
+                    Alert.alert("Error", "Failed to upload image. Please try again.");
+                    return;
+                }
+            }
+
             // Create the encouragement data
             const encouragementData = {
                 receiver: encouragementConfig.receiverId,
-                message: encouragementMessage.trim(),
+                message: contentToSend,
                 categoryName: encouragementConfig.categoryName,
                 taskName: task.content,
-                type: "message", // Type of encouragement (message or image)
+                taskId: task.id,
+                type: encouragementType,
             };
 
             // Make the API call
@@ -73,6 +151,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
             // Only update state if component is still mounted
             if (!isMountedRef.current) return;
+
+            setIsUploading(false);
 
             // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);
@@ -86,17 +166,18 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     {
                         text: "OK",
                         onPress: () => {
-                            // Clear message and close modal after user dismisses alert
+                            // Clear state and close modal after user dismisses alert
                             if (isMountedRef.current) {
-                                setEncouragementMessage("");
                                 setVisible(false);
                             }
                         }
                     }
                 ]
             );
+
         } catch (error) {
             console.error("Error sending encouragement:", error);
+            setIsUploading(false);
             if (isMountedRef.current) {
                 Alert.alert("Error", "Failed to send encouragement. Please try again.");
             }
@@ -135,25 +216,64 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     {encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement
                 </ThemedText>
 
-                {/* Text Input */}
-                <View style={styles.inputContainer}>
-                    <BottomSheetTextInput
-                        placeholder={`Tap to type an encouraging message to ${encouragementConfig?.userHandle || "User"}`}
-                        placeholderTextColor={ThemedColor.caption}
-                        value={encouragementMessage}
-                        onChangeText={setEncouragementMessage}
-                        multiline={true}
-                        numberOfLines={4}
-                        style={styles.textInputStyled}
-                    />
+                {/* Text Input or Image Preview */}
+                {!selectedImage ? (
+                    <View style={styles.inputContainer}>
+                        <BottomSheetTextInput
+                            placeholder={`Tap to type an encouraging message to ${encouragementConfig?.userHandle || "User"}`}
+                            placeholderTextColor={ThemedColor.caption}
+                            value={encouragementMessage}
+                            onChangeText={setEncouragementMessage}
+                            multiline={true}
+                            numberOfLines={4}
+                            style={styles.textInputStyled}
+                        />
+                    </View>
+                ) : (
+                    <TouchableOpacity 
+                        style={styles.imagePreviewContainer}
+                        onPress={handleImagePick}
+                        activeOpacity={0.9}
+                    >
+                        <Image source={{ uri: selectedImage }} style={styles.imagePreview} resizeMode="contain" />
+                        <TouchableOpacity 
+                            style={styles.removeImageButton}
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                setSelectedImage(null);
+                            }}
+                        >
+                            <Octicons name="x" size={20} color={ThemedColor.text} />
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                )}
+
+                {/* Media Icons */}
+                <View style={styles.mediaIconsContainerWrapper}>
+                    <View style={styles.mediaIconsContainer}>
+                        <TouchableOpacity 
+                            style={styles.iconButton}
+                            onPress={handleImagePick}
+                            disabled={isUploading}
+                        >
+                            <Images size={32} color={ThemedColor.text} weight="regular" />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={styles.iconButton}
+                            onPress={() => setShowGifPicker(true)}
+                            disabled={isUploading}
+                        >
+                            <Gif size={32} color={ThemedColor.text} weight="regular" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Send Button and Counter */}
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
-                        title="Send Encouragement"
+                        title={isUploading ? "Uploading..." : "Send Encouragement"}
                         onPress={handleSendEncouragement}
-                        disabled={!encouragementMessage.trim() || encouragementsLeft === 0}
+                        disabled={(!encouragementMessage.trim() && !selectedImage) || encouragementsLeft === 0 || isUploading}
                         style={styles.sendButton}
                     />
                     <ThemedText type="caption" style={styles.counterStyled}>
@@ -161,6 +281,25 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     </ThemedText>
                 </View>
             </View>
+
+            {/* GIF Picker Modal */}
+            <Modal
+                visible={showGifPicker}
+                animationType="slide"
+                onRequestClose={() => setShowGifPicker(false)}
+            >
+                <View style={styles.gifPickerContainer}>
+                    <View style={[styles.gifPickerHeader, { backgroundColor: ThemedColor.background, borderBottomColor: ThemedColor.tertiary }]}>
+                        <ThemedText type="defaultSemiBold" style={styles.gifPickerTitle}>
+                            Select a GIF
+                        </ThemedText>
+                        <TouchableOpacity onPress={() => setShowGifPicker(false)}>
+                            <Octicons name="x" size={24} color={ThemedColor.text} />
+                        </TouchableOpacity>
+                    </View>
+                    <GifPicker onGifSelect={handleGifSelect} />
+                </View>
+            </Modal>
         </DefaultModal>
     );
 }
@@ -291,5 +430,54 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             fontSize: 12,
             textAlign: "center",
             color: ThemedColor.text,
+        },
+        mediaIconsContainerWrapper: {
+            width: "100%",
+            marginBottom: 24,
+        },
+        mediaIconsContainer: {
+            flexDirection: "row",
+            alignItems: "flex-end",
+            gap: 12,
+            alignSelf: "flex-end",
+        },
+        iconButton: {
+            padding: 0,
+        },
+        imagePreviewContainer: {
+            position: "relative",
+            marginBottom: 16,
+            borderRadius: 12,
+            overflow: "hidden",
+        },
+        imagePreview: {
+            width: "100%",
+            height: Dimensions.get("window").height * 0.5,
+            resizeMode: "contain",
+        },
+        removeImageButton: {
+            position: "absolute",
+            top: 8,
+            right: 8,
+            borderRadius: 20,
+            width: 32,
+            height: 32,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        gifPickerContainer: {
+            flex: 1,
+        },
+        gifPickerHeader: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderBottomWidth: 1,
+            paddingTop: 50,
+        },
+        gifPickerTitle: {
+            fontSize: 18,
         },
     });

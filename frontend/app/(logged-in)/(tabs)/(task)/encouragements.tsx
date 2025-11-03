@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
 import CachedImage from "@/components/CachedImage";
+import KudosItem from "@/components/cards/KudosItem";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -113,50 +114,11 @@ export default function Encouragements() {
                 ) : (
                     <View style={styles.encouragementsList}>
                         {encouragements.map((encouragement) => (
-                            <View key={encouragement.id} style={styles.encouragementItem}>
-                                {/* User Avatar and Info */}
-                                <View style={styles.userSection}>
-                                    <CachedImage
-                                        source={{ uri: encouragement.sender.picture }}
-                                        fallbackSource={require("@/assets/images/head.png")}
-                                        variant="thumbnail"
-                                        cachePolicy="memory-disk"
-                                        style={styles.userAvatar}
-                                    />
-                                    <View style={styles.userInfo}>
-                                        <ThemedText type="default" style={styles.userName}>
-                                            {encouragement.sender.name}
-                                        </ThemedText>
-                                    </View>
-                                </View>
-
-                                {/* Encouragement Card */}
-                                <View style={styles.encouragementCard}>
-                                    {/* Unread Indicator */}
-                                    {!encouragement.read && <View style={styles.unreadDot} />}
-
-                                    {/* Task Info */}
-                                    <View style={styles.taskInfo}>
-                                        <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
-                                            {encouragement.categoryName}
-                                        </ThemedText>
-                                        <View style={styles.dot} />
-                                        <ThemedText type="default" style={{...styles.taskName, color: ThemedColor.primary}} numberOfLines={1}>
-                                            {encouragement.taskName}
-                                        </ThemedText>
-                                    </View>
-
-                                    {/* Message */}
-                                    <View style={styles.messageContainer}>
-                                        <ThemedText type="lightBody" style={styles.messageText}>
-                                            {encouragement.message}
-                                        </ThemedText>
-                                        <ThemedText type="caption" style={styles.timeText}>
-                                            {formatTime(encouragement.timestamp)}
-                                        </ThemedText>
-                                    </View>
-                                </View>
-                            </View>
+                            <KudosItem
+                                key={encouragement.id}
+                                kudos={encouragement}
+                                formatTime={formatTime}
+                            />
                         ))}
                     </View>
                 )}
@@ -221,87 +183,5 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         encouragementsList: {
             gap: 16,
-        },
-        encouragementItem: {
-            flexDirection: "row",
-        },
-        userSection: {
-            gap: 8,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
-        },
-        userAvatar: {
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: ThemedColor.tertiary,
-        },
-        userInfo: {
-            width: Dimensions.get("window").width * 0.2,
-        },
-        userName: {
-            color: ThemedColor.text,
-            fontSize: 14,
-            width: Dimensions.get("window").width * 0.2,
-        },
-        timeText: {
-            color: ThemedColor.caption,
-            fontSize: 12,
-            marginTop: 12,
-        },
-        encouragementCard: {
-            flex: 1,
-            backgroundColor: ThemedColor.lightened,
-            borderRadius: 12,
-            padding: 16,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
-        },
-        taskInfo: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 4,
-            flexWrap: "nowrap",
-        },
-        categoryText: {
-            color: ThemedColor.primary,
-            fontSize: 16,
-            flexShrink: 1,
-        },
-        dot: {
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: ThemedColor.caption,
-            flexShrink: 0,
-        },
-        taskName: {
-            color: ThemedColor.text,
-            fontSize: 16,
-            flexShrink: 1,
-        },
-        messageContainer: {
-            marginTop: 4,
-        },
-        messageText: {
-            color: ThemedColor.text,
-            fontSize: 16,
-            lineHeight: 20,
-        },
-        unreadDot: {
-            position: "absolute",
-            top: 0,
-            right: 0,
-            width: 12,
-            height: 12,
-            borderRadius: 12,
-            backgroundColor: ThemedColor.error,
         },
     });

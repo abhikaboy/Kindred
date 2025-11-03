@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
@@ -63,10 +64,11 @@ func getTaskArrayFilterOptions(taskId primitive.ObjectID) *options.UpdateOptions
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Tasks:          collections["categories"],
-		Users:          collections["users"],
-		CompletedTasks: collections["completed-tasks"],
-		TemplateTasks:  collections["template-tasks"],
+		Tasks:               collections["categories"],
+		Users:               collections["users"],
+		CompletedTasks:      collections["completed-tasks"],
+		TemplateTasks:       collections["template-tasks"],
+		EncouragementHelper: encouragement.NewEncouragementService(collections),
 	}
 }
 
@@ -270,9 +272,30 @@ func (s *Service) CompleteTask(
 
 	ctx := context.Background()
 
+	// Get the task details before completing (for encourager notifications)
+	var taskToComplete TaskDocument
+	taskPipeline := getTasksByUserPipeline(userId)
+	taskPipeline = append(taskPipeline, bson.D{
+		{Key: "$match", Value: bson.M{"_id": id}},
+	})
+	taskCursor, err := s.Tasks.Aggregate(ctx, taskPipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer taskCursor.Close(ctx)
+
+	var tasks []TaskDocument
+	if err := taskCursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+
+	if len(tasks) > 0 {
+		taskToComplete = tasks[0]
+	}
+
 	// Get user's current streak and tasks_complete before completion
 	var userBefore types.User
-	err := s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userBefore)
+	err = s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userBefore)
 	if err != nil {
 		return nil, err
 	}
@@ -334,6 +357,23 @@ func (s *Service) CompleteTask(
 
 	if streakChanged {
 		userAfter.Streak = userAfter.Streak + 1
+	}
+
+	// Notify encouragers of task completion (non-blocking - errors are logged)
+	if s.EncouragementHelper != nil && taskToComplete.ID != primitive.NilObjectID {
+		go func() {
+			err := s.EncouragementHelper.NotifyEncouragersOfCompletion(
+				taskToComplete.ID,
+				userId,
+				taskToComplete.Content,
+			)
+			if err != nil {
+				slog.Error("Failed to notify encouragers of task completion",
+					"task_id", taskToComplete.ID,
+					"user_id", userId,
+					"error", err)
+			}
+		}()
 	}
 
 	return &TaskCompletionResult{

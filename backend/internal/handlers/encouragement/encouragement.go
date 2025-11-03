@@ -38,6 +38,11 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		return nil, huma.Error400BadRequest("Invalid receiver ID format", err)
 	}
 
+	taskID, err := primitive.ObjectIDFromHex(input.Body.TaskID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
 	// Get sender information from the users collection
 	senderInfo, err := h.service.GetSenderInfo(senderID)
 	if err != nil {
@@ -58,6 +63,7 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		Message:      input.Body.Message,
 		CategoryName: input.Body.CategoryName,
 		TaskName:     input.Body.TaskName,
+		TaskID:       taskID,
 		Read:         false,
 		Type:         encouragementType,
 	}

@@ -34,6 +34,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewEncouragementService is a public constructor for external packages
+func NewEncouragementService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllEncouragements fetches all Encouragement documents from MongoDB for a specific receiver
 func (s *Service) GetAllEncouragements(receiverID primitive.ObjectID) ([]EncouragementDocument, error) {
 	if s.Encouragements == nil {
@@ -84,6 +89,32 @@ func (s *Service) GetEncouragementByID(id primitive.ObjectID) (*EncouragementDoc
 	}
 
 	return internalEncouragement.ToAPI(), nil
+}
+
+// GetEncouragementsByTaskAndReceiver fetches all encouragements for a specific task and receiver
+func (s *Service) GetEncouragementsByTaskAndReceiver(taskID, receiverID primitive.ObjectID) ([]EncouragementDocumentInternal, error) {
+	if s.Encouragements == nil {
+		return nil, fmt.Errorf("encouragements collection not available")
+	}
+
+	ctx := context.Background()
+	filter := bson.M{
+		"taskId":   taskID,
+		"receiver": receiverID,
+	}
+
+	cursor, err := s.Encouragements.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []EncouragementDocumentInternal
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 // CreateEncouragement adds a new Encouragement document
@@ -318,4 +349,90 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 	}
 
 	return xutils.SendNotification(notification)
+}
+
+// NotifyEncouragersOfCompletion sends push notifications to all users who encouraged a specific task
+func (s *Service) NotifyEncouragersOfCompletion(taskID, taskOwnerID primitive.ObjectID, taskName string) error {
+	// Get all encouragements for this task
+	encouragements, err := s.GetEncouragementsByTaskAndReceiver(taskID, taskOwnerID)
+	if err != nil {
+		return fmt.Errorf("failed to get encouragements: %w", err)
+	}
+
+	if len(encouragements) == 0 {
+		slog.Info("No encouragements found for completed task", "task_id", taskID)
+		return nil
+	}
+
+	ctx := context.Background()
+
+	// Get task owner's display name
+	var taskOwner types.User
+	err = s.Users.FindOne(ctx, bson.M{"_id": taskOwnerID}).Decode(&taskOwner)
+	if err != nil {
+		return fmt.Errorf("failed to get task owner: %w", err)
+	}
+
+	// Track unique encouragers (in case someone sent multiple encouragements)
+	notifiedEncouragers := make(map[primitive.ObjectID]bool)
+
+	for _, encouragement := range encouragements {
+		encouragerID := encouragement.Sender.ID
+
+		// Skip if we already notified this encourager
+		if notifiedEncouragers[encouragerID] {
+			continue
+		}
+
+		// Get encourager's push token
+		var encourager types.User
+		err := s.Users.FindOne(ctx, bson.M{"_id": encouragerID}).Decode(&encourager)
+		if err != nil {
+			slog.Error("Failed to get encourager user", "encourager_id", encouragerID, "error", err)
+			continue
+		}
+
+		if encourager.PushToken == "" {
+			slog.Warn("Encourager has no push token", "encourager_id", encouragerID)
+			continue
+		}
+
+		// Send notification
+		message := fmt.Sprintf("%s completed the task you encouraged: \"%s\"", taskOwner.DisplayName, taskName)
+
+		notification := xutils.Notification{
+			Token:   encourager.PushToken,
+			Title:   "Task Completed! 🎉",
+			Message: message,
+			Data: map[string]string{
+				"type":          "task_completion",
+				"task_owner_id": taskOwnerID.Hex(),
+				"task_owner":    taskOwner.DisplayName,
+				"task_name":     taskName,
+				"task_id":       taskID.Hex(),
+			},
+		}
+
+		err = xutils.SendNotification(notification)
+		if err != nil {
+			slog.Error("Failed to send completion notification to encourager",
+				"encourager_id", encouragerID,
+				"task_id", taskID,
+				"error", err)
+			continue
+		}
+
+		slog.Info("Sent task completion notification to encourager",
+			"encourager_id", encouragerID,
+			"task_id", taskID,
+			"task_name", taskName)
+
+		notifiedEncouragers[encouragerID] = true
+	}
+
+	slog.Info("Notified encouragers of task completion",
+		"task_id", taskID,
+		"encouragers_notified", len(notifiedEncouragers))
+
+	return nil
 }
