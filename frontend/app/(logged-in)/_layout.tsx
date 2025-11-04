@@ -117,22 +117,29 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 const result = await registerForPushNotificationsAsync();
                 if (result) {
                     setExpoPushToken(result.token);
-                    console.log("push token", result);
+                    console.log("📱 Push token obtained:", result.token);
 
                     // Send token to backend
-                    await sendPushTokenToBackend(result.token);
+                    const success = await sendPushTokenToBackend(result.token);
+                    if (!success) {
+                        console.warn("⚠️ Push token was not registered with backend, but continuing...");
+                        // Don't show error to user - this is not critical for app functionality
+                    }
                 }
             } catch (error) {
-                console.error("Error setting up push notifications:", error);
-                showToastable({
-                    message: "Error setting up push notifications",
-                    status: "danger",
-                    position: "top",
-                    offset: 100,
-                    duration: 3000,
-                    swipeDirection: "up",
-                    renderContent: (props) => <DefaultToast {...props} />,
-                });
+                console.error("❌ Error setting up push notifications:", error);
+                // Only show error if it's a critical failure (not just backend registration)
+                if (error instanceof Error && !error.message.includes("push token")) {
+                    showToastable({
+                        message: "Error setting up push notifications",
+                        status: "danger",
+                        position: "top",
+                        offset: 100,
+                        duration: 3000,
+                        swipeDirection: "up",
+                        renderContent: (props) => <DefaultToast {...props} />,
+                    });
+                }
             }
         };
 

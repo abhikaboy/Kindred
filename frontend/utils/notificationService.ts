@@ -67,13 +67,18 @@ export async function registerForPushNotificationsAsync() {
 }
 
 // Send token to backend - only called when necessary
-export async function sendPushTokenToBackend(token) {
+export async function sendPushTokenToBackend(token: string) {
     try {
         await updatePushToken(token);
-        console.log("Push token registered with backend:", token);
+        console.log("✅ Push token registered with backend successfully");
         return true;
     } catch (error) {
-        console.error("Failed to register token with backend:", error);
+        console.error("❌ Failed to register token with backend:", error);
+        // Log more details about the error
+        if (error instanceof Error) {
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+        }
         return false;
     }
 }

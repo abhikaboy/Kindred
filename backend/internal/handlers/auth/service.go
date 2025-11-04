@@ -420,8 +420,76 @@ func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.Ob
 */
 
 func (s *Service) UpdatePushToken(user_id primitive.ObjectID, push_token string) error {
-	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$set": bson.M{"push_token": push_token}})
-	return err
+	ctx := context.Background()
+
+	slog.Info("🔄 [Service] UpdatePushToken starting",
+		"user_id", user_id.Hex(),
+		"push_token_length", len(push_token),
+		"push_token_prefix", push_token[:min(10, len(push_token))])
+
+	// Check if user exists first
+	var existingUser bson.M
+	err := s.users.FindOne(ctx, bson.M{"_id": user_id}).Decode(&existingUser)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			slog.Error("❌ [Service] User not found", "user_id", user_id.Hex())
+			return fmt.Errorf("user not found: %w", err)
+		}
+		slog.Error("❌ [Service] Error finding user", "user_id", user_id.Hex(), "error", err)
+		return fmt.Errorf("error finding user: %w", err)
+	}
+	slog.Info("✅ [Service] User found", "user_id", user_id.Hex())
+
+	// Log current push token if exists
+	if currentToken, ok := existingUser["push_token"].(string); ok && currentToken != "" {
+		slog.Info("📝 [Service] User has existing push token",
+			"user_id", user_id.Hex(),
+			"current_token_length", len(currentToken),
+			"is_same", currentToken == push_token)
+	} else {
+		slog.Info("📝 [Service] User has no existing push token", "user_id", user_id.Hex())
+	}
+
+	// Perform the update
+	slog.Info("🔄 [Service] Executing MongoDB UpdateOne...", "user_id", user_id.Hex())
+	result, err := s.users.UpdateOne(ctx, bson.M{"_id": user_id}, bson.M{"$set": bson.M{"push_token": push_token}})
+
+	if err != nil {
+		slog.Error("❌ [Service] MongoDB UpdateOne failed",
+			"user_id", user_id.Hex(),
+			"error", err,
+			"error_type", fmt.Sprintf("%T", err))
+		return fmt.Errorf("failed to update push token in database: %w", err)
+	}
+
+	slog.Info("✅ [Service] MongoDB UpdateOne succeeded",
+		"user_id", user_id.Hex(),
+		"matched_count", result.MatchedCount,
+		"modified_count", result.ModifiedCount,
+		"upserted_count", result.UpsertedCount)
+
+	// Verify the update
+	var updatedUser bson.M
+	err = s.users.FindOne(ctx, bson.M{"_id": user_id}).Decode(&updatedUser)
+	if err != nil {
+		slog.Warn("⚠️ [Service] Could not verify update", "user_id", user_id.Hex(), "error", err)
+	} else {
+		if verifyToken, ok := updatedUser["push_token"].(string); ok {
+			slog.Info("✅ [Service] Update verified",
+				"user_id", user_id.Hex(),
+				"stored_token_matches", verifyToken == push_token)
+		}
+	}
+
+	slog.Info("🎉 [Service] UpdatePushToken completed successfully", "user_id", user_id.Hex())
+	return nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 /*

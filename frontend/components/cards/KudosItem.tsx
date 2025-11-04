@@ -58,7 +58,7 @@ export default function KudosItem({ kudos, formatTime }: KudosItemProps) {
                 {/* Task Info */}
                 <View style={styles.taskInfo}>
                     <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
-                        {kudos.categoryName}
+                        {kudos.categoryName} 
                     </ThemedText>
                     <View style={styles.dot} />
                     <ThemedText
@@ -120,7 +120,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         kudosCard: {
             flex: 1,
-            backgroundColor: ThemedColor.lightened,
+            backgroundColor: ThemedColor.lightenedCard,
             borderRadius: 12,
             padding: 16,
             shadowColor: "#000",
@@ -134,7 +134,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             alignItems: "center",
             gap: 8,
             marginBottom: 4,
-            flexWrap: "nowrap",
+            flexWrap: "wrap",
         },
         categoryText: {
             color: ThemedColor.primary,

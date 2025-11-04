@@ -136,7 +136,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	slog.LogAttrs(ctx, slog.LevelInfo, "Congratulation inserted", slog.String("id", id.Hex()))
 
 	// Send push notification to receiver
-	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message)
+	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
@@ -285,7 +285,7 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*CongratulationSen
 }
 
 // sendCongratulationNotification sends a push notification when a congratulation is created
-func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText string) error {
+func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText, congratulationType string) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -304,12 +304,22 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 		return nil // Not an error, just no notification sent
 	}
 
-	message := fmt.Sprintf("%s has sent you a congratulation on %s \"%s\"", senderName, taskName, congratulationText)
+	var message string
+	var imageURL string
+
+	// Check if it's an image congratulation
+	if congratulationType == "image" {
+		message = fmt.Sprintf("%s has sent you a congratulation image on %s", senderName, taskName)
+		imageURL = congratulationText // The message field contains the image URL for type="image"
+	} else {
+		message = fmt.Sprintf("%s has sent you a congratulation on %s \"%s\"", senderName, taskName, congratulationText)
+	}
 
 	notification := xutils.Notification{
-		Token:   receiver.PushToken,
-		Title:   "New Congratulation!",
-		Message: message,
+		Token:    receiver.PushToken,
+		Title:    "New Congratulation!",
+		Message:  message,
+		ImageURL: imageURL, // Will be empty string if not an image
 		Data: map[string]string{
 			"type":         "congratulation",
 			"sender_name":  senderName,

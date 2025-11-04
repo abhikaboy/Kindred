@@ -1,5 +1,6 @@
 import { LoginRequest, LoginResponse, RegisterRequest, User } from "./types";
-import { useRequest } from "@/hooks/useRequest";
+import { client } from "@/hooks/useTypedAPI";
+import { withAuthHeaders } from "./utils";
 
 /**
  * Logs in a user
@@ -11,8 +12,15 @@ import { useRequest } from "@/hooks/useRequest";
  */
 export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
     try {
-        const { request } = useRequest();
-        return await request("POST", "/auth/login", credentials);
+        const { data, error } = await client.POST("/v1/auth/login", {
+            body: credentials,
+        });
+
+        if (error) {
+            throw new Error(`Failed to login: ${JSON.stringify(error)}`);
+        }
+
+        return data;
     } catch (error) {
         // Log the error for debugging
         console.error("Login failed:", error);
@@ -30,8 +38,13 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
  */
 export const register = async (credentials: RegisterRequest): Promise<void> => {
     try {
-        const { request } = useRequest();
-        return await request("POST", "/auth/register", credentials);
+        const { error } = await client.POST("/v1/auth/register", {
+            body: credentials,
+        });
+
+        if (error) {
+            throw new Error(`Failed to register: ${JSON.stringify(error)}`);
+        }
     } catch (error) {
         console.error("Registration failed:", error);
         throw new Error("Failed to register. Please try again later.");
@@ -46,9 +59,16 @@ export const register = async (credentials: RegisterRequest): Promise<void> => {
  */
 export const loginWithToken = async (): Promise<User> => {
     try {
-        const { request } = useRequest();
         console.log("logging in with token");
-        return await request("POST", "/user/login");
+        const { data, error } = await client.POST("/v1/user/login", {
+            params: withAuthHeaders(),
+        });
+
+        if (error) {
+            throw new Error(`Failed to login with token: ${JSON.stringify(error)}`);
+        }
+
+        return data;
     } catch (error) {
         console.error("Token login failed:", error);
         throw new Error("Session expired. Please login again.");
@@ -63,11 +83,20 @@ export const loginWithToken = async (): Promise<User> => {
  */
 export const updatePushToken = async (pushToken: string): Promise<void> => {
     try {
-        const { request } = useRequest();
-        return await request("POST", "/user/pushtoken", { push_token: pushToken });
+        const { data, error } = await client.POST("/v1/user/pushtoken", {
+            params: withAuthHeaders(),
+            body: { push_token: pushToken },
+        });
+
+        if (error) {
+            console.error("Push token update error:", error);
+            throw new Error(`Failed to update push token: ${JSON.stringify(error)}`);
+        }
+
+        console.log("Push token updated successfully:", data);
     } catch (error) {
         console.error("Push token update failed:", error);
-        throw new Error("Failed to update push token. Please try again later.");
+        throw error;
     }
 };
 
@@ -78,8 +107,13 @@ export const updatePushToken = async (pushToken: string): Promise<void> => {
  */
 export const deleteAccount = async (): Promise<void> => {
     try {
-        const { request } = useRequest();
-        return await request("DELETE", "/user/account");
+        const { error } = await client.DELETE("/v1/user/account", {
+            params: withAuthHeaders(),
+        });
+
+        if (error) {
+            throw new Error(`Failed to delete account: ${JSON.stringify(error)}`);
+        }
     } catch (error) {
         console.error("Account deletion failed:", error);
         throw new Error("Failed to delete account. Please try again later.");

@@ -67,6 +67,7 @@ export interface Task {
     templateID?: string;
     userID?: string;
     categoryID?: string;
+    categoryName?: string; // Optional category name (populated when task is from unnestedTasks)
     deadline?: string;
     startTime?: string;
     startDate?: string;

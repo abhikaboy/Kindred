@@ -32,7 +32,10 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
     const ThemedColor = useThemeColor();
 
     const finalCategoryName =
-        categoryName || categories?.find((cat) => cat.id === categoryId)?.name || "Unknown Category";
+        categoryName || 
+        task.categoryName || 
+        categories?.find((cat) => cat.id === categoryId)?.name || 
+        "Unknown Category";
 
 
     /* 

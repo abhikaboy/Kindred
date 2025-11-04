@@ -472,29 +472,49 @@ func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOu
 
 // UpdatePushTokenHuma handles push token updates (PROTECTED ROUTE)
 func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushTokenInput) (*UpdatePushTokenOutput, error) {
+	slog.Info("📱 UpdatePushToken called", "timestamp", time.Now().Format(time.RFC3339))
+
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := RequireAuth(ctx)
 	if err != nil {
+		slog.Error("❌ Push token update - Authentication failed", "error", err)
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
+	slog.Info("✅ User authenticated", "user_id", user_id)
+
+	// Log the incoming push token (first 20 chars for security)
+	tokenPreview := input.Body.PushToken
+	if len(tokenPreview) > 20 {
+		tokenPreview = tokenPreview[:20] + "..."
+	}
+	slog.Info("📥 Received push token", "token_preview", tokenPreview, "token_length", len(input.Body.PushToken))
 
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
+		slog.Error("❌ Push token validation failed", "errors", errs)
 		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
+	slog.Info("✅ Push token validated successfully")
 
 	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
+		slog.Error("❌ Invalid user ID format", "user_id", user_id, "error", err)
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
+	slog.Info("✅ User ID converted to ObjectID", "user_id_obj", user_id_obj.Hex())
 
+	slog.Info("🔄 Calling UpdatePushToken service...", "user_id", user_id_obj.Hex())
 	err = h.service.UpdatePushToken(user_id_obj, input.Body.PushToken)
 	if err != nil {
+		slog.Error("❌ Push token update service failed", "user_id", user_id_obj.Hex(), "error", err, "error_type", fmt.Sprintf("%T", err))
 		return nil, huma.Error500InternalServerError("Push token update failed", err)
 	}
+	slog.Info("✅ Push token updated successfully in database", "user_id", user_id_obj.Hex())
 
 	resp := &UpdatePushTokenOutput{}
 	resp.Body.Message = "Push Token Updated Successfully"
+
+	slog.Info("🎉 UpdatePushToken completed successfully", "user_id", user_id_obj.Hex(), "response_message", resp.Body.Message)
 	return resp, nil
 }
 

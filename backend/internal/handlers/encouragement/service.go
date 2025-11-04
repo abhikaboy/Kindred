@@ -166,7 +166,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", id.Hex()))
 
 	// Send push notification to receiver
-	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message)
+	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type)
 	if err != nil {
 		// Log error but don't fail the operation since encouragement was already created
 		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
@@ -315,7 +315,7 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 }
 
 // sendEncouragementNotification sends a push notification when an encouragement is created
-func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText string) error {
+func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText, encouragementType string) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -334,12 +334,22 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 		return nil // Not an error, just no notification sent
 	}
 
-	message := fmt.Sprintf("%s has sent you an encouragement on %s \"%s\"", senderName, taskName, encouragementText)
+	var message string
+	var imageURL string
+
+	// Check if it's an image encouragement
+	if encouragementType == "image" {
+		message = fmt.Sprintf("%s has sent you an encouragement image on %s", senderName, taskName)
+		imageURL = encouragementText // The message field contains the image URL for type="image"
+	} else {
+		message = fmt.Sprintf("%s has sent you an encouragement on %s \"%s\"", senderName, taskName, encouragementText)
+	}
 
 	notification := xutils.Notification{
-		Token:   receiver.PushToken,
-		Title:   "New Encouragement!",
-		Message: message,
+		Token:    receiver.PushToken,
+		Title:    "New Encouragement!",
+		Message:  message,
+		ImageURL: imageURL, // Will be empty string if not an image
 		Data: map[string]string{
 			"type":         "encouragement",
 			"sender_name":  senderName,

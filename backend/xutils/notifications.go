@@ -7,10 +7,11 @@ import (
 var Client *expo.PushClient
 
 type Notification struct {
-	Token   string
-	Message string
-	Data    map[string]string
-	Title   string
+	Token    string
+	Message  string
+	Data     map[string]string
+	Title    string
+	ImageURL string // Optional image URL for notification thumbnail
 }
 
 func initExpoClient() {
@@ -24,13 +25,23 @@ func SendBatchNotification(notifications []Notification) error {
 
 	pushMessages := make([]expo.PushMessage, len(notifications))
 	for i, notification := range notifications {
-		pushMessages[i] = expo.PushMessage{
+		data := notification.Data
+		// Add image URL to data if provided
+		if notification.ImageURL != "" {
+			if data == nil {
+				data = make(map[string]string)
+			}
+			data["imageUrl"] = notification.ImageURL
+		}
+
+		message := expo.PushMessage{
 			To:    []expo.ExponentPushToken{expo.ExponentPushToken(notification.Token)},
 			Body:  notification.Message,
-			Data:  notification.Data,
+			Data:  data,
 			Title: notification.Title,
 			Sound: "default",
 		}
+		pushMessages[i] = message
 	}
 
 	_, err := Client.PublishMultiple(pushMessages)
@@ -52,13 +63,24 @@ func SendNotification(notification Notification) error {
 		initExpoClient()
 	}
 
-	response, err := Client.Publish(&expo.PushMessage{
+	data := notification.Data
+	// Add image data if provided (Expo will show it as attachment/thumbnail)
+	if notification.ImageURL != "" {
+		if data == nil {
+			data = make(map[string]string)
+		}
+		data["imageUrl"] = notification.ImageURL
+	}
+
+	message := &expo.PushMessage{
 		To:    []expo.ExponentPushToken{pushToken},
 		Body:  notification.Message,
-		Data:  notification.Data,
+		Data:  data,
 		Title: notification.Title,
 		Sound: "default",
-	})
+	}
+
+	response, err := Client.Publish(message)
 
 	if err != nil {
 		return err

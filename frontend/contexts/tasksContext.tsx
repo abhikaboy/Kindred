@@ -184,9 +184,24 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param task
      */
     const addToCategory = async (categoryId: string, task: Task) => {
-        let categoriesCopy = categories.slice();
-        categoriesCopy.find((category) => category.id === categoryId).tasks.push(task);
-        setCategories(categoriesCopy);
+        // Create a deep copy of workspaces to avoid mutations
+        let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
+        
+        // Update workspaces state - this will automatically update categories via useEffect
+        workspacesCopy.forEach((workspace: Workspace) => {
+            workspace.categories.forEach((category: Categories) => {
+                if (category.id === categoryId) {
+                    // Ensure the task has the categoryName field populated
+                    const taskWithCategoryName = {
+                        ...task,
+                        categoryName: category.name,
+                    };
+                    category.tasks.push(taskWithCategoryName);
+                }
+            });
+        });
+        
+        setWorkSpaces(workspacesCopy);
     };
 
     /**
@@ -196,42 +211,37 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param updates - Partial task object with fields to update
      */
     const updateTask = (categoryId: string, taskId: string, updates: Partial<Task>) => {
-        // Update workspaces state
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy.forEach((workspace) => {
-            workspace.categories.forEach((category) => {
+        // Create a deep copy of workspaces to avoid mutations
+        let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
+        let categoryName: string | undefined;
+        let updatedTask: Task | null = null;
+        
+        // Update workspaces state - this will automatically update categories via useEffect
+        workspacesCopy.forEach((workspace: Workspace) => {
+            workspace.categories.forEach((category: Categories) => {
                 if (category.id === categoryId) {
                     const taskIndex = category.tasks.findIndex((t) => t.id === taskId);
                     if (taskIndex !== -1) {
                         category.tasks[taskIndex] = {
                             ...category.tasks[taskIndex],
                             ...updates,
+                            categoryName: category.name, // Ensure categoryName is preserved
                         };
+                        categoryName = category.name;
+                        updatedTask = category.tasks[taskIndex];
                     }
                 }
             });
         });
+        
         setWorkSpaces(workspacesCopy);
 
-        // Update categories state
-        let categoriesCopy = categories.slice();
-        const category = categoriesCopy.find((category) => category.id === categoryId);
-        if (category) {
-            const taskIndex = category.tasks.findIndex((t) => t.id === taskId);
-            if (taskIndex !== -1) {
-                category.tasks[taskIndex] = {
-                    ...category.tasks[taskIndex],
-                    ...updates,
-                };
-            }
-            setCategories(categoriesCopy);
-        }
-
         // Update the selected task if it's the one being edited
-        if (task && task.id === taskId) {
+        if (task && task.id === taskId && updatedTask) {
             setTask({
                 ...task,
                 ...updates,
+                categoryName: categoryName, // Ensure categoryName is preserved
             });
         }
     };
@@ -255,23 +265,18 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param taskId
      */
     const removeFromCategory = async (categoryId: string, taskId: string) => {
-        // Update categories state
-        let categoriesCopy = categories.slice();
-        const category = categoriesCopy.find((category) => category.id === categoryId);
-        if (category) {
-            category.tasks = category.tasks.filter((task) => task.id !== taskId);
-            setCategories(categoriesCopy);
-        }
-
-        // Update workspaces state to ensure task is removed from all views
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy.forEach((workspace) => {
-            workspace.categories.forEach((category) => {
+        // Create a deep copy of workspaces to avoid mutations
+        let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
+        
+        // Update workspaces state - this will automatically update categories via useEffect
+        workspacesCopy.forEach((workspace: Workspace) => {
+            workspace.categories.forEach((category: Categories) => {
                 if (category.id === categoryId) {
-                    category.tasks = category.tasks.filter((task) => task.id !== taskId);
+                    category.tasks = category.tasks.filter((task: Task) => task.id !== taskId);
                 }
             });
         });
+        
         setWorkSpaces(workspacesCopy);
     };
 
