@@ -335,27 +335,37 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 	}
 
 	var message string
-	var imageURL string
+	var notification xutils.Notification
 
 	// Check if it's an image encouragement
 	if encouragementType == "image" {
 		message = fmt.Sprintf("%s has sent you an encouragement image on %s", senderName, taskName)
-		imageURL = encouragementText // The message field contains the image URL for type="image"
+		notification = xutils.Notification{
+			Token:    receiver.PushToken,
+			Title:    "New Encouragement!",
+			Message:  message,
+			ImageURL: encouragementText, // The message field contains the image URL for type="image"
+			Data: map[string]string{
+				"type":         "encouragement",
+				"sender_name":  senderName,
+				"task_name":    taskName,
+				"message_text": encouragementText,
+			},
+		}
 	} else {
 		message = fmt.Sprintf("%s has sent you an encouragement on %s \"%s\"", senderName, taskName, encouragementText)
-	}
-
-	notification := xutils.Notification{
-		Token:    receiver.PushToken,
-		Title:    "New Encouragement!",
-		Message:  message,
-		ImageURL: imageURL, // Will be empty string if not an image
-		Data: map[string]string{
-			"type":         "encouragement",
-			"sender_name":  senderName,
-			"task_name":    taskName,
-			"message_text": encouragementText,
-		},
+		notification = xutils.Notification{
+			Token:   receiver.PushToken,
+			Title:   "New Encouragement!",
+			Message: message,
+			// No ImageURL for text encouragements
+			Data: map[string]string{
+				"type":         "encouragement",
+				"sender_name":  senderName,
+				"task_name":    taskName,
+				"message_text": encouragementText,
+			},
+		}
 	}
 
 	return xutils.SendNotification(notification)

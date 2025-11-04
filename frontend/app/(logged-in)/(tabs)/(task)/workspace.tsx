@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTasks } from "@/contexts/tasksContext";
@@ -23,12 +23,16 @@ import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "r
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
+import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 
 type Props = {};
 
 const Workspace = (props: Props) => {
     let ThemedColor = useThemeColor();
     const { categories, selected, showConfetti } = useTasks();
+    const { applyFilters } = useWorkspaceFilters(selected);
+    const { getStateDescription } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
     const { spotlightState, setSpotlightShown } = useSpotlight();
@@ -115,6 +119,8 @@ const Workspace = (props: Props) => {
                 setIsDrawerOpen={setIsDrawerOpen}
                 handleScroll={handleScroll}
                 spotlightState={spotlightState}
+                applyFilters={applyFilters}
+                workspaceStateDescription={getStateDescription()}
             />
         </SpotlightTourProvider>
     );
@@ -140,6 +146,8 @@ const WorkspaceContent = ({
     setIsDrawerOpen,
     handleScroll,
     spotlightState,
+    applyFilters,
+    workspaceStateDescription,
 }: any) => {
     const { start } = useSpotlightTour();
 
@@ -211,7 +219,7 @@ const WorkspaceContent = ({
                         borderBottomWidth: 1,
                         borderBottomColor: ThemedColor.lightened,
                     }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                         <SlidingText type="title" style={styles.title}>
                             {selected}
                         </SlidingText>
@@ -249,7 +257,7 @@ const WorkspaceContent = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <AttachStep index={0}>
+                                    <AttachStep index={0} style={{ width: "100%" }}>
                                         <SlidingText type="title" style={styles.title}>
                                             {selected || "Good Morning! ☀"}
                                         </SlidingText>
@@ -264,8 +272,8 @@ const WorkspaceContent = ({
                                         </TouchableOpacity>
                                     </View>
                                 </View>
-                                <ThemedText type="lightBody">
-                                    Treat yourself to a cup of coffee and a good book. You deserve it.
+                                <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
+                                    {workspaceStateDescription}
                                 </ThemedText>
                             </View>
                         </ConditionalView>
@@ -300,12 +308,15 @@ const WorkspaceContent = ({
                                         // Highlight first category header (step 2) and first task (step 1)
                                         const isFirstCategory = index === 0 && category.tasks.length > 0;
 
+                                        // Apply filters to category tasks
+                                        const filteredTasks = applyFilters(category.tasks);
+
                                         return (
                                             <Category
                                                 key={category.id + category.name}
                                                 id={category.id}
                                                 name={category.name}
-                                                tasks={category.tasks}
+                                                tasks={filteredTasks}
                                                 onLongPress={(categoryId) => {
                                                     setEditing(true);
                                                     setFocusedCategory(categoryId);
@@ -344,9 +355,11 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
+        paddingRight: HORIZONTAL_PADDING,
     },
     title: {
         fontWeight: "600",
+        width: "100%",
     },
     categoriesContainer: {
         gap: 16,

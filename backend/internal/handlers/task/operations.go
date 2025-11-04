@@ -138,6 +138,19 @@ type GetTemplateByIDOutput struct {
 	Body TemplateTaskDocument `json:"body"`
 }
 
+type UpdateTemplateInput struct {
+	Authorization string                 `header:"Authorization" required:"true"`
+	RefreshToken  string                 `header:"refresh_token" required:"true"`
+	ID            string                 `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateTemplateDocument `json:"body"`
+}
+
+type UpdateTemplateOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Template task updated successfully"`
+	}
+}
+
 type CreateTaskFromTemplateOutput struct {
 	Body TaskDocument `json:"body"`
 }
@@ -413,6 +426,17 @@ func RegisterGetTemplateByIDOperation(api huma.API, handler *Handler) {
 		Description: "Retrieve a template by its ID",
 		Tags:        []string{"tasks"},
 	}, handler.GetTemplateByID)
+}
+
+func RegisterUpdateTemplateOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-template",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/tasks/template/{id}",
+		Summary:     "Update template task",
+		Description: "Update a template task for recurring tasks",
+		Tags:        []string{"tasks"},
+	}, handler.UpdateTemplate)
 }
 
 func RegisterGetCompletedTasksOperation(api huma.API, handler *Handler) {

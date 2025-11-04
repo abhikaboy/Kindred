@@ -122,6 +122,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             flex: 1,
             backgroundColor: ThemedColor.lightenedCard,
             borderRadius: 12,
+            borderTopLeftRadius: 0,
             padding: 16,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 1 },
@@ -164,6 +165,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         kudosImage: {
             width: "100%",
+            alignSelf: "flex-start",
             height: 200,
             maxHeight: Dimensions.get("window").height * 0.5,
             resizeMode: "contain",
@@ -172,7 +174,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         timeText: {
             color: ThemedColor.caption,
-            fontSize: 12,
+            fontSize: 14,
             marginTop: 12,
         },
         unreadDot: {

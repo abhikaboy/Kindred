@@ -1150,6 +1150,33 @@ func (s *Service) GetTemplateByID(id primitive.ObjectID) (*TemplateTaskDocument,
 	return &template, err
 }
 
+// UpdateTemplateTask updates a template task document by ID
+func (s *Service) UpdateTemplateTask(id primitive.ObjectID, updated UpdateTemplateDocument) error {
+	ctx := context.Background()
+	filter := bson.M{"_id": id}
+
+	updateFields, err := xutils.ToDoc(updated)
+	if err != nil {
+		return err
+	}
+
+	// Always update the lastEdited field
+	*updateFields = append(*updateFields, bson.E{Key: "lastEdited", Value: xutils.NowUTC()})
+
+	update := bson.M{"$set": updateFields}
+
+	result, err := s.TemplateTasks.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return handleMongoError(ctx, "update template task", err)
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("template task not found")
+	}
+
+	return nil
+}
+
 func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit int) ([]TaskDocument, int64, error) {
 	ctx := context.Background()
 

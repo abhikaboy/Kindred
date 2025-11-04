@@ -15,6 +15,7 @@ type BottomMenuOption = {
     label: string;
     icon: any;
     callback: () => void;
+    labelHighlight?: string; // Optional text to highlight in primary color
 };
 
 type Props = {
@@ -96,19 +97,38 @@ const BottomMenuModal = memo((props: Props) => {
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
             enablePanDownToClose={true}>
             <BottomSheetView style={styles.contentContainer}>
-                {props.options.map((option, index) => (
-                    <TouchableOpacity
-                        key={index}
-                        style={styles.optionContainer}
-                        onPress={() => {
-                            bottomSheetModalRef.current?.dismiss();
-                            // Only call the callback if it exists
-                            option.callback && option.callback();
-                        }}>
-                        <Feather name={option.icon} size={24} color={ThemedColor.text} />
-                        <ThemedText type="default">{option.label}</ThemedText>
-                    </TouchableOpacity>
-                ))}
+                {props.options.map((option, index) => {
+                    // Split label if there's a highlight part
+                    const renderLabel = () => {
+                        if (option.labelHighlight && option.label.includes(option.labelHighlight)) {
+                            const parts = option.label.split(option.labelHighlight);
+                            return (
+                                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                    <ThemedText type="default">{parts[0]}</ThemedText>
+                                    <ThemedText type="default" style={{ color: ThemedColor.primary }}>
+                                        {option.labelHighlight}
+                                    </ThemedText>
+                                    {parts[1] && <ThemedText type="default">{parts[1]}</ThemedText>}
+                                </View>
+                            );
+                        }
+                        return <ThemedText type="default">{option.label}</ThemedText>;
+                    };
+
+                    return (
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.optionContainer}
+                            onPress={() => {
+                                bottomSheetModalRef.current?.dismiss();
+                                // Only call the callback if it exists
+                                option.callback && option.callback();
+                            }}>
+                            <Feather name={option.icon} size={24} color={ThemedColor.text} />
+                            {renderLabel()}
+                        </TouchableOpacity>
+                    );
+                })}
             </BottomSheetView>
         </BottomSheetModal>
     );

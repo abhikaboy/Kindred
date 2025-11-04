@@ -98,6 +98,23 @@ type UpdateTaskReminderDocument struct {
 	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
 }
 
+// UpdateTemplateDocument for updating template tasks (all fields optional)
+type UpdateTemplateDocument struct {
+	Priority       *int            `bson:"priority,omitempty" json:"priority,omitempty"`
+	Content        *string         `bson:"content,omitempty" json:"content,omitempty"`
+	Value          *float64        `bson:"value,omitempty" json:"value,omitempty"`
+	Public         *bool           `bson:"public,omitempty" json:"public,omitempty"`
+	RecurDetails   *RecurDetails   `bson:"recurDetails,omitempty" json:"recurDetails,omitempty"`
+	RecurFrequency *string         `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"`
+	RecurType      *string         `bson:"recurType,omitempty" json:"recurType,omitempty"`
+	Deadline       *time.Time      `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime      *time.Time      `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate      *time.Time      `bson:"startDate,omitempty" json:"startDate,omitempty"`
+	Reminders      []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Notes          *string         `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist      []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+}
+
 /*
 Task Service to be used by Task Handler to interact with the
 Database layer of the application

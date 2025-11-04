@@ -654,6 +654,28 @@ func (h *Handler) GetTemplateByID(ctx context.Context, input *GetTemplateByIDInp
 	return &GetTemplateByIDOutput{Body: *template}, nil
 }
 
+func (h *Handler) UpdateTemplate(ctx context.Context, input *UpdateTemplateInput) (*UpdateTemplateOutput, error) {
+	// Extract user_id from context for authorization
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid template ID format", err)
+	}
+
+	err = h.service.UpdateTemplateTask(id, input.Body)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update template task", err)
+	}
+
+	resp := &UpdateTemplateOutput{}
+	resp.Body.Message = "Template task updated successfully"
+	return resp, nil
+}
+
 func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTasksInput) (*GetCompletedTasksOutput, error) {
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {

@@ -305,27 +305,37 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 	}
 
 	var message string
-	var imageURL string
+	var notification xutils.Notification
 
 	// Check if it's an image congratulation
 	if congratulationType == "image" {
 		message = fmt.Sprintf("%s has sent you a congratulation image on %s", senderName, taskName)
-		imageURL = congratulationText // The message field contains the image URL for type="image"
+		notification = xutils.Notification{
+			Token:    receiver.PushToken,
+			Title:    "New Congratulation!",
+			Message:  message,
+			ImageURL: congratulationText, // The message field contains the image URL for type="image"
+			Data: map[string]string{
+				"type":         "congratulation",
+				"sender_name":  senderName,
+				"task_name":    taskName,
+				"message_text": congratulationText,
+			},
+		}
 	} else {
 		message = fmt.Sprintf("%s has sent you a congratulation on %s \"%s\"", senderName, taskName, congratulationText)
-	}
-
-	notification := xutils.Notification{
-		Token:    receiver.PushToken,
-		Title:    "New Congratulation!",
-		Message:  message,
-		ImageURL: imageURL, // Will be empty string if not an image
-		Data: map[string]string{
-			"type":         "congratulation",
-			"sender_name":  senderName,
-			"task_name":    taskName,
-			"message_text": congratulationText,
-		},
+		notification = xutils.Notification{
+			Token:   receiver.PushToken,
+			Title:   "New Congratulation!",
+			Message: message,
+			// No ImageURL for text congratulations
+			Data: map[string]string{
+				"type":         "congratulation",
+				"sender_name":  senderName,
+				"task_name":    taskName,
+				"message_text": congratulationText,
+			},
+		}
 	}
 
 	return xutils.SendNotification(notification)

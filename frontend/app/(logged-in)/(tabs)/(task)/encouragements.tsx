@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
 import CachedImage from "@/components/CachedImage";
 import KudosItem from "@/components/cards/KudosItem";
+import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -10,6 +11,7 @@ import { router } from "expo-router";
 import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
+import { KUDOS_CONSTANTS } from "@/constants/kudos";
 
 interface Encouragement {
     id: string;
@@ -98,6 +100,15 @@ export default function Encouragements() {
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
+                {/* Progress Card - Always show at top */}
+                <KudosProgressCard
+                    current={encouragements.length}
+                    max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
+                    type="encouragements"
+                />
+                <ThemedText type="subtitle_subtle" style={{paddingVertical: 4}}>
+                    ENCOURAGEMENTS RECEIVED
+                </ThemedText>
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ThemedText type="default">Loading encouragements...</ThemedText>
@@ -158,7 +169,9 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         scrollContent: {
             paddingHorizontal: HORIZONTAL_PADDING,
-            paddingVertical: insets.bottom,
+            paddingTop: 16,
+            paddingBottom: insets.bottom + 16,
+            gap: 16,
         },
         loadingContainer: {
             flex: 1,

@@ -50,7 +50,7 @@ export default function Task() {
     const [activeTab, setActiveTab] = useState(0);
     const { name, id, categoryId } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
-    const { task } = useTasks();
+    const { task, updateTask } = useTasks();
     const { loadTaskData } = useTaskCreation();
     const { openModal } = useCreateModal();
     const [isRunning, setIsRunning] = useState(false);
@@ -233,7 +233,13 @@ export default function Task() {
     console.log(task);
     const updateNotes = useDebounce(async (notes: string) => {
         if (task && categoryId && id) {
-            await updateNotesAPI(categoryId as string, id as string, notes);
+            try {
+                await updateNotesAPI(categoryId as string, id as string, notes);
+                // Update the task in context so it persists when navigating away
+                updateTask(categoryId as string, id as string, { notes });
+            } catch (error) {
+                console.error("Error updating notes:", error);
+            }
         }
     }, 2000);
 

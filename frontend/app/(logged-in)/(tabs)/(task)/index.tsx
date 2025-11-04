@@ -187,7 +187,7 @@ const Home = (props: Props) => {
         {
             render: ({ next, stop }) => (
                 <TourStepCard
-                    title="Community 🤝"
+                    title="Kudos 🤝"
                     description="This is where encouragements and congratulations from your close friends live!"
                     onNext={next}
                     onSkip={() => {
@@ -395,7 +395,7 @@ const HomeContent = ({
                                 {(encouragementCount === 0 || congratulationCount === 0) && (
                                     <AttachStep index={1} style={{ width: '100%', gap: 16 }}>
                                         <View style={{ width: '100%', gap: 16 }}>
-                                            <ThemedText type="subtitle">Community</ThemedText>
+                                            <ThemedText type="subtitle">Kudos</ThemedText>
                                             <View style={{ width: '100%', gap: 12 }}>
                                                 {encouragementCount === 0 && (
                                                     <TouchableOpacity
