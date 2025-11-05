@@ -5,36 +5,40 @@ import { ThemedText } from "@/components/ThemedText";
 import { AttachStep } from "react-native-spotlight-tour";
 import { Fire, Confetti } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { KUDOS_CONSTANTS } from "@/constants/kudos";
+import { useKudos } from "@/contexts/kudosContext";
+import SimpleProgressBar from "../ui/SimpleProgressBar";
 
-interface KudosCardsProps {
-    encouragementCount: number;
-    congratulationCount: number;
-    ThemedColor: any;
-}
-
-const ThemedColor = useThemeColor();
-
-export const KudosCards: React.FC<KudosCardsProps> = ({ encouragementCount, congratulationCount, ThemedColor }) => {
+export const KudosCards: React.FC = () => {
     const router = useRouter();
+    const ThemedColor = useThemeColor();
+    const { unreadEncouragementCount, unreadCongratulationCount, totalEncouragementCount, totalCongratulationCount } =
+        useKudos();
 
-    const hasUnreadEncouragements = encouragementCount > 0;
-    const hasUnreadCongratulations = congratulationCount > 0;
+    const hasUnreadEncouragements = unreadEncouragementCount > 0;
+    const hasUnreadCongratulations = unreadCongratulationCount > 0;
 
     return (
         <AttachStep index={1} style={{ width: "100%" }}>
             <View style={styles.container}>
                 <KudosCard
                     title="Encouragements"
-                    count={encouragementCount}
-                    icon={<Fire size={24} weight="fill" color={ThemedColor.primary} />}
+                    unreadCount={unreadEncouragementCount}
+                    totalCount={totalEncouragementCount}
+                    maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
+                    type="encouragements"
+                    icon={<Fire size={22} weight="fill" color={ThemedColor.primary} />}
                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}
                     hasUnread={hasUnreadEncouragements}
                     ThemedColor={ThemedColor}
                 />
                 <KudosCard
                     title="Congratulations"
-                    count={congratulationCount}
-                    icon={<Confetti size={24} weight="fill" color={ThemedColor.primary} />}
+                    unreadCount={unreadCongratulationCount}
+                    totalCount={totalCongratulationCount}
+                    maxCount={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
+                    type="congratulations"
+                    icon={<Confetti size={22} weight="fill" color={ThemedColor.primary} />}
                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}
                     hasUnread={hasUnreadCongratulations}
                     ThemedColor={ThemedColor}
@@ -46,14 +50,27 @@ export const KudosCards: React.FC<KudosCardsProps> = ({ encouragementCount, cong
 
 interface KudosCardProps {
     title: string;
-    count: number;
+    unreadCount: number;
+    totalCount: number;
+    maxCount: number;
+    type: "encouragements" | "congratulations";
     icon: React.ReactNode;
     onPress: () => void;
     hasUnread: boolean;
     ThemedColor: any;
 }
 
-const KudosCard: React.FC<KudosCardProps> = ({ title, count, icon, onPress, hasUnread, ThemedColor }) => {
+const KudosCard: React.FC<KudosCardProps> = ({
+    title,
+    unreadCount,
+    totalCount,
+    maxCount,
+    type,
+    icon,
+    onPress,
+    hasUnread,
+    ThemedColor,
+}) => {
     return (
         <TouchableOpacity
             onPress={onPress}
@@ -61,21 +78,39 @@ const KudosCard: React.FC<KudosCardProps> = ({ title, count, icon, onPress, hasU
                 styles.card,
                 {
                     backgroundColor: ThemedColor.lightenedCard,
+                    borderColor: ThemedColor.tertiary,
+                    boxShadow: ThemedColor.shadowSmall,
                 },
             ]}>
             {hasUnread && <View style={[styles.unreadIndicator, { backgroundColor: ThemedColor.error }]} />}
-            <View
-                style={{
-                    alignItems: "center",
-                    gap: 4,
-                }}>
-                <View>{icon}</View>
+            <View style={styles.cardContent}>
+                <View style={styles.iconProgressRow}>
+                    <View>{icon}</View>
 
-                <ThemedText type="title">{count}</ThemedText>
+                    <View style={styles.progressBarWrapper}>
+                        <SimpleProgressBar current={totalCount} max={maxCount} height={6} animated={true} />
+                    </View>
+                </View>
 
-                <ThemedText type="default" numberOfLines={1}>
-                    {title}
-                </ThemedText>
+                {unreadCount > 0 && (
+                    <View style={[styles.badge, { backgroundColor: ThemedColor.error }]}>
+                        <View>{icon}</View>
+
+                        <ThemedText type="captionLight" style={styles.badgeText}>
+                            {unreadCount}
+                        </ThemedText>
+                    </View>
+                )}
+                <View style={{ gap: 5 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", paddingRight: 2 }}>
+                        <ThemedText type="caption">
+                            {totalCount} / {maxCount}
+                        </ThemedText>
+                        <ThemedText type="caption" style={{ marginLeft: 7 }}>
+                            {title}
+                        </ThemedText>
+                    </View>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -89,15 +124,27 @@ const styles = StyleSheet.create({
     },
     card: {
         flex: 1,
-        padding: 16,
+        padding: 5,
         borderRadius: 12,
         alignItems: "center",
         justifyContent: "center",
-        minHeight: 120,
-        borderWidth: 1,
-        borderColor: ThemedColor.tertiary,
+        minHeight: 90,
+        borderWidth: 0.5,
         position: "relative",
-        boxShadow: ThemedColor.shadowSmall,
+    },
+    cardContent: {
+        alignItems: "center",
+        gap: 8,
+    },
+    iconProgressRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        width: "100%",
+        paddingHorizontal: 8,
+    },
+    progressBarWrapper: {
+        flex: 1,
     },
     unreadIndicator: {
         width: 10,
@@ -106,5 +153,17 @@ const styles = StyleSheet.create({
         position: "absolute",
         right: 8,
         top: 8,
+    },
+    badge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        minWidth: 24,
+        alignItems: "center",
+    },
+    badgeText: {
+        color: "white",
+        fontSize: 12,
+        fontWeight: "bold",
     },
 });

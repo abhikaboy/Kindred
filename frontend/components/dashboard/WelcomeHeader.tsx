@@ -15,11 +15,11 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPr
 
     let greeting;
     if (currentHour < 12) {
-        greeting = "Good morning,";
+        greeting = "It's Coffee Time,";
     } else if (currentHour < 18) {
-        greeting = "Good afternoon,";
+        greeting = "Keep that energy going,";
     } else {
-        greeting = "Good evening,";
+        greeting = "Time to unwind,";
     }
 
     return (
@@ -32,9 +32,12 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPr
 
             <View style={styles.headerContainer}>
                 <View style={styles.headerRow}>
+                    <ThemedText type="subheading" style={[styles.title, { color: ThemedColor.text }]}>
+                        {greeting}
+                    </ThemedText>
                     <ThemedText type="title" style={[styles.title, { color: ThemedColor.text }]}>
-                        {greeting} {userName ? `${userName}!` : "there!"}{" "}
-                        {currentHour < 12 ? "☀️" : currentHour < 18 ? "🌤️" : "🌙"}
+                        {userName ? `${userName}!` : "there!"}{" "}
+                        {currentHour < 12 ? "☕" : currentHour < 18 ? "🌤️" : "🌙"}
                     </ThemedText>
                 </View>
             </View>
@@ -48,9 +51,8 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
     headerRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
+        flexDirection: "column",
+        alignItems: "flex-start",
         flexWrap: "wrap",
     },
     title: {

@@ -81,11 +81,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         marginBottom: 18,
                     }}>
                     <ThemedText type="caption">KUDOS</ThemedText>
-                    <KudosCards
-                        encouragementCount={encouragementCount}
-                        congratulationCount={congratulationCount}
-                        ThemedColor={ThemedColor}
-                    />
+                    <ThemedText type="caption">Send more Kudos to get rewards.</ThemedText>
+
+                    <KudosCards />
                 </View>
 
                 {/* Recent Workspaces Section */}
