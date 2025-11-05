@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, View, Switch } from "react-native";
+import { ScrollView, View, Switch, TouchableOpacity } from "react-native";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceGrid } from "./WorkspaceGrid";
@@ -9,7 +9,8 @@ import TutorialCard from "@/components/cards/TutorialCard";
 import BasicCard from "@/components/cards/BasicCard";
 import { useRouter } from "expo-router";
 import { KudosCards } from "../cards/KudosCard";
-
+import { HorseIcon, PlusIcon } from "phosphor-react-native";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 interface HomeScrollContentProps {
     encouragementCount: number;
     congratulationCount: number;
@@ -45,7 +46,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
         <ScrollView style={{ gap: 8 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={false}>
             <MotiView style={{ gap: 8, marginTop: 20 }}>
                 {/* Focus - always visible at the top */}
-                <BasicCard>
+                {/* <BasicCard>
                     <View
                         style={{
                             flexDirection: "row",
@@ -64,45 +65,79 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                             ios_backgroundColor={ThemedColor.caption + "40"}
                         />
                     </View>
-                </BasicCard>
-
-                {/* Kudos Cards (Encouragements & Congratulations) */}
-                <KudosCards
-                    encouragementCount={encouragementCount}
-                    congratulationCount={congratulationCount}
-                    ThemedColor={ThemedColor}
-                />
+                </BasicCard> */}
 
                 {/* Dashboard Cards */}
-                <DashboardCards drawerRef={drawerRef} />
+                <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
+                    <ThemedText type="caption">JUMP BACK IN</ThemedText>
+                    <DashboardCards drawerRef={drawerRef} />
+                </View>
+
+                {/* Kudos Cards (Encouragements & Congratulations) */}
+                <View
+                    style={{
+                        marginHorizontal: HORIZONTAL_PADDING,
+                        gap: 12,
+                        marginBottom: 18,
+                    }}>
+                    <ThemedText type="caption">KUDOS</ThemedText>
+                    <KudosCards
+                        encouragementCount={encouragementCount}
+                        congratulationCount={congratulationCount}
+                        ThemedColor={ThemedColor}
+                    />
+                </View>
 
                 {/* Recent Workspaces Section */}
-                <ThemedText type="default">Recent Workspaces</ThemedText>
+                <View
+                    style={{
+                        marginHorizontal: HORIZONTAL_PADDING,
+                        gap: 16,
+                    }}>
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            marginBottom: 2,
+                        }}>
+                        <ThemedText type="caption">RECENT WORKSPACES</ThemedText>
+                        <TouchableOpacity onPress={onCreateWorkspace}>
+                            <PlusIcon size="18" weight="light" color={ThemedColor.caption}></PlusIcon>
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
                 <ScrollView
                     horizontal={false}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 108 }}>
-                    {/* Workspace Grid */}
-                    <WorkspaceGrid
-                        workspaces={workspaces}
-                        displayWorkspaces={displayWorkspaces}
-                        fetchingWorkspaces={fetchingWorkspaces}
-                        onWorkspacePress={onWorkspaceSelect}
-                        onCreatePress={onCreateWorkspace}
-                        ThemedColor={ThemedColor}
-                    />
-
-                    {/* Bottom Dashboard Cards */}
-                    <View style={{ paddingBottom: 64, paddingTop: 16 }}>
-                        <BottomDashboardCards />
+                    <View
+                        style={{
+                            marginHorizontal: HORIZONTAL_PADDING,
+                            gap: 16,
+                            marginBottom: 18,
+                        }}>
+                        {/* Workspace Grid */}
+                        <WorkspaceGrid
+                            workspaces={workspaces}
+                            displayWorkspaces={displayWorkspaces}
+                            fetchingWorkspaces={fetchingWorkspaces}
+                            onWorkspacePress={onWorkspaceSelect}
+                            ThemedColor={ThemedColor}
+                        />
                     </View>
 
                     {/* Tutorial Card */}
-                    <TutorialCard
-                        onPress={() => router.push("/(logged-in)/(tutorial)")}
-                        showBadge={shouldShowTutorial}
-                    />
+                    <View
+                        style={{
+                            marginLeft: HORIZONTAL_PADDING,
+                            marginRight: HORIZONTAL_PADDING,
+                        }}>
+                        <TutorialCard
+                            onPress={() => router.push("/(logged-in)/(tutorial)")}
+                            showBadge={shouldShowTutorial}
+                        />
+                    </View>
                 </ScrollView>
             </MotiView>
         </ScrollView>

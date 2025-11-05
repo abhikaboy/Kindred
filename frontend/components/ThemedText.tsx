@@ -21,7 +21,9 @@ export type ThemedTextProps = TextProps & {
         | "disabledTitle"
         | "smallerDefault"
         | "titleFraunces"
-        | "subtitle_subtle";
+        | "subtitle_subtle"
+        | "larger_default"
+        | "larger_default_light";
 };
 
 export function ThemedText({ style, lightColor, darkColor, type = "default", ...rest }: ThemedTextProps) {
@@ -51,6 +53,9 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "disabledTitle" ? styles.disabledTitle : undefined,
                 type === "smallerDefault" ? styles.smallerDefault : undefined,
                 type === "subtitle_subtle" ? styles.subtitle_subtle : undefined,
+                type === "larger_default" ? styles.larger_default : undefined,
+                type === "larger_default_light" ? styles.larger_default_light : undefined,
+
                 style,
             ]}
             {...rest}
@@ -107,7 +112,7 @@ const useStyles = (ThemedColor: any, scale: number) =>
             letterSpacing: -1,
         },
         titleFraunces: {
-            fontSize: 36 * scale,
+            fontSize: 32 * scale,
             fontWeight: 600,
             fontFamily: "Fraunces",
             letterSpacing: -2,
@@ -141,5 +146,16 @@ const useStyles = (ThemedColor: any, scale: number) =>
             color: ThemedColor.caption,
             opacity: 1,
             paddingVertical: 16,
+        },
+        larger_default: {
+            fontSize: 17 * scale,
+            fontWeight: "regular",
+            fontFamily: "Outfit",
+        },
+        larger_default_light: {
+            fontSize: 17 * scale,
+            fontWeight: "regular",
+            fontFamily: "Outfit",
+            color: ThemedColor.caption,
         },
     });

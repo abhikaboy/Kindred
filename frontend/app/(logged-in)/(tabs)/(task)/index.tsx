@@ -273,15 +273,16 @@ const HomeContent = ({
                     styles.container,
                     {
                         paddingTop: insets.top,
-                        paddingBottom: focusMode ? 0 : Dimensions.get("screen").height * 0.12,
                     },
                 ]}>
                 <ConditionalView condition={selected === ""}>
-                    <WelcomeHeader
-                        userName={user?.display_name}
-                        onMenuPress={() => drawerRef.current?.openDrawer()}
-                        ThemedColor={ThemedColor}
-                    />
+                    <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
+                        <WelcomeHeader
+                            userName={user?.display_name}
+                            onMenuPress={() => drawerRef.current?.openDrawer()}
+                            ThemedColor={ThemedColor}
+                        />
+                    </View>
 
                     <HomeScrollContent
                         encouragementCount={encouragementCount}
@@ -308,6 +309,6 @@ export default Home;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: HORIZONTAL_PADDING,
+        overflow: "visible",
     },
 });

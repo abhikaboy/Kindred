@@ -71,13 +71,13 @@ export default function Task() {
     const pagerViewRef = useRef<PagerView>(null);
 
     const safeAsync = useSafeAsync();
-    
+
     // Task completion hook
     const { markTaskAsCompleted, isCompleting } = useTaskCompletion({
         onSuccess: () => {
             // Navigate back after completion
             router.back();
-        }
+        },
     });
 
     // Function to refresh task data after edit
@@ -257,16 +257,12 @@ export default function Task() {
 
     const handleMarkAsCompleted = () => {
         if (task && categoryId && id) {
-            markTaskAsCompleted(
-                categoryId as string,
-                id as string,
-                {
-                    id: task.id,
-                    content: task.content,
-                    value: task.value,
-                    public: task.public,
-                }
-            );
+            markTaskAsCompleted(categoryId as string, id as string, {
+                id: task.id,
+                content: task.content,
+                value: task.value,
+                public: task.public,
+            });
         }
     };
 
@@ -329,7 +325,7 @@ export default function Task() {
                                 openModal({
                                     edit: true,
                                     categoryId: categoryId as string,
-                                    screen: Screen.DEADLINE
+                                    screen: Screen.DEADLINE,
                                 });
                             }
                         }}>
