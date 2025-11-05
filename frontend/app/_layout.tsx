@@ -28,31 +28,34 @@ import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence } from "moti";
-import * as Sentry from '@sentry/react-native';
+import * as Sentry from "@sentry/react-native";
+import { KudosProvider } from "@/contexts/kudosContext";
 
 Sentry.init({
-  dsn: 'https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016',
+    dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
 
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
+    // Adds more context data to events (IP address, cookies, user, etc.)
+    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+    sendDefaultPii: true,
 
-  // Configure Session Replay
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(),     Sentry.feedbackIntegration({
-    // Additional SDK configuration goes in here, for example:
-    styles: {
-      submitButton: {
-        backgroundColor: "#6a1b9a",
-      },
-    },
-    namePlaceholder: "Fullname",
+    // Configure Session Replay
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+    integrations: [
+        Sentry.mobileReplayIntegration(),
+        Sentry.feedbackIntegration({
+            // Additional SDK configuration goes in here, for example:
+            styles: {
+                submitButton: {
+                    backgroundColor: "#6a1b9a",
+                },
+            },
+            namePlaceholder: "Fullname",
+        }),
+    ],
 
-  }),],
-
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
+    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+    // spotlight: __DEV__,
 });
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -135,29 +138,31 @@ export default Sentry.wrap(function RootLayout() {
                     <OnboardingProvider>
                         <SpotlightProvider>
                             <FocusModeProvider>
-                                <TasksProvider>
-                                    <TaskCreationProvider>
-                                        <BlueprintCreationProvider>
-                                            <DrawerProvider>
-                                                <GestureHandlerRootView style={{ flex: 1 }}>
-                                                    <BottomSheetModalProvider>
-                                                        <Toastable
-                                                            statusMap={{
-                                                                success: ThemedColor.success,
-                                                                danger: ThemedColor.danger,
-                                                                warning: ThemedColor.warning,
-                                                                info: ThemedColor.primary,
-                                                            }}
-                                                            offset={top}
-                                                        />
-                                                        <Slot />
-                                                        <StatusBar style="light" />
-                                                    </BottomSheetModalProvider>
-                                                </GestureHandlerRootView>
-                                            </DrawerProvider>
-                                        </BlueprintCreationProvider>
-                                    </TaskCreationProvider>
-                                </TasksProvider>
+                                <KudosProvider>
+                                    <TasksProvider>
+                                        <TaskCreationProvider>
+                                            <BlueprintCreationProvider>
+                                                <DrawerProvider>
+                                                    <GestureHandlerRootView style={{ flex: 1 }}>
+                                                        <BottomSheetModalProvider>
+                                                            <Toastable
+                                                                statusMap={{
+                                                                    success: ThemedColor.success,
+                                                                    danger: ThemedColor.error,
+                                                                    warning: ThemedColor.warning,
+                                                                    info: ThemedColor.primary,
+                                                                }}
+                                                                offset={top}
+                                                            />
+                                                            <Slot />
+                                                            <StatusBar style="light" />
+                                                        </BottomSheetModalProvider>
+                                                    </GestureHandlerRootView>
+                                                </DrawerProvider>
+                                            </BlueprintCreationProvider>
+                                        </TaskCreationProvider>
+                                    </TasksProvider>
+                                </KudosProvider>
                             </FocusModeProvider>
                         </SpotlightProvider>
                     </OnboardingProvider>

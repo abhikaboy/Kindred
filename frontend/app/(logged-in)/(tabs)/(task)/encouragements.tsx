@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
-import CachedImage from "@/components/CachedImage";
+import React, { useEffect } from "react";
+import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
@@ -8,68 +7,20 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
-import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
-
-interface Encouragement {
-    id: string;
-    sender: {
-        name: string;
-        picture: string;
-        id: string;
-    };
-    message: string;
-    categoryName: string;
-    taskName: string;
-    timestamp: string;
-    read: boolean;
-}
+import { useKudos } from "@/contexts/kudosContext";
 
 export default function Encouragements() {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const [encouragements, setEncouragements] = useState<Encouragement[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { encouragements, totalEncouragementCount, loading, markEncouragementsAsRead } = useKudos();
 
     useEffect(() => {
-        fetchEncouragements();
+        // Mark all as read when viewing the page
+        markEncouragementsAsRead();
     }, []);
-
-    const fetchEncouragements = async () => {
-        try {
-            setLoading(true);
-            const data = await getEncouragementsAPI();
-            
-            // Sort by timestamp in reverse chronological order (newest first)
-            const sortedData = [...data].sort((a, b) => {
-                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-            });
-            
-            setEncouragements(sortedData);
-
-            // Mark all encouragements as read
-            if (sortedData.length > 0) {
-                try {
-                    // Get IDs of unread encouragements
-                    const unreadIds = sortedData.filter((enc) => !enc.read).map((enc) => enc.id);
-
-                    if (unreadIds.length > 0) {
-                        await markEncouragementsReadAPI(unreadIds);
-                        // Update local state to mark all as read
-                        setEncouragements((prev) => prev.map((enc) => ({ ...enc, read: true })));
-                    }
-                } catch (error) {
-                    console.error("Error marking encouragements as read:", error);
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching encouragements:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const formatTime = (timestamp: string) => {
         try {
@@ -95,20 +46,20 @@ export default function Encouragements() {
                 </ThemedText>
             </View>
 
-            {/* Content */}
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
-                {/* Progress Card - Always show at top */}
+                {/* Progress Card - Uses shared data */}
                 <KudosProgressCard
-                    current={encouragements.length}
+                    current={totalEncouragementCount}
                     max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
                     type="encouragements"
                 />
-                <ThemedText type="subtitle_subtle" style={{paddingVertical: 4}}>
+                <ThemedText type="subtitle_subtle" style={{ paddingVertical: 4 }}>
                     ENCOURAGEMENTS RECEIVED
                 </ThemedText>
+
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ThemedText type="default">Loading encouragements...</ThemedText>
@@ -125,11 +76,7 @@ export default function Encouragements() {
                 ) : (
                     <View style={styles.encouragementsList}>
                         {encouragements.map((encouragement) => (
-                            <KudosItem
-                                key={encouragement.id}
-                                kudos={encouragement}
-                                formatTime={formatTime}
-                            />
+                            <KudosItem key={encouragement.id} kudos={encouragement} formatTime={formatTime} />
                         ))}
                     </View>
                 )}

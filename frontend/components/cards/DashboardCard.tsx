@@ -22,12 +22,13 @@ const DashboardCard = (props: Props) => {
                 backgroundColor: ThemedColor.lightenedCard,
                 borderRadius: 12,
                 padding: 16,
-                aspectRatio: 1.36,
+                marginBottom: 5, 
+                aspectRatio: 1.6,
                 justifyContent: "flex-end",
                 width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2) / 2.1,
-                borderWidth: 1,
-                borderColor: "#ffffff08",
+                borderWidth: 0.5,
                 boxShadow: ThemedColor.shadowSmall,
+                borderColor: ThemedColor.tertiary, 
             }}
             onPress={onPress}>
             <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, width: "100%" }}>
