@@ -40,7 +40,7 @@ export const Drawer = ({ close }) => {
                     description="Kindred organizes lists into workspaces. Each workspace can have multiple categories and tasks."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown('menuSpotlight');
+                        setSpotlightShown("menuSpotlight");
                         stop();
                     }}
                 />
@@ -53,7 +53,7 @@ export const Drawer = ({ close }) => {
                     description="The new workspace button is at the top. Tap here to create a new workspace anytime!"
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown('menuSpotlight');
+                        setSpotlightShown("menuSpotlight");
                         stop();
                     }}
                 />
@@ -65,16 +65,16 @@ export const Drawer = ({ close }) => {
                     title="Your Workspaces 📝"
                     description="Current workspaces can be found in 'Personal Workspaces' below. Tap any workspace to view its tasks."
                     onNext={() => {
-                        setSpotlightShown('menuSpotlight');
-                        
+                        setSpotlightShown("menuSpotlight");
+
                         // Check if "🌺 Kindred Guide" workspace exists and select it
-                        const kindredGuide = workspaces.find(w => w.name === "🌺 Kindred Guide");
+                        const kindredGuide = workspaces.find((w) => w.name === "🌺 Kindred Guide");
                         if (kindredGuide) {
                             setSelected("🌺 Kindred Guide");
                             router.navigate("/(logged-in)/(tabs)/(task)");
                             close();
                         }
-                        
+
                         next();
                     }}
                     isLastStep
@@ -121,7 +121,7 @@ const DrawerContent = ({
     showQuickImport,
     setShowQuickImport,
     handleCreateBlueprint,
-    spotlightState
+    spotlightState,
 }: any) => {
     const { start } = useSpotlightTour();
 
@@ -188,7 +188,7 @@ const DrawerContent = ({
                 <ThemedText type="default">Settings</ThemedText>
                 <Ionicons name="settings-outline" size={20} color={ThemedColor.text} />
             </TouchableOpacity>
-            <AttachStep index={1} style={{ width: '100%' }}>
+            <AttachStep index={1} style={{ width: "100%" }}>
                 <TouchableOpacity
                     style={{
                         paddingTop: 4,
@@ -273,8 +273,8 @@ const DrawerContent = ({
                     }}
                     onLongPress={() => {}}
                 />
-                <AttachStep index={2} style={{ width: '100%' }}>
-                    <View style={{ width: '100%' }}>
+                <AttachStep index={2} style={{ width: "100%" }}>
+                    <View style={{ width: "100%" }}>
                         <View
                             style={{
                                 paddingHorizontal: HORIZONTAL_PADDING,
@@ -285,22 +285,24 @@ const DrawerContent = ({
                             <Ionicons name="person" size={16} color={ThemedColor.caption} />
                             <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
                         </View>
-                        {workspaces.filter((workspace) => !workspace.isBlueprint).map((workspace) => (
-                            <DrawerItem
-                                onPress={() => {
-                                    setSelected(workspace.name);
-                                    router.navigate("/(logged-in)/(tabs)/(task)");
-                                    close();
-                                }}
-                                onLongPress={() => {
-                                    setFocusedWorkspace(workspace.name);
-                                    setEditing(true);
-                                }}
-                                key={workspace.name}
-                                title={workspace.name}
-                                selected={selected}
-                            />
-                        ))}
+                        {workspaces
+                            .filter((workspace) => !workspace.isBlueprint)
+                            .map((workspace) => (
+                                <DrawerItem
+                                    onPress={() => {
+                                        setSelected(workspace.name);
+                                        router.navigate("/(logged-in)/(tabs)/(task)");
+                                        close();
+                                    }}
+                                    onLongPress={() => {
+                                        setFocusedWorkspace(workspace.name);
+                                        setEditing(true);
+                                    }}
+                                    key={workspace.name}
+                                    title={workspace.name}
+                                    selected={selected}
+                                />
+                            ))}
                     </View>
                 </AttachStep>
                 <TouchableOpacity onPress={() => {}}>
@@ -318,22 +320,24 @@ const DrawerContent = ({
                         <AntDesign name="question" size={20} color={ThemedColor.caption} />
                     </View>
                 </TouchableOpacity>
-                {workspaces.filter((workspace) => workspace.isBlueprint).map((workspace) => (
-                            <DrawerItem
-                                title={workspace.name}
-                                selected={selected}
-                                onPress={() => {
-                                    setSelected(workspace.name);
-                                    router.navigate("/(logged-in)/(tabs)/(task)");
-                                    close();
-                                }}
-                                onLongPress={() => {
-                                    setFocusedWorkspace(workspace.name);
-                                    setEditing(true);
-                                }}
-                                key={workspace.name}
-                            />
-                        ))}
+                {workspaces
+                    .filter((workspace) => workspace.isBlueprint)
+                    .map((workspace) => (
+                        <DrawerItem
+                            title={workspace.name}
+                            selected={selected}
+                            onPress={() => {
+                                setSelected(workspace.name);
+                                router.navigate("/(logged-in)/(tabs)/(task)");
+                                close();
+                            }}
+                            onLongPress={() => {
+                                setFocusedWorkspace(workspace.name);
+                                setEditing(true);
+                            }}
+                            key={workspace.name}
+                        />
+                    ))}
                 <TouchableOpacity
                     style={{
                         paddingVertical: 12,

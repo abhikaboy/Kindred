@@ -25,9 +25,9 @@ const DashboardCard = (props: Props) => {
                 aspectRatio: 1.36,
                 justifyContent: "flex-end",
                 width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2) / 2.1,
-                borderWidth: 1,
-                borderColor: "#ffffff08",
+                borderWidth: 0.5,
                 boxShadow: ThemedColor.shadowSmall,
+                borderColor: ThemedColor.tertiary, 
             }}
             onPress={onPress}>
             <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, width: "100%" }}>
