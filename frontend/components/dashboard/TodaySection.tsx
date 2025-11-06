@@ -29,16 +29,6 @@ const TodaySection = () => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerContainer}>
-                <View style={styles.headerTop}>
-                    <ThemedText type="subtitle">Today</ThemedText>
-                    <TouchableOpacity onPress={handleHeaderPress} style={styles.viewAllButton}>
-                        <ThemedText type="caption" style={styles.seeAllText}>See all</ThemedText>
-                        <Ionicons name="chevron-forward" size={20} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
             <View style={styles.tasksContainer}>
                 {todayTasks.map((task, index) => (
                     <SwipableTaskCard 

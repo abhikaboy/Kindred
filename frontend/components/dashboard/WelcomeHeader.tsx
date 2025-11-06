@@ -1,7 +1,7 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { ListIcon } from "phosphor-react-native";
+import { FireIcon, ListIcon } from "phosphor-react-native";
 import { AttachStep } from "react-native-spotlight-tour";
 
 interface WelcomeHeaderProps {
@@ -35,7 +35,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPr
                     <ThemedText type="subheading" style={[styles.title, { color: ThemedColor.text }]}>
                         {greeting}
                     </ThemedText>
-                    <ThemedText type="title" style={[styles.title, { color: ThemedColor.text }]}>
+                    <ThemedText type="title" style={[styles.title, { color: ThemedColor.text, fontSize: 24, letterSpacing: -1 }]}>
                         {userName ? `${userName}!` : "there!"}{" "}
                         {currentHour < 12 ? "☕" : currentHour < 18 ? "🌤️" : "🌙"}
                     </ThemedText>
@@ -57,5 +57,6 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: "600",
+        fontSize: 20,
     },
 });

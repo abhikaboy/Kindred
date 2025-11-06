@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, View, Switch, TouchableOpacity } from "react-native";
+import { ScrollView, View, Switch, TouchableOpacity, TextInput } from "react-native";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceGrid } from "./WorkspaceGrid";
@@ -11,6 +11,8 @@ import { useRouter } from "expo-router";
 import { KudosCards } from "../cards/KudosCard";
 import { HorseIcon, PlusIcon } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import TodaySection from "./TodaySection";
+import Ionicons from "@expo/vector-icons/Ionicons";
 interface HomeScrollContentProps {
     encouragementCount: number;
     congratulationCount: number;
@@ -44,7 +46,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
     return (
         <ScrollView style={{ gap: 8 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={false}>
-            <MotiView style={{ gap: 8, marginTop: 20 }}>
+            <MotiView style={{ gap: 8, marginTop: 12 }}>
                 {/* Focus - always visible at the top */}
                 {/* <BasicCard>
                     <View
@@ -85,6 +87,25 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                     <KudosCards />
                 </View>
+
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <ThemedText type="caption">UPCOMING</ThemedText>
+                        <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
+                            <Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />
+                        </TouchableOpacity>
+                    </View>
+                    <TodaySection />
+                </View>
+                {/* <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <ThemedText type="caption">QUICK TASK</ThemedText>
+                        <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
+                            <Ionicons name="add" size={16} color={ThemedColor.caption} />
+                        </TouchableOpacity>
+                    </View>
+                    <TextInput placeholder="Whats on your mind?" style={{ backgroundColor: ThemedColor.lightened, borderRadius: 8, padding: 16, fontSize: 16, fontFamily: "OutfitLight" }} />
+                </View> */}
 
                 {/* Recent Workspaces Section */}
                 <View

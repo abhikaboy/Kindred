@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { DrawerLayout } from "react-native-gesture-handler";
 import TodaySection from "./TodaySection";
 import { AttachStep } from "react-native-spotlight-tour";
-import { Bird, BookBookmark, Calendar, ChartBar } from "phosphor-react-native";
+import { Bird, BookBookmark, Calendar, ChartBar, Microphone } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
@@ -28,12 +28,11 @@ const DashboardCards = (props: Props) => {
             },
         },
         {
-            title: "Workspaces",
-            icon: <BookBookmark size={28} weight="light" color={ThemedColor.text} />,
+            title: "Voice Dump",
+            icon: <Microphone size={28} weight="light" color={ThemedColor.text} />,
             onPress: () => {
-                props.drawerRef?.current?.openDrawer();
+                router.push("/voice");
             },
-            attachStep: 0,
         },
         {
             title: "Calendar",
@@ -54,6 +53,14 @@ const DashboardCards = (props: Props) => {
                     params: { workspace: "Analytics" },
                 });
             },
+        },
+        {
+            title: "Workspaces",
+            icon: <BookBookmark size={28} weight="light" color={ThemedColor.text} />,
+            onPress: () => {
+                props.drawerRef?.current?.openDrawer();
+            },
+            attachStep: 0,
         },
     ];
 
@@ -95,7 +102,6 @@ const DashboardCards = (props: Props) => {
                 })}
             </ScrollView>
 
-            <TodaySection />
         </View>
     );
 };

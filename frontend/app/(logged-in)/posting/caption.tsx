@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { FlatList } from "react-native-gesture-handler";
-import { View, Image, Dimensions, Alert } from "react-native";
+import { View, Image, Dimensions, Alert, TouchableOpacity } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import LongTextInput from "@/components/inputs/LongTextInput";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,7 +9,6 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createPostToBackend } from "@/api/post";
 import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
-import { Icons } from "@/constants/Icons";
 import { ObjectId } from "bson";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -24,7 +23,14 @@ export default function Caption() {
 
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
-    const displayItems = photos.length > 0 ? photos : [Icons.coffee];
+    
+    // Use theme-appropriate placeholder
+    const isDark = ThemedColor.background === '#000000' || ThemedColor.background === '#1a1a1a';
+    const placeholderImage = isDark 
+        ? require('@/assets/images/placeholder dark.jpg')
+        : require('@/assets/images/placeholder light.jpg');
+    
+    const displayItems = photos.length > 0 ? photos : [placeholderImage];
     const hasActualPhotos = photos.length > 0;
     const handleCaptionChange = (text: string) => {
         setData({
@@ -197,7 +203,7 @@ export default function Caption() {
                         <ThemedText>Points Gained</ThemedText>
                         <ThemedText>{taskInfo?.points || 1} points</ThemedText>
                     </View>
-                    <View
+                    <TouchableOpacity
                         style={{
                             width: "100%",
                             padding: 20,
@@ -205,10 +211,14 @@ export default function Caption() {
                             backgroundColor: ThemedColor.lightened,
                             borderRadius: 8,
                             flexDirection: "row",
-                        }}>
-                        <ThemedText>Is this post public?</ThemedText>
-                        <ThemedText>{taskInfo?.public ? "Yes" : "No"}</ThemedText>
-                    </View>
+                        }}
+                        onPress={() => {
+                            router.push("/(logged-in)/posting/groups");
+                        }}
+                        activeOpacity={0.7}>
+                        <ThemedText>Who can see this post?</ThemedText>
+                        <ThemedText>All Friends</ThemedText>
+                    </TouchableOpacity>
                     <PrimaryButton
                         title={isPosting ? "Posting..." : "Post"}
                         onPress={handlePost}
