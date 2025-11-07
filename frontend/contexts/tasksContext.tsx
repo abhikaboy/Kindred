@@ -15,7 +15,7 @@ type TaskContextType = {
     workspaces: Workspace[];
     setWorkSpaces: (workspaces: Workspace[]) => void;
     getWorkspace: (name: string) => Workspace;
-    fetchWorkspaces: () => void;
+    fetchWorkspaces: (forceRefresh?: boolean) => Promise<void>;
     selected: string; // workspace name
     setSelected: (selected: string) => void; // workspace name
     categories: Categories[];
@@ -64,9 +64,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const [showConfetti, setShowConfetti] = useState(false);
     
-    // Constants for recent workspaces
+    // Constants for recent workspaces and caching
     const RECENT_WORKSPACES_KEY = `recent_workspaces_${user?._id || 'default'}`;
     const MAX_RECENT_WORKSPACES = 6;
+    const WORKSPACES_CACHE_KEY = `workspaces_cache_${user?._id || 'default'}`;
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     const unnestedTasks = useMemo(() => {
         let res = workspaces
@@ -145,24 +147,69 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         return workspaces.find((workspace) => workspace.name === name);
     };
 
-    const fetchWorkspaces = async () => {
-        setFetchingWorkspaces(true);
-        console.log("fetching workspaces via API");
-        const data = await fetchUserWorkspaces(user._id);
-        const subscribedBlueprints = await getUserSubscribedBlueprints();
-        console.log("subscribedBlueprints", subscribedBlueprints);
-        const blueprintWorkspaces : BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
-            return {
-                name: blueprint.name,
-                categories: [],
-                blueprintDetails: blueprint,
-                isBlueprint: true
+    const fetchWorkspaces = async (forceRefresh: boolean = false) => {
+        if (!user?._id) return;
+        
+        // Check cache first if not forcing refresh
+        if (!forceRefresh) {
+            try {
+                const cached = await AsyncStorage.getItem(WORKSPACES_CACHE_KEY);
+                if (cached) {
+                    const { data: cachedData, timestamp } = JSON.parse(cached);
+                    const now = Date.now();
+                    
+                    // Use cache if it's less than 5 minutes old
+                    if ((now - timestamp) < CACHE_DURATION) {
+                        console.log("Using cached workspaces (age: " + Math.floor((now - timestamp) / 1000) + "s)");
+                        setWorkSpaces(cachedData);
+                        return;
+                    } else {
+                        console.log("Cache expired, fetching fresh data");
+                    }
+                }
+            } catch (error) {
+                console.error("Error reading workspaces cache:", error);
             }
-        });
-        console.log("blueprintWorkspaces", blueprintWorkspaces);
+        } else {
+            console.log("Force refresh requested, bypassing cache");
+        }
 
-        setWorkSpaces([...data, ...blueprintWorkspaces]);
-        setFetchingWorkspaces(false);
+        // Fetch fresh data
+        setFetchingWorkspaces(true);
+        try {
+            console.log("Fetching workspaces via API");
+            const data = await fetchUserWorkspaces(user._id);
+            const subscribedBlueprints = await getUserSubscribedBlueprints();
+            console.log("subscribedBlueprints", subscribedBlueprints);
+            const blueprintWorkspaces: BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
+                return {
+                    name: blueprint.name,
+                    categories: [],
+                    blueprintDetails: blueprint,
+                    isBlueprint: true
+                }
+            });
+            console.log("blueprintWorkspaces", blueprintWorkspaces);
+
+            const allWorkspaces = [...data, ...blueprintWorkspaces];
+            setWorkSpaces(allWorkspaces);
+
+            // Save to cache
+            try {
+                await AsyncStorage.setItem(WORKSPACES_CACHE_KEY, JSON.stringify({
+                    data: allWorkspaces,
+                    timestamp: Date.now()
+                }));
+                console.log("Workspaces cached successfully");
+            } catch (error) {
+                console.error("Error caching workspaces:", error);
+            }
+        } catch (error) {
+            console.error("Error fetching workspaces:", error);
+            throw error;
+        } finally {
+            setFetchingWorkspaces(false);
+        }
     };
 
     /**

@@ -37,8 +37,6 @@ const Daily = (props: Props) => {
     const pagerRef = useRef<PagerView>(null);
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const params = useLocalSearchParams();
-    const { setSelected } = useTasks();
     const { loadTaskData } = useTaskCreation();
     const { openModal } = useCreateModal();
     
@@ -91,13 +89,6 @@ const Daily = (props: Props) => {
             pagerRef.current.setPageWithoutAnimation(1);
         }
     }, [centerDate]);
-
-    // Set selected workspace based on route parameters
-    useEffect(() => {
-        if (params.workspace && typeof params.workspace === 'string') {
-            setSelected(params.workspace);
-        }
-    }, [params.workspace, setSelected]);
 
     const { allTasks } = useTasks();
     const { setIsDrawerOpen } = useDrawer();
@@ -303,7 +294,7 @@ const Daily = (props: Props) => {
                 </TouchableOpacity>
                 <View style={styles.headerContainer}>
                     <ThemedText type="title" style={styles.title}>
-                        kindred daily view
+                        Daily View
                     </ThemedText>
                 </View>
                 <View style={{ marginBottom: 24, height: Dimensions.get("screen").height * 0.125 }}>

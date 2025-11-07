@@ -26,7 +26,7 @@ import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { isSameDay, startOfDay, endOfDay, format, addDays, startOfWeek, endOfWeek } from "date-fns";
 import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 
 type Props = {};
@@ -49,9 +49,8 @@ const Calendar = (props: Props) => {
     const currentTimeLineRef = useRef<View>(null);
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const params = useLocalSearchParams();
     const { setIsDrawerOpen } = useDrawer();
-    const { allTasks, setSelected } = useTasks();
+    const { allTasks } = useTasks();
 
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
@@ -213,13 +212,6 @@ const Calendar = (props: Props) => {
             pagerRef.current.setPageWithoutAnimation(1);
         }
     }, [centerDate]);
-
-    // Set selected workspace based on route parameters
-    useEffect(() => {
-        if (params.workspace && typeof params.workspace === 'string') {
-            setSelected(params.workspace);
-        }
-    }, [params.workspace, setSelected]);
 
     // Scroll to current time line when component mounts or selected date changes
     useEffect(() => {

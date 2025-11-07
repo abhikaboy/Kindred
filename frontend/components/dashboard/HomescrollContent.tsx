@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, View, Switch, TouchableOpacity, TextInput } from "react-native";
+import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl } from "react-native";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceGrid } from "./WorkspaceGrid";
@@ -26,6 +26,8 @@ interface HomeScrollContentProps {
     ThemedColor: any;
     focusMode: boolean;
     toggleFocusMode: () => void;
+    refreshing?: boolean;
+    onRefresh?: () => void;
 }
 
 export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
@@ -41,11 +43,27 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     ThemedColor,
     focusMode,
     toggleFocusMode,
+    refreshing = false,
+    onRefresh,
 }) => {
     const router = useRouter();
 
     return (
-        <ScrollView style={{ gap: 8 }} contentContainerStyle={{ gap: 8 }} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+            style={{ gap: 8 }} 
+            contentContainerStyle={{ gap: 8 }} 
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                onRefresh ? (
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={ThemedColor.primary}
+                        colors={[ThemedColor.primary]}
+                    />
+                ) : undefined
+            }
+        >
             <MotiView style={{ gap: 8, marginTop: 12 }}>
                 {/* Focus - always visible at the top */}
                 {/* <BasicCard>

@@ -51,11 +51,16 @@ const Home = (props: Props) => {
     const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(false);
     const { focusMode, toggleFocusMode } = useFocusMode();
     const { shouldShowTutorial, markTutorialAsSeen } = useTutorial(user?._id);
+    const [refreshing, setRefreshing] = useState(false);
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
     const { spotlightState, setSpotlightShown } = useSpotlight();
+    
+    // Cache keys and duration
+    const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
     // Get recent workspaces and create a display list
     const recentWorkspaceNames = getRecentWorkspaces();
@@ -111,27 +116,83 @@ const Home = (props: Props) => {
         loadWorkspaces();
     }, [user]);
 
-    // Fetch encouragement and congratulation counts
-    useEffect(() => {
-        const fetchCounts = async () => {
+    // Fetch encouragement and congratulation counts with caching
+    const fetchKudosCounts = React.useCallback(async (forceRefresh: boolean = false) => {
+        if (!user?._id) return;
+        
+        // Check cache first if not forcing refresh
+        if (!forceRefresh) {
             try {
-                const [encouragements, congratulations] = await Promise.all([
-                    getEncouragementsAPI(),
-                    getCongratulationsAPI(),
-                ]);
-
-                const unreadEncouragements = encouragements.filter((item) => !item.read).length;
-                const unreadCongratulations = congratulations.filter((item) => !item.read).length;
-
-                setEncouragementCount(unreadEncouragements);
-                setCongratulationCount(unreadCongratulations);
+                const cached = await AsyncStorage.getItem(KUDOS_CACHE_KEY);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    const now = Date.now();
+                    
+                    // Use cache if it's less than 5 minutes old
+                    if ((now - timestamp) < CACHE_DURATION) {
+                        console.log("Using cached kudos (age: " + Math.floor((now - timestamp) / 1000) + "s)");
+                        setEncouragementCount(data.encouragementCount);
+                        setCongratulationCount(data.congratulationCount);
+                        return;
+                    }
+                }
             } catch (error) {
-                console.error("Error fetching encouragement/congratulation counts:", error);
+                console.error("Error reading kudos cache:", error);
             }
-        };
+        }
 
-        fetchCounts();
-    }, []);
+        // Fetch fresh data
+        try {
+            console.log("Fetching kudos via API");
+            const [encouragements, congratulations] = await Promise.all([
+                getEncouragementsAPI(),
+                getCongratulationsAPI(),
+            ]);
+
+            const unreadEncouragements = encouragements.filter((item) => !item.read).length;
+            const unreadCongratulations = congratulations.filter((item) => !item.read).length;
+
+            setEncouragementCount(unreadEncouragements);
+            setCongratulationCount(unreadCongratulations);
+            
+            // Save to cache
+            try {
+                await AsyncStorage.setItem(KUDOS_CACHE_KEY, JSON.stringify({
+                    data: {
+                        encouragementCount: unreadEncouragements,
+                        congratulationCount: unreadCongratulations,
+                    },
+                    timestamp: Date.now()
+                }));
+                console.log("Kudos cached successfully");
+            } catch (error) {
+                console.error("Error caching kudos:", error);
+            }
+        } catch (error) {
+            console.error("Error fetching encouragement/congratulation counts:", error);
+        }
+    }, [user?._id, KUDOS_CACHE_KEY, CACHE_DURATION]);
+
+    useEffect(() => {
+        fetchKudosCounts();
+    }, [fetchKudosCounts]);
+
+    // Refresh all data (for pull-to-refresh)
+    const handleRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        try {
+            console.log("Refreshing all data...");
+            await Promise.all([
+                fetchWorkspaces(true), // Force refresh workspaces
+                fetchKudosCounts(true), // Force refresh kudos
+            ]);
+            console.log("Refresh complete");
+        } catch (error) {
+            console.error("Error refreshing data:", error);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [fetchWorkspaces, fetchKudosCounts]);
 
     const drawerRef = useRef<DrawerLayout>(null);
 
@@ -209,6 +270,8 @@ const Home = (props: Props) => {
                 setSelected={setSelected}
                 shouldShowTutorial={shouldShowTutorial}
                 spotlightState={spotlightState}
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
             />
         </SpotlightTourProvider>
     );
@@ -234,6 +297,8 @@ const HomeContent = ({
     setSelected,
     shouldShowTutorial,
     spotlightState,
+    refreshing,
+    onRefresh,
 }: any) => {
     const { start } = useSpotlightTour();
     const { selected } = useTasks();
@@ -297,6 +362,8 @@ const HomeContent = ({
                         ThemedColor={ThemedColor}
                         focusMode={focusMode}
                         toggleFocusMode={toggleFocusMode}
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
                     />
                 </ConditionalView>
             </ThemedView>

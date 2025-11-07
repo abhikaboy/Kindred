@@ -11,7 +11,7 @@ import QuickImportBottomSheet from "../modals/QuickImportBottomSheet";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
@@ -20,6 +20,7 @@ import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
     const { workspaces, selected, setSelected } = useTasks();
+    const pathname = usePathname();
     const [creating, setCreating] = React.useState(false);
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
@@ -91,6 +92,7 @@ export const Drawer = ({ close }) => {
                 workspaces={workspaces}
                 selected={selected}
                 setSelected={setSelected}
+                pathname={pathname}
                 creating={creating}
                 setCreating={setCreating}
                 editing={editing}
@@ -112,6 +114,7 @@ const DrawerContent = ({
     workspaces,
     selected,
     setSelected,
+    pathname,
     creating,
     setCreating,
     editing,
@@ -124,6 +127,23 @@ const DrawerContent = ({
     spotlightState,
 }: any) => {
     const { start } = useSpotlightTour();
+
+    // Helper function to determine which drawer item should be selected based on current route
+    const getSelectedItem = () => {
+        if (pathname.includes("/daily")) return "Daily";
+        if (pathname.includes("/calendar")) return "Calendar";
+        if (pathname.includes("/analytics")) return "Analytics";
+        if (pathname.includes("/completed")) return "Completed Tasks";
+        if (pathname.includes("/voice")) return "Voice Dump";
+        if (pathname === "/(logged-in)/(tabs)/(task)" || pathname === "/") {
+            // On home route, use workspace selection
+            return selected === "" ? "Home" : selected;
+        }
+        // For other routes (like workspace view), use workspace selection
+        return selected;
+    };
+
+    const currentSelected = getSelectedItem();
 
     useEffect(() => {
         // Only start the tour if:
@@ -221,7 +241,7 @@ const DrawerContent = ({
                 </View>
                 <DrawerItem
                     title="Home"
-                    selected={selected == "" ? "Home" : selected}
+                    selected={currentSelected}
                     onPress={() => {
                         setSelected("");
                         router.navigate("/(logged-in)/(tabs)/(task)");
@@ -231,7 +251,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Daily"
-                    selected={selected}
+                    selected={currentSelected}
                     onPress={() => {
                         router.navigate("/(logged-in)/(tabs)/(task)/daily");
                         close();
@@ -240,7 +260,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Calendar"
-                    selected={selected}
+                    selected={currentSelected}
                     onPress={() => {
                         router.navigate("/(logged-in)/(tabs)/(task)/calendar");
                         close();
@@ -249,7 +269,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Analytics"
-                    selected={selected}
+                    selected={currentSelected}
                     onPress={() => {
                         router.navigate("/(logged-in)/(tabs)/(task)/analytics");
                         close();
@@ -258,7 +278,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Voice Dump"
-                    selected={selected}
+                    selected={currentSelected}
                     onPress={() => {
                         router.push("/voice");
                         close();
@@ -267,7 +287,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Import"
-                    selected={selected}
+                    selected={currentSelected}
                     onPress={() => {
                         setShowQuickImport(true);
                     }}
@@ -300,7 +320,7 @@ const DrawerContent = ({
                                     }}
                                     key={workspace.name}
                                     title={workspace.name}
-                                    selected={selected}
+                                    selected={currentSelected}
                                 />
                             ))}
                     </View>
@@ -325,7 +345,7 @@ const DrawerContent = ({
                     .map((workspace) => (
                         <DrawerItem
                             title={workspace.name}
-                            selected={selected}
+                            selected={currentSelected}
                             onPress={() => {
                                 setSelected(workspace.name);
                                 router.navigate("/(logged-in)/(tabs)/(task)");
@@ -360,7 +380,7 @@ const DrawerContent = ({
                 <View style={{}}>
                     <DrawerItem
                         title="Completed Tasks"
-                        selected={selected}
+                        selected={currentSelected}
                         onPress={() => {
                             router.navigate("/(logged-in)/(tabs)/(task)/completed");
                             close();
