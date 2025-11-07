@@ -75,11 +75,11 @@ const CreateModal = (props: Props) => {
     // Handle sheet changes
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1 && props.visible) {
+            if (index === -1) {
                 props.setVisible(false);
             }
         },
-        [props.visible, props.setVisible]
+        [props.setVisible]
     );
 
     // Reset screen when modal is dismissed

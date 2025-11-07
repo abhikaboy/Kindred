@@ -32,7 +32,7 @@ export default function KudosItem({ kudos, formatTime }: KudosItemProps) {
     const styles = createStyles(ThemedColor);
 
     const isImage = kudos.type === "image";
-    const isProfileLevel = kudos.scope === "profile" || (!kudos.taskName && !kudos.categoryName);
+    const isProfileLevel = kudos.scope === "profile"
 
     return (
         <View style={styles.kudosItem}>

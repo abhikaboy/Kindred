@@ -91,11 +91,11 @@ export const OnboardModal = (props: Props) => {
     // Handle sheet changes
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1 && visible) {
+            if (index === -1) {
                 setVisible(false);
             }
         },
-        [visible, setVisible]
+        [setVisible]
     );
 
     // Custom backdrop component

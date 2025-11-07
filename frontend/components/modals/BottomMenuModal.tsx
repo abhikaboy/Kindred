@@ -55,11 +55,11 @@ const BottomMenuModal = memo((props: Props) => {
     // Safe way to update parent state when sheet is dismissed
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1 && props.visible) {
+            if (index === -1) {
                 props.setVisible(false);
             }
         },
-        [props.visible, props.setVisible]
+        [props.setVisible]
     );
 
     // Custom backdrop component

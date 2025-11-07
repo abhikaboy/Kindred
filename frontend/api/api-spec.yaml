@@ -876,6 +876,21 @@ paths:
             summary: Find users by phone numbers
             description: Efficiently find users matching any of the provided phone numbers using a single database query
             operationId: find-users-by-phone-numbers
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
             requestBody:
                 content:
                     application/json:
@@ -933,6 +948,21 @@ paths:
             summary: Get suggested users
             description: Get up to 8 suggested users with the most friends
             operationId: get-suggested-users
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
             responses:
                 "200":
                     description: OK
@@ -4513,6 +4543,50 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+        patch:
+            tags:
+                - tasks
+            summary: Update template task
+            description: Update a template task for recurring tasks
+            operationId: update-template
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: refresh_token
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTemplateDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTemplateOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/template/old:
         get:
             tags:
@@ -5708,7 +5782,7 @@ components:
                     readOnly: true
                 categoryName:
                     type: string
-                    description: Category name
+                    description: Category name (required for task scope)
                     examples:
                         - Work
                 message:
@@ -5721,9 +5795,19 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                scope:
+                    type: string
+                    description: Scope of encouragement (task or profile)
+                    examples:
+                        - task
+                taskId:
+                    type: string
+                    description: Task ID (required for task scope)
+                    examples:
+                        - 507f1f77bcf86cd799439013
                 taskName:
                     type: string
-                    description: Task name
+                    description: Task name (required for task scope)
                     examples:
                         - Complete project proposal
                 type:
@@ -5734,8 +5818,7 @@ components:
             required:
                 - receiver
                 - message
-                - categoryName
-                - taskName
+                - scope
                 - type
         CreateGroupParams:
             type: object
@@ -6160,9 +6243,19 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                scope:
+                    type: string
+                    description: Scope of encouragement (task or profile)
+                    examples:
+                        - task
                 sender:
                     description: Sender information
                     $ref: '#/components/schemas/EncouragementSender'
+                taskId:
+                    type: string
+                    description: Task ID being encouraged
+                    examples:
+                        - 507f1f77bcf86cd799439013
                 taskName:
                     type: string
                     description: Task name
@@ -6185,8 +6278,7 @@ components:
                 - receiver
                 - message
                 - timestamp
-                - categoryName
-                - taskName
+                - scope
                 - read
                 - type
         EncouragementSender:
@@ -7601,6 +7693,8 @@ components:
                 congratulations:
                     type: integer
                     format: int64
+                credits:
+                    $ref: '#/components/schemas/UserCredits'
                 display_name:
                     type: string
                 encouragements:
@@ -7647,6 +7741,7 @@ components:
                 - streakEligible
                 - points
                 - posts_made
+                - credits
         SendOTPOutputBody:
             type: object
             additionalProperties: false
@@ -8578,6 +8673,94 @@ components:
                         - Task start date/time updated successfully
             required:
                 - message
+        UpdateTemplateDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTemplateDocument.json
+                    readOnly: true
+                checklist:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChecklistItem'
+                content:
+                    type: string
+                deadline:
+                    type: string
+                    format: date-time
+                notes:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                public:
+                    type: boolean
+                recurDetails:
+                    $ref: '#/components/schemas/RecurDetails'
+                recurFrequency:
+                    type: string
+                recurType:
+                    type: string
+                reminders:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Reminder'
+                startDate:
+                    type: string
+                    format: date-time
+                startTime:
+                    type: string
+                    format: date-time
+                value:
+                    type: number
+                    format: double
+        UpdateTemplateOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTemplateOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Template task updated successfully
+            required:
+                - message
+        UserCredits:
+            type: object
+            additionalProperties: false
+            properties:
+                analytics:
+                    type: integer
+                    description: Analytics access credits
+                    format: int64
+                blueprint:
+                    type: integer
+                    description: Blueprint creation credits
+                    format: int64
+                group:
+                    type: integer
+                    description: Group creation credits
+                    format: int64
+                voice:
+                    type: integer
+                    description: Voice task creation credits
+                    format: int64
+            required:
+                - voice
+                - blueprint
+                - group
+                - analytics
         UserExtendedReference:
             type: object
             additionalProperties: false

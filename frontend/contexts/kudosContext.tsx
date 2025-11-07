@@ -10,10 +10,12 @@ interface Encouragement {
         id: string;
     };
     message: string;
-    categoryName: string;
-    taskName: string;
+    scope: string; // "task" or "profile"
+    categoryName?: string; // Optional - only present for task-scoped encouragements
+    taskName?: string; // Optional - only present for task-scoped encouragements
     timestamp: string;
     read: boolean;
+    type?: string; // "message" or "image" (optional for backwards compatibility)
 }
 
 interface Congratulation {
@@ -76,6 +78,9 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
                 getEncouragementsAPI().catch(() => []),
                 getCongratulationsAPI().catch(() => []),
             ]);
+
+            // DEBUG: Log encouragement data to see what's returned
+            console.log("📝 DEBUG - Fetched encouragements:", JSON.stringify(encouragementsData, null, 2));
 
             // Sort by timestamp (newest first)
             const sortedEncouragements = [...encouragementsData].sort(

@@ -2129,7 +2129,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update template task
+         * @description Update a template task for recurring tasks
+         */
+        patch: operations["update-template"];
         trace?: never;
     };
     "/v1/user/tasks/template/old": {
@@ -2913,10 +2917,10 @@ export interface components {
              */
             readonly $schema?: string;
             /**
-             * @description Category name
+             * @description Category name (required for task scope)
              * @example Work
              */
-            categoryName: string;
+            categoryName?: string;
             /**
              * @description Encouragement message
              * @example Great job on completing your task!
@@ -2928,10 +2932,20 @@ export interface components {
              */
             receiver: string;
             /**
-             * @description Task name
+             * @description Scope of encouragement (task or profile)
+             * @example task
+             */
+            scope: string;
+            /**
+             * @description Task ID (required for task scope)
+             * @example 507f1f77bcf86cd799439013
+             */
+            taskId?: string;
+            /**
+             * @description Task name (required for task scope)
              * @example Complete project proposal
              */
-            taskName: string;
+            taskName?: string;
             /**
              * @description Type of encouragement (message or image)
              * @example message
@@ -3167,7 +3181,7 @@ export interface components {
              * @description Category name
              * @example Work
              */
-            categoryName: string;
+            categoryName?: string;
             /**
              * @description Unique identifier for the encouragement
              * @example 507f1f77bcf86cd799439011
@@ -3188,13 +3202,23 @@ export interface components {
              * @example 507f1f77bcf86cd799439012
              */
             receiver: string;
+            /**
+             * @description Scope of encouragement (task or profile)
+             * @example task
+             */
+            scope: string;
             /** @description Sender information */
             sender: components["schemas"]["EncouragementSender"];
+            /**
+             * @description Task ID being encouraged
+             * @example 507f1f77bcf86cd799439013
+             */
+            taskId?: string;
             /**
              * @description Task name
              * @example Complete project proposal
              */
-            taskName: string;
+            taskName?: string;
             /**
              * Format: date-time
              * @description Creation timestamp
@@ -3953,6 +3977,7 @@ export interface components {
             categories: components["schemas"]["CategoryDocument"][];
             /** Format: int64 */
             congratulations: number;
+            credits: components["schemas"]["UserCredits"];
             display_name: string;
             /** Format: int64 */
             encouragements: number;
@@ -4550,6 +4575,64 @@ export interface components {
             readonly $schema?: string;
             /** @example Task start date/time updated successfully */
             message: string;
+        };
+        UpdateTemplateDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTemplateDocument.json
+             */
+            readonly $schema?: string;
+            checklist?: components["schemas"]["ChecklistItem"][];
+            content?: string;
+            /** Format: date-time */
+            deadline?: string;
+            notes?: string;
+            /** Format: int64 */
+            priority?: number;
+            public?: boolean;
+            recurDetails?: components["schemas"]["RecurDetails"];
+            recurFrequency?: string;
+            recurType?: string;
+            reminders?: components["schemas"]["Reminder"][];
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            startTime?: string;
+            /** Format: double */
+            value?: number;
+        };
+        UpdateTemplateOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTemplateOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Template task updated successfully */
+            message: string;
+        };
+        UserCredits: {
+            /**
+             * Format: int64
+             * @description Analytics access credits
+             */
+            analytics: number;
+            /**
+             * Format: int64
+             * @description Blueprint creation credits
+             */
+            blueprint: number;
+            /**
+             * Format: int64
+             * @description Group creation credits
+             */
+            group: number;
+            /**
+             * Format: int64
+             * @description Voice task creation credits
+             */
+            voice: number;
         };
         UserExtendedReference: {
             /**
@@ -5636,7 +5719,12 @@ export interface operations {
     "find-users-by-phone-numbers": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5701,7 +5789,12 @@ export interface operations {
     "get-suggested-users": {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -9027,6 +9120,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-template": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTemplateDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTemplateOutputBody"];
                 };
             };
             /** @description Error */

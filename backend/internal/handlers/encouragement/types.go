@@ -169,14 +169,17 @@ func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 		Read:      e.Read,
 		Type:      e.Type,
 	}
-	
-	// Only include task fields for task-scoped encouragements
-	if e.Scope == "task" {
+
+	// Include task fields for task-scoped encouragements
+	// Also include them if scope is empty but task fields exist (for backwards compatibility)
+	if e.Scope == "task" || (e.Scope == "" && e.CategoryName != "") {
 		doc.CategoryName = e.CategoryName
 		doc.TaskName = e.TaskName
-		doc.TaskID = e.TaskID.Hex()
+		if !e.TaskID.IsZero() {
+			doc.TaskID = e.TaskID.Hex()
+		}
 	}
-	
+
 	return doc
 }
 

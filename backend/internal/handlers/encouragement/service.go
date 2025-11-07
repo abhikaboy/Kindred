@@ -62,7 +62,16 @@ func (s *Service) GetAllEncouragements(receiverID primitive.ObjectID) ([]Encoura
 	// Convert internal documents to API documents
 	results := make([]EncouragementDocument, len(internalResults))
 	for i, internal := range internalResults {
-		results[i] = *internal.ToAPI()
+		apiDoc := internal.ToAPI()
+		// DEBUG: Log the conversion to see what's happening
+		slog.Info("Converting encouragement to API format", 
+			"id", internal.ID.Hex(), 
+			"scope", internal.Scope, 
+			"categoryName", internal.CategoryName, 
+			"taskName", internal.TaskName,
+			"api_categoryName", apiDoc.CategoryName,
+			"api_taskName", apiDoc.TaskName)
+		results[i] = *apiDoc
 	}
 
 	return results, nil
