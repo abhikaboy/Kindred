@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { FlatList } from "react-native-gesture-handler";
 import { View, Image, Dimensions, Alert, TouchableOpacity } from "react-native";
@@ -11,6 +11,7 @@ import { createPostToBackend } from "@/api/post";
 import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
 import { ObjectId } from "bson";
 import { useAuth } from "@/hooks/useAuth";
+import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 
 export default function Caption() {
     const params = useLocalSearchParams();
@@ -23,6 +24,10 @@ export default function Caption() {
 
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
+    const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
+    
+    // Compute display text based on state
+    const groupDisplayText = selectedGroupId === null ? "All Friends" : (selectedGroupName || "Selected Group");
     
     // Use theme-appropriate placeholder
     const isDark = ThemedColor.background === '#000000' || ThemedColor.background === '#1a1a1a';
@@ -93,13 +98,16 @@ export default function Caption() {
                   }
                 : undefined;
 
+            const selectedGroups = getGroupIds();
+            
             const result = await createPostToBackend(
                 uploadResult.urls, 
                 data.caption, 
                 taskReference, 
                 undefined, 
                 taskInfo?.public ?? false,
-                uploadResult.sizeInfo
+                uploadResult.sizeInfo,
+                selectedGroups
             );
 
             // Update user stats locally if available
@@ -217,7 +225,7 @@ export default function Caption() {
                         }}
                         activeOpacity={0.7}>
                         <ThemedText>Who can see this post?</ThemedText>
-                        <ThemedText>All Friends</ThemedText>
+                        <ThemedText>{groupDisplayText}</ThemedText>
                     </TouchableOpacity>
                     <PrimaryButton
                         title={isPosting ? "Posting..." : "Post"}

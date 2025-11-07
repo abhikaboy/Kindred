@@ -123,6 +123,13 @@ type ChecklistItem struct {
 	Order     int    `bson:"order" json:"order"`
 }
 
+type UserCredits struct {
+	Voice      int `bson:"voice" json:"voice" doc:"Voice task creation credits"`
+	Blueprint  int `bson:"blueprint" json:"blueprint" doc:"Blueprint creation credits"`
+	Group      int `bson:"group" json:"group" doc:"Group creation credits"`
+	Analytics  int `bson:"analytics" json:"analytics" doc:"Analytics access credits"`
+}
+
 type User struct {
 	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
 	Email          string               `bson:"email" json:"email"`
@@ -148,6 +155,7 @@ type User struct {
 	StreakEligible  bool   `bson:"streakEligible" json:"streakEligible"`
 	Points          int    `bson:"points" json:"points"`
 	PostsMade       int    `bson:"posts_made" json:"posts_made"`
+	Credits         UserCredits `bson:"credits" json:"credits"`
 }
 
 type SafeUser struct {
@@ -165,6 +173,7 @@ type SafeUser struct {
 	StreakEligible  bool                 `bson:"streakEligible" json:"streakEligible"`
 	Points          int                  `bson:"points" json:"points"`
 	PostsMade       int                  `bson:"posts_made" json:"posts_made"`
+	Credits         UserCredits          `bson:"credits" json:"credits"`
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`

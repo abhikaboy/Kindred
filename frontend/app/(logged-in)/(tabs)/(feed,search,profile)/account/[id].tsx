@@ -27,6 +27,7 @@ import { type Profile, type RelationshipStatus} from "@/api/types";
 import { components } from "@/api/generated/types";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { getBlueprintById } from "@/api/blueprint";
+import ProfileEncouragementCard from "@/components/cards/ProfileEncouragementCard";
 
 export default function Profile() {
     const { id, blueprintId } = useLocalSearchParams();
@@ -153,7 +154,9 @@ export default function Profile() {
             />
             <ProfileHeader displayName={profile?.display_name || ""} handle={profile?.handle || ""} userId={profile?.id} />
 
-            <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
+            <View style={[styles.contentContainer, { marginTop: 20 + HEADER_HEIGHT }]}>
+                <View style={{ gap: 16 }}>
+
                 <View style={{ width: "100%" }}>
                     <ProfileStats
                         friendsCount={profile?.friends?.length || 0}
@@ -162,7 +165,18 @@ export default function Profile() {
                         onRelationshipChange={handleRelationshipChange}
                     />
                 </View>
+                { canViewPersonalContent && (
+
+                    <View>
+                    <ProfileEncouragementCard 
+                        userId={profile?.id} 
+                        userHandle={profile?.handle}
+                        userName={profile?.display_name}
+                        />
+                </View>
+                    )}
                 <TodayStats userId={profile?.id} />
+                </View>
                 {canViewPersonalContent ? (
                     <>
 

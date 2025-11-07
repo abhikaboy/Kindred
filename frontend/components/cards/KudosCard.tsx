@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { AttachStep } from "react-native-spotlight-tour";
-import { Fire, Confetti } from "phosphor-react-native";
+import { Sparkle, Confetti } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
 import { useKudos } from "@/contexts/kudosContext";
@@ -27,7 +27,7 @@ export const KudosCards: React.FC = () => {
                     totalCount={totalEncouragementCount}
                     maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
                     type="encouragements"
-                    icon={<Fire size={22} weight="fill" color={ThemedColor.primary} />}
+                    icon={<Sparkle size={22} weight="regular" color="#9333EA" />}
                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}
                     hasUnread={hasUnreadEncouragements}
                     ThemedColor={ThemedColor}

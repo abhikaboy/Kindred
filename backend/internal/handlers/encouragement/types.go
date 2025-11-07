@@ -113,9 +113,10 @@ func (s *EncouragementSenderInternal) ToAPI() *EncouragementSender {
 type CreateEncouragementParams struct {
 	Receiver     string `json:"receiver" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID" validate:"required"`
 	Message      string `json:"message" example:"Great job on completing your task!" doc:"Encouragement message" validate:"required"`
-	CategoryName string `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
-	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
-	TaskID       string `json:"taskId" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged" validate:"required"`
+	Scope        string `json:"scope" example:"task" doc:"Scope of encouragement (task or profile)" validate:"omitempty,oneof=task profile"`
+	CategoryName string `json:"categoryName,omitempty" example:"Work" doc:"Category name (required for task scope)"`
+	TaskName     string `json:"taskName,omitempty" example:"Complete project proposal" doc:"Task name (required for task scope)"`
+	TaskID       string `json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID (required for task scope)"`
 	Type         string `json:"type" example:"message" doc:"Type of encouragement (message or image)" validate:"omitempty,oneof=message image"`
 }
 
@@ -125,9 +126,10 @@ type EncouragementDocument struct {
 	Receiver     string              `bson:"receiver" json:"receiver" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID"`
 	Message      string              `bson:"message" json:"message" example:"Great job on completing your task!" doc:"Encouragement message"`
 	Timestamp    time.Time           `bson:"timestamp" json:"timestamp" example:"2023-01-01T00:00:00Z" doc:"Creation timestamp"`
-	CategoryName string              `bson:"categoryName" json:"categoryName" example:"Work" doc:"Category name"`
-	TaskName     string              `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
-	TaskID       string              `bson:"taskId" json:"taskId" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged"`
+	Scope        string              `bson:"scope" json:"scope" example:"task" doc:"Scope of encouragement (task or profile)"`
+	CategoryName string              `bson:"categoryName,omitempty" json:"categoryName,omitempty" example:"Work" doc:"Category name"`
+	TaskName     string              `bson:"taskName,omitempty" json:"taskName,omitempty" example:"Complete project proposal" doc:"Task name"`
+	TaskID       string              `bson:"taskId,omitempty" json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged"`
 	Read         bool                `bson:"read" json:"read" example:"false" doc:"Whether the encouragement has been read"`
 	Type         string              `bson:"type" json:"type" example:"message" doc:"Type of encouragement (message or image)"`
 }
@@ -139,9 +141,10 @@ type EncouragementDocumentInternal struct {
 	Receiver     primitive.ObjectID          `bson:"receiver"`
 	Message      string                      `bson:"message"`
 	Timestamp    time.Time                   `bson:"timestamp"`
-	CategoryName string                      `bson:"categoryName"`
-	TaskName     string                      `bson:"taskName"`
-	TaskID       primitive.ObjectID          `bson:"taskId"`
+	Scope        string                      `bson:"scope"`
+	CategoryName string                      `bson:"categoryName,omitempty"`
+	TaskName     string                      `bson:"taskName,omitempty"`
+	TaskID       primitive.ObjectID          `bson:"taskId,omitempty"`
 	Read         bool                        `bson:"read"`
 	Type         string                      `bson:"type"`
 }
@@ -156,18 +159,25 @@ type UpdateEncouragementDocument struct {
 
 // Helper functions to convert between internal and API types
 func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
-	return &EncouragementDocument{
-		ID:           e.ID.Hex(),
-		Sender:       *e.Sender.ToAPI(),
-		Receiver:     e.Receiver.Hex(),
-		Message:      e.Message,
-		Timestamp:    e.Timestamp,
-		CategoryName: e.CategoryName,
-		TaskName:     e.TaskName,
-		TaskID:       e.TaskID.Hex(),
-		Read:         e.Read,
-		Type:         e.Type,
+	doc := &EncouragementDocument{
+		ID:        e.ID.Hex(),
+		Sender:    *e.Sender.ToAPI(),
+		Receiver:  e.Receiver.Hex(),
+		Message:   e.Message,
+		Timestamp: e.Timestamp,
+		Scope:     e.Scope,
+		Read:      e.Read,
+		Type:      e.Type,
 	}
+	
+	// Only include task fields for task-scoped encouragements
+	if e.Scope == "task" {
+		doc.CategoryName = e.CategoryName
+		doc.TaskName = e.TaskName
+		doc.TaskID = e.TaskID.Hex()
+	}
+	
+	return doc
 }
 
 /*

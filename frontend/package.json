@@ -19,6 +19,7 @@
     "@expo/server": "^0.7.5",
     "@expo/vector-icons": "^15.0.2",
     "@gorhom/bottom-sheet": "^5.2.6",
+    "@gorhom/portal": "^1.0.14",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/slider": "5.0.1",

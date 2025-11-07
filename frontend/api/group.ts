@@ -22,7 +22,8 @@ export const getUserGroups = async (): Promise<GroupDocument[]> => {
         throw new Error(`Failed to fetch groups: ${JSON.stringify(error)}`);
     }
 
-    return (data?.body as any)?.groups || [];
+    // Response structure: { groups: [...] }
+    return (data as any)?.groups || [];
 };
 
 /**
@@ -40,7 +41,8 @@ export const getGroupById = async (groupId: string): Promise<GroupDocument> => {
         throw new Error(`Failed to fetch group: ${JSON.stringify(error)}`);
     }
 
-    return data?.body as GroupDocument;
+    // Response is the group document directly
+    return data as unknown as GroupDocument;
 };
 
 /**
@@ -62,7 +64,8 @@ export const createGroup = async (params: CreateGroupParams): Promise<GroupDocum
         throw new Error(`Failed to create group: ${JSON.stringify(error)}`);
     }
 
-    const result = data?.body as GroupDocument;
+    // The response data IS the group document (not nested under body)
+    const result = data as unknown as GroupDocument;
     console.log('🔵 createGroup returning:', result);
     return result;
 };

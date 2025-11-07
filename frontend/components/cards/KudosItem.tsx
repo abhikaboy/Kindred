@@ -14,8 +14,9 @@ interface KudosData {
     id: string;
     sender: KudosSender;
     message: string;
-    categoryName: string;
-    taskName: string;
+    scope?: string; // "task" or "profile" (optional for backwards compatibility)
+    categoryName?: string;
+    taskName?: string;
     timestamp: string;
     read: boolean;
     type?: string; // "message" or "image" (optional for backwards compatibility)
@@ -31,6 +32,7 @@ export default function KudosItem({ kudos, formatTime }: KudosItemProps) {
     const styles = createStyles(ThemedColor);
 
     const isImage = kudos.type === "image";
+    const isProfileLevel = kudos.scope === "profile" || (!kudos.taskName && !kudos.categoryName);
 
     return (
         <View style={styles.kudosItem}>
@@ -55,20 +57,28 @@ export default function KudosItem({ kudos, formatTime }: KudosItemProps) {
                 {/* Unread Indicator */}
                 {!kudos.read && <View style={styles.unreadDot} />}
 
-                {/* Task Info */}
-                <View style={styles.taskInfo}>
-                    <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
-                        {kudos.categoryName} 
-                    </ThemedText>
-                    <View style={styles.dot} />
-                    <ThemedText
-                        type="default"
-                        style={{ ...styles.taskName, color: ThemedColor.primary }}
-                        numberOfLines={1}
-                    >
-                        {kudos.taskName}
-                    </ThemedText>
-                </View>
+                {/* Task Info or Profile Label */}
+                {isProfileLevel ? (
+                    <View style={styles.taskInfo}>
+                        <ThemedText type="default" style={styles.categoryText}>
+                            Profile Encouragement 🎉
+                        </ThemedText>
+                    </View>
+                ) : (
+                    <View style={styles.taskInfo}>
+                        <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
+                            {kudos.categoryName} 
+                        </ThemedText>
+                        <View style={styles.dot} />
+                        <ThemedText
+                            type="default"
+                            style={{ ...styles.taskName, color: ThemedColor.primary }}
+                            numberOfLines={1}
+                        >
+                            {kudos.taskName}
+                        </ThemedText>
+                    </View>
+                )}
 
                 {/* Message or Image */}
                 <View style={styles.contentContainer}>

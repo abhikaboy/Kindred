@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { PortalProvider } from "@gorhom/portal";
 import { Accelerometer } from "expo-sensors";
 
 // Import components and contexts after the core modules
@@ -30,6 +31,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence } from "moti";
 import * as Sentry from "@sentry/react-native";
 import { KudosProvider } from "@/contexts/kudosContext";
+import { SelectedGroupProvider } from "@/contexts/SelectedGroupContext";
 
 Sentry.init({
     dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
@@ -142,23 +144,27 @@ export default Sentry.wrap(function RootLayout() {
                                     <TasksProvider>
                                         <TaskCreationProvider>
                                             <BlueprintCreationProvider>
-                                                <DrawerProvider>
-                                                    <GestureHandlerRootView style={{ flex: 1 }}>
-                                                        <BottomSheetModalProvider>
-                                                            <Toastable
-                                                                statusMap={{
-                                                                    success: ThemedColor.success,
-                                                                    danger: ThemedColor.error,
-                                                                    warning: ThemedColor.warning,
-                                                                    info: ThemedColor.primary,
-                                                                }}
-                                                                offset={top}
-                                                            />
-                                                            <Slot />
-                                                            <StatusBar style="light" />
-                                                        </BottomSheetModalProvider>
-                                                    </GestureHandlerRootView>
-                                                </DrawerProvider>
+                                                <SelectedGroupProvider>
+                                                    <DrawerProvider>
+                                                        <GestureHandlerRootView style={{ flex: 1 }}>
+                                                            <PortalProvider>
+                                                                <BottomSheetModalProvider>
+                                                                    <Toastable
+                                                                        statusMap={{
+                                                                            success: ThemedColor.success,
+                                                                            danger: ThemedColor.error,
+                                                                            warning: ThemedColor.warning,
+                                                                            info: ThemedColor.primary,
+                                                                        }}
+                                                                        offset={top}
+                                                                    />
+                                                                    <Slot />
+                                                                    <StatusBar style="light" />
+                                                                </BottomSheetModalProvider>
+                                                            </PortalProvider>
+                                                        </GestureHandlerRootView>
+                                                    </DrawerProvider>
+                                                </SelectedGroupProvider>
                                             </BlueprintCreationProvider>
                                         </TaskCreationProvider>
                                     </TasksProvider>

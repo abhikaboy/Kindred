@@ -119,11 +119,11 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "flex-start",
-        padding: 16,
+        padding: 12,
         borderRadius: 12,
         gap: 12,
         width: "48%",
-        minHeight: 70.5,
+        minHeight: 68.5,
     },
     iconContainer: {
         width: 32,

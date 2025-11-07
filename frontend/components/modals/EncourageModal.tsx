@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, Modal } from "react-native";
+import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, Modal, Animated } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -10,8 +10,10 @@ import { createEncouragementAPI } from "@/api/encouragement";
 import { useAuth } from "@/hooks/useAuth";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import { uploadImageSmart } from "@/api/upload";
-import { Images, Gif } from "phosphor-react-native";
+import { Images, Gif, Sparkle } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
+import { LinearGradient } from "expo-linear-gradient";
+import { Portal } from "@gorhom/portal";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -28,9 +30,10 @@ interface EncourageModalProps {
         receiverId: string; // ID of the user receiving the encouragement
         categoryName: string; // Name of the category the task belongs to
     };
+    isProfileLevel?: boolean; // New prop to indicate profile-level encouragement
 }
 
-export default function EncourageModal({ visible, setVisible, task, encouragementConfig }: EncourageModalProps) {
+export default function EncourageModal({ visible, setVisible, task, encouragementConfig, isProfileLevel = false }: EncourageModalProps) {
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
     const [encouragementMessage, setEncouragementMessage] = useState("");
@@ -40,7 +43,38 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const isMountedRef = useRef(true);
     const { pickImage } = useMediaLibrary();
 
+    // Purple glow animation
+    const glowOpacity = useRef(new Animated.Value(0)).current;
+
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
+
+    // Purple glow animation effect
+    useEffect(() => {
+        if (visible) {
+            // Start the pulsing animation
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(glowOpacity, {
+                        toValue: 0.3,
+                        duration: 2000,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(glowOpacity, {
+                        toValue: 0.1,
+                        duration: 2000,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            // Fade out when closing
+            Animated.timing(glowOpacity, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [visible]);
 
     // Track mounted state and reset when modal opens
     useEffect(() => {
@@ -87,9 +121,17 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     };
 
     const handleSendEncouragement = async () => {
-        if (!encouragementConfig?.receiverId || !task || !encouragementConfig?.categoryName) {
-            Alert.alert("Error", "Missing required information to send encouragement");
-            return;
+        // Validation for profile vs task level
+        if (isProfileLevel) {
+            if (!encouragementConfig?.receiverId) {
+                Alert.alert("Error", "Missing required information to send encouragement");
+                return;
+            }
+        } else {
+            if (!encouragementConfig?.receiverId || !task || !encouragementConfig?.categoryName) {
+                Alert.alert("Error", "Missing required information to send encouragement");
+                return;
+            }
         }
 
         if (encouragementsLeft <= 0) {
@@ -136,18 +178,26 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 }
             }
 
-            // Create the encouragement data
-            const encouragementData = {
-                receiver: encouragementConfig.receiverId,
-                message: contentToSend,
-                categoryName: encouragementConfig.categoryName,
-                taskName: task.content,
-                taskId: task.id,
-                type: encouragementType,
-            };
+            // Create the encouragement data based on scope
+            const encouragementData = isProfileLevel
+                ? {
+                    receiver: encouragementConfig.receiverId,
+                    message: contentToSend,
+                    scope: "profile" as const,
+                    type: encouragementType,
+                }
+                : {
+                    receiver: encouragementConfig.receiverId,
+                    message: contentToSend,
+                    scope: "task" as const,
+                    categoryName: encouragementConfig.categoryName,
+                    taskName: task!.content,
+                    taskId: task!.id,
+                    type: encouragementType,
+                };
 
             // Make the API call
-            await createEncouragementAPI(encouragementData);
+            await createEncouragementAPI(encouragementData as any);
 
             // Only update state if component is still mounted
             if (!isMountedRef.current) return;
@@ -185,35 +235,83 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     };
 
     return (
-        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>
-            <View style={styles.container}>
-                {/* Task Card */}
-                <View style={styles.taskCardContainer}>
-                    {task && (
-                        <View style={styles.taskCardStyled}>
-                            <View style={styles.taskCardContent}>
-                                <ThemedText type="default" style={styles.taskTextStyled}>
-                                    {task.content}
-                                </ThemedText>
-                                <View style={styles.taskCardRight}>
-                                    <ThemedText type="caption" style={styles.taskValueStyled}>
-                                        {task.value}
+        <>
+            {/* Full Screen Purple Glow - Using Portal for root-level rendering */}
+            {visible && (
+                <Portal>
+                    <Animated.View 
+                        style={[
+                            styles.fullScreenGlowWrapper,
+                            { opacity: glowOpacity }
+                        ]}
+                        pointerEvents="box-none"
+                    >
+                        {/* Top Border Glow */}
+                        <LinearGradient
+                            colors={['rgba(147, 51, 234, 0.8)', 'transparent']}
+                            style={styles.glowBorderTop}
+                            pointerEvents="none"
+                        />
+                        {/* Bottom Border Glow */}
+                        <LinearGradient
+                            colors={['transparent', 'rgba(147, 51, 234, 0.8)']}
+                            style={styles.glowBorderBottom}
+                            pointerEvents="none"
+                        />
+                        {/* Left Border Glow */}
+                        <LinearGradient
+                            colors={['rgba(147, 51, 234, 0.8)', 'transparent']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.glowBorderLeft}
+                            pointerEvents="none"
+                        />
+                        {/* Right Border Glow */}
+                        <LinearGradient
+                            colors={['transparent', 'rgba(147, 51, 234, 0.8)']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.glowBorderRight}
+                            pointerEvents="none"
+                        />
+                    </Animated.View>
+                </Portal>
+            )}
+            
+            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>
+                <View style={styles.container}>
+                {/* Task Card - Only show for task-level encouragements */}
+                {!isProfileLevel && (
+                    <View style={styles.taskCardContainer}>
+                        {task && (
+                            <View style={styles.taskCardStyled}>
+                                <View style={styles.taskCardContent}>
+                                    <ThemedText type="default" style={styles.taskTextStyled}>
+                                        {task.content}
                                     </ThemedText>
-                                    <Octicons name="flame" size={24} color={ThemedColor.error} />
+                                    <View style={styles.taskCardRight}>
+                                        <ThemedText type="caption" style={styles.taskValueStyled}>
+                                            {task.value}
+                                        </ThemedText>
+                                        <Sparkle size={24} color="#9333EA" weight="regular" />
+                                    </View>
                                 </View>
                             </View>
-                        </View>
-                    )}
-                </View>
+                        )}  
+                    </View>
+                )}
 
                 {/* Title */}
                 <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
-                    Encourage {encouragementConfig?.userHandle || "User"}
+                    {isProfileLevel ? "Send Profile Encouragement" : `Encourage ${encouragementConfig?.userHandle || "User"}`}
                 </ThemedText>
 
                 {/* Description */}
                 <ThemedText type="lightBody" style={styles.descriptionStyled}>
-                    {encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement
+                    {isProfileLevel 
+                        ? `Send a personal encouragement to ${encouragementConfig?.userHandle || "User"}!`
+                        : `${encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement`
+                    }
                 </ThemedText>
 
                 {/* Text Input or Image Preview */}
@@ -301,6 +399,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 </View>
             </Modal>
         </DefaultModal>
+        </>
     );
 }
 
@@ -322,7 +421,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderWidth: 1,
             minHeight: 55,
             justifyContent: "center",
-            boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
+            boxShadow: "0px 0px 5px 2px " + "#9333EA" + "30",
         },
         taskCardStyled: {
             paddingHorizontal: 20,
@@ -479,5 +578,45 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         gifPickerTitle: {
             fontSize: 18,
+        },
+        fullScreenGlowWrapper: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: Dimensions.get("window").width,
+            height: Dimensions.get("window").height,
+            backgroundColor: "transparent",
+            zIndex: 999,
+            elevation: 999,
+        },
+        glowBorderTop: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+        },
+        glowBorderBottom: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+        },
+        glowBorderLeft: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: 80,
+        },
+        glowBorderRight: {
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 80,
         },
     });

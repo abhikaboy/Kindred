@@ -22,6 +22,25 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
 	}
 
+	// Default scope to "task" if not provided
+	scope := input.Body.Scope
+	if scope == "" {
+		scope = "task"
+	}
+
+	// Custom validation based on scope
+	if scope == "task" {
+		if input.Body.TaskID == "" {
+			return nil, huma.Error400BadRequest("TaskID is required for task scope", nil)
+		}
+		if input.Body.TaskName == "" {
+			return nil, huma.Error400BadRequest("TaskName is required for task scope", nil)
+		}
+		if input.Body.CategoryName == "" {
+			return nil, huma.Error400BadRequest("CategoryName is required for task scope", nil)
+		}
+	}
+
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
@@ -38,10 +57,15 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		return nil, huma.Error400BadRequest("Invalid receiver ID format", err)
 	}
 
-	taskID, err := primitive.ObjectIDFromHex(input.Body.TaskID)
-	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	// Handle TaskID based on scope
+	var taskID primitive.ObjectID
+	if scope == "task" {
+		taskID, err = primitive.ObjectIDFromHex(input.Body.TaskID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("Invalid task ID format", err)
+		}
 	}
+	// For profile scope, taskID remains as zero value
 
 	// Get sender information from the users collection
 	senderInfo, err := h.service.GetSenderInfo(senderID)
@@ -61,6 +85,7 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		Sender:       *senderInfo,
 		Receiver:     receiverID,
 		Message:      input.Body.Message,
+		Scope:        scope,
 		CategoryName: input.Body.CategoryName,
 		TaskName:     input.Body.TaskName,
 		TaskID:       taskID,

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -8,41 +8,40 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import GroupListItem from "@/components/posting/GroupListItem";
 import GroupInfoBanner from "@/components/posting/GroupInfoBanner";
 import { useGroups } from "@/hooks/useGroups";
+import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function GroupSelection() {
     const ThemedColor = useThemeColor();
-    const { groups, isLoading } = useGroups();
-    
-    // null = All Friends, string = specific group ID
-    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+    const { groups, isLoading, refresh } = useGroups();
+    const [refreshing, setRefreshing] = useState(false);
+    const { selectedGroupId, setSelectedGroup } = useSelectedGroup();
 
     const handleBack = () => {
         router.back();
     };
 
-    const handleGroupPress = (groupId: string) => {
-        // When selecting a group, deselect "All Friends"
-        setSelectedGroupId(groupId);
+    const handleGroupPress = (groupId: string, groupName: string) => {
+        setSelectedGroup(groupId, groupName);
     };
 
     const handleAllFriendsPress = () => {
-        // When selecting "All Friends", deselect any group
-        setSelectedGroupId(null);
+        setSelectedGroup(null, null);
     };
 
     const handleConfirm = () => {
-        // TODO: Pass selected group back to posting flow via route params or context
-        if (selectedGroupId === null) {
-            console.log("Selected: All Friends");
-        } else {
-            console.log("Selected group:", selectedGroupId);
-        }
+        // Group selection is stored in zustand, so just go back
         router.back();
     };
 
     const handleNewGroup = () => {
         router.push("/(logged-in)/posting/newgroup");
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refresh();
+        setRefreshing(false);
     };
 
     return (
@@ -76,8 +75,16 @@ export default function GroupSelection() {
                 <ScrollView 
                     style={styles.scrollView}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={ThemedColor.primary}
+                            colors={[ThemedColor.primary]}
+                        />
+                    }
                 >
-                    {isLoading ? (
+                    {isLoading && !refreshing ? (
                         <View style={styles.loadingContainer}>
                             <ActivityIndicator size="large" color={ThemedColor.primary} />
                         </View>
@@ -92,17 +99,17 @@ export default function GroupSelection() {
                                 onPress={handleAllFriendsPress}
                             />
 
-                            {/* User's Groups */}
-                            {groups.filter(group => group?._id).map((group) => (
-                                <GroupListItem
-                                    key={group._id}
-                                    groupName={group?.name || "Unnamed Group"}
-                                    members={group?.members || []}
-                                    memberCount={(group?.members || []).length}
-                                    isSelected={selectedGroupId === group._id}
-                                    onPress={() => handleGroupPress(group._id)}
-                                />
-                            ))}
+                {/* User's Groups */}
+                {groups.filter(group => group?._id).map((group) => (
+                    <GroupListItem
+                        key={group._id}
+                        groupName={group?.name || "Unnamed Group"}
+                        members={group?.members || []}
+                        memberCount={(group?.members || []).length}
+                        isSelected={selectedGroupId === group._id}
+                        onPress={() => handleGroupPress(group._id, group?.name || "Unnamed Group")}
+                    />
+                ))}
 
                             {/* New Group Button */}
                             <TouchableOpacity

@@ -298,6 +298,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		StreakEligible:  true,
 		Points:          0,
 		PostsMade:       0,
+		Credits:         types.GetDefaultCredits(),
 
 		AppleID:  aaid.(string),
 		GoogleID: googleid.(string),

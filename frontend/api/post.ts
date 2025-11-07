@@ -24,6 +24,8 @@ export type Post = PostDocumentAPI;
  * @param taskReference 
  * @param blueprintId 
  * @param isPublic
+ * @param size
+ * @param groups - Array of group IDs to share the post with
  */
 export const createPost = async (
     images: string[],
@@ -31,7 +33,8 @@ export const createPost = async (
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
     blueprintId?: string,
     isPublic: boolean = true,
-    size?: { width: number; height: number; bytes: number }
+    size?: { width: number; height: number; bytes: number },
+    groups?: string[]
 ): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {    
     const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
@@ -41,7 +44,8 @@ export const createPost = async (
             task: taskReference,  
             blueprintId, 
             isPublic,
-            size
+            size,
+            groups
         },
     });
 
@@ -367,10 +371,11 @@ export const createPostToBackend = async (
     taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
     blueprintId?: string, 
     isPublic: boolean = false,
-    size?: { width: number; height: number; bytes: number }
+    size?: { width: number; height: number; bytes: number },
+    groups?: string[]
 ): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
     try {
-        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size);
+        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups);
         return result;
     } catch (error) {
         console.log(`Failed to create post to backend: ${JSON.stringify(error)}`);
