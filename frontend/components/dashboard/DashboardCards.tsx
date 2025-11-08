@@ -19,7 +19,7 @@ const DashboardCards = (props: Props) => {
     const cards = [
         {
             title: "Daily View",
-            icon: <Bird size={28} weight="light" color={ThemedColor.text} />,
+            icon: <Bird size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 router.push({
                     pathname: "/(logged-in)/(tabs)/(task)/daily",
@@ -29,14 +29,14 @@ const DashboardCards = (props: Props) => {
         },
         {
             title: "Voice Dump",
-            icon: <Microphone size={28} weight="light" color={ThemedColor.text} />,
+            icon: <Microphone size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 router.push("/voice");
             },
         },
         {
             title: "Calendar",
-            icon: <Calendar size={28} weight="light" color={ThemedColor.text} />,
+            icon: <Calendar size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 router.push({
                     pathname: "/(logged-in)/(tabs)/(task)/calendar",
@@ -46,7 +46,7 @@ const DashboardCards = (props: Props) => {
         },
         {
             title: "Analytics",
-            icon: <ChartBar size={28} weight="light" color={ThemedColor.text} />,
+            icon: <ChartBar size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 router.push({
                     pathname: "/(logged-in)/(tabs)/(task)/analytics",
@@ -56,7 +56,7 @@ const DashboardCards = (props: Props) => {
         },
         {
             title: "Workspaces",
-            icon: <BookBookmark size={28} weight="light" color={ThemedColor.text} />,
+            icon: <BookBookmark size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 props.drawerRef?.current?.openDrawer();
             },

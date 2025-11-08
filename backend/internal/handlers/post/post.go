@@ -199,13 +199,14 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		offset = 0
 	}
 
-	// Fetch more items than requested to account for interleaving
-	// We want to interleave 1 task per 5 posts, so we need roughly 83% posts and 17% tasks
-	postsNeeded := int(float64(limit) * 0.83)
+	// New interleaving strategy: 14 posts + 3 profiles + 3 tasks per 20 items
+	// This gives us 70% posts, 15% profiles, 15% tasks
+	postsNeeded := int(float64(limit) * 0.70)
 	if postsNeeded < 1 {
 		postsNeeded = 1
 	}
-	tasksNeeded := limit - postsNeeded
+	profilesNeeded := int(float64(limit) * 0.15)
+	tasksNeeded := limit - postsNeeded - profilesNeeded
 
 	// Get friends posts
 	posts, postsTotal, err := h.service.GetFriendsPosts(userID, postsNeeded, offset)
@@ -219,24 +220,45 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		tasks = []bson.M{} // Empty tasks if there's an error
 	}
 
-	// Adaptive fetching: if we got fewer posts than expected, fetch more tasks to fill the feed
-	if len(posts) < postsNeeded && len(tasks) < limit {
-		additionalTasksNeeded := limit - len(posts) - len(tasks)
-		if additionalTasksNeeded > 0 {
-			moreTasks, _, err := h.service.GetFriendsPublicTasks(userID, additionalTasksNeeded, len(tasks))
-			if err == nil {
-				tasks = append(tasks, moreTasks...)
-			}
-		}
+	// Get friends for profile encouragements
+	profiles, profilesTotal, err := h.service.GetFriendsForProfileEncouragement(userID, profilesNeeded, offset)
+	if err != nil {
+		profiles = []types.SafeUser{} // Empty profiles if there's an error
 	}
 
-	// Adaptive fetching: if we got fewer tasks than expected, fetch more posts to fill the feed
-	if len(tasks) < tasksNeeded && len(posts) < limit {
-		additionalPostsNeeded := limit - len(posts) - len(tasks)
-		if additionalPostsNeeded > 0 {
-			morePosts, _, err := h.service.GetFriendsPosts(userID, additionalPostsNeeded, len(posts))
+	// Adaptive fetching: balance posts, tasks, and profiles to fill the feed
+	totalFetched := len(posts) + len(tasks) + len(profiles)
+	if totalFetched < limit {
+		shortage := limit - totalFetched
+		
+		// Try to fetch more posts first
+		if len(posts) < postsNeeded {
+			additionalPostsNeeded := shortage
+			if additionalPostsNeeded > 0 {
+				morePosts, _, err := h.service.GetFriendsPosts(userID, additionalPostsNeeded, len(posts))
+				if err == nil {
+					posts = append(posts, morePosts...)
+					totalFetched = len(posts) + len(tasks) + len(profiles)
+					shortage = limit - totalFetched
+				}
+			}
+		}
+		
+		// Then try tasks if still short
+		if shortage > 0 && len(tasks) < tasksNeeded {
+			moreTasks, _, err := h.service.GetFriendsPublicTasks(userID, shortage, len(tasks))
 			if err == nil {
-				posts = append(posts, morePosts...)
+				tasks = append(tasks, moreTasks...)
+				totalFetched = len(posts) + len(tasks) + len(profiles)
+				shortage = limit - totalFetched
+			}
+		}
+		
+		// Finally try profiles if still short
+		if shortage > 0 && len(profiles) < profilesNeeded {
+			moreProfiles, _, err := h.service.GetFriendsForProfileEncouragement(userID, shortage, len(profiles))
+			if err == nil {
+				profiles = append(profiles, moreProfiles...)
 			}
 		}
 	}
@@ -276,10 +298,29 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		feedTasks = append(feedTasks, feedTask)
 	}
 
-	// Interleave posts and tasks: 1 task as 2nd item, then 1 task after every 5 posts
+	// Convert profiles to FeedProfileData
+	var feedProfiles []FeedProfileData
+	for _, profile := range profiles {
+		feedProfile := FeedProfileData{
+			User: &types.UserExtendedReference{
+				ID:             profile.ID.Hex(),
+				Handle:         profile.Handle,
+				DisplayName:    profile.DisplayName,
+				ProfilePicture: profile.ProfilePicture,
+			},
+			TasksComplete: profile.TasksComplete,
+			Streak:        profile.Streak,
+			Points:        profile.Points,
+		}
+		feedProfiles = append(feedProfiles, feedProfile)
+	}
+
+	// Interleave posts, profiles, and tasks
+	// Pattern: Post → Profile (2nd position) → Posts and Tasks/Profiles interspersed
 	var feedItems []FeedItem
 	postIdx := 0
 	taskIdx := 0
+	profileIdx := 0
 
 	// Add first post if available
 	if postIdx < len(apiPosts) && len(feedItems) < limit {
@@ -291,19 +332,21 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		postIdx++
 	}
 
-	// Add first task as 2nd item if available
-	if taskIdx < len(feedTasks) && len(feedItems) < limit {
-		task := feedTasks[taskIdx]
+	// Add first profile as 2nd item if available (per user requirement)
+	if profileIdx < len(feedProfiles) && len(feedItems) < limit {
+		profile := feedProfiles[profileIdx]
 		feedItems = append(feedItems, FeedItem{
-			Type: "task",
-			Task: &task,
+			Type:    "profile",
+			Profile: &profile,
 		})
-		taskIdx++
+		profileIdx++
 	}
 
-	// Continue interleaving: 5 posts, then 1 task
-	for len(feedItems) < limit && (postIdx < len(apiPosts) || taskIdx < len(feedTasks)) {
-		// Add up to 5 posts
+	// Continue interleaving: prioritize posts, then alternate tasks and profiles
+	// Pattern after first 2: Posts (4-5) → Task → Posts (4-5) → Profile → repeat
+	postsInBatch := 0
+	for len(feedItems) < limit && (postIdx < len(apiPosts) || taskIdx < len(feedTasks) || profileIdx < len(feedProfiles)) {
+		// Add posts (4-5 at a time)
 		for i := 0; i < 5 && postIdx < len(apiPosts) && len(feedItems) < limit; i++ {
 			post := apiPosts[postIdx]
 			feedItems = append(feedItems, FeedItem{
@@ -311,21 +354,84 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 				Post: &post,
 			})
 			postIdx++
+			postsInBatch++
 		}
 
-		// Add 1 task after 5 posts
-		if taskIdx < len(feedTasks) && len(feedItems) < limit {
+		// After a batch of posts, alternate between adding a task and a profile
+		if postsInBatch >= 4 {
+			// Add task if available
+			if taskIdx < len(feedTasks) && len(feedItems) < limit {
+				task := feedTasks[taskIdx]
+				feedItems = append(feedItems, FeedItem{
+					Type: "task",
+					Task: &task,
+				})
+				taskIdx++
+			}
+			
+			// Reset batch counter
+			postsInBatch = 0
+			
+			// Add profile if available after another small batch
+			if profileIdx < len(feedProfiles) && len(feedItems) < limit && postIdx < len(apiPosts) {
+				// Add a few more posts first
+				for i := 0; i < 3 && postIdx < len(apiPosts) && len(feedItems) < limit; i++ {
+					post := apiPosts[postIdx]
+					feedItems = append(feedItems, FeedItem{
+						Type: "post",
+						Post: &post,
+					})
+					postIdx++
+				}
+				
+				// Then add profile
+				profile := feedProfiles[profileIdx]
+				feedItems = append(feedItems, FeedItem{
+					Type:    "profile",
+					Profile: &profile,
+				})
+				profileIdx++
+			}
+		}
+	}
+
+	// Fill remaining slots if we haven't reached the limit
+	for len(feedItems) < limit {
+		added := false
+		
+		if postIdx < len(apiPosts) {
+			post := apiPosts[postIdx]
+			feedItems = append(feedItems, FeedItem{
+				Type: "post",
+				Post: &post,
+			})
+			postIdx++
+			added = true
+		} else if taskIdx < len(feedTasks) {
 			task := feedTasks[taskIdx]
 			feedItems = append(feedItems, FeedItem{
 				Type: "task",
 				Task: &task,
 			})
 			taskIdx++
+			added = true
+		} else if profileIdx < len(feedProfiles) {
+			profile := feedProfiles[profileIdx]
+			feedItems = append(feedItems, FeedItem{
+				Type:    "profile",
+				Profile: &profile,
+			})
+			profileIdx++
+			added = true
+		}
+		
+		if !added {
+			break
 		}
 	}
 
 	// Calculate total items and pagination
-	totalItems := postsTotal + tasksTotal
+	totalItems := postsTotal + tasksTotal + profilesTotal
 	hasMore := offset+len(feedItems) < totalItems
 
 	output := &GetFeedOutput{}

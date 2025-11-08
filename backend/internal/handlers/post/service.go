@@ -598,6 +598,89 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 	return tasks, total, nil
 }
 
+// GetFriendsForProfileEncouragement fetches friends' profile data for encouragement suggestions
+func (s *Service) GetFriendsForProfileEncouragement(userID primitive.ObjectID, limit, offset int) ([]types.SafeUser, int, error) {
+	ctx := context.Background()
+
+	// Set default limit if not provided
+	if limit <= 0 {
+		limit = 3
+	}
+
+	// Build aggregation pipeline to get friends' profile data
+	pipeline := mongo.Pipeline{
+		// Stage 1: Match the specific user
+		{{Key: "$match", Value: bson.M{"_id": userID}}},
+
+		// Stage 2: Lookup friends from users collection based on friends array
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "users",
+			"localField":   "friends",
+			"foreignField": "_id",
+			"as":           "friendsData",
+		}}},
+
+		// Stage 3: Unwind friends array
+		{{Key: "$unwind", Value: "$friendsData"}},
+
+		// Stage 4: Replace root with friend document
+		{{Key: "$replaceRoot", Value: bson.M{
+			"newRoot": "$friendsData",
+		}}},
+
+		// Stage 5: Project only the fields we need
+		{{Key: "$project", Value: bson.M{
+			"_id":             1,
+			"display_name":    1,
+			"handle":          1,
+			"profile_picture": 1,
+			"tasks_complete":  1,
+			"streak":          1,
+			"points":          1,
+			"encouragements":  1,
+		}}},
+
+		// Stage 6: Sample randomly to get diverse profiles
+		{{Key: "$sample", Value: bson.M{
+			"size": limit + offset,
+		}}},
+	}
+
+	cursor, err := s.Users.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to aggregate friends for profile encouragement: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var allFriends []types.SafeUser
+	if err := cursor.All(ctx, &allFriends); err != nil {
+		return nil, 0, fmt.Errorf("failed to decode friends: %w", err)
+	}
+
+	// Apply offset and limit after sampling
+	total := len(allFriends)
+	if offset >= len(allFriends) {
+		return []types.SafeUser{}, total, nil
+	}
+
+	end := offset + limit
+	if end > len(allFriends) {
+		end = len(allFriends)
+	}
+
+	friends := allFriends[offset:end]
+
+	slog.Info("Friends for profile encouragement fetched",
+		"userId", userID.Hex(),
+		"count", len(friends),
+		"total", total,
+		"limit", limit,
+		"offset", offset,
+	)
+
+	return friends, total, nil
+}
+
 // GetPostsByBlueprint fetches all posts associated with a specific blueprint
 func (s *Service) GetPostsByBlueprint(blueprintID primitive.ObjectID) ([]types.PostDocument, error) {
 	ctx := context.Background()

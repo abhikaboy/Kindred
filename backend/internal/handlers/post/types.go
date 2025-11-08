@@ -71,9 +71,10 @@ type GetFeedInput struct {
 }
 
 type FeedItem struct {
-	Type string                 `json:"type" doc:"Type of feed item: 'post' or 'task'"`
-	Post *types.PostDocumentAPI `json:"post,omitempty" doc:"Post data (only present if type is 'post')"`
-	Task *FeedTaskData          `json:"task,omitempty" doc:"Task data (only present if type is 'task')"`
+	Type    string                 `json:"type" doc:"Type of feed item: 'post', 'task', or 'profile'"`
+	Post    *types.PostDocumentAPI `json:"post,omitempty" doc:"Post data (only present if type is 'post')"`
+	Task    *FeedTaskData          `json:"task,omitempty" doc:"Task data (only present if type is 'task')"`
+	Profile *FeedProfileData       `json:"profile,omitempty" doc:"Profile data (only present if type is 'profile')"`
 }
 
 type FeedTaskData struct {
@@ -87,6 +88,13 @@ type FeedTaskData struct {
 	CategoryName  string                       `json:"categoryName"`
 	WorkspaceName string                       `json:"workspaceName"`
 	User          *types.UserExtendedReference `json:"user" doc:"User who created the task"`
+}
+
+type FeedProfileData struct {
+	User          *types.UserExtendedReference `json:"user" doc:"User profile to encourage"`
+	TasksComplete float64                      `json:"tasksComplete" doc:"Number of tasks completed by user"`
+	Streak        int                          `json:"streak" doc:"Current streak of the user"`
+	Points        int                          `json:"points" doc:"Total points of the user"`
 }
 
 type GetFeedOutput struct {

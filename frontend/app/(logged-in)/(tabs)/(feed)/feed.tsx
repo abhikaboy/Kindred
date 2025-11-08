@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PostCard from "@/components/cards/PostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
+import ProfileEncouragementCard from "@/components/cards/ProfileEncouragementCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -421,6 +422,17 @@ export default function Feed() {
                     user={task.user}
                 />
             );
+        } else if (item.type === 'profile' && item.profile) {
+            // Render profile encouragement card
+            const profile = item.profile;
+            return (
+                <ProfileEncouragementCard
+                    user={profile.user}
+                    tasksComplete={profile.tasksComplete}
+                    streak={profile.streak}
+                    points={profile.points}
+                />
+            );
         } else if (item.type === 'post' && item.post) {
             // Render post card
             const post = item.post;
@@ -645,9 +657,14 @@ export default function Feed() {
                 keyExtractor={(item) => {
                     if (currentFeed.id === 'feed') {
                         const feedItem = item as FeedItem;
-                        return feedItem.type === 'post' && feedItem.post 
-                            ? `post-${feedItem.post._id}` 
-                            : `task-${feedItem.task?.id}`;
+                        if (feedItem.type === 'post' && feedItem.post) {
+                            return `post-${feedItem.post._id}`;
+                        } else if (feedItem.type === 'task' && feedItem.task) {
+                            return `task-${feedItem.task.id}`;
+                        } else if (feedItem.type === 'profile' && feedItem.profile) {
+                            return `profile-${feedItem.profile.user._id}`;
+                        }
+                        return `unknown-${Math.random()}`;
                     }
                     return (item as PostData)._id;
                 }}
