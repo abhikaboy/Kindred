@@ -148,23 +148,10 @@ export interface FeedTask {
     };
 }
 
-export interface FeedProfile {
-    user: {
-        _id: string;
-        handle: string;
-        display_name: string;
-        profile_picture: string;
-    };
-    tasksComplete: number;
-    streak: number;
-    points: number;
-}
-
 export interface FeedItem {
-    type: 'post' | 'task' | 'profile';
+    type: 'post' | 'task';
     post?: Post;
     task?: FeedTask;
-    profile?: FeedProfile;
 }
 
 export interface PaginatedFeedResponse {
