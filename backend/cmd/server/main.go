@@ -82,7 +82,7 @@ func run(stderr io.Writer, args []string) {
 	fmt.Printf("After New")
 
 	// Gemini Setup
-	geminiService := gemini.InitGenkit()
+	geminiService := gemini.InitGenkit(db.Collections)
 
 	fmt.Printf("Gemini schema: %+v\n", geminiService.Genkit)
 
