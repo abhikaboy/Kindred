@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import { DrawerLayout } from "react-native-gesture-handler";
 import TodaySection from "./TodaySection";
 import { AttachStep } from "react-native-spotlight-tour";
-import { Bird, BookBookmark, Calendar, ChartBar, Microphone } from "phosphor-react-native";
+import { Bird, BookBookmark, Calendar, ChartBar, Microphone, PencilLine } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
@@ -32,6 +32,13 @@ const DashboardCards = (props: Props) => {
             icon: <Microphone size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 router.push("/voice");
+            },
+        },
+        {
+            title: "Text Dump",
+            icon: <PencilLine size={28} weight="light" color={ThemedColor.primary} />,
+            onPress: () => {
+                router.push("/text-dump");
             },
         },
         {

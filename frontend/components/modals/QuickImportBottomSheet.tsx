@@ -44,6 +44,12 @@ export default function QuickImportBottomSheet({ isVisible, onClose }: QuickImpo
         router.push("/(logged-in)/(tabs)/(task)/voice");
     }, [handleDismiss]);
 
+    const handleTextImport = useCallback(() => {
+        handleDismiss();
+        // Navigate to text import screen
+        router.push("/(logged-in)/(tabs)/(task)/text-dump");
+    }, [handleDismiss]);
+
     const renderBackdrop = useCallback(
         (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
         []
@@ -111,6 +117,23 @@ export default function QuickImportBottomSheet({ isVisible, onClose }: QuickImpo
                             <ThemedText type="caption" style={[styles.optionDescription, styles.exampleText]}>
                                 Example: "I have pilates every Tuesday at 8AM, and I want to make breakfast before
                                 that by 7:15 AM"
+                            </ThemedText>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Text Import */}
+                    <TouchableOpacity
+                        style={styles.optionCard}
+                        onPress={handleTextImport}
+                        activeOpacity={0.7}>
+                        <Ionicons name="create-outline" size={32} color={ThemedColor.text} style={styles.optionIcon} />
+                        <View style={styles.optionTextContainer}>
+                            <ThemedText type="defaultSemiBold" style={styles.optionTitle}>
+                                Text Import
+                            </ThemedText>
+                            <ThemedText type="caption" style={styles.optionDescription}>
+                                Type out your thoughts and tasks freely, and let Kindred organize them into actionable
+                                items for you!
                             </ThemedText>
                         </View>
                     </TouchableOpacity>

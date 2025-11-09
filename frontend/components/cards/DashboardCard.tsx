@@ -35,7 +35,7 @@ const DashboardCard = (props: Props) => {
                 {icon}
 
                 <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
-                    <ThemedText type="default"  style={{ color: ThemedColor.primary }}>{title}</ThemedText>
+                    <ThemedText type="default">{title}</ThemedText>
                     <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}   >{"→"}</ThemedText>
                 </View>
             </View>

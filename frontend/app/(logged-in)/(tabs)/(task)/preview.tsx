@@ -7,45 +7,34 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { Task } from "@/api/types";
+import TaskCard from "@/components/cards/TaskCard";
 
 type Props = {};
 
-// Mock task item component matching the design
-const TaskItem = ({ content, isCompleted }: { content: string; isCompleted?: boolean }) => {
-    const ThemedColor = useThemeColor();
-    
+// Preview task item that looks like a real task but isn't swipable
+const PreviewTaskItem = ({ 
+    task, 
+    categoryId 
+}: { 
+    task: Task; 
+    categoryId: string;
+}) => {
     return (
-        <View
-            style={[
-                styles.taskItem,
-                {
-                    backgroundColor: ThemedColor.lightened,
-                    borderColor: ThemedColor.tertiary,
-                },
-            ]}>
-            <ThemedText type="default" style={styles.taskContent}>
-                {content}
-            </ThemedText>
-            <View
-                style={[
-                    styles.statusIndicator,
-                    { backgroundColor: isCompleted ? "#54e788" : "#ff5c5f" },
-                ]}
-            />
-            <ThemedText
-                type="caption"
-                style={[
-                    styles.taskNumber,
-                    { color: ThemedColor.text },
-                ]}>
-                16
-            </ThemedText>
-        </View>
+        <TaskCard
+            content={task.content}
+            value={task.value}
+            priority={task.priority as any}
+            id={task.id}
+            categoryId={categoryId}
+            redirect={false}
+            task={task}
+        />
     );
 };
 
-// Category section component
-const CategorySection = ({
+// Category section for preview
+const PreviewCategorySection = ({
     workspace,
     categoryName,
     tasks,
@@ -53,38 +42,51 @@ const CategorySection = ({
 }: {
     workspace?: string;
     categoryName: string;
-    tasks: { content: string; isCompleted?: boolean }[];
+    tasks: Task[];
     isNew?: boolean;
 }) => {
     const ThemedColor = useThemeColor();
     
     return (
         <View style={styles.categorySection}>
+            {/* Workspace label if provided */}
             {workspace && (
-                <View style={styles.workspaceRow}>
-                    <ThemedText type="caption" style={{ color: ThemedColor.text }}>
-                        Workspace
+                <View style={styles.metaRow}>
+                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                        Workspace: {workspace}
                     </ThemedText>
                     {isNew && (
-                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                            New
-                        </ThemedText>
+                        <View style={[styles.newBadge, { backgroundColor: ThemedColor.primary + '20' }]}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary, fontSize: 11 }}>
+                                NEW
+                            </ThemedText>
+                        </View>
                     )}
                 </View>
             )}
+            
+            {/* Category header */}
             <View style={styles.categoryHeader}>
-                <ThemedText type="subtitle" style={{ color: ThemedColor.text }}>
+                <ThemedText type="subtitle" style={styles.categoryTitle}>
                     {categoryName}
                 </ThemedText>
                 {!workspace && isNew && (
-                    <ThemedText type="subtitle" style={{ color: ThemedColor.primary }}>
-                        New
-                    </ThemedText>
+                    <View style={[styles.newBadge, { backgroundColor: ThemedColor.primary + '20' }]}>
+                        <ThemedText type="caption" style={{ color: ThemedColor.primary, fontSize: 11 }}>
+                            NEW
+                        </ThemedText>
+                    </View>
                 )}
             </View>
+            
+            {/* Tasks list */}
             <View style={styles.tasksList}>
                 {tasks.map((task, index) => (
-                    <TaskItem key={index} content={task.content} isCompleted={task.isCompleted} />
+                    <PreviewTaskItem 
+                        key={index} 
+                        task={task} 
+                        categoryId={`preview-${index}`} 
+                    />
                 ))}
             </View>
         </View>
@@ -95,33 +97,87 @@ const Preview = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
 
-    // Mock data matching the Figma design
+    // Mock data - this would come from the AI generation in a real implementation
     const categories = [
         {
-            workspace: "Workspace",
-            categoryName: "Category 1",
+            workspace: "Personal",
+            categoryName: "Homework",
             isNew: true,
             tasks: [
-                { content: "do my hw lol", isCompleted: true },
-                { content: "do my hw lol", isCompleted: false },
-            ],
+                { 
+                    id: "preview-1",
+                    content: "Complete math assignment chapter 5",
+                    value: 10,
+                    priority: 2,
+                    categoryID: "preview-cat-1",
+                    recurring: false,
+                    public: false,
+                    active: true,
+                    timestamp: new Date().toISOString(),
+                    lastEdited: new Date().toISOString(),
+                },
+                { 
+                    id: "preview-2",
+                    content: "Write essay for English class",
+                    value: 8,
+                    priority: 1,
+                    categoryID: "preview-cat-1",
+                    recurring: false,
+                    public: false,
+                    active: true,
+                    timestamp: new Date().toISOString(),
+                    lastEdited: new Date().toISOString(),
+                },
+            ] as Task[],
         },
         {
-            categoryName: "Category 2",
+            categoryName: "Fitness",
             isNew: true,
             tasks: [
-                { content: "do my hw lol", isCompleted: true },
-                { content: "do my hw lol", isCompleted: false },
-            ],
+                { 
+                    id: "preview-3",
+                    content: "Go to the gym at 7 AM",
+                    value: 5,
+                    priority: 0,
+                    categoryID: "preview-cat-2",
+                    recurring: false,
+                    public: false,
+                    active: true,
+                    timestamp: new Date().toISOString(),
+                    lastEdited: new Date().toISOString(),
+                },
+                { 
+                    id: "preview-4",
+                    content: "Prepare protein shake",
+                    value: 3,
+                    priority: 0,
+                    categoryID: "preview-cat-2",
+                    recurring: false,
+                    public: false,
+                    active: true,
+                    timestamp: new Date().toISOString(),
+                    lastEdited: new Date().toISOString(),
+                },
+            ] as Task[],
         },
         {
-            workspace: "Workspace",
-            categoryName: "Category 2",
-            isNew: true,
+            workspace: "Work",
+            categoryName: "Development",
+            isNew: false,
             tasks: [
-                { content: "do my hw lol", isCompleted: true },
-                { content: "do my hw lol", isCompleted: false },
-            ],
+                { 
+                    id: "preview-5",
+                    content: "Review pull requests",
+                    value: 12,
+                    priority: 2,
+                    categoryID: "preview-cat-3",
+                    recurring: false,
+                    public: false,
+                    active: true,
+                    timestamp: new Date().toISOString(),
+                    lastEdited: new Date().toISOString(),
+                },
+            ] as Task[],
         },
     ];
 
@@ -141,12 +197,15 @@ const Preview = (props: Props) => {
                     <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                         Preview
                     </ThemedText>
+                    <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
+                        Review your generated tasks before adding them
+                    </ThemedText>
                 </View>
 
                 {/* Categories and Tasks */}
                 <View style={styles.contentContainer}>
                     {categories.map((category, index) => (
-                        <CategorySection
+                        <PreviewCategorySection
                             key={index}
                             workspace={category.workspace}
                             categoryName={category.categoryName}
@@ -161,10 +220,13 @@ const Preview = (props: Props) => {
             <View
                 style={[
                     styles.bottomButtonContainer,
-                    { backgroundColor: ThemedColor.background },
+                    { 
+                        backgroundColor: ThemedColor.background,
+                        borderTopColor: ThemedColor.tertiary + '40',
+                    },
                 ]}>
                 <PrimaryButton 
-                    title="Create" 
+                    title="Create Tasks" 
                     onPress={() => {
                         // Navigate to tasks index page
                         router.push("/(logged-in)/(tabs)/(task)" as any);
@@ -184,67 +246,51 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: 100, // Extra padding for fixed bottom button
+        paddingBottom: 120, // Extra padding for fixed bottom button
     },
     backButton: {
         marginBottom: 16,
     },
     headerContainer: {
-        paddingBottom: 32,
+        paddingBottom: 24,
         paddingTop: 4,
+        gap: 8,
     },
     title: {
         fontWeight: "600",
+    },
+    subtitle: {
+        fontSize: 14,
+        lineHeight: 20,
     },
     contentContainer: {
         gap: 32,
     },
     categorySection: {
-        gap: 8,
+        gap: 12,
     },
-    workspaceRow: {
+    metaRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        width: "100%",
     },
     categoryHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "flex-end",
-        width: "100%",
+        alignItems: "center",
+    },
+    categoryTitle: {
+        fontSize: 20,
+        fontWeight: "600",
+        letterSpacing: -0.5,
+    },
+    newBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
     },
     tasksList: {
         gap: 12,
-    },
-    taskItem: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        position: "relative",
-    },
-    taskContent: {
-        flex: 1,
-        lineHeight: 23,
-    },
-    statusIndicator: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        position: "absolute",
-        right: 10,
-        top: "50%",
-        marginTop: -5,
-    },
-    taskNumber: {
-        position: "absolute",
-        right: 25,
-        top: "50%",
-        marginTop: -9,
-        fontSize: 12,
     },
     bottomButtonContainer: {
         position: "absolute",
@@ -252,16 +298,16 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingVertical: 16,
-        paddingBottom: 24,
+        paddingTop: 16,
+        paddingBottom: 32,
+        borderTopWidth: 1,
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
-            height: -2,
+            height: -4,
         },
         shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowRadius: 12,
+        elevation: 8,
     },
 });
-

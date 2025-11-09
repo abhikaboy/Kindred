@@ -286,6 +286,15 @@ const DrawerContent = ({
                     onLongPress={() => {}}
                 />
                 <DrawerItem
+                    title="Text Dump"
+                    selected={currentSelected}
+                    onPress={() => {
+                        router.push("/text-dump");
+                        close();
+                    }}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
                     title="Import"
                     selected={currentSelected}
                     onPress={() => {

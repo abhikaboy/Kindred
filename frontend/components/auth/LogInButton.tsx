@@ -31,10 +31,11 @@ export default function LogInButton() {
                     router.replace("/home");
                 } catch (e: any) {
                     if (e.code === "ERR_REQUEST_CANCELED") {
-                        console.log("they cancelled");
+                        console.log("User cancelled Apple sign in");
+                        // Don't show error for user cancellation
                     } else {
-                        console.log(e.code);
-                        alert("An unexpected error occurred");
+                        console.error('Apple login error:', e.code, e);
+                        alert(`Apple sign in failed: ${e.message || 'An unexpected error occurred. Please try again.'}`);
                     }
                 }
             }}

@@ -128,6 +128,7 @@ export const OnboardModal = (props: Props) => {
                 console.log("We think you already have an account: trying to log in instead");
                 await login(appleAccountID);
                 router.push("/(logged-in)/(tabs)/(task)");
+                // Success - modal will be closed by caller
             } else {
                 // Pre-fill onboarding data with Apple credentials
                 // Don't create account yet - wait until user completes onboarding
@@ -142,16 +143,18 @@ export const OnboardModal = (props: Props) => {
                 
                 // Navigate directly to name screen (skip phone/OTP for Apple users)
                 router.replace("/(onboarding)/name");
-                setVisible(false);
+                // Success - modal will be closed by caller
             }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
-                console.log("they cancelled");
+                console.log("User cancelled Apple sign in");
+                // Don't show error for user cancellation
             } else {
-                console.log(e.code);
-                console.log(e);
-                alert("An unexpected error occurred");
+                console.error('Apple registration error:', e.code, e);
+                alert(`Apple sign up failed: ${e.message || 'An unexpected error occurred'}`);
             }
+            // Re-throw to let caller know it failed
+            throw e;
         }
     };
 
@@ -169,13 +172,17 @@ export const OnboardModal = (props: Props) => {
             await login(appleAccountID);
 
             router.push("/(logged-in)/(tabs)/(task)");
+            // Success - modal will be closed by caller
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
-                console.log("they cancelled");
+                console.log("User cancelled Apple sign in");
+                // Don't show error for user cancellation
             } else {
-                console.log(e.code);
-                alert("An unexpected error occurred");
+                console.error('Apple login error:', e.code, e);
+                alert(`Apple sign in failed: ${e.message || 'An unexpected error occurred'}`);
             }
+            // Re-throw to let caller know it failed
+            throw e;
         }
     };
     const styles = useStyles(ThemedColor);
@@ -250,13 +257,19 @@ export const OnboardModal = (props: Props) => {
                             buttonStyle={AppleAuthenticationButtonStyle.BLACK}
                             cornerRadius={10}
                             style={styles.appleButton}
-                            onPress={() => {
-                                if (mode === "register") {
-                                    apple_regiser();
-                                } else {
-                                    apple_login();
+                            onPress={async () => {
+                                try {
+                                    if (mode === "register") {
+                                        await apple_regiser();
+                                    } else {
+                                        await apple_login();
+                                    }
+                                    // Only close modal after successful auth
+                                    setVisible(false);
+                                } catch (error) {
+                                    // Keep modal open on error so user can try again
+                                    console.error('Apple auth error in onPress:', error);
                                 }
-                                setVisible(false);
                             }}
                         />
                     </View>
