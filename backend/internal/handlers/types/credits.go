@@ -14,18 +14,20 @@ import (
 type CreditType string
 
 const (
-	CreditTypeVoice     CreditType = "voice"
-	CreditTypeBlueprint CreditType = "blueprint"
-	CreditTypeGroup     CreditType = "group"
-	CreditTypeAnalytics CreditType = "analytics"
+	CreditTypeVoice           CreditType = "voice"
+	CreditTypeBlueprint       CreditType = "blueprint"
+	CreditTypeGroup           CreditType = "group"
+	CreditTypeAnalytics       CreditType = "analytics"
+	CreditTypeNaturalLanguage CreditType = "naturalLanguage"
 )
 
 // Default credit amounts for new users
 const (
-	DefaultVoiceCredits     = 10
-	DefaultBlueprintCredits = 5
-	DefaultGroupCredits     = 3
-	DefaultAnalyticsCredits = 0
+	DefaultVoiceCredits           = 5
+	DefaultBlueprintCredits       = 5
+	DefaultGroupCredits           = 3
+	DefaultAnalyticsCredits       = 0
+	DefaultNaturalLanguageCredits = 10
 )
 
 var (
@@ -36,10 +38,11 @@ var (
 // GetDefaultCredits returns the default credits for a new user
 func GetDefaultCredits() UserCredits {
 	return UserCredits{
-		Voice:     DefaultVoiceCredits,
-		Blueprint: DefaultBlueprintCredits,
-		Group:     DefaultGroupCredits,
-		Analytics: DefaultAnalyticsCredits,
+		Voice:           DefaultVoiceCredits,
+		Blueprint:       DefaultBlueprintCredits,
+		Group:           DefaultGroupCredits,
+		Analytics:       DefaultAnalyticsCredits,
+		NaturalLanguage: DefaultNaturalLanguageCredits,
 	}
 }
 
@@ -147,6 +150,8 @@ func getCreditFieldName(creditType CreditType) (string, error) {
 		return "credits.group", nil
 	case CreditTypeAnalytics:
 		return "credits.analytics", nil
+	case CreditTypeNaturalLanguage:
+		return "credits.naturalLanguage", nil
 	default:
 		return "", ErrInvalidCreditType
 	}

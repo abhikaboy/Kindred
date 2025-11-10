@@ -72,6 +72,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version of newService for external packages
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllTasks fetches all Task documents from MongoDB
 func (s *Service) GetAllTasks() ([]TaskDocument, error) {
 	ctx := context.Background()

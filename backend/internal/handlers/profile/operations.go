@@ -226,5 +226,25 @@ func RegisterFindUsersByPhoneNumbersOperation(api huma.API, handler *Handler) {
 	}, handler.FindUsersByPhoneNumbers)
 }
 
+// Get User Credits
+type GetUserCreditsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+}
+
+type GetUserCreditsOutput struct {
+	Body types.UserCredits
+}
+
+func RegisterGetUserCreditsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-credits",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/credits",
+		Summary:     "Get user credits",
+		Description: "Retrieve the current credit balance for the authenticated user",
+		Tags:        []string{"profiles", "credits"},
+	}, handler.GetUserCredits)
+}
+
 // Note: Profile picture upload operations moved to centralized upload service
 // Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead

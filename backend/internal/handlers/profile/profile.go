@@ -209,6 +209,28 @@ func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileBy
 	return resp, nil
 }
 
+func (h *Handler) GetUserCredits(ctx context.Context, input *GetUserCreditsInput) (*GetUserCreditsOutput, error) {
+	// Get authenticated user ID
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Get credits from database
+	credits, err := types.GetCredits(ctx, h.service.Profiles, userObjID)
+	if err != nil {
+		slog.Error("Failed to get user credits", "error", err.Error(), "userID", userID)
+		return nil, huma.Error500InternalServerError("Failed to retrieve credits", err)
+	}
+
+	return &GetUserCreditsOutput{Body: *credits}, nil
+}
+
 func (h *Handler) GetSuggestedUsers(ctx context.Context, input *GetSuggestedUsersInput) (*GetSuggestedUsersOutput, error) {
 	users, err := h.service.GetSuggestedUsers()
 	if err != nil {

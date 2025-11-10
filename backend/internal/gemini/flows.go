@@ -17,10 +17,11 @@ type FlowSet struct {
 	TaskFromImageFlow                *core.Flow[GenerateTaskFromImageParams, GenerateTaskFromImageOutput, struct{}]
 	MultiTaskFromTextFlow            *core.Flow[MultiTaskFromTextInput, MultiTaskFromTextOutput, struct{}]
 	MultiTaskFromTextFlowWithContext *core.Flow[MultiTaskFromTextInputWithUser, MultiTaskFromTextOutput, struct{}]
+	AnalyticsReportFlow              *core.Flow[AnalyticsReportInput, AnalyticsReportOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
-func InitFlows(g *genkit.Genkit, getUserCategoriesTool ai.Tool) *FlowSet {
+func InitFlows(g *genkit.Genkit, tools *ToolSet) *FlowSet {
 	// Generate single task from description
 	generateTaskFlow := genkit.DefineFlow(g, "generateTaskFlow",
 		func(ctx context.Context, input GenerateTaskParams) (*task.CreateTaskParams, error) {
@@ -77,11 +78,73 @@ When choosing category names, prefer existing categories from the user's databas
 
 			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g,
 				ai.WithPrompt(prompt),
-				ai.WithTools(getUserCategoriesTool),
+				ai.WithTools(tools.GetUserCategories),
 			)
 			if err != nil {
 				return MultiTaskFromTextOutput{}, err
 			}
+			return *resp, nil
+		})
+
+	// Analytics report flow - generates insights from completed tasks
+	analyticsReportFlow := genkit.DefineFlow(g, "analyticsReportFlow",
+		func(ctx context.Context, input AnalyticsReportInput) (AnalyticsReportOutput, error) {
+			currentTime := time.Now().UTC().Format(time.RFC3339)
+
+			prompt := fmt.Sprintf(`You are a productivity analytics assistant. Analyze the user's completed tasks and generate a comprehensive, structured analytics report.
+
+IMPORTANT: 
+1. Call the getCompletedTasks tool with userId "%s" and limit %d to fetch the user's recently completed tasks
+2. Call getUserCategories tool with userId "%s" to understand their workspace organization
+
+Current time: %s
+
+Analyze the data and provide structured insights:
+
+PRODUCTIVITY SUMMARY:
+- Calculate total tasks completed
+- Describe completion patterns (e.g., "steady pace", "burst of activity", "declining trend")
+- Identify productive time periods from timeCompleted timestamps
+- Provide an encouraging overall insight
+
+PRIORITY ANALYSIS:
+- Count tasks by priority (1=low, 2=medium, 3=high)
+- Sum all task values for total value delivered
+- List 3-5 notable high-value or high-priority tasks (by content)
+- Analyze priority balance (e.g., "good balance", "too many urgent tasks", "focus on important work")
+
+WORKSPACE INSIGHTS:
+- Identify the 3-5 most active workspaces/categories (by comparing completed task categoryIds with user's categories)
+- **CRITICAL**: Identify STALE WORKSPACES - any workspace/category from getUserCategories that has NO matching tasks in completed tasks
+- For each stale workspace, suggest: "Archive", "Review and reorganize", "Delete if no longer needed", etc.
+- Describe category usage patterns
+
+TIME MANAGEMENT:
+- Count how many tasks have timeTaken data
+- Calculate average time per task if data exists (parse timeTaken strings)
+- List quick wins (tasks with short timeTaken)
+- List time-intensive tasks (tasks with long timeTaken)
+- Provide time management insight
+
+RECOMMENDATIONS:
+- Provide 3-5 actionable, specific suggestions based on the data
+- Keep them encouraging and practical
+
+ALERTS:
+- Flag any concerning patterns (e.g., "Many stale workspaces need attention", "All recent tasks are high-priority - consider task prioritization")
+- Highlight issues needing immediate attention
+
+Be specific with numbers, encouraging in tone, and actionable in recommendations.`, input.UserID, input.Limit, input.UserID, currentTime)
+
+			// Generate structured data with both tools available
+			resp, _, err := genkit.GenerateData[AnalyticsReportOutput](ctx, g,
+				ai.WithPrompt(prompt),
+				ai.WithTools(tools.GetCompletedTasks, tools.GetUserCategories),
+			)
+			if err != nil {
+				return AnalyticsReportOutput{}, err
+			}
+
 			return *resp, nil
 		})
 
@@ -90,5 +153,6 @@ When choosing category names, prefer existing categories from the user's databas
 		TaskFromImageFlow:                generateTaskFromImageFlow,
 		MultiTaskFromTextFlow:            multiTaskFromTextFlow,
 		MultiTaskFromTextFlowWithContext: multiTaskFromTextFlowWithContext,
+		AnalyticsReportFlow:              analyticsReportFlow,
 	}
 }

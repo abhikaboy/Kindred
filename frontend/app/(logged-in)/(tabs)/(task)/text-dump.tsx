@@ -1,5 +1,5 @@
 import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -8,6 +8,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createTasksFromNaturalLanguageAPI } from "@/api/task";
+import { getUserCredits, UserCredits } from "@/api/profile";
 import { useTasks } from "@/contexts/tasksContext";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
@@ -21,6 +22,20 @@ const TextDump = (props: Props) => {
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [credits, setCredits] = useState<UserCredits | null>(null);
+
+    useEffect(() => {
+        // Fetch credits on mount
+        const fetchCredits = async () => {
+            try {
+                const userCredits = await getUserCredits();
+                setCredits(userCredits);
+            } catch (error) {
+                console.error("Failed to fetch credits:", error);
+            }
+        };
+        fetchCredits();
+    }, []);
 
     const handleGenerateTasks = async () => {
         // Clear any previous errors
@@ -98,6 +113,24 @@ const TextDump = (props: Props) => {
                         style={[styles.subtitle, { color: ThemedColor.caption }]}>
                         Write down your thoughts freely
                     </ThemedText>
+                    {credits !== null && (
+                        <View style={styles.creditsContainer}>
+                            <ThemedText type="caption" style={styles.creditsLabel}>
+                                CREDITS
+                            </ThemedText>
+                            <View style={styles.creditsValue}>
+                                <ThemedText type="default" style={{ fontWeight: '600' }}>
+                                    {credits.naturalLanguage}
+                                </ThemedText>
+                                <Ionicons 
+                                    name="information-circle-outline" 
+                                    size={16} 
+                                    color={ThemedColor.caption}
+                                    style={{ marginLeft: 4 }}
+                                />
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 {/* Text Input Section */}
@@ -180,6 +213,20 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 14,
+    },
+    creditsContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginTop: 8,
+    },
+    creditsLabel: {
+        fontSize: 11,
+        fontWeight: "600",
+    },
+    creditsValue: {
+        flexDirection: "row",
+        alignItems: "center",
     },
     textInputSection: {
         marginBottom: 16,

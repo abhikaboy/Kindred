@@ -176,3 +176,30 @@ export const getSuggestedUsers = async (): Promise<UserExtendedReference[]> => {
 
     return response.data || [];
 };
+
+/**
+ * User credits type
+ */
+export interface UserCredits {
+    voice: number;
+    blueprint: number;
+    group: number;
+    analytics: number;
+    naturalLanguage: number;
+}
+
+/**
+ * Get user's credit balance
+ * Returns the current credit balance for the authenticated user
+ */
+export const getUserCredits = async (): Promise<UserCredits> => {
+    const { data, error } = await (client as any).GET("/v1/user/credits", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get user credits: ${JSON.stringify(error)}`);
+    }
+
+    return data || { voice: 0, blueprint: 0, group: 0, analytics: 0, naturalLanguage: 0 };
+};

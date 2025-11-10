@@ -17,10 +17,10 @@ func InitGenkit(collections map[string]*mongo.Collection) *GeminiService {
 	)
 
 	// Initialize tools
-	getUserCategoriesTool := InitTools(g, collections)
+	tools := InitTools(g, collections)
 
 	// Initialize flows with tools
-	flows := InitFlows(g, getUserCategoriesTool)
+	flows := InitFlows(g, tools)
 
 	return &GeminiService{
 		Genkit:                           g,
@@ -28,6 +28,7 @@ func InitGenkit(collections map[string]*mongo.Collection) *GeminiService {
 		TaskFromImageFlow:                flows.TaskFromImageFlow,
 		MultiTaskFromTextFlow:            flows.MultiTaskFromTextFlow,
 		MultiTaskFromTextFlowWithContext: flows.MultiTaskFromTextFlowWithContext,
-		GetUserCategoriesTool:            getUserCategoriesTool,
+		AnalyticsReportFlow:              flows.AnalyticsReportFlow,
+		Tools:                            tools,
 	}
 }

@@ -124,10 +124,11 @@ type ChecklistItem struct {
 }
 
 type UserCredits struct {
-	Voice      int `bson:"voice" json:"voice" doc:"Voice task creation credits"`
-	Blueprint  int `bson:"blueprint" json:"blueprint" doc:"Blueprint creation credits"`
-	Group      int `bson:"group" json:"group" doc:"Group creation credits"`
-	Analytics  int `bson:"analytics" json:"analytics" doc:"Analytics access credits"`
+	Voice           int `bson:"voice" json:"voice" doc:"Voice task creation credits"`
+	Blueprint       int `bson:"blueprint" json:"blueprint" doc:"Blueprint creation credits"`
+	Group           int `bson:"group" json:"group" doc:"Group creation credits"`
+	Analytics       int `bson:"analytics" json:"analytics" doc:"Analytics access credits"`
+	NaturalLanguage int `bson:"naturalLanguage" json:"naturalLanguage" doc:"Natural language task creation credits"`
 }
 
 type User struct {

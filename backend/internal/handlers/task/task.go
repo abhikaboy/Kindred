@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/danielgtaylor/huma/v2"
@@ -860,6 +861,18 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Consume credit atomically - this checks and decrements in one operation
+	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	if err != nil {
+		if err == types.ErrInsufficientCredits {
+			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
+		}
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError("Failed to process credit", err)
 	}
 
 	// Default to EST if no timezone provided
