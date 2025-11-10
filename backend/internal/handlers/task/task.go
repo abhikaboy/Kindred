@@ -862,13 +862,19 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
+	// Default to EST if no timezone provided
+	timezone := input.Body.Timezone
+	if timezone == "" {
+		timezone = "America/New_York"
+	}
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Starting natural language task creation",
 		slog.String("userID", userID),
 		slog.String("inputText", input.Body.Text),
-		slog.String("timezone", input.Body.Timezone))
+		slog.String("timezone", timezone))
 
 	// Call Genkit flow to process natural language
-	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text, input.Body.Timezone)
+	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text, timezone)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to call Gemini flow",
 			slog.String("userID", userID),

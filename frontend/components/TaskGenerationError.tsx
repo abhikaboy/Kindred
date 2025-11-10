@@ -9,10 +9,8 @@ type Props = {
 };
 
 export const TaskGenerationError = ({ message }: Props) => {
-    const ThemedColor = useThemeColor();
-
     return (
-        <View style={[styles.errorContainer, { backgroundColor: ThemedColor.tertiary }]}>
+        <View style={styles.errorContainer}>
             <Ionicons name="alert-circle" size={20} color="#ef4444" style={styles.errorIcon} />
             <ThemedText style={styles.errorText}>
                 {message}
@@ -25,8 +23,6 @@ const styles = StyleSheet.create({
     errorContainer: {
         flexDirection: "row",
         alignItems: "center",
-        padding: 12,
-        borderRadius: 8,
         marginVertical: 12,
         gap: 8,
     },

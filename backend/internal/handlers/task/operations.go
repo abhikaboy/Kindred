@@ -490,7 +490,7 @@ type CreateTaskNaturalLanguageInput struct {
 	Authorization string `header:"Authorization" required:"true"`
 	Body          struct {
 		Text     string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language description of tasks to create" example:"Buy groceries tomorrow at 3pm, finish project report by Friday"`
-		Timezone string `json:"timezone" doc:"User's timezone (IANA format)" example:"America/New_York"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
 	} `json:"body"`
 }
 
