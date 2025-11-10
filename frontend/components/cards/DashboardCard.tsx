@@ -11,11 +11,12 @@ type Props = {
     title: string;
     icon: React.ReactNode;
     onPress: () => void;
+    badge?: string;
 };
 
 const DashboardCard = (props: Props) => {
     const ThemedColor = useThemeColor();
-    const { title, icon, onPress } = props;
+    const { title, icon, onPress, badge } = props;
     return (
         <TouchableOpacity
             style={{
@@ -32,7 +33,25 @@ const DashboardCard = (props: Props) => {
             }}
             onPress={onPress}>
             <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, width: "100%" }}>
-                {icon}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {icon}
+                    {badge && (
+                        <View style={{
+                            backgroundColor: ThemedColor.primary + '20',
+                            paddingHorizontal: 6,
+                            paddingVertical: 2,
+                            borderRadius: 4,
+                        }}>
+                            <ThemedText style={{ 
+                                fontSize: 10, 
+                                fontWeight: '600',
+                                color: ThemedColor.primary,
+                            }}>
+                                {badge}
+                            </ThemedText>
+                        </View>
+                    )}
+                </View>
 
                 <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
                     <ThemedText type="default">{title}</ThemedText>

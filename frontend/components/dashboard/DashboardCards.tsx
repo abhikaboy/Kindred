@@ -30,6 +30,7 @@ const DashboardCards = (props: Props) => {
         {
             title: "Voice Dump",
             icon: <Microphone size={28} weight="light" color={ThemedColor.primary} />,
+            badge: "AI",
             onPress: () => {
                 router.push("/voice");
             },
@@ -37,6 +38,7 @@ const DashboardCards = (props: Props) => {
         {
             title: "Text Dump",
             icon: <PencilLine size={28} weight="light" color={ThemedColor.primary} />,
+            badge: "AI",
             onPress: () => {
                 router.push("/text-dump");
             },
@@ -94,7 +96,13 @@ const DashboardCards = (props: Props) => {
                 nestedScrollEnabled={true}>
                 {cards.map((card, index) => {
                     const CardComponent = (
-                        <DashboardCard key={card.title} title={card.title} icon={card.icon} onPress={card.onPress} />
+                        <DashboardCard 
+                            key={card.title} 
+                            title={card.title} 
+                            icon={card.icon} 
+                            onPress={card.onPress}
+                            badge={card.badge}
+                        />
                     );
 
                     if (card.attachStep !== undefined) {

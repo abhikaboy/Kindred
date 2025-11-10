@@ -20,6 +20,7 @@
       }
     },
     "production": {
+      "distribution": "store",
       "env": {
         "SENTRY_PROJECT": "react-native",
         "SENTRY_ORG": "kindred-gy",

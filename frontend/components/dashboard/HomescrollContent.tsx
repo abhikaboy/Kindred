@@ -107,12 +107,13 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 </View>
 
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <TouchableOpacity 
+                        style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+                        onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}
+                    >
                         <ThemedText type="caption">UPCOMING</ThemedText>
-                        <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
-                            <Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />
-                        </TouchableOpacity>
-                    </View>
+                        <Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />
+                    </TouchableOpacity>
                     <TodaySection />
                 </View>
                 {/* <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>

@@ -278,6 +278,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Voice Dump"
+                    badge="AI"
                     selected={currentSelected}
                     onPress={() => {
                         router.push("/voice");
@@ -287,6 +288,7 @@ const DrawerContent = ({
                 />
                 <DrawerItem
                     title="Text Dump"
+                    badge="AI"
                     selected={currentSelected}
                     onPress={() => {
                         router.push("/text-dump");
@@ -402,7 +404,7 @@ const DrawerContent = ({
     );
 };
 
-const DrawerItem = ({ title, selected, onPress, onLongPress }) => {
+const DrawerItem = ({ title, selected, onPress, onLongPress, badge }) => {
     const ThemedColor = useThemeColor();
     return (
         <TouchableOpacity
@@ -425,6 +427,23 @@ const DrawerItem = ({ title, selected, onPress, onLongPress }) => {
             <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }} key={title}>
                 {title}
             </ThemedText>
+            {badge && (
+                <View style={{
+                    backgroundColor: ThemedColor.primary + '20',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    marginLeft: 4,
+                }}>
+                    <ThemedText style={{ 
+                        fontSize: 10, 
+                        fontWeight: '600',
+                        color: ThemedColor.primary,
+                    }}>
+                        {badge}
+                    </ThemedText>
+                </View>
+            )}
         </TouchableOpacity>
     );
 };
