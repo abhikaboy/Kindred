@@ -34,7 +34,7 @@ const DashboardCard = (props: Props) => {
             onPress={onPress}>
             <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, width: "100%" }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    {icon}
+                {icon}
                     {badge && (
                         <View style={{
                             backgroundColor: ThemedColor.primary + '20',

@@ -11,11 +11,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
 import { useKudos } from "@/contexts/kudosContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Encouragements() {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const { encouragements, totalEncouragementCount, loading, markEncouragementsAsRead } = useKudos();
+    const { user } = useAuth();
+    const { encouragements, loading, markEncouragementsAsRead } = useKudos();
+    
+    // Get sent count from user's kudosRewards for progress tracking
+    const sentEncouragements = user?.kudosRewards?.encouragements || 0;
 
     useEffect(() => {
         // Mark all as read when viewing the page
@@ -50,9 +55,9 @@ export default function Encouragements() {
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
-                {/* Progress Card - Uses shared data */}
+                {/* Progress Card - Shows sent count for rewards */}
                 <KudosProgressCard
-                    current={totalEncouragementCount}
+                    current={sentEncouragements}
                     max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
                     type="encouragements"
                 />

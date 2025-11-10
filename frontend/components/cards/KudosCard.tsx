@@ -7,13 +7,18 @@ import { Sparkle, Confetti } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
 import { useKudos } from "@/contexts/kudosContext";
+import { useAuth } from "@/hooks/useAuth";
 import SimpleProgressBar from "../ui/SimpleProgressBar";
 
 export const KudosCards: React.FC = () => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
-    const { unreadEncouragementCount, unreadCongratulationCount, totalEncouragementCount, totalCongratulationCount } =
-        useKudos();
+    const { user } = useAuth();
+    const { unreadEncouragementCount, unreadCongratulationCount } = useKudos();
+
+    // Get sent counts from user's kudosRewards for progress tracking
+    const sentEncouragements = user?.kudosRewards?.encouragements || 0;
+    const sentCongratulations = user?.kudosRewards?.congratulations || 0;
 
     const hasUnreadEncouragements = unreadEncouragementCount > 0;
     const hasUnreadCongratulations = unreadCongratulationCount > 0;
@@ -24,7 +29,7 @@ export const KudosCards: React.FC = () => {
                 <KudosCard
                     title="Encouragements"
                     unreadCount={unreadEncouragementCount}
-                    totalCount={totalEncouragementCount}
+                    totalCount={sentEncouragements}
                     maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
                     type="encouragements"
                     icon={<Sparkle size={22} weight="regular" color="#9333EA" />}
@@ -35,7 +40,7 @@ export const KudosCards: React.FC = () => {
                 <KudosCard
                     title="Congratulations"
                     unreadCount={unreadCongratulationCount}
-                    totalCount={totalCongratulationCount}
+                    totalCount={sentCongratulations}
                     maxCount={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
                     type="congratulations"
                     icon={<Confetti size={22} weight="fill" color={ThemedColor.primary} />}
@@ -82,7 +87,14 @@ const KudosCard: React.FC<KudosCardProps> = ({
                     boxShadow: ThemedColor.shadowSmall,
                 },
             ]}>
-            {hasUnread && <View style={[styles.unreadIndicator, { backgroundColor: ThemedColor.error }]} />}
+            {hasUnread && (
+                <View style={[styles.unreadBadge, { backgroundColor: ThemedColor.error }]}>
+                    <ThemedText type="defaultSemiBold" style={styles.unreadBadgeText}>
+                        {unreadCount}
+                    </ThemedText>
+                </View>
+            )}
+            
             <View style={styles.cardContent}>
                 <View style={styles.iconProgressRow}>
                     <View>{icon}</View>
@@ -92,15 +104,6 @@ const KudosCard: React.FC<KudosCardProps> = ({
                     </View>
                 </View>
 
-                {unreadCount > 0 && (
-                    <View style={[styles.badge, { backgroundColor: ThemedColor.error }]}>
-                        <View>{icon}</View>
-
-                        <ThemedText type="captionLight" style={styles.badgeText}>
-                            {unreadCount}
-                        </ThemedText>
-                    </View>
-                )}
                 <View style={{ gap: 5 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", paddingRight: 2 }}>
                         <ThemedText type="caption">
@@ -131,6 +134,7 @@ const styles = StyleSheet.create({
         minHeight: 90,
         borderWidth: 0.5,
         position: "relative",
+        overflow: "visible",
     },
     cardContent: {
         alignItems: "center",
@@ -146,24 +150,21 @@ const styles = StyleSheet.create({
     progressBarWrapper: {
         flex: 1,
     },
-    unreadIndicator: {
-        width: 10,
-        height: 10,
+    unreadBadge: {
+        minWidth: 20,
+        height: 20,
         borderRadius: 10,
         position: "absolute",
-        right: 8,
-        top: 8,
-    },
-    badge: {
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 12,
-        minWidth: 24,
+        top: -10,
+        right: -10,
+        zIndex: 10,
+        justifyContent: "center",
         alignItems: "center",
+        paddingHorizontal: 4,
     },
-    badgeText: {
+    unreadBadgeText: {
         color: "white",
         fontSize: 12,
-        fontWeight: "bold",
+        fontWeight: "600",
     },
 });

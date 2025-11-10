@@ -131,6 +131,11 @@ type UserCredits struct {
 	NaturalLanguage int `bson:"naturalLanguage" json:"naturalLanguage" doc:"Natural language task creation credits"`
 }
 
+type KudosRewards struct {
+	Encouragements  int `bson:"encouragements" json:"encouragements" doc:"Number of encouragements sent (for rewards tracking)"`
+	Congratulations int `bson:"congratulations" json:"congratulations" doc:"Number of congratulations sent (for rewards tracking)"`
+}
+
 type User struct {
 	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
 	Email          string               `bson:"email" json:"email"`
@@ -147,16 +152,17 @@ type User struct {
 	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 	PushToken      string               `bson:"push_token" json:"push_token"`
 
-	DisplayName     string `bson:"display_name" json:"display_name"`
-	Handle          string `bson:"handle" json:"handle"`
-	ProfilePicture  string `bson:"profile_picture" json:"profile_picture"`
-	Encouragements  int    `bson:"encouragements" json:"encouragements"`
-	Congratulations int    `bson:"congratulations" json:"congratulations"`
-	Streak          int    `bson:"streak" json:"streak"`
-	StreakEligible  bool   `bson:"streakEligible" json:"streakEligible"`
-	Points          int    `bson:"points" json:"points"`
-	PostsMade       int    `bson:"posts_made" json:"posts_made"`
-	Credits         UserCredits `bson:"credits" json:"credits"`
+	DisplayName     string       `bson:"display_name" json:"display_name"`
+	Handle          string       `bson:"handle" json:"handle"`
+	ProfilePicture  string       `bson:"profile_picture" json:"profile_picture"`
+	Encouragements  int          `bson:"encouragements" json:"encouragements"`   // Available balance to send
+	Congratulations int          `bson:"congratulations" json:"congratulations"` // Available balance to send
+	Streak          int          `bson:"streak" json:"streak"`
+	StreakEligible  bool         `bson:"streakEligible" json:"streakEligible"`
+	Points          int          `bson:"points" json:"points"`
+	PostsMade       int          `bson:"posts_made" json:"posts_made"`
+	Credits         UserCredits  `bson:"credits" json:"credits"`
+	KudosRewards    KudosRewards `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
 }
 
 type SafeUser struct {
@@ -168,13 +174,14 @@ type SafeUser struct {
 	Friends         []primitive.ObjectID `bson:"friends" json:"friends"`
 	TasksComplete   float64              `bson:"tasks_complete" json:"tasks_complete"`
 	RecentActivity  []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
-	Encouragements  int                  `bson:"encouragements" json:"encouragements"`
-	Congratulations int                  `bson:"congratulations" json:"congratulations"`
+	Encouragements  int                  `bson:"encouragements" json:"encouragements"`   // Available balance to send
+	Congratulations int                  `bson:"congratulations" json:"congratulations"` // Available balance to send
 	Streak          int                  `bson:"streak" json:"streak"`
 	StreakEligible  bool                 `bson:"streakEligible" json:"streakEligible"`
 	Points          int                  `bson:"points" json:"points"`
 	PostsMade       int                  `bson:"posts_made" json:"posts_made"`
 	Credits         UserCredits          `bson:"credits" json:"credits"`
+	KudosRewards    KudosRewards         `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`

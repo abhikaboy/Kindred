@@ -234,7 +234,10 @@ func (s *Service) DecrementUserBalance(userID primitive.ObjectID) error {
 
 	ctx := context.Background()
 	filter := bson.M{"_id": userID}
-	update := bson.M{"$inc": bson.M{"congratulations": -1}}
+	update := bson.M{"$inc": bson.M{
+		"congratulations":              -1, // Decrement balance
+		"kudosRewards.congratulations": 1,  // Increment sent count for rewards
+	}}
 
 	_, err := s.Users.UpdateOne(ctx, filter, update)
 	return err

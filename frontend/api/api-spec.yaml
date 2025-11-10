@@ -2614,6 +2614,35 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/credits:
+        get:
+            tags:
+                - profiles
+                - credits
+            summary: Get user credits
+            description: Retrieve the current credit balance for the authenticated user
+            operationId: get-user-credits
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserCredits'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/encouragements:
         get:
             tags:
@@ -4481,6 +4510,39 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Create tasks from natural language
+            description: Process natural language text to create multiple tasks and categories using AI
+            operationId: create-task-natural-language
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateTaskNaturalLanguageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateTaskNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/template/{id}:
         get:
             tags:
@@ -5308,6 +5370,23 @@ components:
             required:
                 - id
                 - name
+        CategoryMetadata:
+            type: object
+            additionalProperties: false
+            properties:
+                id:
+                    type: string
+                    description: Category ID
+                name:
+                    type: string
+                    description: Category name
+                workspaceName:
+                    type: string
+                    description: Workspace name
+            required:
+                - id
+                - name
+                - workspaceName
         ChecklistItem:
             type: object
             additionalProperties: false
@@ -5887,6 +5966,70 @@ components:
                 - images
                 - caption
                 - isPublic
+        CreateTaskNaturalLanguageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateTaskNaturalLanguageInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: Natural language description of tasks to create
+                    examples:
+                        - Buy groceries tomorrow at 3pm, finish project report by Friday
+                    minLength: 1
+                    maxLength: 10000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        CreateTaskNaturalLanguageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateTaskNaturalLanguageOutputBody.json
+                    readOnly: true
+                categoriesCreated:
+                    type: integer
+                    description: Number of new categories created
+                    format: int64
+                message:
+                    type: string
+                    examples:
+                        - Successfully created 3 tasks in 2 categories
+                newCategories:
+                    type: array
+                    description: List of newly created categories with metadata
+                    items:
+                        $ref: '#/components/schemas/CategoryMetadata'
+                tasks:
+                    type: array
+                    description: List of created tasks
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                tasksCreated:
+                    type: integer
+                    description: Total number of tasks created
+                    format: int64
+            required:
+                - categoriesCreated
+                - newCategories
+                - tasksCreated
+                - tasks
+                - message
         CreateTaskParams:
             type: object
             additionalProperties: false
@@ -6835,6 +6978,21 @@ components:
                 - width
                 - height
                 - bytes
+        KudosRewards:
+            type: object
+            additionalProperties: false
+            properties:
+                congratulations:
+                    type: integer
+                    description: Number of congratulations sent (for rewards tracking)
+                    format: int64
+                encouragements:
+                    type: integer
+                    description: Number of encouragements sent (for rewards tracking)
+                    format: int64
+            required:
+                - encouragements
+                - congratulations
         LoginRequest:
             type: object
             additionalProperties: false
@@ -7706,6 +7864,8 @@ components:
                         type: string
                 handle:
                     type: string
+                kudosRewards:
+                    $ref: '#/components/schemas/KudosRewards'
                 points:
                     type: integer
                     format: int64
@@ -7742,6 +7902,7 @@ components:
                 - points
                 - posts_made
                 - credits
+                - kudosRewards
         SendOTPOutputBody:
             type: object
             additionalProperties: false
@@ -8740,6 +8901,13 @@ components:
             type: object
             additionalProperties: false
             properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UserCredits.json
+                    readOnly: true
                 analytics:
                     type: integer
                     description: Analytics access credits
@@ -8752,6 +8920,10 @@ components:
                     type: integer
                     description: Group creation credits
                     format: int64
+                naturalLanguage:
+                    type: integer
+                    description: Natural language task creation credits
+                    format: int64
                 voice:
                     type: integer
                     description: Voice task creation credits
@@ -8761,6 +8933,7 @@ components:
                 - blueprint
                 - group
                 - analytics
+                - naturalLanguage
         UserExtendedReference:
             type: object
             additionalProperties: false

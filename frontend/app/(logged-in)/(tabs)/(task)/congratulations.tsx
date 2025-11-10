@@ -12,6 +12,7 @@ import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congrat
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Congratulation {
     id: string;
@@ -30,8 +31,12 @@ interface Congratulation {
 export default function Congratulations() {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
+    const { user } = useAuth();
     const [congratulations, setCongratulations] = useState<Congratulation[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // Get sent count from user's kudosRewards for progress tracking
+    const sentCongratulations = user?.kudosRewards?.congratulations || 0;
 
     useEffect(() => {
         fetchCongratulations();
@@ -100,9 +105,9 @@ export default function Congratulations() {
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
-                {/* Progress Card - Always show at top */}
+                {/* Progress Card - Shows sent count for rewards */}
                 <KudosProgressCard
-                    current={congratulations.length}
+                    current={sentCongratulations}
                     max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
                     type="congratulations"
                 />

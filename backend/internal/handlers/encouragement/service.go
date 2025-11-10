@@ -64,10 +64,10 @@ func (s *Service) GetAllEncouragements(receiverID primitive.ObjectID) ([]Encoura
 	for i, internal := range internalResults {
 		apiDoc := internal.ToAPI()
 		// DEBUG: Log the conversion to see what's happening
-		slog.Info("Converting encouragement to API format", 
-			"id", internal.ID.Hex(), 
-			"scope", internal.Scope, 
-			"categoryName", internal.CategoryName, 
+		slog.Info("Converting encouragement to API format",
+			"id", internal.ID.Hex(),
+			"scope", internal.Scope,
+			"categoryName", internal.CategoryName,
 			"taskName", internal.TaskName,
 			"api_categoryName", apiDoc.CategoryName,
 			"api_taskName", apiDoc.TaskName)
@@ -280,7 +280,10 @@ func (s *Service) DecrementUserBalance(userID primitive.ObjectID) error {
 
 	ctx := context.Background()
 	filter := bson.M{"_id": userID}
-	update := bson.M{"$inc": bson.M{"encouragements": -1}}
+	update := bson.M{"$inc": bson.M{
+		"encouragements":              -1, // Decrement balance
+		"kudosRewards.encouragements": 1,  // Increment sent count for rewards
+	}}
 
 	_, err := s.Users.UpdateOne(ctx, filter, update)
 	return err

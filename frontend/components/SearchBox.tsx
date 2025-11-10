@@ -1,11 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Image } from "react-native";
+import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Image, Animated, LayoutAnimation, Platform, UIManager } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Keyboard } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { MagnifyingGlass, X, User, Package } from "phosphor-react-native";
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export interface AutocompleteSuggestion {
     id: string;
@@ -52,27 +57,116 @@ export function SearchBox({
     let ThemedColor = useThemeColor();
 
     const [recentItems, setRecentItems] = useState<RecentSearchItem[]>([]);
+    const [showResults, setShowResults] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    
+    // Animation values
+    const resultsHeight = useRef(new Animated.Value(0)).current;
+    const resultsOpacity = useRef(new Animated.Value(0)).current;
+    const iconTransition = useRef(new Animated.Value(0)).current;
+    const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     async function fetchRecents() {
         if (recent) {
-            setRecentItems(await getRecents());
+            const recents = await getRecents();
+            
+            // Animate layout changes for items
+            LayoutAnimation.configureNext({
+                duration: 300,
+                create: {
+                    type: LayoutAnimation.Types.easeInEaseOut,
+                    property: LayoutAnimation.Properties.opacity,
+                },
+                update: {
+                    type: LayoutAnimation.Types.spring,
+                    springDamping: 0.7,
+                },
+            });
+            
+            setRecentItems(recents);
             setFocused(true);
+            
+            // Animate in results
+            if (recents.length > 0) {
+                setShowResults(true);
+                Animated.parallel([
+                    Animated.spring(resultsHeight, {
+                        toValue: 1,
+                        tension: 60,
+                        friction: 10,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(resultsOpacity, {
+                        toValue: 1,
+                        duration: 300,
+                        useNativeDriver: true,
+                    }),
+                    Animated.spring(iconTransition, {
+                        toValue: 1,
+                        tension: 100,
+                        friction: 10,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            }
         } else await clearRecents();
     }
     async function clearRecents() {
+        // Clear any pending blur timeout
+        if (blurTimeoutRef.current) {
+            clearTimeout(blurTimeoutRef.current);
+            blurTimeoutRef.current = null;
+        }
+        
+        // Immediately start hiding if no items or already hidden
+        if (!showResults && recentItems.length === 0) {
+            if (setFocused) setFocused(false);
+            return;
+        }
+        
+        // If already animating, stop the current animation and restart
+        if (isAnimating) {
+            resultsHeight.stopAnimation();
+            resultsOpacity.stopAnimation();
+            iconTransition.stopAnimation();
+        }
+        
+        setIsAnimating(true);
+        
+        // Animate out results - DON'T hide until animation completes
+        Animated.parallel([
+            Animated.timing(resultsHeight, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(resultsOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.spring(iconTransition, {
+                toValue: 0,
+                tension: 100,
+                friction: 10,
+                useNativeDriver: true,
+            }),
+        ]).start(({ finished }) => {
+            // Update state even if animation was interrupted
+            setShowResults(false);
         setRecentItems([]);
+            setIsAnimating(false);
         if (setFocused) setFocused(false);
+        });
     }
     async function deleteRecentItem(id: string) {
         deleteRecent(id).then(() => fetchRecents());
     }
 
     const clear = () => {
-        setRecentItems([]);
-        if (setFocused) setFocused(false);
+        clearRecents();
         onChangeText("");
-        onSubmit();
-        setFocused(false);
+        // Don't call onSubmit() - just clear the input
         Keyboard.dismiss();
     };
 
@@ -82,7 +176,76 @@ export function SearchBox({
                 setInputHeight(height + Dimensions.get("window").height * 0.01);
             });
         }
+        
+        // Cleanup timeout on unmount
+        return () => {
+            if (blurTimeoutRef.current) {
+                clearTimeout(blurTimeoutRef.current);
+            }
+        };
     }, [inputRef]);
+    
+    // Animate autocomplete suggestions
+    useEffect(() => {
+        if (showAutocomplete && autocompleteSuggestions.length > 0) {
+            // Animate layout changes for items
+            LayoutAnimation.configureNext({
+                duration: 300,
+                create: {
+                    type: LayoutAnimation.Types.easeInEaseOut,
+                    property: LayoutAnimation.Properties.opacity,
+                },
+                update: {
+                    type: LayoutAnimation.Types.spring,
+                    springDamping: 0.7,
+                },
+            });
+            
+            setShowResults(true);
+            Animated.parallel([
+                Animated.spring(resultsHeight, {
+                    toValue: 1,
+                    tension: 60,
+                    friction: 10,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(resultsOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(iconTransition, {
+                    toValue: 1,
+                    tension: 100,
+                    friction: 10,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else if (!showAutocomplete) {
+            Animated.parallel([
+                Animated.timing(resultsHeight, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(resultsOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(iconTransition, {
+                    toValue: 0,
+                    tension: 100,
+                    friction: 10,
+                    useNativeDriver: true,
+                }),
+            ]).start(({ finished }) => {
+                if (finished) {
+                    setShowResults(false);
+                }
+            });
+        }
+    }, [showAutocomplete, autocompleteSuggestions.length]);
 
     const onSubmitEditing = () => {
         if (recent)
@@ -103,38 +266,100 @@ export function SearchBox({
                     placeholder={placeholder}
                     ref={inputRef}
                     onSubmitEditing={onSubmitEditing}
-                    onFocus={() => fetchRecents()}
-                    onBlur={() => clearRecents()}
-                    onEndEditing={() => clearRecents()}
+                    onFocus={() => {
+                        // Clear any pending blur
+                        if (blurTimeoutRef.current) {
+                            clearTimeout(blurTimeoutRef.current);
+                            blurTimeoutRef.current = null;
+                        }
+                        fetchRecents();
+                    }}
+                    onBlur={() => {
+                        // Delay clearRecents to allow tap events to fire
+                        // But ensure we always clear eventually
+                        if (blurTimeoutRef.current) {
+                            clearTimeout(blurTimeoutRef.current);
+                        }
+                        blurTimeoutRef.current = setTimeout(() => {
+                            // Force clear even if already animating
+                            if (showResults || recentItems.length > 0) {
+                                clearRecents();
+                            }
+                        }, 150);
+                    }}
                     value={value}
                     onChangeText={onChangeText}
                     {...rest}
                     style={{ ...styles.input, color: ThemedColor.text }}
                     placeholderTextColor={ThemedColor.caption}
                 />
-                {recentItems.length > 0 ? (
-                    <View
+                <Animated.View
                         style={{
                             padding: 12,
+                        borderRadius: 30,
+                        backgroundColor: iconTransition.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [ThemedColor.primary, 'transparent']
+                        }),
+                        transform: [{
+                            scale: iconTransition.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: [1, 0.8, 1]
+                            })
+                        }],
+                        boxShadow: ThemedColor.shadowSmall,
+                        position: 'relative',
+                        width: 44,
+                        height: 44,
+                        justifyContent: 'center',
+                        alignItems: 'center',
                         }}>
-                        <TouchableOpacity onPress={clear}>
-                            <X size={24} color={ThemedColor.text} weight="light" />
+                    <TouchableOpacity 
+                        onPress={clear} 
+                        disabled={!showResults}
+                        style={{ 
+                            position: 'absolute',
+                            width: '100%',
+                            height: '100%',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Animated.View style={{
+                            opacity: iconTransition,
+                            transform: [{
+                                rotate: iconTransition.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['90deg', '0deg']
+                                })
+                            }],
+                        }}>
+                            <X size={20} color={ThemedColor.text} weight="light" />
+                        </Animated.View>
                         </TouchableOpacity>
-                    </View>
-                ) : (
-                    <View
-                        style={{
-                            backgroundColor: ThemedColor.primary,
-                            padding: 12,
-                            borderRadius: 30,
-                            boxShadow: ThemedColor.shadowSmall,
+                    <Animated.View style={{
+                        opacity: iconTransition.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 0]
+                        }),
+                        position: 'absolute',
                         }}>
                         <MagnifyingGlass size={20} color={ThemedColor.buttonText} weight="light" />
-                    </View>
-                )}
+                    </Animated.View>
+                </Animated.View>
             </View>
-            {recent && recentItems.length > 0 && (
-                <View style={{ ...styles.recentsContainer, top: inputHeight }}>
+            {recent && showResults && recentItems.length > 0 && (
+                <Animated.View 
+                    style={{ 
+                        ...styles.recentsContainer, 
+                        top: inputHeight,
+                        opacity: resultsOpacity,
+                        transform: [{
+                            scaleY: resultsHeight
+                        }],
+                        transformOrigin: 'top',
+                    }}
+                >
                     {recentItems.map((item: RecentSearchItem, index: number) => {
                         const displayText =
                             item.type === "user"
@@ -160,6 +385,7 @@ export function SearchBox({
                             <TouchableOpacity
                                 key={item.id}
                                 style={styles.recent}
+                                activeOpacity={0.7}
                                 onPress={() => {
                                     if (isText) {
                                         inputRef.current?.blur();
@@ -216,10 +442,20 @@ export function SearchBox({
                             </TouchableOpacity>
                         );
                     })}
-                </View>
+                </Animated.View>
             )}
-            {showAutocomplete && autocompleteSuggestions.length > 0 && (
-                <View style={{ ...styles.recentsContainer, top: inputHeight }}>
+            {showAutocomplete && showResults && autocompleteSuggestions.length > 0 && (
+                <Animated.View 
+                    style={{ 
+                        ...styles.recentsContainer, 
+                        top: inputHeight,
+                        opacity: resultsOpacity,
+                        transform: [{
+                            scaleY: resultsHeight
+                        }],
+                        transformOrigin: 'top',
+                    }}
+                >
                     {autocompleteSuggestions.map((suggestion: AutocompleteSuggestion) => {
                         const displayText = suggestion.type === "user" ? suggestion.display_name : suggestion.name;
                         const subtitle = suggestion.type === "user" ? suggestion.handle : "Blueprint";
@@ -234,6 +470,7 @@ export function SearchBox({
                             <TouchableOpacity
                                 key={suggestion.id}
                                 style={styles.recent}
+                                activeOpacity={0.7}
                                 onPress={() => {
                                     if (onSelectSuggestion) {
                                         onSelectSuggestion(suggestion);
@@ -266,7 +503,7 @@ export function SearchBox({
                             </TouchableOpacity>
                         );
                     })}
-                </View>
+                </Animated.View>
             )}
         </View>
     );

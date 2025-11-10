@@ -9,15 +9,17 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function KudosRewards() {
   const ThemedColor = useThemeColor();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
+  const { user } = useAuth();
 
-  // TODO: Replace with actual data from API
-  const encouragementsProgress = 3;
-  const congratulationsProgress = 6;
+  // Get sent counts from user's kudosRewards for progress tracking
+  const encouragementsProgress = user?.kudosRewards?.encouragements || 0;
+  const congratulationsProgress = user?.kudosRewards?.congratulations || 0;
 
   const styles = createStyles(ThemedColor, insets);
 

@@ -1324,6 +1324,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/credits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user credits
+         * @description Retrieve the current credit balance for the authenticated user
+         */
+        get: operations["get-user-credits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/encouragements": {
         parameters: {
             query?: never;
@@ -2108,6 +2128,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/natural-language": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create tasks from natural language
+         * @description Process natural language text to create multiple tasks and categories using AI
+         */
+        post: operations["create-task-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/template/{id}": {
         parameters: {
             query?: never;
@@ -2594,6 +2634,14 @@ export interface components {
             isBlueprint?: boolean;
             name: string;
         };
+        CategoryMetadata: {
+            /** @description Category ID */
+            id: string;
+            /** @description Category name */
+            name: string;
+            /** @description Workspace name */
+            workspaceName: string;
+        };
         ChecklistItem: {
             completed: boolean;
             content: string;
@@ -2983,6 +3031,48 @@ export interface components {
             isPublic: boolean;
             size?: components["schemas"]["ImageSize"];
             task?: components["schemas"]["PostTaskExtendedReference"];
+        };
+        CreateTaskNaturalLanguageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTaskNaturalLanguageInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Natural language description of tasks to create
+             * @example Buy groceries tomorrow at 3pm, finish project report by Friday
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        CreateTaskNaturalLanguageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTaskNaturalLanguageOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Number of new categories created
+             */
+            categoriesCreated: number;
+            /** @example Successfully created 3 tasks in 2 categories */
+            message: string;
+            /** @description List of newly created categories with metadata */
+            newCategories: components["schemas"]["CategoryMetadata"][];
+            /** @description List of created tasks */
+            tasks: components["schemas"]["TaskDocument"][];
+            /**
+             * Format: int64
+             * @description Total number of tasks created
+             */
+            tasksCreated: number;
         };
         CreateTaskParams: {
             /**
@@ -3553,6 +3643,18 @@ export interface components {
             /** Format: int64 */
             width: number;
         };
+        KudosRewards: {
+            /**
+             * Format: int64
+             * @description Number of congratulations sent (for rewards tracking)
+             */
+            congratulations: number;
+            /**
+             * Format: int64
+             * @description Number of encouragements sent (for rewards tracking)
+             */
+            encouragements: number;
+        };
         LoginRequest: {
             /**
              * Format: uri
@@ -3983,6 +4085,7 @@ export interface components {
             encouragements: number;
             friends: string[];
             handle: string;
+            kudosRewards: components["schemas"]["KudosRewards"];
             /** Format: int64 */
             points: number;
             /** Format: int64 */
@@ -4614,6 +4717,12 @@ export interface components {
         };
         UserCredits: {
             /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UserCredits.json
+             */
+            readonly $schema?: string;
+            /**
              * Format: int64
              * @description Analytics access credits
              */
@@ -4628,6 +4737,11 @@ export interface components {
              * @description Group creation credits
              */
             group: number;
+            /**
+             * Format: int64
+             * @description Natural language task creation credits
+             */
+            naturalLanguage: number;
             /**
              * Format: int64
              * @description Voice task creation credits
@@ -7332,6 +7446,38 @@ export interface operations {
             };
         };
     };
+    "get-user-credits": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserCredits"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-encouragements": {
         parameters: {
             query?: never;
@@ -9054,6 +9200,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-task-natural-language": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskNaturalLanguageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTaskNaturalLanguageOutputBody"];
                 };
             };
             /** @description Error */

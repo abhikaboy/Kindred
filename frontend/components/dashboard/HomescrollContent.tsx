@@ -112,8 +112,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}
                     >
                         <ThemedText type="caption">UPCOMING</ThemedText>
-                        <Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />
-                    </TouchableOpacity>
+                            <Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />
+                        </TouchableOpacity>
                     <TodaySection />
                 </View>
                 {/* <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>

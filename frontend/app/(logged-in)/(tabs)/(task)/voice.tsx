@@ -16,6 +16,7 @@ import { getUserCredits, UserCredits } from "@/api/profile";
 import { useTasks } from "@/contexts/tasksContext";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
+import { CreditsInfoSheet } from "@/components/CreditsInfoSheet";
 
 type Props = {};
 
@@ -28,6 +29,7 @@ const VoiceDump = (props: Props) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [credits, setCredits] = useState<UserCredits | null>(null);
+    const [showCreditsSheet, setShowCreditsSheet] = useState(false);
 
     useEffect(() => {
         // Fetch credits on mount
@@ -110,6 +112,14 @@ const VoiceDump = (props: Props) => {
             // Invalidate cache and trigger workspace refetch to get new tasks/categories
             fetchWorkspaces(true);
             
+            // Refetch credits to update the count
+            try {
+                const updatedCredits = await getUserCredits();
+                setCredits(updatedCredits);
+            } catch (error) {
+                console.error("Failed to refetch credits:", error);
+            }
+            
             // Clear the transcription
             setTranscription("");
             
@@ -163,24 +173,6 @@ const VoiceDump = (props: Props) => {
                     <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                         Voice Dump
                     </ThemedText>
-                    {credits !== null && (
-                        <View style={styles.creditsContainer}>
-                            <ThemedText type="caption" style={styles.creditsLabel}>
-                                CREDITS
-                            </ThemedText>
-                            <View style={styles.creditsValue}>
-                                <ThemedText type="default" style={{ fontWeight: '600' }}>
-                                    {credits.naturalLanguage}
-                                </ThemedText>
-                                <Ionicons 
-                                    name="information-circle-outline" 
-                                    size={16} 
-                                    color={ThemedColor.caption}
-                                    style={{ marginLeft: 4 }}
-                                />
-                            </View>
-                        </View>
-                    )}
                 </View>
 
                 {/* Preview Section */}
@@ -224,6 +216,34 @@ const VoiceDump = (props: Props) => {
                     </View>
                 )}
 
+                {/* Credits Display */}
+                {credits !== null && (
+                    <View style={styles.creditsContainer}>
+                        <ThemedText type="caption" style={styles.creditsLabel}>
+                            NATURAL LANGUAGE CREDITS
+                        </ThemedText>
+                        <View style={styles.creditsValue}>
+                            <ThemedText type="default" style={{ fontWeight: '600' }}>
+                                {credits.naturalLanguage}
+                            </ThemedText>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    console.log('Info icon pressed, opening sheet');
+                                    setShowCreditsSheet(true);
+                                }}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons 
+                                    name="information-circle-outline" 
+                                    size={16} 
+                                    color={ThemedColor.caption}
+                                    style={{ marginLeft: 4 }}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
                 {/* Microphone Button Section */}
                 <View style={styles.microphoneSection}>
                     <ThemedText 
@@ -249,6 +269,16 @@ const VoiceDump = (props: Props) => {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+
+            {/* Credits Info Sheet */}
+            <CreditsInfoSheet 
+                visible={showCreditsSheet}
+                onClose={() => {
+                    console.log('Closing sheet');
+                    setShowCreditsSheet(false);
+                }}
+                currentCredits={credits?.naturalLanguage ?? 0}
+            />
         </ThemedView>
     );
 };
@@ -278,8 +308,9 @@ const styles = StyleSheet.create({
     creditsContainer: {
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "center",
         gap: 8,
-        marginTop: 8,
+        marginTop: 16,
     },
     creditsLabel: {
         fontSize: 11,
