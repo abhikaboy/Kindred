@@ -489,16 +489,25 @@ func RegisterUpdateTaskReminderOperation(api huma.API, handler *Handler) {
 type CreateTaskNaturalLanguageInput struct {
 	Authorization string `header:"Authorization" required:"true"`
 	Body          struct {
-		Text string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language description of tasks to create" example:"Buy groceries tomorrow at 3pm, finish project report by Friday"`
+		Text     string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language description of tasks to create" example:"Buy groceries tomorrow at 3pm, finish project report by Friday"`
+		Timezone string `json:"timezone" doc:"User's timezone (IANA format)" example:"America/New_York"`
 	} `json:"body"`
+}
+
+// CategoryMetadata contains basic information about a category for the response
+type CategoryMetadata struct {
+	ID            string `json:"id" doc:"Category ID"`
+	Name          string `json:"name" doc:"Category name"`
+	WorkspaceName string `json:"workspaceName" doc:"Workspace name"`
 }
 
 type CreateTaskNaturalLanguageOutput struct {
 	Body struct {
-		CategoriesCreated int            `json:"categoriesCreated" doc:"Number of new categories created"`
-		TasksCreated      int            `json:"tasksCreated" doc:"Total number of tasks created"`
-		Tasks             []TaskDocument `json:"tasks" doc:"List of created tasks"`
-		Message           string         `json:"message" example:"Successfully created 3 tasks in 2 categories"`
+		CategoriesCreated int                `json:"categoriesCreated" doc:"Number of new categories created"`
+		NewCategories     []CategoryMetadata `json:"newCategories" doc:"List of newly created categories with metadata"`
+		TasksCreated      int                `json:"tasksCreated" doc:"Total number of tasks created"`
+		Tasks             []TaskDocument     `json:"tasks" doc:"List of created tasks"`
+		Message           string             `json:"message" example:"Successfully created 3 tasks in 2 categories"`
 	}
 }
 

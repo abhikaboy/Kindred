@@ -392,10 +392,20 @@ export const updateTaskRemindersAPI = async (
 };
 
 /**
+ * Category metadata from natural language task creation
+ */
+export interface CategoryMetadata {
+    id: string;
+    name: string;
+    workspaceName: string;
+}
+
+/**
  * Response type for natural language task creation
  */
 export interface NaturalLanguageTaskCreationResponse {
     categoriesCreated: number;
+    newCategories: CategoryMetadata[];
     tasksCreated: number;
     tasks: TaskDocument[];
     message: string;
@@ -421,9 +431,15 @@ export interface NaturalLanguageTaskCreationResponse {
 export const createTasksFromNaturalLanguageAPI = async (
     text: string
 ): Promise<NaturalLanguageTaskCreationResponse> => {
+    // Get the user's timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
     const { data, error } = await client.POST("/v1/user/tasks/natural-language", {
         params: withAuthHeaders({}),
-        body: { text },
+        body: { 
+            text,
+            timezone,
+        },
     });
 
     if (error) {

@@ -864,10 +864,11 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "Starting natural language task creation",
 		slog.String("userID", userID),
-		slog.String("inputText", input.Body.Text))
+		slog.String("inputText", input.Body.Text),
+		slog.String("timezone", input.Body.Timezone))
 
 	// Call Genkit flow to process natural language
-	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text)
+	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text, input.Body.Timezone)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to call Gemini flow",
 			slog.String("userID", userID),
@@ -880,7 +881,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 		slog.Int("existingCategoryTasks", len(result.Tasks)))
 
 	// Process new categories with their tasks
-	newCategoryTasks, categoriesCreated, newCategoryTaskCount, err := h.processNewCategories(ctx, result.Categories, userObjID)
+	newCategoryTasks, newCategoryMetadata, categoriesCreated, newCategoryTaskCount, err := h.processNewCategories(ctx, result.Categories, userObjID)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to process new categories",
 			slog.String("userID", userID),
@@ -911,6 +912,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 	// Build response
 	output := &CreateTaskNaturalLanguageOutput{}
 	output.Body.CategoriesCreated = categoriesCreated
+	output.Body.NewCategories = newCategoryMetadata
 	output.Body.TasksCreated = totalTasks
 	output.Body.Tasks = allTasks
 

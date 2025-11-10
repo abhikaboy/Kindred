@@ -11,6 +11,7 @@ import { Task } from "@/api/types";
 import TaskCard from "@/components/cards/TaskCard";
 import type { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
+import { CategoryMetadata } from "@/api/task";
 
 type TaskDocument = components["schemas"]["TaskDocument"];
 type Props = {};
@@ -123,13 +124,27 @@ const Preview = (props: Props) => {
         }
     }, [params.tasks]);
 
+    // Parse new categories metadata from route params
+    const newCategoriesData = useMemo(() => {
+        if (!params.newCategories || typeof params.newCategories !== 'string') {
+            return [];
+        }
+        try {
+            return JSON.parse(params.newCategories) as CategoryMetadata[];
+        } catch (error) {
+            console.error("Failed to parse new categories data:", error);
+            return [];
+        }
+    }, [params.newCategories]);
+
     const categoriesCreated = params.categoriesCreated ? Number(params.categoriesCreated) : 0;
     const tasksCreated = params.tasksCreated ? Number(params.tasksCreated) : 0;
 
-    // Build a map of categoryId to category info from workspaces
+    // Build a map of categoryId to category info from workspaces and new categories
     const categoryMap = useMemo(() => {
         const map = new Map<string, { name: string; workspace: string; isNew: boolean }>();
         
+        // Add existing categories from workspaces
         workspaces.forEach(workspace => {
             workspace.categories.forEach(category => {
                 map.set(category.id, {
@@ -140,22 +155,17 @@ const Preview = (props: Props) => {
             });
         });
         
-        return map;
-    }, [workspaces]);
-
-    // Track which categories have new tasks from this generation
-    const newCategoryIds = useMemo(() => {
-        const ids = new Set<string>();
-        const existingIds = new Set(categoryMap.keys());
-        
-        tasksData.forEach(task => {
-            if (task.categoryID && !existingIds.has(task.categoryID)) {
-                ids.add(task.categoryID);
-            }
+        // Add newly created categories from API response
+        newCategoriesData.forEach(category => {
+            map.set(category.id, {
+                name: category.name,
+                workspace: category.workspaceName,
+                isNew: true, // Newly created categories
+            });
         });
         
-        return ids;
-    }, [tasksData, categoryMap]);
+        return map;
+    }, [workspaces, newCategoriesData]);
 
     // Group tasks by category
     const groupedCategories = useMemo(() => {
@@ -186,14 +196,13 @@ const Preview = (props: Props) => {
             
             if (!groups.has(categoryId)) {
                 const categoryInfo = categoryMap.get(categoryId);
-                const isNew = newCategoryIds.has(categoryId);
                 
                 groups.set(categoryId, {
                     categoryId,
                     categoryName: categoryInfo?.name || "Unknown Category",
                     workspace: categoryInfo?.workspace,
                     tasks: [],
-                    isNew: isNew || categoriesCreated > 0, // Mark as new if it's a newly created category
+                    isNew: categoryInfo?.isNew || false, // Use isNew from categoryMap
                 });
             }
             
@@ -201,7 +210,7 @@ const Preview = (props: Props) => {
         });
         
         return Array.from(groups.values());
-    }, [tasksData, categoryMap, newCategoryIds, categoriesCreated]);
+    }, [tasksData, categoryMap]);
 
     // Use grouped categories for rendering (with fallback mock data for preview)
     const categories = groupedCategories.length > 0 ? groupedCategories : [
@@ -402,13 +411,9 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     bottomButtonContainer: {
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingTop: 16,
-        paddingBottom: 32,
+        marginBottom: 96,
         borderTopWidth: 1,
         shadowColor: "#000",
         shadowOffset: {

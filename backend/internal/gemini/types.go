@@ -65,6 +65,7 @@ type CategoryInfo struct {
 
 // Enhanced input that includes user ID for context
 type MultiTaskFromTextInputWithUser struct {
-	UserID string `json:"userId"`
-	Text   string `json:"text"`
+	UserID   string `json:"userId"`
+	Text     string `json:"text"`
+	Timezone string `json:"timezone" jsonschema_description:"User's timezone in IANA format (e.g., 'America/New_York', 'Europe/London'). Use this to interpret relative time references like 'tomorrow at 3pm' correctly."`
 }

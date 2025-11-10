@@ -14,7 +14,7 @@ import (
 )
 
 // callGeminiFlow uses reflection to call the Genkit flow without circular import
-func (h *Handler) callGeminiFlow(ctx context.Context, userID, text string) (*MultiTaskOutputLocal, error) {
+func (h *Handler) callGeminiFlow(ctx context.Context, userID, text, timezone string) (*MultiTaskOutputLocal, error) {
 	if h.geminiService == nil {
 		return nil, fmt.Errorf("gemini service not available")
 	}
@@ -37,6 +37,7 @@ func (h *Handler) callGeminiFlow(ctx context.Context, userID, text string) (*Mul
 	inputValue := reflect.New(inputType).Elem()
 	inputValue.FieldByName("UserID").SetString(userID)
 	inputValue.FieldByName("Text").SetString(text)
+	inputValue.FieldByName("Timezone").SetString(timezone)
 
 	// Call the Run method
 	callResults := runMethod.Call([]reflect.Value{
@@ -107,16 +108,17 @@ func buildTaskDocument(taskParams CreateTaskParams, userID, categoryID primitive
 }
 
 // processNewCategories creates categories with their tasks from AI response
-func (h *Handler) processNewCategories(ctx context.Context, categories []NewCategoryWithTasksLocal, userID primitive.ObjectID) ([]TaskDocument, int, int, error) {
+func (h *Handler) processNewCategories(ctx context.Context, categories []NewCategoryWithTasksLocal, userID primitive.ObjectID) ([]TaskDocument, []CategoryMetadata, int, int, error) {
 	slog.LogAttrs(ctx, slog.LevelInfo, "Processing new categories from AI",
 		slog.Int("categoryCount", len(categories)),
 		slog.String("userID", userID.Hex()))
 
 	// Use channels to collect results from concurrent processing
 	type categoryResult struct {
-		tasks []TaskDocument
-		count int
-		err   error
+		tasks    []TaskDocument
+		metadata CategoryMetadata
+		count    int
+		err      error
 	}
 
 	results := make(chan categoryResult, len(categories))
@@ -194,6 +196,11 @@ func (h *Handler) processNewCategories(ctx context.Context, categories []NewCate
 
 				results <- categoryResult{
 					tasks: categoryTasks,
+					metadata: CategoryMetadata{
+						ID:            newCategory.ID.Hex(),
+						Name:          newCategory.Name,
+						WorkspaceName: workspaceName,
+					},
 					count: len(categoryTasks),
 					err:   nil,
 				}
@@ -209,14 +216,16 @@ func (h *Handler) processNewCategories(ctx context.Context, categories []NewCate
 
 	// Collect results
 	var allTasks []TaskDocument
+	var categoryMetadataList []CategoryMetadata
 	categoriesCreated := 0
 	tasksCreated := 0
 
 	for result := range results {
 		if result.err != nil {
-			return nil, 0, 0, result.err
+			return nil, nil, 0, 0, result.err
 		}
 		allTasks = append(allTasks, result.tasks...)
+		categoryMetadataList = append(categoryMetadataList, result.metadata)
 		tasksCreated += result.count
 		categoriesCreated++
 	}
@@ -225,7 +234,7 @@ func (h *Handler) processNewCategories(ctx context.Context, categories []NewCate
 		slog.Int("categoriesCreated", categoriesCreated),
 		slog.Int("tasksCreated", tasksCreated))
 
-	return allTasks, categoriesCreated, tasksCreated, nil
+	return allTasks, categoryMetadataList, categoriesCreated, tasksCreated, nil
 }
 
 // processExistingCategoryTasks creates tasks in existing categories from AI response (with concurrency)

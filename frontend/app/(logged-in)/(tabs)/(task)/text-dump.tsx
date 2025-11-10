@@ -1,4 +1,4 @@
-import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,12 +8,16 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createTasksFromNaturalLanguageAPI } from "@/api/task";
+import { useTasks } from "@/contexts/tasksContext";
+import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
+import { TaskGenerationError } from "@/components/TaskGenerationError";
 
 type Props = {};
 
 const TextDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const { fetchWorkspaces } = useTasks();
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -33,6 +37,9 @@ const TextDump = (props: Props) => {
         try {
             const result = await createTasksFromNaturalLanguageAPI(text.trim());
             
+            // Invalidate cache and trigger workspace refetch to get new tasks/categories
+            fetchWorkspaces(true);
+            
             // Clear the text input
             setText("");
             
@@ -41,6 +48,7 @@ const TextDump = (props: Props) => {
                 pathname: "/(logged-in)/(tabs)/(task)/preview" as any,
                 params: {
                     tasks: JSON.stringify(result.tasks),
+                    newCategories: JSON.stringify(result.newCategories || []),
                     categoriesCreated: result.categoriesCreated,
                     tasksCreated: result.tasksCreated,
                 }
@@ -125,30 +133,14 @@ const TextDump = (props: Props) => {
                 )}
 
                 {/* Error Message */}
-                {error && (
-                    <View style={[styles.errorContainer, { backgroundColor: ThemedColor.tertiary }]}>
-                        <Ionicons name="alert-circle" size={20} color="#ef4444" style={styles.errorIcon} />
-                        <ThemedText style={styles.errorText}>
-                            {error}
-                        </ThemedText>
-                    </View>
-                )}
+                {error && <TaskGenerationError message={error} />}
 
                 {/* Loading State */}
                 {isLoading && (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color={ThemedColor.tint} />
-                        <ThemedText 
-                            type="default" 
-                            style={[styles.loadingText, { color: ThemedColor.caption }]}>
-                            Processing your text with AI...
-                        </ThemedText>
-                        <ThemedText 
-                            type="default" 
-                            style={[styles.loadingSubtext, { color: ThemedColor.caption }]}>
-                            This may take a few moments
-                        </ThemedText>
-                    </View>
+                    <TaskGenerationLoading 
+                        message="Processing your text with AI..." 
+                        submessage="This may take a few moments"
+                    />
                 )}
 
                 {/* Generate Tasks Button */}
@@ -207,35 +199,6 @@ const styles = StyleSheet.create({
     },
     characterCount: {
         fontSize: 12,
-    },
-    errorContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 12,
-        borderRadius: 8,
-        marginVertical: 12,
-        gap: 8,
-    },
-    errorIcon: {
-        flexShrink: 0,
-    },
-    errorText: {
-        fontSize: 14,
-        flex: 1,
-        color: "#ef4444",
-    },
-    loadingContainer: {
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 24,
-        gap: 12,
-    },
-    loadingText: {
-        fontSize: 16,
-        fontWeight: "500",
-    },
-    loadingSubtext: {
-        fontSize: 14,
     },
     generateButtonContainer: {
         paddingVertical: 16,

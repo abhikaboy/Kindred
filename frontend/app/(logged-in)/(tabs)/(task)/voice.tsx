@@ -11,14 +11,21 @@ import {
     ExpoSpeechRecognitionModule,
     useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
+import { createTasksFromNaturalLanguageAPI } from "@/api/task";
+import { useTasks } from "@/contexts/tasksContext";
+import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
+import { TaskGenerationError } from "@/components/TaskGenerationError";
 
 type Props = {};
 
 const VoiceDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const { fetchWorkspaces } = useTasks();
     const [recognizing, setRecognizing] = useState(false);
     const [transcription, setTranscription] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Speech recognition event handlers
     useSpeechRecognitionEvent("start", () => {
@@ -70,6 +77,59 @@ const VoiceDump = (props: Props) => {
         });
     };
 
+    const handleGenerateTasks = async () => {
+        // Clear any previous errors
+        setError(null);
+        
+        // Validate input
+        if (transcription.trim().length < 4) {
+            setError("Please provide at least 4 characters of speech");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const result = await createTasksFromNaturalLanguageAPI(transcription.trim());
+            
+            // Invalidate cache and trigger workspace refetch to get new tasks/categories
+            fetchWorkspaces(true);
+            
+            // Clear the transcription
+            setTranscription("");
+            
+            // Navigate to preview screen with the task data
+            router.push({
+                pathname: "/(logged-in)/(tabs)/(task)/preview" as any,
+                params: {
+                    tasks: JSON.stringify(result.tasks),
+                    newCategories: JSON.stringify(result.newCategories || []),
+                    categoriesCreated: result.categoriesCreated,
+                    tasksCreated: result.tasksCreated,
+                }
+            });
+        } catch (err) {
+            // Handle different error types
+            let errorMessage = "Failed to generate tasks. Please try again.";
+            
+            if (err instanceof Error) {
+                // Extract meaningful error message
+                if (err.message.includes("Failed to create tasks from natural language")) {
+                    errorMessage = "AI processing failed. Please check your speech and try again.";
+                } else if (err.message.includes("network") || err.message.includes("fetch")) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else {
+                    errorMessage = err.message;
+                }
+            }
+            
+            setError(errorMessage);
+            console.error("Error generating tasks from voice:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <ThemedView style={{ flex: 1 }}>
             <ScrollView 
@@ -108,13 +168,25 @@ const VoiceDump = (props: Props) => {
                     )}
                 </View>
 
+                {/* Error Message */}
+                {error && <TaskGenerationError message={error} />}
+
+                {/* Loading State */}
+                {isLoading && (
+                    <TaskGenerationLoading 
+                        message="Processing your speech with AI..." 
+                        submessage="This may take a few moments"
+                    />
+                )}
+
                 <View style={{ flex: 1, minHeight: 200 }} />
 
-                {transcription && !recognizing && (
+                {transcription && !recognizing && !isLoading && (
                     <View style={styles.generateButtonContainer}>
                         <PrimaryButton
-                            title="Generate"
-                            onPress={() => router.push("/preview" as any)}
+                            title="Generate Tasks"
+                            onPress={handleGenerateTasks}
+                            disabled={transcription.length < 4}
                         />
                     </View>
                 )}
