@@ -35,7 +35,8 @@
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone to generate tasks."
       },
       "entitlements": {
-        "aps-environment": "development"
+        "aps-environment": "production",
+        "com.apple.developer.applesignin": ["Default"]
       },
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.kindred.kindredtsl"

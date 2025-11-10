@@ -196,7 +196,7 @@ const ReferralOnboarding = (props: Props) => {
                         {!errorMessage && !isSuccess && (
                             <View style={styles.helpContainer}>
                                 <ThemedText style={[styles.helpText, { color: ThemedColor.caption }]}>
-                                    💡 Referral codes are 6-12 characters
+                                    💡 Referral codes are 8 characters long
                                 </ThemedText>
                             </View>
                         )}

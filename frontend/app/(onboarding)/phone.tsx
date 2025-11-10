@@ -148,12 +148,12 @@ const PhoneOnboarding = (props: Props) => {
                             }
                         ]}
                     >
-                        <View style={styles.phoneInputWrapper}>
+                        <View style={[
+                            styles.unifiedPhoneWrapper,
+                            { backgroundColor: ThemedColor.lightened }
+                        ]}>
                             <TouchableOpacity
-                                style={[
-                                    styles.countryCodeButton,
-                                    { backgroundColor: ThemedColor.lightened }
-                                ]}
+                                style={styles.countryCodeButton}
                                 onPress={() => setShow(true)}
                                 activeOpacity={0.7}
                             >
@@ -166,7 +166,6 @@ const PhoneOnboarding = (props: Props) => {
                                 style={[
                                     styles.phoneInput,
                                     {
-                                        backgroundColor: ThemedColor.lightened,
                                         color: ThemedColor.text,
                                     }
                                 ]}
@@ -243,17 +242,18 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: 40,
     },
-    phoneInputWrapper: {
+    unifiedPhoneWrapper: {
         flexDirection: 'row',
-        gap: 12,
+        alignItems: 'center',
+        borderRadius: 16,
+        paddingLeft: 20,
     },
     countryCodeButton: {
         paddingVertical: 20,
-        paddingHorizontal: 20,
-        borderRadius: 16,
+        paddingRight: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        minWidth: 80,
+        minWidth: 60,
     },
     countryCodeText: {
         fontSize: 18,
@@ -266,8 +266,8 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit',
         fontWeight: '400',
         paddingVertical: 20,
-        paddingHorizontal: 24,
-        borderRadius: 16,
+        paddingRight: 24,
+        backgroundColor: 'transparent',
     },
     helperText: {
         fontSize: 14,

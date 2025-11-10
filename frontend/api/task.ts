@@ -390,3 +390,50 @@ export const updateTaskRemindersAPI = async (
         throw new Error(`Failed to update task reminders: ${JSON.stringify(error)}`);
     }
 };
+
+/**
+ * Response type for natural language task creation
+ */
+export interface NaturalLanguageTaskCreationResponse {
+    categoriesCreated: number;
+    tasksCreated: number;
+    tasks: TaskDocument[];
+    message: string;
+}
+
+/**
+ * Create tasks from natural language description using AI
+ * API: Makes POST request to process natural language and create tasks/categories
+ * Frontend: The created tasks will need to be refetched or added to TaskContext
+ * 
+ * @param text - Natural language description of tasks to create
+ * @returns Response containing created tasks count, categories count, and task details
+ * 
+ * @example
+ * ```typescript
+ * const result = await createTasksFromNaturalLanguageAPI(
+ *   "Buy groceries tomorrow at 3pm, finish project report by Friday"
+ * );
+ * console.log(result.message); // "Successfully created 2 tasks in 2 new categories"
+ * console.log(result.tasks); // Array of created TaskDocuments
+ * ```
+ */
+export const createTasksFromNaturalLanguageAPI = async (
+    text: string
+): Promise<NaturalLanguageTaskCreationResponse> => {
+    const { data, error } = await client.POST("/v1/user/tasks/natural-language", {
+        params: withAuthHeaders({}),
+        body: { text },
+    });
+
+    if (error) {
+        throw new Error(`Failed to create tasks from natural language: ${JSON.stringify(error)}`);
+    }
+
+    if (!data) {
+        throw new Error("No response data from natural language task creation");
+    }
+
+    // Return the response data
+    return data as unknown as NaturalLanguageTaskCreationResponse;
+};

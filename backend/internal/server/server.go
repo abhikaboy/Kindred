@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/abhikaboy/Kindred/internal/gemini"
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	Blueprint "github.com/abhikaboy/Kindred/internal/handlers/blueprint"
@@ -34,7 +35,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (huma.API, *fiber.App) {
+func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, geminiService *gemini.GeminiService) (huma.API, *fiber.App) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			slog.Error("🚨 FIBER ERROR:", "error", err.Error(), "path", c.Path())
@@ -96,7 +97,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream) (
 	category.Routes(api, collections)
 	activity.Routes(api, collections)
 	profile.Routes(api, collections)
-	task.Routes(api, collections)
+	task.Routes(api, collections, geminiService)
 	connection.Routes(api, collections)
 	group.RegisterRoutes(api, collections)
 	post.Routes(api, collections)

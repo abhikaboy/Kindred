@@ -36,6 +36,7 @@ const login = (props: Props) => {
     const [visible, setVisible] = useState(false);
     const [mode, setMode] = useState<"register" | "login">("register");
     const { user } = useAuth();
+
     useEffect(() => {
         if (user) {
             router.push("/");
@@ -102,8 +103,8 @@ const login = (props: Props) => {
                     source={require("../assets/images/Checkmark.png")}
                     style={{
                         width: 50,
-                        resizeMode: "contain",
-                    }}></Image>
+                    resizeMode: "contain",
+                }}></Image>
             </View>
             <View
                 style={{
@@ -138,7 +139,14 @@ const login = (props: Props) => {
                         onPress={() => {
                             setMode("register");
                             setVisible(true);
-                        }} 
+                        }}
+                        style={{
+                            shadowColor: ThemedColor.primary,
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 10,
+                            elevation: 6,
+                        }}
                     />
                     <ThemedText style={{ textAlign: "center", alignItems: "center" }}>
                         <Text style={{ color: "#000" }}>    

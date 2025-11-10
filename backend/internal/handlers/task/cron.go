@@ -14,7 +14,10 @@ Router maps endpoints to handlers
 */
 func Cron(collections map[string]*mongo.Collection) {
 	service := newService(collections)
-	handler := Handler{service}
+	handler := Handler{
+		service:       service,
+		geminiService: nil, // Cron jobs don't need gemini service
+	}
 
 	/* Recurring Tasks */
 

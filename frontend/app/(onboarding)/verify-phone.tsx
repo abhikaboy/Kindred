@@ -350,16 +350,14 @@ const styles = StyleSheet.create({
     },
     successContainer: {
         marginTop: 16,
-        padding: 12,
-        borderRadius: 12,
-        backgroundColor: 'rgba(52, 199, 89, 0.1)',
+        alignSelf: 'flex-start',
     },
     successText: {
         color: '#34c759',
         fontSize: 16,
         fontFamily: 'Outfit',
         fontWeight: '600',
-        textAlign: 'center',
+        textAlign: 'left',
     },
     resendContainer: {
         flexDirection: 'row',

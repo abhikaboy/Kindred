@@ -484,3 +484,31 @@ func RegisterUpdateTaskReminderOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTaskReminders)
 }
+
+// Create Task from Natural Language
+type CreateTaskNaturalLanguageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Text string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language description of tasks to create" example:"Buy groceries tomorrow at 3pm, finish project report by Friday"`
+	} `json:"body"`
+}
+
+type CreateTaskNaturalLanguageOutput struct {
+	Body struct {
+		CategoriesCreated int            `json:"categoriesCreated" doc:"Number of new categories created"`
+		TasksCreated      int            `json:"tasksCreated" doc:"Total number of tasks created"`
+		Tasks             []TaskDocument `json:"tasks" doc:"List of created tasks"`
+		Message           string         `json:"message" example:"Successfully created 3 tasks in 2 categories"`
+	}
+}
+
+func RegisterCreateTaskNaturalLanguageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "create-task-natural-language",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language",
+		Summary:     "Create tasks from natural language",
+		Description: "Process natural language text to create multiple tasks and categories using AI",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.CreateTaskNaturalLanguage)
+}

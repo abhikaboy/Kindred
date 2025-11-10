@@ -77,14 +77,13 @@ func run(stderr io.Writer, args []string) {
 	// SendGrid Setup
 	twillio.InitSendGrid(config.Twillio.SG_Token)
 
-	// API Server Setup
-	api, fiberApp := server.New(db.Collections, db.Stream)
-	fmt.Printf("After New")
-
-	// Gemini Setup
+	// Gemini Setup (before server setup so it can be passed to routes)
 	geminiService := gemini.InitGenkit(db.Collections)
+	fmt.Printf("Gemini service initialized\n")
 
-	fmt.Printf("Gemini schema: %+v\n", geminiService.Genkit)
+	// API Server Setup
+	api, fiberApp := server.New(db.Collections, db.Stream, geminiService)
+	fmt.Printf("Server initialized\n")
 
 	// Handle OpenAPI generation if flag is set
 	if *generateOpenAPIFlag {

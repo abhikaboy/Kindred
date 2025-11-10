@@ -1,16 +1,27 @@
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { Task } from "@/api/types";
 import TaskCard from "@/components/cards/TaskCard";
+import type { components } from "@/api/generated/types";
+import { useTasks } from "@/contexts/tasksContext";
 
+type TaskDocument = components["schemas"]["TaskDocument"];
 type Props = {};
+
+interface GroupedCategory {
+    workspace?: string;
+    categoryName: string;
+    categoryId: string;
+    tasks: Task[];
+    isNew: boolean;
+}
 
 // Preview task item that looks like a real task but isn't swipable
 const PreviewTaskItem = ({ 
@@ -96,10 +107,106 @@ const PreviewCategorySection = ({
 const Preview = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const params = useLocalSearchParams();
+    const { workspaces } = useTasks();
 
-    // Mock data - this would come from the AI generation in a real implementation
-    const categories = [
+    // Parse the tasks from route params
+    const tasksData = useMemo(() => {
+        if (!params.tasks || typeof params.tasks !== 'string') {
+            return [];
+        }
+        try {
+            return JSON.parse(params.tasks) as TaskDocument[];
+        } catch (error) {
+            console.error("Failed to parse tasks data:", error);
+            return [];
+        }
+    }, [params.tasks]);
+
+    const categoriesCreated = params.categoriesCreated ? Number(params.categoriesCreated) : 0;
+    const tasksCreated = params.tasksCreated ? Number(params.tasksCreated) : 0;
+
+    // Build a map of categoryId to category info from workspaces
+    const categoryMap = useMemo(() => {
+        const map = new Map<string, { name: string; workspace: string; isNew: boolean }>();
+        
+        workspaces.forEach(workspace => {
+            workspace.categories.forEach(category => {
+                map.set(category.id, {
+                    name: category.name,
+                    workspace: workspace.name,
+                    isNew: false, // Existing categories from workspaces
+                });
+            });
+        });
+        
+        return map;
+    }, [workspaces]);
+
+    // Track which categories have new tasks from this generation
+    const newCategoryIds = useMemo(() => {
+        const ids = new Set<string>();
+        const existingIds = new Set(categoryMap.keys());
+        
+        tasksData.forEach(task => {
+            if (task.categoryID && !existingIds.has(task.categoryID)) {
+                ids.add(task.categoryID);
+            }
+        });
+        
+        return ids;
+    }, [tasksData, categoryMap]);
+
+    // Group tasks by category
+    const groupedCategories = useMemo(() => {
+        const groups = new Map<string, GroupedCategory>();
+        
+        tasksData.forEach((taskDoc) => {
+            const categoryId = taskDoc.categoryID;
+            if (!categoryId) return;
+            
+            // Convert TaskDocument to Task format
+            const task: Task = {
+                id: taskDoc.id,
+                content: taskDoc.content,
+                value: taskDoc.value,
+                priority: taskDoc.priority,
+                recurring: taskDoc.recurring,
+                recurFrequency: taskDoc.recurFrequency,
+                recurType: taskDoc.recurType,
+                recurDetails: taskDoc.recurDetails as any, // Type cast to handle schema differences
+                public: taskDoc.public,
+                active: taskDoc.active,
+                timestamp: taskDoc.timestamp,
+                lastEdited: taskDoc.lastEdited,
+                templateID: taskDoc.templateID,
+                userID: taskDoc.userID,
+                categoryID: taskDoc.categoryID,
+            };
+            
+            if (!groups.has(categoryId)) {
+                const categoryInfo = categoryMap.get(categoryId);
+                const isNew = newCategoryIds.has(categoryId);
+                
+                groups.set(categoryId, {
+                    categoryId,
+                    categoryName: categoryInfo?.name || "Unknown Category",
+                    workspace: categoryInfo?.workspace,
+                    tasks: [],
+                    isNew: isNew || categoriesCreated > 0, // Mark as new if it's a newly created category
+                });
+            }
+            
+            groups.get(categoryId)!.tasks.push(task);
+        });
+        
+        return Array.from(groups.values());
+    }, [tasksData, categoryMap, newCategoryIds, categoriesCreated]);
+
+    // Use grouped categories for rendering (with fallback mock data for preview)
+    const categories = groupedCategories.length > 0 ? groupedCategories : [
         {
+            categoryId: "preview-cat-1",
             workspace: "Personal",
             categoryName: "Homework",
             isNew: true,
@@ -131,6 +238,7 @@ const Preview = (props: Props) => {
             ] as Task[],
         },
         {
+            categoryId: "preview-cat-2",
             categoryName: "Fitness",
             isNew: true,
             tasks: [
@@ -161,6 +269,7 @@ const Preview = (props: Props) => {
             ] as Task[],
         },
         {
+            categoryId: "preview-cat-3",
             workspace: "Work",
             categoryName: "Development",
             isNew: false,

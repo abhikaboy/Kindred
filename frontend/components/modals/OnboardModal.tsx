@@ -1,5 +1,5 @@
-import { StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import { StyleSheet, TouchableOpacity, View, Image, useColorScheme, Animated } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "../ThemedText";
@@ -30,6 +30,12 @@ export const OnboardModal = (props: Props) => {
     const { mode, visible, setVisible } = props;
     const router = useRouter();
     const ThemedColor = useThemeColor();
+    const colorScheme = useColorScheme();
+
+    // Animation values for staggered button fade-in
+    const phoneOpacity = useRef(new Animated.Value(0)).current;
+    const appleOpacity = useRef(new Animated.Value(0)).current;
+    const googleOpacity = useRef(new Animated.Value(0)).current;
 
     // Google authentication hook
     const { signInAsync: googleSignInAsync, loading: googleLoading } = useGoogleAuth({
@@ -76,13 +82,41 @@ export const OnboardModal = (props: Props) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
     // Define snap points
-    const snapPoints = useMemo(() => ["50%"], []);
+    const snapPoints = useMemo(() => ["75%"], []);
 
     // Handle visibility changes
     useEffect(() => {
         console.log(visible);
         if (visible) {
             bottomSheetModalRef.current?.present();
+            // Reset animations
+            phoneOpacity.setValue(0);
+            appleOpacity.setValue(0);
+            googleOpacity.setValue(0);
+            
+            // Staggered fade-in animation with initial delay
+            setTimeout(() => {
+                Animated.sequence([
+                    Animated.timing(phoneOpacity, {
+                        toValue: 1,
+                        duration: 500,
+                        useNativeDriver: true,
+                    }),
+                    Animated.parallel([
+                        Animated.timing(appleOpacity, {
+                            toValue: 1,
+                            duration: 500,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(googleOpacity, {
+                            toValue: 1,
+                            duration: 500,
+                            delay: 200,
+                            useNativeDriver: true,
+                        }),
+                    ]),
+                ]).start();
+            }, 300);
         } else {
             bottomSheetModalRef.current?.dismiss();
         }
@@ -101,7 +135,7 @@ export const OnboardModal = (props: Props) => {
     // Custom backdrop component
     const renderBackdrop = useCallback(
         (backdropProps) => (
-            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.85} />
         ),
         []
     );
@@ -188,24 +222,24 @@ export const OnboardModal = (props: Props) => {
     const styles = useStyles(ThemedColor);
     return (
         <BottomSheetModal
-        ref={bottomSheetModalRef}
+            ref={bottomSheetModalRef}
             index={0}
             snapPoints={snapPoints}
             onChange={handleSheetChanges}
             backdropComponent={renderBackdrop}
             handleStyle={{
                 backgroundColor: ThemedColor.background,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
+                borderTopLeftRadius: 28,
+                borderTopRightRadius: 28,
             }}
             handleIndicatorStyle={{
-                backgroundColor: ThemedColor.text,
-                width: 48,
-                height: 3,
-                borderRadius: 10,
-                marginVertical: 12,
+                backgroundColor: ThemedColor.tertiary,
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                marginVertical: 14,
             }}
-            backgroundStyle={{ backgroundColor: "rgba(0,0,0,0.2)" }}
+            backgroundStyle={{ backgroundColor: "rgba(0,0,0,0.3)" }}
             enablePanDownToClose={true}>
             <BottomSheetView
                 style={[
@@ -215,65 +249,117 @@ export const OnboardModal = (props: Props) => {
                         height: "100%",
                     },
                 ]}>
-                <BlurView style={styles.blurContainer} intensity={0}>
-                    <View style={styles.headerSection}>
-                        <ThemedText type="title" style={styles.welcomeTitle}>
-                            {mode === "login" ? "Login to Kindred" : "Register for Kindred"}
-                        </ThemedText>
-                    </View>
-                    
-                    <View style={styles.buttonSection}>
-                        <PrimaryButton
-                            title="Continue with Phone Number"
-                            onPress={() => {
-                                setVisible(false);
-                                if (mode === "login") {
-                                    router.push("/login-phone");
-                                } else {
-                                    router.push("/(onboarding)/phone");
-                                }
-                            }}
-                        />
-                        
-                        <PrimaryButton
-                            title={mode === "register" ? "Sign Up with Google" : "Sign In with Google"}
-                            onPress={async () => {
-                                try {
-                                    await googleSignInAsync();
-                                } catch (error) {
-                                    console.error('Google sign in failed:', error);
-                                }
-                            }}
-                            style={styles.googleButton}
-                            textStyle={styles.googleButtonText}
-                        />
-                        
-                        <AppleAuthenticationButton
-                            buttonType={
-                                mode === "register" 
-                                    ? AppleAuthenticationButtonType.SIGN_UP
-                                    : AppleAuthenticationButtonType.SIGN_IN
-                            }
-                            buttonStyle={AppleAuthenticationButtonStyle.BLACK}
-                            cornerRadius={10}
-                            style={styles.appleButton}
-                            onPress={async () => {
-                                try {
-                                    if (mode === "register") {
-                                        await apple_regiser();
-                                    } else {
-                                        await apple_login();
+                <View style={styles.container}>
+                    {/* Content Wrapper with proper flexbox */}
+                    <View style={styles.contentWrapper}>
+                        {/* Top Section - Header */}
+                        <View style={styles.topSection}>
+                            <Image
+                                source={require("@/assets/images/229.Elegance.png")}
+                                style={styles.headerGraphic}
+                                tintColor={colorScheme === 'dark' ? '#FFFFFF' : '#1F1F1F'}
+                                resizeMode="contain"
+                            />
+                            <View style={styles.titleSection}>
+                                <ThemedText type="title" style={styles.welcomeTitle}>
+                                    {mode === "login" ? "Welcome back" : "Almost there!"}
+                                </ThemedText>
+                                <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
+                                    {mode === "login" 
+                                        ? "Choose your sign in method"
+                                        : "Choose your sign in method"
                                     }
-                                    // Only close modal after successful auth
-                                    setVisible(false);
-                                } catch (error) {
-                                    // Keep modal open on error so user can try again
-                                    console.error('Apple auth error in onPress:', error);
-                                }
-                            }}
-                        />
+                                </ThemedText>
+                            </View>
+                        </View>
+
+                        {/* Bottom Section - Buttons & Footer */}
+                        <View style={styles.bottomSection}>
+                            <View style={styles.buttonSection}>
+                                <Animated.View style={{ opacity: phoneOpacity }}>
+                                    <PrimaryButton
+                                        title="Continue with Phone"
+                                        onPress={() => {
+                                            setVisible(false);
+                                            if (mode === "login") {
+                                                router.push("/login-phone");
+                                            } else {
+                                                router.push("/(onboarding)/phone");
+                                            }
+                                        }}
+                                        style={styles.phoneButton}
+                                        textStyle={styles.phoneButtonText}
+                                    />
+                                </Animated.View>
+
+                                <Animated.View style={{ opacity: appleOpacity }}>
+                                    <TouchableOpacity
+                                        style={styles.appleButton}
+                                        onPress={async () => {
+                                            try {
+                                                if (mode === "register") {
+                                                    await apple_regiser();
+                                                } else {
+                                                    await apple_login();
+                                                }
+                                                setVisible(false);
+                                            } catch (error) {
+                                                console.error('Apple auth error in onPress:', error);
+                                            }
+                                        }}
+                                    >
+                                        <View style={styles.buttonContent}>
+                                            <AntDesign name="apple" size={20} color={ThemedColor.primary} />
+                                            <ThemedText style={styles.appleButtonText}>
+                                                {mode === "register" ? "Continue with Apple" : "Sign in with Apple"}
+                                            </ThemedText>
+                                        </View>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                                
+                                <Animated.View style={{ opacity: googleOpacity }}>
+                                    <TouchableOpacity
+                                        style={styles.googleButton}
+                                        onPress={async () => {
+                                            try {
+                                                await googleSignInAsync();
+                                            } catch (error) {
+                                                console.error('Google sign in failed:', error);
+                                            }
+                                        }}
+                                    >
+                                        <View style={styles.buttonContent}>
+                                            <AntDesign name="google" size={20} color={ThemedColor.primary} />
+                                            <ThemedText style={styles.googleButtonText}>
+                                                {mode === "register" ? "Continue with Google" : "Sign in with Google"}
+                                            </ThemedText>
+                                        </View>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            </View>
+
+                            {/* Footer */}
+                            <View style={styles.footerSection}>
+                                <ThemedText type="caption" style={[styles.footerText, { color: ThemedColor.caption }]}>
+                                    {mode === "login" 
+                                        ? "Don't have an account? " 
+                                        : "Already have an account? "
+                                    }
+                                </ThemedText>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        // Toggle between login and register would go here
+                                        // For now, just close the modal
+                                    }}
+                                >
+                                    <ThemedText type="caption" style={[styles.footerLink, { color: ThemedColor.primary }]}>
+                                        {mode === "login" ? "Sign up" : "Log in"}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
-                </BlurView>
+                </View>
             </BottomSheetView>
         </BottomSheetModal>
     );
@@ -281,78 +367,124 @@ export const OnboardModal = (props: Props) => {
 
 const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
-        blurContainer: {
-            paddingHorizontal: 24,
-            paddingTop: 32,
-            paddingBottom: 40,
-            height: "100%",
-            justifyContent: "space-between",
-            alignItems: "center",
+        container: {
             flex: 1,
+            paddingHorizontal: 20,
+            paddingBottom: 24,
         },
-        headerSection: {
-            alignItems: "flex-start",
-            gap: 12,
-            marginBottom: 8,
-            width: "100%",
+        contentWrapper: {
+            flex: 1,
+            justifyContent: "space-between",
+        },
+        topSection: {
+            alignItems: "center",
+            flexShrink: 1,
+        },
+        headerGraphic: {
+            width: "75%",
+            aspectRatio: 1,
+            maxHeight: Dimensions.get("screen").height / 4.5,
+        },
+        titleSection: {
+            alignItems: "center",
+            gap: 8,
+            paddingTop: 16,
         },
         welcomeTitle: {
-            fontSize: 32,
-            fontWeight: "400",
-            textAlign: "left",
+            fontSize: 36,
+            fontWeight: "600",
+            textAlign: "center",
             color: ThemedColor.text,
             fontFamily: "Fraunces",
-            lineHeight: 38,
+            lineHeight: 42,
+            letterSpacing: -2,
+        },
+        subtitle: {
+            fontSize: 15,
+            textAlign: "center",
+            lineHeight: 22,
+            fontFamily: "Outfit",
+        },
+        bottomSection: {
+            flexShrink: 0,
         },
         buttonSection: {
-            width: "100%",
-            gap: 12,
-            flex: 1,
+            gap: 14,
+        },
+        buttonContent: {
+            flexDirection: "row",
+            alignItems: "center",
             justifyContent: "center",
+            gap: 10,
         },
-        phoneButton: {
-            width: "100%",
-            backgroundColor: "white",
-            borderRadius: 10,
-            paddingVertical: 15,
+        appleButton: {
+            backgroundColor: "#FFFFFF",
+            borderRadius: 14,
+            paddingVertical: 16,
             shadowColor: "#000",
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-            elevation: 3,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 6,
+            elevation: 4,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary + '30',
         },
-        phoneButtonText: {
-            color: "rgba(0,0,0,0.54)",
-            fontSize: 20,
+        appleButtonText: {
+            color: "#1F1F1F",
+            fontSize: 16,
             fontWeight: "500",
             fontFamily: "Outfit",
         },
         googleButton: {
-            width: "100%",
-            backgroundColor: "white",
-            borderRadius: 10,
-            paddingVertical: 15,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 14,
+            paddingVertical: 16,
             shadowColor: "#000",
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
+            shadowOffset: { width: 0, height: 3 },
             shadowOpacity: 0.1,
-            shadowRadius: 3,
+            shadowRadius: 5,
             elevation: 3,
-        },
-        appleButton: {
-            width: "100%",
-            height: 54,
-            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary + '30',
         },
         googleButtonText: {
-            color: "rgba(0,0,0,0.54)",
-            fontSize: 20,
+            color: "#1F1F1F",
+            fontSize: 16,
             fontWeight: "500",
             fontFamily: "Outfit",
+        },
+        phoneButton: {
+            backgroundColor: ThemedColor.primary,
+            borderRadius: 14,
+            paddingVertical: 18,
+            shadowColor: ThemedColor.primary,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
+            elevation: 6,
+        },
+        phoneButtonText: {
+            color: "#FFFFFF",
+            fontSize: 17,
+            fontWeight: "700",
+            fontFamily: "Outfit",
+        },
+        footerSection: {
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 4,
+            paddingTop: 20,
+            paddingBottom: 32,
+        },
+        footerText: {
+            fontSize: 14,
+            fontFamily: "Outfit",
+        },
+
+        footerLink: {
+            fontSize: 14,
+            fontFamily: "Outfit",
+            fontWeight: "600",
         },
     });

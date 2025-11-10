@@ -22,9 +22,22 @@ type MultiTaskFromTextInput struct {
 	Text string `json:"text"`
 }
 
+type CategoryTaskPair struct {
+	CategoryID   string                `json:"categoryId" jsonschema_description:"The ObjectID of the existing category as a hex string (24 characters)"`
+	CategoryName string                `json:"categoryName,omitempty" jsonschema_description:"The name of the existing category (optional, for logging)"`
+	Task         task.CreateTaskParams `json:"task"`
+}
+
+// NewCategoryWithTasks represents a new category to be created with its tasks
+type NewCategoryWithTasks struct {
+	Name          string                  `json:"name" jsonschema_description:"The name of the new category"`
+	WorkspaceName string                  `json:"workspaceName" jsonschema_description:"The workspace name (e.g., 'Personal', 'Work', 'General')"`
+	Tasks         []task.CreateTaskParams `json:"tasks" jsonschema_description:"Tasks to create in this new category"`
+}
+
 type MultiTaskFromTextOutput struct {
-	Categories []Category.CreateCategoryParams `json:"categories"`
-	Tasks      []task.CreateTaskParams         `json:"tasks"`
+	Categories []NewCategoryWithTasks `json:"categories"`
+	Tasks      []CategoryTaskPair     `json:"tasks"`
 }
 
 // Input for getUserCategories tool

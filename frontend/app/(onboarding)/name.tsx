@@ -149,22 +149,19 @@ const NameOnboarding = (props: Props) => {
                                     <ThemedText style={styles.labelText}>Handle</ThemedText>
                                     <ThemedText style={[styles.asterisk, { color: ThemedColor.error }]}>*</ThemedText>
                                 </View>
-                                <View style={styles.handleInputWrapper}>
-                                    <View style={[
-                                        styles.atSymbolContainer,
-                                        { backgroundColor: ThemedColor.lightened }
-                                    ]}>
-                                        <ThemedText style={styles.atSymbol}>@</ThemedText>
-                                    </View>
+                                <View style={[
+                                    styles.unifiedInputWrapper,
+                                    { backgroundColor: ThemedColor.lightened }
+                                ]}>
+                                    <ThemedText style={styles.prefixText}>@</ThemedText>
                                     <TextInput
                                         style={[
-                                            styles.handleInput,
+                                            styles.unifiedInput,
                                             {
-                                                backgroundColor: ThemedColor.lightened,
                                                 color: ThemedColor.text,
                                             }
                                         ]}
-                                        placeholder="username"
+                                        placeholder="kindreduser"
                                         placeholderTextColor={ThemedColor.caption}
                                         value={handle}
                                         onChangeText={handleTextChange}
@@ -273,29 +270,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         borderRadius: 16,
     },
-    handleInputWrapper: {
+    unifiedInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-    },
-    atSymbolContainer: {
-        paddingVertical: 20,
-        paddingHorizontal: 20,
         borderRadius: 16,
+        paddingLeft: 24,
     },
-    atSymbol: {
+    prefixText: {
         fontSize: 18,
         fontFamily: 'Outfit',
         fontWeight: '500',
+        marginRight: 4,
     },
-    handleInput: {
+    unifiedInput: {
         flex: 1,
         fontSize: 18,
         fontFamily: 'Outfit',
         fontWeight: '400',
         paddingVertical: 20,
-        paddingHorizontal: 24,
-        borderRadius: 16,
+        paddingRight: 24,
+        backgroundColor: 'transparent',
     },
     errorText: {
         fontSize: 14,

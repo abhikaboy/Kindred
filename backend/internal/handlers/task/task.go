@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -16,8 +17,29 @@ import (
 
 var validator = xvalidator.Validator
 
+// CategoryTaskPairLocal is a local definition to avoid circular import with gemini package
+type CategoryTaskPairLocal struct {
+	CategoryID   string           `json:"categoryId"`
+	CategoryName string           `json:"categoryName,omitempty"`
+	Task         CreateTaskParams `json:"task"`
+}
+
+// NewCategoryWithTasksLocal represents a new category to create with its tasks
+type NewCategoryWithTasksLocal struct {
+	Name          string             `json:"name"`
+	WorkspaceName string             `json:"workspaceName"`
+	Tasks         []CreateTaskParams `json:"tasks"`
+}
+
+// MultiTaskOutputLocal is a local definition to avoid circular import with gemini package
+type MultiTaskOutputLocal struct {
+	Categories []NewCategoryWithTasksLocal `json:"categories"`
+	Tasks      []CategoryTaskPairLocal     `json:"tasks"`
+}
+
 type Handler struct {
-	service *Service
+	service       *Service
+	geminiService any // Service interface - using any to avoid circular import
 }
 
 func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput) (*GetTasksByUserOutput, error) {
@@ -820,4 +842,85 @@ func (h *Handler) UpdateTaskReminders(ctx context.Context, input *UpdateTaskRemi
 	resp := &UpdateTaskReminderOutput{}
 	resp.Body.Message = "Task reminders updated successfully"
 	return resp, nil
+}
+
+// CreateTaskNaturalLanguage processes natural language text to create tasks and categories using AI
+func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTaskNaturalLanguageInput) (*CreateTaskNaturalLanguageOutput, error) {
+	// Validate input
+	if input.Body.Text == "" {
+		return nil, huma.Error400BadRequest("Text field is required", nil)
+	}
+
+	// Extract and validate user ID
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Starting natural language task creation",
+		slog.String("userID", userID),
+		slog.String("inputText", input.Body.Text))
+
+	// Call Genkit flow to process natural language
+	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to call Gemini flow",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError("Failed to process natural language with AI", err)
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "AI response received",
+		slog.Int("newCategories", len(result.Categories)),
+		slog.Int("existingCategoryTasks", len(result.Tasks)))
+
+	// Process new categories with their tasks
+	newCategoryTasks, categoriesCreated, newCategoryTaskCount, err := h.processNewCategories(ctx, result.Categories, userObjID)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to process new categories",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError(err.Error(), err)
+	}
+
+	// Process tasks for existing categories
+	existingCategoryTasks, existingCategoryTaskCount, err := h.processExistingCategoryTasks(ctx, result.Tasks, userObjID)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to process existing category tasks",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError(err.Error(), err)
+	}
+
+	// Combine all created tasks
+	allTasks := append(newCategoryTasks, existingCategoryTasks...)
+	totalTasks := newCategoryTaskCount + existingCategoryTaskCount
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Natural language task creation completed",
+		slog.String("userID", userID),
+		slog.Int("totalTasks", totalTasks),
+		slog.Int("categoriesCreated", categoriesCreated),
+		slog.Int("tasksInNewCategories", newCategoryTaskCount),
+		slog.Int("tasksInExistingCategories", existingCategoryTaskCount))
+
+	// Build response
+	output := &CreateTaskNaturalLanguageOutput{}
+	output.Body.CategoriesCreated = categoriesCreated
+	output.Body.TasksCreated = totalTasks
+	output.Body.Tasks = allTasks
+
+	if totalTasks == 0 {
+		output.Body.Message = "No valid tasks could be created from the provided text"
+	} else if categoriesCreated > 0 {
+		output.Body.Message = fmt.Sprintf("Successfully created %d tasks in %d new categories", totalTasks, categoriesCreated)
+	} else {
+		output.Body.Message = fmt.Sprintf("Successfully created %d tasks in existing categories", totalTasks)
+	}
+
+	return output, nil
 }

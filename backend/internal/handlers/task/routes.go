@@ -8,15 +8,19 @@ import (
 /*
 Router maps endpoints to handlers
 */
-func Routes(api huma.API, collections map[string]*mongo.Collection) {
+func Routes(api huma.API, collections map[string]*mongo.Collection, geminiService any) {
 	service := newService(collections)
-	handler := Handler{service}
+	handler := Handler{
+		service:       service,
+		geminiService: geminiService,
+	}
 
 	RegisterTaskOperations(api, &handler)
 }
 
 // RegisterTaskOperations registers all task operations with Huma
 func RegisterTaskOperations(api huma.API, handler *Handler) {
+	RegisterCreateTaskNaturalLanguageOperation(api, handler)
 	RegisterGetTasksByUserOperation(api, handler)
 	RegisterCreateTaskOperation(api, handler)
 	RegisterGetTasksOperation(api, handler)

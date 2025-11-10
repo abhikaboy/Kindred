@@ -27,6 +27,7 @@ import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
+import { SpinningDashedCircle } from "@/components/ui/SpinningDashedCircle";
 
 type Props = {};
 
@@ -340,6 +341,7 @@ const HomeContent = ({
                         paddingTop: insets.top,
                     },
                 ]}>
+                {/* <SpinningDashedCircle /> */}
                 <ConditionalView condition={selected === ""}>
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
                         <WelcomeHeader

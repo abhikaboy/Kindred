@@ -70,8 +70,8 @@ Current time: %s
 User input: %s
 
 Your response should include:
-1. categories: An array of category objects with "name" and "workspaceName" fields
-2. tasks: An array of task objects, each with appropriate fields
+1. categories: An array of category objects with "name" and "workspaceName" fields. New categories should include tasks in the tasks array.
+2. tasks: An array of categoryTaskPair objects, each with appropriate fields. The categoryId should be the ID of the existing category in the user's database. These are exlusively for tasks that belong to existing categories.
 
 When choosing category names, prefer existing categories from the user's database when the task fits. Only create new categories when the task doesn't match any existing category.`, input.UserID, currentTime, input.Text)
 
@@ -92,4 +92,3 @@ When choosing category names, prefer existing categories from the user's databas
 		MultiTaskFromTextFlowWithContext: multiTaskFromTextFlowWithContext,
 	}
 }
-
