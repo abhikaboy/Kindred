@@ -202,15 +202,19 @@ const Search = (props: Props) => {
 
     // Autocomplete function with debouncing - only fetch, don't update main results
     const handleAutocomplete = useCallback(async (query: string) => {
+        console.log('🔍 handleAutocomplete called with query:', query);
         if (!query.trim() || query.trim().length < 2) {
+            console.log('🔍 Query too short, clearing autocomplete');
             setAutocompleteSuggestions([]);
             setShowAutocomplete(false);
             return;
         }
 
         try {
-            // Prioritize users for autocomplete
-            const userResults = await autocompleteProfiles(query);
+            console.log('🔍 Calling searchProfiles API (fallback) with query:', query);
+            // Use regular search as fallback since Atlas Search autocomplete might not be configured
+            const userResults = await searchProfiles(query);
+            console.log('🔍 API returned userResults:', userResults);
 
             // Convert to autocomplete suggestions format
             const suggestions: AutocompleteSuggestion[] = userResults.map((user) => ({
@@ -221,8 +225,10 @@ const Search = (props: Props) => {
                 type: "user" as const,
             }));
 
+            console.log('🔍 Autocomplete suggestions:', suggestions);
             setAutocompleteSuggestions(suggestions);
             setShowAutocomplete(true);
+            console.log('🔍 showAutocomplete set to true, suggestions count:', suggestions.length);
         } catch (error) {
             console.error("Autocomplete error:", error);
             setAutocompleteSuggestions([]);

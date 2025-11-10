@@ -14,6 +14,7 @@ import { Images, Gif, Sparkle } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
+import ConfettiCannon from "react-native-confetti-cannon";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -40,8 +41,10 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(false);
     const isMountedRef = useRef(true);
     const { pickImage } = useMediaLibrary();
+    const confettiRef = useRef<any>(null);
 
     // Purple glow animation
     const glowOpacity = useRef(new Animated.Value(0)).current;
@@ -86,6 +89,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             setSelectedImage(null);
             setIsUploading(false);
             setShowGifPicker(false);
+            // Don't reset showConfetti immediately - let it finish animation
         }
         return () => {
             isMountedRef.current = false;
@@ -206,24 +210,30 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
             // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);
-            updateUser({ encouragements: newCount });
+            
+            // Also increment kudosRewards.encouragements for rewards tracking
+            const currentKudosRewards = user?.kudosRewards || { encouragements: 0, congratulations: 0 };
+            updateUser({ 
+                encouragements: newCount,
+                kudosRewards: {
+                    ...currentKudosRewards,
+                    encouragements: currentKudosRewards.encouragements + 1
+                }
+            });
 
-            // Show success message first, then close modal
-            Alert.alert(
-                "Success", 
-                "Encouragement sent successfully!",
-                [
-                    {
-                        text: "OK",
-                        onPress: () => {
-                            // Clear state and close modal after user dismisses alert
-                            if (isMountedRef.current) {
-                                setVisible(false);
-                            }
-                        }
-                    }
-                ]
-            );
+            // Close modal first, enable confetti, then trigger it
+            setVisible(false);
+            setShowConfetti(true);
+            
+            setTimeout(() => {
+                if (confettiRef.current) {
+                    confettiRef.current.start();
+                }
+                // Hide confetti after animation completes
+                setTimeout(() => {
+                    setShowConfetti(false);
+                }, 3000);
+            }, 300); // Small delay to ensure modal is closed before confetti
 
         } catch (error) {
             console.error("Error sending encouragement:", error);
@@ -276,6 +286,23 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         />
                     </Animated.View>
                 </Portal>
+            )}
+
+            {/* Confetti Cannon - Only show when user just sent an encouragement */}
+            {showConfetti && (
+                <ConfettiCannon
+                    ref={confettiRef}
+                    count={50}
+                    origin={
+                        { x: Dimensions.get("screen").width / 2, 
+                        y: (Dimensions.get("screen").height / 4) * 3.7 }
+                    }
+                    explosionSpeed={300}
+                    fadeOut={true}
+                    autoStart={false}
+                    fallSpeed={1000}
+                    colors={['#9333EA', '#A855F7', '#C084FC', '#E9D5FF']}
+                />
             )}
             
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>

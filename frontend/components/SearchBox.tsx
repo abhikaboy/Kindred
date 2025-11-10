@@ -1,16 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Image, Animated, LayoutAnimation, Platform, UIManager } from "react-native";
+import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Image, Animated } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Keyboard } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { MagnifyingGlass, X, User, Package } from "phosphor-react-native";
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export interface AutocompleteSuggestion {
     id: string;
@@ -60,28 +55,41 @@ export function SearchBox({
     const [showResults, setShowResults] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     
+    // Debug logging
+    useEffect(() => {
+        console.log('📦 SearchBox props:', { 
+            showAutocomplete, 
+            suggestionsCount: autocompleteSuggestions.length,
+            recent 
+        });
+    }, [showAutocomplete, autocompleteSuggestions.length, recent]);
+    
     // Animation values
     const resultsHeight = useRef(new Animated.Value(0)).current;
-    const resultsOpacity = useRef(new Animated.Value(0)).current;
     const iconTransition = useRef(new Animated.Value(0)).current;
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    
+    // Animate autocomplete suggestions
+    useEffect(() => {
+        if (showAutocomplete && autocompleteSuggestions.length > 0) {
+            Animated.spring(resultsHeight, {
+                toValue: 1,
+                tension: 60,
+                friction: 10,
+                useNativeDriver: false,
+            }).start();
+        } else {
+            Animated.timing(resultsHeight, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+            }).start();
+        }
+    }, [showAutocomplete, autocompleteSuggestions.length]);
 
     async function fetchRecents() {
         if (recent) {
             const recents = await getRecents();
-            
-            // Animate layout changes for items
-            LayoutAnimation.configureNext({
-                duration: 300,
-                create: {
-                    type: LayoutAnimation.Types.easeInEaseOut,
-                    property: LayoutAnimation.Properties.opacity,
-                },
-                update: {
-                    type: LayoutAnimation.Types.spring,
-                    springDamping: 0.7,
-                },
-            });
             
             setRecentItems(recents);
             setFocused(true);
@@ -94,12 +102,7 @@ export function SearchBox({
                         toValue: 1,
                         tension: 60,
                         friction: 10,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(resultsOpacity, {
-                        toValue: 1,
-                        duration: 300,
-                        useNativeDriver: true,
+                        useNativeDriver: false, // Can't use native driver with maxHeight
                     }),
                     Animated.spring(iconTransition, {
                         toValue: 1,
@@ -127,7 +130,6 @@ export function SearchBox({
         // If already animating, stop the current animation and restart
         if (isAnimating) {
             resultsHeight.stopAnimation();
-            resultsOpacity.stopAnimation();
             iconTransition.stopAnimation();
         }
         
@@ -138,12 +140,7 @@ export function SearchBox({
             Animated.timing(resultsHeight, {
                 toValue: 0,
                 duration: 200,
-                useNativeDriver: true,
-            }),
-            Animated.timing(resultsOpacity, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
+                useNativeDriver: false, // Can't use native driver with maxHeight
             }),
             Animated.spring(iconTransition, {
                 toValue: 0,
@@ -185,68 +182,6 @@ export function SearchBox({
         };
     }, [inputRef]);
     
-    // Animate autocomplete suggestions
-    useEffect(() => {
-        if (showAutocomplete && autocompleteSuggestions.length > 0) {
-            // Animate layout changes for items
-            LayoutAnimation.configureNext({
-                duration: 300,
-                create: {
-                    type: LayoutAnimation.Types.easeInEaseOut,
-                    property: LayoutAnimation.Properties.opacity,
-                },
-                update: {
-                    type: LayoutAnimation.Types.spring,
-                    springDamping: 0.7,
-                },
-            });
-            
-            setShowResults(true);
-            Animated.parallel([
-                Animated.spring(resultsHeight, {
-                    toValue: 1,
-                    tension: 60,
-                    friction: 10,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(resultsOpacity, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(iconTransition, {
-                    toValue: 1,
-                    tension: 100,
-                    friction: 10,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        } else if (!showAutocomplete) {
-            Animated.parallel([
-                Animated.timing(resultsHeight, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(resultsOpacity, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(iconTransition, {
-                    toValue: 0,
-                    tension: 100,
-                    friction: 10,
-                    useNativeDriver: true,
-                }),
-            ]).start(({ finished }) => {
-                if (finished) {
-                    setShowResults(false);
-                }
-            });
-        }
-    }, [showAutocomplete, autocompleteSuggestions.length]);
-
     const onSubmitEditing = () => {
         if (recent)
             appendSearch(value).then(() => {
@@ -272,7 +207,10 @@ export function SearchBox({
                             clearTimeout(blurTimeoutRef.current);
                             blurTimeoutRef.current = null;
                         }
-                        fetchRecents();
+                        // Only fetch recents if in recent mode
+                        if (recent) {
+                            fetchRecents();
+                        }
                     }}
                     onBlur={() => {
                         // Delay clearRecents to allow tap events to fire
@@ -350,15 +288,17 @@ export function SearchBox({
             </View>
             {recent && showResults && recentItems.length > 0 && (
                 <Animated.View 
-                    style={{ 
-                        ...styles.recentsContainer, 
-                        top: inputHeight,
-                        opacity: resultsOpacity,
-                        transform: [{
-                            scaleY: resultsHeight
-                        }],
-                        transformOrigin: 'top',
-                    }}
+                    style={[
+                        styles.recentsContainer, 
+                        { 
+                            top: inputHeight,
+                            overflow: 'hidden',
+                            maxHeight: resultsHeight.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, 400], // Max height for recent searches
+                            }),
+                        }
+                    ]}
                 >
                     {recentItems.map((item: RecentSearchItem, index: number) => {
                         const displayText =
@@ -444,17 +384,19 @@ export function SearchBox({
                     })}
                 </Animated.View>
             )}
-            {showAutocomplete && showResults && autocompleteSuggestions.length > 0 && (
+            {showAutocomplete && autocompleteSuggestions.length > 0 && (
                 <Animated.View 
-                    style={{ 
-                        ...styles.recentsContainer, 
-                        top: inputHeight,
-                        opacity: resultsOpacity,
-                        transform: [{
-                            scaleY: resultsHeight
-                        }],
-                        transformOrigin: 'top',
-                    }}
+                    style={[
+                        styles.recentsContainer, 
+                        { 
+                            top: inputHeight,
+                            overflow: 'hidden',
+                            maxHeight: resultsHeight.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, 400],
+                            }),
+                        }
+                    ]}
                 >
                     {autocompleteSuggestions.map((suggestion: AutocompleteSuggestion) => {
                         const displayText = suggestion.type === "user" ? suggestion.display_name : suggestion.name;

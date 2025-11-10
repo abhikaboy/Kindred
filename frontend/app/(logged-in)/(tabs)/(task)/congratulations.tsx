@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
-import CachedImage from "@/components/CachedImage";
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, TouchableOpacity, ScrollView, Animated } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
@@ -8,73 +7,38 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
-import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
 import { useAuth } from "@/hooks/useAuth";
-
-interface Congratulation {
-    id: string;
-    sender: {
-        name: string;
-        picture: string;
-        id: string;
-    };
-    message: string;
-    categoryName: string;
-    taskName: string;
-    timestamp: string;
-    read: boolean;
-}
+import { useKudos } from "@/contexts/kudosContext";
 
 export default function Congratulations() {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
-    const [congratulations, setCongratulations] = useState<Congratulation[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { congratulations, loading, markCongratulationsAsRead } = useKudos();
     
     // Get sent count from user's kudosRewards for progress tracking
     const sentCongratulations = user?.kudosRewards?.congratulations || 0;
 
+    // Fade-in animation
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
-        fetchCongratulations();
+        // Mark all as read when viewing the page
+        markCongratulationsAsRead();
     }, []);
 
-    const fetchCongratulations = async () => {
-        try {
-            setLoading(true);
-            const data = await getCongratulationsAPI();
-            
-            // Sort by timestamp in reverse chronological order (newest first)
-            const sortedData = [...data].sort((a, b) => {
-                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-            });
-            
-            setCongratulations(sortedData);
-
-            // Mark all congratulations as read
-            if (sortedData.length > 0) {
-                try {
-                    // Get IDs of unread congratulations
-                    const unreadIds = sortedData.filter((con) => !con.read).map((con) => con.id);
-
-                    if (unreadIds.length > 0) {
-                        await markCongratulationsReadAPI(unreadIds);
-                        // Update local state to mark all as read
-                        setCongratulations((prev) => prev.map((con) => ({ ...con, read: true })));
-                    }
-                } catch (error) {
-                    console.error("Error marking congratulations as read:", error);
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching congratulations:", error);
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (!loading && congratulations.length > 0) {
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }).start();
         }
-    };
+    }, [loading, congratulations.length]);
 
     const formatTime = (timestamp: string) => {
         try {
@@ -114,11 +78,7 @@ export default function Congratulations() {
                 <ThemedText type="subtitle_subtle" style={{paddingVertical: 4}}>
                     CONGRATULATIONS RECEIVED
                 </ThemedText>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ThemedText type="default">Loading congratulations...</ThemedText>
-                    </View>
-                ) : congratulations.length === 0 ? (
+                {!loading && congratulations.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <ThemedText type="subtitle" style={styles.emptyText}>
                             No congratulations yet
@@ -127,8 +87,8 @@ export default function Congratulations() {
                             When friends congratulate you on tasks, they'll appear here
                         </ThemedText>
                     </View>
-                ) : (
-                    <View style={styles.congratulationsList}>
+                ) : !loading && congratulations.length > 0 ? (
+                    <Animated.View style={[styles.congratulationsList, { opacity: fadeAnim }]}>
                         {congratulations.map((congratulation) => (
                             <KudosItem
                                 key={congratulation.id}
@@ -136,8 +96,8 @@ export default function Congratulations() {
                                 formatTime={formatTime}
                             />
                         ))}
-                    </View>
-                )}
+                    </Animated.View>
+                ) : null}
             </ScrollView>
         </ThemedView>
     );

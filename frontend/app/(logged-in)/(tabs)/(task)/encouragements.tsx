@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, TouchableOpacity, ScrollView, Animated } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
@@ -22,10 +22,23 @@ export default function Encouragements() {
     // Get sent count from user's kudosRewards for progress tracking
     const sentEncouragements = user?.kudosRewards?.encouragements || 0;
 
+    // Fade-in animation
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
         // Mark all as read when viewing the page
         markEncouragementsAsRead();
     }, []);
+
+    useEffect(() => {
+        if (!loading && encouragements.length > 0) {
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [loading, encouragements.length]);
 
     const formatTime = (timestamp: string) => {
         try {
@@ -65,11 +78,7 @@ export default function Encouragements() {
                     ENCOURAGEMENTS RECEIVED
                 </ThemedText>
 
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ThemedText type="default">Loading encouragements...</ThemedText>
-                    </View>
-                ) : encouragements.length === 0 ? (
+                {!loading && encouragements.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <ThemedText type="subtitle" style={styles.emptyText}>
                             No encouragements yet
@@ -78,13 +87,13 @@ export default function Encouragements() {
                             When friends encourage you on tasks, they'll appear here
                         </ThemedText>
                     </View>
-                ) : (
-                    <View style={styles.encouragementsList}>
+                ) : !loading && encouragements.length > 0 ? (
+                    <Animated.View style={[styles.encouragementsList, { opacity: fadeAnim }]}>
                         {encouragements.map((encouragement) => (
                             <KudosItem key={encouragement.id} kudos={encouragement} formatTime={formatTime} />
                         ))}
-                    </View>
-                )}
+                    </Animated.View>
+                ) : null}
             </ScrollView>
         </ThemedView>
     );
@@ -139,12 +148,9 @@ const createStyles = (ThemedColor: any, insets: any) =>
             gap: 8,
         },
         emptyText: {
-            color: ThemedColor.text,
-            textAlign: "center",
-        },
-        emptySubtext: {
             color: ThemedColor.caption,
             textAlign: "center",
+            opacity: 0.6,
         },
         encouragementsList: {
             gap: 16,
