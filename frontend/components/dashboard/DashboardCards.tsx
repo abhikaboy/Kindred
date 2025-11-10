@@ -88,7 +88,7 @@ const DashboardCards = (props: Props) => {
                     marginRight: 0,
                 }}
                 bounces={false}
-                decelerationRate="fast"
+                decelerationRate={0.9988}
                 directionalLockEnabled={true}
                 canCancelContentTouches={true}
                 scrollEventThrottle={16}

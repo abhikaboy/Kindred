@@ -32,7 +32,7 @@ export const KudosCards: React.FC = () => {
                     totalCount={sentEncouragements}
                     maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
                     type="encouragements"
-                    icon={<Sparkle size={22} weight="regular" color="#9333EA" />}
+                    icon={<Sparkle size={22} weight="regular" color={ThemedColor.primary} />}
                     onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}
                     hasUnread={hasUnreadEncouragements}
                     ThemedColor={ThemedColor}

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Dimensions } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
@@ -14,7 +14,8 @@ type Props = {
 
 const CommentInput = (props: Props) => {
     const [internalValue, setInternalValue] = React.useState("");
-    let ThemedColor = useThemeColor();
+    const ThemedColor = useThemeColor();
+    const { width: windowWidth } = useWindowDimensions();
 
     // Use controlled value if provided, otherwise use internal state
     const value = props.value !== undefined ? props.value : internalValue;
@@ -31,7 +32,7 @@ const CommentInput = (props: Props) => {
     };
 
     return (
-        <View>
+        <View style={styles.container}>
             <BottomSheetTextInput
                 autoFocus={props.autoFocus}
                 placeholder={props.placeHolder || "Leave a comment"}
@@ -51,7 +52,8 @@ const CommentInput = (props: Props) => {
                     fontSize: 16,
                     fontFamily: "Outfit",
                     paddingHorizontal: 20,
-                    width: props.width || Dimensions.get("screen").width * 0.7,
+                    flex: 1,
+                    minWidth: Math.min(windowWidth * 0.7, 280),
                 }}
                 placeholderTextColor={ThemedColor.caption}
             />
@@ -61,4 +63,8 @@ const CommentInput = (props: Props) => {
 
 export default CommentInput;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+});

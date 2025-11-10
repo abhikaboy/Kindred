@@ -66,24 +66,39 @@ export function SearchBox({
     
     // Animation values
     const resultsHeight = useRef(new Animated.Value(0)).current;
+    const resultsOpacity = useRef(new Animated.Value(0)).current;
     const iconTransition = useRef(new Animated.Value(0)).current;
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
     // Animate autocomplete suggestions
     useEffect(() => {
         if (showAutocomplete && autocompleteSuggestions.length > 0) {
-            Animated.spring(resultsHeight, {
-                toValue: 1,
-                tension: 60,
-                friction: 10,
-                useNativeDriver: false,
-            }).start();
+            Animated.parallel([
+                Animated.spring(resultsHeight, {
+                    toValue: 1,
+                    tension: 60,
+                    friction: 10,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(resultsOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: false,
+                }),
+            ]).start();
         } else {
-            Animated.timing(resultsHeight, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: false,
-            }).start();
+            Animated.parallel([
+                Animated.timing(resultsHeight, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(resultsOpacity, {
+                    toValue: 0,
+                    duration: 150,
+                    useNativeDriver: false,
+                }),
+            ]).start();
         }
     }, [showAutocomplete, autocompleteSuggestions.length]);
 
@@ -384,7 +399,7 @@ export function SearchBox({
                     })}
                 </Animated.View>
             )}
-            {showAutocomplete && autocompleteSuggestions.length > 0 && (
+            {showAutocomplete && (
                 <Animated.View 
                     style={[
                         styles.recentsContainer, 
@@ -395,8 +410,10 @@ export function SearchBox({
                                 inputRange: [0, 1],
                                 outputRange: [0, 400],
                             }),
+                            opacity: resultsOpacity,
                         }
                     ]}
+                    pointerEvents={autocompleteSuggestions.length > 0 ? 'auto' : 'none'}
                 >
                     {autocompleteSuggestions.map((suggestion: AutocompleteSuggestion) => {
                         const displayText = suggestion.type === "user" ? suggestion.display_name : suggestion.name;

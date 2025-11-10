@@ -211,9 +211,9 @@ const Search = (props: Props) => {
         }
 
         try {
-            console.log('🔍 Calling searchProfiles API (fallback) with query:', query);
-            // Use regular search as fallback since Atlas Search autocomplete might not be configured
-            const userResults = await searchProfiles(query);
+            console.log('🔍 Calling autocompleteProfiles API with query:', query);
+            // Prioritize users for autocomplete
+            const userResults = await autocompleteProfiles(query);
             console.log('🔍 API returned userResults:', userResults);
 
             // Convert to autocomplete suggestions format

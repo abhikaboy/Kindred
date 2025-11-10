@@ -365,7 +365,6 @@ const stylesheet = (ThemedColor: any) =>
             flex: 1,
             backgroundColor: ThemedColor.background,
             paddingHorizontal: 16,
-            height: '100%',
         },
         header: {
             alignItems: "center",
@@ -384,6 +383,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         contentContainer: {
             flexGrow: 1,
+            paddingBottom: 8,
         },
         commentItem: {
             marginVertical: 8,
@@ -409,7 +409,7 @@ const stylesheet = (ThemedColor: any) =>
             borderTopWidth: 1,
             borderTopColor: ThemedColor.tertiary,
             backgroundColor: ThemedColor.background,
-            height: "16%",
+            minHeight: 70,
         },
         inputRow: {
             flexDirection: "row",
