@@ -5,7 +5,6 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { router } from "expo-router";
 import { DrawerLayout } from "react-native-gesture-handler";
 import TodaySection from "./TodaySection";
-import { AttachStep } from "react-native-spotlight-tour";
 import { Bird, BookBookmark, Calendar, ChartBar, Microphone, PencilLine } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
@@ -69,7 +68,6 @@ const DashboardCards = (props: Props) => {
             onPress: () => {
                 props.drawerRef?.current?.openDrawer();
             },
-            attachStep: 0,
         },
     ];
 
@@ -94,27 +92,15 @@ const DashboardCards = (props: Props) => {
                 scrollEventThrottle={16}
                 alwaysBounceHorizontal={false}
                 nestedScrollEnabled={true}>
-                {cards.map((card, index) => {
-                    const CardComponent = (
-                        <DashboardCard 
-                            key={card.title} 
-                            title={card.title} 
-                            icon={card.icon} 
-                            onPress={card.onPress}
-                            badge={card.badge}
-                        />
-                    );
-
-                    if (card.attachStep !== undefined) {
-                        return (
-                            <AttachStep key={card.title} index={card.attachStep}>
-                                {CardComponent}
-                            </AttachStep>
-                        );
-                    }
-
-                    return CardComponent;
-                })}
+                {cards.map((card, index) => (
+                    <DashboardCard 
+                        key={card.title} 
+                        title={card.title} 
+                        icon={card.icon} 
+                        onPress={card.onPress}
+                        badge={card.badge}
+                    />
+                ))}
             </ScrollView>
 
         </View>

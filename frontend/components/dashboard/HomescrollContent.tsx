@@ -13,6 +13,7 @@ import { HorseIcon, PlusIcon } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import TodaySection from "./TodaySection";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { AttachStep } from "react-native-spotlight-tour";
 interface HomeScrollContentProps {
     encouragementCount: number;
     congratulationCount: number;
@@ -89,8 +90,17 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
-                    <ThemedText type="caption">JUMP BACK IN</ThemedText>
-                    <DashboardCards drawerRef={drawerRef} />
+                    <AttachStep index={0}>
+                        <ThemedText type="caption">JUMP BACK IN</ThemedText>
+                    </AttachStep>
+                    {shouldShowTutorial ? (
+                        <TutorialCard
+                            onPress={() => router.push("/(logged-in)/(tutorial)")}
+                            showBadge={shouldShowTutorial}
+                        />
+                    ) : (
+                        <DashboardCards drawerRef={drawerRef} />
+                    )}
                 </View>
 
                 {/* Kudos Cards (Encouragements & Congratulations) */}

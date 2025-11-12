@@ -210,8 +210,8 @@ const Home = (props: Props) => {
         {
             render: ({ next, stop }) => (
                 <TourStepCard
-                    title="Workspaces 📚"
-                    description="Quick access to all your workspaces! Tap here to view and manage your workspaces."
+                    title="Jump Back In 🚀"
+                    description="Quick access to your most important features! Start your day here with daily views, voice dumps, and more."
                     onNext={next}
                     onSkip={() => {
                         setSpotlightShown("homeSpotlight");
