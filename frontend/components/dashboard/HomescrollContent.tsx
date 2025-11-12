@@ -93,14 +93,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     <AttachStep index={0}>
                         <ThemedText type="caption">JUMP BACK IN</ThemedText>
                     </AttachStep>
-                    {shouldShowTutorial ? (
-                        <TutorialCard
-                            onPress={() => router.push("/(logged-in)/(tutorial)")}
-                            showBadge={shouldShowTutorial}
-                        />
-                    ) : (
-                        <DashboardCards drawerRef={drawerRef} />
-                    )}
+                    <DashboardCards drawerRef={drawerRef} />
                 </View>
 
                 {/* Kudos Cards (Encouragements & Congratulations) */}
