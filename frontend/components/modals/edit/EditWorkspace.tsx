@@ -17,11 +17,11 @@ import DefaultCard from "@/components/cards/DefaultCard";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { isToday, isThisWeek, isFuture, isPast, startOfWeek, endOfWeek } from "date-fns";
-import { 
-    ChartBar, 
-    ChartBarHorizontal, 
-    CheckCircle, 
-    CalendarBlank, 
+import {
+    ChartBar,
+    ChartBarHorizontal,
+    CheckCircle,
+    CalendarBlank,
     CalendarCheck,
     ArrowRight,
     Minus,
@@ -29,7 +29,7 @@ import {
     Hash,
     SortAscending,
     ArrowUp,
-    ArrowDown
+    ArrowDown,
 } from "phosphor-react-native";
 
 type Props = {
@@ -83,17 +83,17 @@ const EditWorkspace = (props: Props) => {
     const handleDeleteWorkspace = async () => {
         // Store the workspace data for potential rollback
         const workspaceToDelete = getWorkspace(id);
-        
+
         // Optimistic update - immediately update the UI
         removeWorkspace(id);
-        
+
         // Close the modal immediately for better UX
         setShowDeleteConfirmation(false);
-        
+
         try {
             // Call the API to delete the workspace
             await deleteWorkspace(id);
-            
+
             // Show success toast
             showToastable({
                 title: "Workspace deleted!",
@@ -104,16 +104,16 @@ const EditWorkspace = (props: Props) => {
                 message: `Workspace "${id}" has been deleted successfully`,
                 renderContent: (props) => <DefaultToast {...props} />,
             });
-            
+
             setEditing(false);
         } catch (error) {
             console.error("Error deleting workspace:", error);
-            
+
             // Rollback the optimistic update on error
             if (workspaceToDelete) {
                 restoreWorkspace(workspaceToDelete);
             }
-            
+
             // Show error toast
             showToastable({
                 title: "Error",
@@ -222,7 +222,7 @@ const EditWorkspace = (props: Props) => {
 
                 if (filtersData) {
                     const filters = JSON.parse(filtersData);
-                    const count = 
+                    const count =
                         Object.values(filters.priorities).filter((v: any) => v).length +
                         Object.values(filters.deadlines).filter((v: any) => v).length;
                     setActiveFilterCount(count);
@@ -247,10 +247,10 @@ const EditWorkspace = (props: Props) => {
         if (!currentSort) return "Sort";
         const labels: Record<string, string> = {
             "task-count": "Task Count",
-            "alphabetical": "Alphabetical",
+            alphabetical: "Alphabetical",
             "due-date": "Due Date",
             "start-date": "Start Date",
-            "priority": "Priority",
+            priority: "Priority",
         };
         return `Sort • ${labels[currentSort] || currentSort}`;
     };
@@ -258,28 +258,32 @@ const EditWorkspace = (props: Props) => {
     const options = [
         { label: "Edit", icon: "edit", callback: handleEditClick },
         { label: "Reorder", icon: "list", callback: handleReorderClick },
-        { 
-            label: getSortLabel(), 
-            icon: "filter", 
+        {
+            label: getSortLabel(),
+            icon: "filter",
             callback: handleSortClick,
         },
-        { 
-            label: activeFilterCount > 0 ? `Filter • ${activeFilterCount} active` : "Filter", 
-            icon: "sliders", 
+        {
+            label: activeFilterCount > 0 ? `Filter • ${activeFilterCount} active` : "Filter",
+            icon: "sliders",
             callback: handleFilterClick,
             labelHighlight: activeFilterCount > 0 ? `${activeFilterCount} active` : undefined,
         },
-        { label: `Visibility (${isPublic ? "Public" : "Private"})`, icon: isPublic ? "eye" : "eye-off", callback: handleVisibilityClick },
+        {
+            label: `Visibility (${isPublic ? "Public" : "Private"})`,
+            icon: isPublic ? "eye" : "eye-off",
+            callback: handleVisibilityClick,
+        },
         { label: "Delete", icon: "trash-2", callback: handleDeleteClick },
     ];
 
     return (
         <>
-            <BottomMenuModal 
-                id={{ id: "", category: id }} 
-                visible={editing} 
-                setVisible={setEditing} 
-                options={options} 
+            <BottomMenuModal
+                id={{ id: "", category: id }}
+                visible={editing}
+                setVisible={setEditing}
+                options={options}
             />
 
             {/* Edit Workspace Bottom Sheet Modal */}
@@ -367,7 +371,7 @@ const EditWorkspace = (props: Props) => {
                     />
                 </BottomSheetView>
             </BottomSheetModal>
-            
+
             <DeleteWorkspaceConfirmationModal
                 visible={showDeleteConfirmation}
                 setVisible={setShowDeleteConfirmation}
@@ -389,7 +393,7 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
         // Create a proper copy of workspaces array
         const workspacesCopy = [...workspaces];
         const workspaceIndex = workspacesCopy.findIndex((ws) => ws.name === selected);
-        
+
         if (workspaceIndex !== -1) {
             // Create a new workspace object with updated categories
             workspacesCopy[workspaceIndex] = {
@@ -398,20 +402,43 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
             };
             setWorkSpaces(workspacesCopy);
         }
-        
+
         onSave();
         setHasChanges(false);
     };
 
+    const ThemedColor = useThemeColor();
+
     return (
         <>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>
-                Reorder Categories
-            </ThemedText>
+            <View
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 16,
+
+                    gap: 12,
+                }}>
+                <ThemedText type="subtitle">Reorder Categories</ThemedText>
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: "rgba(100, 100, 255, 0.1)",
+                        paddingHorizontal: 12,
+                        paddingVertical: 5,
+                        borderRadius: 20,
+                        gap: 8,
+                    }}>
+                    <Feather name="trending-up" size={20} color={ThemedColor.primary} />
+                    <ThemedText type="defaultSemiBold" style={{ fontSize: 14, opacity: 0.8 }}>
+                        In Development
+                    </ThemedText>
+                </View>
+            </View>
+
             <View style={{ flex: 1, gap: 16 }}>
-                <ThemedText type="lightBody">
-                    Long press and drag to reorder categories
-                </ThemedText>
+                <ThemedText type="lightBody">Long press and drag to reorder categories</ThemedText>
                 <View style={{ flex: 1 }}>
                     <DraggableFlatList
                         data={reorderedCategories}
@@ -438,12 +465,7 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
                         keyExtractor={(item) => item.id}
                     />
                 </View>
-                <PrimaryButton
-                    title="Save Order"
-                    outline={!hasChanges}
-                    onPress={handleSave}
-                    disabled={!hasChanges}
-                />
+                <PrimaryButton title="Save Order" outline={!hasChanges} onPress={handleSave} disabled={!hasChanges} />
             </View>
         </>
     );
@@ -462,48 +484,54 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
     const handleSort = async () => {
         const workspacesCopy = workspaces.slice();
         const workspaceIndex = workspacesCopy.findIndex((ws) => ws.name === selected);
-        
+
         if (workspaceIndex !== -1) {
             const categories = [...workspacesCopy[workspaceIndex].categories];
             const isAscending = sortDirection === "ascending";
-            
+
             let sortedCategories;
             switch (selectedSort) {
                 case "task-count":
-                    sortedCategories = categories.sort((a, b) => 
+                    sortedCategories = categories.sort((a, b) =>
                         isAscending ? a.tasks.length - b.tasks.length : b.tasks.length - a.tasks.length
                     );
                     break;
                 case "alphabetical":
-                    sortedCategories = categories.sort((a, b) => 
+                    sortedCategories = categories.sort((a, b) =>
                         isAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
                     );
                     break;
                 case "due-date":
                     // Sort by earliest due date in category (tasks with deadlines)
                     sortedCategories = categories.sort((a, b) => {
-                        const aEarliestDeadline = a.tasks
-                            .filter(t => t.deadline)
-                            .map(t => new Date(t.deadline).getTime())
-                            .sort((x, y) => x - y)[0] || Infinity;
-                        const bEarliestDeadline = b.tasks
-                            .filter(t => t.deadline)
-                            .map(t => new Date(t.deadline).getTime())
-                            .sort((x, y) => x - y)[0] || Infinity;
-                        return isAscending ? aEarliestDeadline - bEarliestDeadline : bEarliestDeadline - aEarliestDeadline;
+                        const aEarliestDeadline =
+                            a.tasks
+                                .filter((t) => t.deadline)
+                                .map((t) => new Date(t.deadline).getTime())
+                                .sort((x, y) => x - y)[0] || Infinity;
+                        const bEarliestDeadline =
+                            b.tasks
+                                .filter((t) => t.deadline)
+                                .map((t) => new Date(t.deadline).getTime())
+                                .sort((x, y) => x - y)[0] || Infinity;
+                        return isAscending
+                            ? aEarliestDeadline - bEarliestDeadline
+                            : bEarliestDeadline - aEarliestDeadline;
                     });
                     break;
                 case "start-date":
                     // Sort by earliest start date in category
                     sortedCategories = categories.sort((a, b) => {
-                        const aEarliestStart = a.tasks
-                            .filter(t => t.startDate)
-                            .map(t => new Date(t.startDate).getTime())
-                            .sort((x, y) => x - y)[0] || Infinity;
-                        const bEarliestStart = b.tasks
-                            .filter(t => t.startDate)
-                            .map(t => new Date(t.startDate).getTime())
-                            .sort((x, y) => x - y)[0] || Infinity;
+                        const aEarliestStart =
+                            a.tasks
+                                .filter((t) => t.startDate)
+                                .map((t) => new Date(t.startDate).getTime())
+                                .sort((x, y) => x - y)[0] || Infinity;
+                        const bEarliestStart =
+                            b.tasks
+                                .filter((t) => t.startDate)
+                                .map((t) => new Date(t.startDate).getTime())
+                                .sort((x, y) => x - y)[0] || Infinity;
                         return isAscending ? aEarliestStart - bEarliestStart : bEarliestStart - aEarliestStart;
                     });
                     break;
@@ -511,25 +539,19 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
                     // Sort by highest priority in category (high=3, medium=2, low=1, none=0)
                     sortedCategories = categories.sort((a, b) => {
                         const priorityMap: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
-                        const aHighestPriority = Math.max(
-                            ...a.tasks.map(t => priorityMap[t.priority] || 0),
-                            0
-                        );
-                        const bHighestPriority = Math.max(
-                            ...b.tasks.map(t => priorityMap[t.priority] || 0),
-                            0
-                        );
+                        const aHighestPriority = Math.max(...a.tasks.map((t) => priorityMap[t.priority] || 0), 0);
+                        const bHighestPriority = Math.max(...b.tasks.map((t) => priorityMap[t.priority] || 0), 0);
                         return isAscending ? aHighestPriority - bHighestPriority : bHighestPriority - aHighestPriority;
                     });
                     break;
                 default:
                     sortedCategories = categories;
             }
-            
+
             workspacesCopy[workspaceIndex].categories = sortedCategories;
             setWorkSpaces(workspacesCopy);
         }
-        
+
         // Save sort option and direction to AsyncStorage
         try {
             await Promise.all([
@@ -539,7 +561,7 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
         } catch (error) {
             console.error("Error saving sort option:", error);
         }
-        
+
         onApply();
     };
 
@@ -575,21 +597,21 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
         }
     };
 
-    const SortOptionRow = ({ 
-        option, 
-        label, 
-        IconComponent 
-    }: { 
-        option: SortOption; 
+    const SortOptionRow = ({
+        option,
+        label,
+        IconComponent,
+    }: {
+        option: SortOption;
         label: string;
         IconComponent: React.ComponentType<any>;
     }) => {
         const isSelected = selectedSort === option;
         const textColor = isSelected ? ThemedColor.primary : ThemedColor.text;
         const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-        
+
         const DirectionIcon = sortDirection === "ascending" ? ArrowUp : ArrowDown;
-        
+
         return (
             <TouchableOpacity onPress={() => handleSortOptionPress(option)}>
                 <View style={styles.sortOptionRow}>
@@ -599,9 +621,7 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
                             {label}
                         </ThemedText>
                     </View>
-                    {isSelected && (
-                        <DirectionIcon color={iconColor} size={20} weight="bold" />
-                    )}
+                    {isSelected && <DirectionIcon color={iconColor} size={20} weight="bold" />}
                 </View>
             </TouchableOpacity>
         );
@@ -615,29 +635,29 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
             <View style={{ flex: 1, gap: 20 }}>
                 {/* Sort Options */}
                 <View style={{ gap: 8 }}>
-                    <SortOptionRow 
-                        option="task-count" 
-                        label="Task Count" 
+                    <SortOptionRow
+                        option="task-count"
+                        label="Task Count"
                         IconComponent={(props) => <Hash {...props} />}
                     />
-                    <SortOptionRow 
-                        option="alphabetical" 
-                        label="Alphabetical" 
+                    <SortOptionRow
+                        option="alphabetical"
+                        label="Alphabetical"
                         IconComponent={(props) => <SortAscending {...props} />}
                     />
-                    <SortOptionRow 
-                        option="due-date" 
-                        label="Due Date" 
+                    <SortOptionRow
+                        option="due-date"
+                        label="Due Date"
                         IconComponent={(props) => <CalendarCheck {...props} />}
                     />
-                    <SortOptionRow 
-                        option="start-date" 
-                        label="Start Date" 
+                    <SortOptionRow
+                        option="start-date"
+                        label="Start Date"
                         IconComponent={(props) => <CalendarBlank {...props} />}
                     />
-                    <SortOptionRow 
-                        option="priority" 
-                        label="Priority" 
+                    <SortOptionRow
+                        option="priority"
+                        label="Priority"
                         IconComponent={(props) => <ChartBar {...props} />}
                     />
                 </View>
@@ -680,7 +700,7 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
         try {
             // Save filters to AsyncStorage
             await AsyncStorage.setItem(`workspace-filters-${workspaceName}`, JSON.stringify(filters));
-            
+
             showToastable({
                 title: "Filters Applied",
                 status: "success",
@@ -689,7 +709,7 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
                 message: "Task filters have been applied to this workspace",
                 renderContent: (props) => <DefaultToast {...props} />,
             });
-            
+
             onApply();
         } catch (error) {
             console.error("Error saving filters:", error);
@@ -709,7 +729,7 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
             deadlines: { overdue: false, today: false, thisWeek: false, future: false, none: false },
         };
         setFilters(clearedFilters);
-        
+
         try {
             await AsyncStorage.removeItem(`workspace-filters-${workspaceName}`);
             showToastable({
@@ -733,9 +753,9 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
                 [option]: !filters[category][option],
             },
         };
-        
+
         setFilters(newFilters);
-        
+
         // Save immediately to AsyncStorage
         try {
             await AsyncStorage.setItem(`workspace-filters-${workspaceName}`, JSON.stringify(newFilters));
@@ -744,14 +764,14 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
         }
     };
 
-    const FilterCard = ({ 
-        label, 
-        isSelected, 
+    const FilterCard = ({
+        label,
+        isSelected,
         onPress,
         IconComponent,
-    }: { 
-        label: string; 
-        isSelected: boolean; 
+    }: {
+        label: string;
+        isSelected: boolean;
         onPress: () => void;
         IconComponent: React.ComponentType<any>;
     }) => {
@@ -785,13 +805,12 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
         );
     };
 
-    const hasActiveFilters = 
-        Object.values(filters.priorities).some(v => v) || 
-        Object.values(filters.deadlines).some(v => v);
+    const hasActiveFilters =
+        Object.values(filters.priorities).some((v) => v) || Object.values(filters.deadlines).some((v) => v);
 
-    const activeFilterCount = 
-        Object.values(filters.priorities).filter(v => v).length +
-        Object.values(filters.deadlines).filter(v => v).length;
+    const activeFilterCount =
+        Object.values(filters.priorities).filter((v) => v).length +
+        Object.values(filters.deadlines).filter((v) => v).length;
 
     return (
         <>
@@ -801,7 +820,9 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
             <View style={{ flex: 1, gap: 24 }}>
                 {/* Priority Level */}
                 <View style={{ gap: 12 }}>
-                    <ThemedText type="default" style={{ fontSize: 16 }}>Priority Level</ThemedText>
+                    <ThemedText type="default" style={{ fontSize: 16 }}>
+                        Priority Level
+                    </ThemedText>
                     <View style={styles.filterGrid}>
                         <FilterCard
                             label="Low"
@@ -826,7 +847,9 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
 
                 {/* Deadline */}
                 <View style={{ gap: 12 }}>
-                    <ThemedText type="default" style={{ fontSize: 16 }}>Deadline</ThemedText>
+                    <ThemedText type="default" style={{ fontSize: 16 }}>
+                        Deadline
+                    </ThemedText>
                     <View style={styles.filterGrid}>
                         <FilterCard
                             label="Overdue"

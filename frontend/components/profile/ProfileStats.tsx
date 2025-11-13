@@ -22,15 +22,29 @@ export default function ProfileStats({
 
     return (
         <View style={styles.statsContainer}>
-            <View style={{ width: "49%" }}>
+            <View
+                style={{
+                    width: "48%",
+                    backgroundColor: ThemedColor.lightened,
+                    borderWidth: 0.5,
+                    borderColor: ThemedColor.tertiary,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    boxShadow: ThemedColor.shadowSmall,
+                    justifyContent: "center",
+                }}>
                 {profile && <FollowButton profile={profile} onRelationshipChange={onRelationshipChange} />}
             </View>
             <View
                 style={{
-                    width: "49%",
+                    width: "48%",
                     backgroundColor: ThemedColor.lightened,
+                    borderWidth: 0.5,
+                    borderColor: ThemedColor.tertiary,
+                    paddingVertical: 8,
                     borderRadius: 12,
                     alignItems: "center",
+                    boxShadow: ThemedColor.shadowSmall,
                     justifyContent: "center",
                 }}>
                 <ThemedText type="lightBody" style={{ width: "100%", textAlign: "center" }}>
@@ -46,6 +60,6 @@ const styles = StyleSheet.create({
         display: "flex",
         flexDirection: "row",
         width: "100%",
-        gap: 8,
+        gap: 12,
     },
 });

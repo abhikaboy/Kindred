@@ -1,13 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import {
-    View,
-    StyleSheet,
-    TouchableOpacity,
-    Platform,
-    Alert,
-    Keyboard,
-    Dimensions,
-} from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, Alert, Keyboard, Dimensions } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
 import { ThemedText } from "../ThemedText";
 import SendButton from "./SendButton";
@@ -145,14 +137,37 @@ const Comment = ({
 
     // get the sorted comments - memoized for performance
     const sortedComments = useMemo(() => {
-        return sortCommentsHierarchically(
-            localComments.filter((comment) => !deletingComments.has(comment.id))
-        );
+        return sortCommentsHierarchically(localComments.filter((comment) => !deletingComments.has(comment.id)));
     }, [localComments, deletingComments]);
 
     // gets the time to show in how long ago a comment was made - memoized
-    const getTimeAgo = useCallback((createdAt: string): number => {
-        return Math.abs(new Date().getTime() - new Date(createdAt).getTime()) / 36e5;
+    const getTimeAgo = useCallback((createdAt: string): string => {
+        const now = new Date();
+        const commentDate = new Date(createdAt);
+        const diffInMs = now.getTime() - commentDate.getTime();
+        const diffInSeconds = Math.floor(diffInMs / 1000);
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const diffInDays = Math.floor(diffInHours / 24);
+        const diffInWeeks = Math.floor(diffInDays / 7);
+        const diffInMonths = Math.floor(diffInDays / 30);
+        const diffInYears = Math.floor(diffInDays / 365);
+
+        if (diffInSeconds < 60) {
+            return "just now";
+        } else if (diffInMinutes < 60) {
+            return diffInMinutes === 1 ? "1 min ago" : `${diffInMinutes} mins ago`;
+        } else if (diffInHours < 24) {
+            return diffInHours === 1 ? "1 hour ago" : `${diffInHours} hours ago`;
+        } else if (diffInDays < 7) {
+            return diffInDays === 1 ? "1 day ago" : `${diffInDays} days ago`;
+        } else if (diffInWeeks < 4) {
+            return diffInWeeks === 1 ? "1 week ago" : `${diffInWeeks} weeks ago`;
+        } else if (diffInMonths < 12) {
+            return diffInMonths === 1 ? "1 month ago" : `${diffInMonths} months ago`;
+        } else {
+            return diffInYears === 1 ? "1 year ago" : `${diffInYears} years ago`;
+        }
     }, []);
 
     // permission check
@@ -194,18 +209,21 @@ const Comment = ({
     };
 
     // handles replying - memoized
-    const handleReply = useCallback((commentId: string, userName: string) => {
-        const rootParentId = findRootParent(commentId, localComments);
+    const handleReply = useCallback(
+        (commentId: string, userName: string) => {
+            const rootParentId = findRootParent(commentId, localComments);
 
-        setReplyingTo({
-            id: rootParentId,
-            name: userName,
-            immediateParent: commentId,
-        });
+            setReplyingTo({
+                id: rootParentId,
+                name: userName,
+                immediateParent: commentId,
+            });
 
-        setCommentText(`@${userName} `);
-        setAutoFocusInput(true);
-    }, [localComments]);
+            setCommentText(`@${userName} `);
+            setAutoFocusInput(true);
+        },
+        [localComments]
+    );
 
     // handle deleting
     const handleDeleteComment = (commentId: string, commentUserId: string) => {
@@ -279,49 +297,53 @@ const Comment = ({
     };
 
     // Render comment item - memoized
-    const renderCommentItem = useCallback(({ item: comment }: { item: CommentProps }) => {
-        const canDelete = canDeleteComment(comment.user._id);
-        const isDeleting = deletingComments.has(comment.id);
+    const renderCommentItem = useCallback(
+        ({ item: comment }: { item: CommentProps }) => {
+            const canDelete = canDeleteComment(comment.user._id);
+            const isDeleting = deletingComments.has(comment.id);
 
-        return (
-            <TouchableOpacity
-                style={[
-                    styles.commentItem,
-                    comment.parentId && styles.replyComment,
-                    isDeleting && styles.deletingComment,
-                ]}
-                onLongPress={
-                    canDelete && !isDeleting
-                        ? () => handleLongPress(comment.id, comment.user._id)
-                        : undefined
-                }
-                onPress={() => {
-                    onClose();
-                    router.push(`/account/${comment.user._id}`);
-                }}
-                delayLongPress={500}
-                activeOpacity={isDeleting ? 1 : 0.7}>
-                <UserInfoRowComment
-                    name={comment.user.display_name}
-                    content={comment.content}
-                    icon={comment.user.profile_picture}
-                    time={getTimeAgo(comment.metadata.createdAt)}
-                    id={comment.id}
-                    onReply={!isDeleting ? handleReply : undefined}
-                />
-                {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}
-            </TouchableOpacity>
-        );
-    }, [deletingComments, currentUserId, postOwnerId, handleReply, onClose]);
+            return (
+                <TouchableOpacity
+                    style={[
+                        styles.commentItem,
+                        comment.parentId && styles.replyComment,
+                        isDeleting && styles.deletingComment,
+                    ]}
+                    onLongPress={
+                        canDelete && !isDeleting ? () => handleLongPress(comment.id, comment.user._id) : undefined
+                    }
+                    onPress={() => {
+                        onClose();
+                        router.push(`/account/${comment.user._id}`);
+                    }}
+                    delayLongPress={500}
+                    activeOpacity={isDeleting ? 1 : 0.7}>
+                    <UserInfoRowComment
+                        name={comment.user.display_name}
+                        content={comment.content}
+                        icon={comment.user.profile_picture}
+                        time={getTimeAgo(comment.metadata.createdAt)} // Now returns a string
+                        id={comment.id}
+                        onReply={!isDeleting ? handleReply : undefined}
+                    />
+                    {isDeleting && <ThemedText style={styles.deletingText}>Deleting...</ThemedText>}
+                </TouchableOpacity>
+            );
+        },
+        [deletingComments, currentUserId, postOwnerId, handleReply, onClose, getTimeAgo]
+    );
 
     // Empty list component
-    const ListEmptyComponent = useCallback(() => (
-        <View style={styles.emptyContainer}>
-            <ThemedText style={{ color: ThemedColor.caption }}>
-                No comments yet. Be the first to comment!
-            </ThemedText>
-        </View>
-    ), [ThemedColor]);
+    const ListEmptyComponent = useCallback(
+        () => (
+            <View style={styles.emptyContainer}>
+                <ThemedText style={{ color: ThemedColor.caption }}>
+                    No comments yet. Be the first to comment!
+                </ThemedText>
+            </View>
+        ),
+        [ThemedColor]
+    );
 
     return (
         <BottomSheetView style={styles.modalContainer}>
@@ -391,7 +413,7 @@ const stylesheet = (ThemedColor: any) =>
         replyComment: {
             marginLeft: 20,
             paddingLeft: 12,
-            borderLeftWidth: 2,
+            borderLeftWidth: 1,
             borderLeftColor: ThemedColor.tertiary,
         },
         deletingComment: {

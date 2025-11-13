@@ -16,6 +16,7 @@ import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "r
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { BookIcon } from "phosphor-react-native";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -217,7 +218,7 @@ const DrawerContent = ({
                         marginBottom: Dimensions.get("screen").height * 0.01,
                         paddingHorizontal: HORIZONTAL_PADDING,
                         borderTopWidth: 0,
-                        borderWidth: 2,
+                        borderWidth: 1,
                         borderColor: ThemedColor.tertiary,
                     }}
                     onPress={() => setCreating(true)}>
@@ -348,7 +349,6 @@ const DrawerContent = ({
                             <Ionicons name="document-text" size={16} color={ThemedColor.caption} />
                             <ThemedText type="subtitle_subtle">BLUEPRINTS</ThemedText>
                         </View>
-                        <AntDesign name="question" size={20} color={ThemedColor.caption} />
                     </View>
                 </TouchableOpacity>
                 {workspaces
@@ -404,7 +404,15 @@ const DrawerContent = ({
     );
 };
 
-const DrawerItem = ({ title, selected, onPress, onLongPress, badge }) => {
+type DrawerItemProps = {
+    title: string;
+    selected: string;
+    onPress: () => void;
+    onLongPress?: () => void;
+    badge?: string;
+};
+
+const DrawerItem = ({ title, selected, onPress, onLongPress, badge }: DrawerItemProps) => {
     const ThemedColor = useThemeColor();
     return (
         <TouchableOpacity
@@ -428,18 +436,20 @@ const DrawerItem = ({ title, selected, onPress, onLongPress, badge }) => {
                 {title}
             </ThemedText>
             {badge && (
-                <View style={{
-                    backgroundColor: ThemedColor.primary + '20',
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    borderRadius: 4,
-                    marginLeft: 4,
-                }}>
-                    <ThemedText style={{ 
-                        fontSize: 10, 
-                        fontWeight: '600',
-                        color: ThemedColor.primary,
+                <View
+                    style={{
+                        backgroundColor: ThemedColor.primary + "20",
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 4,
+                        marginLeft: 4,
                     }}>
+                    <ThemedText
+                        style={{
+                            fontSize: 10,
+                            fontWeight: "600",
+                            color: ThemedColor.primary,
+                        }}>
                         {badge}
                     </ThemedText>
                 </View>

@@ -1,5 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { TextInput, TextInputProps, StyleSheet, View, Dimensions, TouchableOpacity, Image, Animated } from "react-native";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import {
+    TextInput,
+    TextInputProps,
+    StyleSheet,
+    View,
+    Dimensions,
+    TouchableOpacity,
+    Image,
+    Animated,
+} from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -21,7 +30,7 @@ interface SearchBoxProps extends TextInputProps {
     value: string;
     recent?: boolean;
     name?: string;
-    onSubmit: () => void;
+    onSubmit: (searchText?: string) => void;
     onChangeText: (text: string) => void;
     icon?: React.ReactNode;
     setFocused?: (focused: boolean) => void;
@@ -29,6 +38,7 @@ interface SearchBoxProps extends TextInputProps {
     onSelectSuggestion?: (suggestion: AutocompleteSuggestion) => void;
     showAutocomplete?: boolean;
 }
+
 const base = 393;
 const scale = Dimensions.get("screen").width / base;
 
@@ -46,427 +56,383 @@ export function SearchBox({
     showAutocomplete = false,
     ...rest
 }: SearchBoxProps) {
-    const { getRecents, appendSearch, deleteRecent } = useRecentSearch(name);
+    const { getRecents, appendSearch, deleteRecent, isLoading } = useRecentSearch(name);
     const [inputHeight, setInputHeight] = useState(0);
     const inputRef = useRef<TextInput>(null);
-    let ThemedColor = useThemeColor();
+    const ThemedColor = useThemeColor();
 
     const [recentItems, setRecentItems] = useState<RecentSearchItem[]>([]);
     const [showResults, setShowResults] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
-    
-    // Debug logging
-    useEffect(() => {
-        console.log('📦 SearchBox props:', { 
-            showAutocomplete, 
-            suggestionsCount: autocompleteSuggestions.length,
-            recent 
-        });
-    }, [showAutocomplete, autocompleteSuggestions.length, recent]);
-    
-    // Animation values
-    const resultsHeight = useRef(new Animated.Value(0)).current;
+    const [isFocused, setIsFocused] = useState(false);
+
     const resultsOpacity = useRef(new Animated.Value(0)).current;
     const iconTransition = useRef(new Animated.Value(0)).current;
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    
-    // Animate autocomplete suggestions
-    useEffect(() => {
-        if (showAutocomplete && autocompleteSuggestions.length > 0) {
-            Animated.parallel([
-                Animated.spring(resultsHeight, {
-                    toValue: 1,
-                    tension: 60,
-                    friction: 10,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(resultsOpacity, {
-                    toValue: 1,
-                    duration: 200,
-                    useNativeDriver: false,
-                }),
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(resultsHeight, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(resultsOpacity, {
-                    toValue: 0,
-                    duration: 150,
-                    useNativeDriver: false,
-                }),
-            ]).start();
-        }
-    }, [showAutocomplete, autocompleteSuggestions.length]);
+    const isMountedRef = useRef(true);
 
-    async function fetchRecents() {
-        if (recent) {
+    const shouldShowAutocomplete = showAutocomplete && autocompleteSuggestions.length > 0;
+    const shouldShowRecents = recent && recentItems.length > 0 && !shouldShowAutocomplete && isFocused;
+    const shouldShowLoading = recent && isLoading && isFocused && !shouldShowAutocomplete;
+
+    useEffect(() => {
+        if (shouldShowAutocomplete || shouldShowRecents || shouldShowLoading) {
+            setShowResults(true);
+            Animated.parallel([
+                Animated.timing(resultsOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(iconTransition, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else if (!shouldShowAutocomplete && !shouldShowRecents && !shouldShowLoading && showResults) {
+            Animated.parallel([
+                Animated.timing(resultsOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(iconTransition, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => {
+                if (isMountedRef.current) {
+                    setShowResults(false);
+                }
+            });
+        }
+    }, [shouldShowAutocomplete, shouldShowRecents, shouldShowLoading]);
+
+    const fetchRecents = useCallback(async () => {
+        if (recent && !showAutocomplete) {
             const recents = await getRecents();
-            
-            setRecentItems(recents);
-            setFocused(true);
-            
-            // Animate in results
-            if (recents.length > 0) {
-                setShowResults(true);
-                Animated.parallel([
-                    Animated.spring(resultsHeight, {
-                        toValue: 1,
-                        tension: 60,
-                        friction: 10,
-                        useNativeDriver: false, // Can't use native driver with maxHeight
-                    }),
-                    Animated.spring(iconTransition, {
-                        toValue: 1,
-                        tension: 100,
-                        friction: 10,
-                        useNativeDriver: true,
-                    }),
-                ]).start();
+            if (isMountedRef.current) {
+                setRecentItems(recents);
+                if (setFocused) setFocused(true);
             }
-        } else await clearRecents();
-    }
-    async function clearRecents() {
-        // Clear any pending blur timeout
+        }
+    }, [recent, showAutocomplete, getRecents, setFocused]);
+
+    const clearRecents = useCallback(() => {
         if (blurTimeoutRef.current) {
             clearTimeout(blurTimeoutRef.current);
             blurTimeoutRef.current = null;
         }
-        
-        // Immediately start hiding if no items or already hidden
-        if (!showResults && recentItems.length === 0) {
-            if (setFocused) setFocused(false);
-            return;
-        }
-        
-        // If already animating, stop the current animation and restart
-        if (isAnimating) {
-            resultsHeight.stopAnimation();
-            iconTransition.stopAnimation();
-        }
-        
+
         setIsAnimating(true);
-        
-        // Animate out results - DON'T hide until animation completes
+
         Animated.parallel([
-            Animated.timing(resultsHeight, {
+            Animated.timing(resultsOpacity, {
                 toValue: 0,
                 duration: 200,
-                useNativeDriver: false, // Can't use native driver with maxHeight
-            }),
-            Animated.spring(iconTransition, {
-                toValue: 0,
-                tension: 100,
-                friction: 10,
                 useNativeDriver: true,
             }),
-        ]).start(({ finished }) => {
-            // Update state even if animation was interrupted
-            setShowResults(false);
-        setRecentItems([]);
-            setIsAnimating(false);
-        if (setFocused) setFocused(false);
+            Animated.timing(iconTransition, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            if (isMountedRef.current) {
+                setShowResults(false);
+                setRecentItems([]);
+                setIsAnimating(false);
+                setIsFocused(false);
+                if (setFocused) setFocused(false);
+            }
         });
-    }
-    async function deleteRecentItem(id: string) {
-        deleteRecent(id).then(() => fetchRecents());
-    }
+    }, [resultsOpacity, iconTransition, setFocused]);
 
-    const clear = () => {
-        clearRecents();
+    const deleteRecentItem = useCallback(
+        async (id: string) => {
+            await deleteRecent(id);
+            fetchRecents();
+        },
+        [deleteRecent, fetchRecents]
+    );
+
+    const clear = useCallback(() => {
         onChangeText("");
-        // Don't call onSubmit() - just clear the input
+        clearRecents();
         Keyboard.dismiss();
-    };
+    }, [onChangeText, clearRecents]);
 
     useEffect(() => {
+        isMountedRef.current = true;
+
         if (inputRef.current) {
-            inputRef.current?.measureInWindow((height) => {
-                setInputHeight(height + Dimensions.get("window").height * 0.01);
+            inputRef.current.measureInWindow((x, y, width, height) => {
+                if (isMountedRef.current) {
+                    setInputHeight(y + height + 8);
+                }
             });
         }
-        
-        // Cleanup timeout on unmount
+
         return () => {
+            isMountedRef.current = false;
             if (blurTimeoutRef.current) {
                 clearTimeout(blurTimeoutRef.current);
             }
         };
-    }, [inputRef]);
-    
-    const onSubmitEditing = () => {
-        if (recent)
-            appendSearch(value).then(() => {
-                fetchRecents();
-            });
+    }, []);
+
+    const handleFocus = useCallback(() => {
+        if (blurTimeoutRef.current) {
+            clearTimeout(blurTimeoutRef.current);
+            blurTimeoutRef.current = null;
+        }
+
+        setIsFocused(true);
+
+        if (recent && !showAutocomplete) {
+            fetchRecents();
+        }
+    }, [recent, showAutocomplete, fetchRecents]);
+
+    const handleBlur = useCallback(() => {
+        if (blurTimeoutRef.current) {
+            clearTimeout(blurTimeoutRef.current);
+        }
+
+        blurTimeoutRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+                setIsFocused(false);
+                if (showResults && !isAnimating) {
+                    clearRecents();
+                }
+            }
+        }, 250);
+    }, [showResults, isAnimating, clearRecents]);
+
+    const handleItemPress = useCallback(
+        async (item: RecentSearchItem | AutocompleteSuggestion) => {
+            if (blurTimeoutRef.current) {
+                clearTimeout(blurTimeoutRef.current);
+                blurTimeoutRef.current = null;
+            }
+
+            const isRecentItem = (i: RecentSearchItem | AutocompleteSuggestion): i is RecentSearchItem => {
+                return "text" in i || "timestamp" in i;
+            };
+
+            if (isRecentItem(item) && item.type === "text" && item.text) {
+                const searchText = item.text.trim();
+                if (searchText) {
+                    onChangeText(searchText);
+                    clearRecents();
+                    inputRef.current?.blur();
+                    setTimeout(() => {
+                        onSubmit(searchText);
+                    }, 10);
+                }
+            } else if (onSelectSuggestion) {
+                if (isRecentItem(item) && item.type !== "text") {
+                    const suggestion: AutocompleteSuggestion = {
+                        id: item.id,
+                        display_name: item.display_name,
+                        handle: item.handle,
+                        name: item.name,
+                        profile_picture: item.profile_picture,
+                        banner: item.banner,
+                        type: item.type as "user" | "blueprint",
+                    };
+                    await appendSearch(item);
+                    clearRecents();
+                    onSelectSuggestion(suggestion);
+                } else if (!isRecentItem(item)) {
+                    const recentItem: RecentSearchItem = {
+                        id: item.id,
+                        display_name: item.display_name,
+                        handle: item.handle,
+                        name: item.name,
+                        profile_picture: item.profile_picture,
+                        banner: item.banner,
+                        type: item.type,
+                        timestamp: Date.now(),
+                    };
+                    await appendSearch(recentItem);
+                    clearRecents();
+                    onSelectSuggestion(item);
+                }
+            }
+        },
+        [onChangeText, onSubmit, onSelectSuggestion, appendSearch, clearRecents]
+    );
+
+    const onSubmitEditing = useCallback(() => {
+        if (recent && value.trim() && !isAnimating) {
+            appendSearch(value);
+        }
         onSubmit();
         inputRef.current?.blur();
-    };
+        clearRecents();
+    }, [recent, value, isAnimating, appendSearch, onSubmit, clearRecents]);
 
     const styles = useStyles(ThemedColor);
+    const showClearButton = showResults || value.length > 0;
 
     return (
         <View>
             <View style={styles.container}>
                 <TextInput
-                    id={"search-input"}
+                    id="search-input"
                     placeholder={placeholder}
                     ref={inputRef}
                     onSubmitEditing={onSubmitEditing}
-                    onFocus={() => {
-                        // Clear any pending blur
-                        if (blurTimeoutRef.current) {
-                            clearTimeout(blurTimeoutRef.current);
-                            blurTimeoutRef.current = null;
-                        }
-                        // Only fetch recents if in recent mode
-                        if (recent) {
-                            fetchRecents();
-                        }
-                    }}
-                    onBlur={() => {
-                        // Delay clearRecents to allow tap events to fire
-                        // But ensure we always clear eventually
-                        if (blurTimeoutRef.current) {
-                            clearTimeout(blurTimeoutRef.current);
-                        }
-                        blurTimeoutRef.current = setTimeout(() => {
-                            // Force clear even if already animating
-                            if (showResults || recentItems.length > 0) {
-                                clearRecents();
-                            }
-                        }, 150);
-                    }}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
                     value={value}
                     onChangeText={onChangeText}
                     {...rest}
                     style={{ ...styles.input, color: ThemedColor.text }}
                     placeholderTextColor={ThemedColor.caption}
                 />
-                <Animated.View
-                        style={{
-                            padding: 12,
-                        borderRadius: 30,
-                        backgroundColor: iconTransition.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [ThemedColor.primary, 'transparent']
-                        }),
-                        transform: [{
-                            scale: iconTransition.interpolate({
-                                inputRange: [0, 0.5, 1],
-                                outputRange: [1, 0.8, 1]
-                            })
-                        }],
-                        boxShadow: ThemedColor.shadowSmall,
-                        position: 'relative',
-                        width: 44,
-                        height: 44,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        }}>
-                    <TouchableOpacity 
-                        onPress={clear} 
-                        disabled={!showResults}
-                        style={{ 
-                            position: 'absolute',
-                            width: '100%',
-                            height: '100%',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <Animated.View style={{
-                            opacity: iconTransition,
-                            transform: [{
-                                rotate: iconTransition.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: ['90deg', '0deg']
-                                })
-                            }],
-                        }}>
-                            <X size={20} color={ThemedColor.text} weight="light" />
-                        </Animated.View>
-                        </TouchableOpacity>
-                    <Animated.View style={{
-                        opacity: iconTransition.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 0]
-                        }),
-                        position: 'absolute',
-                        }}>
+                <TouchableOpacity
+                    onPress={showClearButton ? clear : undefined}
+                    disabled={!showClearButton}
+                    style={[
+                        styles.iconButton,
+                        {
+                            backgroundColor: showClearButton ? "transparent" : ThemedColor.primary,
+                        },
+                    ]}>
+                    {showClearButton ? (
+                        <X size={20} color={ThemedColor.text} weight="light" />
+                    ) : (
                         <MagnifyingGlass size={20} color={ThemedColor.buttonText} weight="light" />
-                    </Animated.View>
-                </Animated.View>
+                    )}
+                </TouchableOpacity>
             </View>
-            {recent && showResults && recentItems.length > 0 && (
-                <Animated.View 
+
+            {(showResults || isLoading) && (
+                <Animated.View
                     style={[
-                        styles.recentsContainer, 
-                        { 
+                        styles.recentsContainer,
+                        {
                             top: inputHeight,
-                            overflow: 'hidden',
-                            maxHeight: resultsHeight.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [0, 400], // Max height for recent searches
-                            }),
-                        }
-                    ]}
-                >
-                    {recentItems.map((item: RecentSearchItem, index: number) => {
-                        const displayText =
-                            item.type === "user"
-                                ? item.display_name
-                                : item.type === "blueprint"
-                                  ? item.name
-                                  : item.text;
-                        const subtitle =
-                            item.type === "user" ? item.handle : item.type === "blueprint" ? "Blueprint" : null;
-
-                        const imageUri =
-                            item.type === "user"
-                                ? item.profile_picture
-                                : item.type === "blueprint"
-                                  ? item.banner
-                                  : null;
-
-                        const isUser = item.type === "user";
-                        const isBlueprint = item.type === "blueprint";
-                        const isText = item.type === "text";
-
-                        return (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={styles.recent}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    if (isText) {
-                                        inputRef.current?.blur();
-                                        onChangeText(item.text || "");
-                                        onSubmit();
-                                        clearRecents();
-                                    } else if (onSelectSuggestion) {
-                                        // Convert to AutocompleteSuggestion and trigger selection
-                                        onSelectSuggestion({
-                                            id: item.id,
-                                            display_name: item.display_name,
-                                            handle: item.handle,
-                                            name: item.name,
-                                            profile_picture: item.profile_picture,
-                                            banner: item.banner,
-                                            type: item.type as "user" | "blueprint",
-                                        });
-                                        clearRecents();
-                                    }
-                                }}>
-                                <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
-                                    {isText ? (
-                                        <MagnifyingGlass size={20} color={ThemedColor.text} weight="light" />
-                                    ) : imageUri ? (
-                                        <Image
-                                            source={{ uri: imageUri }}
-                                            style={isUser ? styles.userImage : styles.blueprintImage}
-                                        />
-                                    ) : (
-                                        <View style={isUser ? styles.placeholderUser : styles.placeholderBlueprint}>
-                                            {isUser ? (
-                                                <User size={16} color={ThemedColor.background} weight="light" />
-                                            ) : (
-                                                <Package size={16} color={ThemedColor.background} weight="light" />
-                                            )}
-                                        </View>
-                                    )}
-                                    <View style={{ flex: 1 }}>
-                                        <ThemedText type="default" style={{ fontWeight: isText ? "400" : "600" }}>
-                                            {displayText}
-                                        </ThemedText>
-                                        {subtitle && (
-                                            <ThemedText type="default" style={{ fontSize: 12, opacity: 0.7 }}>
-                                                {subtitle}
-                                            </ThemedText>
-                                        )}
-                                    </View>
-                                </View>
-                                <TouchableOpacity
-                                    style={{ paddingRight: 16 }}
-                                    onPress={() => deleteRecentItem(item.id)}>
-                                    <X size={20} color={ThemedColor.text} weight="light" />
-                                </TouchableOpacity>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </Animated.View>
-            )}
-            {showAutocomplete && (
-                <Animated.View 
-                    style={[
-                        styles.recentsContainer, 
-                        { 
-                            top: inputHeight,
-                            overflow: 'hidden',
-                            maxHeight: resultsHeight.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [0, 400],
-                            }),
                             opacity: resultsOpacity,
-                        }
+                        },
                     ]}
-                    pointerEvents={autocompleteSuggestions.length > 0 ? 'auto' : 'none'}
-                >
-                    {autocompleteSuggestions.map((suggestion: AutocompleteSuggestion) => {
-                        const displayText = suggestion.type === "user" ? suggestion.display_name : suggestion.name;
-                        const subtitle = suggestion.type === "user" ? suggestion.handle : "Blueprint";
-
-                        // Get the image to display
-                        const imageUri = suggestion.type === "user" ? suggestion.profile_picture : suggestion.banner;
-
-                        // For users, use circular image; for blueprints, use rounded rectangle
-                        const isUser = suggestion.type === "user";
-
-                        return (
-                            <TouchableOpacity
+                    pointerEvents={showResults ? "auto" : "none"}>
+                    {shouldShowAutocomplete ? (
+                        autocompleteSuggestions.map((suggestion) => (
+                            <SuggestionItem
                                 key={suggestion.id}
-                                style={styles.recent}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    if (onSelectSuggestion) {
-                                        onSelectSuggestion(suggestion);
-                                    }
-                                }}>
-                                <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
-                                    {imageUri ? (
-                                        <Image
-                                            source={{ uri: imageUri }}
-                                            style={isUser ? styles.userImage : styles.blueprintImage}
-                                        />
-                                    ) : (
-                                        <View style={isUser ? styles.placeholderUser : styles.placeholderBlueprint}>
-                                            {isUser ? (
-                                                <User size={16} color={ThemedColor.background} weight="light" />
-                                            ) : (
-                                                <Package size={16} color={ThemedColor.background} weight="light" />
-                                            )}
-                                        </View>
-                                    )}
-                                    <View style={{ flex: 1 }}>
-                                        <ThemedText type="default" style={{ fontWeight: "600" }}>
-                                            {displayText}
-                                        </ThemedText>
-                                        <ThemedText type="default" style={{ fontSize: 12, opacity: 0.7 }}>
-                                            {subtitle}
-                                        </ThemedText>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })}
+                                item={suggestion}
+                                onPress={() => handleItemPress(suggestion)}
+                                ThemedColor={ThemedColor}
+                                styles={styles}
+                            />
+                        ))
+                    ) : shouldShowRecents ? (
+                        recentItems.map((item) => (
+                            <RecentItem
+                                key={item.id}
+                                item={item}
+                                onPress={() => handleItemPress(item)}
+                                onDelete={() => deleteRecentItem(item.id)}
+                                ThemedColor={ThemedColor}
+                                styles={styles}
+                            />
+                        ))
+                    ) : shouldShowLoading ? (
+                        <View style={styles.recent}>
+                            <ThemedText type="default" style={{ opacity: 0.5 }}>
+                                Loading recent searches...
+                            </ThemedText>
+                        </View>
+                    ) : null}
                 </Animated.View>
             )}
         </View>
     );
 }
+
+const SuggestionItem = React.memo(({ item, onPress, ThemedColor, styles }: any) => {
+    const displayText = item.type === "user" ? item.display_name : item.name;
+    const subtitle = item.type === "user" ? item.handle : "Blueprint";
+    const imageUri = item.type === "user" ? item.profile_picture : item.banner;
+    const isUser = item.type === "user";
+
+    return (
+        <TouchableOpacity style={styles.recent} activeOpacity={0.7} onPress={onPress}>
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
+                {imageUri ? (
+                    <Image source={{ uri: imageUri }} style={isUser ? styles.userImage : styles.blueprintImage} />
+                ) : (
+                    <View style={isUser ? styles.placeholderUser : styles.placeholderBlueprint}>
+                        {isUser ? (
+                            <User size={16} color={ThemedColor.background} weight="light" />
+                        ) : (
+                            <Package size={16} color={ThemedColor.background} weight="light" />
+                        )}
+                    </View>
+                )}
+                <View style={{ flex: 1 }}>
+                    <ThemedText type="default" style={{ fontWeight: "600" }}>
+                        {displayText}
+                    </ThemedText>
+                    <ThemedText type="default" style={{ fontSize: 12, opacity: 0.7 }}>
+                        {subtitle}
+                    </ThemedText>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+});
+
+const RecentItem = React.memo(({ item, onPress, onDelete, ThemedColor, styles }: any) => {
+    const displayText = item.type === "user" ? item.display_name : item.type === "blueprint" ? item.name : item.text;
+    const subtitle = item.type === "user" ? item.handle : item.type === "blueprint" ? "Blueprint" : null;
+    const imageUri = item.type === "user" ? item.profile_picture : item.type === "blueprint" ? item.banner : null;
+    const isUser = item.type === "user";
+    const isText = item.type === "text";
+
+    return (
+        <TouchableOpacity style={styles.recent} activeOpacity={0.7} onPress={onPress}>
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
+                {isText ? (
+                    <MagnifyingGlass size={20} color={ThemedColor.text} weight="light" />
+                ) : imageUri ? (
+                    <Image source={{ uri: imageUri }} style={isUser ? styles.userImage : styles.blueprintImage} />
+                ) : (
+                    <View style={isUser ? styles.placeholderUser : styles.placeholderBlueprint}>
+                        {isUser ? (
+                            <User size={16} color={ThemedColor.background} weight="light" />
+                        ) : (
+                            <Package size={16} color={ThemedColor.background} weight="light" />
+                        )}
+                    </View>
+                )}
+                <View style={{ flex: 1 }}>
+                    <ThemedText type="default" style={{ fontWeight: isText ? "400" : "600" }}>
+                        {displayText}
+                    </ThemedText>
+                    {subtitle && (
+                        <ThemedText type="default" style={{ fontSize: 12, opacity: 0.7 }}>
+                            {subtitle}
+                        </ThemedText>
+                    )}
+                </View>
+            </View>
+            <TouchableOpacity
+                style={{ paddingLeft: 8, paddingRight: 16 }}
+                onPress={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                }}>
+                <X size={20} color={ThemedColor.text} weight="light" />
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
+});
 
 const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
@@ -476,7 +442,7 @@ const useStyles = (ThemedColor: any) =>
             position: "absolute",
             width: "100%",
             paddingVertical: 8,
-            marginTop: 26,
+            marginTop: -50, 
             paddingLeft: 16,
             backgroundColor: ThemedColor.lightened,
             zIndex: 10,
@@ -515,9 +481,13 @@ const useStyles = (ThemedColor: any) =>
             zIndex: 5,
             paddingVertical: 8,
         },
-        icon: {
-            marginLeft: 8,
-            resizeMode: "contain",
+        iconButton: {
+            padding: 12,
+            borderRadius: 30,
+            width: 44,
+            height: 44,
+            justifyContent: "center",
+            alignItems: "center",
         },
         userImage: {
             width: 40,

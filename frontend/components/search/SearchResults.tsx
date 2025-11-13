@@ -1,11 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import BlueprintCard from "@/components/cards/BlueprintCard";
 import Animated, { FadeIn, FadeOut, Layout } from "react-native-reanimated";
 import type { components } from "@/api/generated/types";
-import TaskTabs from "../inputs/TaskTabs";
-import UserInfoRowFollow from "../UserInfo/UserInfoRowFollow";
 import FollowButton from "../inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoRowBase from "../UserInfo/UserInfoRowBase";
@@ -16,7 +14,6 @@ import { Profile, RelationshipStatus } from "@/api/types";
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type ProfileDocument = components["schemas"]["ProfileDocument"];
 
-// Helper function to convert ProfileDocument to Profile
 const convertToProfile = (profileDoc: ProfileDocument): Profile => {
     return {
         id: profileDoc.id,
@@ -56,93 +53,128 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
     const router = useRouter();
-    if (mode === "searching") {
-        return (
-            <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                <SearchResultsSkeleton activeTab={activeTab} />
-            </Animated.View>
-        );
-    }
 
-    if (mode === "results") {
+    const tabs = ["Blueprints", "Users"];
+
+    const TabHeader = useMemo(() => {
         return (
-            <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                <View style={styles.tabsContainer}>
-                    <TaskTabs tabs={["Blueprints", "Users"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+            <View style={styles.tabsContainer}>
+                <View style={[styles.tabHeaderContainer, { borderBottomColor: ThemedColor.tertiary }]}>
+                    {tabs.map((tab, index) => (
+                        <TouchableOpacity
+                            key={`tab-${tab}`}
+                            style={[
+                                styles.tab,
+                                activeTab === index && {
+                                    borderBottomWidth: 2,
+                                    borderBottomColor: ThemedColor.primary,
+                                    marginBottom: -1,
+                                },
+                            ]}
+                            onPress={() => setActiveTab(index)}
+                            activeOpacity={0.7}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <ThemedText
+                                style={[
+                                    styles.tabText,
+                                    {
+                                        color: activeTab === index ? ThemedColor.text : ThemedColor.caption,
+                                        fontWeight: activeTab === index ? "600" : "500",
+                                    },
+                                ]}>
+                                {tab}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    ))}
                 </View>
-
-                {activeTab === 0 ? (
-                    <Animated.View
-                        key="blueprints"
-                        entering={FadeIn.duration(200)}
-                        exiting={FadeOut.duration(200)}
-                        layout={Layout.springify()}>
-                        <ThemedText type="default" style={styles.searchResultsHeader}>
-                            Results
-                        </ThemedText>
-                        <View style={styles.searchResultsContainer}>
-                            {searchResults.map((blueprint) => (
-                                <View key={blueprint.id} style={styles.searchResultItem}>
-                                    <BlueprintCard {...blueprint} large={true} />
-                                </View>
-                            ))}
-                        </View>
-                    </Animated.View>
-                ) : (
-                    <Animated.View
-                        key="users"
-                        entering={FadeIn.duration(200)}
-                        exiting={FadeOut.duration(200)}
-                        layout={Layout.springify()}>
-                        <ThemedText type="default" style={styles.searchResultsHeader}>
-                            Results
-                        </ThemedText>
-                        <View style={styles.searchResultsContainer}>
-                            {userResults.map((user) => (
-                                <TouchableOpacity
-                                    key={user.id}
-                                    style={styles.searchResultItem}
-                                    onPress={() => router.push(`/account/${user.id}`)}>
-                                    <UserInfoRowBase
-                                        name={user.display_name}
-                                        username={user.handle}
-                                        icon={user.profile_picture}
-                                        id={user.id}
-                                        right={
-                                            <View>
-                                                <FollowButton profile={convertToProfile(user)} />
-                                            </View>
-                                        }
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </Animated.View>
-                )}
-            </Animated.View>
+            </View>
         );
-    }
+    }, [activeTab, ThemedColor, styles, setActiveTab]);
 
-    if (mode === "no-results") {
+    const BlueprintContent = useMemo(() => {
+        if (mode === "searching") return null;
+
+        const hasBlueprints = searchResults && searchResults.length > 0;
+
         return (
-            <Animated.View style={[focusStyle]} exiting={FadeOut}>
-                <View style={styles.tabsContainer}>
-                    <TaskTabs tabs={["Blueprints", "Users"]} activeTab={activeTab} setActiveTab={setActiveTab} />
-                </View>
-                <ThemedText type="subtitle" style={styles.searchResultsHeader}>
-                    Results
+            <View style={{ display: activeTab === 0 ? "flex" : "none" }}>
+                <ThemedText type="default" style={styles.searchResultsHeader}>
+                    {hasBlueprints ? `${searchResults.length} Results` : "No Results"}
                 </ThemedText>
-                <View style={styles.noResultsContainer}>
-                    <ThemedText style={styles.noResultsText}>
-                        No {activeTab === 0 ? "blueprints" : "users"} found for "{searchTerm}"
-                    </ThemedText>
+                <View style={styles.searchResultsContainer}>
+                    {hasBlueprints ? (
+                        searchResults.map((blueprint) => (
+                            <View key={blueprint.id} style={styles.searchResultItem}>
+                                <BlueprintCard {...blueprint} large={true} />
+                            </View>
+                        ))
+                    ) : (
+                        <View style={styles.noResultsContainer}>
+                            <ThemedText style={styles.noResultsText}>No blueprints found for "{searchTerm}"</ThemedText>
+                        </View>
+                    )}
                 </View>
-            </Animated.View>
+            </View>
         );
-    }
+    }, [mode, searchResults, searchTerm, activeTab, styles]);
 
-    return null;
+    const UserContent = useMemo(() => {
+        if (mode === "searching") return null;
+
+        const hasUsers = userResults && userResults.length > 0;
+
+        return (
+            <View style={{ display: activeTab === 1 ? "flex" : "none" }}>
+                <ThemedText type="default" style={styles.searchResultsHeader}>
+                    {hasUsers ? `${userResults.length} Results` : "No Results"}
+                </ThemedText>
+                <View style={styles.searchResultsContainer}>
+                    {hasUsers ? (
+                        userResults.map((user) => (
+                            <TouchableOpacity
+                                key={user.id}
+                                style={styles.searchResultItem}
+                                onPress={() => router.push(`/account/${user.id}`)}>
+                                <UserInfoRowBase
+                                    name={user.display_name}
+                                    username={user.handle}
+                                    icon={user.profile_picture}
+                                    id={user.id}
+                                    right={
+                                        <View>
+                                            <FollowButton profile={convertToProfile(user)} />
+                                        </View>
+                                    }
+                                />
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <View style={styles.noResultsContainer}>
+                            <ThemedText style={styles.noResultsText}>No users found for "{searchTerm}"</ThemedText>
+                        </View>
+                    )}
+                </View>
+            </View>
+        );
+    }, [mode, userResults, searchTerm, activeTab, router, styles]);
+
+    return (
+        <Animated.View style={[focusStyle]} exiting={FadeOut}>
+            {TabHeader}
+
+            {mode === "searching" ? (
+                <SearchResultsSkeleton activeTab={activeTab} />
+            ) : (
+                <View>
+                    {BlueprintContent}
+                    {UserContent}
+                </View>
+            )}
+        </Animated.View>
+    );
 };
+
+export default React.memo(SearchResults);
 
 const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
@@ -156,6 +188,7 @@ const useStyles = (ThemedColor: any) =>
         },
         searchResultsContainer: {
             paddingHorizontal: 16,
+            marginBottom: 112,
         },
         searchResultItem: {
             marginBottom: 6,
@@ -173,5 +206,21 @@ const useStyles = (ThemedColor: any) =>
         tabsContainer: {
             paddingHorizontal: 16,
             paddingBottom: 4,
+        },
+        tabHeaderContainer: {
+            flexDirection: "row",
+            borderBottomWidth: 1,
+            marginBottom: 12,
+        },
+        tab: {
+            flex: 1,
+            paddingBottom: 16, // Increased for easier tapping
+            paddingTop: 12, // Increased for easier tapping
+            marginHorizontal: 4, // Added for easier tapping
+        },
+        tabText: {
+            fontSize: 18, // Increased for better visibility
+            fontFamily: "Outfit",
+            textAlign: "center",
         },
     });

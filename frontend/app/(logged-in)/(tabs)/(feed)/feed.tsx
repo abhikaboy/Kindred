@@ -23,6 +23,8 @@ import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
+import { Heart, HeartIcon, HeartStraightIcon } from "phosphor-react-native";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 const HORIZONTAL_PADDING = 16;
 
@@ -74,7 +76,7 @@ export default function Feed() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-    
+
     // Pagination state
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -88,7 +90,7 @@ export default function Feed() {
     const [availableFeeds, setAvailableFeeds] = useState([
         { name: "Feed", id: "feed" },
         { name: "Friends", id: "friends" },
-        { name: "All Posts", id: "all" }
+        { name: "All Posts", id: "all" },
     ]);
     const [subscribedBlueprints, setSubscribedBlueprints] = useState<any[]>([]);
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -122,15 +124,7 @@ export default function Feed() {
     // Start loading animation when loading state changes
     useEffect(() => {
         if (loading) {
-            Animated.loop(
-                Animated.timing(loadingRotation, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: true,
-                })
-            ).start();
-        } else {
-            loadingRotation.setValue(0);
+            <LoadingScreen message="Getting Posts..."/>;
         }
     }, [loading, loadingRotation]);
 
@@ -139,19 +133,19 @@ export default function Feed() {
         try {
             const blueprints = await getUserSubscribedBlueprints();
             setSubscribedBlueprints(blueprints);
-            
+
             // Create feeds array with base feeds + blueprint feeds
             const baseFeeds = [
                 { name: "Feed", id: "feed" },
                 { name: "Friends", id: "friends" },
-                { name: "All Posts", id: "all" }
+                { name: "All Posts", id: "all" },
             ];
-            
-            const blueprintFeeds = blueprints.map(blueprint => ({
+
+            const blueprintFeeds = blueprints.map((blueprint) => ({
                 name: blueprint.name,
-                id: `blueprint-${blueprint.id}`
+                id: `blueprint-${blueprint.id}`,
             }));
-            
+
             setAvailableFeeds([...baseFeeds, ...blueprintFeeds]);
         } catch (error) {
             console.error("Error fetching subscribed blueprints:", error);
@@ -159,75 +153,78 @@ export default function Feed() {
             setAvailableFeeds([
                 { name: "Feed", id: "feed" },
                 { name: "Friends", id: "friends" },
-                { name: "All Posts", id: "all" }
+                { name: "All Posts", id: "all" },
             ]);
         }
     }, []);
 
-    const fetchPosts = useCallback(async (feedId?: string, resetPagination = true) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const currentFeedId = feedId || currentFeed.id;
-            let result;
-            
-            if (currentFeedId === "feed") {
-                // Use the new unified feed endpoint
-                const feedResult = await getFeed(20, 0);
-                setFeedItems(feedResult.items);
-                // Extract posts from feed items for backward compatibility
-                const postsOnly = feedResult.items
-                    .filter(item => item.type === 'post' && item.post)
-                    .map(item => item.post!);
-                setPosts(postsOnly);
-                setOffset(feedResult.nextOffset);
-                setHasMore(feedResult.hasMore);
+    const fetchPosts = useCallback(
+        async (feedId?: string, resetPagination = true) => {
+            setLoading(true);
+            setError(null);
+            try {
+                const currentFeedId = feedId || currentFeed.id;
+                let result;
+
+                if (currentFeedId === "feed") {
+                    // Use the new unified feed endpoint
+                    const feedResult = await getFeed(20, 0);
+                    setFeedItems(feedResult.items);
+                    // Extract posts from feed items for backward compatibility
+                    const postsOnly = feedResult.items
+                        .filter((item) => item.type === "post" && item.post)
+                        .map((item) => item.post!);
+                    setPosts(postsOnly);
+                    setOffset(feedResult.nextOffset);
+                    setHasMore(feedResult.hasMore);
+                    setLastUpdated(new Date());
+                    setLoading(false);
+                    setInitialLoading(false);
+                    return;
+                } else if (currentFeedId === "friends") {
+                    result = await getFriendsPosts(8, 0);
+                } else if (currentFeedId.startsWith("blueprint-")) {
+                    // Extract blueprint ID from feed ID
+                    const blueprintId = currentFeedId.replace("blueprint-", "");
+                    const fetchedPosts = await getPostsByBlueprint(blueprintId);
+                    // Blueprint posts don't support pagination yet, wrap in result format
+                    result = {
+                        posts: fetchedPosts,
+                        total: fetchedPosts.length,
+                        hasMore: false,
+                        nextOffset: 0,
+                    };
+                } else {
+                    result = await getAllPosts(8, 0);
+                }
+
+                if (!result || !result.posts) {
+                    throw new Error("No data received from API");
+                }
+                if (!Array.isArray(result.posts)) {
+                    throw new Error("API response is not an array");
+                }
+
+                setPosts(result.posts);
+                setFeedItems([]); // Clear feed items for non-feed views
+                setOffset(result.nextOffset);
+                setHasMore(result.hasMore);
                 setLastUpdated(new Date());
+            } catch (error) {
+                console.error("Error fetching posts:", error);
+                const errorMessage = error.message || "Failed to load posts";
+                setError(errorMessage);
+                showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
+                setPosts([]);
+                setFeedItems([]);
+                setHasMore(false);
+            } finally {
                 setLoading(false);
                 setInitialLoading(false);
-                return;
-            } else if (currentFeedId === "friends") {
-                result = await getFriendsPosts(8, 0);
-            } else if (currentFeedId.startsWith("blueprint-")) {
-                // Extract blueprint ID from feed ID
-                const blueprintId = currentFeedId.replace("blueprint-", "");
-                const fetchedPosts = await getPostsByBlueprint(blueprintId);
-                // Blueprint posts don't support pagination yet, wrap in result format
-                result = {
-                    posts: fetchedPosts,
-                    total: fetchedPosts.length,
-                    hasMore: false,
-                    nextOffset: 0
-                };
-            } else {
-                result = await getAllPosts(8, 0);
             }
-            
-            if (!result || !result.posts) {
-                throw new Error("No data received from API");
-            }
-            if (!Array.isArray(result.posts)) {
-                throw new Error("API response is not an array");
-            }
-
-            setPosts(result.posts);
-            setFeedItems([]); // Clear feed items for non-feed views
-            setOffset(result.nextOffset);
-            setHasMore(result.hasMore);
-            setLastUpdated(new Date());
-        } catch (error) {
-            console.error("Error fetching posts:", error);
-            const errorMessage = error.message || "Failed to load posts";
-            setError(errorMessage);
-            showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
-            setPosts([]);
-            setFeedItems([]);
-            setHasMore(false);
-        } finally {
-            setLoading(false);
-            setInitialLoading(false);
-        }
-    }, [currentFeed.id, currentFeed.name]);
+        },
+        [currentFeed.id, currentFeed.name]
+    );
 
     // Load more posts when scrolling to the end
     const loadMorePosts = useCallback(async () => {
@@ -239,16 +236,16 @@ export default function Feed() {
         try {
             const currentFeedId = currentFeed.id;
             let result;
-            
+
             if (currentFeedId === "feed") {
                 const feedResult = await getFeed(20, offset);
                 // Append new feed items
-                setFeedItems(prev => [...prev, ...feedResult.items]);
+                setFeedItems((prev) => [...prev, ...feedResult.items]);
                 // Extract and append posts
                 const postsOnly = feedResult.items
-                    .filter(item => item.type === 'post' && item.post)
-                    .map(item => item.post!);
-                setPosts(prevPosts => [...prevPosts, ...postsOnly]);
+                    .filter((item) => item.type === "post" && item.post)
+                    .map((item) => item.post!);
+                setPosts((prevPosts) => [...prevPosts, ...postsOnly]);
                 setOffset(feedResult.nextOffset);
                 setHasMore(feedResult.hasMore);
                 setLoadingMore(false);
@@ -262,13 +259,13 @@ export default function Feed() {
             } else {
                 result = await getAllPosts(8, offset);
             }
-            
+
             if (!result || !result.posts) {
                 throw new Error("No data received from API");
             }
 
             // Append new posts to existing posts
-            setPosts(prevPosts => [...prevPosts, ...result.posts]);
+            setPosts((prevPosts) => [...prevPosts, ...result.posts]);
             setOffset(result.nextOffset);
             setHasMore(result.hasMore);
         } catch (error) {
@@ -285,7 +282,7 @@ export default function Feed() {
         return [...posts].sort((a, b) => {
             const dateA = new Date(a.metadata?.createdAt || 0);
             const dateB = new Date(b.metadata?.createdAt || 0);
-            return dateB.getTime() - dateA.getTime(); 
+            return dateB.getTime() - dateA.getTime();
         });
     }, [posts]);
 
@@ -306,12 +303,9 @@ export default function Feed() {
     useEffect(() => {
         const initializeFeed = async () => {
             // Run both API calls in parallel for faster initial load
-            await Promise.all([
-                fetchSubscribedBlueprints(),
-                fetchPosts(currentFeed.id)
-            ]);
+            await Promise.all([fetchSubscribedBlueprints(), fetchPosts(currentFeed.id)]);
         };
-        
+
         initializeFeed();
         isInitialMount.current = false;
     }, []); // Only run once on mount
@@ -322,7 +316,7 @@ export default function Feed() {
         if (isInitialMount.current) {
             return;
         }
-        
+
         // Fetch posts for the new feed
         fetchPosts(currentFeed.id);
     }, [currentFeed.id]);
@@ -405,75 +399,81 @@ export default function Feed() {
         }));
     }, []);
 
-    const renderFeedItem = useCallback(({ item }: { item: FeedItem }) => {
-        if (item.type === 'task' && item.task) {
-            // Render task card
-            const task = item.task;
-            return (
-                <TaskFeedCard
-                    taskId={task.id}
-                    content={task.content}
-                    workspaceName={task.workspaceName}
-                    categoryName={task.categoryName}
-                    timestamp={task.timestamp}
-                    priority={task.priority}
-                    value={task.value}
-                    user={task.user}
-                />
-            );
-        } else if (item.type === 'post' && item.post) {
-            // Render post card
-            const post = item.post;
+    const renderFeedItem = useCallback(
+        ({ item }: { item: FeedItem }) => {
+            if (item.type === "task" && item.task) {
+                // Render task card
+                const task = item.task;
+                return (
+                    <TaskFeedCard
+                        taskId={task.id}
+                        content={task.content}
+                        workspaceName={task.workspaceName}
+                        categoryName={task.categoryName}
+                        timestamp={task.timestamp}
+                        priority={task.priority}
+                        value={task.value}
+                        user={task.user}
+                    />
+                );
+            } else if (item.type === "post" && item.post) {
+                // Render post card
+                const post = item.post;
+                const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
+                const postReactions = post.reactions ? transformReactions(post.reactions) : [];
+
+                return (
+                    <PostCard
+                        icon={post.user?.profile_picture || ""}
+                        name={post.user?.display_name || "Unknown"}
+                        username={post.user?.handle || "unknown"}
+                        userId={post.user?._id || ""}
+                        id={post._id}
+                        images={post.images}
+                        caption={post.caption}
+                        size={post.size}
+                        time={postTime}
+                        reactions={postReactions}
+                        comments={post.comments}
+                        category={post.task?.category?.name}
+                        taskName={post.task?.content}
+                    />
+                );
+            }
+            return null;
+        },
+        [calculatePostTime, transformReactions, ThemedColor]
+    );
+
+    const renderPost = useCallback(
+        ({ item: post }: { item: PostData }) => {
             const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
             const postReactions = post.reactions ? transformReactions(post.reactions) : [];
-            
+
             return (
                 <PostCard
                     icon={post.user?.profile_picture || ""}
                     name={post.user?.display_name || "Unknown"}
                     username={post.user?.handle || "unknown"}
                     userId={post.user?._id || ""}
-                    id={post._id}
-                    images={post.images}
-                    caption={post.caption}
-                    size={post.size}
+                    caption={post.caption || ""}
                     time={postTime}
-                    reactions={postReactions}
-                    comments={post.comments}
+                    priority="low"
+                    points={0}
+                    timeTaken={0}
                     category={post.task?.category?.name}
                     taskName={post.task?.content}
+                    reactions={postReactions}
+                    comments={post.comments || []}
+                    images={post.images || []}
+                    size={post.size}
+                    onReactionUpdate={() => refreshSinglePost(post._id)}
+                    id={post._id}
                 />
             );
-        }
-        return null;
-    }, [calculatePostTime, transformReactions, ThemedColor]);
-
-    const renderPost = useCallback(({ item: post }: { item: PostData }) => {
-        const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
-        const postReactions = post.reactions ? transformReactions(post.reactions) : [];
-        
-        return (
-            <PostCard
-                icon={post.user?.profile_picture || ""}
-                name={post.user?.display_name || "Unknown"}
-                username={post.user?.handle || "unknown"}
-                userId={post.user?._id || ""}
-                caption={post.caption || ""}
-                time={postTime}
-                priority="low"
-                points={0}
-                timeTaken={0}
-                category={post.task?.category?.name}
-                taskName={post.task?.content}
-                reactions={postReactions}
-                comments={post.comments || []}
-                images={post.images || []}
-                size={post.size}
-                onReactionUpdate={() => refreshSinglePost(post._id)}
-                id={post._id}
-            />
-        );
-    }, [refreshSinglePost, calculatePostTime, transformReactions]);
+        },
+        [refreshSinglePost, calculatePostTime, transformReactions]
+    );
 
     const renderHeader = useCallback(() => {
         return (
@@ -485,9 +485,9 @@ export default function Feed() {
                         onPress={() => {
                             router.push("/(logged-in)/(tabs)/(feed)/Notifications");
                         }}
-                        style={{ position: 'relative' }}>
-                        <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
-                        <View style={{ position: 'absolute', top: -8, right: -8 }}>
+                        style={{ position: "relative" }}>
+                        <HeartStraightIcon size={32} weight="regular" color={ThemedColor.text} />
+                        <View style={{ position: "absolute", top: -8, right: -8 }}>
                             <NotificationBadge />
                         </View>
                     </TouchableOpacity>
@@ -527,10 +527,10 @@ export default function Feed() {
         if (posts.length === 0 && !loading) {
             const isFriendsFeed = currentFeed.id === "friends";
             const isBlueprintFeed = currentFeed.id.startsWith("blueprint-");
-            
+
             let emptyText = "No posts yet";
             let emptySubtext = "Pull down to refresh";
-            
+
             if (isFriendsFeed) {
                 emptyText = "No posts from friends yet";
                 emptySubtext = "Add friends to see their posts here";
@@ -538,12 +538,10 @@ export default function Feed() {
                 emptyText = `No posts in ${currentFeed.name} yet`;
                 emptySubtext = "Create posts using this blueprint to see them here";
             }
-            
+
             return (
                 <View style={styles.emptyContainer}>
-                    <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
-                        {emptyText}
-                    </ThemedText>
+                    <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>{emptyText}</ThemedText>
                     <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
                         {emptySubtext}
                     </ThemedText>
@@ -577,9 +575,7 @@ export default function Feed() {
         if (!hasMore && posts.length > 0) {
             return (
                 <View style={styles.endOfFeedContainer}>
-                    <ThemedText style={styles.endOfFeedText}>
-                        You've reached the end! 🎉
-                    </ThemedText>
+                    <ThemedText style={styles.endOfFeedText}>You've reached the end! 🎉</ThemedText>
                 </View>
             );
         }
@@ -618,9 +614,9 @@ export default function Feed() {
                             onPress={() => {
                                 router.push("/(logged-in)/(tabs)/(feed)/Notifications");
                             }}
-                            style={{ position: 'relative' }}>
+                            style={{ position: "relative" }}>
                             <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
-                            <View style={{ position: 'absolute', top: -8, right: -8 }}>
+                            <View style={{ position: "absolute", top: -8, right: -8 }}>
                                 <NotificationBadge />
                             </View>
                         </TouchableOpacity>
@@ -641,17 +637,17 @@ export default function Feed() {
 
             <FlatList
                 ref={flatListRef}
-                data={currentFeed.id === 'feed' ? feedItems : sortedPosts}
+                data={currentFeed.id === "feed" ? feedItems : sortedPosts}
                 keyExtractor={(item) => {
-                    if (currentFeed.id === 'feed') {
+                    if (currentFeed.id === "feed") {
                         const feedItem = item as FeedItem;
-                        return feedItem.type === 'post' && feedItem.post 
-                            ? `post-${feedItem.post._id}` 
+                        return feedItem.type === "post" && feedItem.post
+                            ? `post-${feedItem.post._id}`
                             : `task-${feedItem.task?.id}`;
                     }
                     return (item as PostData)._id;
                 }}
-                renderItem={currentFeed.id === 'feed' ? renderFeedItem : renderPost}
+                renderItem={currentFeed.id === "feed" ? renderFeedItem : renderPost}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
@@ -727,7 +723,9 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             paddingVertical: 8,
             borderRadius: 8,
             marginRight: 8,
-            shadowColor: "#000",
+            boxShadow: ThemedColor.smallShadow,
+            borderWidth: 0.5,
+            borderColor: ThemedColor.tertiary,
             shadowOffset: {
                 width: 0,
                 height: 1,

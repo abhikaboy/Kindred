@@ -18,7 +18,7 @@ export default function Friends() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    
+
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -45,11 +45,10 @@ export default function Friends() {
     // Filter friends based on search query
     const filteredFriends = useMemo(() => {
         if (!searchQuery.trim()) return friends;
-        
+
         const query = searchQuery.toLowerCase();
-        return friends.filter(friend => 
-            friend.display_name.toLowerCase().includes(query) ||
-            friend.handle.toLowerCase().includes(query)
+        return friends.filter(
+            (friend) => friend.display_name.toLowerCase().includes(query) || friend.handle.toLowerCase().includes(query)
         );
     }, [friends, searchQuery]);
 
@@ -59,36 +58,42 @@ export default function Friends() {
     }, []);
 
     // Handle friend press
-    const handleFriendPress = useCallback((friendId: string) => {
-        router.push(`/account/${friendId}`);
-    }, [router]);
+    const handleFriendPress = useCallback(
+        (friendId: string) => {
+            router.push(`/account/${friendId}`);
+        },
+        [router]
+    );
 
     // Render friend item
-    const renderFriendItem = useCallback(({ item }: { item: UserExtendedReference }) => (
-        <TouchableOpacity 
-            onPress={() => handleFriendPress(item._id)}
-            style={styles.friendItem}
-        >
-            <UserInfoRowBase
-                name={item.display_name}
-                username={item.handle}
-                icon={item.profile_picture}
-                id={item._id}
-                right={
-                    <ThemedText type="defaultSemiBold" style={styles.arrowIcon}>
-                        →
-                    </ThemedText>
-                }
-            />
-        </TouchableOpacity>
-    ), [handleFriendPress]);
+    const renderFriendItem = useCallback(
+        ({ item }: { item: UserExtendedReference }) => (
+            <TouchableOpacity onPress={() => handleFriendPress(item._id)} style={styles.friendItem}>
+                <UserInfoRowBase
+                    name={item.display_name}
+                    username={item.handle}
+                    icon={item.profile_picture}
+                    id={item._id}
+                    right={
+                        <ThemedText type="defaultSemiBold" style={styles.arrowIcon}>
+                            →
+                        </ThemedText>
+                    }
+                />
+            </TouchableOpacity>
+        ),
+        [handleFriendPress]
+    );
 
     // Render skeleton loading
-    const renderSkeletonItem = useCallback(({ index }: { index: number }) => (
-        <View key={index} style={styles.friendItem}>
-            <UserRowSkeleton />
-        </View>
-    ), []);
+    const renderSkeletonItem = useCallback(
+        ({ index }: { index: number }) => (
+            <View key={index} style={styles.friendItem}>
+                <UserRowSkeleton />
+            </View>
+        ),
+        []
+    );
 
     // Loading state
     if (loading) {
@@ -97,9 +102,13 @@ export default function Friends() {
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <ThemedText type="default" style={styles.backIcon}>←</ThemedText>
+                        <ThemedText type="default" style={styles.backIcon}>
+                            ←
+                        </ThemedText>
                     </TouchableOpacity>
-                    <ThemedText type="subtitle" style={styles.headerTitle}>Friends</ThemedText>
+                    <ThemedText type="subtitle" style={styles.headerTitle}>
+                        Friends
+                    </ThemedText>
                     <View style={styles.backButton} />
                 </View>
 
@@ -120,7 +129,7 @@ export default function Friends() {
                     <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
                         FRIENDS
                     </ThemedText>
-                    
+
                     {/* Skeleton loading */}
                     <FlatList
                         data={Array(6).fill(0)}
@@ -140,12 +149,16 @@ export default function Friends() {
             <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <ThemedText type="default" style={styles.backIcon}>←</ThemedText>
+                        <ThemedText type="default" style={styles.backIcon}>
+                            ←
+                        </ThemedText>
                     </TouchableOpacity>
-                    <ThemedText type="subtitle" style={styles.headerTitle}>Friends</ThemedText>
+                    <ThemedText type="subtitle" style={styles.headerTitle}>
+                        Friends
+                    </ThemedText>
                     <View style={styles.backButton} />
                 </View>
-                
+
                 <View style={styles.errorContainer}>
                     <ThemedText type="default">Error loading friends: {error}</ThemedText>
                     <TouchableOpacity onPress={loadFriends} style={styles.retryButton}>
@@ -163,9 +176,13 @@ export default function Friends() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText type="default" style={styles.backIcon}>←</ThemedText>
+                    <ThemedText type="default" style={styles.backIcon}>
+                        ←
+                    </ThemedText>
                 </TouchableOpacity>
-                <ThemedText type="subtitle" style={styles.headerTitle}>Friends</ThemedText>
+                <ThemedText type="subtitle" style={styles.headerTitle}>
+                    Friends
+                </ThemedText>
                 <View style={styles.backButton} />
             </View>
 
@@ -188,10 +205,10 @@ export default function Friends() {
                     <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
                         FRIENDS
                     </ThemedText>
-                    
+
                     {filteredFriends.length === 0 ? (
                         <View style={styles.emptyContainer}>
-                            <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.secondaryText }]}>
+                            <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.text }]}>
                                 {searchQuery ? "No friends found matching your search" : "No friends yet"}
                             </ThemedText>
                         </View>
@@ -228,7 +245,7 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
     },
     backIcon: {
-        fontSize: 16,
+        fontSize: 24,
     },
     headerTitle: {
         fontSize: 16,
@@ -262,7 +279,7 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
     },
     arrowIcon: {
-        fontSize: 16,
+        fontSize: 18,
     },
     emptyContainer: {
         alignItems: "center",

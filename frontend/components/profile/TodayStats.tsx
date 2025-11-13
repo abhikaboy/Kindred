@@ -23,10 +23,9 @@ function StatItem({ icon, label, value, loading = false }: StatItemProps) {
                 styles.statItem,
                 {
                     backgroundColor: ThemedColor.lightened,
-                    shadowColor: ThemedColor.text,
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
+                    boxShadow: ThemedColor.shadowSmall,
+                    borderWidth: 0.5,
+                    borderColor: ThemedColor.tertiary,
                 },
             ]}>
             <View style={styles.iconContainer}>{icon}</View>

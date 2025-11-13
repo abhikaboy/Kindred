@@ -4,16 +4,31 @@ import { Dimensions, Platform, TouchableOpacity, View, Animated } from "react-na
 import { usePathname } from "expo-router";
 
 import { HapticTab } from "@/components/HapticTab";
-import Octicons from "@expo/vector-icons/Octicons";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { useColorScheme } from "react-native";
-import Entypo from "@expo/vector-icons/Entypo";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
+
+// Import Phosphor icons
+import {
+    PencilSimple,
+    PencilSimpleLine,
+    Compass,
+    CompassTool,
+    MagnifyingGlass,
+    User,
+    Stack,
+    StackSimple,
+    Cards,
+    SquaresFour,
+    GridFour,
+    Rows,
+    TextColumns,
+} from "phosphor-react-native";
 
 // Custom tab button components
 const TasksTabButton = (props: any) => {
@@ -28,12 +43,12 @@ const FeedTabButton = (props: any) => {
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
     const isSelected = currentIndex === 1; // Feed is the second tab
-    
+
     // Disable button when focus mode is enabled
     if (focusMode) {
         return null;
     }
-    
+
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
@@ -42,12 +57,12 @@ const SearchTabButton = (props: any) => {
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
     const isSelected = currentIndex === 2; // Search is the third tab
-    
+
     // Disable button when focus mode is enabled
     if (focusMode) {
         return null;
     }
-    
+
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
@@ -56,12 +71,12 @@ const ProfileTabButton = (props: any) => {
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
     const isSelected = currentIndex === 3; // Profile is the fourth tab
-    
+
     // Disable button when focus mode is enabled
     if (focusMode) {
         return null;
     }
-    
+
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
@@ -76,6 +91,8 @@ export default function TabLayout() {
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
+    const navigationState = useNavigationState((state) => state);
+    const currentIndex = navigationState?.index || 0;
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
@@ -99,7 +116,8 @@ export default function TabLayout() {
         // Add other screen paths where you want to hide tabs
     ];
 
-    const shouldHideTabBar = hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen || focusMode;
+    const shouldHideTabBar =
+        hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen || focusMode;
 
     // Animate tab bar visibility
     useEffect(() => {
@@ -165,12 +183,10 @@ export default function TabLayout() {
                             paddingTop: 12,
                             height: 90,
                             paddingBottom: 32,
-                            borderRadius: 20,
                             borderBottomLeftRadius: 0,
                             borderBottomRightRadius: 0,
                             width: "100%",
                             overflow: "hidden",
-                            borderWidth: 1,
                         },
                         android: {
                             borderTopWidth: 1,
@@ -193,7 +209,12 @@ export default function TabLayout() {
                 name="(task)"
                 options={{
                     title: "Tasks",
-                    tabBarIcon: ({ color }) => <Entypo name="pencil" size={24} color={color} />,
+                    tabBarIcon: ({ color, focused }) =>
+                        focused ? (
+                            <PencilSimple size={24} color={color} weight="fill" />
+                        ) : (
+                            <PencilSimpleLine size={24} color={color} />
+                        ),
                     tabBarBadge: todayTaskCount > 0 ? todayTaskCount : undefined,
                     tabBarButton: TasksTabButton,
                     tabBarAccessibilityLabel: "Tasks",
@@ -203,7 +224,12 @@ export default function TabLayout() {
                 name="(feed)"
                 options={{
                     title: "Feed",
-                    tabBarIcon: ({ color }) => <Entypo name="home" size={24} color={color} />,
+                    tabBarIcon: ({ color, focused }) =>
+                        focused ? (
+                            <SquaresFour size={24} color={color} weight="fill" />
+                        ) : (
+                            <SquaresFour size={24} color={color} />
+                        ),
                     tabBarButton: FeedTabButton,
                     tabBarAccessibilityLabel: "Feed",
                 }}
@@ -212,7 +238,12 @@ export default function TabLayout() {
                 name="(search)"
                 options={{
                     title: "Search",
-                    tabBarIcon: ({ color }) => <Octicons name="search" size={24} color={color} />,
+                    tabBarIcon: ({ color, focused }) =>
+                        focused ? (
+                            <MagnifyingGlass size={24} color={color} weight="bold" />
+                        ) : (
+                            <MagnifyingGlass size={24} color={color} />
+                        ),
                     tabBarButton: SearchTabButton,
                     tabBarAccessibilityLabel: "Search",
                 }}
@@ -221,7 +252,8 @@ export default function TabLayout() {
                 name="(profile)"
                 options={{
                     title: "Profile",
-                    tabBarIcon: ({ color }) => <Octicons name="person" size={24} color={color} />,
+                    tabBarIcon: ({ color, focused }) =>
+                        focused ? <User size={24} color={color} weight="fill" /> : <User size={24} color={color} />,
                     tabBarButton: ProfileTabButton,
                     tabBarAccessibilityLabel: "Profile",
                 }}

@@ -13,11 +13,7 @@ interface ProfileEncouragementCardProps {
     userName?: string;
 }
 
-export default function ProfileEncouragementCard({ 
-    userId, 
-    userHandle, 
-    userName 
-}: ProfileEncouragementCardProps) {
+export default function ProfileEncouragementCard({ userId, userHandle, userName }: ProfileEncouragementCardProps) {
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
     const [showEncourageModal, setShowEncourageModal] = useState(false);
@@ -51,17 +47,9 @@ export default function ProfileEncouragementCard({
 
     return (
         <>
-            <TouchableOpacity 
-                style={styles.card} 
-                onPress={handlePress}
-                activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.7}>
                 <View style={styles.iconContainer}>
-                    <Sparkle 
-                        size={24} 
-                        color={ThemedColor.primary} 
-                        weight="fill"
-                    />
+                    <Sparkle size={24} color={ThemedColor.primary} weight="fill" />
                 </View>
                 <ThemedText type="defaultSemiBold" style={styles.text}>
                     Send Encouragement
@@ -94,6 +82,9 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             padding: 16,
             shadowRadius: 4,
             elevation: 3,
+            borderWidth: 0.5,
+            borderColor: ThemedColor.tertiary,
+            boxShadow: ThemedColor.shadowSmall,
         },
         iconContainer: {
             width: 40,
@@ -109,4 +100,3 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             fontSize: 16,
         },
     });
-

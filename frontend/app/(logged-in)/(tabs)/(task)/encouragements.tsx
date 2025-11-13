@@ -18,7 +18,7 @@ export default function Encouragements() {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { encouragements, loading, markEncouragementsAsRead } = useKudos();
-    
+
     // Get sent count from user's kudosRewards for progress tracking
     const sentEncouragements = user?.kudosRewards?.encouragements || 0;
 
@@ -127,6 +127,7 @@ const createStyles = (ThemedColor: any, insets: any) =>
         },
         scrollView: {
             flex: 1,
+            marginBottom: 60,
         },
         scrollContent: {
             paddingHorizontal: HORIZONTAL_PADDING,

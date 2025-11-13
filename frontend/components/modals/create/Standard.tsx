@@ -99,7 +99,15 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     );
 };
 
-const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, spotlightState }: Props & { spotlightState: any }) => {
+const StandardContent = ({
+    hide,
+    goTo,
+    edit = false,
+    categoryId,
+    screen,
+    isBlueprint = false,
+    spotlightState,
+}: Props & { spotlightState: any }) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, selectedCategory, setCreateCategory, task } = useTasks();
@@ -162,45 +170,45 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
     useEffect(() => {
         if (edit && categoryId && categories && categories.length > 0) {
             const timer = setTimeout(() => {
-                const taskCategory = categories.find(cat => cat.id === categoryId);
-                
+                const taskCategory = categories.find((cat) => cat.id === categoryId);
+
                 if (taskCategory) {
-                    setCreateCategory({ 
-                        label: taskCategory.name, 
-                        id: taskCategory.id, 
-                        special: false 
+                    setCreateCategory({
+                        label: taskCategory.name,
+                        id: taskCategory.id,
+                        special: false,
                     });
                 } else {
                     // As a last resort, set the first available category
                     if (categories.length > 0) {
                         const firstCategory = categories[0];
-                        setCreateCategory({ 
-                            label: firstCategory.name, 
-                            id: firstCategory.id, 
-                            special: false 
+                        setCreateCategory({
+                            label: firstCategory.name,
+                            id: firstCategory.id,
+                            special: false,
                         });
                     }
                 }
             }, 100);
-            
+
             return () => clearTimeout(timer);
         } else {
         }
     }, [edit, categoryId, categories]);
 
     const createPost = async () => {
-        console.log('createPost called with context values:', {
+        console.log("createPost called with context values:", {
             startDate: startDate,
             startTime: startTime,
             deadline: deadline,
-            taskName: taskName
+            taskName: taskName,
         });
-        
+
         if (availableCategories.length === 0) return;
-        
+
         // Trim trailing newlines and whitespace from task name
-        const trimmedTaskName = taskName.replace(/[\n\r]+$/g, '').trim();
-        
+        const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
+
         if (isBlueprint) {
             // For blueprint mode, create task locally with proper TaskDocument structure
             const newTask: components["schemas"]["TaskDocument"] = {
@@ -216,23 +224,23 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
                 startDate: startDate?.toISOString(),
                 startTime: startTime?.toISOString(),
                 deadline: deadline?.toISOString(),
-                reminders: reminders.map(reminder => ({
+                reminders: reminders.map((reminder) => ({
                     ...reminder,
-                    triggerTime: reminder.triggerTime.toISOString()
+                    triggerTime: reminder.triggerTime.toISOString(),
                 })),
                 recurFrequency: recurring ? recurFrequency : undefined,
-                recurDetails: recurring ? recurDetails as any : undefined,
+                recurDetails: recurring ? (recurDetails as any) : undefined,
                 timestamp: new Date().toISOString(),
                 lastEdited: new Date().toISOString(),
                 userID: "", // Will be set by backend when blueprint is created
                 categoryID: selectedCategory.id,
             };
-            
+
             addTaskToBlueprintCategory(selectedCategory.id, newTask);
             resetTaskCreation();
             return;
         }
-        
+
         // Normal mode - create task via API
         let postBody: CreateTaskParams = {
             content: trimmedTaskName,
@@ -246,17 +254,17 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
             startDate: startDate?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
-            reminders: reminders.map(reminder => ({
+            reminders: reminders.map((reminder) => ({
                 ...reminder,
-                triggerTime: reminder.triggerTime.toISOString()
+                triggerTime: reminder.triggerTime.toISOString(),
             })),
         };
         if (recurring) {
             postBody.recurFrequency = recurFrequency;
             postBody.recurDetails = recurDetails as RecurDetails;
         }
-        
-        console.log('POST body:', JSON.stringify(postBody, null, 2));
+
+        console.log("POST body:", JSON.stringify(postBody, null, 2));
         const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody);
 
         addToCategory(selectedCategory.id, response);
@@ -265,10 +273,10 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
 
     const updatePost = async () => {
         if (!task) return;
-        
+
         // Trim trailing newlines and whitespace from task name
-        const trimmedTaskName = taskName.replace(/[\n\r]+$/g, '').trim();
-        
+        const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
+
         const updateData: components["schemas"]["UpdateTaskDocument"] = {
             content: trimmedTaskName,
             priority: priority,
@@ -276,17 +284,19 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
             recurring: recurring,
             public: isPublic,
             active: task.active || false,
-            recurDetails: recurring ? recurDetails as RecurDetails : {
-                every: 1,
-                daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
-                behavior: "ROLLING",
-            },
+            recurDetails: recurring
+                ? (recurDetails as RecurDetails)
+                : {
+                      every: 1,
+                      daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+                      behavior: "ROLLING",
+                  },
             startDate: startDate?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
-            reminders: reminders.map(reminder => ({
+            reminders: reminders.map((reminder) => ({
                 ...reminder,
-                triggerTime: reminder.triggerTime.toISOString()
+                triggerTime: reminder.triggerTime.toISOString(),
             })),
             notes: task.notes || "",
             checklist: task.checklist || [],
@@ -294,14 +304,14 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
 
         // Use the selected category from the dropdown, or fall back to the original task category
         const targetCategoryId = selectedCategory?.id || task.categoryID;
-        
+
         // Optimistic update - update the task locally before the API call
         const defaultRecurDetails: RecurDetails = {
             every: 1,
             daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
             behavior: "ROLLING",
         };
-        
+
         updateTask(targetCategoryId, task.id, {
             content: trimmedTaskName,
             priority: priority,
@@ -313,14 +323,14 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
             startDate: startDate?.toISOString() || "",
             startTime: startTime?.toISOString() || "",
             deadline: deadline?.toISOString() || "",
-            reminders: reminders.map(reminder => ({
+            reminders: reminders.map((reminder) => ({
                 ...reminder,
-                triggerTime: reminder.triggerTime.toISOString()
+                triggerTime: reminder.triggerTime.toISOString(),
             })),
             notes: task.notes || "",
             checklist: task.checklist || [],
         });
-        
+
         try {
             // Make the API call
             await updateTaskAPI(targetCategoryId, task.id, updateData);
@@ -329,7 +339,7 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
             // In a production app, you might want to revert the optimistic update here
             // or show an error message to the user
         }
-        
+
         resetTaskCreation();
     };
 
@@ -345,7 +355,7 @@ const StandardContent = ({ hide, goTo, edit = false, categoryId, screen, isBluep
     }
 
     return (
-        <View style={{ gap: 8, flexDirection: "column", display: "flex" }} >
+        <View style={{ gap: 8, flexDirection: "column", display: "flex" }}>
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
                 <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}></View>
             </View>
@@ -646,12 +656,12 @@ const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
     const ThemedColor = useThemeColor();
     const { deadline } = useTaskCreation();
     const ICON_SIZE = 20;
-    
+
     // Hide the button when deadline is set
     if (deadline) {
         return null;
     }
-    
+
     return (
         <TouchableOpacity
             onPress={() => goTo(Screen.DEADLINE)}
@@ -666,14 +676,8 @@ const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
                 gap: 4,
                 padding: 12,
             }}>
-            <Feather 
-                name="alert-circle" 
-                size={ICON_SIZE} 
-                color={ThemedColor.text} 
-            />
-            <ThemedText type="lightBody">
-                Deadline
-            </ThemedText>
+            <Feather name="alert-circle" size={ICON_SIZE} color={ThemedColor.text} />
+            <ThemedText type="lightBody">Deadline</ThemedText>
         </TouchableOpacity>
     );
 };
@@ -685,31 +689,41 @@ const AdvancedOptionList = ({
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
 }) => {
-    const { startDate, startTime, deadline, reminders, recurring, recurFrequency, isBlueprint: isBlueprintMode } = useTaskCreation();
-    
+    const {
+        startDate,
+        startTime,
+        deadline,
+        reminders,
+        recurring,
+        recurFrequency,
+        isBlueprint: isBlueprintMode,
+    } = useTaskCreation();
+
     // Check if start date is the blueprint default date (Jan 1, 1970 at midnight)
     // Only consider it as "not configured" if we're in blueprint mode AND it matches the exact default
-    const isBlueprintDefaultDate = isBlueprintMode && startDate && 
-        startDate.getFullYear() === 1970 && 
-        startDate.getMonth() === 0 && 
+    const isBlueprintDefaultDate =
+        isBlueprintMode &&
+        startDate &&
+        startDate.getFullYear() === 1970 &&
+        startDate.getMonth() === 0 &&
         startDate.getDate() === 1 &&
         startDate.getHours() === 0 &&
         startDate.getMinutes() === 0 &&
         startDate.getSeconds() === 0;
-    
+
     // Start date is configured if it exists AND (we're not in blueprint mode OR it's not the default date)
     const startDateConfigured = startDate !== null && !isBlueprintDefaultDate;
-    
+
     return (
         <View style={{ gap: 12, marginTop: 4 }}>
             <AdvancedOption
                 icon="calendar"
                 label={
-                    startDate && startTime 
-                        ? `Start: ${startDate.toLocaleDateString()} ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                        : startDate 
-                        ? `Start Date: ${startDate.toLocaleDateString()}`
-                        : "Set Start Date & Time"
+                    startDate && startTime
+                        ? `Start: ${startDate.toLocaleDateString()} ${startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                        : startDate
+                          ? `Start Date: ${startDate.toLocaleDateString()}`
+                          : "Set Start Date & Time"
                 }
                 screen={Screen.STARTDATE}
                 goTo={goTo}
@@ -738,9 +752,7 @@ const AdvancedOptionList = ({
                     reminders.length > 0
                         ? reminders.length === 1
                             ? `Reminder: ${reminders[0].triggerTime.toLocaleString()}`
-                            : `Reminders: ${reminders
-                                  .map((r) => r.triggerTime.toLocaleTimeString())
-                                  .join(", ")}`
+                            : `Reminders: ${reminders.map((r) => r.triggerTime.toLocaleTimeString()).join(", ")}`
                         : "Add Reminder"
                 }
                 screen={Screen.REMINDER}
@@ -748,14 +760,14 @@ const AdvancedOptionList = ({
                 showUnconfigured={showUnconfigured}
                 configured={reminders.length > 0}
             />
-            <AdvancedOption
+            {/* <AdvancedOption
                 icon="people"
                 label="Add Collaborators"
                 screen={Screen.COLLABORATORS}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
                 configured={false}
-            />
+            /> */}
         </View>
     );
 };

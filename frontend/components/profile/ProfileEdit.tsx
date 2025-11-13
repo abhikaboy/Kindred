@@ -12,39 +12,66 @@ interface ProfileStatsProps {
 export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
     const ThemedColor = useThemeColor();
     return (
-        <View style={styles.statsContainer}>
-            <View style={{ width: "50%" }}>
-                <PrimaryButton
-                    title="Edit Profile"
+        <View style={styles.container}>
+            <View style={styles.gridContainer}>
+                <View style={styles.buttonWrapper}>
+                    <PrimaryButton
+                        title="Edit Profile"
+                        onPress={() => {
+                            router.push("/(logged-in)/(tabs)/(profile)/edit");
+                        }}
+                        style={styles.button}
+                    />
+                </View>
+                <TouchableOpacity
                     onPress={() => {
-                        router.push("/(logged-in)/(tabs)/(profile)/edit");
+                        router.push("/(logged-in)/(tabs)/(profile)/friends");
                     }}
-                />
+                    style={[
+                        styles.friendsButton,
+                        {
+                            backgroundColor: ThemedColor.lightened,
+                            borderColor: ThemedColor.tertiary,
+                            boxShadow: ThemedColor.shadowSmall,
+                        },
+                    ]}>
+                    <ThemedText type="lightBody" style={styles.friendsText}>
+                        {friendsCount} Friends
+                    </ThemedText>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity
-                onPress={() => {
-                    router.push("/(logged-in)/(tabs)/(profile)/friends");
-                }}
-                style={{
-                    width: "50%",
-                    backgroundColor: ThemedColor.lightened,
-                    borderRadius: 12,
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}>
-                <ThemedText type="lightBody" style={{ width: "100%", textAlign: "center" }}>
-                    {friendsCount} Friends
-                </ThemedText>
-            </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    statsContainer: {
+    container: {
+        width: "100%",
+    },
+    gridContainer: {
         display: "flex",
         flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 12,
+    },
+    buttonWrapper: {
+        width: "48%",
+    },
+    button: {
         width: "100%",
-        gap: 4,
+    },
+    friendsButton: {
+        width: "48%",
+        borderRadius: 12,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 0.5,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+    },
+    friendsText: {
+        width: "100%",
+        textAlign: "center",
+        fontWeight: "500",
     },
 });

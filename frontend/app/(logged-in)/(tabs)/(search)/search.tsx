@@ -155,6 +155,7 @@ const Search = (props: Props) => {
             Alert.alert("Error", "Failed to find contacts. Please try again.");
         },
     });
+    const skipAutocompleteRef = useRef(false);
 
     const [state, dispatch] = useReducer(searchReducer, {
         mode: "categories",
@@ -170,6 +171,7 @@ const Search = (props: Props) => {
     const [autocompleteSuggestions, setAutocompleteSuggestions] = React.useState<AutocompleteSuggestion[]>([]);
     const [showAutocomplete, setShowAutocomplete] = React.useState(false);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isSelectingFromRecent = useRef(false);
     const router = useRouter();
     const { appendSearch } = useRecentSearch("search-page");
 
@@ -202,19 +204,19 @@ const Search = (props: Props) => {
 
     // Autocomplete function with debouncing - only fetch, don't update main results
     const handleAutocomplete = useCallback(async (query: string) => {
-        console.log('🔍 handleAutocomplete called with query:', query);
+        console.log("🔍 handleAutocomplete called with query:", query);
         if (!query.trim() || query.trim().length < 2) {
-            console.log('🔍 Query too short, clearing autocomplete');
+            console.log("🔍 Query too short, clearing autocomplete");
             setAutocompleteSuggestions([]);
             setShowAutocomplete(false);
             return;
         }
 
         try {
-            console.log('🔍 Calling autocompleteProfiles API with query:', query);
+            console.log("🔍 Calling autocompleteProfiles API with query:", query);
             // Prioritize users for autocomplete
             const userResults = await autocompleteProfiles(query);
-            console.log('🔍 API returned userResults:', userResults);
+            console.log("🔍 API returned userResults:", userResults);
 
             // Convert to autocomplete suggestions format
             const suggestions: AutocompleteSuggestion[] = userResults.map((user) => ({
@@ -225,10 +227,10 @@ const Search = (props: Props) => {
                 type: "user" as const,
             }));
 
-            console.log('🔍 Autocomplete suggestions:', suggestions);
+            console.log("🔍 Autocomplete suggestions:", suggestions);
             setAutocompleteSuggestions(suggestions);
             setShowAutocomplete(true);
-            console.log('🔍 showAutocomplete set to true, suggestions count:', suggestions.length);
+            console.log("🔍 showAutocomplete set to true, suggestions count:", suggestions.length);
         } catch (error) {
             console.error("Autocomplete error:", error);
             setAutocompleteSuggestions([]);
@@ -236,39 +238,55 @@ const Search = (props: Props) => {
     }, []);
 
     // Full search function for submit
+    // In your Search component (search.tsx), update handleSearch:
     const handleSearch = useCallback(async (query: string) => {
+        console.log("🔎 handleSearch called with query:", query);
+
         if (!query.trim()) {
             dispatch({ type: "CLEAR_SEARCH" });
             return;
         }
 
+        // Clear autocomplete before searching
+        setShowAutocomplete(false);
+        setAutocompleteSuggestions([]);
+
         dispatch({ type: "START_SEARCH" });
+
         try {
-            // Search for both blueprints and users in parallel
             const [blueprintResults, userResults] = await Promise.all([
                 searchBlueprintsFromBackend(query),
-                searchProfiles(query),
+                autocompleteProfiles(query), // Using autocomplete which works
             ]);
+
+            console.log("🔎 Search Results:");
+            console.log("  - Blueprints found:", blueprintResults?.length || 0);
+            console.log("  - Users found:", userResults?.length || 0);
 
             dispatch({
                 type: "SEARCH_SUCCESS",
                 payload: {
-                    blueprints: blueprintResults,
-                    users: userResults,
+                    blueprints: blueprintResults || [],
+                    users: userResults || [],
                 },
             });
         } catch (error) {
+            console.error("🔎 Search error:", error);
             dispatch({ type: "SEARCH_ERROR", payload: error.message });
         }
     }, []);
 
     const onSubmit = useCallback(() => {
-        // Clear debounce timer and autocomplete on submit
+        // Clear debounce timer
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
         }
+
+        // IMPORTANT: Clear autocomplete completely
         setShowAutocomplete(false);
         setAutocompleteSuggestions([]);
+
+        // Execute the search
         handleSearch(searchTerm);
     }, [handleSearch, searchTerm]);
 
@@ -295,6 +313,14 @@ const Search = (props: Props) => {
             // Clear existing timer
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
+            }
+
+            // Don't trigger autocomplete if we're selecting from recents
+            if (isSelectingFromRecent.current) {
+                isSelectingFromRecent.current = false;
+                setAutocompleteSuggestions([]);
+                setShowAutocomplete(false);
+                return;
             }
 
             // Set new timer for autocomplete (300ms delay)
@@ -343,10 +369,37 @@ const Search = (props: Props) => {
     );
 
     // Memoize the onSubmit callback
-    const handleSubmit = useCallback(() => {
-        handleSearch(searchTerm);
-    }, [handleSearch, searchTerm]);
+    const handleSubmit = useCallback(
+        (searchText?: string) => {
+            const textToSearch = searchText || searchTerm;
+            console.log("🔎 handleSubmit called with:", textToSearch);
 
+            // If we have a searchText parameter, we're selecting from recents
+            if (searchText) {
+                isSelectingFromRecent.current = true;
+                dispatch({ type: "SET_SEARCH_TERM", payload: searchText });
+            }
+
+            // Clear any pending autocomplete
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current);
+            }
+
+            // Clear autocomplete suggestions
+            setShowAutocomplete(false);
+            setAutocompleteSuggestions([]);
+
+            // Only search if we have text
+            if (textToSearch.trim()) {
+                console.log("🔎 Calling handleSearch from handleSubmit with:", textToSearch);
+                setFocused(false);
+                handleSearch(textToSearch);
+            } else {
+                console.log("🔎 No text to search");
+            }
+        },
+        [handleSearch, searchTerm]
+    );
     // Memoize the setFocused callback
     const handleSetFocused = useCallback((focused: boolean) => {
         setFocused(focused);
@@ -499,12 +552,12 @@ const Search = (props: Props) => {
                         placeholder={"Search for a user or blueprint!"}
                         onChangeText={handleSearchTermChange}
                         onSubmit={handleSubmit}
-                        recent={!showAutocomplete}
+                        recent={!showAutocomplete && mode === "categories"} // Only show recents in categories mode
                         name={"search-page"}
                         setFocused={handleSetFocused}
                         autocompleteSuggestions={autocompleteSuggestions}
                         onSelectSuggestion={handleSelectSuggestion}
-                        showAutocomplete={showAutocomplete}
+                        showAutocomplete={showAutocomplete && mode === "categories"} // Only show autocomplete in categories mode
                     />
                 </View>
             </View>

@@ -10,26 +10,27 @@ export interface RecentSearchItem {
     name?: string;
     profile_picture?: string;
     banner?: string;
-    text?: string; // For legacy text searches
+    text?: string;
+    timestamp?: number; // Add timestamp for better sorting
 }
 
 export function useRecentSearch(searchSet: string = "") {
-    // two functions, append recent and get recents
     const [recents, setRecents] = useState<RecentSearchItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const MAX_RECENTS = 6;
     const safeAsync = useSafeAsync();
 
     useEffect(() => {
         const loadRecents = async () => {
             if (searchSet === "") {
-                setRecents(() => []);
+                setRecents([]);
                 return;
             }
 
+            setIsLoading(true);
             const { result, error } = await safeAsync(async () => {
                 const recents = await asyncStorage.getItem(searchSet);
                 if (recents) {
-                    console.log("found recent searches");
                     const parsed = JSON.parse(recents);
                     
                     // Migrate old string-based recents to new format
@@ -37,61 +38,80 @@ export function useRecentSearch(searchSet: string = "") {
                         return parsed.map((text: string) => ({
                             id: text,
                             type: 'text' as const,
-                            text
+                            text,
+                            timestamp: Date.now()
                         }));
                     }
                     
                     return parsed;
                 } else {
-                    console.log("didn't find search set");
                     return [];
                 }
             });
 
             if (error) {
                 console.error("Error loading recents:", error);
+                setIsLoading(false);
                 return;
             }
 
-            setRecents(result);
+            setRecents(result || []);
+            setIsLoading(false);
         };
 
         loadRecents();
-    }, [searchSet]);
+    }, [searchSet, safeAsync]);
 
     const appendSearch = async (search: RecentSearchItem | string) => {
-        if (searchSet.trim() === "") {
+        if (!searchSet || searchSet.trim() === "") {
             return;
         }
         
         // Convert string to RecentSearchItem for backwards compatibility
-        const searchItem: RecentSearchItem = typeof search === 'string' 
-            ? { id: search, type: 'text', text: search }
-            : search;
+        let searchItem: RecentSearchItem;
         
-        if (!searchItem.id || (searchItem.type === 'text' && !searchItem.text?.trim())) {
+        if (typeof search === 'string') {
+            searchItem = { 
+                id: search, 
+                type: 'text', 
+                text: search,
+                timestamp: Date.now()
+            };
+        } else {
+            // Ensure we have all the data we need
+            searchItem = {
+                ...search,
+                timestamp: Date.now()
+            };
+        }
+        
+        // Validate the search item
+        if (!searchItem.id) {
             return;
         }
         
-        let filtered = recents;
-        // Remove duplicate by id
-        filtered = filtered.filter((item) => item.id !== searchItem.id);
+        if (searchItem.type === 'text' && !searchItem.text?.trim()) {
+            return;
+        }
         
-        let newRecents = [searchItem, ...filtered];
-        newRecents = newRecents.slice(0, MAX_RECENTS);
-        console.log(newRecents);
-        asyncStorage.setItem(searchSet, JSON.stringify(newRecents));
+        // Remove any existing item with the same ID
+        let filtered = recents.filter((item) => item.id !== searchItem.id);
+        
+        // Add to front and limit
+        let newRecents = [searchItem, ...filtered].slice(0, MAX_RECENTS);
+        
+        // Save to storage
+        await asyncStorage.setItem(searchSet, JSON.stringify(newRecents));
         setRecents(newRecents);
     };
 
     const deleteRecent = async (id: string) => {
-        if (searchSet.trim() === "" || id.trim() === "") {
+        if (!searchSet || searchSet.trim() === "" || !id || id.trim() === "") {
             return;
         }
-        let filtered = recents;
-        filtered = filtered.filter((item) => item.id !== id);
-        asyncStorage.setItem(searchSet, JSON.stringify(filtered));
-        console.log(filtered);
+        
+        const filtered = recents.filter((item) => item.id !== id);
+        await asyncStorage.setItem(searchSet, JSON.stringify(filtered));
         setRecents(filtered);
     };
 
@@ -99,5 +119,5 @@ export function useRecentSearch(searchSet: string = "") {
         return recents;
     };
 
-    return { getRecents, appendSearch, deleteRecent };
+    return { getRecents, appendSearch, deleteRecent, isLoading };
 }

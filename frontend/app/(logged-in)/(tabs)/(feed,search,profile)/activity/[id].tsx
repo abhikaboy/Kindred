@@ -1,5 +1,5 @@
-import { Dimensions, StyleSheet, Text, View, ScrollView, TouchableOpacity } from "react-native";
-import React, { useState, useEffect } from "react";
+import { Dimensions, StyleSheet, Text, View, ScrollView, TouchableOpacity, Animated } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import ActivityPoint from "@/components/profile/ActivityPoint";
@@ -28,6 +28,77 @@ const month_names = [
     "December",
 ];
 
+// Skeleton Loader Component
+const ActivitySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmerAnim, {
+                    toValue: 1,
+                    duration: 1500,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(shimmerAnim, {
+                    toValue: 0,
+                    duration: 1500,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+    }, [shimmerAnim]);
+
+    const opacity = shimmerAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.3, 0.7],
+    });
+
+    const renderMonthSkeleton = (key: number) => {
+        const numPoints = 30;
+        const pointRows = Math.ceil(numPoints / 7);
+
+        return (
+            <View key={key} style={skeletonStyles.monthContainer}>
+                <Animated.View
+                    style={[
+                        skeletonStyles.monthNameSkeleton,
+                        {
+                            backgroundColor: ThemedColor.tertiary,
+                            opacity,
+                        },
+                    ]}
+                />
+
+                <View style={skeletonStyles.activityGridContainer}>
+                    {Array.from({ length: pointRows }).map((_, rowIndex) => (
+                        <View key={rowIndex} style={skeletonStyles.activityRow}>
+                            {Array.from({ length: 7 }).map((_, pointIndex) => {
+                                if (rowIndex * 7 + pointIndex >= numPoints) return null;
+
+                                return (
+                                    <Animated.View
+                                        key={pointIndex}
+                                        style={[
+                                            skeletonStyles.activityPointSkeleton,
+                                            {
+                                                backgroundColor: ThemedColor.tertiary,
+                                                opacity: Animated.add(opacity, new Animated.Value(Math.random() * 0.2)),
+                                            },
+                                        ]}
+                                    />
+                                );
+                            })}
+                        </View>
+                    ))}
+                </View>
+            </View>
+        );
+    };
+
+    return <View style={skeletonStyles.container}>{[0, 1, 2].map((index) => renderMonthSkeleton(index))}</View>;
+};
+
 const Activity = (props: Props) => {
     const ThemedColor = useThemeColor();
     const [year, setYear] = useState(new Date().getFullYear());
@@ -51,12 +122,12 @@ const Activity = (props: Props) => {
             try {
                 setLoading(true);
                 setError(null);
-                
+
                 const yearActivities = await activityAPI.getAllUserActivity(userId, year);
                 setActivities(yearActivities);
             } catch (err) {
-                console.error('Failed to fetch activity data:', err);
-                setError('Failed to load activity data');
+                console.error("Failed to fetch activity data:", err);
+                setError("Failed to load activity data");
             } finally {
                 setLoading(false);
             }
@@ -85,7 +156,7 @@ const Activity = (props: Props) => {
                     </ThemedText>
                 </TouchableOpacity>
                 <ThemedText type="fancyFrauncesHeading" style={styles.title}>
-                    {displayName ? `${displayName}'s Activity` : 'Activity'}
+                    {displayName ? `${displayName}'s Activity` : "Activity"}
                 </ThemedText>
             </View>
 
@@ -94,8 +165,6 @@ const Activity = (props: Props) => {
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
-                
-
                 <View style={styles.yearSelector}>
                     <TouchableOpacity onPress={() => setYearWithinBounds(year - 1)}>
                         <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
@@ -108,14 +177,14 @@ const Activity = (props: Props) => {
                         <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
-                
+
                 {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ThemedText type="lightBody">Loading activity data...</ThemedText>
-                    </View>
+                    <ActivitySkeleton ThemedColor={ThemedColor} />
                 ) : error ? (
                     <View style={styles.errorContainer}>
-                        <ThemedText type="lightBody" style={styles.errorText}>{error}</ThemedText>
+                        <ThemedText type="lightBody" style={styles.errorText}>
+                            {error}
+                        </ThemedText>
                     </View>
                 ) : (
                     <View style={styles.dataContainer}>
@@ -124,14 +193,14 @@ const Activity = (props: Props) => {
                             const currentDate = new Date();
                             const currentYear = currentDate.getFullYear();
                             const currentMonth = currentDate.getMonth() + 1; // 1-indexed
-                            
+
                             // Skip future months
                             if (year > currentYear || (year === currentYear && monthNumber > currentMonth)) {
                                 return null;
                             }
-                            
+
                             const monthlyLevels = getMonthlyActivityLevels(activities, year, monthNumber);
-                            
+
                             return (
                                 <View key={monthName} style={styles.monthContainer}>
                                     <ThemedText type="subtitle">{monthName}</ThemedText>
@@ -144,19 +213,23 @@ const Activity = (props: Props) => {
                                                 const currentYear = currentDate.getFullYear();
                                                 const currentMonth = currentDate.getMonth() + 1;
                                                 const currentDay = currentDate.getDate();
-                                                
-                                                const isFuture = year > currentYear || 
-                                                               (year === currentYear && monthNumber > currentMonth) ||
-                                                               (year === currentYear && monthNumber === currentMonth && dayNumber > currentDay);
-                                                
-                                                const isToday = year === currentYear && 
-                                                              monthNumber === currentMonth && 
-                                                              dayNumber === currentDay;
-                                                
+
+                                                const isFuture =
+                                                    year > currentYear ||
+                                                    (year === currentYear && monthNumber > currentMonth) ||
+                                                    (year === currentYear &&
+                                                        monthNumber === currentMonth &&
+                                                        dayNumber > currentDay);
+
+                                                const isToday =
+                                                    year === currentYear &&
+                                                    monthNumber === currentMonth &&
+                                                    dayNumber === currentDay;
+
                                                 return (
-                                                    <ActivityPoint 
-                                                        key={dayIndex} 
-                                                        level={level} 
+                                                    <ActivityPoint
+                                                        key={dayIndex}
+                                                        level={level}
                                                         isFuture={isFuture}
                                                         isToday={isToday}
                                                     />
@@ -258,3 +331,38 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             color: "red",
         },
     });
+
+// Skeleton styles
+const skeletonStyles = StyleSheet.create({
+    container: {
+        width: "100%",
+        alignItems: "center",
+        gap: 24,
+        paddingVertical: 8,
+    },
+    monthContainer: {
+        gap: 16,
+        alignItems: "center",
+        width: "100%",
+        maxWidth: 350,
+    },
+    monthNameSkeleton: {
+        width: 120,
+        height: 24,
+        borderRadius: 6,
+    },
+    activityGridContainer: {
+        gap: 8,
+        width: "100%",
+    },
+    activityRow: {
+        flexDirection: "row",
+        gap: 8,
+        justifyContent: "center",
+    },
+    activityPointSkeleton: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+    },
+});

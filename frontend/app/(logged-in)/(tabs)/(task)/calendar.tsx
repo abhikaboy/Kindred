@@ -1,17 +1,17 @@
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useRef, useState, useMemo, useEffect, useCallback } from "react";
 import { DrawerLayout, GestureDetector, Gesture } from "react-native-gesture-handler";
-import Animated, { 
-    useSharedValue, 
-    useAnimatedStyle, 
-    withSpring, 
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
     runOnJS,
     interpolate,
     useDerivedValue,
     useAnimatedScrollHandler,
     scrollTo,
     useAnimatedRef,
-    useAnimatedReaction
+    useAnimatedReaction,
 } from "react-native-reanimated";
 import { Drawer } from "@/components/home/Drawer";
 import { ThemedView } from "@/components/ThemedView";
@@ -60,16 +60,16 @@ const Calendar = (props: Props) => {
     });
     const [selectedDate, setSelectedDate] = useState(centerDate);
     const [pageIndex, setPageIndex] = useState(1); // 0: prev, 1: current, 2: next
-    
+
     // Schedule Layout Configuration - using shared values for smooth animations
     const hourHeightShared = useSharedValue(40); // Animated height in pixels for each hour
     const [hourHeight, setHourHeight] = useState(40); // State for non-animated components
-    
+
     // Helper function to adjust hour height with smooth animations
     const adjustHourHeight = (newHeight: number, animated: boolean = true) => {
         // Clamp between reasonable bounds to prevent unusable UI
         const clampedHeight = Math.max(20, Math.min(80, newHeight));
-        
+
         if (animated) {
             // Smooth spring animation for the shared value
             hourHeightShared.value = withSpring(clampedHeight, {
@@ -81,7 +81,7 @@ const Calendar = (props: Props) => {
             // Immediate update for gestures (more responsive)
             hourHeightShared.value = clampedHeight;
         }
-        
+
         // Update state for non-animated components
         setHourHeight(clampedHeight);
     };
@@ -96,7 +96,7 @@ const Calendar = (props: Props) => {
     const focalPointYShared = useSharedValue(0);
     const animatedScrollY = useSharedValue(0);
     const isPinchingShared = useSharedValue(false);
-    
+
     // State to track current scroll position
     const [currentScrollY, setCurrentScrollY] = useState(0);
 
@@ -110,7 +110,7 @@ const Calendar = (props: Props) => {
 
     // Function to smoothly update scroll position using animated values
     const updateScrollPositionSmooth = (targetY: number) => {
-        'worklet';
+        "worklet";
         if (scrollViewRef.current) {
             scrollTo(scrollViewRef, 0, targetY, false);
         }
@@ -124,11 +124,11 @@ const Calendar = (props: Props) => {
                 const scale = currentHeight / initialPinchHeightShared.value;
                 const initialScrollY = initialScrollPositionShared.value;
                 const focalOffsetY = focalPointYShared.value;
-                
+
                 const contentAtFocal = initialScrollY + focalOffsetY;
                 const newScrollY = contentAtFocal * scale - focalOffsetY;
                 const clampedScrollY = Math.max(0, newScrollY);
-                
+
                 // Use scrollTo to smoothly update the scroll position
                 scrollTo(scrollViewRef, 0, clampedScrollY, false);
             }
@@ -144,17 +144,17 @@ const Calendar = (props: Props) => {
             focalPointYShared.value = event.focalY - 200; // Approximate offset for header content
             initialScrollPositionShared.value = animatedScrollY.value;
             isPinchingShared.value = true;
-            
+
             runOnJS(setIsPinching)(true);
         })
         .onUpdate((event) => {
             // Calculate new height based on pinch scale
             const newHeight = initialPinchHeightShared.value * event.scale;
             const clampedHeight = Math.max(20, Math.min(80, newHeight));
-            
+
             // Update height - scroll position will be automatically updated by useAnimatedReaction
             hourHeightShared.value = clampedHeight;
-            
+
             // Update state for UI feedback (throttled)
             if (Math.abs(clampedHeight - hourHeight) > 2) {
                 runOnJS(setHourHeight)(clampedHeight);
@@ -162,7 +162,7 @@ const Calendar = (props: Props) => {
         })
         .onEnd(() => {
             isPinchingShared.value = false;
-            
+
             // Add a subtle spring animation when gesture ends
             hourHeightShared.value = withSpring(hourHeightShared.value, {
                 damping: 25,
@@ -219,31 +219,31 @@ const Calendar = (props: Props) => {
             // Only scroll to current time if we're viewing today
             const today = new Date();
             const isToday = isSameDay(selectedDate, today);
-            
+
             if (isToday && scrollViewRef.current) {
                 // Calculate the scroll position to center the current time line in view
                 const now = new Date();
                 const currentHour = now.getHours();
                 const currentMinute = now.getMinutes();
-                
+
                 // Calculate the exact position within the schedule using current height
                 const currentHourHeight = hourHeightShared.value;
                 const hourPosition = currentHour * currentHourHeight;
                 const minuteOffset = (currentMinute / 60) * currentHourHeight; // Position within the hour
                 const totalPosition = hourPosition + minuteOffset;
-                
+
                 // Scroll to position with some offset to show context above
                 const scrollY = Math.max(0, totalPosition - 100); // 100px offset from top
-                
-                scrollViewRef.current.scrollTo({ 
-                    y: scrollY, 
-                    animated: true 
+
+                scrollViewRef.current.scrollTo({
+                    y: scrollY,
+                    animated: true,
                 });
             } else if (!isToday && scrollViewRef.current) {
                 // For other days, scroll to the top
-                scrollViewRef.current.scrollTo({ 
-                    y: 0, 
-                    animated: true 
+                scrollViewRef.current.scrollTo({
+                    y: 0,
+                    animated: true,
                 });
             }
         };
@@ -288,7 +288,8 @@ const Calendar = (props: Props) => {
             if (task.startDate) {
                 const taskDate = new Date(task.startDate);
                 // Check if the time component is meaningful (not just 00:00:00)
-                const hasSpecificTime = taskDate.getHours() !== 0 || taskDate.getMinutes() !== 0 || taskDate.getSeconds() !== 0;
+                const hasSpecificTime =
+                    taskDate.getHours() !== 0 || taskDate.getMinutes() !== 0 || taskDate.getSeconds() !== 0;
                 return hasSpecificTime;
             }
             return false;
@@ -304,13 +305,15 @@ const Calendar = (props: Props) => {
                 if (!task.startTime) {
                     const taskDate = new Date(task.startDate);
                     // Only date component, no meaningful time (00:00:00)
-                    const hasNoSpecificTime = taskDate.getHours() === 0 && taskDate.getMinutes() === 0 && taskDate.getSeconds() === 0;
+                    const hasNoSpecificTime =
+                        taskDate.getHours() === 0 && taskDate.getMinutes() === 0 && taskDate.getSeconds() === 0;
                     return hasNoSpecificTime;
                 }
                 // Case 2: Has startTime but it's set to 00:00:00 (midnight)
                 else {
                     const startTime = new Date(task.startTime);
-                    const hasNoSpecificTime = startTime.getHours() === 0 && startTime.getMinutes() === 0 && startTime.getSeconds() === 0;
+                    const hasNoSpecificTime =
+                        startTime.getHours() === 0 && startTime.getMinutes() === 0 && startTime.getSeconds() === 0;
                     return hasNoSpecificTime;
                 }
             }
@@ -356,15 +359,15 @@ const Calendar = (props: Props) => {
     // Create themed and dynamic styles
     const themedStyles = StyleSheet.create({
         scheduleTaskContent: {
-            height: '100%', // Fill the container but don't expand beyond it
-            maxHeight: '100%', // Don't exceed container height
-            overflow: 'hidden', // Hide any overflow content
+            height: "100%", // Fill the container but don't expand beyond it
+            maxHeight: "100%", // Don't exceed container height
+            overflow: "hidden", // Hide any overflow content
             paddingHorizontal: 12,
             paddingVertical: 8,
             borderRadius: 12,
             borderWidth: 1,
             borderColor: ThemedColor.text,
-            justifyContent: 'center', // Center content vertically
+            justifyContent: "center", // Center content vertically
             backgroundColor: ThemedColor.lightened,
         },
         deadlineTaskContent: {
@@ -448,11 +451,11 @@ const Calendar = (props: Props) => {
         const proportionalHeight = durationHours * currentHourHeight * 0.85; // Use 85% of hour space
         const taskHeight = proportionalHeight; // No minimum height - let tasks be proportionally sized
         const topOffset = (minuteOffset / 60) * currentHourHeight;
-        
+
         return {
             height: taskHeight,
             maxHeight: taskHeight, // Enforce the calculated height strictly
-            overflow: 'hidden' as const, // CRITICAL: Hide any content that exceeds bounds
+            overflow: "hidden" as const, // CRITICAL: Hide any content that exceeds bounds
             marginBottom: 4,
             marginTop: topOffset,
         };
@@ -496,30 +499,78 @@ const Calendar = (props: Props) => {
 
     // Pre-create all 24 animated hour line styles (compact approach)
     const animatedHourLineStyles = [
-        useAnimatedStyle(() => ({ transform: [{ translateY: 0 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 1 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 2 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 3 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 4 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 5 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 6 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 7 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 8 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 9 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 10 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 11 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 12 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 13 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 14 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 15 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 16 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 17 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 18 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 19 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 20 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 21 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 22 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
-        useAnimatedStyle(() => ({ transform: [{ translateY: 23 * hourHeightShared.value + hourHeightShared.value / 2 }] })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 0 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 1 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 2 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 3 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 4 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 5 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 6 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 7 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 8 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 9 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 10 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 11 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 12 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 13 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 14 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 15 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 16 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 17 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 18 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 19 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 20 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 21 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 22 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
+        useAnimatedStyle(() => ({
+            transform: [{ translateY: 23 * hourHeightShared.value + hourHeightShared.value / 2 }],
+        })),
     ];
 
     // Helper functions to access styles by hour
@@ -531,7 +582,7 @@ const Calendar = (props: Props) => {
         // Get the current time for positioning
         const now = new Date();
         const currentMinute = now.getMinutes();
-        
+
         const position = (currentMinute / 60) * hourHeightShared.value;
         return {
             transform: [{ translateY: position }],
@@ -577,6 +628,12 @@ const Calendar = (props: Props) => {
                     <ThemedText type="title" style={styles.title}>
                         Calendar
                     </ThemedText>
+                    <View style={styles.badge}>
+                        <Feather name="trending-up" size={20} color={ThemedColor.primary} />
+                        <ThemedText type="defaultSemiBold" style={styles.badgeText}>
+                            In Development
+                        </ThemedText>
+                    </View>
                 </View>
 
                 {/* Day Picker */}
@@ -616,172 +673,171 @@ const Calendar = (props: Props) => {
                                         {hourHeight}px
                                     </ThemedText>
                                 </View>
-                                
-                            <View style={styles.timeLabels}>
-                                {Array.from({ length: 24 }, (_, i) => {
-                                    // Show full 24 hours from 12 AM to 11 PM
-                                    const hour = i;
-                                    return (
-                                        <Animated.View 
-                                            key={hour} 
-                                            style={[
-                                                animatedTimeLabelStyle,
-                                                createAnimatedPositionStyle(hour),
-                                                { position: 'absolute' }
-                                            ]}
-                                        >
-                                            <ThemedText type="caption" style={styles.timeText}>
-                                                {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour} ${hour >= 12 ? "PM" : "AM"}`}
-                                            </ThemedText>
-                                        </Animated.View>
-                                    );
-                                })}
-                                        </View>
-                            
-                            {/* Hour lines */}
-                            <View style={styles.hourLines}>
-                                {Array.from({ length: 24 }, (_, i) => {
-                                    const hour = i;
-                                    return (
-                                        <Animated.View
-                                            key={`line-${hour}`}
-                                            style={[
-                                                themedStyles.hourLine,
-                                                createAnimatedHourLineStyle(hour),
-                                                { position: 'absolute' }
-                                            ]}
-                                        />
-                                    );
-                                })}
-                            </View>
-                            <Animated.View style={[styles.scheduleTasks, animatedScheduleTasksStyle]}>
-                                {Array.from({ length: 24 }, (_, i) => {
-                                    const hour = i;
-                                    const tasksInThisHour = tasksWithSpecificTime.filter((task) => {
-                                        // Use startTime if available, otherwise fall back to startDate
-                                        let taskTime;
-                                        if (task.startTime) {
-                                            taskTime = new Date(task.startTime);
-                                        } else if (task.startDate) {
-                                            taskTime = new Date(task.startDate);
-                                        } else if (task.deadline) {
-                                            // For deadline tasks, use the deadline time
-                                            taskTime = new Date(task.deadline);
-                                        } else {
-                                            return false;
-                                        }
-                                        const taskHour = taskTime.getHours();
-                                        return taskHour === hour;
-                                    });
 
-                                    const now = new Date();
-                                    const currentHour = now.getHours();
-                                    const currentMinute = now.getMinutes();
-                                    const isCurrentHour = hour === currentHour;
-                                    const isToday = isSameDay(selectedDate, now);
+                                <View style={styles.timeLabels}>
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                        // Show full 24 hours from 12 AM to 11 PM
+                                        const hour = i;
+                                        return (
+                                            <Animated.View
+                                                key={hour}
+                                                style={[
+                                                    animatedTimeLabelStyle,
+                                                    createAnimatedPositionStyle(hour),
+                                                    { position: "absolute" },
+                                                ]}>
+                                                <ThemedText type="caption" style={styles.timeText}>
+                                                    {`${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour} ${hour >= 12 ? "PM" : "AM"}`}
+                                                </ThemedText>
+                                            </Animated.View>
+                                        );
+                                    })}
+                                </View>
 
-                                    // Check if we should show current time line for this hour
-                                    const shouldShowCurrentTime = isCurrentHour && isToday;
+                                {/* Hour lines */}
+                                <View style={styles.hourLines}>
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                        const hour = i;
+                                        return (
+                                            <Animated.View
+                                                key={`line-${hour}`}
+                                                style={[
+                                                    themedStyles.hourLine,
+                                                    createAnimatedHourLineStyle(hour),
+                                                    { position: "absolute" },
+                                                ]}
+                                            />
+                                        );
+                                    })}
+                                </View>
+                                <Animated.View style={[styles.scheduleTasks, animatedScheduleTasksStyle]}>
+                                    {Array.from({ length: 24 }, (_, i) => {
+                                        const hour = i;
+                                        const tasksInThisHour = tasksWithSpecificTime.filter((task) => {
+                                            // Use startTime if available, otherwise fall back to startDate
+                                            let taskTime;
+                                            if (task.startTime) {
+                                                taskTime = new Date(task.startTime);
+                                            } else if (task.startDate) {
+                                                taskTime = new Date(task.startDate);
+                                            } else if (task.deadline) {
+                                                // For deadline tasks, use the deadline time
+                                                taskTime = new Date(task.deadline);
+                                            } else {
+                                                return false;
+                                            }
+                                            const taskHour = taskTime.getHours();
+                                            return taskHour === hour;
+                                        });
 
-                                    return (
-                                        <Animated.View 
-                                            key={hour} 
-                                            style={[
-                                                animatedHourSlotStyle,
-                                                createAnimatedPositionStyle(hour),
-                                                { position: 'absolute' }
-                                            ]}
-                                        >
-                                            {shouldShowCurrentTime && (
-                                                <Animated.View
-                                                    ref={currentTimeLineRef}
-                                                    style={[
-                                                        themedStyles.currentTimeLine,
-                                                        currentTimeLineAnimatedStyle,
-                                                    ]}>
-                                                    <View style={themedStyles.currentTimeIndicator} />
-                                                </Animated.View>
-                                            )}
-                                            {tasksInThisHour.map((task) => {
-                                                if (!task) return null; // Skip null tasks
+                                        const now = new Date();
+                                        const currentHour = now.getHours();
+                                        const currentMinute = now.getMinutes();
+                                        const isCurrentHour = hour === currentHour;
+                                        const isToday = isSameDay(selectedDate, now);
 
-                                                const isDeadline = task.deadline && !task.startTime && !task.startDate;
-                                                
-                                                // Calculate task duration and positioning
-                                                let durationHours = 1; // Default 1 hour
-                                                let minuteOffset = 0;
-                                                
-                                                if (task.startTime && task.deadline) {
-                                                    const startTime = new Date(task.startTime);
-                                                    const endTime = new Date(task.deadline);
-                                                    const durationMs = endTime.getTime() - startTime.getTime();
-                                                    
-                                                    // Convert to hours and clamp to reasonable values
-                                                    const calculatedDuration = durationMs / (1000 * 60 * 60);
-                                                    durationHours = Math.max(0.5, Math.min(8, calculatedDuration)); // Between 30 min and 8 hours
-                                                    minuteOffset = startTime.getMinutes();
-                                                } else if (task.startTime) {
-                                                    const startTime = new Date(task.startTime);
-                                                    minuteOffset = startTime.getMinutes();
-                                                    durationHours = 1; // Default 1 hour for tasks with start time but no deadline
-                                                } else if (task.startDate && !isDeadline) {
-                                                    const startTime = new Date(task.startDate);
-                                                    minuteOffset = startTime.getMinutes();
-                                                    durationHours = 1; // Default 1 hour for tasks with start date
-                                                }
-                                                
-                                                const taskStyle = createTaskStyle(durationHours, minuteOffset);
+                                        // Check if we should show current time line for this hour
+                                        const shouldShowCurrentTime = isCurrentHour && isToday;
 
-                                                return (
-                                                    <View
-                                                        key={task.id || `task-${Math.random()}`}
-                                                        style={taskStyle}
-                                                    >
-                                                        <TouchableOpacity
-                                                            style={styles.scheduleTaskTouchable}
-                                                        onPress={() => {
-                                                            console.log("Clicked task:", task);
-                                                            console.log("Task ID on click:", task.id);
+                                        return (
+                                            <Animated.View
+                                                key={hour}
+                                                style={[
+                                                    animatedHourSlotStyle,
+                                                    createAnimatedPositionStyle(hour),
+                                                    { position: "absolute" },
+                                                ]}>
+                                                {shouldShowCurrentTime && (
+                                                    <Animated.View
+                                                        ref={currentTimeLineRef}
+                                                        style={[
+                                                            themedStyles.currentTimeLine,
+                                                            currentTimeLineAnimatedStyle,
+                                                        ]}>
+                                                        <View style={themedStyles.currentTimeIndicator} />
+                                                    </Animated.View>
+                                                )}
+                                                {tasksInThisHour.map((task) => {
+                                                    if (!task) return null; // Skip null tasks
 
-                                                            if (task.id) {
-                                                                console.log("Navigating to task ID:", task.id);
-                                                                router.push({
-                                                                    pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-                                                                    params: {
-                                                                        name: task.content,
-                                                                        id: task.id,
-                                                                        categoryId: task.categoryID || "",
-                                                                    },
-                                                                });
-                                                            } else {
-                                                                console.warn("Task has no ID:", task);
-                                                                console.warn(
-                                                                    "Available properties:",
-                                                                    Object.keys(task)
-                                                                );
-                                                            }
-                                                        }}>
-                                                            <View
-                                                            style={[
-                                                                themedStyles.scheduleTaskContent,
-                                                                isDeadline && themedStyles.deadlineTaskContent,
-                                                            ]}>
-                                                            <ThemedText
-                                                                type="lightBody"
-                                                                style={isDeadline && themedStyles.deadlineText}>
-                                                                {isDeadline
-                                                                    ? `${task.content} [Deadline]`
-                                                                    : task.content}
-                                                            </ThemedText>
-                                                            </View>
-                                                    </TouchableOpacity>
-                                                    </View>
-                                                );
-                                            })}
-                                        </Animated.View>
-                                    );
-                                })}
-                            </Animated.View>
+                                                    const isDeadline =
+                                                        task.deadline && !task.startTime && !task.startDate;
+
+                                                    // Calculate task duration and positioning
+                                                    let durationHours = 1; // Default 1 hour
+                                                    let minuteOffset = 0;
+
+                                                    if (task.startTime && task.deadline) {
+                                                        const startTime = new Date(task.startTime);
+                                                        const endTime = new Date(task.deadline);
+                                                        const durationMs = endTime.getTime() - startTime.getTime();
+
+                                                        // Convert to hours and clamp to reasonable values
+                                                        const calculatedDuration = durationMs / (1000 * 60 * 60);
+                                                        durationHours = Math.max(0.5, Math.min(8, calculatedDuration)); // Between 30 min and 8 hours
+                                                        minuteOffset = startTime.getMinutes();
+                                                    } else if (task.startTime) {
+                                                        const startTime = new Date(task.startTime);
+                                                        minuteOffset = startTime.getMinutes();
+                                                        durationHours = 1; // Default 1 hour for tasks with start time but no deadline
+                                                    } else if (task.startDate && !isDeadline) {
+                                                        const startTime = new Date(task.startDate);
+                                                        minuteOffset = startTime.getMinutes();
+                                                        durationHours = 1; // Default 1 hour for tasks with start date
+                                                    }
+
+                                                    const taskStyle = createTaskStyle(durationHours, minuteOffset);
+
+                                                    return (
+                                                        <View
+                                                            key={task.id || `task-${Math.random()}`}
+                                                            style={taskStyle}>
+                                                            <TouchableOpacity
+                                                                style={styles.scheduleTaskTouchable}
+                                                                onPress={() => {
+                                                                    console.log("Clicked task:", task);
+                                                                    console.log("Task ID on click:", task.id);
+
+                                                                    if (task.id) {
+                                                                        console.log("Navigating to task ID:", task.id);
+                                                                        router.push({
+                                                                            pathname:
+                                                                                "/(logged-in)/(tabs)/(task)/task/[id]",
+                                                                            params: {
+                                                                                name: task.content,
+                                                                                id: task.id,
+                                                                                categoryId: task.categoryID || "",
+                                                                            },
+                                                                        });
+                                                                    } else {
+                                                                        console.warn("Task has no ID:", task);
+                                                                        console.warn(
+                                                                            "Available properties:",
+                                                                            Object.keys(task)
+                                                                        );
+                                                                    }
+                                                                }}>
+                                                                <View
+                                                                    style={[
+                                                                        themedStyles.scheduleTaskContent,
+                                                                        isDeadline && themedStyles.deadlineTaskContent,
+                                                                    ]}>
+                                                                    <ThemedText
+                                                                        type="lightBody"
+                                                                        style={isDeadline && themedStyles.deadlineText}>
+                                                                        {isDeadline
+                                                                            ? `${task.content} [Deadline]`
+                                                                            : task.content}
+                                                                    </ThemedText>
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    );
+                                                })}
+                                            </Animated.View>
+                                        );
+                                    })}
+                                </Animated.View>
                             </Animated.View>
                         </GestureDetector>
                     </View>
@@ -803,7 +859,7 @@ const Calendar = (props: Props) => {
                         useSchedulable={true}
                         onScheduleTask={(task, type) => {
                             // Handle scheduling logic here
-                            console.log('Scheduling task:', task.content, 'as:', type);
+                            console.log("Scheduling task:", task.content, "as:", type);
                         }}
                         schedulingType="startDate"
                         emptyMessage="No unscheduled tasks"
@@ -836,6 +892,8 @@ const styles = StyleSheet.create({
     },
     titleContainer: {
         marginBottom: 24,
+        flexDirection: "row",
+        gap: 12,
     },
     title: {
         fontSize: 32,
@@ -884,9 +942,9 @@ const styles = StyleSheet.create({
     },
     scheduleTaskTouchable: {
         flex: 1,
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden', // Ensure touchable area respects bounds
+        width: "100%",
+        height: "100%",
+        overflow: "hidden", // Ensure touchable area respects bounds
     },
     section: {
         gap: 12,
@@ -896,5 +954,17 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         letterSpacing: -1,
     },
+    badge: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(100, 100, 255, 0.1)",
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 8,
+    },
+    badgeText: {
+        fontSize: 14,
+        opacity: 0.8,
+    },
 });
-

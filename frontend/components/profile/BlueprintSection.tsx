@@ -30,7 +30,7 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const router = useRouter();
-    
+
     const [blueprints, setBlueprints] = useState<BlueprintDocumentWithoutSubscribers[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -105,14 +105,12 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <ThemedText type="subtitle">
-                    {title}
-                </ThemedText>
-                {showViewAll && blueprints.length > 0 && (
+                <ThemedText type="subtitle">{title}</ThemedText>
+                {/* {showViewAll && blueprints.length > 0 && (
                     <TouchableOpacity onPress={handleViewAllPress} style={styles.viewAllButton}>
                         <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
-                )}
+                )} */}
             </View>
 
             {loading ? (
@@ -200,6 +198,30 @@ const stylesheet = (ThemedColor: any) =>
         retryText: {
             color: ThemedColor.primary,
             textDecorationLine: "underline",
+        },
+        emptyContainer: {
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingVertical: 60,
+            paddingHorizontal: 40,
+        },
+        emptyImage: {
+            width: 150,
+            height: 150,
+            marginBottom: 24,
+            opacity: 0.8,
+        },
+        emptyTitle: {
+            fontSize: 20,
+            fontWeight: "600",
+            marginBottom: 8,
+            textAlign: "center",
+        },
+        emptyDescription: {
+            fontSize: 14,
+            textAlign: "center",
+            lineHeight: 20,
         },
     });
 
