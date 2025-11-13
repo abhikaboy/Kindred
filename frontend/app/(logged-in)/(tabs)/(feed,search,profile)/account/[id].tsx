@@ -1,4 +1,13 @@
-import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity, ActivityIndicator, useColorScheme } from "react-native";
+import {
+    StyleSheet,
+    ScrollView,
+    Image,
+    Dimensions,
+    View,
+    TouchableOpacity,
+    ActivityIndicator,
+    useColorScheme,
+} from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import React, { useEffect, useRef, useState, useMemo } from "react";
@@ -23,7 +32,7 @@ import FollowButton from "@/components/inputs/FollowButton";
 import BlueprintSection from "@/components/profile/BlueprintSection";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
-import { type Profile, type RelationshipStatus} from "@/api/types";
+import { type Profile, type RelationshipStatus } from "@/api/types";
 import { components } from "@/api/generated/types";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { getBlueprintById } from "@/api/blueprint";
@@ -53,7 +62,6 @@ export default function Profile() {
         }
     }, [blueprint, setSelectedBlueprint]);
 
-
     const fallback_profile = {
         id: "67ef139d4931ee7a9fb630fc",
         display_name: "Coffee!~",
@@ -76,12 +84,15 @@ export default function Profile() {
         enabled: !!id,
     }) as any; // Type assertion until profile types are aligned
 
-
     // Only show encourage tasks when profile data is loaded
     const tasks = useMemo(() => {
         if (profile?.tasks?.length > 0)
             return {
-                todayTasks: profile?.tasks.map((task : TaskDocument) => ({ ...task, encourage: true, categoryName: task.categoryID })),
+                todayTasks: profile?.tasks.map((task: TaskDocument) => ({
+                    ...task,
+                    encourage: true,
+                    categoryName: task.categoryID,
+                })),
                 completedTasks: [],
                 activeTasks: [],
                 encouragementConfig: {
@@ -152,39 +163,41 @@ export default function Profile() {
                 backgroundColor={ThemedColor.background}
                 headerHeight={HEADER_HEIGHT}
             />
-            <ProfileHeader displayName={profile?.display_name || ""} handle={profile?.handle || ""} userId={profile?.id} />
+            <ProfileHeader
+                displayName={profile?.display_name || ""}
+                handle={profile?.handle || ""}
+                userId={profile?.id}
+            />
 
             <View style={[styles.contentContainer, { marginTop: 20 + HEADER_HEIGHT }]}>
-                <View style={{ gap: 16 }}>
-
-                <View style={{ width: "100%" }}>
-                    <ProfileStats
-                        friendsCount={profile?.friends?.length || 0}
-                        profileUserId={profile?.id}
-                        profile={profile}
-                        onRelationshipChange={handleRelationshipChange}
-                    />
-                </View>
-                { canViewPersonalContent && (
-
-                    <View>
-                    <ProfileEncouragementCard 
-                        userId={profile?.id} 
-                        userHandle={profile?.handle}
-                        userName={profile?.display_name}
-                        />
-                </View>
+                <View style={{ gap: 12 }}>
+                    {canViewPersonalContent && (
+                        <View>
+                            <ProfileEncouragementCard
+                                userId={profile?.id}
+                                userHandle={profile?.handle}
+                                userName={profile?.display_name}
+                            />
+                        </View>
                     )}
-                <TodayStats userId={profile?.id} />
+                    <View style={{ width: "100%" }}>
+                        <ProfileStats
+                            friendsCount={profile?.friends?.length || 0}
+                            profileUserId={profile?.id}
+                            profile={profile}
+                            onRelationshipChange={handleRelationshipChange}
+                        />
+                    </View>
+
+                    <TodayStats userId={profile?.id} />
                 </View>
                 {canViewPersonalContent ? (
                     <>
-
                         <WeeklyActivity userid={profile?.id} />
 
                         {profile?.id && (
-                            <BlueprintSection 
-                                userId={profile.id} 
+                            <BlueprintSection
+                                userId={profile.id}
                                 title={`${profile.display_name}'s Blueprints`}
                                 showViewAll={true}
                             />
@@ -202,18 +215,15 @@ export default function Profile() {
                     </>
                 ) : (
                     <View style={styles.privateProfileContainer}>
-                        <Image 
-                            source={require('@/assets/images/185-Analysing.png')}
-                            style={[
-                                styles.privateProfileImage,
-                                colorScheme === 'dark' && styles.invertedImage
-                            ]}
+                        <Image
+                            source={require("@/assets/images/185-Analysing.png")}
+                            style={[styles.privateProfileImage, colorScheme === "dark" && styles.invertedImage]}
                             resizeMode="contain"
                         />
-                        <ThemedText type="subtitle" style={{ textAlign: 'center', marginBottom: 8 }}>
+                        <ThemedText type="subtitle" style={{ textAlign: "center", marginBottom: 8 }}>
                             This profile is private
                         </ThemedText>
-                        <ThemedText style={{ textAlign: 'center', opacity: 0.7 }}>
+                        <ThemedText style={{ textAlign: "center", opacity: 0.7 }}>
                             Connect with {profile.display_name} to see their activity, tasks, and posts
                         </ThemedText>
                     </View>
@@ -255,8 +265,8 @@ const styles = StyleSheet.create({
     privateProfileContainer: {
         paddingVertical: 60,
         paddingHorizontal: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
     },
     privateProfileImage: {
         width: Dimensions.get("window").width * 0.75,
@@ -265,6 +275,6 @@ const styles = StyleSheet.create({
         marginTop: -32,
     },
     invertedImage: {
-        tintColor: '#ffffff',
+        tintColor: "#ffffff",
     },
 });

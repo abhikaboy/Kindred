@@ -18,7 +18,7 @@ export default function Congratulations() {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { congratulations, loading, markCongratulationsAsRead } = useKudos();
-    
+
     // Get sent count from user's kudosRewards for progress tracking
     const sentCongratulations = user?.kudosRewards?.congratulations || 0;
 
@@ -75,7 +75,7 @@ export default function Congratulations() {
                     max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
                     type="congratulations"
                 />
-                <ThemedText type="subtitle_subtle" style={{paddingVertical: 4}}>
+                <ThemedText type="subtitle_subtle" style={{ paddingVertical: 4 }}>
                     CONGRATULATIONS RECEIVED
                 </ThemedText>
                 {!loading && congratulations.length === 0 ? (
@@ -90,11 +90,7 @@ export default function Congratulations() {
                 ) : !loading && congratulations.length > 0 ? (
                     <Animated.View style={[styles.congratulationsList, { opacity: fadeAnim }]}>
                         {congratulations.map((congratulation) => (
-                            <KudosItem
-                                key={congratulation.id}
-                                kudos={congratulation}
-                                formatTime={formatTime}
-                            />
+                            <KudosItem key={congratulation.id} kudos={congratulation} formatTime={formatTime} />
                         ))}
                     </Animated.View>
                 ) : null}
@@ -131,6 +127,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         },
         scrollView: {
             flex: 1,
+            marginBottom: 60,
         },
         scrollContent: {
             paddingHorizontal: HORIZONTAL_PADDING,

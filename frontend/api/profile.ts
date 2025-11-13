@@ -70,14 +70,20 @@ export const getProfileByPhone = async (phone: string): Promise<ProfileDocument>
  * Search profiles (type-safe)
  */
 export const searchProfiles = async (query?: string): Promise<ProfileDocument[]> => {
+    console.log("🔍 searchProfiles API called with query:", query);
+    console.log("🔍 API URL: /v1/user/profiles/search");
+    console.log("🔍 Query params:", query ? { query } : {});
+    
     const { data, error } = await client.GET("/v1/user/profiles/search", {
         params: withAuthHeaders({ query: query ? { query } : {} }),
     });
 
     if (error) {
+        console.error("🔍 searchProfiles API error:", error);
         throw new Error(`Failed to search profiles: ${JSON.stringify(error)}`);
     }
 
+    console.log("🔍 searchProfiles raw API response:", data);
     return data || [];
 };
 

@@ -17,6 +17,7 @@ import {
     AppleAuthenticationButtonStyle,
     AppleAuthenticationButtonType,
 } from "expo-apple-authentication";
+import Feather from "@expo/vector-icons/Feather";
 
 type Props = {
     visible: boolean;
@@ -58,7 +59,7 @@ export const OnboardModal = (props: Props) => {
                     }
                     setVisible(false);
                 } catch (error) {
-                    console.error('Google authentication error:', error);
+                    console.error("Google authentication error:", error);
                     if (mode === "register") {
                         // Try login if registration fails (user might already exist)
                         try {
@@ -66,16 +67,16 @@ export const OnboardModal = (props: Props) => {
                             router.push("/(logged-in)/(tabs)/(task)");
                             setVisible(false);
                         } catch (loginError) {
-                            console.error('Google login fallback failed:', loginError);
+                            console.error("Google login fallback failed:", loginError);
                         }
                     }
                 }
             }
         },
         onError: (error) => {
-            console.error('Google auth error:', error);
-            alert('Google authentication failed. Please try again.');
-        }
+            console.error("Google auth error:", error);
+            alert("Google authentication failed. Please try again.");
+        },
     });
 
     // Reference to the bottom sheet modal
@@ -93,7 +94,7 @@ export const OnboardModal = (props: Props) => {
             phoneOpacity.setValue(0);
             appleOpacity.setValue(0);
             googleOpacity.setValue(0);
-            
+
             // Staggered fade-in animation with initial delay
             setTimeout(() => {
                 Animated.sequence([
@@ -153,10 +154,10 @@ export const OnboardModal = (props: Props) => {
             const email = credential.email || "user@gmail.com"; // Fallback email if Apple doesn't provide one
             const firstName = credential.fullName?.givenName;
             const lastName = credential.fullName?.familyName;
-            
-            console.log('DEBUG - Apple credential email:', credential.email);
-            console.log('DEBUG - Email after fallback:', email);
-            
+
+            console.log("DEBUG - Apple credential email:", credential.email);
+            console.log("DEBUG - Email after fallback:", email);
+
             // If Apple doesn't provide name/email, user is signing in again (not first time)
             if (!email || email === "user@gmail.com" || !firstName || !lastName) {
                 console.log("We think you already have an account: trying to log in instead");
@@ -172,9 +173,9 @@ export const OnboardModal = (props: Props) => {
                     displayName: displayName,
                     appleId: appleAccountID,
                 });
-                
-                console.log('Pre-filled onboarding data with Apple credentials');
-                
+
+                console.log("Pre-filled onboarding data with Apple credentials");
+
                 // Navigate directly to name screen (skip phone/OTP for Apple users)
                 router.replace("/(onboarding)/name");
                 // Success - modal will be closed by caller
@@ -184,8 +185,8 @@ export const OnboardModal = (props: Props) => {
                 console.log("User cancelled Apple sign in");
                 // Don't show error for user cancellation
             } else {
-                console.error('Apple registration error:', e.code, e);
-                alert(`Apple sign up failed: ${e.message || 'An unexpected error occurred'}`);
+                console.error("Apple registration error:", e.code, e);
+                alert(`Apple sign up failed: ${e.message || "An unexpected error occurred"}`);
             }
             // Re-throw to let caller know it failed
             throw e;
@@ -212,8 +213,8 @@ export const OnboardModal = (props: Props) => {
                 console.log("User cancelled Apple sign in");
                 // Don't show error for user cancellation
             } else {
-                console.error('Apple login error:', e.code, e);
-                alert(`Apple sign in failed: ${e.message || 'An unexpected error occurred'}`);
+                console.error("Apple login error:", e.code, e);
+                alert(`Apple sign in failed: ${e.message || "An unexpected error occurred"}`);
             }
             // Re-throw to let caller know it failed
             throw e;
@@ -257,7 +258,7 @@ export const OnboardModal = (props: Props) => {
                             <Image
                                 source={require("@/assets/images/229.Elegance.png")}
                                 style={styles.headerGraphic}
-                                tintColor={colorScheme === 'dark' ? '#FFFFFF' : '#1F1F1F'}
+                                tintColor={colorScheme === "dark" ? "#FFFFFF" : "#1F1F1F"}
                                 resizeMode="contain"
                             />
                             <View style={styles.titleSection}>
@@ -265,10 +266,7 @@ export const OnboardModal = (props: Props) => {
                                     {mode === "login" ? "Welcome back" : "Almost there!"}
                                 </ThemedText>
                                 <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
-                                    {mode === "login" 
-                                        ? "Choose your sign in method"
-                                        : "Choose your sign in method"
-                                    }
+                                    {mode === "login" ? "Choose your sign in method" : "Choose your sign in method"}
                                 </ThemedText>
                             </View>
                         </View>
@@ -304,10 +302,9 @@ export const OnboardModal = (props: Props) => {
                                                 }
                                                 setVisible(false);
                                             } catch (error) {
-                                                console.error('Apple auth error in onPress:', error);
+                                                console.error("Apple auth error in onPress:", error);
                                             }
-                                        }}
-                                    >
+                                        }}>
                                         <View style={styles.buttonContent}>
                                             <AntDesign name="apple" size={20} color={ThemedColor.primary} />
                                             <ThemedText style={styles.appleButtonText}>
@@ -316,7 +313,7 @@ export const OnboardModal = (props: Props) => {
                                         </View>
                                     </TouchableOpacity>
                                 </Animated.View>
-                                
+
                                 <Animated.View style={{ opacity: googleOpacity }}>
                                     <TouchableOpacity
                                         style={styles.googleButton}
@@ -324,15 +321,19 @@ export const OnboardModal = (props: Props) => {
                                             try {
                                                 await googleSignInAsync();
                                             } catch (error) {
-                                                console.error('Google sign in failed:', error);
+                                                console.error("Google sign in failed:", error);
                                             }
                                         }}
+                                        disabled={true} // Disable while in development
                                     >
                                         <View style={styles.buttonContent}>
                                             <AntDesign name="google" size={20} color={ThemedColor.primary} />
                                             <ThemedText style={styles.googleButtonText}>
                                                 {mode === "register" ? "Continue with Google" : "Sign in with Google"}
                                             </ThemedText>
+                                        </View>
+                                        <View style={styles.developmentBadge}>
+                                            <ThemedText style={styles.developmentBadgeText}>Coming Soon</ThemedText>
                                         </View>
                                     </TouchableOpacity>
                                 </Animated.View>
@@ -341,18 +342,16 @@ export const OnboardModal = (props: Props) => {
                             {/* Footer */}
                             <View style={styles.footerSection}>
                                 <ThemedText type="caption" style={[styles.footerText, { color: ThemedColor.caption }]}>
-                                    {mode === "login" 
-                                        ? "Don't have an account? " 
-                                        : "Already have an account? "
-                                    }
+                                    {mode === "login" ? "Don't have an account? " : "Already have an account? "}
                                 </ThemedText>
                                 <TouchableOpacity
                                     onPress={() => {
                                         // Toggle between login and register would go here
                                         // For now, just close the modal
-                                    }}
-                                >
-                                    <ThemedText type="caption" style={[styles.footerLink, { color: ThemedColor.primary }]}>
+                                    }}>
+                                    <ThemedText
+                                        type="caption"
+                                        style={[styles.footerLink, { color: ThemedColor.primary }]}>
                                         {mode === "login" ? "Sign up" : "Log in"}
                                     </ThemedText>
                                 </TouchableOpacity>
@@ -409,13 +408,7 @@ const useStyles = (ThemedColor: any) =>
             flexShrink: 0,
         },
         buttonSection: {
-            gap: 14,
-        },
-        buttonContent: {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
+            gap: 18,
         },
         appleButton: {
             backgroundColor: "#FFFFFF",
@@ -427,7 +420,7 @@ const useStyles = (ThemedColor: any) =>
             shadowRadius: 6,
             elevation: 4,
             borderWidth: 1,
-            borderColor: ThemedColor.tertiary + '30',
+            borderColor: ThemedColor.tertiary + "30",
         },
         appleButtonText: {
             color: "#1F1F1F",
@@ -445,13 +438,43 @@ const useStyles = (ThemedColor: any) =>
             shadowRadius: 5,
             elevation: 3,
             borderWidth: 1,
-            borderColor: ThemedColor.tertiary + '30',
+            borderColor: ThemedColor.tertiary + "30",
+            position: "relative",
+            opacity: 0.7, // Slightly dimmed to indicate unavailable
         },
         googleButtonText: {
             color: "#1F1F1F",
             fontSize: 16,
             fontWeight: "500",
             fontFamily: "Outfit",
+        },
+        buttonContent: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+        },
+        developmentBadge: {
+            position: "absolute",
+            top: -10,
+            right: 0,
+            backgroundColor: ThemedColor.primary,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 10,
+            shadowColor: ThemedColor.primary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 3,
+            elevation: 3,
+        },
+        developmentBadgeText: {
+            color: "#FFFFFF",
+            fontSize: 11,
+            fontWeight: "600",
+            fontFamily: "Outfit",
+            letterSpacing: 0.3,
+            textTransform: "uppercase",
         },
         phoneButton: {
             backgroundColor: ThemedColor.primary,
@@ -486,5 +509,18 @@ const useStyles = (ThemedColor: any) =>
             fontSize: 14,
             fontFamily: "Outfit",
             fontWeight: "600",
+        },
+        badge: {
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "rgba(100, 100, 255, 0.1)",
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 20,
+            gap: 8,
+        },
+        badgeText: {
+            fontSize: 14,
+            opacity: 0.8,
         },
     });

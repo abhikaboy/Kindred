@@ -14,16 +14,19 @@ type ContactsFromPhoneProps = {
 };
 
 export const ContactsFromPhone: React.FC<ContactsFromPhoneProps> = ({ contacts }) => {
-    const renderContact = useCallback(({ item }: { item: MatchedContact }) => (
-        <ContactCard
-            name={item.user.display_name}
-            icon={item.user.profile_picture}
-            handle={item.user.handle}
-            following={false} // We can enhance this later to check actual friendship status
-            id={item.user._id}
-            contactName={item.contactName}
-        />
-    ), []);
+    const renderContact = useCallback(
+        ({ item }: { item: MatchedContact }) => (
+            <ContactCard
+                name={item.user.display_name}
+                icon={item.user.profile_picture}
+                handle={item.user.handle}
+                following={false} // We can enhance this later to check actual friendship status
+                id={item.user._id}
+                contactName={item.contactName}
+            />
+        ),
+        []
+    );
 
     if (!contacts || contacts.length === 0) {
         return null;
@@ -31,7 +34,7 @@ export const ContactsFromPhone: React.FC<ContactsFromPhoneProps> = ({ contacts }
 
     return (
         <View style={styles.contactsSection}>
-            <ThemedText type="subtitle" style={styles.contactsHeader}>
+            <ThemedText type="defaultSemiBold" style={styles.contactsHeader}>
                 From your Contacts
             </ThemedText>
             <FlatList
@@ -51,7 +54,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     contactsHeader: {
-        marginBottom: 16,
+        marginBottom: 12,
         paddingHorizontal: 16,
     },
     contactsList: {
@@ -59,4 +62,3 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
 });
-

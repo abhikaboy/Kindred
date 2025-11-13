@@ -110,6 +110,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ categoryGroups, focusS
 const styles = StyleSheet.create({
     categoriesContainer: {
         gap: 12,
+        marginBottom: 112,
     },
     categorySection: {
         marginBottom: 2,

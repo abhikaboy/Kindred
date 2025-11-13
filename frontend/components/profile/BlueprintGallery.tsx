@@ -9,6 +9,7 @@ import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import LoadingScreen from "../ui/LoadingScreen";
 
 interface BlueprintGalleryProps {
     blueprintId: string;
@@ -24,12 +25,12 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     const { user } = useAuth();
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-    
+
     const [postImages, setPostImages] = useState<PostImage[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set());
-    
+
     useEffect(() => {
         fetchBlueprintImages();
     }, [blueprintId]);
@@ -38,7 +39,7 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
         try {
             setLoading(true);
             setError(null);
-            
+
             const posts = await getPostsByBlueprint(blueprintId);
 
             const postImageData: PostImage[] = posts
@@ -98,40 +99,34 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     };
 
     const showDeleteConfirmation = (postId: string) => {
-        Alert.alert(
-            "Delete Post", 
-            "Are you sure you want to delete this post? This action cannot be undone.", 
-            [
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => handleDeletePost(postId),
-                },
-            ]
-        );
+        Alert.alert("Delete Post", "Are you sure you want to delete this post? This action cannot be undone.", [
+            {
+                text: "Cancel",
+                style: "cancel",
+            },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => handleDeletePost(postId),
+            },
+        ]);
     };
 
     const handleDeletePost = async (postId: string) => {
         try {
-            setDeletingPosts(prev => new Set(prev.add(postId)));
-            
+            setDeletingPosts((prev) => new Set(prev.add(postId)));
+
             await deletePost(postId);
-            
+
             // Remove the deleted post from the local state
-            setPostImages(prevImages => 
-                prevImages.filter(image => image.postId !== postId)
-            );
-            
+            setPostImages((prevImages) => prevImages.filter((image) => image.postId !== postId));
+
             showToast("Post deleted successfully", "success");
         } catch (error) {
             console.error("Error deleting post:", error);
             showToast("Failed to delete post", "danger");
         } finally {
-            setDeletingPosts(prev => {
+            setDeletingPosts((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(postId);
                 return newSet;
@@ -144,13 +139,17 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     };
 
     const renderEmptyState = () => (
-        <View style={styles.emptyState}>
-            <MaterialIcons name="photo-library" size={48} color={ThemedColor.caption} />
-            <ThemedText type="caption" style={styles.emptyText}>
-                No posts with images yet
+        <View style={styles.emptyContainer}>
+            <Image
+                source={require("@/assets/images/343.Art-Gallery.png")}
+                style={styles.emptyImage}
+                resizeMode="contain"
+            />
+            <ThemedText type="subtitle" style={styles.emptyTitle}>
+                No Posts Yet
             </ThemedText>
-            <ThemedText type="caption" style={styles.emptySubtext}>
-                Posts created using this blueprint will appear here
+            <ThemedText type="default" style={[styles.emptyDescription, { color: ThemedColor.caption }]}>
+                No Posts with Images Yet
             </ThemedText>
         </View>
     );
@@ -169,17 +168,8 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
         </View>
     );
 
-    const renderLoadingState = () => (
-        <View style={styles.emptyState}>
-            <MaterialIcons name="hourglass-empty" size={48} color={ThemedColor.caption} />
-            <ThemedText type="caption" style={styles.emptyText}>
-                Loading gallery...
-            </ThemedText>
-        </View>
-    );
-
     if (loading) {
-        return renderLoadingState();
+        <LoadingScreen message="Getting Blueprints..." />;
     }
 
     if (error) {
@@ -196,7 +186,7 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
             data={postImages}
             renderItem={({ item }) => {
                 const isDeleting = deletingPosts.has(item.postId);
-                
+
                 return (
                     <TouchableOpacity
                         style={[styles.galleryItem, isDeleting && styles.deletingItem]}
@@ -275,5 +265,29 @@ const stylesheet = (ThemedColor: any) =>
         retryText: {
             color: ThemedColor.primary,
             textDecorationLine: "underline",
+        },
+        emptyContainer: {
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingVertical: 60,
+            paddingHorizontal: 40,
+        },
+        emptyImage: {
+            width: 150,
+            height: 150,
+            marginBottom: 24,
+            opacity: 0.8,
+        },
+        emptyTitle: {
+            fontSize: 20,
+            fontWeight: "600",
+            marginBottom: 8,
+            textAlign: "center",
+        },
+        emptyDescription: {
+            fontSize: 14,
+            textAlign: "center",
+            lineHeight: 20,
         },
     });

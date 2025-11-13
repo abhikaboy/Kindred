@@ -1,4 +1,4 @@
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Image } from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
@@ -30,7 +30,7 @@ const Daily = (props: Props) => {
     const drawerRef = useRef(null);
     const pagerRef = useRef<PagerView>(null);
     const ThemedColor = useThemeColor();
-    
+
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
         const d = new Date();
@@ -127,6 +127,30 @@ const Daily = (props: Props) => {
                         Analytics
                     </ThemedText>
                 </View>
+
+                {/* Coming Soon Overlay */}
+                <View style={styles.comingSoonContainer}>
+                    <View style={styles.comingSoonContent}>
+                        <Image
+                            source={require("@/assets/images/417.Touch-Screen.png")}
+                            style={styles.comingSoonImage}
+                            resizeMode="contain"
+                        />
+                        <ThemedText type="subtitle" style={styles.comingSoonTitle}>
+                            Coming Soon
+                        </ThemedText>
+                        <ThemedText type="default" style={styles.comingSoonDescription}>
+                            We're working on bringing you powerful analytics and insights. Check back soon!
+                        </ThemedText>
+
+                        <View style={styles.badge}>
+                            <Feather name="trending-up" size={20} color={ThemedColor.primary} />
+                            <ThemedText type="defaultSemiBold" style={styles.badgeText}>
+                                In Development
+                            </ThemedText>
+                        </View>
+                    </View>
+                </View>
             </View>
         </DrawerLayout>
     );
@@ -140,8 +164,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: HORIZONTAL_PADDING,
     },
     headerContainer: {
-        paddingBottom: 24,
         paddingTop: 20,
+        flexDirection: "row",
+        justifyContent: "center",
     },
     title: {
         fontWeight: "600",
@@ -149,5 +174,48 @@ const styles = StyleSheet.create({
     dayOfWeek: {
         marginTop: 4,
         marginBottom: 8,
+    },
+    comingSoonContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: -150,
+    },
+    comingSoonContent: {
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    comingSoonImage: {
+        width: 200,
+        height: 200,
+        marginBottom: 24,
+        opacity: 0.9,
+    },
+    comingSoonTitle: {
+        fontSize: 28,
+        fontWeight: "700",
+        marginBottom: 12,
+        textAlign: "center",
+    },
+    comingSoonDescription: {
+        fontSize: 16,
+        opacity: 0.7,
+        textAlign: "center",
+        lineHeight: 24,
+        maxWidth: 280,
+        marginBottom: 32,
+    },
+    badge: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(100, 100, 255, 0.1)",
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 8,
+    },
+    badgeText: {
+        fontSize: 14,
+        opacity: 0.8,
     },
 });

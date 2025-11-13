@@ -12,6 +12,7 @@ import { uploadImageSmart } from "@/api/upload";
 import { updateProfile } from "@/api/profile";
 import { router } from "expo-router";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import Feather from "@expo/vector-icons/Feather";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -32,7 +33,7 @@ const Edit = () => {
 
     const pickImage = async () => {
         const result = await pickImageFromLibrary();
-        
+
         if (result && !result.canceled && result.assets && result.assets.length > 0) {
             const imageUri = result.assets[0].uri;
             setSelectedImage(imageUri);
@@ -224,9 +225,32 @@ const Edit = () => {
                     ]}
                 />
             </View>
-            <ThemedText type="subtitle_subtle" style={{ marginTop: 4 }}>
-                PROFILE
-            </ThemedText>
+            <View
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                }}>
+                <ThemedText type="subtitle_subtle" style={{ marginTop: 4 }}>
+                    PROFILE
+                </ThemedText>
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: "rgba(100, 100, 255, 0.1)",
+                        paddingHorizontal: 12,
+                        paddingVertical: 5,
+                        borderRadius: 20,
+                        gap: 8,
+                    }}>
+                    <Feather name="trending-up" size={20} color={ThemedColor.primary} />
+                    <ThemedText type="defaultSemiBold" style={{ fontSize: 14, opacity: 0.8 }}>
+                        In Development
+                    </ThemedText>
+                </View>
+            </View>
+
             <View style={{ marginBottom: 16 }}>
                 <InputGroup
                     options={[

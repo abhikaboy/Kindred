@@ -8,6 +8,7 @@ import CachedImage from "../CachedImage";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { router } from "expo-router";
 
 // SparkleIcon component for encourage button
 const SparkleIcon = ({ size = 24, color = "#ffffff" }) => (
@@ -49,33 +50,43 @@ const TaskFeedCard = React.memo(({
     const { user: currentUser } = useAuth();
     const [showEncourageModal, setShowEncourageModal] = useState(false);
 
-    // Calculate time ago (in hours)
+    // Calculate time ago
     const timeAgo = useMemo(() => {
         const now = new Date();
         const taskTime = new Date(timestamp);
         const diffMs = now.getTime() - taskTime.getTime();
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         
-        if (diffHours < 1) return 0;
-        return diffHours;
+        if (diffMinutes < 1) return "now";
+        if (diffMinutes < 60) return `${diffMinutes}m`;
+        if (diffHours < 24) return `${diffHours}h`;
+        if (diffDays < 7) return `${diffDays}d`;
+        const weeks = Math.floor(diffDays / 7);
+        return `${weeks}w`;
     }, [timestamp]);
 
-    // Format time display
-    const timeDisplay = useMemo(() => {
-        if (timeAgo < 1) return "now";
-        if (timeAgo < 24) return `${timeAgo}h`;
-        const days = Math.floor(timeAgo / 24);
-        if (days < 7) return `${days}d`;
-        const weeks = Math.floor(days / 7);
-        return `${weeks}w`;
-    }, [timeAgo]);
+    const handleUserPress = useCallback(async () => {
+        try {
+            if (Platform.OS === "ios") {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+        } catch (error) {
+            console.log("Haptic error:", error);
+        }
+        console.log("Navigating to user:", user._id);
+        router.push(`/account/${user._id}`);
+    }, [user._id]);
 
     const handleEncouragePress = useCallback(async () => {
         if (!currentUser?._id) {
+            console.log("User not authenticated");
             return;
         }
 
         if (currentUser._id === user._id) {
+            console.log("Cannot encourage own task");
             return;
         }
 
@@ -84,7 +95,7 @@ const TaskFeedCard = React.memo(({
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
         } catch (error) {
-            // Ignore haptics errors
+            console.log("Haptic error:", error);
         }
 
         setShowEncourageModal(true);
@@ -94,18 +105,20 @@ const TaskFeedCard = React.memo(({
 
     const styles = useMemo(() => StyleSheet.create({
         container: {
-            backgroundColor: ThemedColor.card,
-            paddingBottom: 18,
-            borderBottomWidth: 1.5,
+            backgroundColor: ThemedColor.background,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
             borderBottomColor: ThemedColor.tertiary,
         },
-        userHeader: {
+        content: {
+            paddingVertical: 12,
+        },
+        header: {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
             paddingHorizontal: HORIZONTAL_PADDING,
             marginBottom: 18,
-            marginTop: 18,
         },
         userInfo: {
             flexDirection: "row",
@@ -127,7 +140,7 @@ const TaskFeedCard = React.memo(({
             fontWeight: "400",
             color: ThemedColor.text,
         },
-        username: {
+        userHandle: {
             fontSize: 14,
             fontWeight: "300",
             color: ThemedColor.caption,
@@ -140,12 +153,13 @@ const TaskFeedCard = React.memo(({
         categorySection: {
             paddingHorizontal: HORIZONTAL_PADDING,
             marginBottom: 18,
-            gap: 8,
+            gap: 12,
         },
         taskIndicator: {
             fontSize: 13,
             fontWeight: "300",
             letterSpacing: -0.13,
+            color: ThemedColor.caption,
         },
         categoryRow: {
             flexDirection: "row",
@@ -157,121 +171,131 @@ const TaskFeedCard = React.memo(({
             alignItems: "center",
             gap: 8,
             flexWrap: "wrap",
-            maxWidth: "70%",
+            maxWidth: "60%",
             flex: 1,
         },
         categoryText: {
             fontSize: 16,
             fontWeight: "400",
             letterSpacing: -0.16,
+            color: ThemedColor.text,
         },
         dot: {
             width: 4,
             height: 4,
             borderRadius: 2,
+            backgroundColor: ThemedColor.primary,
         },
         encourageButton: {
             flexDirection: "row",
             alignItems: "center",
-            gap: 12,
+            gap: 8,
         },
         encourageText: {
             fontSize: 14,
             fontWeight: "400",
             letterSpacing: -0.14,
-
+            color: ThemedColor.primary,
         },
         contentSection: {
             paddingHorizontal: HORIZONTAL_PADDING,
         },
-        content: {
+        taskContent: {
             fontSize: 16,
             fontWeight: "400",
             lineHeight: 20,
+            color: ThemedColor.text,
         },
     }), [ThemedColor]);
 
     return (
         <View style={styles.container}>
-            {/* User Header */}
-            <View style={styles.userHeader}>
-                <View style={styles.userInfo}>
-                    <CachedImage
-                        source={{ uri: user.profile_picture }}
-                        style={styles.userIcon}
-                    />
-                    <View style={styles.userDetails}>
-                        <ThemedText style={styles.userName}>
-                            {user.display_name}
-                        </ThemedText>
-                        <ThemedText style={styles.username}>
-                            {user.handle}
-                        </ThemedText>
-                    </View>
-                </View>
-                <ThemedText style={styles.timeText}>
-                    {timeDisplay}
-                </ThemedText>
-            </View>
-
-            {/* Category Section with Encourage Button */}
-            <View style={styles.categorySection}>
-                <ThemedText style={[styles.taskIndicator, { color: ThemedColor.caption }]}>
-                    added a new task
-                </ThemedText>
-                <View style={styles.categoryRow}>
-                    <View style={styles.categoryInfo}>
-                        <ThemedText style={[styles.categoryText, { color: ThemedColor.text }]}>
-                            {workspaceName}
-                        </ThemedText>
-                        <View style={[styles.dot, { backgroundColor: ThemedColor.primary }]} />
-                        <ThemedText style={[styles.categoryText, { color: ThemedColor.text }]}>
-                            {categoryName}
-                        </ThemedText>
-                    </View>
+            <View style={styles.content}>
+                {/* User Header - Similar to PostCard */}
+                <View style={styles.header}>
                     <TouchableOpacity
-                        style={[
-                            styles.encourageButton,
-                            (!currentUser?._id || isOwnTask) && { opacity: 0.5 },
-                        ]}
-                        onPress={handleEncouragePress}
-                        disabled={!currentUser?._id || isOwnTask}>
-                        <SparkleIcon size={24} color={ThemedColor.primary} />
-                        <ThemedText style={[styles.encourageText, { color: ThemedColor.primary }]}>
-                            {!currentUser?._id
-                                ? "Login to Encourage"
-                                : isOwnTask
-                                  ? "Your Task"
-                                  : "Encourage"}
-                        </ThemedText>
+                        style={styles.userInfo}
+                        activeOpacity={0.4}
+                        onPress={handleUserPress}>
+                        <CachedImage
+                            source={{ uri: user.profile_picture }}
+                            style={styles.userIcon}
+                            variant="thumbnail"
+                            cachePolicy="memory-disk"
+                        />
+                        <View style={styles.userDetails}>
+                            <ThemedText style={styles.userName}>
+                                {user.display_name}
+                            </ThemedText>
+                            <ThemedText style={styles.userHandle}>
+                                {user.handle}
+                            </ThemedText>
+                        </View>
                     </TouchableOpacity>
+                    <ThemedText style={styles.timeText}>
+                        {timeAgo}
+                    </ThemedText>
                 </View>
-            </View>
 
-            {/* Task Content */}
-            <View style={styles.contentSection}>
-                <ThemedText style={[styles.content, { color: ThemedColor.text }]}>
-                    {content}
-                </ThemedText>
-            </View>
+                {/* Category Section with Encourage Button */}
+                <View style={styles.categorySection}>
+                    <ThemedText style={styles.taskIndicator}>
+                        added a new task
+                    </ThemedText>
+                    <View style={styles.categoryRow}>
+                        <View style={styles.categoryInfo}>
+                            <ThemedText style={styles.categoryText}>
+                                {workspaceName}
+                            </ThemedText>
+                            <View style={styles.dot} />
+                            <ThemedText style={styles.categoryText}>
+                                {categoryName}
+                            </ThemedText>
+                        </View>
+                        <TouchableOpacity
+                            style={[
+                                styles.encourageButton,
+                                (!currentUser?._id || isOwnTask) && { opacity: 0.5 },
+                            ]}
+                            onPress={handleEncouragePress}
+                            disabled={!currentUser?._id || isOwnTask}>
+                            <SparkleIcon size={20} color={ThemedColor.primary} />
+                            <ThemedText style={styles.encourageText}>
+                                {!currentUser?._id
+                                    ? "Login"
+                                    : isOwnTask
+                                      ? "Your Task"
+                                      : "Encourage"}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
-            {/* Encourage Modal */}
-            <EncourageModal
-                visible={showEncourageModal}
-                setVisible={setShowEncourageModal}
-                task={{
-                    id: taskId,
-                    content: content,
-                    value: value,
-                    priority: priority,
-                    categoryId: "",
-                }}
-                encouragementConfig={{
-                    userHandle: user.handle,
-                    receiverId: user._id,
-                    categoryName: categoryName,
-                }}
-            />
+                {/* Task Content */}
+                <View style={styles.contentSection}>
+                    <ThemedText style={styles.taskContent}>
+                        {content}
+                    </ThemedText>
+                </View>
+
+                {/* Encourage Modal */}
+                <EncourageModal
+                    visible={showEncourageModal}
+                    setVisible={setShowEncourageModal}
+                    task={{
+                        id: taskId,
+                        content: content,
+                        value: value,
+                        priority: priority,
+                        categoryId: "",
+                    }}
+                    encouragementConfig={{
+                        userHandle: user.handle,
+                        receiverId: user._id,
+                        categoryName: categoryName,
+                    }}
+                />
+            </View>
         </View>
     );
 });

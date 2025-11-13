@@ -10,8 +10,8 @@ type Props = {
     name: string;
     content: string;
     icon: string;
-    id?: string; 
-    time?: number;
+    id?: string;
+    time?: string;
     onReply?: (commentId: string, userName: string) => void;
 };
 
@@ -20,7 +20,7 @@ const UserInfoRowComment = ({ name, content, icon, time, id, onReply }: Props) =
 
     const handleReply = () => {
         if (onReply && id) {
-            onReply(id, name); 
+            onReply(id, name);
         }
     };
 
@@ -46,7 +46,7 @@ const UserInfoRowComment = ({ name, content, icon, time, id, onReply }: Props) =
                                     style={{
                                         color: ThemedColor.caption,
                                     }}>
-                                    {time < 1 ? `${Math.round(time * 60)}m ago` : `${Math.round(time)}h ago`}
+                                    {time}
                                 </ThemedText>
                             )}
                         </View>

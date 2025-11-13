@@ -1,5 +1,5 @@
-import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import React, { useState, useEffect } from "react";
+import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -30,6 +30,110 @@ type ProcessedNotification = {
     read: boolean;
     referenceId: string; // Post ID or Task ID that the notification references
     thumbnail?: string; // Optional thumbnail for friend notifications
+};
+
+// Skeleton Component
+const NotificationsSkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmerAnim, {
+                    toValue: 1,
+                    duration: 1500,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(shimmerAnim, {
+                    toValue: 0,
+                    duration: 1500,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+    }, [shimmerAnim]);
+
+    const opacity = shimmerAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.3, 0.7],
+    });
+
+    const SkeletonItem = () => (
+        <View style={skeletonStyles.itemContainer}>
+            <Animated.View
+                style={[
+                    skeletonStyles.avatar,
+                    {
+                        backgroundColor: ThemedColor.tertiary,
+                        opacity,
+                    },
+                ]}
+            />
+            <View style={skeletonStyles.textContainer}>
+                <Animated.View
+                    style={[
+                        skeletonStyles.nameLine,
+                        {
+                            backgroundColor: ThemedColor.tertiary,
+                            opacity,
+                        },
+                    ]}
+                />
+                <Animated.View
+                    style={[
+                        skeletonStyles.contentLine,
+                        {
+                            backgroundColor: ThemedColor.tertiary,
+                            opacity,
+                        },
+                    ]}
+                />
+                <Animated.View
+                    style={[
+                        skeletonStyles.timeLine,
+                        {
+                            backgroundColor: ThemedColor.tertiary,
+                            opacity,
+                        },
+                    ]}
+                />
+            </View>
+            <Animated.View
+                style={[
+                    skeletonStyles.thumbnail,
+                    {
+                        backgroundColor: ThemedColor.tertiary,
+                        opacity,
+                    },
+                ]}
+            />
+        </View>
+    );
+
+    const SkeletonSection = ({ itemCount }: { itemCount: number }) => (
+        <View style={skeletonStyles.section}>
+            <Animated.View
+                style={[
+                    skeletonStyles.sectionTitle,
+                    {
+                        backgroundColor: ThemedColor.tertiary,
+                        opacity,
+                    },
+                ]}
+            />
+            {Array.from({ length: itemCount }).map((_, index) => (
+                <SkeletonItem key={index} />
+            ))}
+        </View>
+    );
+
+    return (
+        <View>
+            <SkeletonSection itemCount={3} />
+            <SkeletonSection itemCount={2} />
+            <SkeletonSection itemCount={2} />
+        </View>
+    );
 };
 
 // Extract NotificationItem component
@@ -101,7 +205,7 @@ const NotificationSection = ({
 
     return (
         <View style={styles.section}>
-            <ThemedText type="subtitle">{title}</ThemedText>
+            <ThemedText type="defaultSemiBold">{title}</ThemedText>
             {notifications.map((notification, index) => (
                 <NotificationItem
                     key={`${notification.type}-${notification.id}-${index}`}
@@ -117,12 +221,7 @@ const NotificationSection = ({
 const Notifications = () => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-    const { 
-        notifications: rawNotifications, 
-        loading, 
-        error, 
-        refreshNotifications 
-    } = useNotifications();
+    const { notifications: rawNotifications, loading, error, refreshNotifications } = useNotifications();
 
     const now = Date.now();
     const today = new Date();
@@ -136,7 +235,7 @@ const Notifications = () => {
     // Convert API notification to processed notification
     const processNotification = (notification: NotificationDocument): ProcessedNotification => {
         const notificationTime = new Date(notification.time).getTime();
-        
+
         // Extract task name from content for encouragement/congratulation notifications
         let taskName = "";
         if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
@@ -146,7 +245,12 @@ const Notifications = () => {
 
         return {
             id: notification.id,
-            type: notification.notificationType.toLowerCase() as "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted",
+            type: notification.notificationType.toLowerCase() as
+                | "comment"
+                | "encouragement"
+                | "congratulation"
+                | "friend_request"
+                | "friend_request_accepted",
             name: notification.user.display_name,
             userId: notification.user.id,
             time: notificationTime,
@@ -156,7 +260,7 @@ const Notifications = () => {
             image: notification.user.profile_picture || Icons.coffee,
             read: notification.read,
             referenceId: notification.reference_id,
-            thumbnail: notification.thumbnail
+            thumbnail: notification.thumbnail,
         };
     };
 
@@ -176,23 +280,6 @@ const Notifications = () => {
     const thisWeekNotifications = filterByTimePeriod(notifications, isThisWeek);
     const thisMonthNotifications = filterByTimePeriod(notifications, isThisMonth);
 
-    if (loading) {
-        return (
-            <ThemedView style={styles.container}>
-                <View style={styles.headerContainer}>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
-                    </TouchableOpacity>
-                    <ThemedText type="subtitle">Notifications</ThemedText>
-                </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color={ThemedColor.text} />
-                    <ThemedText style={{ marginTop: 16 }}>Loading notifications...</ThemedText>
-                </View>
-            </ThemedView>
-        );
-    }
-
     return (
         <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
@@ -203,22 +290,30 @@ const Notifications = () => {
             </View>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
                 <FollowRequestsSection styles={styles} maxVisible={4} />
-                {error ? (
+                {loading ? (
+                    <NotificationsSkeleton ThemedColor={ThemedColor} />
+                ) : error ? (
                     <View style={styles.section}>
-                        <ThemedText style={{ textAlign: 'center', color: 'red' }}>{error}</ThemedText>
-                        <TouchableOpacity onPress={() => refreshNotifications()} style={{ marginTop: 16, alignItems: 'center' }}>
+                        <ThemedText style={{ textAlign: "center", color: "red" }}>{error}</ThemedText>
+                        <TouchableOpacity
+                            onPress={() => refreshNotifications()}
+                            style={{ marginTop: 16, alignItems: "center" }}>
                             <ThemedText style={{ color: ThemedColor.text }}>Tap to retry</ThemedText>
                         </TouchableOpacity>
                     </View>
                 ) : notifications.length === 0 ? (
                     <View style={styles.section}>
-                        <ThemedText style={{ textAlign: 'center' }}>No notifications yet</ThemedText>
+                        <ThemedText style={{ textAlign: "center" }}>No notifications yet</ThemedText>
                     </View>
                 ) : (
                     <>
                         <NotificationSection title="Today" notifications={todayNotifications} styles={styles} />
                         <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} />
-                        <NotificationSection title="This Month" notifications={thisMonthNotifications} styles={styles} />
+                        <NotificationSection
+                            title="This Month"
+                            notifications={thisMonthNotifications}
+                            styles={styles}
+                        />
                     </>
                 )}
             </ScrollView>
@@ -250,5 +345,55 @@ const stylesheet = (ThemedColor: any) => {
         },
     });
 };
+
+// Skeleton Styles
+const skeletonStyles = StyleSheet.create({
+    section: {
+        marginBottom: 24,
+    },
+    sectionTitle: {
+        width: 80,
+        height: 20,
+        borderRadius: 4,
+        marginBottom: 16,
+    },
+    itemContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginVertical: 12,
+        paddingHorizontal: 4,
+    },
+    avatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        marginRight: 12,
+    },
+    textContainer: {
+        flex: 1,
+        gap: 8,
+    },
+    nameLine: {
+        width: "40%",
+        height: 14,
+        borderRadius: 4,
+    },
+    contentLine: {
+        width: "80%",
+        height: 12,
+        borderRadius: 4,
+    },
+    timeLine: {
+        width: "25%",
+        height: 10,
+        borderRadius: 4,
+    },
+    thumbnail: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        marginLeft: 12,
+    },
+});
 
 export default Notifications;
