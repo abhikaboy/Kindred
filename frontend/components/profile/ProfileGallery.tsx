@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Animated, Image, Dimensions } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Animated, Image, Dimensions, useColorScheme } from "react-native";
 import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,11 +68,16 @@ const GallerySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
 
 // Empty State Component
 const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
+    const colorScheme = useColorScheme();
+    
     return (
         <View style={styles.emptyContainer}>
             <Image
                 source={require("@/assets/images/343.Art-Gallery.png")}
-                style={styles.emptyImage}
+                style={[
+                    styles.emptyImage,
+                    colorScheme === 'dark' && styles.invertedImage
+                ]}
                 resizeMode="contain"
             />
             <ThemedText type="subtitle" style={styles.emptyTitle}>
@@ -348,6 +353,9 @@ const styles = StyleSheet.create({
         height: 150,
         marginBottom: 24,
         opacity: 0.8,
+    },
+    invertedImage: {
+        tintColor: '#ffffff',
     },
     emptyTitle: {
         fontSize: 20,

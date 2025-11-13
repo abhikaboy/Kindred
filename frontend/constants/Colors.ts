@@ -50,7 +50,7 @@ export const Colors = {
         caption: "#919090ff",
         lightened: "#171626",
         lightenedCard: "#1a1929ff",
-        tertiary: "#1C1B2A",
+        tertiary: "#1F1D2E",
         tint: tintColorDark,
         icon: "#9BA1A6",
         tabIconDefault: "#9BA1A6",

@@ -152,31 +152,30 @@ const WorkspaceContent = ({
 }: any) => {
     const { start } = useSpotlightTour();
     const pathname = usePathname();
+    const hasTriggeredRef = useRef(false);
 
+    // Extract primitive values to avoid reference changes
+    const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
+    const menuSpotlightShown = spotlightState.menuSpotlight;
+
+    // Use a separate effect with ONLY the trigger check - no cleanup
     useEffect(() => {
-        // Only trigger workspace spotlight if:
-        // 1. We're in the Kindred Guide workspace
-        // 2. Haven't shown workspace spotlight yet
-        // 3. Menu spotlight is complete
-        // 4. We're on the correct route (not feed or other screens)
-        const isWorkspaceRoute = pathname === "/(logged-in)/(tabs)/(task)" || 
-                                pathname.includes("/(logged-in)/(tabs)/(task)/workspace");
+        if (hasTriggeredRef.current) return;
         
-        if (selected === "🌺 Kindred Guide" && 
-            !spotlightState.workspaceSpotlight && 
-            spotlightState.menuSpotlight &&
-            isWorkspaceRoute) {
-            // 1 second delay to ensure:
-            // - Page has fully loaded and rendered
-            // - Drawer close animation is complete
-            // - AsyncStorage state has been saved
-            const timer = setTimeout(() => {
+        const shouldTrigger = selected === "🌺 Kindred Guide" && 
+            !workspaceSpotlightShown && 
+            menuSpotlightShown;
+        
+        if (shouldTrigger && !hasTriggeredRef.current) {
+            hasTriggeredRef.current = true;
+            console.log('⏰ Triggering workspace spotlight in 1 second...');
+            
+            setTimeout(() => {
+                console.log('🚀 Starting workspace spotlight!');
                 start();
             }, 1000);
-
-            return () => clearTimeout(timer);
         }
-    }, [start, selected, spotlightState.workspaceSpotlight, spotlightState.menuSpotlight, pathname]);
+    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start]);
 
     return (
         <DrawerLayout

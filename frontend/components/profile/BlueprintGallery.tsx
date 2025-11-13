@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, useColorScheme } from "react-native";
 import { deletePost, getPostsByBlueprint } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -138,21 +138,28 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
         showPostOptions(postId, postUserId);
     };
 
-    const renderEmptyState = () => (
-        <View style={styles.emptyContainer}>
-            <Image
-                source={require("@/assets/images/343.Art-Gallery.png")}
-                style={styles.emptyImage}
-                resizeMode="contain"
-            />
-            <ThemedText type="subtitle" style={styles.emptyTitle}>
-                No Posts Yet
-            </ThemedText>
-            <ThemedText type="default" style={[styles.emptyDescription, { color: ThemedColor.caption }]}>
-                No Posts with Images Yet
-            </ThemedText>
-        </View>
-    );
+    const renderEmptyState = () => {
+        const colorScheme = useColorScheme();
+        
+        return (
+            <View style={styles.emptyContainer}>
+                <Image
+                    source={require("@/assets/images/343.Art-Gallery.png")}
+                    style={[
+                        styles.emptyImage,
+                        colorScheme === 'dark' && styles.invertedImage
+                    ]}
+                    resizeMode="contain"
+                />
+                <ThemedText type="subtitle" style={styles.emptyTitle}>
+                    No Posts Yet
+                </ThemedText>
+                <ThemedText type="default" style={[styles.emptyDescription, { color: ThemedColor.caption }]}>
+                    No Posts with Images Yet
+                </ThemedText>
+            </View>
+        );
+    };
 
     const renderErrorState = () => (
         <View style={styles.emptyState}>
@@ -278,6 +285,9 @@ const stylesheet = (ThemedColor: any) =>
             height: 150,
             marginBottom: 24,
             opacity: 0.8,
+        },
+        invertedImage: {
+            tintColor: '#ffffff',
         },
         emptyTitle: {
             fontSize: 20,

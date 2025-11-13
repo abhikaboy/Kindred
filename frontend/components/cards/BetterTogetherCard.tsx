@@ -101,9 +101,9 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         gap: 8,
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
     },
     content: {
         gap: 4,

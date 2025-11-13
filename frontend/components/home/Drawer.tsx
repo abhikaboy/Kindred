@@ -75,11 +75,6 @@ export const Drawer = ({ close }) => {
                         if (kindredGuide) {
                             setSelected("🌺 Kindred Guide");
                             close();
-                            
-                            // Small delay only for drawer close animation (UX)
-                            setTimeout(() => {
-                                router.navigate("/(logged-in)/(tabs)/(task)");
-                            }, 300);
                         }
 
                         next();

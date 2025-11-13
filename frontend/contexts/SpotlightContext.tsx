@@ -64,6 +64,7 @@ export const SpotlightProvider: React.FC<{ children: React.ReactNode}> = ({ chil
             ...spotlightState,
             [key]: true,
         };
+        
         setSpotlightState(newState);
 
         // Persist to AsyncStorage in background (don't await)

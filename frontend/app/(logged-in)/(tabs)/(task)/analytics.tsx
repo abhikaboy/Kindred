@@ -1,4 +1,4 @@
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Image } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View, Image, useColorScheme } from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
@@ -30,6 +30,7 @@ const Daily = (props: Props) => {
     const drawerRef = useRef(null);
     const pagerRef = useRef<PagerView>(null);
     const ThemedColor = useThemeColor();
+    const colorScheme = useColorScheme();
 
     // Center date is the first day of the current window
     const [centerDate, setCenterDate] = useState(() => {
@@ -133,7 +134,10 @@ const Daily = (props: Props) => {
                     <View style={styles.comingSoonContent}>
                         <Image
                             source={require("@/assets/images/417.Touch-Screen.png")}
-                            style={styles.comingSoonImage}
+                            style={[
+                                styles.comingSoonImage,
+                                colorScheme === 'dark' && styles.invertedImage
+                            ]}
                             resizeMode="contain"
                         />
                         <ThemedText type="subtitle" style={styles.comingSoonTitle}>
@@ -190,6 +194,9 @@ const styles = StyleSheet.create({
         height: 200,
         marginBottom: 24,
         opacity: 0.9,
+    },
+    invertedImage: {
+        tintColor: '#ffffff',
     },
     comingSoonTitle: {
         fontSize: 28,
