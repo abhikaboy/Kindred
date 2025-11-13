@@ -132,31 +132,41 @@ var SearchIndexes = []SearchIndex{
 				{Key: "mappings", Value: bson.D{
 					{Key: "dynamic", Value: false},
 					{Key: "fields", Value: bson.D{
-						// Full-text search fields
-						{Key: "display_name", Value: bson.D{
-							{Key: "type", Value: "string"},
-							{Key: "analyzer", Value: "lucene.standard"},
+						// Multi-type field definition for display_name
+						// Supports both "text" and "autocomplete" search operators
+						{Key: "display_name", Value: bson.A{
+							// String type for full-text search
+							bson.D{
+								{Key: "type", Value: "string"},
+								{Key: "analyzer", Value: "lucene.standard"},
+							},
+							// Autocomplete type for autocomplete search
+							bson.D{
+								{Key: "type", Value: "autocomplete"},
+								{Key: "analyzer", Value: "lucene.standard"},
+								{Key: "tokenization", Value: "edgeGram"},
+								{Key: "minGrams", Value: 2},
+								{Key: "maxGrams", Value: 15},
+								{Key: "foldDiacritics", Value: true},
+							},
 						}},
-						{Key: "handle", Value: bson.D{
-							{Key: "type", Value: "string"},
-							{Key: "analyzer", Value: "lucene.standard"},
-						}},
-						// Autocomplete fields
-						{Key: "display_name", Value: bson.D{
-							{Key: "type", Value: "autocomplete"},
-							{Key: "analyzer", Value: "lucene.standard"},
-							{Key: "tokenization", Value: "edgeGram"},
-							{Key: "minGrams", Value: 2},
-							{Key: "maxGrams", Value: 15},
-							{Key: "foldDiacritics", Value: true},
-						}},
-						{Key: "handle", Value: bson.D{
-							{Key: "type", Value: "autocomplete"},
-							{Key: "analyzer", Value: "lucene.standard"},
-							{Key: "tokenization", Value: "edgeGram"},
-							{Key: "minGrams", Value: 2},
-							{Key: "maxGrams", Value: 15},
-							{Key: "foldDiacritics", Value: true},
+						// Multi-type field definition for handle
+						// Supports both "text" and "autocomplete" search operators
+						{Key: "handle", Value: bson.A{
+							// String type for full-text search
+							bson.D{
+								{Key: "type", Value: "string"},
+								{Key: "analyzer", Value: "lucene.standard"},
+							},
+							// Autocomplete type for autocomplete search
+							bson.D{
+								{Key: "type", Value: "autocomplete"},
+								{Key: "analyzer", Value: "lucene.standard"},
+								{Key: "tokenization", Value: "edgeGram"},
+								{Key: "minGrams", Value: 2},
+								{Key: "maxGrams", Value: 15},
+								{Key: "foldDiacritics", Value: true},
+							},
 						}},
 					}},
 				}}},

@@ -105,7 +105,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register waitlist and blueprint routes
 	Waitlist.Routes(api, collections)
-	Blueprint.Routes(api, collections)
+	Blueprint.Routes(api, collections, geminiService)
 
 	// Register encouragement and congratulation routes
 	encouragement.Routes(api, collections)

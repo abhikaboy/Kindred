@@ -151,3 +151,32 @@ type TimeManagement struct {
 	TimeIntensiveTasks    []string `json:"timeIntensiveTasks" jsonschema_description:"Tasks that took significant time to complete"`
 	TimeManagementInsight string   `json:"timeManagementInsight" jsonschema_description:"Overall analysis of time management patterns"`
 }
+
+// Input for blueprint generation flow
+type GenerateBlueprintInput struct {
+	UserID      string `json:"userId" jsonschema_description:"The user's ObjectID as a hex string"`
+	Description string `json:"description" jsonschema_description:"Description of what the blueprint should contain (e.g., 'Morning routine for productivity', 'Weekly meal prep plan')"`
+}
+
+// Output for blueprint generation flow
+type GenerateBlueprintOutput struct {
+	Blueprint BlueprintData `json:"blueprint" jsonschema_description:"The generated blueprint with all its details"`
+}
+
+// BlueprintData represents the structure of a generated blueprint
+type BlueprintData struct {
+	Name        string                  `json:"name" jsonschema_description:"Name of the blueprint (e.g., 'Morning Routine', 'Meal Prep Blueprint')"`
+	Description string                  `json:"description" jsonschema_description:"Detailed description of the blueprint and its purpose"`
+	Banner      string                  `json:"banner" jsonschema_description:"Banner image URL or color scheme suggestion"`
+	Tags        []string                `json:"tags" jsonschema_description:"Tags for categorizing the blueprint (e.g., 'productivity', 'health', 'morning')"`
+	Duration    string                  `json:"duration" jsonschema_description:"Expected duration to complete all tasks in the blueprint (e.g., '1h', '30m')"`
+	Category    string                  `json:"category" jsonschema_description:"Primary category of the blueprint (e.g., 'productivity', 'health', 'learning')"`
+	Categories  []BlueprintCategory     `json:"categories" jsonschema_description:"Categories containing organized tasks for this blueprint"`
+}
+
+// BlueprintCategory represents a category within a blueprint with its tasks
+type BlueprintCategory struct {
+	Name          string                  `json:"name" jsonschema_description:"Name of the category within the blueprint"`
+	WorkspaceName string                  `json:"workspaceName" jsonschema_description:"Workspace name (should match the blueprint name)"`
+	Tasks         []task.CreateTaskParams `json:"tasks" jsonschema_description:"Tasks belonging to this category"`
+}

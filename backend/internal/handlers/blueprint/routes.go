@@ -8,9 +8,12 @@ import (
 /*
 Router maps endpoints to handlers
 */
-func Routes(api huma.API, collections map[string]*mongo.Collection) {
+func Routes(api huma.API, collections map[string]*mongo.Collection, geminiService any) {
 	service := newService(collections)
-	handler := Handler{service}
+	handler := Handler{
+		service:       service,
+		geminiService: geminiService,
+	}
 
 	RegisterBlueprintOperations(api, &handler)
 }

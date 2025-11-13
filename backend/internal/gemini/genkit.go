@@ -29,6 +29,7 @@ func InitGenkit(collections map[string]*mongo.Collection) *GeminiService {
 		MultiTaskFromTextFlow:            flows.MultiTaskFromTextFlow,
 		MultiTaskFromTextFlowWithContext: flows.MultiTaskFromTextFlowWithContext,
 		AnalyticsReportFlow:              flows.AnalyticsReportFlow,
+		GenerateBlueprintFlow:            flows.GenerateBlueprintFlow,
 		Tools:                            tools,
 	}
 }

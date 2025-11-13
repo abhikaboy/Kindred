@@ -25,6 +25,7 @@ import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
+import { usePathname } from "expo-router";
 
 type Props = {};
 
@@ -150,17 +151,32 @@ const WorkspaceContent = ({
     workspaceStateDescription,
 }: any) => {
     const { start } = useSpotlightTour();
+    const pathname = usePathname();
 
     useEffect(() => {
-        // Start the tour if we're in the Kindred Guide workspace and haven't shown this spotlight yet
-        if (selected === "🌺 Kindred Guide" && !spotlightState.workspaceSpotlight && spotlightState.menuSpotlight) {
+        // Only trigger workspace spotlight if:
+        // 1. We're in the Kindred Guide workspace
+        // 2. Haven't shown workspace spotlight yet
+        // 3. Menu spotlight is complete
+        // 4. We're on the correct route (not feed or other screens)
+        const isWorkspaceRoute = pathname === "/(logged-in)/(tabs)/(task)" || 
+                                pathname.includes("/(logged-in)/(tabs)/(task)/workspace");
+        
+        if (selected === "🌺 Kindred Guide" && 
+            !spotlightState.workspaceSpotlight && 
+            spotlightState.menuSpotlight &&
+            isWorkspaceRoute) {
+            // 1 second delay to ensure:
+            // - Page has fully loaded and rendered
+            // - Drawer close animation is complete
+            // - AsyncStorage state has been saved
             const timer = setTimeout(() => {
                 start();
             }, 1000);
 
             return () => clearTimeout(timer);
         }
-    }, [start, selected, spotlightState.workspaceSpotlight, spotlightState.menuSpotlight]);
+    }, [start, selected, spotlightState.workspaceSpotlight, spotlightState.menuSpotlight, pathname]);
 
     return (
         <DrawerLayout

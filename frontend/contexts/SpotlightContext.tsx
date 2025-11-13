@@ -25,7 +25,7 @@ const initialState: SpotlightState = {
     taskSpotlight: false,
 };
 
-export const SpotlightProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SpotlightProvider: React.FC<{ children: React.ReactNode}> = ({ children }) => {
     const [spotlightState, setSpotlightState] = useState<SpotlightState>(initialState);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
@@ -56,34 +56,34 @@ export const SpotlightProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         loadSpotlightState();
     }, [user?._id]);
 
-    const setSpotlightShown = async (key: keyof SpotlightState) => {
+    const setSpotlightShown = (key: keyof SpotlightState) => {
         if (!user?._id) return;
 
-        try {
-            const newState = {
-                ...spotlightState,
-                [key]: true,
-            };
-            setSpotlightState(newState);
+        // Immediately update state (synchronous)
+        const newState = {
+            ...spotlightState,
+            [key]: true,
+        };
+        setSpotlightState(newState);
 
-            const storageKey = `${user._id}-spotlight`;
-            await AsyncStorage.setItem(storageKey, JSON.stringify(newState));
-        } catch (error) {
+        // Persist to AsyncStorage in background (don't await)
+        const storageKey = `${user._id}-spotlight`;
+        AsyncStorage.setItem(storageKey, JSON.stringify(newState)).catch((error) => {
             console.error('Error saving spotlight state:', error);
-        }
+        });
     };
 
-    const resetSpotlights = async () => {
+    const resetSpotlights = () => {
         if (!user?._id) return;
 
-        try {
-            setSpotlightState(initialState);
+        // Immediately update state (synchronous)
+        setSpotlightState(initialState);
 
-            const key = `${user._id}-spotlight`;
-            await AsyncStorage.setItem(key, JSON.stringify(initialState));
-        } catch (error) {
+        // Persist to AsyncStorage in background (don't await)
+        const key = `${user._id}-spotlight`;
+        AsyncStorage.setItem(key, JSON.stringify(initialState)).catch((error) => {
             console.error('Error resetting spotlight state:', error);
-        }
+        });
     };
 
     return (

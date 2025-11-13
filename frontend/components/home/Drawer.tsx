@@ -67,14 +67,19 @@ export const Drawer = ({ close }) => {
                     title="Your Workspaces 📝"
                     description="Current workspaces can be found in 'Personal Workspaces' below. Tap any workspace to view its tasks."
                     onNext={() => {
+                        // Immediately update state (synchronous - no waiting needed)
                         setSpotlightShown("menuSpotlight");
 
-                        // Check if "🌺 Kindred Guide" workspace exists and select it
+                        // Find and navigate to Kindred Guide workspace
                         const kindredGuide = workspaces.find((w) => w.name === "🌺 Kindred Guide");
                         if (kindredGuide) {
                             setSelected("🌺 Kindred Guide");
-                            router.navigate("/(logged-in)/(tabs)/(task)");
                             close();
+                            
+                            // Small delay only for drawer close animation (UX)
+                            setTimeout(() => {
+                                router.navigate("/(logged-in)/(tabs)/(task)");
+                            }, 300);
                         }
 
                         next();

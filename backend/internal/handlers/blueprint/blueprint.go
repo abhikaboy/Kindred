@@ -14,7 +14,8 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service       *Service
+	geminiService any // Gemini service interface - using any to avoid circular import
 }
 
 func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprintInput) (*CreateBlueprintOutput, error) {
@@ -256,4 +257,66 @@ func (h *Handler) GetBlueprintByCategoryHuma(ctx context.Context, input *GetBlue
 	}
 
 	return &GetBlueprintByCategoryOutput{Body: blueprintGroups}, nil
+}
+
+func (h *Handler) GenerateAndCreateBlueprintHuma(ctx context.Context, input *GenerateAndCreateBlueprintInput) (*GenerateAndCreateBlueprintOutput, error) {
+	// Validate input
+	if input.Body.Description == "" {
+		return nil, huma.Error400BadRequest("Description field is required", nil)
+	}
+
+	// Extract and validate user ID
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Consume credit for AI generation
+	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	if err != nil {
+		if err == types.ErrInsufficientCredits {
+			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 AI credit to generate a blueprint.", err)
+		}
+		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+	}
+
+	// Call Genkit flow to generate blueprint
+	generatedBlueprint, err := h.callGeminiGenerateBlueprintFlow(ctx, userID, input.Body.Description)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to generate blueprint with AI", err)
+	}
+
+	// Create internal document for database operations
+	internalDoc := BlueprintDocumentInternal{
+		ID:               primitive.NewObjectID(),
+		Banner:           generatedBlueprint.Banner,
+		Name:             generatedBlueprint.Name,
+		Tags:             generatedBlueprint.Tags,
+		Description:      generatedBlueprint.Description,
+		Duration:         generatedBlueprint.Duration,
+		Category:         generatedBlueprint.Category,
+		Categories:       generatedBlueprint.Categories,
+		Subscribers:      []primitive.ObjectID{},
+		SubscribersCount: 0,
+		Timestamp:        time.Now(),
+		Owner: &types.UserExtendedReferenceInternal{
+			ID:             userObjID,
+			DisplayName:    "",
+			Handle:         "",
+			ProfilePicture: "",
+		},
+	}
+
+	// Save blueprint to database
+	blueprint, err := h.service.CreateBlueprint(&internalDoc)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to create blueprint", err)
+	}
+
+	return &GenerateAndCreateBlueprintOutput{Body: *blueprint}, nil
 }

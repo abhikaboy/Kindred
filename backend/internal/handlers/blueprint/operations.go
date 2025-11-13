@@ -140,6 +140,17 @@ func RegisterGetBlueprintsByCreatorOperation(api huma.API, handler *Handler) {
 	}, handler.GetBlueprintsByCreatorHuma)
 }
 
+func RegisterGenerateAndCreateBlueprintOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "generate-and-create-blueprint",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/blueprints/generate",
+		Summary:     "Generate and create blueprint with AI",
+		Description: "Generate a complete blueprint using AI based on a description and save it to the database. Requires 1 AI credit.",
+		Tags:        []string{"blueprints", "ai"},
+	}, handler.GenerateAndCreateBlueprintHuma)
+}
+
 // Register all blueprint operations
 func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSearchBlueprintsOperation(api, handler)
@@ -154,4 +165,5 @@ func RegisterBlueprintOperations(api huma.API, handler *Handler) {
 	RegisterSubscribeToBlueprintOperation(api, handler)
 	RegisterUnsubscribeFromBlueprintOperation(api, handler)
 	RegisterGetUserSubscribedBlueprintsOperation(api, handler)
+	RegisterGenerateAndCreateBlueprintOperation(api, handler)
 }

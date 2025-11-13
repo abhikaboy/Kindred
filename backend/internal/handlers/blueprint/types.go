@@ -139,6 +139,21 @@ type GetBlueprintsByCreatorOutput struct {
 	Body []BlueprintDocumentWithoutSubscribers `json:"body"`
 }
 
+// Generate and Create Blueprint with AI
+type GenerateAndCreateBlueprintInput struct {
+	Authorization string                           `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                           `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          GenerateAndCreateBlueprintParams `json:"body"`
+}
+
+type GenerateAndCreateBlueprintParams struct {
+	Description string `json:"description" example:"Morning routine for productivity" doc:"Description of what the blueprint should contain"`
+}
+
+type GenerateAndCreateBlueprintOutput struct {
+	Body BlueprintDocument `json:"body"`
+}
+
 type CreateBlueprintParams struct {
 	Banner      string                   `bson:"banner" json:"banner" example:"https://example.com/banner.jpg" doc:"Banner image URL for the blueprint"`
 	Name        string                   `bson:"name" json:"name" example:"Morning Routine" doc:"Name of the blueprint"`
