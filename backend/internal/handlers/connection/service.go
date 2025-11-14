@@ -132,7 +132,7 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 	r.ID = id
 
 	// Send push notification to receiver (no database notification)
-	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.Name)
+	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.ID, r.Requester.Name)
 	if err != nil {
 		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", r.ReceiverID)
 		// Don't fail the request if notification fails
@@ -272,7 +272,7 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		// Don't fail the request if we can't get user details for notification
 	} else {
 		// Send push notification to requester (no database notification)
-		err = s.sendFriendRequestAcceptedNotification(otherUserID, accepterUser.Name)
+		err = s.sendFriendRequestAcceptedNotification(otherUserID, userID, accepterUser.Name)
 		if err != nil {
 			slog.Error("Failed to send friend request accepted notification", "error", err, "requester_id", otherUserID)
 			// Don't fail the request if notification fails
@@ -283,7 +283,7 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 }
 
 // sendFriendRequestNotification sends a push notification to the receiver when a friend request is sent
-func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, requesterName string) error {
+func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, requesterID primitive.ObjectID, requesterName string) error {
 	ctx := context.Background()
 
 	// Get receiver's push token
@@ -307,6 +307,7 @@ func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, r
 		Data: map[string]string{
 			"type":           "friend_request",
 			"requester_name": requesterName,
+			"requester_id":   requesterID.Hex(),
 		},
 	}
 
@@ -350,7 +351,7 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]types.UserExtendedRef
 }
 
 // sendFriendRequestAcceptedNotification sends a push notification to the requester when their friend request is accepted
-func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.ObjectID, accepterName string) error {
+func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.ObjectID, accepterID primitive.ObjectID, accepterName string) error {
 	ctx := context.Background()
 
 	// Get requester's push token
@@ -374,6 +375,7 @@ func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.Ob
 		Data: map[string]string{
 			"type":          "friend_request_accepted",
 			"accepter_name": accepterName,
+			"accepter_id":   accepterID.Hex(),
 		},
 	}
 
@@ -471,7 +473,7 @@ func (s *Service) CreateConnectionRequest(requesterID, receiverID primitive.Obje
 	}
 
 	// Send push notification to receiver (no database notification)
-	err = s.sendFriendRequestNotification(receiverID, requester.Name)
+	err = s.sendFriendRequestNotification(receiverID, requester.ID, requester.Name)
 	if err != nil {
 		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", receiverID)
 		// Don't fail the request if notification fails

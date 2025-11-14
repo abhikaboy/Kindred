@@ -153,8 +153,61 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         responseListener.current = addNotificationResponseListener((response) => {
             console.log("Notification response:", response);
             const data = response.notification.request.content.data;
-            if (data?.screen) {
-                router.push(data.screen);
+            
+            // Handle routing based on notification type
+            if (data?.type) {
+                switch (data.type) {
+                    case 'friend_request':
+                        // Route to the requester's profile if we have their ID, otherwise friends page
+                        if (data.requester_id) {
+                            router.push(`/account/${data.requester_id}` as any);
+                        } else {
+                            router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
+                        }
+                        break;
+                    
+                    case 'friend_request_accepted':
+                        // Route to the accepter's profile if we have their ID, otherwise friends page
+                        if (data.accepter_id) {
+                            router.push(`/account/${data.accepter_id}` as any);
+                        } else {
+                            router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
+                        }
+                        break;
+                    
+                    case 'encouragement':
+                        // Route to encouragements page
+                        router.push('/(logged-in)/encouragement' as any);
+                        break;
+                    
+                    case 'congratulation':
+                        // Route to congratulations page
+                        router.push('/(logged-in)/congratulations' as any);
+                        break;
+                    
+                    case 'task_completion':
+                        // Route to the user's profile if we have their ID
+                        if (data.task_owner_id) {
+                            router.push(`/account/${data.task_owner_id}` as any);
+                        } else {
+                            // Fallback to notifications page
+                            router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
+                        }
+                        break;
+                    
+                    default:
+                        // Fallback: check for explicit screen path
+                        if (data.screen) {
+                            router.push(data.screen as any);
+                        } else {
+                            // Default to notifications page
+                            router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
+                        }
+                        break;
+                }
+            } else if (data?.screen) {
+                // Legacy handling: if screen is provided directly
+                router.push(data.screen as any);
             }
         });
 
