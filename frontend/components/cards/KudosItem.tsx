@@ -1,8 +1,9 @@
 import React from "react";
-import { View, StyleSheet, Dimensions, Image } from "react-native";
+import { View, StyleSheet, Dimensions, Image, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import CachedImage from "@/components/CachedImage";
+import { useRouter } from "expo-router";
 
 interface KudosSender {
     name: string;
@@ -30,14 +31,19 @@ interface KudosItemProps {
 export default function KudosItem({ kudos, formatTime }: KudosItemProps) {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
+    const router = useRouter();
 
     const isImage = kudos.type === "image";
     const isProfileLevel = kudos.scope === "profile"
 
+    const handleAvatarPress = () => {
+        router.push(`/account/${kudos.sender.id}` as any);
+    };
+
     return (
         <View style={styles.kudosItem}>
             {/* User Avatar and Info */}
-            <View style={styles.userSection}>
+            <TouchableOpacity style={styles.userSection} onPress={handleAvatarPress} activeOpacity={0.7}>
                 <CachedImage
                     source={{ uri: kudos.sender.picture }}
                     fallbackSource={require("@/assets/images/head.png")}
@@ -50,7 +56,7 @@ export default function KudosItem({ kudos, formatTime }: KudosItemProps) {
                         {kudos.sender.name}
                     </ThemedText>
                 </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Kudos Card */}
             <View style={styles.kudosCard}>
