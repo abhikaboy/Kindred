@@ -13,7 +13,7 @@ import ThemedSlider from "@/components/inputs/ThemedSlider";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle } from "phosphor-react-native";
+import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
@@ -127,6 +127,7 @@ const StandardContent = ({
         startDate,
         reminders,
         isPublic,
+        integration,
         resetTaskCreation,
         setPriority,
         setValue,
@@ -257,6 +258,7 @@ const StandardContent = ({
                 ...reminder,
                 triggerTime: reminder.triggerTime.toISOString(),
             })),
+            integration: integration || undefined,
         };
         if (recurring) {
             postBody.recurFrequency = recurFrequency;
@@ -299,6 +301,7 @@ const StandardContent = ({
             })),
             notes: task.notes || "",
             checklist: task.checklist || [],
+            integration: integration || undefined,
         };
 
         // Use the selected category from the dropdown, or fall back to the original task category
@@ -704,7 +707,9 @@ const AdvancedOptionList = ({
         recurring,
         recurFrequency,
         isBlueprint: isBlueprintMode,
+        integration,
     } = useTaskCreation();
+    const ThemedColor = useThemeColor();
 
     // Check if start date is the blueprint default date (Jan 1, 1970 at midnight)
     // Only consider it as "not configured" if we're in blueprint mode AND it matches the exact default
@@ -766,6 +771,14 @@ const AdvancedOptionList = ({
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
                 configured={reminders.length > 0}
+            />
+            <AdvancedOption
+                iconComponent={<Plugs size={24} color={ThemedColor.text} weight="regular" />}
+                label={integration ? `Integration: ${integration.charAt(0).toUpperCase() + integration.slice(1)}` : "Add Integration"}
+                screen={Screen.INTEGRATION}
+                goTo={goTo}
+                showUnconfigured={showUnconfigured}
+                configured={integration !== ""}
             />
             {/* <AdvancedOption
                 icon="people"

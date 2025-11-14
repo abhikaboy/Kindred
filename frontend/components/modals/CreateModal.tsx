@@ -10,6 +10,7 @@ import Recurring from "./create/Recurring";
 import StartDate from "./create/StartDate";
 import Reminder from "./create/Reminder";
 import Collaborators from "./create/Collaborators";
+import Integration from "./create/Integration";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 
@@ -36,6 +37,7 @@ export enum Screen {
     STARTDATE,
     REMINDER,
     COLLABORATORS,
+    INTEGRATION,
 }
 
 const CreateModal = (props: Props) => {
@@ -137,6 +139,8 @@ const CreateModal = (props: Props) => {
                 return <Reminder {...screenProps} />;
             case Screen.COLLABORATORS:
                 return <Collaborators {...screenProps} />;
+            case Screen.INTEGRATION:
+                return <Integration goTo={goToScreen} />;
             default:
                 return null;
         }

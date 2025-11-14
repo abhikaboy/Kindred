@@ -23,9 +23,10 @@ type CreateTaskParams struct {
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"` // Defaults to today
 
-	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
-	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
-	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Notes       string          `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist   []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Reminders   []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Integration string          `bson:"integration,omitempty" json:"integration,omitempty"`
 }
 
 type SortParams struct {
@@ -57,6 +58,7 @@ type UpdateTaskDocument struct {
 	Notes       string              `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist   []ChecklistItem     `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
+	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
 }
 
 type SortTypes string

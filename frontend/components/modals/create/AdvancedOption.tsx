@@ -5,7 +5,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Screen } from "../CreateModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
-    icon: keyof typeof Ionicons.glyphMap;
+    icon?: keyof typeof Ionicons.glyphMap;
+    iconComponent?: React.ReactNode;
     label: string;
     screen: Screen;
     goTo: (screen: Screen) => void;
@@ -13,7 +14,7 @@ type Props = {
     configured?: boolean;
 };
 
-const AdvancedOption = ({ icon, label, screen, goTo, showUnconfigured, configured }: Props) => {
+const AdvancedOption = ({ icon, iconComponent, label, screen, goTo, showUnconfigured, configured }: Props) => {
     const ThemedColor = useThemeColor();
     // if we should only show configured and we are NOT configured then dont show
     if (!showUnconfigured && !configured) {
@@ -36,7 +37,7 @@ const AdvancedOption = ({ icon, label, screen, goTo, showUnconfigured, configure
                 // borderWidth: 1,
                 // borderColor: ThemedColor.tertiary,
             }}>
-            <Ionicons name={icon} size={24} color={ThemedColor.text} />
+            {iconComponent ? iconComponent : icon && <Ionicons name={icon} size={24} color={ThemedColor.text} />}
             <ThemedText type="lightBody">{label}</ThemedText>
         </TouchableOpacity>
     );
