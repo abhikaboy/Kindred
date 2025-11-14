@@ -9,6 +9,7 @@ type Props = {
     title: string;
     content?: string;
     children?: React.ReactNode;
+    icon?: React.ReactNode;
 };
 
 const DataCard = (props: Props) => {
@@ -23,7 +24,10 @@ const DataCard = (props: Props) => {
                 height: "auto",
                 // boxShadow: ThemedColor.shadowSmall,
             }}>
-            <ThemedText type="subtitle">{props.title}</ThemedText>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                {props.icon && props.icon}
+                <ThemedText type="subtitle">{props.title}</ThemedText>
+            </View>
             {props.content && <ThemedText type="default">{props.content}</ThemedText>}
             {props.children}
         </View>

@@ -218,9 +218,9 @@ const SwipeCompleteTutorialScreen = (props: Props) => {
                     {/* Real Swipeable Task Card */}
                     <ReanimatedSwipeable
                         containerStyle={styles.swipeable}
-                        friction={2}
+                        friction={1.5}
                         enableTrackpadTwoFingerGesture
-                        leftThreshold={screenWidth / 3}
+                        leftThreshold={screenWidth / 4}
                         overshootLeft={true}
                         overshootFriction={2.7}
                         renderLeftActions={(prog, drag) => LeftAction(prog, drag, ThemedColor, handleComplete)}

@@ -147,6 +147,19 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         return workspaces.find((workspace) => workspace.name === name);
     };
 
+    /**
+     * Invalidates the workspaces cache by removing it from AsyncStorage
+     * This should be called after any local update to prevent stale cache from overwriting local changes
+     */
+    const invalidateWorkspacesCache = async () => {
+        try {
+            await AsyncStorage.removeItem(WORKSPACES_CACHE_KEY);
+            console.log("Workspaces cache invalidated");
+        } catch (error) {
+            console.error("Error invalidating workspaces cache:", error);
+        }
+    };
+
     const fetchWorkspaces = async (forceRefresh: boolean = false) => {
         if (!user?._id) return;
         
@@ -223,6 +236,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let workspacesCopy = workspaces.slice();
         workspacesCopy.push(newWorkspace);
         setWorkSpaces(workspacesCopy);
+        // Invalidate cache after local update
+        await invalidateWorkspacesCache();
     };
 
     /**
@@ -249,6 +264,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         });
         
         setWorkSpaces(workspacesCopy);
+        // Invalidate cache after local update
+        await invalidateWorkspacesCache();
     };
 
     /**
@@ -291,6 +308,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 categoryName: categoryName, // Ensure categoryName is preserved
             });
         }
+
+        // Invalidate cache after local update
+        invalidateWorkspacesCache();
     };
 
     /**
@@ -305,6 +325,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let workspacesCopy = workspaces.slice();
         workspacesCopy.find((workspace) => workspace.name === name).categories.push(category);
         setWorkSpaces(workspacesCopy);
+        // Invalidate cache after local update
+        invalidateWorkspacesCache();
     };
     /**
      * Visually will remove a task from a category locally
@@ -325,6 +347,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         });
         
         setWorkSpaces(workspacesCopy);
+        // Invalidate cache after local update
+        await invalidateWorkspacesCache();
     };
 
     /**
@@ -338,6 +362,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             .find((workspace) => workspace.name === name)
             .categories.filter((category) => category.id !== categoryId);
         setWorkSpaces(workspacesCopy);
+        // Invalidate cache after local update
+        await invalidateWorkspacesCache();
     };
 
     /**
@@ -355,6 +381,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         } else if (selected === name && workspacesCopy.length === 0) {
             setSelected("");
         }
+        
+        // Invalidate cache after local update
+        invalidateWorkspacesCache();
     };
 
     /**
@@ -447,13 +476,16 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * Custom setSelected function that also adds to recent workspaces
      * @param workspaceName - The name of the workspace to select
      */
-    const handleSetSelected = async (workspaceName: string) => {
-        // First set the selected workspace
+    const handleSetSelected = (workspaceName: string) => {
+        // First set the selected workspace immediately (synchronous)
         setSelected(workspaceName);
         
-        // Then add to recent workspaces (but not if it's empty)
+        // Defer AsyncStorage write to avoid blocking the UI
         if (workspaceName && workspaceName.trim() !== '') {
-            await addToRecentWorkspaces(workspaceName);
+            // Use setTimeout to defer the async operation
+            setTimeout(() => {
+                addToRecentWorkspaces(workspaceName);
+            }, 0);
         }
     };
 
@@ -478,6 +510,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setSelected(newName);
             }
         }
+        
+        // Invalidate cache after local update
+        await invalidateWorkspacesCache();
         
         try {
             // Call the API to rename the workspace
@@ -537,6 +572,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let workspacesCopy = workspaces.slice();
         workspacesCopy[workspaceIndex].categories[categoryIndex].name = newName;
         setWorkSpaces(workspacesCopy);
+        
+        // Invalidate cache after local update
+        await invalidateWorkspacesCache();
         
         try {
             // Call the API to rename the category

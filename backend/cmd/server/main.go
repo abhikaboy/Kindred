@@ -20,6 +20,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/server"
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
 	"github.com/abhikaboy/Kindred/internal/twillio"
+	"github.com/abhikaboy/Kindred/internal/unsplash"
 	"github.com/abhikaboy/Kindred/internal/xslog"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/joho/godotenv"
@@ -77,8 +78,17 @@ func run(stderr io.Writer, args []string) {
 	// SendGrid Setup
 	twillio.InitSendGrid(config.Twillio.SG_Token)
 
+	// Unsplash Setup
+	var unsplashClient *unsplash.Client
+	if config.Unsplash.AccessKey != "" {
+		unsplashClient = unsplash.NewClient(config.Unsplash.AccessKey)
+		fmt.Printf("Unsplash client initialized\n")
+	} else {
+		fmt.Printf("⚠️  Unsplash API key not configured - banner generation will be disabled\n")
+	}
+
 	// Gemini Setup (before server setup so it can be passed to routes)
-	geminiService := gemini.InitGenkit(db.Collections)
+	geminiService := gemini.InitGenkit(db.Collections, unsplashClient)
 	fmt.Printf("Gemini service initialized\n")
 
 	// API Server Setup

@@ -13,11 +13,10 @@ import ThemedSlider from "@/components/inputs/ThemedSlider";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Feather from "@expo/vector-icons/Feather";
+import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { updateTaskAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
@@ -460,7 +459,11 @@ const StandardContent = ({
                         paddingTop: 16,
                     }}>
                     <ThemedText type="lightBody">Advanced Options</ThemedText>
-                    <Feather name={showAdvanced ? "chevron-up" : "chevron-down"} size={20} color={ThemedColor.text} />
+                    {showAdvanced ? (
+                        <CaretUp size={20} color={ThemedColor.text} weight="bold" />
+                    ) : (
+                        <CaretDown size={20} color={ThemedColor.text} weight="bold" />
+                    )}
                 </TouchableOpacity>
             </AttachStep>
             <ConditionalView condition={showAdvanced}>
@@ -510,7 +513,11 @@ const PrimaryOptionRow = ({ goTo }: { goTo: (screen: Screen) => void }) => {
                         alignItems: "center",
                         justifyContent: "center",
                     }}>
-                    <Feather name={isPublic ? "eye" : "eye-off"} size={20} color={ThemedColor.text} />
+                    {isPublic ? (
+                        <Eye size={20} color={ThemedColor.text} weight="regular" />
+                    ) : (
+                        <EyeSlash size={20} color={ThemedColor.text} weight="regular" />
+                    )}
                     <ThemedText type="lightBody">{isPublic ? "Public" : "Private"}</ThemedText>
                 </TouchableOpacity>
             </AttachStep>
@@ -571,7 +578,7 @@ const PriorityPicker = ({
                         gap: 4,
                         padding: 12,
                     }}>
-                    <Feather name="flag" size={ICON_SIZE} color={priorityMapping[priority]} />
+                    <Flag size={ICON_SIZE} color={priorityMapping[priority]} weight="fill" />
                     <ThemedText type="lightBody" style={{ fontSize: 16 }}>
                         Priority
                     </ThemedText>
@@ -631,7 +638,7 @@ const DifficultyPopover = ({ value, setValue }: { value: number; setValue: (valu
                         gap: 4,
                         padding: 12,
                     }}>
-                    <FontAwesome6 name="dumbbell" size={ICON_SIZE} color={ThemedColor.primary} />
+                    <Barbell size={ICON_SIZE} color={ThemedColor.primary} weight="fill" />
                     <ThemedText type="lightBody" style={{ fontSize: 16 }}>
                         Difficulty
                     </ThemedText>
@@ -676,7 +683,7 @@ const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
                 gap: 4,
                 padding: 12,
             }}>
-            <Feather name="alert-circle" size={ICON_SIZE} color={ThemedColor.text} />
+            <WarningCircle size={ICON_SIZE} color={ThemedColor.text} weight="regular" />
             <ThemedText type="lightBody">Deadline</ThemedText>
         </TouchableOpacity>
     );

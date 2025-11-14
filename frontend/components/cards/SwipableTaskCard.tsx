@@ -8,7 +8,6 @@ import { Task } from "@/api/types";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
-import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
 import { useTasks } from "@/contexts/tasksContext";
@@ -16,9 +15,7 @@ import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
-import Octicons from "@expo/vector-icons/Octicons";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
+import { Bell, Flag, Trash } from "phosphor-react-native";
 type Props = {
     redirect?: boolean;
     categoryId: string;
@@ -153,7 +150,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                             drag,
                             () => console.log("pressed"),
                             3,
-                            <Ionicons name="alarm-outline" size={32} color="white" style={styles.rightAction} />,
+                            <Bell size={24} color="white" weight="regular" />,
                             ThemedColor.primary
                         )}
                         {RightAction(
@@ -161,7 +158,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                             drag,
                             () => console.log("pressed"),
                             3,
-                            <Feather name="flag" size={24} color="white" style={styles.rightAction} />,
+                            <Flag size={24} color="white" weight="regular" />,
                             ThemedColor.primary
                         )}
                         {RightAction(
@@ -169,7 +166,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                             drag,
                             () => deleteTask(categoryId, task.id),
                             3,
-                            <Octicons name="trash" size={24} color="white" style={styles.rightAction} />,
+                            <Trash size={24} color="white" weight="regular" />,
                             ThemedColor.error
                         )}
                     </View>
@@ -261,8 +258,18 @@ function RightAction(
 
     return (
         <Reanimated.View
-            style={[styleAnimation, { backgroundColor: color, justifyContent: "center", alignItems: "center" }]}>
-            <TouchableOpacity onPress={() => callback()}>{icon}</TouchableOpacity>
+            style={[
+                styleAnimation, 
+                { 
+                    backgroundColor: color, 
+                    justifyContent: "center", 
+                    alignItems: "center",
+                    width: RIGHT_ACTION_WIDTH,
+                }
+            ]}>
+            <TouchableOpacity onPress={() => callback()} style={{ width: "100%", alignItems: "center" }}>
+                {icon}
+            </TouchableOpacity>
         </Reanimated.View>
     );
 }

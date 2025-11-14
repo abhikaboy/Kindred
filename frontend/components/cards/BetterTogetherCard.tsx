@@ -32,7 +32,6 @@ const BetterTogetherCard = ({ onDismiss, onSyncContacts, isLoadingContacts, isFi
                 styles.container,
                 {
                     backgroundColor: ThemedColor.lightenedCard,
-                    boxShadow: ThemedColor.shadowSmall,
                     borderWidth: 1,
                     borderColor: ThemedColor.tertiary,
                 },
@@ -100,10 +99,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 12,
         gap: 8,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-        elevation: 1,
     },
     content: {
         gap: 4,

@@ -20,6 +20,7 @@ import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
 import BlueprintSection from "@/components/profile/BlueprintSection";
+import ReferralCard from "@/components/profile/ReferralCard";
 import { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
 
@@ -90,6 +91,8 @@ export default function Profile() {
                 </View>
 
                 <TodayStats userId={user?._id} />
+
+                <ReferralCard />
 
                 <WeeklyActivity userid={user?._id} displayName={user?.display_name} />
 

@@ -3,13 +3,14 @@ package gemini
 import (
 	"context"
 
+	"github.com/abhikaboy/Kindred/internal/unsplash"
 	"github.com/firebase/genkit/go/genkit"
 	"github.com/firebase/genkit/go/plugins/googlegenai"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // InitGenkit initializes the Genkit service with all tools and flows
-func InitGenkit(collections map[string]*mongo.Collection) *GeminiService {
+func InitGenkit(collections map[string]*mongo.Collection, unsplashClient *unsplash.Client) *GeminiService {
 	// Initialize Genkit with the Google AI plugin
 	g := genkit.Init(context.Background(),
 		genkit.WithPlugins(&googlegenai.GoogleAI{}),
@@ -17,7 +18,7 @@ func InitGenkit(collections map[string]*mongo.Collection) *GeminiService {
 	)
 
 	// Initialize tools
-	tools := InitTools(g, collections)
+	tools := InitTools(g, collections, unsplashClient)
 
 	// Initialize flows with tools
 	flows := InitFlows(g, tools)

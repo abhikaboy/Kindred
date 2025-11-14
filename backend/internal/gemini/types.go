@@ -180,3 +180,21 @@ type BlueprintCategory struct {
 	WorkspaceName string                  `json:"workspaceName" jsonschema_description:"Workspace name (should match the blueprint name)"`
 	Tasks         []task.CreateTaskParams `json:"tasks" jsonschema_description:"Tasks belonging to this category"`
 }
+
+// Input for fetchUnsplashImage tool
+type FetchUnsplashImageInput struct {
+	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`
+}
+
+// Output from fetchUnsplashImage tool
+type FetchUnsplashImageOutput struct {
+	URL                  string `json:"url" jsonschema_description:"Regular sized image URL suitable for banners"`
+	ThumbnailURL         string `json:"thumbnailUrl" jsonschema_description:"Thumbnail sized image URL"`
+	Description          string `json:"description,omitempty" jsonschema_description:"Image description if available"`
+	AltDescription       string `json:"altDescription,omitempty" jsonschema_description:"Alternative description of the image"`
+	Color                string `json:"color" jsonschema_description:"Dominant color of the image as hex code"`
+	Photographer         string `json:"photographer" jsonschema_description:"Name of the photographer"`
+	PhotographerUsername string `json:"photographerUsername" jsonschema_description:"Unsplash username of the photographer"`
+	Width                int    `json:"width" jsonschema_description:"Image width in pixels"`
+	Height               int    `json:"height" jsonschema_description:"Image height in pixels"`
+}

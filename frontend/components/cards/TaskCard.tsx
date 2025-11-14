@@ -8,14 +8,12 @@ import { Task } from "@/api/types";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
 import { useTasks } from "@/contexts/tasksContext";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
 import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { AttachStep } from "react-native-spotlight-tour";
-import { Sparkle } from "phosphor-react-native";
+import { Sparkle, Timer, Repeat } from "phosphor-react-native";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -275,10 +273,10 @@ const TaskCard = ({
                     <View style={styles.iconRow}>
                         <ConditionalView condition={!encourage}>
                             <ConditionalView condition={isRunningState}>
-                                <MaterialIcons name="timer" size={20} color={ThemedColor.caption} />
+                                <Timer size={20} color={ThemedColor.caption} weight="regular" />
                             </ConditionalView>
                             <ConditionalView condition={task?.recurring}>
-                                <AntDesign name="retweet" size={20} color={ThemedColor.caption} />
+                                <Repeat size={20} color={ThemedColor.caption} weight="regular" />
                             </ConditionalView>
                             {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             {value}

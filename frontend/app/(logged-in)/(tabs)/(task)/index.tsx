@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, View, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,13 +6,12 @@ import { useTasks } from "@/contexts/tasksContext";
 import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
-import { useCreateModal } from "@/contexts/createModalContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ConditionalView from "@/components/ui/ConditionalView";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
-import Workspace from "./workspace";
-import Today from "./today";
+import { TodayContent } from "@/components/task/TodayContent";
+import { WorkspaceContent } from "@/components/task/WorkspaceContent";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { getEncouragementsAPI } from "@/api/encouragement";
@@ -27,7 +26,8 @@ import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
-import { SpinningDashedCircle } from "@/components/ui/SpinningDashedCircle";
+import { AnimatedView } from "@/components/ui/AnimatedView";
+import { List } from "phosphor-react-native";
 
 type Props = {};
 
@@ -45,7 +45,6 @@ const Home = (props: Props) => {
         getRecentWorkspaces,
     } = useTasks();
 
-    const { openModal } = useCreateModal();
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
     const [encouragementCount, setEncouragementCount] = useState(0);
     const [congratulationCount, setCongratulationCount] = useState(0);
@@ -61,7 +60,7 @@ const Home = (props: Props) => {
     
     // Cache keys and duration
     const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    const CACHE_DURATION = 1 * 60 * 1000; // 1 minute
 
     // Get recent workspaces and create a display list
     const recentWorkspaceNames = getRecentWorkspaces();
@@ -174,6 +173,18 @@ const Home = (props: Props) => {
         }
     }, [user?._id, KUDOS_CACHE_KEY, CACHE_DURATION]);
 
+    // Invalidate kudos cache and trigger a fresh fetch
+    const invalidateKudosCache = React.useCallback(async () => {
+        try {
+            console.log("Invalidating kudos cache...");
+            await AsyncStorage.removeItem(KUDOS_CACHE_KEY);
+            // Immediately fetch fresh data after invalidation
+            await fetchKudosCounts(true);
+        } catch (error) {
+            console.error("Error invalidating kudos cache:", error);
+        }
+    }, [KUDOS_CACHE_KEY, fetchKudosCounts]);
+
     useEffect(() => {
         fetchKudosCounts();
     }, [fetchKudosCounts]);
@@ -197,15 +208,7 @@ const Home = (props: Props) => {
 
     const drawerRef = useRef<DrawerLayout>(null);
 
-    if (selected == "Today") {
-        return <Today />;
-    }
-
-    if (selected !== "") {
-        return <Workspace />;
-    }
-
-    // Tour steps
+    // Tour steps for home screen
     const tourSteps: TourStep[] = [
         {
             render: ({ next, stop }) => (
@@ -303,15 +306,34 @@ const HomeContent = ({
 }: any) => {
     const { start } = useSpotlightTour();
     const { selected } = useTasks();
+    
+    // Track which workspaces have been visited for lazy mounting
+    const [visitedWorkspaces, setVisitedWorkspaces] = React.useState<Set<string>>(new Set());
 
     useEffect(() => {
-        if (!spotlightState.homeSpotlight) {
+        if (!spotlightState.homeSpotlight && selected === "") {
             const timer = setTimeout(() => {
                 start();
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [start, spotlightState.homeSpotlight]);
+    }, [start, spotlightState.homeSpotlight, selected]);
+
+    // Add workspace to visited set when selected
+    useEffect(() => {
+        if (selected && selected !== "" && selected !== "Today") {
+            setVisitedWorkspaces(prev => {
+                const newSet = new Set(prev);
+                newSet.add(selected);
+                return newSet;
+            });
+        }
+    }, [selected]);
+
+    // Determine which view to show
+    const isHome = selected === "";
+    const isToday = selected === "Today";
+    const isWorkspace = selected !== "" && selected !== "Today";
 
     return (
         <DrawerLayout
@@ -324,50 +346,80 @@ const HomeContent = ({
             drawerType="front"
             onDrawerOpen={() => setIsDrawerOpen(true)}
             onDrawerClose={() => setIsDrawerOpen(false)}>
+            {/* Shared modals */}
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
-
             <WorkspaceSelectionBottomSheet
                 isVisible={showWorkspaceSelection}
                 onClose={() => setShowWorkspaceSelection(false)}
-                onComplete={() => {
-                    setShowWorkspaceSelection(false);
-                }}
+                onComplete={() => setShowWorkspaceSelection(false)}
             />
 
-            <ThemedView
-                style={[
-                    styles.container,
-                    {
-                        paddingTop: insets.top,
-                    },
-                ]}>
-                {/* <SpinningDashedCircle /> */}
-                <ConditionalView condition={selected === ""}>
-                    <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
-                        <WelcomeHeader
-                            userName={user?.display_name}
-                            onMenuPress={() => drawerRef.current?.openDrawer()}
-                            ThemedColor={ThemedColor}
-                        />
+            <ThemedView style={styles.container}>
+                {/* Menu button overlay - shown for Today and Workspace views */}
+                <ConditionalView condition={!isHome}>
+                    <View
+                        style={[
+                            styles.menuButtonContainer,
+                            { paddingTop: insets.top + 10, paddingLeft: HORIZONTAL_PADDING },
+                        ]}>
+                        <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
+                            <List size={24} color={ThemedColor.caption} weight="regular" />
+                        </TouchableOpacity>
                     </View>
-
-                    <HomeScrollContent
-                        encouragementCount={encouragementCount}
-                        congratulationCount={congratulationCount}
-                        workspaces={workspaces}
-                        displayWorkspaces={displayWorkspaces}
-                        fetchingWorkspaces={fetchingWorkspaces}
-                        onWorkspaceSelect={setSelected}
-                        onCreateWorkspace={() => setCreatingWorkspace(true)}
-                        shouldShowTutorial={shouldShowTutorial}
-                        drawerRef={drawerRef}
-                        ThemedColor={ThemedColor}
-                        focusMode={focusMode}
-                        toggleFocusMode={toggleFocusMode}
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                    />
                 </ConditionalView>
+
+                {/* Container for cross-fading views */}
+                <View style={styles.viewsContainer}>
+                    {/* Home View - Dashboard with workspaces */}
+                    <AnimatedView visible={isHome}>
+                        <ThemedView style={[styles.viewContainer, { paddingTop: insets.top }]}>
+                            <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
+                                <WelcomeHeader
+                                    userName={user?.display_name}
+                                    onMenuPress={() => drawerRef.current?.openDrawer()}
+                                    ThemedColor={ThemedColor}
+                                />
+                            </View>
+
+                            <HomeScrollContent
+                                encouragementCount={encouragementCount}
+                                congratulationCount={congratulationCount}
+                                workspaces={workspaces}
+                                displayWorkspaces={displayWorkspaces}
+                                fetchingWorkspaces={fetchingWorkspaces}
+                                onWorkspaceSelect={setSelected}
+                                onCreateWorkspace={() => setCreatingWorkspace(true)}
+                                shouldShowTutorial={shouldShowTutorial}
+                                drawerRef={drawerRef}
+                                ThemedColor={ThemedColor}
+                                focusMode={focusMode}
+                                toggleFocusMode={toggleFocusMode}
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                            />
+                        </ThemedView>
+                    </AnimatedView>
+
+                    {/* Today View - Tasks due/scheduled for today */}
+                    <AnimatedView visible={isToday}>
+                        <TodayContent />
+                    </AnimatedView>
+
+                    {/* Workspace Views - Lazy mount on first visit, then keep mounted for smooth transitions */}
+                    {workspaces.map((workspace) => {
+                        // Only render if this workspace has been visited
+                        if (!visitedWorkspaces.has(workspace.name)) {
+                            return null;
+                        }
+                        
+                        const isThisWorkspace = selected === workspace.name && isWorkspace;
+                        return (
+                            <AnimatedView key={workspace.name} visible={isThisWorkspace}>
+                                <WorkspaceContent workspaceName={workspace.name} />
+                            </AnimatedView>
+                        );
+                    })}
+                </View>
             </ThemedView>
         </DrawerLayout>
     );
@@ -379,5 +431,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         overflow: "visible",
+    },
+    viewsContainer: {
+        flex: 1,
+        position: "relative",
+    },
+    viewContainer: {
+        flex: 1,
+    },
+    menuButtonContainer: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        zIndex: 100,
     },
 });

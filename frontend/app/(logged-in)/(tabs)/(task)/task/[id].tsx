@@ -30,7 +30,7 @@ import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI } from "@/api/ta
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import Feather from "@expo/vector-icons/Feather";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple } from "phosphor-react-native";
 import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
 import { Screen } from "@/components/modals/CreateModal";
@@ -89,8 +89,13 @@ export default function Task() {
     // Handle deadline update
     const handleDeadlineUpdate = (deadline: Date | null) => {
         console.log("Deadline updated:", deadline);
-        // The task context should automatically update when the task is modified
-        // You can add additional logic here if needed
+        
+        // Update the local task state immediately for UI responsiveness
+        if (task && categoryId && id) {
+            updateTask(categoryId as string, id as string, {
+                deadline: deadline?.toISOString() || "",
+            });
+        }
     };
 
     useEffect(() => {
@@ -329,7 +334,7 @@ export default function Task() {
                                 });
                             }
                         }}>
-                        <Feather name="edit" size={24} color={ThemedColor.text} />
+                        <PencilSimple size={24} color={ThemedColor.text} weight="regular" />
                     </TouchableOpacity>
                 </View>
                 <View style={{ paddingBottom: 16 }} />
@@ -356,7 +361,11 @@ export default function Task() {
                             style={{ flex: 1 }}
                             keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
                             <View style={{ gap: 20 }}>
-                                <DataCard title="Notes" key="notes">
+                                <DataCard 
+                                    title="Notes" 
+                                    key="notes"
+                                    icon={<Note size={20} color={ThemedColor.text} weight="regular" />}
+                                >
                                     <TextInput
                                         value={localNotes}
                                         onChangeText={(text) => {
@@ -375,7 +384,11 @@ export default function Task() {
                                         }}
                                     />
                                 </DataCard>
-                                <DataCard title="Checklist" key="checklist">
+                                <DataCard 
+                                    title="Checklist" 
+                                    key="checklist"
+                                    icon={<ListChecks size={20} color={ThemedColor.text} weight="regular" />}
+                                >
                                     <Checklist
                                         initialChecklist={
                                             task?.checklist?.map((item, index) => ({
@@ -402,7 +415,10 @@ export default function Task() {
                                     />
                                 </DataCard>
                                 <ConditionalView condition={task?.startDate != null} key="startDate">
-                                    <DataCard title="Start Date">
+                                    <DataCard 
+                                        title="Start Date"
+                                        icon={<Calendar size={20} color={ThemedColor.text} weight="regular" />}
+                                    >
                                         <View
                                             style={{
                                                 flexDirection: "row",
@@ -420,7 +436,10 @@ export default function Task() {
                                     </DataCard>
                                 </ConditionalView>
                                 <ConditionalView condition={task?.deadline != null} key="deadline">
-                                    <DataCard title="Deadline">
+                                    <DataCard 
+                                        title="Deadline"
+                                        icon={<Flag size={20} color={ThemedColor.text} weight="regular" />}
+                                    >
                                         <View
                                             style={{
                                                 flexDirection: "row",
@@ -438,13 +457,19 @@ export default function Task() {
                                                 </ThemedText>
                                             </View>
                                             <TouchableOpacity
-                                                onPress={() => setShowDeadlineModal(true)}
+                                                onPress={() => {
+                                                    // Load task data before opening modal
+                                                    if (task) {
+                                                        loadTaskData(task);
+                                                    }
+                                                    setShowDeadlineModal(true);
+                                                }}
                                                 style={{
                                                     padding: 8,
                                                     borderRadius: 4,
                                                     backgroundColor: ThemedColor.lightened,
                                                 }}>
-                                                <Feather name="edit-2" size={16} color={ThemedColor.text} />
+                                                <PencilSimple size={16} color={ThemedColor.text} weight="regular" />
                                             </TouchableOpacity>
                                         </View>
                                     </DataCard>
@@ -457,12 +482,19 @@ export default function Task() {
                                             boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
                                         }}
                                         onPress={() => {
+                                            // Load task data before opening modal
+                                            if (task) {
+                                                loadTaskData(task);
+                                            }
                                             setShowDeadlineModal(true);
                                         }}
                                     />
                                 </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
-                                    <DataCard title="Recurring">
+                                    <DataCard 
+                                        title="Recurring"
+                                        icon={<Repeat size={20} color={ThemedColor.text} weight="regular" />}
+                                    >
                                         <View style={{ flexDirection: "column", gap: 8 }}>
                                             <ThemedText type="lightBody">
                                                 {DetailsToString(
@@ -480,7 +512,10 @@ export default function Task() {
                                     </DataCard>
                                 </ConditionalView>
                                 <ConditionalView condition={task?.reminders != null} key="reminders">
-                                    <DataCard title="Reminders">
+                                    <DataCard 
+                                        title="Reminders"
+                                        icon={<Bell size={20} color={ThemedColor.text} weight="regular" />}
+                                    >
                                         {task?.reminders?.map((reminder) => (
                                             <View key={reminder.triggerTime.toString()}>
                                                 <ThemedText type="lightBody">

@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchBox } from "@/components/SearchBox";
 import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
+import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { getFriendsAPI } from "@/api/connection";
 import type { components } from "@/api/generated/types";
 import { SkeletonLoader, UserRowSkeleton } from "@/components/ui/SkeletonLoader";
@@ -199,30 +200,36 @@ export default function Friends() {
             </View>
 
             {/* Content */}
-            <View style={styles.contentContainer}>
-                {/* Friends Section */}
-                <View style={styles.section}>
-                    <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
-                        FRIENDS
-                    </ThemedText>
+            <FlatList
+                ListHeaderComponent={
+                    <>
+                        {/* Follow Requests Section */}
+                        <FollowRequestsSection 
+                            styles={styles} 
+                            maxVisible={100} 
+                        />
 
-                    {filteredFriends.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.text }]}>
-                                {searchQuery ? "No friends found matching your search" : "No friends yet"}
+                        {/* Friends Section Header */}
+                        <View style={styles.section}>
+                            <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
+                                FRIENDS
                             </ThemedText>
                         </View>
-                    ) : (
-                        <FlatList
-                            data={filteredFriends}
-                            renderItem={renderFriendItem}
-                            keyExtractor={(item) => item._id}
-                            showsVerticalScrollIndicator={false}
-                            style={styles.friendsList}
-                        />
-                    )}
-                </View>
-            </View>
+                    </>
+                }
+                data={filteredFriends}
+                renderItem={renderFriendItem}
+                keyExtractor={(item) => item._id}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.contentContainer}
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.text }]}>
+                            {searchQuery ? "No friends found matching your search" : "No friends yet"}
+                        </ThemedText>
+                    </View>
+                }
+            />
         </ThemedView>
     );
 }
@@ -300,5 +307,8 @@ const styles = StyleSheet.create({
     retryButton: {
         paddingVertical: 8,
         paddingHorizontal: 16,
+    },
+    requestItem: {
+        marginBottom: 16,
     },
 });

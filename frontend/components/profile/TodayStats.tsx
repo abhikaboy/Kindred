@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Octicons from "@expo/vector-icons/Octicons";
+import { Fire, CheckCircle, Camera, CreditCard } from "phosphor-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
@@ -45,7 +45,7 @@ interface TodayStatsProps {
     userId?: string;
 }
 
-const iconSize = 24;
+const iconSize = 28;
 
 export default function TodayStats({ userId }: TodayStatsProps) {
     const ThemedColor = useThemeColor();
@@ -76,25 +76,25 @@ export default function TodayStats({ userId }: TodayStatsProps) {
         <View style={styles.container}>
             <View style={styles.gridContainer}>
                 <StatItem
-                    icon={<Octicons name="flame" size={iconSize} color={ThemedColor.primary} />}
+                    icon={<Fire size={iconSize} color={ThemedColor.primary} />}
                     label="Streak"
                     value={stats.streak}
                     loading={loading}
                 />
                 <StatItem
-                    icon={<Octicons name="check-circle" size={iconSize} color={ThemedColor.primary} />}
+                    icon={<CheckCircle size={iconSize} color={ThemedColor.primary} />}
                     label="Tasks Complete"
                     value={stats.tasks}
                     loading={loading}
                 />
                 <StatItem
-                    icon={<Octicons name="device-camera" size={iconSize} color={ThemedColor.primary} />}
+                    icon={<Camera size={iconSize} color={ThemedColor.primary} />}
                     label="Posts Made"
                     value={stats.posts}
                     loading={loading}
                 />
                 <StatItem
-                    icon={<Octicons name="credit-card" size={iconSize} color={ThemedColor.primary} />}
+                    icon={<CreditCard size={iconSize} color={ThemedColor.primary} />}
                     label="Points"
                     value={stats.points}
                     loading={loading}

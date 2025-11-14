@@ -387,6 +387,8 @@ const stylesheet = (ThemedColor: any) =>
             flex: 1,
             backgroundColor: ThemedColor.background,
             paddingHorizontal: 16,
+            justifyContent: "space-between",
+            height: "100%",
         },
         header: {
             alignItems: "center",
@@ -402,6 +404,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         flatList: {
             flex: 1,
+            height: "100%",
         },
         contentContainer: {
             flexGrow: 1,
@@ -437,6 +440,7 @@ const stylesheet = (ThemedColor: any) =>
             flexDirection: "row",
             alignItems: "flex-end",
             gap: 8,
+            paddingBottom: 12,
         },
         emptyContainer: {
             flex: 1,

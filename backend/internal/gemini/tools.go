@@ -1,10 +1,12 @@
 package gemini
 
 import (
+	"context"
 	"fmt"
 
 	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	Task "github.com/abhikaboy/Kindred/internal/handlers/task"
+	"github.com/abhikaboy/Kindred/internal/unsplash"
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/genkit"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,12 +15,13 @@ import (
 
 // ToolSet contains all Genkit tools
 type ToolSet struct {
-	GetUserCategories ai.Tool
-	GetCompletedTasks ai.Tool
+	GetUserCategories  ai.Tool
+	GetCompletedTasks  ai.Tool
+	FetchUnsplashImage ai.Tool
 }
 
 // InitTools initializes and registers all Genkit tools
-func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection) *ToolSet {
+func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection, unsplashClient *unsplash.Client) *ToolSet {
 	// Create services for database access
 	categoryService := Category.NewService(collections)
 	taskService := Task.NewService(collections)
@@ -141,8 +144,54 @@ func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection) *Tool
 		},
 	)
 
+	// Define tool to fetch Unsplash banner images
+	fetchUnsplashImageTool := genkit.DefineTool(
+		g,
+		"fetchUnsplashImage",
+		"Fetches a random high-quality banner image from Unsplash based on a search query. Use this to get beautiful, professional banner images for blueprints. Returns the image URL and metadata.",
+		func(ctx *ai.ToolContext, input FetchUnsplashImageInput) (FetchUnsplashImageOutput, error) {
+			if unsplashClient == nil {
+				return FetchUnsplashImageOutput{}, fmt.Errorf("unsplash client not initialized")
+			}
+
+			// Use a context with timeout
+			searchCtx, cancel := context.WithTimeout(context.Background(), 10)
+			defer cancel()
+
+			// Fetch a random photo matching the query
+			photo, err := unsplashClient.GetRandomPhoto(searchCtx, input.Query)
+			if err != nil {
+				return FetchUnsplashImageOutput{}, fmt.Errorf("failed to fetch unsplash image: %w", err)
+			}
+
+			// Log for debugging
+			fmt.Printf("🖼️  fetchUnsplashImage called with query: %s\n", input.Query)
+			fmt.Printf("📸 Found image: %s by %s\n", photo.ID, photo.User.Name)
+
+			// Trigger download tracking (Unsplash API requirement)
+			if photo.Links.DownloadLocation != "" {
+				go func() {
+					_ = unsplashClient.TriggerDownload(context.Background(), photo.Links.DownloadLocation)
+				}()
+			}
+
+			return FetchUnsplashImageOutput{
+				URL:            photo.URLs.Regular,
+				ThumbnailURL:   photo.URLs.Small,
+				Description:    photo.Description,
+				AltDescription: photo.AltDescription,
+				Color:          photo.Color,
+				Photographer:   photo.User.Name,
+				PhotographerUsername: photo.User.Username,
+				Width:          photo.Width,
+				Height:         photo.Height,
+			}, nil
+		},
+	)
+
 	return &ToolSet{
-		GetUserCategories: getUserCategoriesTool,
-		GetCompletedTasks: getCompletedTasksTool,
+		GetUserCategories:  getUserCategoriesTool,
+		GetCompletedTasks:  getCompletedTasksTool,
+		FetchUnsplashImage: fetchUnsplashImageTool,
 	}
 }

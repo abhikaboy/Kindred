@@ -1,7 +1,7 @@
 import { ScrollView, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
-import Feather from "@expo/vector-icons/Feather";
+import { ArrowLeft } from "phosphor-react-native";
 import { TouchableOpacity } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
@@ -47,11 +47,21 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
         combineDateAndTime();
     }, [date, time]);
 
+    // Reusable function to handle suggested tag selection
+    const handleSuggestedDeadline = (calculatedDeadline: Date) => {
+        setDeadline(calculatedDeadline);
+        if (onSubmit) {
+            onSubmit(calculatedDeadline);
+        } else {
+            goToStandard();
+        }
+    };
+
     return (
         <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
                 <TouchableOpacity onPress={goToStandard}>
-                    <Feather name="arrow-left" size={24} color={ThemedColor.text} />
+                    <ArrowLeft size={24} color={ThemedColor.text} weight="regular" />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={{ textAlign: "center" }}>
                     Set Deadline
@@ -69,33 +79,35 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
                     caption={new Date().toLocaleDateString()}
                     tag="Today"
                     onPress={() => {
-                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
-                        goToStandard();
+                        const todayDeadline = new Date(new Date().setHours(23, 59, 59, 999));
+                        handleSuggestedDeadline(todayDeadline);
                     }}
                 />
                 <SuggestedTag
                     caption={new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()}
                     tag="Tomorrow"
                     onPress={() => {
-                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
-                        goToStandard();
+                        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                        const tomorrowDeadline = new Date(tomorrow.setHours(23, 59, 59, 999));
+                        handleSuggestedDeadline(tomorrowDeadline);
                     }}
                 />
                 <SuggestedTag
                     caption={new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString()}
                     tag="1 Hour"
                     onPress={() => {
-                        setTime(new Date(Date.now() + 60 * 60 * 1000));
-                        goToStandard();
+                        const oneHourDeadline = new Date(Date.now() + 60 * 60 * 1000);
+                        handleSuggestedDeadline(oneHourDeadline);
                     }}
                 />
                 <SuggestedTag
                     caption={new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString()}
                     tag="In a Week"
                     onPress={() => {
-                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
-                        setDate(new Date(new Date().setDate(new Date().getDate() + 7)));
-                        goToStandard();
+                        const nextWeek = new Date();
+                        nextWeek.setDate(nextWeek.getDate() + 7);
+                        const weekDeadline = new Date(nextWeek.setHours(23, 59, 59, 999));
+                        handleSuggestedDeadline(weekDeadline);
                     }}
                 />
                 <SuggestedTag
@@ -104,9 +116,10 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
                     ).toLocaleDateString()}
                     tag="End of This Week"
                     onPress={() => {
-                        setTime(new Date(new Date().setHours(23, 59, 59, 999)));
-                        setDate(new Date(new Date().setDate(new Date().getDate() + (7 - new Date().getDay())))); // the closest Sunday
-                        goToStandard();
+                        const endOfWeek = new Date();
+                        endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
+                        const endOfWeekDeadline = new Date(endOfWeek.setHours(23, 59, 59, 999));
+                        handleSuggestedDeadline(endOfWeekDeadline);
                     }}
                 />
             </ScrollView>

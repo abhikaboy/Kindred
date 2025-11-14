@@ -9,14 +9,28 @@ import EditWorkspace from "../modals/edit/EditWorkspace";
 import CreateWorkspaceBottomSheetModal from "../modals/CreateWorkspaceBottomSheetModal";
 import QuickImportBottomSheet from "../modals/QuickImportBottomSheet";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { 
+    Gear, 
+    User, 
+    FileText, 
+    Archive 
+} from "phosphor-react-native";
 import { router, usePathname } from "expo-router";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
-import { BookIcon } from "phosphor-react-native";
+import { 
+    House, 
+    Calendar, 
+    ChartLine, 
+    Microphone, 
+    ChatTeardropText,
+    BookOpen,
+    CalendarBlank,
+    DownloadSimple,
+    CheckCircle
+} from "phosphor-react-native";
 
 export const Drawer = ({ close }) => {
     const ThemedColor = useThemeColor();
@@ -144,6 +158,25 @@ const DrawerContent = ({
         return selected;
     };
 
+    // Helper function to handle smooth navigation
+    const handleNavigate = useCallback((route: any, workspaceName?: string) => {
+        close();
+        requestAnimationFrame(() => {
+            if (workspaceName !== undefined) {
+                setSelected(workspaceName);
+            }
+            router.navigate(route as any);
+        });
+    }, [close, setSelected]);
+
+    // Helper for router.push instead of navigate
+    const handlePush = useCallback((route: any) => {
+        close();
+        requestAnimationFrame(() => {
+            router.push(route as any);
+        });
+    }, [close]);
+
     const currentSelected = getSelectedItem();
 
     useEffect(() => {
@@ -207,7 +240,7 @@ const DrawerContent = ({
                     router.push("/(logged-in)/(tabs)/(task)/settings");
                 }}>
                 <ThemedText type="default">Settings</ThemedText>
-                <Ionicons name="settings-outline" size={20} color={ThemedColor.text} />
+                <Gear size={20} color={ThemedColor.text} weight="regular" />
             </TouchableOpacity>
             <AttachStep index={1} style={{ width: "100%" }}>
                 <TouchableOpacity
@@ -237,74 +270,62 @@ const DrawerContent = ({
                         alignItems: "center",
                         gap: 8,
                     }}>
-                    <Ionicons name="home" size={16} color={ThemedColor.caption} />
+                    <House size={16} color={ThemedColor.caption} weight="regular" />
                     <ThemedText type="subtitle_subtle">HOME</ThemedText>
                 </View>
                 <DrawerItem
                     title="Home"
                     selected={currentSelected}
-                    onPress={() => {
-                        setSelected("");
-                        router.navigate("/(logged-in)/(tabs)/(task)");
-                        close();
-                    }}
+                    icon={<House size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", "")}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
                     title="Daily"
                     selected={currentSelected}
-                    onPress={() => {
-                        router.navigate("/(logged-in)/(tabs)/(task)/daily");
-                        close();
-                    }}
+                    icon={<CalendarBlank size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/daily")}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
                     title="Calendar"
                     selected={currentSelected}
-                    onPress={() => {
-                        router.navigate("/(logged-in)/(tabs)/(task)/calendar");
-                        close();
-                    }}
+                    icon={<Calendar size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/calendar")}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
                     title="Analytics"
                     selected={currentSelected}
-                    onPress={() => {
-                        router.navigate("/(logged-in)/(tabs)/(task)/analytics");
-                        close();
-                    }}
+                    icon={<ChartLine size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/analytics")}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
                     title="Voice Dump"
                     badge="AI"
                     selected={currentSelected}
-                    onPress={() => {
-                        router.push("/voice");
-                        close();
-                    }}
+                    icon={<Microphone size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handlePush("/voice")}
                     onLongPress={() => {}}
                 />
                 <DrawerItem
                     title="Text Dump"
                     badge="AI"
                     selected={currentSelected}
-                    onPress={() => {
-                        router.push("/text-dump");
-                        close();
-                    }}
+                    icon={<ChatTeardropText size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handlePush("/text-dump")}
                     onLongPress={() => {}}
                 />
-                <DrawerItem
+                {/* <DrawerItem
                     title="Import"
                     selected={currentSelected}
+                    icon={<DownloadSimple size={20} color={ThemedColor.primary} weight="regular" />}
                     onPress={() => {
                         setShowQuickImport(true);
                     }}
                     onLongPress={() => {}}
-                />
+                /> */}
                 <AttachStep index={2} style={{ width: "100%" }}>
                     <View style={{ width: "100%" }}>
                         <View
@@ -314,18 +335,14 @@ const DrawerContent = ({
                                 alignItems: "center",
                                 gap: 8,
                             }}>
-                            <Ionicons name="person" size={16} color={ThemedColor.caption} />
+                            <User size={16} color={ThemedColor.caption} weight="regular" />
                             <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
                         </View>
                         {workspaces
                             .filter((workspace) => !workspace.isBlueprint)
                             .map((workspace) => (
                                 <DrawerItem
-                                    onPress={() => {
-                                        setSelected(workspace.name);
-                                        router.navigate("/(logged-in)/(tabs)/(task)");
-                                        close();
-                                    }}
+                                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
                                     onLongPress={() => {
                                         setFocusedWorkspace(workspace.name);
                                         setEditing(true);
@@ -346,7 +363,7 @@ const DrawerContent = ({
                             justifyContent: "space-between",
                         }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            <Ionicons name="document-text" size={16} color={ThemedColor.caption} />
+                            <FileText size={16} color={ThemedColor.caption} weight="regular" />
                             <ThemedText type="subtitle_subtle">BLUEPRINTS</ThemedText>
                         </View>
                     </View>
@@ -357,11 +374,7 @@ const DrawerContent = ({
                         <DrawerItem
                             title={workspace.name}
                             selected={currentSelected}
-                            onPress={() => {
-                                setSelected(workspace.name);
-                                router.navigate("/(logged-in)/(tabs)/(task)");
-                                close();
-                            }}
+                            onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
                             onLongPress={() => {
                                 setFocusedWorkspace(workspace.name);
                                 setEditing(true);
@@ -384,7 +397,7 @@ const DrawerContent = ({
                 </TouchableOpacity>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Ionicons name="archive" size={16} color={ThemedColor.caption} />
+                        <Archive size={16} color={ThemedColor.caption} weight="regular" />
                         <ThemedText type="subtitle_subtle">ARCHIVE</ThemedText>
                     </View>
                 </View>
@@ -392,10 +405,8 @@ const DrawerContent = ({
                     <DrawerItem
                         title="Completed Tasks"
                         selected={currentSelected}
-                        onPress={() => {
-                            router.navigate("/(logged-in)/(tabs)/(task)/completed");
-                            close();
-                        }}
+                        icon={<CheckCircle size={20} color={ThemedColor.primary} weight="regular" />}
+                        onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/completed")}
                         onLongPress={() => {}}
                     />
                 </View>
@@ -410,10 +421,13 @@ type DrawerItemProps = {
     onPress: () => void;
     onLongPress?: () => void;
     badge?: string;
+    icon?: React.ReactNode;
 };
 
-const DrawerItem = ({ title, selected, onPress, onLongPress, badge }: DrawerItemProps) => {
+const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, icon }: DrawerItemProps) => {
     const ThemedColor = useThemeColor();
+    const isSelected = selected === title;
+    
     return (
         <TouchableOpacity
             style={[
@@ -426,12 +440,17 @@ const DrawerItem = ({ title, selected, onPress, onLongPress, badge }: DrawerItem
                     paddingHorizontal: HORIZONTAL_PADDING,
                     gap: 8,
                 },
-                selected == title ? { backgroundColor: ThemedColor.tertiary } : undefined,
+                isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
             ]}
             onPress={onPress}
             onLongPress={onLongPress}
             key={title}>
-            <SelectedIndicator selected={selected === title} />
+            <SelectedIndicator selected={isSelected} />
+            {icon && (
+                <View style={{ width: 20, alignItems: "center" }}>
+                    {icon}
+                </View>
+            )}
             <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }} key={title}>
                 {title}
             </ThemedText>
@@ -439,24 +458,24 @@ const DrawerItem = ({ title, selected, onPress, onLongPress, badge }: DrawerItem
                 <View
                     style={{
                         backgroundColor: ThemedColor.primary + "20",
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 4,
-                        marginLeft: 4,
-                    }}>
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                    marginLeft: 4,
+                }}>
                     <ThemedText
                         style={{
-                            fontSize: 10,
+                        fontSize: 10, 
                             fontWeight: "600",
-                            color: ThemedColor.primary,
-                        }}>
+                        color: ThemedColor.primary,
+                    }}>
                         {badge}
                     </ThemedText>
                 </View>
             )}
         </TouchableOpacity>
     );
-};
+});
 
 // Convert styles to a function to properly access ThemedColor
 const styles = (ThemedColor) =>

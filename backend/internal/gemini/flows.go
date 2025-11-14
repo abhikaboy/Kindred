@@ -164,10 +164,16 @@ IMPORTANT INSTRUCTIONS:
 
 1. CALL getUserCategories tool with userId "%s" to understand the user's existing categories and workspaces. This will help you create relevant and contextually appropriate blueprints.
 
-2. Create a complete blueprint with the following structure:
+2. CALL fetchUnsplashImage tool with a relevant search query based on the blueprint theme to get a beautiful banner image. For example:
+   - For a "Morning Routine" blueprint, use query "morning sunrise coffee"
+   - For a "Workout Plan" blueprint, use query "fitness gym workout"
+   - For a "Meal Prep" blueprint, use query "healthy food meal prep"
+   Choose a descriptive query that matches the blueprint's theme. Use the returned URL for the banner field.
+
+3. Create a complete blueprint with the following structure:
    - name: A clear, concise name for the blueprint (e.g., "Morning Productivity Routine", "Weekly Meal Prep Plan")
    - description: A detailed description explaining the purpose and benefits of this blueprint
-   - banner: Suggest a color scheme or placeholder image URL (e.g., "#4A90E2" or "https://placeholder.com/600x200")
+   - banner: Use the image URL returned from fetchUnsplashImage tool
    - tags: An array of 3-5 relevant tags for categorization (e.g., ["productivity", "morning", "health"])
    - duration: Estimated total time to complete all tasks (e.g., "45m", "1h 30m", "2h")
    - category: Primary category type (e.g., "productivity", "health", "learning", "lifestyle")
@@ -188,7 +194,7 @@ IMPORTANT INSTRUCTIONS:
        - checklist: Array of checklist items (optional)
        - reminders: Array of reminder objects (optional)
 
-3. BLUEPRINT DESIGN GUIDELINES:
+4. BLUEPRINT DESIGN GUIDELINES:
    - Create 2-5 categories that logically organize the tasks
    - Each category should have 3-8 tasks
    - Tasks should be specific, actionable, and ordered logically
@@ -197,19 +203,20 @@ IMPORTANT INSTRUCTIONS:
    - For recurring tasks, consider daily/weekly patterns
    - Add helpful notes for tasks that need clarification
 
-4. QUALITY STANDARDS:
+5. QUALITY STANDARDS:
    - Ensure tasks are complete and actionable
    - Order tasks in a logical sequence
    - Balance task priorities across the blueprint
    - Make the blueprint immediately useful and practical
    - Consider the user's existing workspace patterns from getUserCategories
+   - Use high-quality, relevant banner images from Unsplash
 
 Generate a high-quality, comprehensive blueprint that the user can immediately subscribe to and start using.`, input.UserID, input.Description, currentTime, input.UserID)
 
-			// Generate structured blueprint data with user context
+			// Generate structured blueprint data with user context and Unsplash tool
 			resp, _, err := genkit.GenerateData[GenerateBlueprintOutput](ctx, g,
 				ai.WithPrompt(prompt),
-				ai.WithTools(tools.GetUserCategories),
+				ai.WithTools(tools.GetUserCategories, tools.FetchUnsplashImage),
 			)
 			if err != nil {
 				return GenerateBlueprintOutput{}, err
