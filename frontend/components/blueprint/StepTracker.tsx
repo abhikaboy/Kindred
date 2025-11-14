@@ -1,8 +1,7 @@
 import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Ionicons } from "@expo/vector-icons";
 
 type Step = {
     number: number;
@@ -16,146 +15,73 @@ type Props = {
     onStepPress?: (stepNumber: number) => void;
 };
 
-const StepProgress = ({ steps, currentStep, onStepPress }: Props) => {
+const StepProgress = ({ steps, currentStep }: Props) => {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
 
-    const getStepState = (stepNumber: number) => {
-        if (stepNumber < currentStep) return "completed";
-        if (stepNumber === currentStep) return "active";
-        return "inactive";
-    };
-
-    const renderStep = (step: Step, index: number) => {
-        const state = getStepState(step.number);
-        const isLast = index === steps.length - 1;
-        const nextStepState = !isLast ? getStepState(step.number + 1) : null;
-        
-        const lineActive = state === "completed" || nextStepState === "active" || nextStepState === "completed";
-
-        return (
-            <View key={step.number} style={styles.stepContainer}>
-                <View style={styles.stepWrapper}>
-                    <View style={[
-                        styles.stepCircle,
-                        state === "completed" && styles.stepCircleCompleted,
-                        state === "active" && styles.stepCircleActive,
-                        state === "inactive" && styles.stepCircleInactive,
-                    ]}>
-                        {state === "completed" ? (
-                            <Ionicons 
-                                name="checkmark" 
-                                size={16} 
-                                color={ThemedColor.buttonText} 
-                            />
-                        ) : (
-                            <ThemedText 
-                                type="defaultSemiBold" 
-                                style={[
-                                    styles.stepNumber,
-                                    state === "active" && styles.stepNumberActive,
-                                    state === "inactive" && styles.stepNumberInactive,
-                                ]}
-                            >
-                                {/* {step.number} */}
-                            </ThemedText>
-                        )}
-                    </View>
-                    {/* {!isLast && (
-                        <View style={[
-                            styles.connectingLine,
-                            lineActive && styles.connectingLineActive,
-                        ]} />
-                    )} */}
-                </View>
-                <ThemedText 
-                    type="subtitle" 
-                    style={[
-                        styles.stepTitle,
-                        state === "active" && styles.stepTitleActive,
-                        state === "inactive" && styles.stepTitleInactive,
-                    ]}
-                >
-                    {step.title}
+    return (
+        <View style={styles.container}>
+            <View style={styles.textContainer}>
+                <ThemedText style={styles.stepText}>
+                    Step {currentStep} of {steps.length}
+                </ThemedText>
+                <ThemedText style={styles.stepTitle}>
+                    {steps[currentStep - 1]?.title}
                 </ThemedText>
             </View>
-        );
-    };
-
-    return (
-        <View>
-            <View style={styles.stepsRow}>
-                {steps.map((step, index) => renderStep(step, index))}
+            
+            <View style={styles.progressBarContainer}>
+                <View style={styles.progressBarBackground}>
+                    <View 
+                        style={[
+                            styles.progressBarFill,
+                            { width: `${(currentStep / steps.length) * 100}%` }
+                        ]} 
+                    />
+                </View>
             </View>
         </View>
     );
 };
 
 const createStyles = (ThemedColor: any) => StyleSheet.create({
-    stepsRow: {
+    container: {
+        gap: 8,
+        paddingVertical: 8,
+        paddingRight: 20,
+    },
+    textContainer: {
         flexDirection: "row",
-    },
-    stepContainer: {
-        flex: 1,
-        alignItems: "flex-start",
-        position: "relative",
-        width: "100%"
-    },
-    stepWrapper: {
-        width: "100%",
-        alignItems: "flex-start",
-        marginBottom: 8,
-    },
-    stepCircle: {
-        width: 24,
-        height: 24,
-        borderRadius: 8,
-        justifyContent: "center",
+        justifyContent: "space-between",
         alignItems: "center",
-        zIndex: 2,
     },
-    stepCircleCompleted: {
-        backgroundColor: ThemedColor.primary,
-    },
-    stepCircleActive: {
-        backgroundColor: ThemedColor.primary,
-    },
-    stepCircleInactive: {
-        backgroundColor: ThemedColor.tertiary,
-    },
-    stepNumber: {
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    stepNumberActive: {
-        color: ThemedColor.buttonText,
-    },
-    stepNumberInactive: {
+    stepText: {
+        fontSize: 11,
+        fontFamily: "Outfit",
         color: ThemedColor.caption,
-    },
-    connectingLine: {
-        position: "absolute",
-        left: 25, 
-        right: -35,
-        height: 2,
-        backgroundColor: ThemedColor.tertiary,
-        top: 17, 
-        zIndex: 1,
-    },
-    connectingLineActive: {
-        backgroundColor: ThemedColor.primary,
+        fontWeight: "500",
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
     },
     stepTitle: {
-        textAlign: "center",
         fontSize: 14,
-        fontWeight: "400",
-        marginTop: 4,
-    },
-    stepTitleActive: {
+        fontFamily: "Outfit",
         color: ThemedColor.text,
+        fontWeight: "500",
     },
-    stepTitleInactive: {
-        color: ThemedColor.caption,
+    progressBarContainer: {
+        width: "100%",
+    },
+    progressBarBackground: {
+        height: 4,
+        backgroundColor: ThemedColor.tertiary,
+        borderRadius: 2,
+        overflow: "hidden",
+    },
+    progressBarFill: {
+        height: "100%",
+        backgroundColor: ThemedColor.primary,
+        borderRadius: 2,
     },
 });
 

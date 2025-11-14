@@ -141,6 +141,13 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     });
                 }
             }
+
+            // Check for initial notification (when app opened from killed state)
+            const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
+            if (lastNotificationResponse) {
+                console.log("📬 App opened from notification:", lastNotificationResponse);
+                handleNotificationResponse(lastNotificationResponse);
+            }
         };
 
         setupNotifications();
@@ -152,63 +159,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         responseListener.current = addNotificationResponseListener((response) => {
             console.log("Notification response:", response);
-            const data = response.notification.request.content.data;
-            
-            // Handle routing based on notification type
-            if (data?.type) {
-                switch (data.type) {
-                    case 'friend_request':
-                        // Route to the requester's profile if we have their ID, otherwise friends page
-                        if (data.requester_id) {
-                            router.push(`/account/${data.requester_id}` as any);
-                        } else {
-                            router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
-                        }
-                        break;
-                    
-                    case 'friend_request_accepted':
-                        // Route to the accepter's profile if we have their ID, otherwise friends page
-                        if (data.accepter_id) {
-                            router.push(`/account/${data.accepter_id}` as any);
-                        } else {
-                            router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
-                        }
-                        break;
-                    
-                    case 'encouragement':
-                        // Route to encouragements page
-                        router.push('/(logged-in)/encouragement' as any);
-                        break;
-                    
-                    case 'congratulation':
-                        // Route to congratulations page
-                        router.push('/(logged-in)/congratulations' as any);
-                        break;
-                    
-                    case 'task_completion':
-                        // Route to the user's profile if we have their ID
-                        if (data.task_owner_id) {
-                            router.push(`/account/${data.task_owner_id}` as any);
-                        } else {
-                            // Fallback to notifications page
-                            router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
-                        }
-                        break;
-                    
-                    default:
-                        // Fallback: check for explicit screen path
-                        if (data.screen) {
-                            router.push(data.screen as any);
-                        } else {
-                            // Default to notifications page
-                            router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
-                        }
-                        break;
-                }
-            } else if (data?.screen) {
-                // Legacy handling: if screen is provided directly
-                router.push(data.screen as any);
-            }
+            handleNotificationResponse(response);
         });
 
         // Cleanup function
@@ -221,6 +172,97 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             }
         };
     }, [user]); // Only run when user changes
+
+    // Centralized notification routing handler
+    const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
+        const data = response.notification.request.content.data;
+        
+        console.log("🔔 Handling notification with data:", JSON.stringify(data, null, 2));
+        
+        // Handle routing based on notification type
+        if (data?.type) {
+            const notificationType = String(data.type).toLowerCase();
+            
+            switch (notificationType) {
+                case 'friend_request':
+                    // Route to the requester's profile if we have their ID, otherwise friends page
+                    if (data.requester_id) {
+                        console.log("🔗 Routing to requester profile:", data.requester_id);
+                        router.push(`/account/${data.requester_id}` as any);
+                    } else {
+                        console.log("🔗 Routing to friends page");
+                        router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
+                    }
+                    break;
+                
+                case 'friend_request_accepted':
+                    // Route to the accepter's profile if we have their ID, otherwise friends page
+                    if (data.accepter_id) {
+                        console.log("🔗 Routing to accepter profile:", data.accepter_id);
+                        router.push(`/account/${data.accepter_id}` as any);
+                    } else {
+                        console.log("🔗 Routing to friends page");
+                        router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
+                    }
+                    break;
+                
+                case 'encouragement':
+                    // Route to encouragements page
+                    console.log("🔗 Routing to encouragements page");
+                    router.push('/(logged-in)/encouragement' as any);
+                    break;
+                
+                case 'congratulation':
+                    // Route to congratulations page
+                    console.log("🔗 Routing to congratulations page");
+                    router.push('/(logged-in)/congratulations' as any);
+                    break;
+                
+                case 'comment':
+                    // Route to notifications page for comments
+                    console.log("🔗 Routing to notifications page (comment)");
+                    router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
+                    break;
+                
+                case 'task_completion':
+                    // Route to the user's profile if we have their ID
+                    if (data.task_owner_id) {
+                        console.log("🔗 Routing to task owner profile:", data.task_owner_id);
+                        router.push(`/account/${data.task_owner_id}` as any);
+                    } else {
+                        console.log("🔗 Routing to notifications page (task completion)");
+                        router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
+                    }
+                    break;
+                
+                case 'checkin':
+                    // Route to today/home page for check-ins
+                    console.log("🔗 Routing to home page (checkin)");
+                    router.push('/(logged-in)/(tabs)/(task)/' as any);
+                    break;
+                
+                default:
+                    console.log("⚠️ Unknown notification type:", notificationType);
+                    // Fallback: check for explicit screen path
+                    if (data.screen) {
+                        console.log("🔗 Routing to explicit screen:", data.screen);
+                        router.push(data.screen as any);
+                    } else {
+                        // Default to notifications page
+                        console.log("🔗 Routing to notifications page (default)");
+                        router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
+                    }
+                    break;
+            }
+        } else if (data?.screen) {
+            // Legacy handling: if screen is provided directly
+            console.log("🔗 Routing to legacy screen:", data.screen);
+            router.push(data.screen as any);
+        } else {
+            console.log("⚠️ No type or screen in notification data, routing to notifications page");
+            router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
+        }
+    };
 
     // Show loading state while authenticating
     if (isLoading) {

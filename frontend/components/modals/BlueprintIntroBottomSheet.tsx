@@ -24,7 +24,7 @@ export default function BlueprintIntroBottomSheet({
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
     // variables
-    const snapPoints = useMemo(() => ["85%"], []);
+    const snapPoints = useMemo(() => ["80%"], []);
 
     // callbacks
     const handlePresentModalPress = useCallback(() => {
@@ -68,13 +68,14 @@ export default function BlueprintIntroBottomSheet({
                 {/* Title */}
                 <View style={styles.titleContainer}>
                     <ThemedText style={styles.title}>Introducing Blueprints</ThemedText>
+                    <ThemedText style={styles.subtitle}>Shareable to-do lists for everyone</ThemedText>
                 </View>
 
                 {/* Image Container */}
                 <View style={styles.imageContainer}>
                     <View style={styles.imageWrapper}>
                         <Image
-                            source={require("@/assets/images/blueprintReplacement.png")}
+                            source={require("@/assets/images/together.png")}
                             style={styles.image}
                             resizeMode="cover"
                         />
@@ -83,23 +84,26 @@ export default function BlueprintIntroBottomSheet({
 
                 {/* Description */}
                 <View style={styles.descriptionContainer}>
-                    <ThemedText type="subtitle_subtle">COPY HABITS & LISTS </ThemedText>
+                    <ThemedText type="subtitle_subtle">WHAT ARE BLUEPRINTS?</ThemedText>
                     <ThemedText style={styles.description}>
-                        Through Blueprints, you can copy the habits/todo lists of others or build out those habits and
-                        todolists yourself. {`\n`}
-                    </ThemedText>
-                    <ThemedText style={styles.description}>
-                        Blueprints are a public todo list that others can subscribe to and post to.
+                        Blueprints are <ThemedText style={styles.bold}>static, shareable to-do lists</ThemedText> that anyone can subscribe to and use as their own!
                     </ThemedText>
                 </View>
 
-                {/* Additional Info */}
-                <View style={styles.infoContainer}>
-                    <ThemedText type="subtitle_subtle">BUILD COMMUNITIES </ThemedText>
-                    <ThemedText style={styles.infoText}>
-                        By building a blueprint, you can also build a community where others are completing similar
-                        tasks and hold yourself accountable
-                    </ThemedText>
+                {/* Features */}
+                <View style={styles.featuresContainer}>
+                    <View style={styles.featureRow}>
+                        <ThemedText style={styles.bullet}>•</ThemedText>
+                        <ThemedText style={styles.featureText}>Subscribe to others' lists and make them yours</ThemedText>
+                    </View>
+                    <View style={styles.featureRow}>
+                        <ThemedText style={styles.bullet}>•</ThemedText>
+                        <ThemedText style={styles.featureText}>Create your own and share with the community</ThemedText>
+                    </View>
+                    <View style={styles.featureRow}>
+                        <ThemedText style={styles.bullet}>•</ThemedText>
+                        <ThemedText style={styles.featureText}>Build accountability through shared goals</ThemedText>
+                    </View>
                 </View>
 
                 {/* Button */}
@@ -122,65 +126,77 @@ const stylesheet = (ThemedColor: any) =>
         },
         container: {
             flex: 1,
-            paddingHorizontal: 20,
-            paddingTop: 32,
+            paddingHorizontal: 24,
+            paddingTop: 24,
         },
         titleContainer: {
-            marginBottom: 24,
+            marginBottom: 20,
+            alignItems: "center",
         },
         title: {
-            fontSize: 24,
-            fontWeight: "600",
+            fontSize: 28,
+            fontWeight: "700",
             color: ThemedColor.text,
             fontFamily: "Fraunces",
             letterSpacing: -1,
             textAlign: "center",
+            marginBottom: 4,
+        },
+        subtitle: {
+            fontSize: 16,
+            color: ThemedColor.caption,
+            fontFamily: "Outfit",
+            textAlign: "center",
         },
         imageContainer: {
-            marginBottom: 32,
-        },
-        imageWrapper: {
-            backgroundColor: ThemedColor.tertiary,
-            borderRadius: 4,
-            height: 152,
-            overflow: "hidden",
-            position: "relative",
-        },
-        image: {
-            width: "100%",
-            height: 180,
-            position: "absolute",
-            top: -24,
-        },
-        imageOverlay: {
-            position: "absolute",
-            top: 51,
-            left: 0,
-            right: 0,
+            marginBottom: 0,
             alignItems: "center",
         },
-        imageText: {
-            fontSize: 12,
-            color: ThemedColor.text,
-            fontFamily: "Outfit",
+        imageWrapper: {
+            width: "100%",
+            height: 180,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        image: {
+            width: "70%",
+            height: "70%",
         },
         descriptionContainer: {
-            marginBottom: 24,
+            marginBottom: 20,
         },
         description: {
-            fontSize: 16,
+            fontSize: 15,
             color: ThemedColor.text,
             fontFamily: "Outfit",
-            lineHeight: 24,
+            lineHeight: 22,
+            marginTop: 8,
         },
-        infoContainer: {
+        bold: {
+            fontWeight: "600",
+            color: ThemedColor.primary,
+        },
+        featuresContainer: {
             marginBottom: 32,
+            gap: 8,
         },
-        infoText: {
-            fontSize: 16,
+        featureRow: {
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 8,
+        },
+        bullet: {
+            fontSize: 18,
+            color: ThemedColor.primary,
+            fontWeight: "bold",
+            marginTop: 2,
+        },
+        featureText: {
+            flex: 1,
+            fontSize: 15,
             color: ThemedColor.text,
             fontFamily: "Outfit",
-            lineHeight: 24,
+            lineHeight: 22,
         },
         button: {
             borderRadius: 12,
@@ -191,7 +207,7 @@ const stylesheet = (ThemedColor: any) =>
             },
             shadowOpacity: 0.25,
             shadowRadius: 4,
-            marginBottom: 48,
+            marginBottom: 24,
             elevation: 4,
         },
     });

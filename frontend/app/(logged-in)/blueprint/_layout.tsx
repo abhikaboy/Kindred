@@ -269,9 +269,14 @@ const BlueprintCreationLayout = () => {
                             transform: [{ scaleY: headerHeight }],
                         }
                     ]}>
-                        <ThemedText type="fancyFrauncesHeading" style={{fontSize: 28, paddingVertical: 12}}>
-                            New Blueprint
-                        </ThemedText>
+                        <View style={styles.titleContainer}>
+                            <ThemedText type="fancyFrauncesHeading" style={styles.titleText}>
+                                New Blueprint
+                            </ThemedText>
+                            <ThemedText style={styles.subtitleText}>
+                                Create a shareable to-do list
+                            </ThemedText>
+                        </View>
                     </Animated.View>
 
                     {/* Progress Container */}
@@ -291,8 +296,6 @@ const BlueprintCreationLayout = () => {
                     flex: 1,
                     backgroundColor: ThemedColor.background, 
                     borderRadius: 24, 
-                    marginTop: 24,
-                    boxShadow: "0 3px 10px 0 rgba(0, 0, 0, 0.2)"
                 }}>
                     <ScrollView
                         style={styles.scrollView}
@@ -304,11 +307,6 @@ const BlueprintCreationLayout = () => {
                     </ScrollView>
 
                     <View style={styles.continueButtonContainer}>
-                        <PrimaryButton
-                            title="Back"
-                            onPress={handleBack}
-                            ghost
-                        />
                         <PrimaryButton
                             title={currentStep === 3 ? "Create Blueprint" : "Continue"}
                             onPress={handleNext}
@@ -339,13 +337,28 @@ const createStyles = (ThemedColor: any, insets: any, isKeyboardVisible: boolean)
         fixedHeader: {
             // This ensures the header section has a defined size
             minHeight: 100,
-            maxHeight: 120,
+            maxHeight: 130,
+            marginTop: 24,
         },
         header: {
             justifyContent: "flex-start",
             alignItems: "flex-start",
             paddingHorizontal: 20,
             paddingBottom: 8,
+        },
+        titleContainer: {
+            gap: 4,
+        },
+        titleText: {
+            fontSize: 32,
+            letterSpacing: -1.5,
+            lineHeight: 38,
+        },
+        subtitleText: {
+            fontSize: 15,
+            color: ThemedColor.caption,
+            fontFamily: "Outfit",
+            letterSpacing: 0.2,
         },
         backButton: {
             position: "absolute",
@@ -361,13 +374,13 @@ const createStyles = (ThemedColor: any, insets: any, isKeyboardVisible: boolean)
         },
         scrollContent: {
             paddingHorizontal: 20,
-            paddingTop: 36,
+            paddingTop: 8,
             paddingBottom: 20,
         },
         continueButtonContainer: {
             paddingHorizontal: 20,
             gap: 12,
-            paddingBottom: insets.bottom + 24,
+            paddingBottom: insets.bottom + 0,
         },
         continueButton: {
             paddingVertical: 16,
