@@ -166,6 +166,7 @@ const NotificationItem = ({
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
+                    type="encouragement"
                 />
             ) : notification.type === "congratulation" ? (
                 <UserInfoEncouragementNotification
@@ -175,6 +176,7 @@ const NotificationItem = ({
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
+                    type="congratulation"
                 />
             ) : notification.type === "friend_request" || notification.type === "friend_request_accepted" ? (
                 <UserInfoFriendNotification

@@ -18,6 +18,7 @@ import (
 func newService(collections map[string]*mongo.Collection) *Service {
 	congratulations := collections["congratulations"]
 	users := collections["users"]
+	posts := collections["posts"]
 
 	// Log if collections are not found
 	if congratulations == nil {
@@ -26,10 +27,14 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	if users == nil {
 		slog.Error("Users collection not found in database")
 	}
+	if posts == nil {
+		slog.Error("Posts collection not found in database")
+	}
 
 	return &Service{
 		Congratulations:     congratulations,
 		Users:               users,
+		Posts:               posts,
 		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
@@ -114,6 +119,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		TaskName:     r.TaskName,
 		Read:         false, // Default to unread
 		Type:         r.Type,
+		PostID:       r.PostID,
 	}
 
 	slog.Info("Creating congratulation", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "balance", balance)
@@ -142,9 +148,24 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
 	}
 
-	// Create notification in the database
+	// Create notification in the database with thumbnail (first image from post if available)
 	notificationContent := fmt.Sprintf("%s has sent you a congratulation on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
-	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id)
+	var thumbnail string
+	
+	// If we have a post ID, try to fetch the post to get the thumbnail
+	if r.PostID != nil && !r.PostID.IsZero() {
+		if s.Posts != nil {
+			var post struct {
+				Images []string `bson:"images"`
+			}
+			err := s.Posts.FindOne(ctx, bson.M{"_id": r.PostID}).Decode(&post)
+			if err == nil && len(post.Images) > 0 {
+				thumbnail = post.Images[0]
+			}
+		}
+	}
+	
+	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id, thumbnail)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to create congratulation notification in database", "error", err, "receiver_id", r.Receiver)

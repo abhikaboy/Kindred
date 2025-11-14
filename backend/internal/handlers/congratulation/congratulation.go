@@ -50,6 +50,16 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		congratulationType = "message"
 	}
 
+	// Parse postId if provided
+	var postID *primitive.ObjectID
+	if input.Body.PostID != "" {
+		parsedPostID, err := primitive.ObjectIDFromHex(input.Body.PostID)
+		if err != nil {
+			return nil, huma.Error400BadRequest("Invalid post ID format", err)
+		}
+		postID = &parsedPostID
+	}
+
 	// Create internal document for database operations
 	internalDoc := CongratulationDocumentInternal{
 		ID:           primitive.NewObjectID(),
@@ -60,6 +70,7 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		TaskName:     input.Body.TaskName,
 		Read:         false,
 		Type:         congratulationType,
+		PostID:       postID,
 	}
 
 	congratulation, err := h.service.CreateCongratulation(&internalDoc)

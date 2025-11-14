@@ -22,7 +22,7 @@ const REWARDS_DATA: RewardItem[] = [
     {
         id: "circles",
         icon: "ellipsis-horizontal-circle-outline",
-        title: "Posting to Circles",
+        title: "2 Groups Credits",
         description: "Post to sub groups of your close friends instead of everyone on your friends list!",
     },
     {
@@ -34,8 +34,8 @@ const REWARDS_DATA: RewardItem[] = [
     {
         id: "voice",
         icon: "mic-outline",
-        title: "Unlimited Voice Dumps",
-        description: "Record unlimited voice notes to quickly capture your thoughts and ideas on the go.",
+        title: "5 Voice Dump Credits",
+        description: "Record 5 voice notes to quickly capture your thoughts and ideas on the go.",
     },
     {
         id: "giphy",

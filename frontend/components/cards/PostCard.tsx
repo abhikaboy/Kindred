@@ -967,6 +967,7 @@ const PostCard = React.memo(({
                         userHandle: username,
                         receiverId: userId,
                         categoryName: category || "General",
+                        postId: id, // Pass the post ID for thumbnail
                     }}
                 />
         </View>

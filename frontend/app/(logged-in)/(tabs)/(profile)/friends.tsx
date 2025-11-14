@@ -264,7 +264,6 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
     contentContainer: {
-        flex: 1,
         paddingHorizontal: 20,
         paddingBottom: Dimensions.get("window").height * 0.1,
     },

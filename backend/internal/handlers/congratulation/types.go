@@ -116,6 +116,7 @@ type CreateCongratulationParams struct {
 	CategoryName string `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
 	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
 	Type         string `json:"type" example:"message" doc:"Type of congratulation (message or image)" validate:"omitempty,oneof=message image"`
+	PostID       string `json:"postId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Optional post ID associated with the congratulation"`
 }
 
 type CongratulationDocument struct {
@@ -141,6 +142,7 @@ type CongratulationDocumentInternal struct {
 	TaskName     string                       `bson:"taskName"`
 	Read         bool                         `bson:"read"`
 	Type         string                       `bson:"type"`
+	PostID       *primitive.ObjectID          `bson:"postId,omitempty"`
 }
 
 type UpdateCongratulationDocument struct {
@@ -174,5 +176,6 @@ Database layer of the application
 type Service struct {
 	Congratulations     *mongo.Collection
 	Users               *mongo.Collection
+	Posts               *mongo.Collection
 	NotificationService *notifications.Service
 }

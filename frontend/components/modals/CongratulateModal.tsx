@@ -28,6 +28,7 @@ interface CongratulateModalProps {
         userHandle?: string;
         receiverId: string; // ID of the user receiving the congratulation
         categoryName: string; // Name of the category the task belongs to
+        postId?: string; // Optional post ID for thumbnail
     };
 }
 
@@ -147,6 +148,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 categoryName: congratulationConfig.categoryName,
                 taskName: task.content,
                 type: congratulationType,
+                ...(congratulationConfig.postId && { postId: congratulationConfig.postId }), // Include postId if available
             };
 
             // Make the API call

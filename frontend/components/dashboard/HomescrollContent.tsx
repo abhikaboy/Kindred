@@ -104,7 +104,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         marginBottom: 18,
                     }}>
                     <ThemedText type="caption">KUDOS</ThemedText>
-                    <ThemedText type="caption">Send more Kudos to get rewards.</ThemedText>
+                    <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
 
                     <KudosCards />
                 </View>
