@@ -215,8 +215,8 @@ const AccomplishmentOnboarding = (props: Props) => {
                     ]}
                 >
                     <ReanimatedSwipeable
-                        friction={2}
-                        rightThreshold={40}
+                        friction={1.3}
+                        rightThreshold={100}
                         renderLeftActions={(prog, drag) => 
                             LeftAction(prog, drag, handleComplete, ThemedColor)
                         }
@@ -235,7 +235,7 @@ const AccomplishmentOnboarding = (props: Props) => {
                     </ReanimatedSwipeable>
 
                     <ThemedText style={[styles.instructionText, { color: ThemedColor.caption }]}>
-                        Swipe to Mark Complete  →
+                        Swipe the task to Mark it Complete  →
                     </ThemedText>
                 </Animated.View>
 

@@ -218,7 +218,7 @@ const SwipeCompleteTutorialScreen = (props: Props) => {
                     {/* Real Swipeable Task Card */}
                     <ReanimatedSwipeable
                         containerStyle={styles.swipeable}
-                        friction={1.5}
+                        friction={1}
                         enableTrackpadTwoFingerGesture
                         leftThreshold={screenWidth / 4}
                         overshootLeft={true}
@@ -307,7 +307,7 @@ const SwipeCompleteTutorialScreen = (props: Props) => {
                 {/* Title at Bottom */}
                 <View style={styles.titleContainer}>
                     <ThemedText type="titleFraunces" style={styles.title}>
-                        Swipe to complete, or delete tasks
+                        Swipe the task to complete, or delete tasks
                     </ThemedText>
                 </View>
             </Animated.View>
