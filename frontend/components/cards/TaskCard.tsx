@@ -14,6 +14,7 @@ import CongratulateModal from "../modals/CongratulateModal";
 import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { AttachStep } from "react-native-spotlight-tour";
 import { Sparkle, Timer, Repeat } from "phosphor-react-native";
+import { getIntegrationIcon } from "@/utils/integrationUtils";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -277,6 +278,9 @@ const TaskCard = ({
                             </ConditionalView>
                             <ConditionalView condition={task?.recurring}>
                                 <Repeat size={20} color={ThemedColor.caption} weight="regular" />
+                            </ConditionalView>
+                            <ConditionalView condition={!!task?.integration}>
+                                {getIntegrationIcon(task?.integration, ThemedColor.caption)}
                             </ConditionalView>
                             {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             {value}

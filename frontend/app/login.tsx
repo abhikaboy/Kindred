@@ -41,9 +41,7 @@ const login = (props: Props) => {
         if (user) {
             router.push("/");
         }
-    }, [user]);
-
-    return (
+    }, [user]);    return (
         <View
             style={{
                 backgroundColor: Colors.light.background,

@@ -886,13 +886,38 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 		slog.String("inputText", input.Body.Text),
 		slog.String("timezone", timezone))
 
-	// Call Genkit flow to process natural language
+	// Call Genkit flow to process natural language with retry logic
 	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text, timezone)
 	if err != nil {
-		slog.LogAttrs(ctx, slog.LevelError, "Failed to call Gemini flow",
+		slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini flow failed, retrying once",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to process natural language with AI", err)
+		
+		// Retry once
+		result, err = h.callGeminiFlow(ctx, userID, input.Body.Text, timezone)
+		if err != nil {
+			// Both attempts failed - refund the credit
+			slog.LogAttrs(ctx, slog.LevelError, "Both attempts to call Gemini flow failed, refunding credit",
+				slog.String("userID", userID),
+				slog.String("error", err.Error()))
+			
+			// Refund the credit that was consumed earlier
+			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
+			if refundErr != nil {
+				slog.LogAttrs(ctx, slog.LevelError, "Failed to refund credit after AI failure",
+					slog.String("userID", userID),
+					slog.String("refundError", refundErr.Error()))
+				// Continue with error response even if refund fails - user should contact support
+			} else {
+				slog.LogAttrs(ctx, slog.LevelInfo, "Credit successfully refunded",
+					slog.String("userID", userID))
+			}
+			
+			return nil, huma.Error500InternalServerError("Failed to process natural language with AI after retry. Your credit has been refunded.", err)
+		}
+		
+		slog.LogAttrs(ctx, slog.LevelInfo, "Retry successful after initial failure",
+			slog.String("userID", userID))
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "AI response received",

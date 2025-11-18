@@ -74,6 +74,7 @@ export interface Task {
     notes?: string;
     checklist?: ChecklistItem[];
     reminders?: Reminder[];
+    integration?: string; // Integration app name (amazon, gmail, etc.)
     
     // Completion tracking fields (only populated for completed tasks)
     timeCompleted?: string;

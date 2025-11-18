@@ -30,7 +30,8 @@ import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI } from "@/api/ta
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs } from "phosphor-react-native";
+import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
 import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
 import { Screen } from "@/components/modals/CreateModal";
@@ -524,6 +525,34 @@ export default function Task() {
                                             </View>
                                         ))}
                                     </DataCard>
+                                </ConditionalView>
+                                <ConditionalView condition={task?.integration != null} key="integration">
+                                    <TouchableOpacity 
+                                        onPress={() => openIntegrationApp(task?.integration)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <DataCard 
+                                            title="Integration"
+                                            icon={<Plugs size={20} color={ThemedColor.text} weight="regular" />}
+                                        >
+                                            <View style={{
+                                                flexDirection: "row",
+                                                alignItems: "center",
+                                                gap: 12,
+                                                paddingVertical: 8,
+                                            }}>
+                                                {getIntegrationIcon(task?.integration, ThemedColor.primary, 28)}
+                                                <View style={{ flex: 1 }}>
+                                                    <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>
+                                                        {getIntegrationName(task?.integration)}
+                                                    </ThemedText>
+                                                    <ThemedText type="lightBody" style={{ color: ThemedColor.caption, fontSize: 13 }}>
+                                                        Tap to open
+                                                    </ThemedText>
+                                                </View>
+                                            </View>
+                                        </DataCard>
+                                    </TouchableOpacity>
                                 </ConditionalView>
                                 <View key="mark-complete" style={{ marginTop: 0 }}>
                                     <PrimaryButton
