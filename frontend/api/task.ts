@@ -9,6 +9,7 @@ type UpdateTaskNotesDocument = components["schemas"]["UpdateTaskNotesDocument"];
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 type CompleteTaskDocument = components["schemas"]["CompleteTaskDocument"];
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
+type UpdateTemplateDocument = components["schemas"]["UpdateTemplateDocument"];
 
 /**
  * Create a new task in a specific category
@@ -39,9 +40,12 @@ export const createTaskAPI = async (categoryId: string, task: CreateTaskParams):
  * @param categoryId - The ID of the category the task belongs to
  * @param taskId - The ID of the task to delete
  */
-export const removeFromCategoryAPI = async (categoryId: string, taskId: string): Promise<void> => {
+export const removeFromCategoryAPI = async (categoryId: string, taskId: string, deleteRecurring: boolean = false): Promise<void> => {
     const { error } = await client.DELETE("/v1/user/tasks/{category}/{id}", {
-        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        params: withAuthHeaders({ 
+            path: { category: categoryId, id: taskId },
+            query: { deleteRecurring }
+        }),
     });
 
     if (error) {
@@ -213,6 +217,26 @@ export const updateTaskAPI = async (
 
     if (error) {
         throw new Error(`Failed to update task: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Update a template with full template data
+ * API: Makes PATCH request to update the template
+ * @param templateId - The ID of the template to update
+ * @param updateData - The template data to update
+ */
+export const updateTemplateAPI = async (
+    templateId: string,
+    updateData: UpdateTemplateDocument
+): Promise<void> => {
+    const { error } = await client.PATCH("/v1/user/tasks/template/{id}", {
+        params: withAuthHeaders({ path: { id: templateId } }),
+        body: updateData,
+    });
+
+    if (error) {
+        throw new Error(`Failed to update template: ${JSON.stringify(error)}`);
     }
 };
 

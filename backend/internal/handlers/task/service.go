@@ -221,7 +221,10 @@ func (s *Service) UpdatePartialTask(
 		{Key: "tasks.$[t].recurring", Value: updated.Recurring},
 		{Key: "tasks.$[t].recurDetails", Value: updated.RecurDetails},
 		{Key: "tasks.$[t].public", Value: updated.Public},
-		{Key: "tasks.$[t].active", Value: updated.Active},
+	}
+
+	if updated.Active != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].active", Value: updated.Active})
 	}
 
 	// Add the new fields conditionally

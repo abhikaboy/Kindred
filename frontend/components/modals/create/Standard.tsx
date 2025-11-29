@@ -17,13 +17,14 @@ import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs 
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
-import { updateTaskAPI } from "@/api/task";
+import { updateTaskAPI, updateTemplateAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import CustomAlert, { AlertButton } from "../CustomAlert";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -144,6 +145,12 @@ const StandardContent = ({
     const ThemedColor = useThemeColor();
     const { start } = useSpotlightTour();
 
+    // Alert state
+    const [alertVisible, setAlertVisible] = React.useState(false);
+    const [alertTitle, setAlertTitle] = React.useState("");
+    const [alertMessage, setAlertMessage] = React.useState("");
+    const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
+
     // Set the blueprint flag when component mounts or when the prop changes
     useEffect(() => {
         setIsBlueprint(isBlueprint);
@@ -242,7 +249,7 @@ const StandardContent = ({
         }
 
         // Normal mode - create task via API
-        let postBody: CreateTaskParams = {
+        let postBody: any = {
             content: trimmedTaskName,
             priority: priority,
             value: value,
@@ -266,7 +273,7 @@ const StandardContent = ({
         }
 
         console.log("POST body:", JSON.stringify(postBody, null, 2));
-        const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody);
+        const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody as CreateTaskParams);
 
         addToCategory(selectedCategory.id, response);
         resetTaskCreation();
@@ -278,7 +285,7 @@ const StandardContent = ({
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
 
-        const updateData: components["schemas"]["UpdateTaskDocument"] = {
+        const updateData: any = {
             content: trimmedTaskName,
             priority: priority,
             value: value,
@@ -314,35 +321,103 @@ const StandardContent = ({
             behavior: "ROLLING",
         };
 
-        updateTask(targetCategoryId, task.id, {
-            content: trimmedTaskName,
-            priority: priority,
-            value: value,
-            recurring: recurring,
-            public: isPublic,
-            active: task.active || false,
-            recurDetails: (recurring ? recurDetails : defaultRecurDetails) as RecurDetails,
-            startDate: startDate?.toISOString() || "",
-            startTime: startTime?.toISOString() || "",
-            deadline: deadline?.toISOString() || "",
-            reminders: reminders.map((reminder) => ({
-                ...reminder,
-                triggerTime: reminder.triggerTime.toISOString(),
-            })),
-            notes: task.notes || "",
-            checklist: task.checklist || [],
-        });
+        const performTaskUpdate = async () => {
+            updateTask(targetCategoryId, task.id, {
+                content: trimmedTaskName,
+                priority: priority,
+                value: value,
+                recurring: recurring,
+                public: isPublic,
+                active: task.active || false,
+                recurDetails: (recurring ? recurDetails : defaultRecurDetails) as RecurDetails,
+                startDate: startDate?.toISOString() || "",
+                startTime: startTime?.toISOString() || "",
+                deadline: deadline?.toISOString() || "",
+                reminders: reminders.map((reminder) => ({
+                    ...reminder,
+                    triggerTime: reminder.triggerTime.toISOString(),
+                })),
+                notes: task.notes || "",
+                checklist: task.checklist || [],
+            });
 
-        try {
-            // Make the API call
-            await updateTaskAPI(targetCategoryId, task.id, updateData);
-        } catch (error) {
-            console.error("Failed to update task:", error);
-            // In a production app, you might want to revert the optimistic update here
-            // or show an error message to the user
+            try {
+                // Make the API call
+                await updateTaskAPI(targetCategoryId, task.id, updateData);
+            } catch (error) {
+                console.error("Failed to update task:", error);
+            }
+        };
+
+        const performTemplateUpdate = async () => {
+             if (!task.templateID) return;
+             
+             // 1. Update the current task first
+             await performTaskUpdate();
+
+             // 2. Update the template
+             try {
+                const templateUpdateData: components["schemas"]["UpdateTemplateDocument"] = {
+                    content: trimmedTaskName,
+                    priority: priority,
+                    value: value,
+                    public: isPublic,
+                    recurDetails: recurring ? (recurDetails as RecurDetails) : undefined,
+                    recurFrequency: recurring ? recurFrequency : undefined,
+                    startDate: startDate?.toISOString(),
+                    startTime: startTime?.toISOString(),
+                    deadline: deadline?.toISOString(),
+                    reminders: reminders.map((reminder) => ({
+                        ...reminder,
+                        triggerTime: reminder.triggerTime.toISOString(),
+                    })),
+                    notes: task.notes || "",
+                    checklist: task.checklist || [],
+                };
+                await updateTemplateAPI(task.templateID, templateUpdateData);
+             } catch (error) {
+                console.error("Failed to update template:", error);
+             }
+        };
+
+        if (task.templateID) {
+             setAlertTitle("Update Recurring Task");
+             setAlertMessage("Do you want to update only this occurrence or all future tasks?");
+             setAlertButtons([
+                 {
+                     text: "Only This Task",
+                     onPress: async () => {
+                         // Explicitly close alert first to prevent race conditions
+                         setAlertVisible(false);
+                         await performTaskUpdate();
+                         resetTaskCreation();
+                         hide();
+                     }
+                 },
+                 {
+                     text: "All Future Tasks",
+                     onPress: async () => {
+                         setAlertVisible(false);
+                         await performTemplateUpdate();
+                         resetTaskCreation();
+                         hide();
+                     }
+                 },
+                 {
+                     text: "Cancel",
+                     style: "cancel",
+                     onPress: () => {
+                         // Do nothing, keep modal open (or rather, CustomAlert will close itself)
+                         // But we want to ensure we don't perform any other actions
+                     }
+                 }
+             ]);
+             setAlertVisible(true);
+        } else {
+             await performTaskUpdate();
+             resetTaskCreation();
+             hide();
         }
-
-        resetTaskCreation();
     };
 
     // Determine which categories to use based on blueprint mode
@@ -412,8 +487,8 @@ const StandardContent = ({
                             updatePost();
                         } else {
                             createPost();
+                            hide();
                         }
-                        hide();
                     }}>
                     <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
@@ -472,6 +547,14 @@ const StandardContent = ({
             <ConditionalView condition={showAdvanced}>
                 <AdvancedOptionList goTo={goTo} showUnconfigured={true} />
             </ConditionalView>
+            
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </View>
     );
 };

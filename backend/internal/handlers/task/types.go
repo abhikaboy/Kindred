@@ -17,7 +17,7 @@ type CreateTaskParams struct {
 	RecurFrequency string        `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"`
 	RecurDetails   *RecurDetails `bson:"recurDetails,omitempty" json:"recurDetails,omitempty"`
 	Public         bool          `bson:"public" json:"public"`
-	Active         bool          `bson:"active" json:"active"`
+	Active         *bool         `bson:"active" json:"active,omitempty"`
 
 	Deadline  *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
@@ -47,7 +47,7 @@ type UpdateTaskDocument struct {
 	Recurring    bool          `bson:"recurring" json:"recurring"`
 	RecurDetails *RecurDetails `bson:"recurDetails" json:"recurDetails"`
 	Public       bool          `bson:"public" json:"public"`
-	Active       bool          `bson:"active" json:"active"`
+	Active       *bool         `bson:"active" json:"active,omitempty"`
 
 	// Add the new fields for updating task properties
 	Deadline  *time.Time  `bson:"deadline,omitempty" json:"deadline,omitempty"`

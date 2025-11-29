@@ -26,11 +26,11 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI } from "@/api/task";
+import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI } from "@/api/task";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash } from "phosphor-react-native";
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
 import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
@@ -40,6 +40,10 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
 import { Picker } from "@react-native-picker/picker";
 import { useTaskCompletion } from "@/hooks/useTaskCompletion";
+import RecurringInfoCard from "@/components/task/RecurringInfoCard";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { showToastable } from "react-native-toastable";
+import DefaultToast from "@/components/ui/DefaultToast";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -51,7 +55,7 @@ export default function Task() {
     const [activeTab, setActiveTab] = useState(0);
     const { name, id, categoryId } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
-    const { task, updateTask } = useTasks();
+    const { task, updateTask, removeFromCategory } = useTasks();
     const { loadTaskData } = useTaskCreation();
     const { openModal } = useCreateModal();
     const [isRunning, setIsRunning] = useState(false);
@@ -65,6 +69,12 @@ export default function Task() {
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
     const [recurDetails, setRecurDetails] = useState<RecurDetails | null>(null);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     // Add a ref to track mounted state
     const isMounted = useRef(true);
@@ -148,7 +158,7 @@ export default function Task() {
         const template = await getTemplateByIDAPI(id);
         console.log(template);
         setTemplate(template);
-        setRecurDetails(template?.recurDetails);
+        setRecurDetails(template?.recurDetails as RecurDetails);
     };
 
     useEffect(() => {
@@ -269,6 +279,64 @@ export default function Task() {
                 value: task.value,
                 public: task.public,
             });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!task || !categoryId || !id) return;
+
+        const deleteAction = async (deleteRecurring: boolean = false) => {
+            try {
+                await removeFromCategoryAPI(categoryId as string, id as string, deleteRecurring);
+                removeFromCategory(categoryId as string, id as string);
+                router.back();
+            } catch (error) {
+                console.error("Error deleting task:", error);
+                showToastable({
+                    title: "Error",
+                    status: "danger",
+                    position: "top",
+                    message: "Error deleting task",
+                    swipeDirection: "up",
+                    renderContent: (props) => <DefaultToast {...props} />,
+                });
+            }
+        };
+
+        if (task.templateID) {
+            setAlertTitle("Delete Recurring Task");
+            setAlertMessage("Do you want to delete only this task or all future tasks?");
+            setAlertButtons([
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Only This Task",
+                    onPress: () => deleteAction(false),
+                },
+                {
+                    text: "All Future Tasks",
+                    onPress: () => deleteAction(true),
+                    style: "destructive",
+                },
+            ]);
+            setAlertVisible(true);
+        } else {
+            setAlertTitle("Delete Task");
+            setAlertMessage("Are you sure you want to delete this task?");
+            setAlertButtons([
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    onPress: () => deleteAction(false),
+                    style: "destructive",
+                },
+            ]);
+            setAlertVisible(true);
         }
     };
 
@@ -492,25 +560,13 @@ export default function Task() {
                                     />
                                 </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
-                                    <DataCard 
-                                        title="Recurring"
-                                        icon={<Repeat size={20} color={ThemedColor.text} weight="regular" />}
-                                    >
-                                        <View style={{ flexDirection: "column", gap: 8 }}>
-                                            <ThemedText type="lightBody">
-                                                {DetailsToString(
-                                                    recurDetails,
-                                                    template?.recurFrequency,
-                                                    template?.recurType
-                                                )}
-                                            </ThemedText>
-                                            <ThemedText type="lightBody">
-                                                {template?.recurType === "OCCURRENCE"
-                                                    ? "Repeating Start Date"
-                                                    : "Repeating Deadline"}
-                                            </ThemedText>
-                                        </View>
-                                    </DataCard>
+                                    <RecurringInfoCard
+                                        recurDetails={recurDetails!}
+                                        frequency={template?.recurFrequency}
+                                        recurType={template?.recurType}
+                                        lastDate={template?.lastGenerated}
+                                        nextDate={template?.nextGenerated}
+                                    />
                                 </ConditionalView>
                                 <ConditionalView condition={task?.reminders != null} key="reminders">
                                     <DataCard 
@@ -611,6 +667,14 @@ export default function Task() {
                 categoryId={categoryId as string}
                 onDeadlineUpdate={handleDeadlineUpdate}
             />
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </ThemedView>
     );
 }
@@ -629,44 +693,3 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     );
 }
 
-function DetailsToString(details: RecurDetails, frequency: string, type: string) {
-    let caseMap = new Map<string, string>([
-        ["[0,1,1,1,1,1,0]", "Weekdays"],
-        ["[0,0,0,0,0,0,1]", "Weekends"],
-        ["[1,1,1,1,1,1,1]", "Every day of the week"],
-    ]);
-
-    let daysOfWeekMapping = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    let arrayToDays = (array: number[]) => {
-        let numEntries = array.filter((day) => day === 1).length;
-        if (numEntries == 1) {
-            return daysOfWeekMapping[array.findIndex((day) => day === 1)];
-        }
-        if (numEntries == 2) {
-            return (
-                daysOfWeekMapping[array.findIndex((day) => day === 1)] +
-                " and " +
-                daysOfWeekMapping[array.findLastIndex((day) => day === 1)]
-            );
-        }
-        return array.map((day, index) => {
-            if (day === 1) {
-                return daysOfWeekMapping[index];
-            }
-        });
-    };
-    switch (frequency) {
-        case "daily":
-            return `Every ${details.every > 1 ? details.every : ""} day${details.every > 1 ? "s" : ""}`;
-        case "weekly":
-            // special case for weekdays, weekends
-            let lastPart = caseMap.has(JSON.stringify(details.daysOfWeek))
-                ? caseMap.get(JSON.stringify(details.daysOfWeek))
-                : arrayToDays(details.daysOfWeek || []);
-            return `Every${details.every > 1 ? details.every : ""} week${details.every > 1 ? "s" : ""} on ${lastPart}`;
-        case "monthly":
-            return `${frequency} ${type} - ${details?.behavior} behavior`;
-        default:
-            return `${frequency} - ${details?.behavior} behavior`;
-    }
-}

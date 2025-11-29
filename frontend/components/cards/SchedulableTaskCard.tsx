@@ -16,6 +16,7 @@ import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
+import CustomAlert, { AlertButton } from "../modals/CustomAlert";
 
 type Props = {
     redirect?: boolean;
@@ -35,25 +36,56 @@ export default function SchedulableTaskCard({
     const { removeFromCategory, setShowConfetti } = useTasks();
     const ThemedColor = useThemeColor();
 
+    // Alert state
+    const [alertVisible, setAlertVisible] = React.useState(false);
+    const [alertTitle, setAlertTitle] = React.useState("");
+    const [alertMessage, setAlertMessage] = React.useState("");
+    const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
+
     /* 
   Mark as completed function
 */
 
     const deleteTask = async (categoryId: string, taskId: string) => {
-        try {
-            const res = await removeFromCategoryAPI(categoryId, taskId);
-            removeFromCategory(categoryId, taskId);
-            console.log(res);
-        } catch (error) {
-            console.log(error);
-            showToastable({
-                title: "Error",
-                status: "danger",
-                position: "top",
-                message: "Error deleting task",
-                swipeDirection: "up",
-                renderContent: (props) => <DefaultToast {...props} />,
-            });
+        const performDelete = async (deleteRecurring: boolean) => {
+            try {
+                const res = await removeFromCategoryAPI(categoryId, taskId, deleteRecurring);
+                removeFromCategory(categoryId, taskId);
+                console.log(res);
+            } catch (error) {
+                console.log(error);
+                showToastable({
+                    title: "Error",
+                    status: "danger",
+                    position: "top",
+                    message: "Error deleting task",
+                    swipeDirection: "up",
+                    renderContent: (props) => <DefaultToast {...props} />,
+                });
+            }
+        };
+
+        if (task.templateID) {
+            setAlertTitle("Delete Recurring Task");
+            setAlertMessage("Do you want to delete only this task or all future tasks?");
+            setAlertButtons([
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Only This Task",
+                    onPress: () => performDelete(false),
+                },
+                {
+                    text: "All Future Tasks",
+                    onPress: () => performDelete(true),
+                    style: "destructive",
+                },
+            ]);
+            setAlertVisible(true);
+        } else {
+            performDelete(false);
         }
     };
 
@@ -95,6 +127,14 @@ export default function SchedulableTaskCard({
                     showRedOutline={!isCategoryConfigured}
                 />
             </ReanimatedSwipeable>
+            
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </>
     );
 }
