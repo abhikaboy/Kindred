@@ -132,6 +132,11 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 
 	taskParams := input.Body
 
+	isActive := true
+	if taskParams.Active != nil {
+		isActive = *taskParams.Active
+	}
+
 	// Create task document using fields from CreateTaskParams
 	task := TaskDocument{
 		ID:             primitive.NewObjectID(),
@@ -142,7 +147,7 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		RecurFrequency: taskParams.RecurFrequency,
 		RecurDetails:   taskParams.RecurDetails,
 		Public:         taskParams.Public,
-		Active:         taskParams.Active,
+		Active:         isActive,
 		UserID:         userObjID,
 		CategoryID:     categoryID,
 		Deadline:       taskParams.Deadline,
@@ -892,7 +897,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 		slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini flow failed, retrying once",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		
+
 		// Retry once
 		result, err = h.callGeminiFlow(ctx, userID, input.Body.Text, timezone)
 		if err != nil {
@@ -900,7 +905,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 			slog.LogAttrs(ctx, slog.LevelError, "Both attempts to call Gemini flow failed, refunding credit",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			
+
 			// Refund the credit that was consumed earlier
 			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
 			if refundErr != nil {
@@ -912,10 +917,10 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 				slog.LogAttrs(ctx, slog.LevelInfo, "Credit successfully refunded",
 					slog.String("userID", userID))
 			}
-			
+
 			return nil, huma.Error500InternalServerError("Failed to process natural language with AI after retry. Your credit has been refunded.", err)
 		}
-		
+
 		slog.LogAttrs(ctx, slog.LevelInfo, "Retry successful after initial failure",
 			slog.String("userID", userID))
 	}

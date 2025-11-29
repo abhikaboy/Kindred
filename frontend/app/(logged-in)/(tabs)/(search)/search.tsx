@@ -6,7 +6,6 @@ import {
     Pressable,
     Keyboard,
     RefreshControl,
-    Alert,
     useColorScheme,
 } from "react-native";
 import React, { useEffect, useCallback, useMemo, useRef, useReducer } from "react";
@@ -39,6 +38,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -116,6 +116,12 @@ const Search = (props: Props) => {
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
     const { matchedContacts, addMatchedContacts, isLoading: isLoadingMatchedContacts } = useMatchedContacts();
 
+    // Alert state
+    const [alertVisible, setAlertVisible] = React.useState(false);
+    const [alertTitle, setAlertTitle] = React.useState("");
+    const [alertMessage, setAlertMessage] = React.useState("");
+    const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
+
     // TanStack Query for fetching suggested users
     const { data: suggestedUsers = [], isLoading: isLoadingSuggestedUsers } = useQuery({
         queryKey: ["suggestedUsers"],
@@ -143,17 +149,19 @@ const Search = (props: Props) => {
                 // Save to AsyncStorage
                 addMatchedContacts(newMatchedContacts);
 
-                Alert.alert(
-                    "Friends Found!",
-                    `Found ${matchedUsers.length} of your contacts on Kindred! Scroll down to see them.`,
-                    [{ text: "OK" }]
-                );
+                setAlertTitle("Friends Found!");
+                setAlertMessage(`Found ${matchedUsers.length} of your contacts on Kindred! Scroll down to see them.`);
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
             } else {
             }
         },
         onError: (error) => {
             console.error("Error finding users by phone numbers:", error);
-            Alert.alert("Error", "Failed to find contacts. Please try again.");
+            setAlertTitle("Error");
+            setAlertMessage("Failed to find contacts. Please try again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         },
     });
     const skipAutocompleteRef = useRef(false);
@@ -428,17 +436,25 @@ const Search = (props: Props) => {
         try {
             const contactsResponse = await getContacts();
 
+            // Handle alert if present
+            if (contactsResponse.alert) {
+                setAlertTitle(contactsResponse.alert.title);
+                setAlertMessage(contactsResponse.alert.message);
+                setAlertButtons(contactsResponse.alert.buttons || [{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
+                return;
+            }
+
             // If no numbers returned, permission was likely denied or no contacts exist
             if (contactsResponse.numbers.length === 0) {
-                // The hook already shows appropriate alerts for permission issues
+                // The hook already returns alerts for permission issues which we handled above
                 // Only show this alert if permission was granted but no numbers found
                 const { status } = await Contacts.getPermissionsAsync();
                 if (status === "granted") {
-                    Alert.alert(
-                        "No Phone Numbers Found",
-                        "We couldn't find any phone numbers in your contacts. Make sure your contacts have phone numbers saved.",
-                        [{ text: "OK" }]
-                    );
+                    setAlertTitle("No Phone Numbers Found");
+                    setAlertMessage("We couldn't find any phone numbers in your contacts. Make sure your contacts have phone numbers saved.");
+                    setAlertButtons([{ text: "OK", style: "default" }]);
+                    setAlertVisible(true);
                 }
                 return;
             }
@@ -453,7 +469,10 @@ const Search = (props: Props) => {
             findUsersMutation.mutate(contactsResponse.numbers);
         } catch (error) {
             console.error("Error getting contacts:", error);
-            Alert.alert("Error", "Failed to access contacts. Please try again.");
+            setAlertTitle("Error");
+            setAlertMessage("Failed to access contacts. Please try again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         }
     }, [getContacts, findUsersMutation]);
 
@@ -579,6 +598,13 @@ const Search = (props: Props) => {
                     </View>
                 </View>
             </View>
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </View>
     );
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Animated, Image, Dimensions, useColorScheme } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Animated, Image, Dimensions, useColorScheme } from "react-native";
 import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,7 @@ import { showToast } from "@/utils/showToast";
 import CachedImage from "../CachedImage";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 interface ProfileGalleryProps {
     userId?: string;
@@ -96,6 +97,12 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
     const [postImages, setPostImages] = useState<PostImage[]>([]);
     const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     useEffect(() => {
         const fetchImages = async () => {
@@ -194,7 +201,7 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
 
         console.log("ProfileGallery showPostOptions called with:", { postId, postUserId, currentUserId: user?._id });
 
-        const options = [];
+        const options: AlertButton[] = [];
 
         options.push({
             text: "View Post",
@@ -221,11 +228,17 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
             "ProfileGallery: Showing alert with options:",
             options.map((o) => o.text)
         );
-        Alert.alert("Post Options", "", options);
+        
+        setAlertTitle("Post Options");
+        setAlertMessage("");
+        setAlertButtons(options);
+        setAlertVisible(true);
     };
 
     const showDeleteConfirmation = (postId: string) => {
-        Alert.alert("Delete Post", "Are you sure you want to delete this post? This action cannot be undone.", [
+        setAlertTitle("Delete Post");
+        setAlertMessage("Are you sure you want to delete this post? This action cannot be undone.");
+        setAlertButtons([
             {
                 text: "Cancel",
                 style: "cancel",
@@ -236,6 +249,7 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
                 onPress: () => handleDeletePost(postId),
             },
         ]);
+        setAlertVisible(true);
     };
 
     const handleDeletePost = async (postId: string) => {
@@ -276,37 +290,46 @@ export default function ProfileGallery({ userId, images }: ProfileGalleryProps) 
     }
 
     return (
-        <FlatList
-            numColumns={3}
-            data={postImages}
-            renderItem={({ item }) => {
-                const isDeleting = deletingPosts.has(item.postId);
-                const canDelete = canDeletePost(item.postUserId);
+        <>
+            <FlatList
+                numColumns={3}
+                data={postImages}
+                renderItem={({ item }) => {
+                    const isDeleting = deletingPosts.has(item.postId);
+                    const canDelete = canDeletePost(item.postUserId);
 
-                return (
-                    <TouchableOpacity
-                        style={[styles.galleryItem, isDeleting && styles.deletingItem]}
-                        onPress={() => handleImagePress(item.postId)}
-                        onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
-                        delayLongPress={500}
-                        activeOpacity={isDeleting ? 1 : 0.8}>
-                        <CachedImage
-                            style={[styles.galleryImage, isDeleting && styles.deletingImage]}
-                            source={{
-                                uri: item.imageUrl,
-                            }}
-                            variant="thumbnail"
-                            cachePolicy="disk"
-                            transition={100}
-                        />
-                    </TouchableOpacity>
-                );
-            }}
-            keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.galleryContainer}
-        />
+                    return (
+                        <TouchableOpacity
+                            style={[styles.galleryItem, isDeleting && styles.deletingItem]}
+                            onPress={() => handleImagePress(item.postId)}
+                            onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
+                            delayLongPress={500}
+                            activeOpacity={isDeleting ? 1 : 0.8}>
+                            <CachedImage
+                                style={[styles.galleryImage, isDeleting && styles.deletingImage]}
+                                source={{
+                                    uri: item.imageUrl,
+                                }}
+                                variant="thumbnail"
+                                cachePolicy="disk"
+                                transition={100}
+                            />
+                        </TouchableOpacity>
+                    );
+                }}
+                keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.galleryContainer}
+            />
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
+        </>
     );
 }
 

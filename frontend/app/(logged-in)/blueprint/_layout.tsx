@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, Animated, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, Animated } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BlueprintIntroBottomSheet from "@/components/modals/BlueprintIntroBottomSheet";
 import { components } from "@/api/types";
 import { useBlueprints } from "@/contexts/blueprintContext";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 type Category = components["schemas"]["CategoryDocument"];
 
@@ -55,6 +56,12 @@ const BlueprintCreationLayout = () => {
     const [showBlueprintIntro, setShowBlueprintIntro] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
     // Animation values for header collapse
     const headerHeight = new Animated.Value(1);
     const titleOpacity = new Animated.Value(1);
@@ -120,7 +127,10 @@ const BlueprintCreationLayout = () => {
         } catch (error) {
             console.error("Error creating blueprint:", error);
             // Show user-friendly error message
-            Alert.alert("Error", error instanceof Error ? error.message : "Failed to create blueprint");
+            setAlertTitle("Error");
+            setAlertMessage(error instanceof Error ? error.message : "Failed to create blueprint");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         } finally {
             setIsCreating(false);
         }
@@ -320,6 +330,14 @@ const BlueprintCreationLayout = () => {
                 isVisible={showBlueprintIntro}
                 onClose={() => setShowBlueprintIntro(false)}
                 onBuildBlueprint={handleBuildBlueprint}
+            />
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
             />
         </View>
     );

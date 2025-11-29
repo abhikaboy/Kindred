@@ -1,5 +1,5 @@
 import React from "react";
-import { Linking, Alert } from "react-native";
+import { Linking } from "react-native";
 import {
     AmazonLogo,
     EnvelopeSimple,
@@ -67,8 +67,8 @@ export const getIntegrationName = (integration: string | undefined): string => {
 };
 
 // Helper function to open app
-export const openIntegrationApp = async (integration: string | undefined) => {
-    if (!integration) return;
+export const openIntegrationApp = async (integration: string | undefined): Promise<{ success: boolean; title?: string; message?: string }> => {
+    if (!integration) return { success: false };
     
     const integrationLower = integration.toLowerCase();
     let url = "";
@@ -86,8 +86,7 @@ export const openIntegrationApp = async (integration: string | undefined) => {
             break;
         case "imessage":
             // iMessage doesn't have a web URL, only iOS app
-            Alert.alert("iMessage", "Please open the iMessage app on your device");
-            return;
+            return { success: false, title: "iMessage", message: "Please open the iMessage app on your device" };
         case "slack":
             url = "https://slack.com/";
             break;
@@ -96,27 +95,25 @@ export const openIntegrationApp = async (integration: string | undefined) => {
             break;
         case "chrome":
             // Chrome is a browser, not a specific destination
-            Alert.alert("Chrome", "Chrome is already your default browser");
-            return;
+            return { success: false, title: "Chrome", message: "Chrome is already your default browser" };
         case "safari":
             // Safari is a browser, not a specific destination
-            Alert.alert("Safari", "Safari is your default browser");
-            return;
+            return { success: false, title: "Safari", message: "Safari is your default browser" };
         default:
-            Alert.alert("Error", `Unknown integration: ${appName}`);
-            return;
+            return { success: false, title: "Error", message: `Unknown integration: ${appName}` };
     }
     
     try {
         const supported = await Linking.canOpenURL(url);
         if (supported) {
             await Linking.openURL(url);
+            return { success: true };
         } else {
-            Alert.alert("Error", `Cannot open ${appName}`);
+            return { success: false, title: "Error", message: `Cannot open ${appName}` };
         }
     } catch (error) {
-        Alert.alert("Error", `Failed to open ${appName}`);
         console.error("Error opening integration app:", error);
+        return { success: false, title: "Error", message: `Failed to open ${appName}` };
     }
 };
 

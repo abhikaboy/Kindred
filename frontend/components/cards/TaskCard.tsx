@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { TouchableOpacity, View, StyleSheet, Dimensions, Alert } from "react-native";
+import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -15,6 +15,7 @@ import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, 
 import { AttachStep } from "react-native-spotlight-tour";
 import { Sparkle, Timer, Repeat } from "phosphor-react-native";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -79,6 +80,12 @@ const TaskCard = ({
     const { setTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     const debouncedRedirect = useDebounce(() => {
         if (!redirect) return;
@@ -199,7 +206,10 @@ const TaskCard = ({
         if (encourage) {
             if (!encouragementConfig?.receiverId || encouragementConfig.receiverId.trim() === "") {
                 console.error("Cannot show encourage modal: missing receiverId");
-                Alert.alert("Error", "Unable to send encouragement at this time. Please try again later.");
+                setAlertTitle("Error");
+                setAlertMessage("Unable to send encouragement at this time. Please try again later.");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
                 return;
             }
             console.log("Encourage button pressed, showing modal");
@@ -208,7 +218,10 @@ const TaskCard = ({
         if (congratulate) {
             if (!congratulationConfig?.receiverId || congratulationConfig.receiverId.trim() === "") {
                 console.error("Cannot show congratulate modal: missing receiverId");
-                Alert.alert("Error", "Unable to send congratulation at this time. Please try again later.");
+                setAlertTitle("Error");
+                setAlertMessage("Unable to send congratulation at this time. Please try again later.");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
                 return;
             }
             console.log("Congratulate button pressed, showing modal");
@@ -336,6 +349,14 @@ const TaskCard = ({
                     categoryId,
                 }}
                 congratulationConfig={congratulationConfig}
+            />
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
             />
         </>
     );

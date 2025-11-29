@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, useColorScheme } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, useColorScheme } from "react-native";
 import { deletePost, getPostsByBlueprint } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import LoadingScreen from "../ui/LoadingScreen";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 interface BlueprintGalleryProps {
     blueprintId: string;
@@ -30,6 +31,12 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set());
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     useEffect(() => {
         fetchBlueprintImages();
@@ -75,7 +82,7 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     };
 
     const showPostOptions = (postId: string, postUserId: string) => {
-        const options = [];
+        const options: AlertButton[] = [];
 
         options.push({
             text: "View Post",
@@ -95,11 +102,16 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
             style: "cancel" as const,
         });
 
-        Alert.alert("Post Options", "", options);
+        setAlertTitle("Post Options");
+        setAlertMessage("");
+        setAlertButtons(options);
+        setAlertVisible(true);
     };
 
     const showDeleteConfirmation = (postId: string) => {
-        Alert.alert("Delete Post", "Are you sure you want to delete this post? This action cannot be undone.", [
+        setAlertTitle("Delete Post");
+        setAlertMessage("Are you sure you want to delete this post? This action cannot be undone.");
+        setAlertButtons([
             {
                 text: "Cancel",
                 style: "cancel",
@@ -110,6 +122,7 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
                 onPress: () => handleDeletePost(postId),
             },
         ]);
+        setAlertVisible(true);
     };
 
     const handleDeletePost = async (postId: string) => {
@@ -188,36 +201,45 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     }
 
     return (
-        <FlatList
-            numColumns={3}
-            data={postImages}
-            renderItem={({ item }) => {
-                const isDeleting = deletingPosts.has(item.postId);
+        <>
+            <FlatList
+                numColumns={3}
+                data={postImages}
+                renderItem={({ item }) => {
+                    const isDeleting = deletingPosts.has(item.postId);
 
-                return (
-                    <TouchableOpacity
-                        style={[styles.galleryItem, isDeleting && styles.deletingItem]}
-                        onPress={() => handleImagePress(item.postId)}
-                        onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
-                        delayLongPress={500}
-                        activeOpacity={isDeleting ? 1 : 0.8}>
-                        <CachedImage
-                            style={[styles.galleryImage, isDeleting && styles.deletingImage]}
-                            source={{
-                                uri: item.imageUrl,
-                            }}
-                            variant="thumbnail"
-                            cachePolicy="disk"
-                            transition={100}
-                        />
-                    </TouchableOpacity>
-                );
-            }}
-            keyExtractor={(item, index) => `blueprint-gallery-${item.postId}-${index}`}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.galleryContainer}
-        />
+                    return (
+                        <TouchableOpacity
+                            style={[styles.galleryItem, isDeleting && styles.deletingItem]}
+                            onPress={() => handleImagePress(item.postId)}
+                            onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
+                            delayLongPress={500}
+                            activeOpacity={isDeleting ? 1 : 0.8}>
+                            <CachedImage
+                                style={[styles.galleryImage, isDeleting && styles.deletingImage]}
+                                source={{
+                                    uri: item.imageUrl,
+                                }}
+                                variant="thumbnail"
+                                cachePolicy="disk"
+                                transition={100}
+                            />
+                        </TouchableOpacity>
+                    );
+                }}
+                keyExtractor={(item, index) => `blueprint-gallery-${item.postId}-${index}`}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.galleryContainer}
+            />
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
+        </>
     );
 }
 

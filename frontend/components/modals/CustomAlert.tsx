@@ -83,11 +83,11 @@ const CustomAlert = ({ visible, setVisible, title, message, buttons = [] }: Prop
                                         shadowColor: "#000",
                                         shadowOffset: {
                                             width: 0,
-                                            height: 2,
+                                            height: 1,
                                         },
-                                        shadowOpacity: 0.05,
-                                        shadowRadius: 3.84,
-                                        elevation: 2,
+                                        shadowOpacity: 0.02,
+                                        shadowRadius: 1.5,
+                                        elevation: 1,
                                         // Add extra margin if it's the last button (Cancel) to separate it
                                         marginTop: isCancel ? 8 : 0,
                                     }

@@ -109,6 +109,16 @@ export default function Task() {
         }
     };
 
+    const handleIntegrationPress = async () => {
+        const result = await openIntegrationApp(task?.integration);
+        if (!result.success) {
+            setAlertTitle(result.title || "Error");
+            setAlertMessage(result.message || "Failed to open integration");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
+        }
+    };
+
     useEffect(() => {
         return () => {
             isMounted.current = false;
@@ -584,7 +594,7 @@ export default function Task() {
                                 </ConditionalView>
                                 <ConditionalView condition={task?.integration != null} key="integration">
                                     <TouchableOpacity 
-                                        onPress={() => openIntegrationApp(task?.integration)}
+                                        onPress={handleIntegrationPress}
                                         activeOpacity={0.7}
                                     >
                                         <DataCard 

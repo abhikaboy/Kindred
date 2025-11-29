@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { FlatList } from "react-native-gesture-handler";
-import { View, Image, Dimensions, Alert, TouchableOpacity } from "react-native";
+import { View, Image, Dimensions, TouchableOpacity } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import LongTextInput from "@/components/inputs/LongTextInput";
 import { ThemedText } from "@/components/ThemedText";
@@ -12,6 +12,7 @@ import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
 import { ObjectId } from "bson";
 import { useAuth } from "@/hooks/useAuth";
 import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 export default function Caption() {
     const params = useLocalSearchParams();
@@ -21,6 +22,12 @@ export default function Caption() {
     const [data, setData] = useState({ caption: "" });
     const [isPosting, setIsPosting] = useState(false);
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
@@ -79,7 +86,10 @@ export default function Caption() {
     };
     const handlePost = async () => {
         if (!data.caption.trim()) {
-            Alert.alert("Error", "Please add a caption");
+            setAlertTitle("Error");
+            setAlertMessage("Please add a caption");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
@@ -118,7 +128,9 @@ export default function Caption() {
                 });
             }
 
-            Alert.alert("Success!", "Your post has been shared!", [
+            setAlertTitle("Success!");
+            setAlertMessage("Your post has been shared!");
+            setAlertButtons([
                 {
                     text: "View Post",
                     onPress: () => {
@@ -133,6 +145,7 @@ export default function Caption() {
                     },
                 },
             ]);
+            setAlertVisible(true);
         } catch (error) {
             console.error("Error creating post:", error);
 
@@ -141,7 +154,10 @@ export default function Caption() {
                 errorMessage = error.message;
             }
 
-            Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+            setAlertTitle("Error");
+            setAlertMessage(errorMessage);
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         } finally {
             setIsPosting(false);
         }
@@ -234,6 +250,13 @@ export default function Caption() {
                     />
                 </View>
             </View>
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </ThemedView>
     );
 }

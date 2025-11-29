@@ -8,7 +8,7 @@ import {
     Platform,
     KeyboardAvoidingView,
     Image as RNImage,
-    Alert,
+    // Alert, // Removed Alert import
 } from "react-native";
 import { Image } from "expo-image";
 import CachedImage from "../CachedImage";
@@ -37,6 +37,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as SMS from 'expo-sms';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { Confetti } from "phosphor-react-native";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 type ImageSize = components["schemas"]["ImageSize"];
 
@@ -281,6 +282,12 @@ const PostCard = React.memo(({
     const queryClient = useQueryClient();
     const screenWidth = useMemo(() => Dimensions.get("window").width, []);
     const { fetchWorkspaces } = useTasks();
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     // Memoize stringified reactions to avoid expensive JSON operations on every render
     const reactionsStringified = useMemo(() => JSON.stringify(reactions), [reactions]);
@@ -630,27 +637,30 @@ const PostCard = React.memo(({
         options.push({
             text: "Cancel",
             style: "cancel" as const,
+            onPress: () => {},
         });
 
-        Alert.alert("Post Options", "", options);
+        setAlertTitle("Post Options");
+        setAlertMessage("");
+        setAlertButtons(options);
+        setAlertVisible(true);
     };
 
     const showDeleteConfirmation = () => {
-        Alert.alert(
-            "Delete Post",
-            "Are you sure you want to delete this post? This action cannot be undone.",
-            [
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: handleDeletePost,
-                },
-            ]
-        );
+        setAlertTitle("Delete Post");
+        setAlertMessage("Are you sure you want to delete this post? This action cannot be undone.");
+        setAlertButtons([
+            {
+                text: "Cancel",
+                style: "cancel",
+            },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: handleDeletePost,
+            },
+        ]);
+        setAlertVisible(true);
     };
 
     const handleDeletePost = async () => {
@@ -674,32 +684,31 @@ const PostCard = React.memo(({
     };
 
     const handleReportPost = () => {
-        Alert.alert(
-            "Report Post",
-            "Why are you reporting this post?",
-            [
-                {
-                    text: "Inappropriate content",
-                    onPress: () => submitReport("inappropriate"),
-                },
-                {
-                    text: "Spam",
-                    onPress: () => submitReport("spam"),
-                },
-                {
-                    text: "Harassment",
-                    onPress: () => submitReport("harassment"),
-                },
-                {
-                    text: "Other",
-                    onPress: () => submitReport("other"),
-                },
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-            ]
-        );
+        setAlertTitle("Report Post");
+        setAlertMessage("Why are you reporting this post?");
+        setAlertButtons([
+            {
+                text: "Inappropriate content",
+                onPress: () => submitReport("inappropriate"),
+            },
+            {
+                text: "Spam",
+                onPress: () => submitReport("spam"),
+            },
+            {
+                text: "Harassment",
+                onPress: () => submitReport("harassment"),
+            },
+            {
+                text: "Other",
+                onPress: () => submitReport("other"),
+            },
+            {
+                text: "Cancel",
+                style: "cancel",
+            },
+        ]);
+        setAlertVisible(true);
     };
 
     const submitReport = async (reason: string) => {
@@ -969,6 +978,14 @@ const PostCard = React.memo(({
                         categoryName: category || "General",
                         postId: id, // Pass the post ID for thumbnail
                     }}
+                />
+
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title={alertTitle}
+                    message={alertMessage}
+                    buttons={alertButtons}
                 />
         </View>
     );

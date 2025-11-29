@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert, Platform } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Sparkle } from "phosphor-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import EncourageModal from "@/components/modals/EncourageModal";
 import * as Haptics from "expo-haptics";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 interface ProfileEncouragementCardProps {
     userId: string;
@@ -18,6 +19,12 @@ export default function ProfileEncouragementCard({ userId, userHandle, userName 
     const { user } = useAuth();
     const [showEncourageModal, setShowEncourageModal] = useState(false);
 
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
     const styles = useMemo(() => createStyles(ThemedColor), [ThemedColor]);
 
     // Don't show the card if viewing own profile
@@ -29,7 +36,10 @@ export default function ProfileEncouragementCard({ userId, userHandle, userName 
     const handlePress = async () => {
         if (!userId || userId.trim() === "") {
             console.error("Cannot show encourage modal: missing userId");
-            Alert.alert("Error", "Unable to send encouragement at this time. Please try again later.");
+            setAlertTitle("Error");
+            setAlertMessage("Unable to send encouragement at this time. Please try again later.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
@@ -67,6 +77,14 @@ export default function ProfileEncouragementCard({ userId, userHandle, userName 
                     categoryName: "", // Not needed for profile scope
                 }}
                 isProfileLevel={true} // New prop to indicate profile-level
+            />
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
             />
         </>
     );

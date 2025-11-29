@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, Modal, Animated } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -15,6 +15,7 @@ import GifPicker from "./GifPicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
 import ConfettiCannon from "react-native-confetti-cannon";
+import CustomAlert, { AlertButton } from "./CustomAlert";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -45,6 +46,12 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const isMountedRef = useRef(true);
     const { pickImage } = useMediaLibrary();
     const confettiRef = useRef<any>(null);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     // Purple glow animation
     const glowOpacity = useRef(new Animated.Value(0)).current;
@@ -114,7 +121,10 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             }
         } catch (error) {
             console.error("Error picking image:", error);
-            Alert.alert("Error", "Failed to select image. Please try again.");
+            setAlertTitle("Error");
+            setAlertMessage("Failed to select image. Please try again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         }
     };
 
@@ -128,24 +138,36 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
         // Validation for profile vs task level
         if (isProfileLevel) {
             if (!encouragementConfig?.receiverId) {
-                Alert.alert("Error", "Missing required information to send encouragement");
+                setAlertTitle("Error");
+                setAlertMessage("Missing required information to send encouragement");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
                 return;
             }
         } else {
             if (!encouragementConfig?.receiverId || !task || !encouragementConfig?.categoryName) {
-                Alert.alert("Error", "Missing required information to send encouragement");
+                setAlertTitle("Error");
+                setAlertMessage("Missing required information to send encouragement");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
                 return;
             }
         }
 
         if (encouragementsLeft <= 0) {
-            Alert.alert("Error", "You have no encouragements left today");
+            setAlertTitle("Error");
+            setAlertMessage("You have no encouragements left today");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
         // Check if either message or image is provided
         if (!encouragementMessage.trim() && !selectedImage) {
-            Alert.alert("Error", "Please enter a message or select an image");
+            setAlertTitle("Error");
+            setAlertMessage("Please enter a message or select an image");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
@@ -177,7 +199,10 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 } catch (uploadError) {
                     console.error("Error uploading image:", uploadError);
                     setIsUploading(false);
-                    Alert.alert("Error", "Failed to upload image. Please try again.");
+                    setAlertTitle("Error");
+                    setAlertMessage("Failed to upload image. Please try again.");
+                    setAlertButtons([{ text: "OK", style: "default" }]);
+                    setAlertVisible(true);
                     return;
                 }
             }
@@ -239,7 +264,10 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             console.error("Error sending encouragement:", error);
             setIsUploading(false);
             if (isMountedRef.current) {
-                Alert.alert("Error", "Failed to send encouragement. Please try again.");
+                setAlertTitle("Error");
+                setAlertMessage("Failed to send encouragement. Please try again.");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
             }
         }
     };
@@ -425,6 +453,14 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     <GifPicker onGifSelect={handleGifSelect} />
                 </View>
             </Modal>
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </DefaultModal>
         </>
     );

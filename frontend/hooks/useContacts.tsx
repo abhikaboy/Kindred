@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import * as Contacts from 'expo-contacts';
-import { Platform, Alert, Linking } from 'react-native';
+import { Platform, Linking } from 'react-native';
 
 export interface ContactInfo {
     id: string;
@@ -9,9 +9,20 @@ export interface ContactInfo {
     emails?: string[];
 }
 
+export interface AlertButton {
+    text: string;
+    onPress?: () => void;
+    style?: "default" | "cancel" | "destructive";
+}
+
 export interface ContactsResponse {
     numbers: string[];
     contactsMap: { [phoneNumber: string]: string }; // Map of phone number to contact name
+    alert?: {
+        title: string;
+        message: string;
+        buttons?: AlertButton[];
+    };
 }
 
 export function useContacts() {
@@ -48,32 +59,39 @@ export function useContacts() {
                 
                 if (status === 'denied') {
                     // Permission was explicitly denied
-                    Alert.alert(
-                        'Contacts Permission Denied',
-                        'To find your friends on Kindred, we need access to your contacts. You can enable this in your device settings.',
-                        [
-                            { text: 'Cancel', style: 'cancel' },
-                            { 
-                                text: 'Open Settings', 
-                                onPress: () => {
-                                    if (Platform.OS === 'ios') {
-                                        Linking.openURL('app-settings:');
-                                    } else {
-                                        Linking.openSettings();
+                    return {
+                        numbers: [],
+                        contactsMap: {},
+                        alert: {
+                            title: 'Contacts Permission Denied',
+                            message: 'To find your friends on Kindred, we need access to your contacts. You can enable this in your device settings.',
+                            buttons: [
+                                { text: 'Cancel', style: 'cancel' },
+                                { 
+                                    text: 'Open Settings', 
+                                    onPress: () => {
+                                        if (Platform.OS === 'ios') {
+                                            Linking.openURL('app-settings:');
+                                        } else {
+                                            Linking.openSettings();
+                                        }
                                     }
                                 }
-                            }
-                        ]
-                    );
+                            ]
+                        }
+                    };
                 } else {
                     // Permission request was cancelled or not determined
-                    Alert.alert(
-                        'Permission Required',
-                        'Kindred needs access to your contacts to help you find friends who are already using the app.',
-                        [{ text: 'OK' }]
-                    );
+                    return {
+                        numbers: [],
+                        contactsMap: {},
+                        alert: {
+                            title: 'Permission Required',
+                            message: 'Kindred needs access to your contacts to help you find friends who are already using the app.',
+                            buttons: [{ text: 'OK' }]
+                        }
+                    };
                 }
-                return { numbers: [], contactsMap: {} };
             }
 
             // Fetch contacts
@@ -109,8 +127,14 @@ export function useContacts() {
             return { numbers: phoneNumbers, contactsMap };
         } catch (error) {
             console.error('Error fetching contacts:', error);
-            Alert.alert('Error', 'Failed to fetch contacts. Please try again.');
-            return { numbers: [], contactsMap: {} };
+            return {
+                numbers: [],
+                contactsMap: {},
+                alert: {
+                    title: 'Error',
+                    message: 'Failed to fetch contacts. Please try again.'
+                }
+            };
         } finally {
             setIsLoading(false);
         }

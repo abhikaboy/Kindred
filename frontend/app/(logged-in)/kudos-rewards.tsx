@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, useColorScheme, Alert } from "react-native";
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, useColorScheme } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
@@ -14,6 +14,7 @@ import Feather from "@expo/vector-icons/Feather";
 import RewardRedemptionModal, { RewardInfo } from "@/components/modals/RewardRedemptionModal";
 import { redeemRewardAPI } from "@/api/rewards";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 // Reward definitions (all cost 12 kudos)
 const REWARDS: RewardInfo[] = [
@@ -63,6 +64,12 @@ export default function KudosRewards() {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isRedeeming, setIsRedeeming] = useState(false);
 
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
     // Get sent counts from user's kudosRewards for progress tracking
     const encouragementsProgress = user?.kudosRewards?.encouragements || 0;
     const congratulationsProgress = user?.kudosRewards?.congratulations || 0;
@@ -72,13 +79,19 @@ export default function KudosRewards() {
     const handleRewardPress = (reward: RewardInfo) => {
         // Check if integration is disabled
         if (reward.type === "integration") {
-            Alert.alert("Coming Soon", "Integration rewards are not yet available.");
+            setAlertTitle("Coming Soon");
+            setAlertMessage("Integration rewards are not yet available.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
         
         // Check if user has enough of either kudos type
         if (encouragementsProgress < reward.kudosCost && congratulationsProgress < reward.kudosCost) {
-            Alert.alert("Insufficient Kudos", `You need ${reward.kudosCost} encouragements or ${reward.kudosCost} congratulations to claim this reward.`);
+            setAlertTitle("Insufficient Kudos");
+            setAlertMessage(`You need ${reward.kudosCost} encouragements or ${reward.kudosCost} congratulations to claim this reward.`);
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
         
@@ -121,21 +134,19 @@ export default function KudosRewards() {
             
             updateUser(updatedUser);
             
-            Alert.alert(
-                "Success!",
-                `You've claimed ${selectedReward.title}! ${response.creditsReceived ? `+${response.creditsReceived} credits added to your account.` : ""}`,
-                [{ text: "OK" }]
-            );
+            setAlertTitle("Success!");
+            setAlertMessage(`You've claimed ${selectedReward.title}! ${response.creditsReceived ? `+${response.creditsReceived} credits added to your account.` : ""}`);
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             
             setIsModalVisible(false);
             setSelectedReward(null);
         } catch (error: any) {
             console.error("Failed to redeem reward:", error);
-            Alert.alert(
-                "Error",
-                error?.message || "Failed to redeem reward. Please try again.",
-                [{ text: "OK" }]
-            );
+            setAlertTitle("Error");
+            setAlertMessage(error?.message || "Failed to redeem reward. Please try again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         } finally {
             setIsRedeeming(false);
         }
@@ -317,6 +328,14 @@ export default function KudosRewards() {
                     isRedeeming={isRedeeming}
                 />
             )}
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </ThemedView>
     );
 }

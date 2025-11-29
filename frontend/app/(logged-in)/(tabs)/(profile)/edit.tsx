@@ -1,4 +1,4 @@
-import { View, Image, TouchableOpacity, Dimensions, Alert, Linking, Platform, Modal, ScrollView } from "react-native";
+import { View, Image, TouchableOpacity, Dimensions, Linking, Platform, Modal, ScrollView } from "react-native";
 import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -15,6 +15,7 @@ import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { isSubscriptionActive } from "@/utils/subscription";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -24,6 +25,12 @@ const Edit = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     // Form state
     const [displayName, setDisplayName] = useState(user?.display_name || "");
@@ -54,11 +61,10 @@ const Edit = () => {
                 if (canOpen) {
                     await Linking.openURL(appStoreUrl);
                 } else {
-                    Alert.alert(
-                        "Unable to Open",
-                        "Please visit the App Store to manage your subscriptions.",
-                        [{ text: "OK" }]
-                    );
+                    setAlertTitle("Unable to Open");
+                    setAlertMessage("Please visit the App Store to manage your subscriptions.");
+                    setAlertButtons([{ text: "OK", style: "default" }]);
+                    setAlertVisible(true);
                 }
             } else if (Platform.OS === 'android') {
                 // Open Google Play subscriptions page
@@ -68,33 +74,33 @@ const Edit = () => {
                 if (canOpen) {
                     await Linking.openURL(playStoreUrl);
                 } else {
-                    Alert.alert(
-                        "Unable to Open",
-                        "Please visit the Play Store to manage your subscriptions.",
-                        [{ text: "OK" }]
-                    );
+                    setAlertTitle("Unable to Open");
+                    setAlertMessage("Please visit the Play Store to manage your subscriptions.");
+                    setAlertButtons([{ text: "OK", style: "default" }]);
+                    setAlertVisible(true);
                 }
             } else {
                 // Web or other platforms
-                Alert.alert(
-                    "Kindred Plus",
-                    "Get unlimited access to all premium features!\n\n• Unlimited voice credits\n• Unlimited natural language\n• Unlimited groups\n• Advanced analytics\n• Priority support\n\nSubscription management coming soon!",
-                    [{ text: "OK" }]
-                );
+                setAlertTitle("Kindred Plus");
+                setAlertMessage("Get unlimited access to all premium features!\n\n• Unlimited voice credits\n• Unlimited natural language\n• Unlimited groups\n• Advanced analytics\n• Priority support\n\nSubscription management coming soon!");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
             }
         } catch (error) {
             console.error("Error opening subscription:", error);
-            Alert.alert(
-                "Error",
-                "Unable to open subscription settings. Please try again later.",
-                [{ text: "OK" }]
-            );
+            setAlertTitle("Error");
+            setAlertMessage("Unable to open subscription settings. Please try again later.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         }
     };
 
     const handleSave = async () => {
         if (!user?._id) {
-            Alert.alert("Error", "User ID not found. Please try logging in again.");
+            setAlertTitle("Error");
+            setAlertMessage("User ID not found. Please try logging in again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
@@ -149,12 +155,19 @@ const Edit = () => {
 
                 console.log("Profile saved successfully!");
 
-                Alert.alert("Success", "Profile updated successfully!");
-                router.back();
+                setAlertTitle("Success");
+                setAlertMessage("Profile updated successfully!");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
+                
+                // Delay navigation to let user see success message
+                setTimeout(() => {
+                    router.back();
+                }, 1500);
             } else {
                 router.back();
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Save failed:", error);
             console.error("Error details:", error.message);
 
@@ -168,7 +181,10 @@ const Edit = () => {
                 errorMessage = "Profile not found. Please try again.";
             }
 
-            Alert.alert("Error", errorMessage);
+            setAlertTitle("Error");
+            setAlertMessage(errorMessage);
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         } finally {
             setIsSaving(false);
         }
@@ -470,6 +486,14 @@ const Edit = () => {
                     </ScrollView>
                 </ThemedView>
             </Modal>
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </ThemedView>
     );
 };

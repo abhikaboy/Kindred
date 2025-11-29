@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Platform, Alert, Keyboard, Dimensions } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, Keyboard, Dimensions } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
 import { ThemedText } from "../ThemedText";
 import SendButton from "./SendButton";
@@ -9,6 +9,7 @@ import { BottomSheetView, BottomSheetModal, BottomSheetFlatList } from "@gorhom/
 import { addComment, deleteComment } from "@/api/post";
 import { showToast } from "@/utils/showToast";
 import { router } from "expo-router";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 export type CommentProps = {
     id: string;
@@ -62,6 +63,12 @@ const Comment = ({
     const [deletingComments, setDeletingComments] = useState<Set<string>>(new Set());
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     // only update if comments changed
     useEffect(() => {
@@ -232,7 +239,9 @@ const Comment = ({
             return;
         }
 
-        Alert.alert("Delete Comment", "Are you sure you want to delete this comment?", [
+        setAlertTitle("Delete Comment");
+        setAlertMessage("Are you sure you want to delete this comment?");
+        setAlertButtons([
             {
                 text: "Cancel",
                 style: "cancel",
@@ -254,7 +263,7 @@ const Comment = ({
                         }
 
                         showToast("Comment deleted successfully", "success");
-                    } catch (error) {
+                    } catch (error: any) {
                         console.error("Failed to delete comment:", error);
 
                         if (error.message && error.message.includes("Comment not found")) {
@@ -275,6 +284,7 @@ const Comment = ({
                 },
             },
         ]);
+        setAlertVisible(true);
     };
 
     // handles the long press on a comment
@@ -283,7 +293,9 @@ const Comment = ({
             return;
         }
 
-        Alert.alert("Comment Options", "", [
+        setAlertTitle("Comment Options");
+        setAlertMessage("");
+        setAlertButtons([
             {
                 text: "Delete Comment",
                 style: "destructive",
@@ -294,6 +306,7 @@ const Comment = ({
                 style: "cancel",
             },
         ]);
+        setAlertVisible(true);
     };
 
     // Render comment item - memoized
@@ -377,6 +390,14 @@ const Comment = ({
                     <SendButton onSend={handleSubmitComment} />
                 </View>
             </View>
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </BottomSheetView>
     );
 };

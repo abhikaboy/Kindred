@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, View, ScrollView, Dimensions, Alert, Share, ActivityIndicator } from "react-native";
+import { StyleSheet, View, ScrollView, Dimensions, Share, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -9,6 +9,7 @@ import { TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Clipboard from 'expo-clipboard';
 import { useReferral } from "@/hooks/useReferral";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 type RewardItem = {
     id: string;
@@ -58,6 +59,12 @@ export default function Rewards() {
     const styles = useStyles(ThemedColor);
     const [copied, setCopied] = useState(false);
 
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
     // Use referral hook to get real data from backend
     const {
         referralCode,
@@ -74,7 +81,10 @@ export default function Rewards() {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (error) {
-            Alert.alert("Error", "Failed to copy referral code");
+            setAlertTitle("Error");
+            setAlertMessage("Failed to copy referral code");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         }
     };
 
@@ -219,6 +229,14 @@ export default function Rewards() {
                     ))}
                 </View>
             </ScrollView>
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </ThemedView>
     );
 }

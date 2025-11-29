@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, Modal } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -13,6 +13,7 @@ import { uploadImageSmart } from "@/api/upload";
 import { Images, Gif } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
 import ConfettiCannon from "react-native-confetti-cannon";
+import CustomAlert, { AlertButton } from "./CustomAlert";
 
 interface CongratulateModalProps {
     visible: boolean;
@@ -43,6 +44,12 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const isMountedRef = useRef(true);
     const { pickImage } = useMediaLibrary();
     const confettiRef = useRef<any>(null);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertTitle, setAlertTitle] = useState("");
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
 
@@ -81,7 +88,10 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             }
         } catch (error) {
             console.error("Error picking image:", error);
-            Alert.alert("Error", "Failed to select image. Please try again.");
+            setAlertTitle("Error");
+            setAlertMessage("Failed to select image. Please try again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
         }
     };
 
@@ -93,18 +103,27 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
     const handleSendCongratulation = async () => {
         if (!congratulationConfig?.receiverId || !task || !congratulationConfig?.categoryName) {
-            Alert.alert("Error", "Missing required information to send congratulation");
+            setAlertTitle("Error");
+            setAlertMessage("Missing required information to send congratulation");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
         if (congratulationsLeft <= 0) {
-            Alert.alert("Error", "You have no congratulations left today");
+            setAlertTitle("Error");
+            setAlertMessage("You have no congratulations left today");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
         // Check if either message or image is provided
         if (!congratulationMessage.trim() && !selectedImage) {
-            Alert.alert("Error", "Please enter a message or select an image");
+            setAlertTitle("Error");
+            setAlertMessage("Please enter a message or select an image");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
             return;
         }
 
@@ -136,7 +155,10 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 } catch (uploadError) {
                     console.error("Error uploading image:", uploadError);
                     setIsUploading(false);
-                    Alert.alert("Error", "Failed to upload image. Please try again.");
+                    setAlertTitle("Error");
+                    setAlertMessage("Failed to upload image. Please try again.");
+                    setAlertButtons([{ text: "OK", style: "default" }]);
+                    setAlertVisible(true);
                     return;
                 }
             }
@@ -189,7 +211,10 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             console.error("Error sending congratulation:", error);
             setIsUploading(false);
             if (isMountedRef.current) {
-                Alert.alert("Error", "Failed to send congratulation. Please try again.");
+                setAlertTitle("Error");
+                setAlertMessage("Failed to send congratulation. Please try again.");
+                setAlertButtons([{ text: "OK", style: "default" }]);
+                setAlertVisible(true);
             }
         }
     };
@@ -339,6 +364,14 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     <GifPicker onGifSelect={handleGifSelect} />
                 </View>
             </Modal>
+
+            <CustomAlert
+                visible={alertVisible}
+                setVisible={setAlertVisible}
+                title={alertTitle}
+                message={alertMessage}
+                buttons={alertButtons}
+            />
         </DefaultModal>
         </>
     );
