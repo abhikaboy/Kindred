@@ -38,6 +38,7 @@ import BetterTogetherCard from "@/components/cards/BetterTogetherCard";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -109,7 +110,7 @@ const Search = (props: Props) => {
     const [categoryGroups, setCategoryGroups] = React.useState<BlueprintCategoryGroup[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [activeTab, setActiveTab] = React.useState(1); // Default to Users tab (index 1)
+    const [activeTab, setActiveTab] = React.useState(1); // Default to Friends (index 1)
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
@@ -465,11 +466,16 @@ const Search = (props: Props) => {
         );
     }
 
+    // Handle toggle press
+    const handleTogglePress = useCallback((option: string) => {
+        setActiveTab(option === "Blueprints" ? 0 : 1);
+    }, []);
+
     return (
         <View style={[styles.container, { paddingTop: 0, paddingBottom: insets.bottom }]}>
             <ThemedView style={{ flex: 1 }}>
                 <ScrollView
-                    style={[styles.scrollView, { paddingTop: insets.top + 90 }]}
+                    style={[styles.scrollView, { paddingTop: insets.top + 140 }]}
                     refreshControl={
                         <RefreshControl
                             refreshing={false}
@@ -478,26 +484,30 @@ const Search = (props: Props) => {
                             colors={[ThemedColor.text]}
                         />
                     }>
-                    {mode === "categories" && (
-                        <View style={styles.betterTogetherContainer}>
-                            <BetterTogetherCard
-                                onSyncContacts={handleAddContacts}
-                                isLoadingContacts={isLoadingContacts}
-                                isFindingFriends={findUsersMutation.isPending}
-                                onCardPress={handleRewardsCardPress}
-                            />
-                        </View>
-                    )}
-                    <FollowRequestsSection styles={styles} />
-                    {!isLoadingMatchedContacts && matchedContacts.length > 0 && mode === "categories" && (
-                        <ContactsFromPhone contacts={matchedContacts} />
-                    )}
-                    {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && mode === "categories" && (
-                        <SuggestedUsers users={suggestedUsers} />
+                    {mode === "categories" && activeTab === 1 && (
+                        <>
+                            <View style={styles.betterTogetherContainer}>
+                                <BetterTogetherCard
+                                    onSyncContacts={handleAddContacts}
+                                    isLoadingContacts={isLoadingContacts}
+                                    isFindingFriends={findUsersMutation.isPending}
+                                    onCardPress={handleRewardsCardPress}
+                                />
+                            </View>
+                            <FollowRequestsSection styles={styles} />
+                            {!isLoadingMatchedContacts && matchedContacts.length > 0 && (
+                                <ContactsFromPhone contacts={matchedContacts} />
+                            )}
+                            {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && (
+                                <SuggestedUsers users={suggestedUsers} />
+                            )}
+                        </>
                     )}
                     <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
                         {mode === "categories" ? (
-                            <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
+                            activeTab === 0 ? (
+                                <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
+                            ) : null
                         ) : (
                             <SearchResults
                                 mode={mode}
@@ -507,6 +517,7 @@ const Search = (props: Props) => {
                                 focusStyle={focusStyle}
                                 activeTab={activeTab}
                                 setActiveTab={setActiveTab}
+                                showTabs={false}
                             />
                         )}
                     </Pressable>
@@ -542,7 +553,7 @@ const Search = (props: Props) => {
                         left: 0,
                         right: 0,
                         top: 0,
-                        height: insets.top + 120,
+                        height: insets.top + 160,
                     }}
                 />
 
@@ -559,6 +570,13 @@ const Search = (props: Props) => {
                         onSelectSuggestion={handleSelectSuggestion}
                         showAutocomplete={showAutocomplete && mode === "categories"} // Only show autocomplete in categories mode
                     />
+                    <View style={{ paddingBottom: 8 }}>
+                        <SegmentedControl
+                            options={["Blueprints", "Friends"]}
+                            selectedOption={activeTab === 0 ? "Blueprints" : "Friends"}
+                            onOptionPress={handleTogglePress}
+                        />
+                    </View>
                 </View>
             </View>
         </View>

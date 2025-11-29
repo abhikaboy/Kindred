@@ -43,16 +43,6 @@ const DashboardCards = (props: Props) => {
             },
         },
         {
-            title: "Calendar",
-            icon: <Calendar size={28} weight="light" color={ThemedColor.primary} />,
-            onPress: () => {
-                router.push({
-                    pathname: "/(logged-in)/(tabs)/(task)/calendar",
-                    params: { workspace: "Calendar" },
-                });
-            },
-        },
-        {
             title: "Analytics",
             icon: <ChartBar size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {

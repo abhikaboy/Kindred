@@ -1,10 +1,10 @@
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import React from "react";
-import PreviewIcon from "../profile/PreviewIcon";
+import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
-import FollowButton from "../inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
 type Props = {
     name: string;
@@ -16,11 +16,9 @@ type Props = {
 };
 
 const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) => {
-    let ThemedColor = useThemeColor();
+    const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
     const router = useRouter();
-
-    const connectionType = following ? "friends" : "none";
 
     const handlePress = () => {
         if (id) {
@@ -28,25 +26,51 @@ const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) 
         }
     };
 
+    const displayHandle = handle.startsWith("@") ? handle : `@${handle}`;
+
     return (
         <TouchableOpacity style={styles.container} onPress={handlePress}>
-            <PreviewIcon size="large" icon={icon} />
-            <View style={{ flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-                <View>
-                    <ThemedText style={{ textAlign: "left" }} type="lightBody">
+            <CachedImage
+                source={{ uri: icon }}
+                style={StyleSheet.absoluteFillObject}
+                contentFit="cover"
+                variant="medium"
+                blurRadius={2}
+            />
+            
+            <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.5)"]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0.5, y: 0.01 }}
+                end={{ x: 0.5, y: 0.8 }}
+            />
+
+            <View style={styles.contentContainer}>
+                <ThemedText 
+                    type="captionLight" 
+                    style={styles.handleText}
+                >
+                    {displayHandle}
+                </ThemedText>
+                
+                <View style={styles.nameRow}>
+                    <ThemedText 
+                        type="defaultSemiBold" 
+                        style={styles.nameText}
+                        lightColor="#FFFFFF"
+                        darkColor="#FFFFFF"
+                        numberOfLines={1}
+                    >
                         {name}
                     </ThemedText>
-                    <ThemedText style={{ textAlign: "left" }} type="caption">
-                        {handle} 
+                    <ThemedText 
+                        type="defaultSemiBold" 
+                        style={styles.arrowText}
+                        lightColor="#FFFFFF"
+                        darkColor="#FFFFFF"
+                    >
+                        →
                     </ThemedText>
-                    {contactName && (
-                        <ThemedText 
-                            style={{ textAlign: "left", marginTop: 4, fontStyle: "italic" }} 
-                            type="caption"
-                        >
-                            {contactName}
-                        </ThemedText>
-                    )}
                 </View>
             </View>
         </TouchableOpacity>
@@ -58,16 +82,39 @@ export default ContactCard;
 const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
-            flex: 1,
+            width: 125,
+            height: 160,
             borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: ThemedColor.tertiary,
+            marginRight: 12,
+            justifyContent: "flex-end",
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
-            padding: 12,
-            paddingVertical: 20,
-            minWidth: Dimensions.get("screen").width * 0.3,
-            gap: 16,
-            maxWidth: Dimensions.get("screen").width * 0.4,
+        },
+        contentContainer: {
+            width: "100%",
+            paddingHorizontal: 12,
+            paddingBottom: 12,
+            overflow: "visible",
+        },
+        handleText: {
+            color: "#9D9D9D",
+            marginBottom: 0,
+        },
+        nameRow: {
+            flexDirection: "row",
             alignItems: "center",
-            boxShadow: ThemedColor.shadowSmall,
+            justifyContent: "space-between",
+            width: "100%",
+        },
+        nameText: {
+            flex: 1,
+            marginRight: 4,
+            color: "#FFFFFF",
+        },
+        arrowText: {
+            textAlign: "center",
+            color: "#FFFFFF",
         },
     });

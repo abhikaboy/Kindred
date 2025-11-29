@@ -15,7 +15,7 @@ import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 
 export default function Caption() {
     const params = useLocalSearchParams();
-    const photos = params.photos ? JSON.parse(params.photos as string) : [];
+    const photos = params.photos ? JSON.parse(params.pphotos as string) : [];
     const flatListRef = useRef<FlatList>(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
     const [data, setData] = useState({ caption: "" });

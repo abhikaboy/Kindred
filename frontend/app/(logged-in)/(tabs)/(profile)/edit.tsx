@@ -1,4 +1,4 @@
-import { View, Image, TouchableOpacity, Dimensions, Alert } from "react-native";
+import { View, Image, TouchableOpacity, Dimensions, Alert, Linking, Platform, Modal, ScrollView } from "react-native";
 import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -13,6 +13,8 @@ import { updateProfile } from "@/api/profile";
 import { router } from "expo-router";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import Feather from "@expo/vector-icons/Feather";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { isSubscriptionActive } from "@/utils/subscription";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -21,6 +23,7 @@ const Edit = () => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // Form state
     const [displayName, setDisplayName] = useState(user?.display_name || "");
@@ -38,6 +41,54 @@ const Edit = () => {
             const imageUri = result.assets[0].uri;
             setSelectedImage(imageUri);
             console.log("Selected image:", imageUri);
+        }
+    };
+
+    const handleUpgradePress = async () => {
+        try {
+            if (Platform.OS === 'ios') {
+                // Open App Store subscriptions page
+                const appStoreUrl = 'https://apps.apple.com/account/subscriptions';
+                const canOpen = await Linking.canOpenURL(appStoreUrl);
+                
+                if (canOpen) {
+                    await Linking.openURL(appStoreUrl);
+                } else {
+                    Alert.alert(
+                        "Unable to Open",
+                        "Please visit the App Store to manage your subscriptions.",
+                        [{ text: "OK" }]
+                    );
+                }
+            } else if (Platform.OS === 'android') {
+                // Open Google Play subscriptions page
+                const playStoreUrl = 'https://play.google.com/store/account/subscriptions';
+                const canOpen = await Linking.canOpenURL(playStoreUrl);
+                
+                if (canOpen) {
+                    await Linking.openURL(playStoreUrl);
+                } else {
+                    Alert.alert(
+                        "Unable to Open",
+                        "Please visit the Play Store to manage your subscriptions.",
+                        [{ text: "OK" }]
+                    );
+                }
+            } else {
+                // Web or other platforms
+                Alert.alert(
+                    "Kindred Plus",
+                    "Get unlimited access to all premium features!\n\n• Unlimited voice credits\n• Unlimited natural language\n• Unlimited groups\n• Advanced analytics\n• Priority support\n\nSubscription management coming soon!",
+                    [{ text: "OK" }]
+                );
+            }
+        } catch (error) {
+            console.error("Error opening subscription:", error);
+            Alert.alert(
+                "Error",
+                "Unable to open subscription settings. Please try again later.",
+                [{ text: "OK" }]
+            );
         }
     };
 
@@ -278,6 +329,147 @@ const Edit = () => {
                     ]}
                 />
             </View>
+
+            {/* Learn about Kindred Plus Button - Only show for users without active subscription */}
+            {user && !(user as any).subscription?.tier && (
+                <View style={{ marginTop: 32, marginBottom: 16 }}>
+                    <PrimaryButton
+                        title="Learn about Kindred Plus"
+                        onPress={() => setShowUpgradeModal(true)}
+                        style={{
+                            shadowColor: ThemedColor.primary,
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.5,
+                            shadowRadius: 12,
+                            elevation: 8,
+                        }}
+                        textStyle={{
+                            fontSize: 15,
+                            fontWeight: "600",
+                        }}
+                    />
+                </View>
+            )}
+
+            {/* Kindred Plus Benefits Modal */}
+            <Modal
+                visible={showUpgradeModal}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setShowUpgradeModal(false)}
+            >
+                <ThemedView style={{ flex: 1 }}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        contentContainerStyle={{
+                            paddingHorizontal: HORIZONTAL_PADDING,
+                            paddingTop: insets.top + 16,
+                            paddingBottom: insets.bottom + 24,
+                        }}
+                    >
+                        {/* Header */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <View style={{ flex: 1 }}>
+                                <ThemedText type="title" style={{ fontSize: 28 }}>
+                                    Kindred Plus
+                                </ThemedText>
+                                <ThemedText type="default" style={{ opacity: 0.7, fontSize: 16, marginTop: 4 }}>
+                                    Upgrade for $4.99/month
+                                </ThemedText>
+                            </View>
+                            <TouchableOpacity onPress={() => setShowUpgradeModal(false)}>
+                                <Feather name="x" size={28} color={ThemedColor.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ height: 24 }} />
+
+                        {/* Benefits */}
+                        <ThemedText type="defaultSemiBold" style={{ fontSize: 18, marginBottom: 16 }}>
+                            What's Included:
+                        </ThemedText>
+
+                        {[
+                            { icon: 'mic', title: 'Unlimited Voice Credits', description: 'Create tasks with your voice without limits' },
+                            { icon: 'message-circle', title: 'Unlimited Natural Language', description: 'Use AI to create tasks naturally' },
+                            { icon: 'users', title: 'Unlimited Group Creation', description: 'Collaborate with unlimited groups' },
+                            { icon: 'layers', title: 'Unlimited Blueprint Subscriptions', description: 'Subscribe to as many blueprints as you want' },
+                            { icon: 'eye-off', title: 'Ad-Free Experience', description: 'Enjoy Kindred without any advertisements' },
+                        ].map((benefit, index) => (
+                            <View
+                                key={index}
+                                style={{
+                                    flexDirection: 'row',
+                                    marginBottom: 20,
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 16,
+                                    backgroundColor: ThemedColor.lightenedCard,
+                                    borderRadius: 12,
+                                }}
+                            >
+                                <View style={{ marginRight: 16, marginTop: 4 }}>
+                                    <Feather name={benefit.icon as any} size={24} color={ThemedColor.primary} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <ThemedText type="defaultSemiBold" style={{ marginBottom: 4 }}>
+                                        {benefit.title}
+                                    </ThemedText>
+                                    <ThemedText type="default" style={{ opacity: 0.7, fontSize: 14 }}>
+                                        {benefit.description}
+                                    </ThemedText>
+                                </View>
+                            </View>
+                        ))}
+
+                        {/* Additional Info */}
+                        <View
+                            style={{
+                                backgroundColor: ThemedColor.lightenedCard,
+                                padding: 16,
+                                borderRadius: 12,
+                                marginTop: 16,
+                                marginBottom: 24,
+                            }}
+                        >
+                            <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textAlign: 'center' }}>
+                                Cancel anytime. No commitment required.
+                            </ThemedText>
+                        </View>
+
+                        {/* Upgrade Button */}
+                        <PrimaryButton
+                            title="Upgrade to Kindred Plus"
+                            onPress={() => {
+                                setShowUpgradeModal(false);
+                                handleUpgradePress();
+                            }}
+                            disabled={true}
+                            style={{
+                                shadowColor: ThemedColor.primary,
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.5,
+                                shadowRadius: 12,
+                                elevation: 8,
+                                marginBottom: 12,
+                            }}
+                            textStyle={{
+                                fontSize: 16,
+                                fontWeight: "700",
+                            }}
+                        />
+
+                        {/* Cancel Button */}
+                        <TouchableOpacity
+                            onPress={() => setShowUpgradeModal(false)}
+                            style={{ paddingVertical: 12 }}
+                        >
+                            <ThemedText type="default" style={{ textAlign: 'center', opacity: 0.6 }}>
+                                Maybe Later
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </ThemedView>
+            </Modal>
         </ThemedView>
     );
 };

@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     contactsList: {
-        gap: 16,
         paddingHorizontal: 16,
+        overflow: "visible",
     },
 });

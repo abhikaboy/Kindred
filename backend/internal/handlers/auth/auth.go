@@ -299,6 +299,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		Points:          0,
 		PostsMade:       0,
 		Credits:         types.GetDefaultCredits(),
+		Subscription:    types.GetDefaultSubscription(),
 
 		AppleID:  aaid.(string),
 		GoogleID: googleid.(string),

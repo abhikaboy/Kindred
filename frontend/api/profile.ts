@@ -149,9 +149,8 @@ export interface UserExtendedReferenceWithPhone {
  */
 export const findUsersByPhoneNumbers = async (phoneNumbers: string[]): Promise<UserExtendedReferenceWithPhone[]> => {
     // Use the openapi-fetch client with type casting until OpenAPI types are regenerated
-    const { data, error } = await client.POST("/v1/profiles/find-by-phone" as any, {
-        params: withAuthHeaders({}),
-        body: { numbers: phoneNumbers } as any,
+    const { data, error } = await (client as any).POST("/v1/profiles/find-by-phone", {
+        body: { numbers: phoneNumbers },
     });
 
     if (error) {

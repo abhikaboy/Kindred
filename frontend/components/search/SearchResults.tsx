@@ -39,6 +39,7 @@ type SearchResultsProps = {
     focusStyle: any;
     activeTab: number;
     setActiveTab: (tab: number) => void;
+    showTabs?: boolean;
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({
@@ -49,6 +50,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     focusStyle,
     activeTab,
     setActiveTab,
+    showTabs = true,
 }) => {
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
@@ -57,6 +59,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     const tabs = ["Blueprints", "Users"];
 
     const TabHeader = useMemo(() => {
+        if (!showTabs) return null;
         return (
             <View style={styles.tabsContainer}>
                 <View style={[styles.tabHeaderContainer, { borderBottomColor: ThemedColor.tertiary }]}>
@@ -89,7 +92,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 </View>
             </View>
         );
-    }, [activeTab, ThemedColor, styles, setActiveTab]);
+    }, [activeTab, ThemedColor, styles, setActiveTab, showTabs]);
 
     const BlueprintContent = useMemo(() => {
         if (mode === "searching") return null;

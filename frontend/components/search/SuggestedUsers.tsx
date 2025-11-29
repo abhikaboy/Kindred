@@ -52,7 +52,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     usersList: {
-        gap: 12,
         paddingHorizontal: 16,
         paddingBottom: 3, 
     },

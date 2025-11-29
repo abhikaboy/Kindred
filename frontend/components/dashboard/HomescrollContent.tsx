@@ -12,6 +12,7 @@ import { KudosCards } from "../cards/KudosCard";
 import { HorseIcon, PlusIcon } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import TodaySection from "./TodaySection";
+import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AttachStep } from "react-native-spotlight-tour";
 interface HomeScrollContentProps {
@@ -119,6 +120,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         </TouchableOpacity>
                     <TodaySection />
                 </View>
+
+
                 {/* <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                         <ThemedText type="caption">QUICK TASK</ThemedText>
@@ -147,7 +150,6 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         </TouchableOpacity>
                     </View>
                 </View>
-
                 <ScrollView
                     horizontal={false}
                     showsVerticalScrollIndicator={false}
@@ -167,6 +169,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                             ThemedColor={ThemedColor}
                         />
                     </View>
+                {/* Recently Completed Tasks */}
+                <RecentlyCompletedTasks />
 
                     {/* Tutorial Card */}
                     <View

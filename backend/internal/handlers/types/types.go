@@ -62,6 +62,7 @@ type TaskDocument struct {
 	// Completion tracking fields (only populated for completed tasks)
 	TimeCompleted *time.Time `bson:"timeCompleted,omitempty" json:"timeCompleted,omitempty"`
 	TimeTaken     *string    `bson:"timeTaken,omitempty" json:"timeTaken,omitempty"`
+	Posted        bool       `bson:"posted" json:"posted"`
 }
 
 /*
@@ -137,6 +138,48 @@ type KudosRewards struct {
 	Congratulations int `bson:"congratulations" json:"congratulations" doc:"Number of congratulations sent (for rewards tracking)"`
 }
 
+// SubscriptionTier represents the tier of subscription a user has
+type SubscriptionTier string
+
+const (
+	TierFree     SubscriptionTier = "free"
+	TierBasic    SubscriptionTier = "basic"    // $4.99/mo - 2x credits regeneration, no ads
+	TierPremium  SubscriptionTier = "premium"  // $9.99/mo - Unlimited everything, analytics, priority support
+	TierLifetime SubscriptionTier = "lifetime" // One-time purchase - Same as Premium forever
+)
+
+// SubscriptionStatus represents the current status of a subscription
+type SubscriptionStatus string
+
+const (
+	StatusActive   SubscriptionStatus = "active"   // Subscription is currently active
+	StatusExpired  SubscriptionStatus = "expired"  // Subscription has expired
+	StatusCanceled SubscriptionStatus = "canceled" // Subscription was canceled but may still be active until end date
+	StatusTrial    SubscriptionStatus = "trial"    // User is in trial period
+)
+
+// SubscriptionProvider represents the payment provider
+type SubscriptionProvider string
+
+const (
+	ProviderStripe SubscriptionProvider = "stripe"
+	ProviderApple  SubscriptionProvider = "apple"
+	ProviderGoogle SubscriptionProvider = "google"
+	ProviderPromo  SubscriptionProvider = "promo" // Promotional/free subscription
+)
+
+// Subscription represents a user's subscription information
+type Subscription struct {
+	Tier           SubscriptionTier     `bson:"tier" json:"tier"`
+	Status         SubscriptionStatus   `bson:"status" json:"status"`
+	StartDate      time.Time            `bson:"startDate" json:"startDate"`
+	EndDate        *time.Time           `bson:"endDate,omitempty" json:"endDate,omitempty"`         // When subscription ends (for trials/canceled)
+	RenewalDate    *time.Time           `bson:"renewalDate,omitempty" json:"renewalDate,omitempty"` // Next billing date
+	Provider       SubscriptionProvider `bson:"provider,omitempty" json:"provider,omitempty"`
+	SubscriptionID string               `bson:"subscriptionId,omitempty" json:"subscriptionId,omitempty"` // External provider ID
+	CanceledAt     *time.Time           `bson:"canceledAt,omitempty" json:"canceledAt,omitempty"`
+}
+
 type User struct {
 	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
 	Email          string               `bson:"email" json:"email"`
@@ -164,6 +207,7 @@ type User struct {
 	PostsMade       int          `bson:"posts_made" json:"posts_made"`
 	Credits         UserCredits  `bson:"credits" json:"credits"`
 	KudosRewards    KudosRewards `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
+	Subscription    Subscription `bson:"subscription" json:"subscription"`
 }
 
 type SafeUser struct {
@@ -183,6 +227,7 @@ type SafeUser struct {
 	PostsMade       int                  `bson:"posts_made" json:"posts_made"`
 	Credits         UserCredits          `bson:"credits" json:"credits"`
 	KudosRewards    KudosRewards         `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
+	Subscription    Subscription         `bson:"subscription" json:"subscription"`
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`

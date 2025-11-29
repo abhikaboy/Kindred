@@ -1,6 +1,6 @@
 import { useTasks } from "@/contexts/tasksContext";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { View, TouchableOpacity, ScrollView, Keyboard, Platform, Image } from "react-native";
+import { View, TouchableOpacity, ScrollView, Keyboard, Platform, Image, StyleProp, ViewStyle } from "react-native";
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
 import { Dimensions, StyleSheet } from "react-native";
@@ -288,13 +288,6 @@ const DrawerContent = ({
                     onLongPress={() => {}}
                 />
                 <DrawerItem
-                    title="Calendar"
-                    selected={currentSelected}
-                    icon={<Calendar size={20} color={ThemedColor.primary} weight="regular" />}
-                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/calendar")}
-                    onLongPress={() => {}}
-                />
-                <DrawerItem
                     title="Analytics"
                     selected={currentSelected}
                     icon={<ChartLine size={20} color={ThemedColor.primary} weight="regular" />}
@@ -341,7 +334,7 @@ const DrawerContent = ({
                         {workspaces
                             .filter((workspace) => !workspace.isBlueprint)
                             .map((workspace) => (
-                                <DrawerItem
+                                <WorkspaceDrawerItem
                                     onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
                                     onLongPress={() => {
                                         setFocusedWorkspace(workspace.name);
@@ -422,9 +415,10 @@ type DrawerItemProps = {
     onLongPress?: () => void;
     badge?: string;
     icon?: React.ReactNode;
+    style?: StyleProp<ViewStyle>;
 };
 
-const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, icon }: DrawerItemProps) => {
+const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, icon, style }: DrawerItemProps) => {
     const ThemedColor = useThemeColor();
     const isSelected = selected === title;
     
@@ -441,6 +435,7 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
                     gap: 8,
                 },
                 isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
+                style,
             ]}
             onPress={onPress}
             onLongPress={onLongPress}
@@ -476,6 +471,25 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
         </TouchableOpacity>
     );
 });
+
+const WorkspaceDrawerItem = (props: DrawerItemProps) => {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingVertical: 4 }}>
+            <DrawerItem
+                {...props}
+                style={{
+                    borderWidth: 1,
+                    borderColor: ThemedColor.tertiary,
+                    borderRadius: 8,
+                    paddingVertical: 20,
+                    paddingHorizontal: 16,
+                    width: "100%",
+                }}
+            />
+        </View>
+    );
+};
 
 // Convert styles to a function to properly access ThemedColor
 const styles = (ThemedColor) =>

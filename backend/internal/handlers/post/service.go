@@ -108,6 +108,45 @@ func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, *UserS
 	id := result.InsertedID.(primitive.ObjectID)
 	r.ID = id
 
+	// If this post is linked to a task, mark the task as posted
+	if r.Task != nil {
+		// Determine which collection the task is in (likely "completed-tasks" but we should check)
+		// For now, we assume tasks are moved to "completed-tasks" upon completion
+		// But since we don't have a direct reference to the collection name in the task reference,
+		// we'll try to update it in the users collection where completed tasks are embedded/stored
+		// Wait, completed tasks are stored in the "completed-tasks" collection according to task service.
+
+		// Since we don't have direct access to "completed-tasks" collection here in the struct,
+		// let's assume we need to add it or use a dynamic collection access if needed.
+		// However, looking at task service, completed tasks are stored in "tasks" collection but moved to "completed-tasks"?
+		// Let's check the task service again...
+		// "into": "completed-tasks" in the aggregation pipeline.
+
+		// Since we don't have the "completed-tasks" collection initialized in Service struct,
+		// we might need to add it or access it via the database.
+		// But wait, 'Categories' collection contains active tasks.
+		// Completed tasks are likely in a separate collection or just marked as inactive?
+		// In task/service.go: "into": "completed-tasks" suggests a separate collection.
+
+		// Let's try to update it in the "completed-tasks" collection.
+		// Since it's not in the Service struct, we'll need to use the client from one of the other collections
+		// or better, add it to the Service struct in newService (but I can't change main.go/wire.go easily).
+		// Instead, I'll access it via the database of another collection.
+
+		db := s.Posts.Database()
+		completedTasksColl := db.Collection("completed-tasks")
+
+		_, err := completedTasksColl.UpdateOne(ctx,
+			bson.M{"_id": r.Task.ID},
+			bson.M{"$set": bson.M{"posted": true}},
+		)
+
+		if err != nil {
+			// Log warning but don't fail the post creation
+			fmt.Printf("Warning: Failed to mark task as posted: %v\n", err)
+		}
+	}
+
 	// Update user stats after successful post creation and get the updated stats
 	userStats, err := s.updateUserPostStats(ctx, r.User.ID)
 	if err != nil {

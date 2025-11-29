@@ -79,6 +79,7 @@ export interface Task {
     // Completion tracking fields (only populated for completed tasks)
     timeCompleted?: string;
     timeTaken?: string;
+    posted?: boolean; // Whether a post has been created for this task
 }
 
 export interface Categories {
@@ -97,6 +98,32 @@ export interface Workspace {
 export interface BlueprintWorkspace extends Workspace {
     blueprintDetails: components["schemas"]["BlueprintDocumentWithoutSubscribers"];
     isBlueprint: true;
+}
+
+// Subscription types
+export type SubscriptionTier = "free" | "basic" | "premium" | "lifetime";
+export type SubscriptionStatus = "active" | "expired" | "canceled" | "trial";
+export type SubscriptionProvider = "stripe" | "apple" | "google" | "promo";
+
+export interface Subscription {
+    tier: SubscriptionTier;
+    status: SubscriptionStatus;
+    startDate: string;
+    endDate?: string;
+    renewalDate?: string;
+    provider?: SubscriptionProvider;
+    subscriptionId?: string;
+    canceledAt?: string;
+}
+
+export interface SubscriptionFeatures {
+    unlimitedVoice: boolean;
+    unlimitedNaturalLanguage: boolean;
+    unlimitedGroups: boolean;
+    unlimitedAnalytics: boolean;
+    noAds: boolean;
+    prioritySupport: boolean;
+    creditMultiplier: number;
 }
 
 export interface User {

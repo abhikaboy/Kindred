@@ -50,10 +50,7 @@ const BetterTogetherCard = ({ onDismiss, onSyncContacts, isLoadingContacts, isFi
                     <ThemedText style={[styles.arrow, { color: ThemedColor.primary }]}>→</ThemedText>
                 </View>
 
-                <ThemedText style={styles.description}>
-                    Here you can search for your friends, link your contact to see whose on Kindred, or Invite your
-                    friends to Kindred to earn Rewards!
-                </ThemedText>
+                <ThemedText style={styles.description}>Invite your friends to Kindred to earn Rewards!</ThemedText>
             </Pressable>
 
             <TouchableOpacity
@@ -139,6 +136,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: "Outfit",
         fontWeight: "400",
+        marginTop: 4,
     },
     syncButton: {
         flexDirection: "row",

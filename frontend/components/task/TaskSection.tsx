@@ -30,7 +30,7 @@ export default function TaskSection({
 
     if (tasks.length === 0) {
         return (
-            <View style={styles.section}>
+            <View style={{...styles.section, opacity: 0.3}}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
                     {title}
                 </ThemedText>
@@ -39,7 +39,7 @@ export default function TaskSection({
                         {description}
                     </ThemedText>
                 )}
-                <ThemedText type="lightBody" style={styles.emptyText}>
+                <ThemedText type="lightBody">
                     {emptyMessage}
                 </ThemedText>
             </View>
@@ -84,17 +84,12 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: "600",
-        letterSpacing: -1,
+        fontWeight: "500",
     },
     description: {
         marginBottom: 8,
     },
     taskContainer: {
         gap: 8,
-    },
-    emptyText: {
-        textAlign: "center",
-        marginTop: 20,
     },
 });
