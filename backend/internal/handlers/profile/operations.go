@@ -111,6 +111,21 @@ type FindUsersByPhoneNumbersOutput struct {
 	Body []types.UserExtendedReferenceWithPhone `json:"body"`
 }
 
+// Update Timezone
+type UpdateTimezoneInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          struct {
+		Timezone string `json:"timezone" example:"America/New_York" doc:"The IANA timezone identifier"`
+	}
+}
+
+type UpdateTimezoneOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Timezone updated successfully"`
+	}
+}
+
 // Note: Image upload functionality moved to centralized /v1/uploads endpoints
 // Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead
 
@@ -224,6 +239,17 @@ func RegisterFindUsersByPhoneNumbersOperation(api huma.API, handler *Handler) {
 		Description: "Efficiently find users matching any of the provided phone numbers using a single database query",
 		Tags:        []string{"profiles"},
 	}, handler.FindUsersByPhoneNumbers)
+}
+
+func RegisterUpdateTimezoneOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-timezone",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/timezone",
+		Summary:     "Update timezone",
+		Description: "Update the authenticated user's timezone",
+		Tags:        []string{"profiles", "user"},
+	}, handler.UpdateTimezone)
 }
 
 // Get User Credits

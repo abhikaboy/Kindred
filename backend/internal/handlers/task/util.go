@@ -6,8 +6,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,37 +30,52 @@ func getBaseTime(template *TemplateTaskDocument) time.Time {
 }
 
 // applyTimeToDate applies the time components from a source time to a target date
-func applyTimeToDate(targetDate time.Time, sourceTime *time.Time) time.Time {
+func applyTimeToDate(targetDate time.Time, sourceTime *time.Time, loc *time.Location) time.Time {
 	if sourceTime == nil {
 		return targetDate
 	}
 
+	if loc == nil {
+		loc = time.UTC
+	}
+
+	// Convert targetDate to the target location
+	targetInLoc := targetDate.In(loc)
+	sourceInLoc := sourceTime.In(loc)
+
 	return time.Date(
-		targetDate.Year(),
-		targetDate.Month(),
-		targetDate.Day(),
-		sourceTime.Hour(),
-		sourceTime.Minute(),
-		sourceTime.Second(),
+		targetInLoc.Year(),
+		targetInLoc.Month(),
+		targetInLoc.Day(),
+		sourceInLoc.Hour(),
+		sourceInLoc.Minute(),
+		sourceInLoc.Second(),
 		0,
-		targetDate.Location(),
-	)
+		loc,
+	).In(time.UTC)
 }
 
 // calculateNextRecurrence calculates the next recurrence date based on frequency
-func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTime time.Time) (time.Time, error) {
+func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTime time.Time, loc *time.Location) (time.Time, error) {
+	if loc == nil {
+		loc = time.UTC
+	}
+
+	// Convert baseTime to the user's timezone for calculation
+	localBaseTime := baseTime.In(loc)
 	var nextTime time.Time
+
 	switch template.RecurFrequency {
 	case "daily":
-		nextTime = baseTime.AddDate(0, 0, template.RecurDetails.Every)
+		nextTime = localBaseTime.AddDate(0, 0, template.RecurDetails.Every)
 
 	case "weekly":
-		nextTime = baseTime.AddDate(0, 0, 1)
+		nextTime = localBaseTime.AddDate(0, 0, 1)
 		found := false
 		for i := 0; i < 7; i++ {
 			dayOfWeek := int(nextTime.Weekday())
 			if template.RecurDetails.DaysOfWeek[dayOfWeek] == 1 {
-				if nextTime.After(baseTime) {
+				if nextTime.After(localBaseTime) {
 					found = true
 					break
 				}
@@ -67,30 +84,41 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 		}
 
 		if !found {
-			nextTime = baseTime.AddDate(0, 0, 7*template.RecurDetails.Every)
+			nextTime = localBaseTime.AddDate(0, 0, 7*template.RecurDetails.Every)
+			// We need to find the correct day in the new week
+			// Reset nextTime to start of that week and find the first valid day
+			// For simplicity, we can just recurse (be careful with infinite recursion if logic is wrong, but here we advanced by 7 days)
 			return s.calculateNextRecurrence(&TemplateTaskDocument{
 				RecurType:      template.RecurType,
 				RecurFrequency: template.RecurFrequency,
 				RecurDetails:   template.RecurDetails,
-				LastGenerated:  &nextTime,
-			}, nextTime)
+				LastGenerated:  &nextTime, // This is just a placeholder passed back in, logic uses baseTime arg mostly but recursive call uses Updated struct? No wait.
+			}, nextTime.In(time.UTC), loc) // Recursive call with updated baseTime in UTC
 		}
 
 	case "monthly":
 		// Start with the current month
-		nextTime = baseTime
+		nextTime = localBaseTime
 		found := false
 
 		// First try to find a valid day in the current month
 		for _, day := range template.RecurDetails.DaysOfMonth {
-			lastDayOfMonth := time.Date(nextTime.Year(), nextTime.Month()+1, 0, 0, 0, 0, 0, nextTime.Location()).Day()
+			// Calculate last day of the month relative to nextTime
+			lastDayOfMonth := time.Date(nextTime.Year(), nextTime.Month()+1, 0, 0, 0, 0, 0, loc).Day()
 			targetDay := day
 			if targetDay > lastDayOfMonth {
 				targetDay = lastDayOfMonth
 			}
 
-			candidateTime := time.Date(nextTime.Year(), nextTime.Month(), targetDay, 0, 0, 0, 0, nextTime.Location())
-			if candidateTime.After(baseTime) {
+			candidateTime := time.Date(nextTime.Year(), nextTime.Month(), targetDay, 0, 0, 0, 0, loc)
+			// Need to make sure candidateTime preserves the time components if that's desired?
+			// Usually recurrence just sets the date. Time is handled by applyTimeToDate later.
+			// But wait, AddDate preserves time.
+			// Here we are constructing a new Date at 00:00:00. Let's preserve the time from baseTime?
+			candidateTime = time.Date(candidateTime.Year(), candidateTime.Month(), candidateTime.Day(),
+				localBaseTime.Hour(), localBaseTime.Minute(), localBaseTime.Second(), localBaseTime.Nanosecond(), loc)
+
+			if candidateTime.After(localBaseTime) {
 				nextTime = candidateTime
 				found = true
 				break
@@ -99,23 +127,67 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 
 		// If no valid day found in current month, move to next month
 		if !found {
-			nextTime = time.Date(baseTime.Year(), baseTime.Month()+time.Month(template.RecurDetails.Every), 1, 0, 0, 0, 0, baseTime.Location())
-			return s.calculateNextRecurrence(&TemplateTaskDocument{
-				RecurType:      template.RecurType,
-				RecurFrequency: template.RecurFrequency,
-				RecurDetails:   template.RecurDetails,
-				LastGenerated:  &nextTime,
-			}, nextTime)
+			// Move to next month (respecting 'Every')
+			nextTime = localBaseTime.AddDate(0, template.RecurDetails.Every, 0)
+			// Find the first valid day in that month
+			// We can reuse the logic by calling recursively with the start of that month - 1 day?
+			// Or just find the first valid day directly.
+			foundInNext := false
+			for _, day := range template.RecurDetails.DaysOfMonth {
+				lastDayOfMonth := time.Date(nextTime.Year(), nextTime.Month()+1, 0, 0, 0, 0, 0, loc).Day()
+				targetDay := day
+				if targetDay > lastDayOfMonth {
+					targetDay = lastDayOfMonth
+				}
+				candidateTime := time.Date(nextTime.Year(), nextTime.Month(), targetDay,
+					localBaseTime.Hour(), localBaseTime.Minute(), localBaseTime.Second(), localBaseTime.Nanosecond(), loc)
+
+				if candidateTime.After(localBaseTime) {
+					nextTime = candidateTime
+					foundInNext = true
+					break
+				}
+			}
+			if !foundInNext {
+				// This shouldn't happen if DaysOfMonth has at least one valid day.
+				// But if it does, we might need to advance another month.
+				// For safety, let's just return error or fall back.
+				// Simplest fallback: just add one month and try again (recursive)
+				nextAttemptTime := localBaseTime.AddDate(0, 1, 0)
+				return s.calculateNextRecurrence(template, nextAttemptTime.In(time.UTC), loc)
+			}
 		}
 
 	case "yearly":
-		nextTime = baseTime.AddDate(template.RecurDetails.Every, 0, 0)
+		nextTime = localBaseTime.AddDate(template.RecurDetails.Every, 0, 0)
 
 	default:
 		return time.Time{}, fmt.Errorf("invalid recurrence frequency: %s", template.RecurFrequency)
 	}
 
-	return nextTime, nil
+	// Convert result back to UTC
+	return nextTime.In(time.UTC), nil
+}
+
+func (s *Service) getUserLocation(ctx context.Context, userID primitive.ObjectID) (*time.Location, error) {
+	var user types.User
+	// We need to use FindOne here.
+	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		slog.Error("Failed to fetch user for timezone", "userID", userID, "error", err)
+		return time.UTC, nil // Default to UTC on error
+	}
+
+	if user.Timezone == "" {
+		return time.UTC, nil
+	}
+
+	loc, err := time.LoadLocation(user.Timezone)
+	if err != nil {
+		slog.Error("Failed to load user location", "timezone", user.Timezone, "error", err)
+		return time.UTC, nil
+	}
+	return loc, nil
 }
 
 // ComputeNextOccurrence calculates the next occurrence time for a recurring task
@@ -124,13 +196,16 @@ func (s *Service) ComputeNextOccurrence(template *TemplateTaskDocument) (time.Ti
 		return time.Time{}, fmt.Errorf("invalid recurrence type: %s", template.RecurType)
 	}
 
+	ctx := context.Background()
+	loc, _ := s.getUserLocation(ctx, template.UserID)
+
 	baseTime := getBaseTime(template)
-	nextTime, err := s.calculateNextRecurrence(template, baseTime)
+	nextTime, err := s.calculateNextRecurrence(template, baseTime, loc)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	return applyTimeToDate(nextTime, template.StartTime), nil
+	return applyTimeToDate(nextTime, template.StartTime, loc), nil
 }
 
 // ComputeNextDeadline calculates the next deadline time for a recurring task
@@ -139,16 +214,17 @@ func (s *Service) ComputeNextDeadline(template *TemplateTaskDocument) (time.Time
 		return time.Time{}, fmt.Errorf("invalid recurrence type: %s", template.RecurType)
 	}
 	c := context.Background()
+	loc, _ := s.getUserLocation(c, template.UserID)
 
 	baseTime := getBaseTime(template)
 	slog.LogAttrs(c, slog.LevelInfo, "Base time", slog.Time("baseTime", baseTime))
-	nextTime, err := s.calculateNextRecurrence(template, baseTime)
+	nextTime, err := s.calculateNextRecurrence(template, baseTime, loc)
 	slog.LogAttrs(c, slog.LevelInfo, "Next time", slog.Time("nextTime", nextTime))
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	return applyTimeToDate(nextTime, template.Deadline), nil
+	return applyTimeToDate(nextTime, template.Deadline, loc), nil
 }
 
 // PrintNextRecurrences prints the next 7 recurrences for a given template

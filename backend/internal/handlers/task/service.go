@@ -585,42 +585,67 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	var nextGeneration time.Time
 	var deletedCount int
 
-	if templateDoc.RecurType == "OCCURRENCE" {
+	// Catch-up loop: skip past occurrences
+	now := xutils.NowUTC()
+	catchUpLimit := 100 // Prevent infinite loops
+	iterations := 0
 
+	for {
+		iterations++
+		if iterations > catchUpLimit {
+			slog.Warn("Catch-up limit reached for recurring task", "templateID", templateId)
+			break
+		}
+
+		if templateDoc.RecurType == "OCCURRENCE" {
+			nextGeneration, err = s.ComputeNextOccurrence(&templateDoc)
+			if err != nil {
+				return nil, err
+			}
+		} else if templateDoc.RecurType == "DEADLINE" {
+			nextGeneration, err = s.ComputeNextDeadline(&templateDoc)
+			if err != nil {
+				return nil, err
+			}
+		} else if templateDoc.RecurType == "WINDOW" {
+			// Window logic (placeholder)
+			nextGeneration, err = s.ComputeNextOccurrence(&templateDoc)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Check if the calculated nextGeneration is still in the past
+		// If so, update LastGenerated and try again (skip this occurrence)
+		if nextGeneration.Before(now) {
+			slog.Info("Skipping past recurrence", "templateID", templateId, "skippedTime", nextGeneration)
+			templateDoc.LastGenerated = &nextGeneration
+			continue
+		}
+
+		// Found a future or current occurrence
+		break
+	}
+
+	// Apply the correct fields to the task based on the type
+	if templateDoc.RecurType == "OCCURRENCE" {
 		deletedCount, err = s.DeleteTaskFromTemplateID(templateDoc)
 		if err != nil {
 			return nil, err
 		}
-
-		nextGeneration, err = s.ComputeNextOccurrence(&templateDoc)
-		slog.LogAttrs(ctx, slog.LevelInfo, "Next occurrence", slog.String("nextGeneration", nextGeneration.Format(time.RFC3339)))
-		if err != nil {
-			return nil, err
-		}
 		task.StartDate = &nextGeneration
-
 	} else if templateDoc.RecurType == "DEADLINE" {
-
-		// if the recur behavior is buildup, then we dont need to delete the last task
-		// otherwise, if its rolling we need to delete the last task
-		fmt.Println(templateDoc.RecurDetails)
 		if templateDoc.RecurDetails.Behavior == "" || templateDoc.RecurDetails.Behavior != "BUILDUP" {
-			fmt.Println("Deleting task from template because this is a rolling deadline")
 			deletedCount, err = s.DeleteTaskFromTemplateID(templateDoc)
 			if err != nil {
 				return nil, err
 			}
 		}
-		nextGeneration, err = s.ComputeNextDeadline(&templateDoc)
-		if err != nil {
-			return nil, err
-		}
 		task.Deadline = &nextGeneration
 	} else if templateDoc.RecurType == "WINDOW" {
-		// TODO: implement window
-		nextGeneration = *templateDoc.NextGenerated
 		task.Deadline = &nextGeneration
 	}
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Updating template", slog.String("templateId", templateId.Hex()), slog.String("lastGenerated", thisGeneration.Format(time.RFC3339)), slog.String("nextGenerated", nextGeneration.Format(time.RFC3339)))
 
 	update := bson.M{

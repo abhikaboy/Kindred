@@ -338,5 +338,27 @@ func (h *Handler) AutocompleteProfilesHuma(ctx context.Context, input *Autocompl
 	return resp, nil
 }
 
+func (h *Handler) UpdateTimezone(ctx context.Context, input *UpdateTimezoneInput) (*UpdateTimezoneOutput, error) {
+	// Extract user_id from context for authorization
+	authenticatedUserID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	// Convert authenticated user ID to ObjectID
+	authUserID, err := primitive.ObjectIDFromHex(authenticatedUserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid authenticated user ID", err)
+	}
+
+	if err := h.service.UpdateTimezone(authUserID, input.Body.Timezone); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update timezone", err)
+	}
+
+	resp := &UpdateTimezoneOutput{}
+	resp.Body.Message = "Timezone updated successfully"
+	return resp, nil
+}
+
 // Note: Profile picture upload functionality moved to centralized upload service
 // Use /v1/uploads/profile/{id}/url and /v1/uploads/profile/{id}/confirm instead

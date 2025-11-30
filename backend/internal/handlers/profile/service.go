@@ -291,6 +291,21 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 		},
 	}
 
+	_, err = s.Profiles.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// UpdateTimezone updates the timezone for a specific user
+func (s *Service) UpdateTimezone(id primitive.ObjectID, timezone string) error {
+	ctx := context.Background()
+	filter := bson.M{"_id": id}
+
+	update := bson.M{
+		"$set": bson.M{
+			"timezone": timezone,
+		},
+	}
+
 	_, err := s.Profiles.UpdateOne(ctx, filter, update)
 	return err
 }

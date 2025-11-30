@@ -215,6 +215,7 @@ type User struct {
 	Credits         UserCredits  `bson:"credits" json:"credits"`
 	KudosRewards    KudosRewards `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
 	Subscription    Subscription `bson:"subscription" json:"subscription"`
+	Timezone        string       `bson:"timezone,omitempty" json:"timezone,omitempty"`
 }
 
 type SafeUser struct {
@@ -235,6 +236,7 @@ type SafeUser struct {
 	Credits         UserCredits          `bson:"credits" json:"credits"`
 	KudosRewards    KudosRewards         `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
 	Subscription    Subscription         `bson:"subscription" json:"subscription"`
+	Timezone        string               `bson:"timezone,omitempty" json:"timezone,omitempty"`
 }
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`

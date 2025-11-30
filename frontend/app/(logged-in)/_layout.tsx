@@ -25,6 +25,8 @@ import { ThemedView } from "@/components/ThemedView";
 import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
 import CreateModal from "@/components/modals/CreateModal";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { updateTimezone } from "@/api/profile";
+import * as Localization from 'expo-localization';
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -33,20 +35,22 @@ export const unstable_settings = {
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();
     return (
-        <ScrollView
-            style={{
-                flex: 1,
-                backgroundColor: ThemedColor.background,
-                padding: 20,
-            }}>
-            <ThemedText type="heading">{error.name}</ThemedText>
-            <ThemedText type="heading">Oops! Something went wrong.</ThemedText>
-            <ThemedText type="default">{error.message}</ThemedText>
-            <ThemedText type="default">{error.stack}</ThemedText>
-            <ThemedText type="default">{error.cause as string}</ThemedText>
-            <ThemedText type="default" onPress={retry}>
-                Try Again?
-            </ThemedText>
+        <ScrollView style={{ flex: 1, backgroundColor: ThemedColor.background.base }}>
+            <View style={{ flex: 1, padding: 20, marginTop: 100 }}>
+                <ThemedText type="title" style={{ color: ThemedColor.text.error }}>
+                    Something went wrong
+                </ThemedText>
+                <ThemedText style={{ marginTop: 10 }}>{error.message}</ThemedText>
+                <ThemedText style={{ marginTop: 10, fontWeight: "bold" }} onPress={retry}>
+                    Try Again
+                </ThemedText>
+                <ThemedText style={{ marginTop: 10, fontWeight: "bold" }} onPress={() => {
+                    AsyncStorage.clear();
+                }}>
+                    Clear Cache
+                </ThemedText>
+            </View>
+
             <View style={{ height: 100 }} />
         </ScrollView>
     );
@@ -87,18 +91,29 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     }
                 } else {
                     console.log('User authenticated, staying in app');
+                    // Update user timezone on successful auth if it has changed
+                    try {
+                        const deviceTimezone = Localization.getCalendars()[0].timeZone || 'UTC';
+                        
+                        // Check if user has timezone field and if it differs from device timezone
+                        // Cast user to any to access timezone field if it's not yet in the type definition
+                        const userTimezone = (userData as any).timezone;
+                        
+                        if (deviceTimezone && userTimezone !== deviceTimezone) {
+                            console.log(`Updating user timezone from ${userTimezone} to ${deviceTimezone}`);
+                            await updateTimezone(deviceTimezone);
+                        } else {
+                            console.log('Timezone is up to date or invalid:', deviceTimezone);
+                        }
+                    } catch (tzError) {
+                        console.error("Failed to update timezone:", tzError);
+                        // Don't block auth flow for timezone update failure
+                    }
                 }
             } catch (error) {
                 console.error("Authentication failed with error:", error);
-                
-                // Check if user has seen onboarding before redirecting to login
-                const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-                console.log('Auth error, hasSeenOnboarding:', hasSeenOnboarding);
-                if (!hasSeenOnboarding) {
-                    setRedirectPath("/(onboarding)/productivity");
-                } else {
-                    setRedirectPath("/login");
-                }
+                // If auth fails, clear everything and go to login
+                setRedirectPath("/login");
             } finally {
                 setIsLoading(false);
                 authInitialized.current = true;
@@ -106,165 +121,50 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         };
 
         initializeAuth();
-    }, []); // Empty dependency array is correct here
+    }, []);
 
-    // Push notification setup - only run when user is authenticated
     useEffect(() => {
-        if (!user) return;
+        registerForPushNotificationsAsync().then((token) => {
+            setExpoPushToken(token);
+            if (token) {
+                sendPushTokenToBackend(token);
+            }
+        });
 
-        const setupNotifications = async () => {
-            try {
-                const result = await registerForPushNotificationsAsync();
-                if (result) {
-                    setExpoPushToken(result.token);
-                    console.log("📱 Push token obtained:", result.token);
-
-                    // Send token to backend
-                    const success = await sendPushTokenToBackend(result.token);
-                    if (!success) {
-                        console.warn("⚠️ Push token was not registered with backend, but continuing...");
-                        // Don't show error to user - this is not critical for app functionality
+        notificationListener.current = addNotificationListener((notification) => {
+            showToastable({
+                message: notification.request.content.body || "New notification",
+                title: notification.request.content.title || "Notification",
+                status: "info",
+                duration: 3000,
+                render: (toast) => <DefaultToast toast={toast} />,
+                onPress: () => {
+                    const data = notification.request.content.data;
+                    if (data?.url) {
+                        router.push(data.url);
                     }
                 }
-            } catch (error) {
-                console.error("❌ Error setting up push notifications:", error);
-                // Only show error if it's a critical failure (not just backend registration)
-                if (error instanceof Error && !error.message.includes("push token")) {
-                    showToastable({
-                        message: "Error setting up push notifications",
-                        status: "danger",
-                        position: "top",
-                        offset: 100,
-                        duration: 3000,
-                        swipeDirection: "up",
-                        renderContent: (props) => <DefaultToast {...props} />,
-                    });
-                }
-            }
-
-            // Check for initial notification (when app opened from killed state)
-            const lastNotificationResponse = await Notifications.getLastNotificationResponseAsync();
-            if (lastNotificationResponse) {
-                console.log("📬 App opened from notification:", lastNotificationResponse);
-                handleNotificationResponse(lastNotificationResponse);
-            }
-        };
-
-        setupNotifications();
-
-        // Set up notification listeners
-        notificationListener.current = addNotificationListener((notification) => {
-            console.log("Notification received:", notification);
+            });
         });
 
         responseListener.current = addNotificationResponseListener((response) => {
-            console.log("Notification response:", response);
-            handleNotificationResponse(response);
+            console.log(response);
+            const data = response.notification.request.content.data;
+            if (data?.url) {
+                router.push(data.url);
+            }
         });
 
-        // Cleanup function
         return () => {
             if (notificationListener.current) {
-                notificationListener.current.remove();
+                Notifications.removeNotificationSubscription(notificationListener.current);
             }
             if (responseListener.current) {
-                responseListener.current.remove();
+                Notifications.removeNotificationSubscription(responseListener.current);
             }
         };
-    }, [user]); // Only run when user changes
+    }, []);
 
-    // Centralized notification routing handler
-    const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
-        const data = response.notification.request.content.data;
-        
-        console.log("🔔 Handling notification with data:", JSON.stringify(data, null, 2));
-        
-        // Handle routing based on notification type
-        if (data?.type) {
-            const notificationType = String(data.type).toLowerCase();
-            
-            switch (notificationType) {
-                case 'friend_request':
-                    // Route to the requester's profile if we have their ID, otherwise friends page
-                    if (data.requester_id) {
-                        console.log("🔗 Routing to requester profile:", data.requester_id);
-                        router.push(`/account/${data.requester_id}` as any);
-                    } else {
-                        console.log("🔗 Routing to friends page");
-                        router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
-                    }
-                    break;
-                
-                case 'friend_request_accepted':
-                    // Route to the accepter's profile if we have their ID, otherwise friends page
-                    if (data.accepter_id) {
-                        console.log("🔗 Routing to accepter profile:", data.accepter_id);
-                        router.push(`/account/${data.accepter_id}` as any);
-                    } else {
-                        console.log("🔗 Routing to friends page");
-                        router.push('/(logged-in)/(tabs)/(profile)/friends' as any);
-                    }
-                    break;
-                
-                case 'encouragement':
-                    // Route to encouragements page
-                    console.log("🔗 Routing to encouragements page");
-                    router.push('/(logged-in)/encouragement' as any);
-                    break;
-                
-                case 'congratulation':
-                    // Route to congratulations page
-                    console.log("🔗 Routing to congratulations page");
-                    router.push('/(logged-in)/congratulations' as any);
-                    break;
-                
-                case 'comment':
-                    // Route to notifications page for comments
-                    console.log("🔗 Routing to notifications page (comment)");
-                    router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
-                    break;
-                
-                case 'task_completion':
-                    // Route to the user's profile if we have their ID
-                    if (data.task_owner_id) {
-                        console.log("🔗 Routing to task owner profile:", data.task_owner_id);
-                        router.push(`/account/${data.task_owner_id}` as any);
-                    } else {
-                        console.log("🔗 Routing to notifications page (task completion)");
-                        router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
-                    }
-                    break;
-                
-                case 'checkin':
-                    // Route to today/home page for check-ins
-                    console.log("🔗 Routing to home page (checkin)");
-                    router.push('/(logged-in)/(tabs)/(task)/' as any);
-                    break;
-                
-                default:
-                    console.log("⚠️ Unknown notification type:", notificationType);
-                    // Fallback: check for explicit screen path
-                    if (data.screen) {
-                        console.log("🔗 Routing to explicit screen:", data.screen);
-                        router.push(data.screen as any);
-                    } else {
-                        // Default to notifications page
-                        console.log("🔗 Routing to notifications page (default)");
-                        router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
-                    }
-                    break;
-            }
-        } else if (data?.screen) {
-            // Legacy handling: if screen is provided directly
-            console.log("🔗 Routing to legacy screen:", data.screen);
-            router.push(data.screen as any);
-        } else {
-            console.log("⚠️ No type or screen in notification data, routing to notifications page");
-            router.push('/(logged-in)/(tabs)/(feed)/Notifications' as any);
-        }
-    };
-
-    // Show loading state while authenticating
     if (isLoading) {
         return (
             <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -285,6 +185,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                         }}
                     />
                 </MotiView>
+
             </ThemedView>
         );
     }
@@ -327,21 +228,30 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
 // Separate component to use the CreateModal context
 const LayoutContent = () => {
-    const ThemedColor = useThemeColor();
-    const { visible, setVisible, modalConfig } = useCreateModal();
-
+    const { isOpen: isCreateModalOpen, setIsOpen: setCreateModalOpen } = useCreateModal();
+    
     return (
-        <>
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />
+        <BlueprintCreationProvider>
+            <Stack
+                screenOptions={{
+                    headerShown: false,
+                    header: (props) => <BackButton {...props} />,
+                }}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                    name="profile/settings"
+                    options={{
+                        headerShown: true,
+                        headerTitle: "Settings",
+                        presentation: "modal",
+                    }}
+                />
+            </Stack>
             <CreateModal 
-                visible={visible} 
-                setVisible={setVisible}
-                edit={modalConfig.edit}
-                screen={modalConfig.screen}
-                categoryId={modalConfig.categoryId}
-                isBlueprint={modalConfig.isBlueprint}
+                isVisible={isCreateModalOpen} 
+                onClose={() => setCreateModalOpen(false)} 
             />
-        </>
+        </BlueprintCreationProvider>
     );
 };
 

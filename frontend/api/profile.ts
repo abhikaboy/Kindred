@@ -208,3 +208,16 @@ export const getUserCredits = async (): Promise<UserCredits> => {
 
     return data || { voice: 0, blueprint: 0, group: 0, analytics: 0, naturalLanguage: 0 };
 };
+
+/**
+ * Update user's timezone
+ */
+export const updateTimezone = async (timezone: string): Promise<void> => {
+    const { error } = await (client as any).POST("/v1/user/timezone", {
+        body: { timezone },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update timezone: ${JSON.stringify(error)}`);
+    }
+};
