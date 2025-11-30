@@ -15,10 +15,11 @@
     ],
     "ios": {
       "buildNumber": "55",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to look up nearby restaurants and addresses.",
         "ITSAppUsesNonExemptEncryption": false,
+        "NSPrivacyPolicyURL": "https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSExceptionDomains": {

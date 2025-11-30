@@ -7,9 +7,10 @@ type Props = {
     level: number;
     isFuture?: boolean;
     isToday?: boolean;
+    onPress?: () => void;
 };
 
-const ActivityPoint = ({ level, isFuture = false, isToday = false }: Props) => {
+const ActivityPoint = ({ level, isFuture = false, isToday = false, onPress }: Props) => {
     let ThemedColor = useThemeColor();
     const LEVELS = { 
         0: ThemedColor.lightened, // No activity - use lightened background color
@@ -20,8 +21,16 @@ const ActivityPoint = ({ level, isFuture = false, isToday = false }: Props) => {
     };
     const [display, setDisplay] = useState(false);
     
+    const handlePress = () => {
+        if (onPress) {
+            onPress();
+        } else {
+            setDisplay(!display);
+        }
+    };
+
     return (
-        <TouchableOpacity onPress={() => setDisplay(!display)}>
+        <TouchableOpacity onPress={handlePress}>
             <View
                 style={{
                     width: 40,

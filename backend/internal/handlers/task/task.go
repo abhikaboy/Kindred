@@ -749,6 +749,32 @@ func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTask
 	return output, nil
 }
 
+func (h *Handler) GetCompletedTasksByDate(ctx context.Context, input *GetCompletedTasksByDateInput) (*GetCompletedTasksByDateOutput, error) {
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	date, err := time.Parse("2006-01-02", input.Date)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid date format (use YYYY-MM-DD)", err)
+	}
+
+	tasks, err := h.service.GetCompletedTasksByDate(userObjID, date)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
+	}
+
+	output := &GetCompletedTasksByDateOutput{}
+	output.Body.Tasks = tasks
+	return output, nil
+}
+
 // Specialized update handlers
 
 // UpdateTaskDeadline updates the deadline field of a task

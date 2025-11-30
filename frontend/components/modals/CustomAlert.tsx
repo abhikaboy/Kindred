@@ -66,44 +66,46 @@ const CustomAlert = ({ visible, setVisible, title, message, buttons = [] }: Prop
                     )}
                 </View>
 
-                <View style={styles.actions}>
+                <View style={[
+                    styles.actions,
+                    {
+                        backgroundColor: ThemedColor.background,
+                        borderColor: ThemedColor.tertiary,
+                        shadowColor: "#000",
+                        shadowOffset: {
+                            width: 0,
+                            height: 1,
+                        },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 2,
+                    }
+                ]}>
                     {sortedButtons.map((button, index) => {
                         const isDestructive = button.style === "destructive";
                         const isCancel = button.style === "cancel";
+                        const isLast = index === sortedButtons.length - 1;
                         
                         return (
-                            <TouchableOpacity
-                                key={index}
-                                onPress={() => handleButtonPress(button)}
-                                style={[
-                                    styles.button,
-                                    { 
-                                        backgroundColor: ThemedColor.background,
-                                        borderColor: ThemedColor.tertiary,
-                                        shadowColor: "#000",
-                                        shadowOffset: {
-                                            width: 0,
-                                            height: 1,
-                                        },
-                                        shadowOpacity: 0.02,
-                                        shadowRadius: 1.5,
-                                        elevation: 1,
-                                        // Add extra margin if it's the last button (Cancel) to separate it
-                                        marginTop: isCancel ? 8 : 0,
-                                    }
-                                ]}
-                            >
-                                <ThemedText 
-                                    type="defaultSemiBold" 
-                                    style={{ 
-                                        // Cancel is now red/destructive too
-                                        color: (isDestructive || isCancel) ? ThemedColor.error : ThemedColor.text,
-                                        textAlign: "center"
-                                    }}
+                            <React.Fragment key={index}>
+                                <TouchableOpacity
+                                    onPress={() => handleButtonPress(button)}
+                                    style={styles.button}
                                 >
-                                    {button.text}
-                                </ThemedText>
-                            </TouchableOpacity>
+                                    <ThemedText 
+                                        type="defaultSemiBold" 
+                                        style={{ 
+                                            color: (isDestructive || isCancel) ? ThemedColor.error : ThemedColor.text,
+                                            textAlign: "center"
+                                        }}
+                                    >
+                                        {button.text}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                                {!isLast && (
+                                    <View style={[styles.separator, { backgroundColor: ThemedColor.tertiary }]} />
+                                )}
+                            </React.Fragment>
                         );
                     })}
                 </View>
@@ -118,13 +120,13 @@ const styles = StyleSheet.create({
         paddingBottom: 128, // Increased bottom padding even more
     },
     header: {
-        alignItems: "flex-start", // Left align
+        alignItems: "center", // Left align
         marginBottom: 32,
         width: "100%",
     },
     title: {
         fontSize: 24,
-        textAlign: "left", // Left align
+        textAlign: "center", // Left align
         marginBottom: 8,
         letterSpacing: -0.5, // Loosen tight tracking slightly if needed, or just standard
     },
@@ -135,15 +137,20 @@ const styles = StyleSheet.create({
     },
     actions: {
         flexDirection: "column",
-        gap: 12,
+        width: "100%",
+        borderRadius: 16,
+        borderWidth: 1,
+        overflow: "hidden",
     },
     button: {
         width: "100%",
         paddingVertical: 16,
-        borderRadius: 16,
-        borderWidth: 1,
         alignItems: "center",
         justifyContent: "center",
+    },
+    separator: {
+        width: "100%",
+        height: 1,
     }
 });
 

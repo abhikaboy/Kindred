@@ -2128,6 +2128,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/completed/date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get completed tasks by date
+         * @description Retrieve completed tasks for a specific date
+         */
+        get: operations["get-completed-tasks-by-date"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/natural-language": {
         parameters: {
             query?: never;
@@ -3484,6 +3504,15 @@ export interface components {
              * @description Total number of pages
              */
             totalPages: number;
+        };
+        GetCompletedTasksByDateOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             */
+            readonly $schema?: string;
+            /** @description List of completed tasks */
+            tasks: components["schemas"]["TaskDocument"][];
         };
         GetFeedOutputBody: {
             /**
@@ -9200,6 +9229,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-completed-tasks-by-date": {
+        parameters: {
+            query: {
+                /** @description Date in YYYY-MM-DD format */
+                date: string;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetCompletedTasksByDateOutputBody"];
                 };
             };
             /** @description Error */

@@ -1217,6 +1217,35 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 	return results, totalCount, nil
 }
 
+func (s *Service) GetCompletedTasksByDate(userId primitive.ObjectID, date time.Time) ([]TaskDocument, error) {
+	ctx := context.Background()
+
+	// Calculate start and end of the day in UTC
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	endOfDay := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	filter := bson.M{
+		"userID": userId,
+		"timeCompleted": bson.M{
+			"$gte": startOfDay,
+			"$lte": endOfDay,
+		},
+	}
+
+	cursor, err := s.CompletedTasks.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 // Specialized update methods for targeted operations
 
 // UpdateTaskDeadline updates only the deadline field of a task

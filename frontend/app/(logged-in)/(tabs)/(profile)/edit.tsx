@@ -448,8 +448,26 @@ const Edit = () => {
                             }}
                         >
                             <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textAlign: 'center' }}>
+                                $4.99/month • Auto-renewable subscription
+                            </ThemedText>
+                            <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
                                 Cancel anytime. No commitment required.
                             </ThemedText>
+                            
+                            {/* Required: Privacy Policy and Terms Links */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                                <TouchableOpacity onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}>
+                                    <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textDecorationLine: 'underline', color: ThemedColor.primary }}>
+                                        Privacy Policy
+                                    </ThemedText>
+                                </TouchableOpacity>
+                                <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13 }}>•</ThemedText>
+                                <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+                                    <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textDecorationLine: 'underline', color: ThemedColor.primary }}>
+                                        Terms of Use
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         {/* Upgrade Button */}

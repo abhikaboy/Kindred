@@ -4510,6 +4510,39 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/completed/date:
+        get:
+            tags:
+                - tasks
+            summary: Get completed tasks by date
+            description: Retrieve completed tasks for a specific date
+            operationId: get-completed-tasks-by-date
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: date
+                  in: query
+                  description: Date in YYYY-MM-DD format
+                  required: true
+                  schema:
+                    type: string
+                    example: "2024-01-01"
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetCompletedTasksByDateOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/natural-language:
         post:
             tags:
@@ -6695,6 +6728,22 @@ components:
                 - limit
                 - total
                 - totalPages
+        GetCompletedTasksByDateOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: List of completed tasks
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+            required:
+                - tasks
         GetFeedOutputBody:
             type: object
             additionalProperties: false

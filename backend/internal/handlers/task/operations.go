@@ -261,6 +261,18 @@ type GetCompletedTasksOutput struct {
 	} `json:"body"`
 }
 
+// Get Completed Tasks By Date
+type GetCompletedTasksByDateInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Date          string `query:"date" doc:"Date in YYYY-MM-DD format" example:"2024-01-01"`
+}
+
+type GetCompletedTasksByDateOutput struct {
+	Body struct {
+		Tasks []TaskDocument `json:"tasks"`
+	} `json:"body"`
+}
+
 // Operation registrations
 
 func RegisterGetTasksByUserOperation(api huma.API, handler *Handler) {
@@ -448,6 +460,17 @@ func RegisterGetCompletedTasksOperation(api huma.API, handler *Handler) {
 		Description: "Retrieve all completed tasks for the logged in user",
 		Tags:        []string{"tasks"},
 	}, handler.GetCompletedTasks)
+}
+
+func RegisterGetCompletedTasksByDateOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-completed-tasks-by-date",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tasks/completed/date",
+		Summary:     "Get completed tasks by date",
+		Description: "Retrieve completed tasks for a specific date",
+		Tags:        []string{"tasks"},
+	}, handler.GetCompletedTasksByDate)
 }
 
 // Specialized endpoint registrations

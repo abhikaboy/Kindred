@@ -5,6 +5,7 @@ import { withAuthHeaders } from "./utils";
 // Use generated types
 export type ActivityDocument = components['schemas']['ActivityDocument'];
 export type ActivityDay = components['schemas']['ActivityDay'];
+export type TaskDocument = components['schemas']['TaskDocument'];
 
 // API functions
 export const activityAPI = {
@@ -67,6 +68,27 @@ export const activityAPI = {
       return data || [];
     } catch (error) {
       console.error('Error fetching all user activity:', error);
+      throw error;
+    }
+  },
+
+  // Get completed tasks for a specific date
+  async getCompletedTasksByDate(date: Date): Promise<TaskDocument[]> {
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      const { data, error } = await client.GET('/v1/user/tasks/completed/date', {
+        params: withAuthHeaders({ 
+          query: { date: dateStr }
+        })
+      });
+      
+      if (error) {
+        throw new Error(`Failed to fetch completed tasks by date: ${JSON.stringify(error)}`);
+      }
+      
+      return data?.body?.tasks || [];
+    } catch (error) {
+      console.error('Error fetching completed tasks by date:', error);
       throw error;
     }
   }
