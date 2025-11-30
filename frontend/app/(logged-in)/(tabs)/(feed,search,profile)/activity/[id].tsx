@@ -9,6 +9,7 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { activityAPI, getMonthlyActivityLevels, ActivityDocument } from "@/api/activity";
+import CompletedTasksBottomSheetModal from "@/components/modals/CompletedTasksBottomSheetModal";
 
 type Props = {};
 
@@ -106,6 +107,8 @@ const Activity = (props: Props) => {
     const [activities, setActivities] = useState<ActivityDocument[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const userId = params.id as string;
@@ -232,6 +235,13 @@ const Activity = (props: Props) => {
                                                         level={level}
                                                         isFuture={isFuture}
                                                         isToday={isToday}
+                                                        onPress={() => {
+                                                            if (!isFuture && level > 0) {
+                                                                const date = new Date(year, monthNumber - 1, dayNumber);
+                                                                setSelectedDate(date);
+                                                                setModalVisible(true);
+                                                            }
+                                                        }}
                                                     />
                                                 );
                                             })}
@@ -243,6 +253,11 @@ const Activity = (props: Props) => {
                     </View>
                 )}
             </ScrollView>
+            <CompletedTasksBottomSheetModal 
+                visible={modalVisible} 
+                setVisible={setModalVisible} 
+                date={selectedDate} 
+            />
         </ThemedView>
     );
 };

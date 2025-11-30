@@ -4217,6 +4217,16 @@ export interface components {
             lastGenerated: string;
             /** Format: date-time */
             nextGenerated: string;
+            /** Format: int64 */
+            timesGenerated?: number;
+            /** Format: int64 */
+            timesCompleted?: number;
+            /** Format: int64 */
+            timesMissed?: number;
+            /** Format: int64 */
+            streak?: number;
+            /** Format: int64 */
+            highestStreak?: number;
             notes?: string;
             /** Format: int64 */
             priority: number;

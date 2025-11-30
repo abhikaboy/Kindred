@@ -246,6 +246,9 @@ func (s *Service) UpdatePartialTask(
 	if updated.Checklist != nil {
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].checklist", Value: updated.Checklist})
 	}
+	if updated.Integration != "" {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].integration", Value: updated.Integration})
+	}
 
 	_, err := s.Tasks.UpdateOne(ctx,
 		bson.M{
@@ -341,6 +344,26 @@ func (s *Service) CompleteTask(
 	_, err = s.Tasks.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
+	}
+
+	// Update recurring template stats if this was a recurring task
+	if taskToComplete.TemplateID != nil {
+		_, err = s.TemplateTasks.UpdateOne(ctx,
+			bson.M{"_id": *taskToComplete.TemplateID},
+			mongo.Pipeline{
+				{{Key: "$set", Value: bson.M{
+					"streak":         bson.M{"$add": bson.A{bson.M{"$ifNull": bson.A{"$streak", 0}}, 1}},
+					"timesCompleted": bson.M{"$add": bson.A{bson.M{"$ifNull": bson.A{"$timesCompleted", 0}}, 1}},
+				}}},
+				{{Key: "$set", Value: bson.M{
+					"highestStreak": bson.M{"$max": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
+				}}},
+			},
+		)
+		if err != nil {
+			slog.Error("Failed to update template stats", "error", err, "templateID", *taskToComplete.TemplateID)
+			// Don't fail the completion
+		}
 	}
 
 	// Update user's tasks_complete count
@@ -560,9 +583,11 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	templateDoc.LastGenerated = templateDoc.NextGenerated
 	thisGeneration := *templateDoc.LastGenerated
 	var nextGeneration time.Time
+	var deletedCount int
+
 	if templateDoc.RecurType == "OCCURRENCE" {
 
-		err = s.DeleteTaskFromTemplateID(templateDoc)
+		deletedCount, err = s.DeleteTaskFromTemplateID(templateDoc)
 		if err != nil {
 			return nil, err
 		}
@@ -581,7 +606,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		fmt.Println(templateDoc.RecurDetails)
 		if templateDoc.RecurDetails.Behavior == "" || templateDoc.RecurDetails.Behavior != "BUILDUP" {
 			fmt.Println("Deleting task from template because this is a rolling deadline")
-			err = s.DeleteTaskFromTemplateID(templateDoc)
+			deletedCount, err = s.DeleteTaskFromTemplateID(templateDoc)
 			if err != nil {
 				return nil, err
 			}
@@ -597,7 +622,80 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		task.Deadline = &nextGeneration
 	}
 	slog.LogAttrs(ctx, slog.LevelInfo, "Updating template", slog.String("templateId", templateId.Hex()), slog.String("lastGenerated", thisGeneration.Format(time.RFC3339)), slog.String("nextGenerated", nextGeneration.Format(time.RFC3339)))
-	s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateId}, bson.M{"$set": bson.M{"lastGenerated": &thisGeneration, "nextGenerated": &nextGeneration}})
+
+	update := bson.M{
+		"$set": bson.M{
+			"lastGenerated": &thisGeneration,
+			"nextGenerated": &nextGeneration,
+		},
+		"$inc": bson.M{
+			"timesGenerated": 1,
+		},
+	}
+
+	if deletedCount > 0 {
+		update["$inc"].(bson.M)["timesMissed"] = deletedCount
+		update["$set"].(bson.M)["streak"] = 0
+
+		// Send push notification to user about missed task
+		go func() {
+			var user types.User
+			err := s.Users.FindOne(ctx, bson.M{"_id": templateDoc.UserID}).Decode(&user)
+			if err != nil {
+				slog.Error("Failed to find user for missed task notification", "error", err)
+				return
+			}
+
+			if user.PushToken != "" {
+				xutils.SendNotification(xutils.Notification{
+					Token:   user.PushToken,
+					Title:   "Task Missed",
+					Message: fmt.Sprintf("You missed your recurring task: %s", templateDoc.Content),
+					Data: map[string]string{
+						"taskId": templateDoc.ID.Hex(),
+						"type":   "TASK_MISSED",
+					},
+				})
+			}
+		}()
+	} else {
+		// If we didn't delete any task (deletedCount == 0), it means the previous task was likely completed
+		// (since it's not in the active list).
+		// We only send this notification if:
+		// 1. It's not the first generation (TimesGenerated > 0)
+		// 2. The recurrence type implies we SHOULD have deleted it if it was there (Rolling/Occurrence)
+		//    This prevents sending "Great Job" for Buildup tasks where the old one is intentionally kept.
+		isRollingOrOccurrence := templateDoc.RecurType == "OCCURRENCE" ||
+			(templateDoc.RecurType == "DEADLINE" && (templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP"))
+
+		if templateDoc.TimesGenerated > 0 && isRollingOrOccurrence {
+			go func() {
+				var user types.User
+				err := s.Users.FindOne(ctx, bson.M{"_id": templateDoc.UserID}).Decode(&user)
+				if err != nil {
+					slog.Error("Failed to find user for completion notification", "error", err)
+					return
+				}
+
+				if user.PushToken != "" {
+					xutils.SendNotification(xutils.Notification{
+						Token:   user.PushToken,
+						Title:   "Great Job!",
+						Message: fmt.Sprintf("We've added '%s' back to your todo list.", templateDoc.Content),
+						Data: map[string]string{
+							"taskId": templateDoc.ID.Hex(),
+							"type":   "TASK_REGENERATED",
+						},
+					})
+				}
+			}()
+		}
+	}
+
+	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateId}, update)
+	if err != nil {
+		return nil, err
+	}
 
 	// insert the task into the database
 	_, err = s.Tasks.UpdateOne(ctx, bson.M{"_id": templateDoc.CategoryID}, bson.M{"$push": bson.M{"tasks": task}})
@@ -607,7 +705,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	return &task, nil
 }
 
-func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) error {
+func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) (int, error) {
 	ctx := context.Background()
 
 	cursor, err := s.Tasks.Aggregate(ctx, mongo.Pipeline{
@@ -625,24 +723,27 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) err
 		},
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 	var results []TaskDocument
 	if err := cursor.All(ctx, &results); err != nil {
-		return err
+		return 0, err
 	}
+
+	deletedCount := 0
 	for _, result := range results {
 		if len(results) > 0 {
 			// lets just delete the task for now
 			err = s.DeleteTask(templateDoc.CategoryID, result.ID)
 			if err != nil {
 				slog.Error("Error deleting task in DeleteTaskFromTemplateID", "error", err)
-				return err
+				return deletedCount, err
 			}
+			deletedCount++
 		}
 	}
 
-	return nil
+	return deletedCount, nil
 }
 
 func (s *Service) GetTasksWithStartTimesOlderThanOneDay(userID ...primitive.ObjectID) ([]TemplateTaskDocument, error) {

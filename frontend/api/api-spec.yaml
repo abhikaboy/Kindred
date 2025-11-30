@@ -8120,6 +8120,21 @@ components:
                 nextGenerated:
                     type: string
                     format: date-time
+                timesGenerated:
+                    type: integer
+                    format: int64
+                timesCompleted:
+                    type: integer
+                    format: int64
+                timesMissed:
+                    type: integer
+                    format: int64
+                streak:
+                    type: integer
+                    format: int64
+                highestStreak:
+                    type: integer
+                    format: int64
                 notes:
                     type: string
                 priority:

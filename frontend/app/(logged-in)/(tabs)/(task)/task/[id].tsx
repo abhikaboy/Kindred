@@ -374,7 +374,6 @@ export default function Task() {
                         borderBottomWidth: 1,
                         borderBottomColor: ThemedColor.lightened,
                     }}>
-                    <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} />
                 </View>
             </ConditionalView>
 
@@ -432,7 +431,7 @@ export default function Task() {
                     <ScrollView
                         style={{ flex: 1 }}
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 50 }}
+                        contentContainerStyle={{ paddingBottom: 128 }}
                         onScroll={handleScroll}
                         scrollEventThrottle={16}>
                         <KeyboardAvoidingView
@@ -553,22 +552,6 @@ export default function Task() {
                                         </View>
                                     </DataCard>
                                 </ConditionalView>
-                                <ConditionalView condition={task?.deadline == null} key="deadline-2">
-                                    <PrimaryButton
-                                        title="Set Deadline"
-                                        outline
-                                        style={{
-                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                        }}
-                                        onPress={() => {
-                                            // Load task data before opening modal
-                                            if (task) {
-                                                loadTaskData(task);
-                                            }
-                                            setShowDeadlineModal(true);
-                                        }}
-                                    />
-                                </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
                                     <RecurringInfoCard
                                         recurDetails={recurDetails!}
@@ -631,6 +614,21 @@ export default function Task() {
                                         disabled={isCompleting}
                                     />
                                 </View>
+                                <ConditionalView condition={task?.deadline == null} key="deadline-2">
+                                    <PrimaryButton
+                                        title="Set Deadline"
+                                        style={{
+                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                        }}
+                                        onPress={() => {
+                                            // Load task data before opening modal
+                                            if (task) {
+                                                loadTaskData(task);
+                                            }
+                                            setShowDeadlineModal(true);
+                                        }}
+                                    />
+                                </ConditionalView>
                             </View>
                         </KeyboardAvoidingView>
                     </ScrollView>

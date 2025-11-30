@@ -156,6 +156,7 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		Notes:          taskParams.Notes,
 		Checklist:      taskParams.Checklist,
 		Reminders:      taskParams.Reminders,
+		Integration:    taskParams.Integration,
 		Timestamp:      time.Now(),
 		LastEdited:     time.Now(),
 	}

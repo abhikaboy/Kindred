@@ -503,31 +503,34 @@ const Search = (props: Props) => {
                             colors={[ThemedColor.text]}
                         />
                     }>
-                    {mode === "categories" && activeTab === 1 && (
+                    {mode === "categories" && (
                         <>
-                            <View style={styles.betterTogetherContainer}>
-                                <BetterTogetherCard
-                                    onSyncContacts={handleAddContacts}
-                                    isLoadingContacts={isLoadingContacts}
-                                    isFindingFriends={findUsersMutation.isPending}
-                                    onCardPress={handleRewardsCardPress}
-                                />
+                            <View style={{ display: activeTab === 1 ? "flex" : "none", paddingBottom: 120 }}>
+                                <View style={styles.betterTogetherContainer}>
+                                    <BetterTogetherCard
+                                        onSyncContacts={handleAddContacts}
+                                        isLoadingContacts={isLoadingContacts}
+                                        isFindingFriends={findUsersMutation.isPending}
+                                        onCardPress={handleRewardsCardPress}
+                                    />
+                                </View>
+                                <FollowRequestsSection styles={styles} />
+                                {!isLoadingMatchedContacts && matchedContacts.length > 0 && (
+                                    <ContactsFromPhone contacts={matchedContacts} />
+                                )}
+                                {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && (
+                                    <SuggestedUsers users={suggestedUsers} />
+                                )}
                             </View>
-                            <FollowRequestsSection styles={styles} />
-                            {!isLoadingMatchedContacts && matchedContacts.length > 0 && (
-                                <ContactsFromPhone contacts={matchedContacts} />
-                            )}
-                            {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && (
-                                <SuggestedUsers users={suggestedUsers} />
-                            )}
+                            <View style={{ display: activeTab === 0 ? "flex" : "none" }}>
+                                <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
+                                    <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
+                                </Pressable>
+                            </View>
                         </>
                     )}
-                    <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
-                        {mode === "categories" ? (
-                            activeTab === 0 ? (
-                                <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
-                            ) : null
-                        ) : (
+                    {mode !== "categories" && (
+                        <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
                             <SearchResults
                                 mode={mode}
                                 searchResults={searchResults}
@@ -538,8 +541,8 @@ const Search = (props: Props) => {
                                 setActiveTab={setActiveTab}
                                 showTabs={false}
                             />
-                        )}
-                    </Pressable>
+                        </Pressable>
+                    )}
                 </ScrollView>
 
                 {focused && (
