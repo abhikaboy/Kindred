@@ -7,11 +7,13 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { getCompletedTasksAPI } from "@/api/task";
 import { Camera, CheckCircle, Confetti } from "phosphor-react-native";
 import { formatDistanceToNow } from "date-fns";
+import { useTasks } from "@/contexts/tasksContext";
 
 const RecentlyCompletedTasks = () => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
+    const { workspaces } = useTasks();
 
     const { data, isLoading } = useQuery({
         queryKey: ["completedTasks", "recent"],
@@ -21,7 +23,20 @@ const RecentlyCompletedTasks = () => {
     // Filter out tasks that have already been posted
     const recentTasks = data?.tasks?.filter((task: any) => !task.posted).slice(0, 3) || [];
 
+    const getCategoryName = (categoryId: string) => {
+        if (!categoryId) return "Unknown Category";
+        for (const workspace of workspaces) {
+            const category = workspace.categories.find((cat) => cat.id === categoryId);
+            if (category) {
+                return category.name;
+            }
+        }
+        return "Unknown Category";
+    };
+
     const handleTaskPress = (task: any) => {
+        const categoryName = task.categoryName || getCategoryName(task.categoryID);
+        
         router.push({
             pathname: "/(logged-in)/posting/cameraview",
             params: {
@@ -29,7 +44,7 @@ const RecentlyCompletedTasks = () => {
                     id: task.id,
                     name: task.content,
                     category: task.categoryID,
-                    categoryName: task.categoryName,
+                    categoryName: categoryName,
                     public: task.public,
                 }),
             },

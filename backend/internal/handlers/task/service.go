@@ -746,6 +746,31 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) (in
 	return deletedCount, nil
 }
 
+// GetDueRecurringTasks returns all recurring tasks that are due for generation.
+// It checks for templates where nextGenerated <= Now.
+func (s *Service) GetDueRecurringTasks() ([]TemplateTaskDocument, error) {
+	ctx := context.Background()
+	now := xutils.NowUTC()
+
+	matchConditions := bson.M{"nextGenerated": bson.M{"$lte": now}}
+
+	templatePipeline := bson.A{
+		bson.D{{Key: "$match", Value: matchConditions}},
+	}
+
+	cursor, err := s.TemplateTasks.Aggregate(ctx, templatePipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []TemplateTaskDocument
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 func (s *Service) GetTasksWithStartTimesOlderThanOneDay(userID ...primitive.ObjectID) ([]TemplateTaskDocument, error) {
 	ctx := context.Background()
 

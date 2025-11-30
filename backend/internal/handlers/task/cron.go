@@ -24,15 +24,9 @@ func Cron(collections map[string]*mongo.Collection) {
 	c := cron.New()
 	id, err := c.AddFunc("@every 1m", func() {
 		tasks := make([]TemplateTaskDocument, 0)
-		recurringTasks, err := service.GetTasksWithStartTimesOlderThanOneDay()
+		recurringTasks, err := service.GetDueRecurringTasks()
 		if err != nil {
-			slog.Error("Error getting tasks with start times older than one day", "error", err)
-		}
-		tasks = append(tasks, recurringTasks...)
-
-		recurringTasks, err = service.GetRecurringTasksWithPastDeadlines()
-		if err != nil {
-			slog.Error("Error getting recurring tasks with past deadlines", "error", err)
+			slog.Error("Error getting due recurring tasks", "error", err)
 		}
 		tasks = append(tasks, recurringTasks...)
 
