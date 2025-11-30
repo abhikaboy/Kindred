@@ -4530,6 +4530,13 @@ paths:
                   schema:
                     type: string
                     example: "2024-01-01"
+                - name: timezone
+                  in: query
+                  description: User's timezone (IANA format)
+                  required: false
+                  schema:
+                    type: string
+                    example: "America/New_York"
             responses:
                 "200":
                     description: OK

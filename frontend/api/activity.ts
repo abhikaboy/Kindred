@@ -75,10 +75,16 @@ export const activityAPI = {
   // Get completed tasks for a specific date
   async getCompletedTasksByDate(date: Date): Promise<TaskDocument[]> {
     try {
-      const dateStr = date.toISOString().split('T')[0];
+      // Format date as YYYY-MM-DD using local time components to avoid UTC shifting
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       const { data, error } = await client.GET('/v1/user/tasks/completed/date', {
         params: withAuthHeaders({ 
-          query: { date: dateStr }
+          query: { 
+            date: dateStr,
+            timezone: timezone
+          }
         })
       });
       

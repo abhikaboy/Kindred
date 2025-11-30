@@ -1,6 +1,8 @@
 package task
 
 import (
+	"log/slog"
+
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
@@ -23,6 +25,7 @@ func (h *Handler) HandleReminder() (fiber.Map, error) {
 			if !reminder.Sent && reminder.TriggerTime.Before(xutils.NowUTC()) {
 				err = h.service.SendReminder(task.UserID, reminder, &task)
 				if err != nil {
+					slog.Error("Failed to send reminder", "error", err, "taskId", task.ID.Hex(), "userId", task.UserID.Hex())
 					failed_updates = append(failed_updates, TaskID{
 						TaskID:     task.ID,
 						CategoryID: task.CategoryID,
@@ -43,6 +46,7 @@ func (h *Handler) HandleReminder() (fiber.Map, error) {
 	for _, update := range successful_updates {
 		err = h.service.UpdateReminderSent(update.TaskID, update.CategoryID, update.UserID)
 		if err != nil {
+			slog.Error("Failed to update reminder sent status", "error", err, "taskId", update.TaskID.Hex())
 			failed_updates = append(failed_updates, update)
 		}
 	}

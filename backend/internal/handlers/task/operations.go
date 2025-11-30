@@ -265,6 +265,7 @@ type GetCompletedTasksOutput struct {
 type GetCompletedTasksByDateInput struct {
 	Authorization string `header:"Authorization" required:"true"`
 	Date          string `query:"date" doc:"Date in YYYY-MM-DD format" example:"2024-01-01"`
+	Timezone      string `query:"timezone" doc:"User's timezone (IANA format)" example:"America/New_York"`
 }
 
 type GetCompletedTasksByDateOutput struct {

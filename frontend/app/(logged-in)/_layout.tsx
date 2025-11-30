@@ -124,13 +124,24 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     useEffect(() => {
-        registerForPushNotificationsAsync().then((token) => {
-            setExpoPushToken(token);
-            if (token) {
-                sendPushTokenToBackend(token);
+        if (!user) return;
+
+        registerForPushNotificationsAsync().then((result) => {
+            if (!result) return;
+            
+            setExpoPushToken(result.token);
+            
+            // Check against auth response token stored in context
+            const userPushToken = (user as any)?.push_token;
+            
+            // Only send if token is different from what backend has
+            if (result.token && userPushToken !== result.token) {
+                sendPushTokenToBackend(result.token);
             }
         });
+    }, [user]);
 
+    useEffect(() => {
         notificationListener.current = addNotificationListener((notification) => {
             showToastable({
                 message: notification.request.content.body || "New notification",
@@ -228,7 +239,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
 // Separate component to use the CreateModal context
 const LayoutContent = () => {
-    const { isOpen: isCreateModalOpen, setIsOpen: setCreateModalOpen } = useCreateModal();
+    const { visible, setVisible, modalConfig } = useCreateModal();
     
     return (
         <BlueprintCreationProvider>
@@ -238,18 +249,19 @@ const LayoutContent = () => {
                     header: (props) => <BackButton {...props} />,
                 }}>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
+                {/* <Stack.Screen
                     name="profile/settings"
                     options={{
                         headerShown: true,
                         headerTitle: "Settings",
                         presentation: "modal",
                     }}
-                />
+                /> */}
             </Stack>
             <CreateModal 
-                isVisible={isCreateModalOpen} 
-                onClose={() => setCreateModalOpen(false)} 
+                visible={visible} 
+                setVisible={setVisible}
+                {...modalConfig}
             />
         </BlueprintCreationProvider>
     );

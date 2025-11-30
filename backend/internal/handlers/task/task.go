@@ -761,12 +761,27 @@ func (h *Handler) GetCompletedTasksByDate(ctx context.Context, input *GetComplet
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
 	}
 
-	date, err := time.Parse("2006-01-02", input.Date)
-	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid date format (use YYYY-MM-DD)", err)
+	// Parse timezone or default to UTC
+	loc := time.UTC
+	if input.Timezone != "" {
+		var err error
+		loc, err = time.LoadLocation(input.Timezone)
+		if err != nil {
+			// Fallback to UTC if timezone is invalid, but log it
+			slog.LogAttrs(ctx, slog.LevelWarn, "Invalid timezone provided, defaulting to UTC",
+				slog.String("timezone", input.Timezone),
+				slog.String("error", err.Error()))
+			loc = time.UTC
+		}
 	}
 
-	tasks, err := h.service.GetCompletedTasksByDate(userObjID, date)
+	// Re-parse date in the correct location to get midnight in that timezone
+	dateInLoc, err := time.ParseInLocation("2006-01-02", input.Date, loc)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid date format", err)
+	}
+
+	tasks, err := h.service.GetCompletedTasksByDate(userObjID, dateInLoc)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
 	}

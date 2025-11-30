@@ -37,7 +37,9 @@
       },
       "entitlements": {
         "aps-environment": "production",
-        "com.apple.developer.applesignin": ["Default"]
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
       },
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.kindred.kindredtsl"
@@ -97,7 +99,8 @@
           "organization": "kindred-gy",
           "setCommits": false
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

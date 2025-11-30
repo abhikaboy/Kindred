@@ -9257,6 +9257,8 @@ export interface operations {
             query: {
                 /** @description Date in YYYY-MM-DD format */
                 date: string;
+                /** @description User's timezone (IANA format) */
+                timezone?: string;
             };
             header: {
                 Authorization: string;

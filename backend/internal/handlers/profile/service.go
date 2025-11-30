@@ -291,7 +291,7 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 		},
 	}
 
-	_, err = s.Profiles.UpdateOne(ctx, filter, update)
+	_, err := s.Profiles.UpdateOne(ctx, filter, update)
 	return err
 }
 

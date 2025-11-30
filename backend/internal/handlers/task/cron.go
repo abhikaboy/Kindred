@@ -52,7 +52,10 @@ func Cron(collections map[string]*mongo.Collection) {
 			})
 		}
 
-		fmt.Println(reminder_result)
+		// Only log if there are actually failed updates or tasks to avoid noise
+		if failedUpdates, ok := reminder_result["failed_updates"].([]TaskID); ok && len(failedUpdates) > 0 {
+			slog.Warn("Reminder cycle completed with failures", "failed_count", len(failedUpdates))
+		}
 
 		/* Checkins */
 

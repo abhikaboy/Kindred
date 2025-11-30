@@ -1371,15 +1371,26 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 func (s *Service) GetCompletedTasksByDate(userId primitive.ObjectID, date time.Time) ([]TaskDocument, error) {
 	ctx := context.Background()
 
-	// Calculate start and end of the day in UTC
-	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-	endOfDay := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 999999999, time.UTC)
+	// date is expected to be midnight in the user's timezone (or UTC if not specified)
+	// We need to find tasks completed between date (start of day) and date + 24h (end of day)
+	// Mongo stores times in UTC, so we need to convert the start/end times to UTC for the query
+
+	startOfDay := date
+	endOfDay := date.Add(24*time.Hour - 1*time.Nanosecond)
+
+	// Debug logging
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetCompletedTasksByDate query range",
+		slog.String("userId", userId.Hex()),
+		slog.Time("startLocal", startOfDay),
+		slog.Time("endLocal", endOfDay),
+		slog.Time("startUTC", startOfDay.UTC()),
+		slog.Time("endUTC", endOfDay.UTC()))
 
 	filter := bson.M{
 		"userID": userId,
 		"timeCompleted": bson.M{
-			"$gte": startOfDay,
-			"$lte": endOfDay,
+			"$gte": startOfDay.UTC(),
+			"$lte": endOfDay.UTC(),
 		},
 	}
 
