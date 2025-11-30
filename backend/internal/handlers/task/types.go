@@ -41,24 +41,30 @@ type ChecklistItem = types.ChecklistItem
 type Reminder = types.Reminder
 
 type UpdateTaskDocument struct {
-	Priority     int           `bson:"priority" json:"priority"`
-	Content      string        `bson:"content" json:"content"`
-	Value        float64       `bson:"value" json:"value"`
-	Recurring    bool          `bson:"recurring" json:"recurring"`
-	RecurDetails *RecurDetails `bson:"recurDetails" json:"recurDetails"`
-	Public       bool          `bson:"public" json:"public"`
-	Active       *bool         `bson:"active" json:"active,omitempty"`
+	Priority       int           `bson:"priority" json:"priority"`
+	Content        string        `bson:"content" json:"content"`
+	Value          float64       `bson:"value" json:"value"`
+	Recurring      bool          `bson:"recurring" json:"recurring"`
+	RecurDetails   *RecurDetails `bson:"recurDetails" json:"recurDetails"`
+	RecurFrequency string        `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"`
+	RecurType      string        `bson:"recurType,omitempty" json:"recurType,omitempty"`
+	Public         bool          `bson:"public" json:"public"`
+	Active         *bool         `bson:"active" json:"active,omitempty"`
 
 	// Add the new fields for updating task properties
-	Deadline  *time.Time  `bson:"deadline,omitempty" json:"deadline,omitempty"`
-	StartTime *time.Time  `bson:"startTime,omitempty" json:"startTime,omitempty"`
-	StartDate *time.Time  `bson:"startDate,omitempty" json:"startDate,omitempty"`
-	Reminders []*Reminder `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Deadline   *time.Time          `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	StartTime  *time.Time          `bson:"startTime,omitempty" json:"startTime,omitempty"`
+	StartDate  *time.Time          `bson:"startDate,omitempty" json:"startDate,omitempty"`
+	Reminders  []*Reminder         `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	TemplateID *primitive.ObjectID `bson:"templateID,omitempty" json:"templateID,omitempty"`
 
 	Notes       string              `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist   []ChecklistItem     `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
+
+	// Internal flag to indicate if a template should be generated (not stored in DB)
+	GenerateTemplate bool `bson:"-" json:"generateTemplate,omitempty"`
 }
 
 type SortTypes string

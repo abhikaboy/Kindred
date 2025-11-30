@@ -321,25 +321,41 @@ const StandardContent = ({
             behavior: "ROLLING",
         };
 
-        const performTaskUpdate = async () => {
-            updateTask(targetCategoryId, task.id, {
-                content: trimmedTaskName,
-                priority: priority,
-                value: value,
-                recurring: recurring,
-                public: isPublic,
-                active: task.active || false,
-                recurDetails: (recurring ? recurDetails : defaultRecurDetails) as RecurDetails,
-                startDate: startDate?.toISOString() || "",
-                startTime: startTime?.toISOString() || "",
-                deadline: deadline?.toISOString() || "",
-                reminders: reminders.map((reminder) => ({
-                    ...reminder,
-                    triggerTime: reminder.triggerTime.toISOString(),
-                })),
-                notes: task.notes || "",
-                checklist: task.checklist || [],
-            });
+        // Check if we should request template generation
+        // Only generate template if recurring is true AND it wasn't recurring before (or didn't have a template)
+        const generateTemplate = recurring && (!task.recurring || !task.templateID);
+
+        const updateData: any = {
+            content: trimmedTaskName,
+            priority: priority,
+            value: value,
+            recurring: recurring,
+            public: isPublic,
+            active: task.active || false,
+            recurDetails: recurring
+                ? (recurDetails as RecurDetails)
+                : {
+                      every: 1,
+                      daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+                      behavior: "ROLLING",
+                  },
+            startDate: startDate?.toISOString(),
+            startTime: startTime?.toISOString(),
+            deadline: deadline?.toISOString(),
+            reminders: reminders.map((reminder) => ({
+                ...reminder,
+                triggerTime: reminder.triggerTime.toISOString(),
+            })),
+            notes: task.notes || "",
+            checklist: task.checklist || [],
+            integration: integration || undefined,
+            generateTemplate: generateTemplate,
+        };
+
+        if (recurring) {
+            updateData.recurFrequency = recurFrequency;
+        }
+            updateTask(targetCategoryId, task.id, updateData);
 
             try {
                 // Make the API call

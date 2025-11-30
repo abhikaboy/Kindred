@@ -223,11 +223,21 @@ func (s *Service) UpdatePartialTask(
 		{Key: "tasks.$[t].public", Value: updated.Public},
 	}
 
+	if updated.RecurFrequency != "" {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].recurFrequency", Value: updated.RecurFrequency})
+	}
+	if updated.RecurType != "" {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].recurType", Value: updated.RecurType})
+	}
+
 	if updated.Active != nil {
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].active", Value: updated.Active})
 	}
 
 	// Add the new fields conditionally
+	if updated.TemplateID != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].templateID", Value: updated.TemplateID})
+	}
 	if updated.Deadline != nil {
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].deadline", Value: updated.Deadline})
 	}
@@ -769,6 +779,98 @@ func (s *Service) DeleteTaskFromTemplateID(templateDoc TemplateTaskDocument) (in
 	}
 
 	return deletedCount, nil
+}
+
+// CreateTemplateForTask creates a template task for a recurring task
+func (s *Service) CreateTemplateForTask(
+	userID primitive.ObjectID,
+	categoryID primitive.ObjectID,
+	templateID primitive.ObjectID,
+	content string,
+	priority int,
+	value float64,
+	public bool,
+	recurFrequency string,
+	recurDetails *RecurDetails,
+	deadline *time.Time,
+	startTime *time.Time,
+	startDate *time.Time,
+	reminders []*Reminder,
+) error {
+
+	recurType := "OCCURRENCE"
+
+	// if we have a deadline with no start information
+	if deadline != nil {
+		recurType = "DEADLINE"
+		if startTime != nil || startDate != nil {
+			recurType = "WINDOW"
+		}
+	}
+
+	baseTime := xutils.NowUTC()
+	if deadline != nil {
+		baseTime = *deadline
+	} else if startTime != nil {
+		baseTime = *startTime
+	}
+
+	// filter out non relative reminders
+	relativeReminders := make([]*Reminder, 0)
+	for _, reminder := range reminders {
+		if reminder.Type == "RELATIVE" {
+			relativeReminders = append(relativeReminders, reminder)
+		}
+	}
+
+	// Create a template for the recurring task
+	template_doc := TemplateTaskDocument{
+		UserID:         userID,
+		CategoryID:     categoryID,
+		ID:             templateID,
+		Content:        content,
+		Priority:       priority,
+		Value:          value,
+		Public:         public,
+		RecurType:      recurType,
+		RecurFrequency: recurFrequency,
+		RecurDetails:   recurDetails,
+
+		Deadline:      deadline,
+		StartTime:     startTime,
+		StartDate:     startDate,
+		LastGenerated: &baseTime,
+		Reminders:     relativeReminders,
+	}
+
+	var next_occurence time.Time
+	var err error
+
+	if recurType == "OCCURRENCE" {
+		next_occurence, err = s.ComputeNextOccurrence(&template_doc)
+		if err != nil {
+			return fmt.Errorf("error creating OCCURRENCE template task: %w", err)
+		}
+	} else if recurType == "DEADLINE" {
+		next_occurence, err = s.ComputeNextDeadline(&template_doc)
+		if err != nil {
+			return fmt.Errorf("error creating DEADLINE template task: %w", err)
+		}
+	} else if recurType == "WINDOW" {
+		next_occurence, err = s.ComputeNextOccurrence(&template_doc)
+		if err != nil {
+			return fmt.Errorf("error creating WINDOW template task: %w", err)
+		}
+	}
+
+	template_doc.NextGenerated = &next_occurence
+
+	_, err = s.CreateTemplateTask(categoryID, &template_doc)
+	if err != nil {
+		return fmt.Errorf("error creating template task: %w", err)
+	}
+
+	return nil
 }
 
 // GetDueRecurringTasks returns all recurring tasks that are due for generation.

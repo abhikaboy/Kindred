@@ -4639,14 +4639,18 @@ export interface components {
             priority: number;
             public: boolean;
             recurDetails: components["schemas"]["RecurDetails"];
+            recurFrequency?: string;
+            recurType?: string;
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
             startTime?: string;
+            templateID?: string;
             /** Format: double */
             value: number;
+            generateTemplate?: boolean;
         };
         UpdateTaskNotesDocument: {
             /**

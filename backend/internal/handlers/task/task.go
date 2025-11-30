@@ -205,7 +205,28 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		templateID := primitive.NewObjectID()
 		task.TemplateID = &templateID
 
-		err := h.handleRecurringTaskCreation(task, taskParams, categoryID, taskParams.Deadline, taskParams.StartTime, taskParams.StartDate, taskParams.Reminders)
+		if taskParams.RecurFrequency == "" {
+			return nil, huma.Error400BadRequest("Recurring frequency is required", nil)
+		}
+		if taskParams.RecurDetails == nil {
+			return nil, huma.Error400BadRequest("Recurring details are required", nil)
+		}
+
+		err := h.service.CreateTemplateForTask(
+			userObjID,
+			categoryID,
+			templateID,
+			taskParams.Content,
+			taskParams.Priority,
+			taskParams.Value,
+			taskParams.Public,
+			taskParams.RecurFrequency,
+			taskParams.RecurDetails,
+			taskParams.Deadline,
+			taskParams.StartTime,
+			taskParams.StartDate,
+			taskParams.Reminders,
+		)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("Failed to create recurring task template", err)
 		}
@@ -217,94 +238,6 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 	}
 
 	return &CreateTaskOutput{Body: *doc}, nil
-}
-
-// handleRecurringTaskCreation creates a template task for recurring tasks
-func (h *Handler) handleRecurringTaskCreation(task TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time, reminders []*Reminder) error {
-	if !task.Recurring {
-		return nil
-	}
-
-	if params.RecurFrequency == "" {
-		return fmt.Errorf("invalid recurring frequency")
-	}
-	if params.RecurDetails == nil {
-		return fmt.Errorf("recurring details are required")
-	}
-
-	recurType := "OCCURRENCE"
-
-	// if we have a deadline with no start information
-	if params.Deadline != nil {
-		recurType = "DEADLINE"
-		if params.StartTime != nil || params.StartDate != nil {
-			recurType = "WINDOW"
-		}
-	}
-
-	baseTime := xutils.NowUTC()
-	if params.Deadline != nil {
-		baseTime = *params.Deadline
-	} else if params.StartTime != nil {
-		baseTime = *params.StartTime
-	}
-
-	// filter out non relative reminders
-	relativeReminders := make([]*Reminder, 0)
-	for _, reminder := range reminders {
-		if reminder.Type == "RELATIVE" {
-			relativeReminders = append(relativeReminders, reminder)
-		}
-	}
-
-	// Create a template for the recurring task
-	template_doc := TemplateTaskDocument{
-		UserID:         task.UserID,
-		CategoryID:     categoryId,
-		ID:             *task.TemplateID, // Use the template ID that was set
-		Content:        params.Content,
-		Priority:       params.Priority,
-		Value:          params.Value,
-		Public:         params.Public,
-		RecurType:      recurType,
-		RecurFrequency: params.RecurFrequency,
-		RecurDetails:   params.RecurDetails,
-
-		Deadline:      deadline,
-		StartTime:     startTime,
-		StartDate:     startDate,
-		LastGenerated: &baseTime,
-		Reminders:     relativeReminders,
-	}
-
-	var next_occurence time.Time
-	var err error
-
-	if recurType == "OCCURRENCE" {
-		next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
-		if err != nil {
-			return fmt.Errorf("error creating OCCURRENCE template task: %w", err)
-		}
-	} else if recurType == "DEADLINE" {
-		next_occurence, err = h.service.ComputeNextDeadline(&template_doc)
-		if err != nil {
-			return fmt.Errorf("error creating DEADLINE template task: %w", err)
-		}
-	} else if recurType == "WINDOW" {
-		next_occurence, err = h.service.ComputeNextOccurrence(&template_doc)
-		if err != nil {
-			return fmt.Errorf("error creating WINDOW template task: %w", err)
-		}
-	}
-
-	template_doc.NextGenerated = &next_occurence
-
-	_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
-	if err != nil {
-		return fmt.Errorf("error creating template task: %w", err)
-	}
-
-	return nil
 }
 
 func (h *Handler) GetTasks(ctx context.Context, input *GetTasksInput) (*GetTasksOutput, error) {
@@ -358,12 +291,65 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 	}
 
 	// Extract user_id from context (set by auth middleware)
-	_, err = auth.RequireAuth(ctx)
+	userIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
+	userObjID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
 	updateData := input.Body
+
+	// Check if we are making the task recurring and need to generate a template
+	if updateData.Recurring && updateData.GenerateTemplate {
+		templateID := primitive.NewObjectID()
+
+		// Validate required fields for recurring task
+		recurFrequency := updateData.RecurFrequency
+		if recurFrequency == "" {
+			return nil, huma.Error400BadRequest("Recurring frequency is required when making task recurring", nil)
+		}
+
+		recurDetails := updateData.RecurDetails
+		if recurDetails == nil {
+			return nil, huma.Error400BadRequest("Recurring details are required when making task recurring", nil)
+		}
+
+		err = h.service.CreateTemplateForTask(
+			userObjID,
+			categoryID,
+			templateID,
+			updateData.Content,
+			updateData.Priority,
+			updateData.Value,
+			updateData.Public,
+			recurFrequency,
+			recurDetails,
+			updateData.Deadline,
+			updateData.StartTime,
+			updateData.StartDate,
+			updateData.Reminders,
+		)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Failed to create recurring template", err)
+		}
+
+		// Set the template ID in the update data
+		updateData.TemplateID = &templateID
+
+		// Infer and set RecurType for the task update as well
+		recurType := "OCCURRENCE"
+		if updateData.Deadline != nil {
+			recurType = "DEADLINE"
+			if updateData.StartTime != nil || updateData.StartDate != nil {
+				recurType = "WINDOW"
+			}
+		}
+		updateData.RecurType = recurType
+	}
 
 	// Use the UpdatePartialTask service method which matches the available service signature
 	_, err = h.service.UpdatePartialTask(id, categoryID, updateData)
