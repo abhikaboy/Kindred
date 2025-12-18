@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, View } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as Haptics from "expo-haptics";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ModalHead from "./ModalHead";
 import Standard from "./create/Standard";
@@ -60,6 +61,8 @@ const CreateModal = (props: Props) => {
     // Handle visibility changes
     useEffect(() => {
         if (props.visible) {
+            // Light haptic feedback when modal becomes visible
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             try {
                 bottomSheetModalRef.current?.present();
             } catch (error) {

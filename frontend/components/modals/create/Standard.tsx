@@ -1,5 +1,5 @@
 import { Dimensions, Keyboard, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ThemedInput from "../../inputs/ThemedInput";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
@@ -141,16 +141,35 @@ const StandardContent = ({
         setStartDate,
         setReminders,
         setIsPublic,
+        isBlueprint: isBlueprintState,
         setIsBlueprint,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const { start } = useSpotlightTour();
+
+    // Determine which categories to use based on blueprint mode
+    // Use state version from context (synced from prop via useEffect)
+    // Memoize to ensure it updates when dependencies change
+    const availableCategories = useMemo(() => {
+        return isBlueprintState ? blueprintCategories : categories;
+    }, [isBlueprintState, blueprintCategories, categories]);
 
     // Alert state
     const [alertVisible, setAlertVisible] = React.useState(false);
     const [alertTitle, setAlertTitle] = React.useState("");
     const [alertMessage, setAlertMessage] = React.useState("");
     const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
+
+    // Check if categories are available, redirect if not
+    useEffect(() => {
+        if (availableCategories) {
+            if (availableCategories.filter((c) => c.name !== "!-proxy-!").length === 0) {
+                goTo(Screen.NEW_CATEGORY);
+            }
+        } else {
+            console.warn("Categories is null", availableCategories);
+        }
+    }, [availableCategories, goTo]);
 
     // Set the blueprint flag when component mounts or when the prop changes
     useEffect(() => {
@@ -212,12 +231,12 @@ const StandardContent = ({
             taskName: taskName,
         });
 
-        if (availableCategories.length === 0) return;
+        if (!availableCategories || availableCategories.length === 0) return;
 
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
 
-        if (isBlueprint) {
+        if (isBlueprintState) {
             // For blueprint mode, create task locally with proper TaskDocument structure
             const newTask: components["schemas"]["TaskDocument"] = {
                 id: new ObjectId().toString(), // Temporary ID for local use
@@ -436,7 +455,7 @@ const StandardContent = ({
                 <AttachStep index={0} style={{ width: "76%" }}>
                     <Dropdown
                         options={[
-                            ...availableCategories
+                            ...(availableCategories || [])
                                 .filter((c) => c.name !== "!-proxy-!")
                                 .map((c) => {
                                     return { label: c.name, id: c.id, special: false };
