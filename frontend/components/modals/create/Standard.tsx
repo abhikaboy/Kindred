@@ -20,11 +20,12 @@ import type { components } from "@/api/generated/types";
 import { updateTaskAPI, updateTemplateAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
-import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
+import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep, hide } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import CustomAlert, { AlertButton } from "../CustomAlert";
+import { updatePost } from "@/api/post";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -285,173 +286,135 @@ const StandardContent = ({
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
 
-        const updateData: any = {
-            content: trimmedTaskName,
-            priority: priority,
-            value: value,
-            recurring: recurring,
-            public: isPublic,
-            active: task.active || false,
-            recurDetails: recurring
-                ? (recurDetails as RecurDetails)
-                : {
-                      every: 1,
-                      daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
-                      behavior: "ROLLING",
-                  },
-            startDate: startDate?.toISOString(),
-            startTime: startTime?.toISOString(),
-            deadline: deadline?.toISOString(),
-            reminders: reminders.map((reminder) => ({
-                ...reminder,
-                triggerTime: reminder.triggerTime.toISOString(),
-            })),
-            notes: task.notes || "",
-            checklist: task.checklist || [],
-            integration: integration || undefined,
-        };
+    let updateData: any = {
+        content: trimmedTaskName,
+        priority: priority,
+        value: value,
+        recurring: recurring,
+        public: isPublic,
+        active: task.active || false,
+        recurDetails: recurring
+            ? (recurDetails as RecurDetails)
+            : {
+                  every: 1,
+                  daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+                  behavior: "ROLLING",
+              },
+        startDate: startDate?.toISOString(),
+        startTime: startTime?.toISOString(),
+        deadline: deadline?.toISOString(),
+        reminders: reminders.map((reminder) => ({
+            ...reminder,
+            triggerTime: reminder.triggerTime.toISOString(),
+        })),
+        notes: task.notes || "",
+        checklist: task.checklist || [],
+        integration: integration || undefined,
+    };
 
-        // Use the selected category from the dropdown, or fall back to the original task category
-        const targetCategoryId = selectedCategory?.id || task.categoryID;
+    // Use the selected category from the dropdown, or fall back to the original task category
+    const targetCategoryId = selectedCategory?.id || task.categoryID;
 
-        // Optimistic update - update the task locally before the API call
-        const defaultRecurDetails: RecurDetails = {
-            every: 1,
-            daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
-            behavior: "ROLLING",
-        };
+    // Optimistic update - update the task locally before the API call
+    const defaultRecurDetails: RecurDetails = {
+        every: 1,
+        daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+        behavior: "ROLLING",
+    };
 
-        // Check if we should request template generation
-        // Only generate template if recurring is true AND it wasn't recurring before (or didn't have a template)
-        const generateTemplate = recurring && (!task.recurring || !task.templateID);
+    // Check if we should request template generation
+    // Only generate template if recurring is true AND it wasn't recurring before (or didn't have a template)
+    const generateTemplate = recurring && (!task.recurring || !task.templateID);
 
-        const updateData: any = {
-            content: trimmedTaskName,
-            priority: priority,
-            value: value,
-            recurring: recurring,
-            public: isPublic,
-            active: task.active || false,
-            recurDetails: recurring
-                ? (recurDetails as RecurDetails)
-                : {
-                      every: 1,
-                      daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
-                      behavior: "ROLLING",
-                  },
-            startDate: startDate?.toISOString(),
-            startTime: startTime?.toISOString(),
-            deadline: deadline?.toISOString(),
-            reminders: reminders.map((reminder) => ({
-                ...reminder,
-                triggerTime: reminder.triggerTime.toISOString(),
-            })),
-            notes: task.notes || "",
-            checklist: task.checklist || [],
-            integration: integration || undefined,
-            generateTemplate: generateTemplate,
-        };
+    // Merge what would have been in the second block here if needed
+    if (recurring) {
+        updateData.recurFrequency = recurFrequency;
+    }
+    updateData.generateTemplate = generateTemplate;
 
-        if (recurring) {
-            updateData.recurFrequency = recurFrequency;
-        }
-            updateTask(targetCategoryId, task.id, updateData);
+    updateTask(targetCategoryId, task.id, updateData);
 
-            try {
-                // Make the API call
-                await updateTaskAPI(targetCategoryId, task.id, updateData);
-            } catch (error) {
-                console.error("Failed to update task:", error);
-            }
-        };
-
-        const performTemplateUpdate = async () => {
-             if (!task.templateID) return;
-             
-             // 1. Update the current task first
-             await performTaskUpdate();
-
-             // 2. Update the template
-             try {
-                const templateUpdateData: components["schemas"]["UpdateTemplateDocument"] = {
-                    content: trimmedTaskName,
-                    priority: priority,
-                    value: value,
-                    public: isPublic,
-                    recurDetails: recurring ? (recurDetails as RecurDetails) : undefined,
-                    recurFrequency: recurring ? recurFrequency : undefined,
-                    startDate: startDate?.toISOString(),
-                    startTime: startTime?.toISOString(),
-                    deadline: deadline?.toISOString(),
-                    reminders: reminders.map((reminder) => ({
-                        ...reminder,
-                        triggerTime: reminder.triggerTime.toISOString(),
-                    })),
-                    notes: task.notes || "",
-                    checklist: task.checklist || [],
-                };
-                await updateTemplateAPI(task.templateID, templateUpdateData);
-             } catch (error) {
-                console.error("Failed to update template:", error);
-             }
-        };
-
+    try {
+        // Make the API call
+        await updateTaskAPI(targetCategoryId, task.id, updateData);
+    } catch (error) {
+        console.error("Failed to update task:", error);
+    }
+};
+    const handleUpdateOrTemplate = async () => {
         if (task.templateID) {
-             setAlertTitle("Update Recurring Task");
-             setAlertMessage("Do you want to update only this occurrence or all future tasks?");
-             setAlertButtons([
-                 {
-                     text: "Only This Task",
-                     onPress: async () => {
-                         // Explicitly close alert first to prevent race conditions
-                         setAlertVisible(false);
-                         await performTaskUpdate();
-                         resetTaskCreation();
-                         hide();
-                     }
-                 },
-                 {
-                     text: "All Future Tasks",
-                     onPress: async () => {
-                         setAlertVisible(false);
-                         await performTemplateUpdate();
-                         resetTaskCreation();
-                         hide();
-                     }
-                 },
-                 {
-                     text: "Cancel",
-                     style: "cancel",
-                     onPress: () => {
-                         // Do nothing, keep modal open (or rather, CustomAlert will close itself)
-                         // But we want to ensure we don't perform any other actions
-                     }
-                 }
-             ]);
-             setAlertVisible(true);
+            setAlertTitle("Update Recurring Task");
+            setAlertMessage("Do you want to update only this occurrence or all future tasks?");
+            setAlertButtons([
+                {
+                    text: "Only This Task",
+                    onPress: async () => {
+                        setAlertVisible(false);
+                        await updatePost();
+                        resetTaskCreation();
+                        hide();
+                    }
+                },
+                {
+                    text: "All Future Tasks",
+                    onPress: async () => {
+                        setAlertVisible(false);
+                        await performTemplateUpdate();
+                        resetTaskCreation();
+                        hide();
+                    }
+                },
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                    onPress: () => {}
+                }
+            ]);
+            setAlertVisible(true);
         } else {
-             await performTaskUpdate();
-             resetTaskCreation();
-             hide();
+            await updatePost();
+            resetTaskCreation();
+            hide();
         }
     };
 
-    // Determine which categories to use based on blueprint mode
-    const availableCategories = isBlueprint ? blueprintCategories : categories;
+    const performTemplateUpdate = async () => {
+            if (!task.templateID) return;
+            
+            // 1. Update the current task first
+            await updatePost();
 
-    if (availableCategories) {
-        if (availableCategories.filter((c) => c.name !== "!-proxy-!").length == 0) {
-            goTo(Screen.NEW_CATEGORY);
-        }
-    } else {
-        console.warn("Categories is null " + availableCategories);
-    }
+            // 2. Update the template
+            try {
+            const templateUpdateData: components["schemas"]["UpdateTemplateDocument"] = {
+                content: taskName,
+                priority: priority,
+                value: value,
+                public: isPublic,
+                recurDetails: recurring ? (recurDetails as RecurDetails) : undefined,
+                recurFrequency: recurring ? recurFrequency : undefined,
+                startDate: startDate?.toISOString(),
+                startTime: startTime?.toISOString(),
+                deadline: deadline?.toISOString(),
+                reminders: reminders.map((reminder) => ({
+                    ...reminder,
+                    triggerTime: reminder.triggerTime.toISOString(),
+                })),
+                notes: task.notes || "",
+                checklist: task.checklist || [],
+            };
+            await updateTemplateAPI(task.templateID, templateUpdateData);
+            } catch (error) {
+            console.error("Failed to update template:", error);
+            }
+    };
+    
+
+
 
     return (
         <View style={{ gap: 8, flexDirection: "column", display: "flex" }}>
-            <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
-                <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}></View>
-            </View>
+
             {suggestion && (
                 <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
                     <ThemedText type="default" style={{ fontSize: 16 }}>
@@ -498,11 +461,11 @@ const StandardContent = ({
                         borderWidth: 0,
                         borderColor: ThemedColor.text,
                     }}
-                    onPress={() => {
+                    onPress={async () => {
                         if (edit) {
-                            updatePost();
+                            await handleUpdateOrTemplate();
                         } else {
-                            createPost();
+                            await createPost();
                             hide();
                         }
                     }}>

@@ -168,10 +168,18 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         return () => {
             if (notificationListener.current) {
-                Notifications.removeNotificationSubscription(notificationListener.current);
+                try {
+                    notificationListener.current.remove();
+                } catch (error) {
+                    console.warn("Failed to remove notification listener:", error);
+                }
             }
             if (responseListener.current) {
-                Notifications.removeNotificationSubscription(responseListener.current);
+                try {
+                    responseListener.current.remove();
+                } catch (error) {
+                    console.warn("Failed to remove notification response listener:", error);
+                }
             }
         };
     }, []);
