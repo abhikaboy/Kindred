@@ -1,5 +1,6 @@
 import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -38,12 +39,40 @@ const Review = (props: Props) => {
         return cards.length === 0;
     }, [cards]);
     
+    // Animation values for fade out and scale in
+    const fadeOpacity = useSharedValue(1);
+    const scale = useSharedValue(0.9);
+    
+    // Animated styles
+    const animatedCardStyle = useAnimatedStyle(() => ({
+        opacity: fadeOpacity.value,
+        transform: [{ scale: scale.value }],
+    }));
+    
+    // Reset animations when currentTask changes (new card mounts)
+    useEffect(() => {
+        if (currentTask) {
+            // Scale in animation for new card
+            scale.value = 0.8;
+            scale.value = withTiming(1, {
+            });
+            // Reset fade opacity
+            fadeOpacity.value = 1;
+        }
+    }, [currentTask?.id]);
+    
     const onSwipe = (direction: string, task: Task) => {
         console.log('You swiped: ' + direction);
         if (!task) return;
         
+        // Start fade out animation immediately
+        fadeOpacity.value = withTiming(0, {
+            duration: 300,
+            easing: Easing.out(Easing.ease),
+        });
+        
         // Add task to removed tasks - this will cause cards array to update
-        // Use a small delay to allow the swipe animation to complete
+        // Use a delay to allow the fade animation to complete
         setTimeout(() => {
             setRemovedTasks((prev) => {
                 if (prev.includes(task.id)) {
@@ -51,7 +80,7 @@ const Review = (props: Props) => {
                 }
                 return [...prev, task.id];
             });
-        }, 500);
+        }, 300);
     };
 
     const outOfFrame = (index: number, id: string) => {
@@ -84,21 +113,79 @@ const Review = (props: Props) => {
                 </View>
 
                 <ConditionalView condition={!emptyStack && currentTask != null} style={styles.taskContainer}>
-                        <TinderCard
-                            key={currentTask?.id || "mwo"}
-                            onSwipe={(direction) => onSwipe(direction, currentTask)}
-                            ref={(el) => (childRefs.current[0] = el)}
-                            onCardLeftScreen={() => outOfFrame(0, currentTask.id)}
+                    <View style={{ position: "relative", width: "100%", height: Dimensions.get("window").width * 0.7 }}>
+                        {/* Skeleton card underneath - always visible */}
+                        <View
+                            style={[
+                                styles.skeletonCard,
+                                {
+                                    borderColor: ThemedColor.tertiary,
+                                    transform: [{ translateY: 8 }],
+                                },
+                            ]}
                         >
                             <View style={{
                                 width: "100%",
-                                height: Dimensions.get("window").width * 0.7,
+                                height: "100%",
                                 borderRadius: 12,
                                 borderWidth: 1,
                                 borderColor: ThemedColor.tertiary,
                                 padding: 16,
                                 justifyContent: "space-between",
                             }}>
+                                <View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                        <View style={{ width: 60, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                        <View style={{ width: 40, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                    </View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                        <View style={{ width: 50, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                        <View style={{ width: 100, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                    </View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                        <View style={{ width: 70, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                        <View style={{ width: 120, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                    </View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                        <View style={{ width: 80, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                        <View style={{ width: 90, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                    </View>
+                                </View>
+                                <View style={{ flex: 1, justifyContent: "flex-end" }}>
+                                    <View style={{ width: 100, height: 16, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3, marginBottom: 8 }} />
+                                    <View style={{ width: "75%", height: 24, backgroundColor: ThemedColor.tertiary, borderRadius: 4, opacity: 0.3 }} />
+                                </View>
+                            </View>
+                        </View>
+                        
+                        {/* Main card with animations - on top */}
+                        <Animated.View
+                            style={[
+                                {
+                                    position: "absolute",
+                                    width: "100%",
+                                    height: "100%",
+                                    zIndex: 10,
+                                },
+                                animatedCardStyle,
+                            ]}
+                        >
+                            <TinderCard
+                                key={currentTask?.id || "mwo"}
+                                onSwipe={(direction) => onSwipe(direction, currentTask)}
+                                ref={(el) => (childRefs.current[0] = el)}
+                                onCardLeftScreen={() => outOfFrame(0, currentTask.id)}
+                            >
+                                <View style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: ThemedColor.tertiary,
+                                    backgroundColor: ThemedColor.background,
+                                    padding: 16,
+                                    justifyContent: "space-between",
+                                }}>
                                 <View>
                                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                                     <ThemedText type="default">Priority</ThemedText>
@@ -140,8 +227,10 @@ const Review = (props: Props) => {
                                     </ThemedText>
                                 </View>
 
-                            </View>
-                        </TinderCard>
+                                </View>
+                            </TinderCard>
+                        </Animated.View>
+                    </View>
                 <View>
                     <ThemedText type="default">
                         {cards.length} remaining 
@@ -173,9 +262,10 @@ const Review = (props: Props) => {
                 {/* Mark All as Completed Button */}
                 <View style={styles.generateButtonContainer}>
                     <PrimaryButton
-                        title={"Mark All as Completed"}
+                        title={emptyStack ? "Return":"Mark All as Completed"}
                         onPress={() => {
                             console.log("Mark all as completed");
+                            router.back()
                         }}
                     />
                 </View>
@@ -252,6 +342,14 @@ const styles = StyleSheet.create({
     generateButtonContainer: {
         paddingVertical: 16,
         width: "100%",
+    },
+    skeletonCard: {
+        position: "absolute",
+        width: "100%",
+        height: "100%",
+        borderRadius: 12,
+        borderWidth: 1,
+        backgroundColor: "transparent",
     },
 });
 
