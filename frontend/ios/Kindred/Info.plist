@@ -75,6 +75,8 @@
     <string>This app needs access to save photos to your photo library.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>This app needs access to photo library to select photos for your profile and posts.</string>
+    <key>NSPrivacyPolicyURL</key>
+    <string>https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.</string>
     <key>NSUserActivityTypes</key>
@@ -90,7 +92,7 @@
       <string>arm64</string>
     </array>
     <key>UIRequiresFullScreen</key>
-    <true/>
+    <false/>
     <key>UIStatusBarStyle</key>
     <string>UIStatusBarStyleDefault</string>
     <key>UISupportedInterfaceOrientations</key>
@@ -102,7 +104,5 @@
     <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>NSPrivacyPolicyURL</key>
-    <string>https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a</string>
   </dict>
 </plist>

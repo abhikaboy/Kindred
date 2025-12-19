@@ -5,7 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { router } from "expo-router";
 import { DrawerLayout } from "react-native-gesture-handler";
 import TodaySection from "./TodaySection";
-import { Bird, BookBookmark, Calendar, ChartBar, Microphone, PencilLine } from "phosphor-react-native";
+import { Bird, BookBookmark, Calendar, ChartBar, CheckCircle, Microphone, PencilLine } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
@@ -49,6 +49,16 @@ const DashboardCards = (props: Props) => {
                 router.push({
                     pathname: "/(logged-in)/(tabs)/(task)/analytics",
                     params: { workspace: "Analytics" },
+                });
+            },
+        },
+        {
+            title: "Review",
+            icon: <CheckCircle size={28} weight="light" color={ThemedColor.primary} />,
+            onPress: () => {
+                router.push({
+                    pathname: "/(logged-in)/(tabs)/(task)/review",
+                    params: { workspace: "Review" },
                 });
             },
         },
