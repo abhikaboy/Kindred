@@ -475,6 +475,69 @@ func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*Dele
 	return resp, nil
 }
 
+func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskInput) (*BulkCompleteTaskOutput, error) {
+	// @TODO: modify to actually do the operations properly instead of doing
+	// single edits in a for loop
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	// Validate input
+	if len(input.Body.Tasks) == 0 {
+		return nil, huma.Error400BadRequest("At least one task is required", nil)
+	}
+
+	if len(input.Body.Tasks) > 100 {
+		return nil, huma.Error400BadRequest("Maximum 100 tasks allowed per request", nil)
+	}
+
+	// Call the bulk complete service method
+	result, err := h.service.BulkCompleteTask(userObjID, input.Body.Tasks)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to complete tasks", err)
+	}
+
+	return result, nil
+}
+
+func (h *Handler) BulkDeleteTask(ctx context.Context, input *BulkDeleteTaskInput) (*BulkDeleteTaskOutput, error) {
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	// Validate input
+	if len(input.Body.Tasks) == 0 {
+		return nil, huma.Error400BadRequest("At least one task is required", nil)
+	}
+
+	if len(input.Body.Tasks) > 100 {
+		return nil, huma.Error400BadRequest("Maximum 100 tasks allowed per request", nil)
+	}
+
+	// Call the bulk delete service method
+	result, err := h.service.BulkDeleteTask(userObjID, input.Body.Tasks)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to delete tasks", err)
+	}
+
+	return result, nil
+}
+
 func (h *Handler) ActivateTask(ctx context.Context, input *ActivateTaskInput) (*ActivateTaskOutput, error) {
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
