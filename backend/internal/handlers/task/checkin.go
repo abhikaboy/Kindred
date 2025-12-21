@@ -25,8 +25,8 @@ type CheckinInfo struct {
 var CheckinSchedule = map[time.Time]CheckinInfo{
 	time.Date(0, 1, 1, 13+4, 1, 0, 0, time.UTC): {
 		Title:    "Afternoon Check-in 🌙",
-		Message:  "Hey %s, how's \"%s\" going?",
-		SendTask: true,
+		Message:  "Hey %s, time to review the tasks you have scheduled!",
+		SendTask: false,
 	},
 }
 
@@ -78,19 +78,8 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 			taskCounts = &TaskCounts{ScheduledToday: 0, DeadlineToday: 0}
 		}
 
-		var personalizedMessage string
-		if checkinInfo.SendTask {
-			task, err := h.service.GetRandomTaskForToday(user.ID)
-			if err != nil {
-				slog.Error("Error getting random task for user", "user_id", user.ID, "error", err)
-				personalizedMessage = fmt.Sprintf(checkinInfo.Message, user.DisplayName, "")
-			} else {
-				personalizedMessage = fmt.Sprintf(checkinInfo.Message, user.DisplayName, task.Content)
-			}
-		} else {
-			// Personalize the message with the user's display name and task counts (title is static)
-			personalizedMessage = fmt.Sprintf(checkinInfo.Message, user.DisplayName, taskCounts.ScheduledToday, taskCounts.DeadlineToday)
-		}
+		// Personalize the message with the user's display name
+		personalizedMessage := fmt.Sprintf(checkinInfo.Message, user.DisplayName)
 
 		notifications = append(notifications, xutils.Notification{
 			Token:   user.PushToken,
@@ -102,6 +91,7 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 				"timestamp":       now.Format(time.RFC3339),
 				"scheduled_today": fmt.Sprintf("%d", taskCounts.ScheduledToday),
 				"deadline_today":  fmt.Sprintf("%d", taskCounts.DeadlineToday),
+				"url":             "/(logged-in)/(tabs)/(task)/review",
 			},
 		})
 	}
