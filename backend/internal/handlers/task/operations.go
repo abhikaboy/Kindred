@@ -200,6 +200,21 @@ type UpdateTemplateOutput struct {
 	}
 }
 
+type TemplateWithCategory struct {
+	TemplateTaskDocument `bson:",inline"`
+	CategoryName         string `bson:"categoryName" json:"categoryName"`
+}
+
+type GetUserTemplatesInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type GetUserTemplatesOutput struct {
+	Body struct {
+		Templates []TemplateWithCategory `json:"templates"`
+	} `json:"body"`
+}
+
 type CreateTaskFromTemplateOutput struct {
 	Body TaskDocument `json:"body"`
 }
@@ -521,6 +536,17 @@ func RegisterUpdateTemplateOperation(api huma.API, handler *Handler) {
 		Description: "Update a template task for recurring tasks",
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTemplate)
+}
+
+func RegisterGetUserTemplatesOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-templates",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tasks/templates",
+		Summary:     "Get user's template tasks with category names",
+		Description: "Retrieve all template tasks for the authenticated user with their category names",
+		Tags:        []string{"tasks"},
+	}, handler.GetUserTemplates)
 }
 
 func RegisterGetCompletedTasksOperation(api huma.API, handler *Handler) {

@@ -952,6 +952,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/blueprints/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate and create blueprint with AI
+         * @description Generate a complete blueprint using AI based on a description and save it to the database. Requires 1 AI credit.
+         */
+        post: operations["generate-and-create-blueprint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/blueprints/subscribed": {
         parameters: {
             query?: never;
@@ -1944,6 +1964,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/rewards/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem a kudos reward
+         * @description Redeem a reward using accumulated kudos from sending encouragements and congratulations
+         */
+        post: operations["redeem-reward"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/setup-default-workspace": {
         parameters: {
             query?: never;
@@ -2082,6 +2122,46 @@ export interface paths {
          * @description Change the active status of a task
          */
         post: operations["activate-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/bulk/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk complete tasks
+         * @description Mark multiple tasks as completed in a single request
+         */
+        post: operations["bulk-complete-tasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/bulk/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk delete tasks
+         * @description Delete multiple tasks in a single request
+         */
+        post: operations["bulk-delete-tasks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2230,6 +2310,46 @@ export interface paths {
         get: operations["get-recurring-tasks-with-past-deadlines"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user's template tasks with category names
+         * @description Retrieve all template tasks for the authenticated user with their category names
+         */
+        get: operations["get-user-templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/timezone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update timezone
+         * @description Update the authenticated user's timezone
+         */
+        post: operations["update-timezone"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2631,6 +2751,122 @@ export interface components {
              */
             timestamp: string;
         };
+        BulkCompleteTaskInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BulkCompleteTaskInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Array of tasks to complete */
+            tasks: components["schemas"]["BulkCompleteTaskItem"][];
+        };
+        BulkCompleteTaskItem: {
+            /**
+             * @description The ID of the category the task belongs to
+             * @example 507f1f77bcf86cd799439011
+             */
+            categoryId: string;
+            /** @description The completion data for the task */
+            completeData: components["schemas"]["CompleteTaskDocument"];
+            /**
+             * @description The ID of the task to complete
+             * @example 507f1f77bcf86cd799439011
+             */
+            taskId: string;
+        };
+        BulkCompleteTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BulkCompleteTaskOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description The user's current streak count
+             * @example 5
+             */
+            currentStreak: number;
+            /** @description Array of task IDs that failed to complete */
+            failedTaskIds?: string[];
+            /** @example Bulk task completion completed */
+            message: string;
+            /**
+             * @description Indicates if the user's streak increased
+             * @example true
+             */
+            streakChanged: boolean;
+            /**
+             * Format: double
+             * @description Total tasks completed by user
+             * @example 42
+             */
+            tasksComplete: number;
+            /**
+             * Format: int64
+             * @description Number of tasks successfully completed
+             * @example 5
+             */
+            totalCompleted: number;
+            /**
+             * Format: int64
+             * @description Number of tasks that failed to complete
+             * @example 0
+             */
+            totalFailed: number;
+        };
+        BulkDeleteTaskInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BulkDeleteTaskInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Array of tasks to delete */
+            tasks: components["schemas"]["BulkDeleteTaskItem"][];
+        };
+        BulkDeleteTaskItem: {
+            /**
+             * @description The ID of the category the task belongs to
+             * @example 507f1f77bcf86cd799439011
+             */
+            categoryId: string;
+            /**
+             * @description Optional. If true, also delete the recurring template. Defaults to false.
+             * @example false
+             */
+            deleteRecurring?: boolean;
+            /**
+             * @description The ID of the task to delete
+             * @example 507f1f77bcf86cd799439011
+             */
+            taskId: string;
+        };
+        BulkDeleteTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BulkDeleteTaskOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Array of task IDs that failed to delete */
+            failedTaskIds?: string[];
+            /** @example Bulk task deletion completed */
+            message: string;
+            /**
+             * Format: int64
+             * @description Number of tasks successfully deleted
+             * @example 5
+             */
+            totalDeleted: number;
+            /**
+             * Format: int64
+             * @description Number of tasks that failed to delete
+             * @example 0
+             */
+            totalFailed: number;
+        };
         CategoryDocument: {
             /**
              * Format: uri
@@ -2949,6 +3185,11 @@ export interface components {
              */
             message: string;
             /**
+             * @description Optional post ID associated with the congratulation
+             * @example 507f1f77bcf86cd799439013
+             */
+            postId?: string;
+            /**
              * @description Receiver user ID
              * @example 507f1f77bcf86cd799439012
              */
@@ -3101,11 +3342,12 @@ export interface components {
              * @example https://example.com/schemas/CreateTaskParams.json
              */
             readonly $schema?: string;
-            active: boolean;
+            active?: boolean;
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
             deadline?: string;
+            integration?: string;
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -3450,6 +3692,19 @@ export interface components {
             /** @description List of phone numbers to search for */
             numbers: string[];
         };
+        GenerateAndCreateBlueprintParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GenerateAndCreateBlueprintParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Description of what the blueprint should contain
+             * @example Morning routine for productivity
+             */
+            description: string;
+        };
         GenerateImageUploadURLOutputBody: {
             /**
              * Format: uri
@@ -3474,6 +3729,15 @@ export interface components {
              */
             readonly $schema?: string;
             features: components["schemas"]["FeatureDefinition"][];
+        };
+        GetCompletedTasksByDateOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetCompletedTasksByDateOutputBody.json
+             */
+            readonly $schema?: string;
+            tasks: components["schemas"]["TaskDocument"][];
         };
         GetCompletedTasksOutputBody: {
             /**
@@ -3504,15 +3768,6 @@ export interface components {
              * @description Total number of pages
              */
             totalPages: number;
-        };
-        GetCompletedTasksByDateOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             */
-            readonly $schema?: string;
-            /** @description List of completed tasks */
-            tasks: components["schemas"]["TaskDocument"][];
         };
         GetFeedOutputBody: {
             /**
@@ -3633,6 +3888,15 @@ export interface components {
              */
             readonly $schema?: string;
             groups: components["schemas"]["GroupDocumentAPI"][];
+        };
+        GetUserTemplatesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetUserTemplatesOutputBody.json
+             */
+            readonly $schema?: string;
+            templates: components["schemas"]["TemplateWithCategory"][];
         };
         GroupDocumentAPI: {
             /**
@@ -3960,6 +4224,44 @@ export interface components {
             months?: number[];
             reminders?: string[];
         };
+        RedeemRewardRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RedeemRewardRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Type of kudos to use for redemption
+             * @enum {string}
+             */
+            kudosType: "encouragements" | "congratulations";
+            /**
+             * @description Type of reward to redeem
+             * @enum {string}
+             */
+            rewardType: "voice" | "naturalLanguage" | "group" | "integration" | "analytics";
+        };
+        RedeemRewardResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RedeemRewardResponse.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Number of credits received (if applicable)
+             */
+            creditsReceived?: number;
+            /**
+             * Format: int64
+             * @description Remaining kudos after redemption
+             */
+            kudosRemaining: number;
+            /** @description Success message */
+            message: string;
+        };
         ReferralDocument: {
             /**
              * Format: uri
@@ -4124,8 +4426,10 @@ export interface components {
             /** Format: int64 */
             streak: number;
             streakEligible: boolean;
+            subscription: components["schemas"]["Subscription"];
             /** Format: double */
             tasks_complete: number;
+            timezone?: string;
         };
         SendOTPOutputBody: {
             /**
@@ -4157,6 +4461,20 @@ export interface components {
             /** @example Subscribed to blueprint successfully */
             message: string;
         };
+        Subscription: {
+            /** Format: date-time */
+            canceledAt?: string;
+            /** Format: date-time */
+            endDate?: string;
+            provider?: string;
+            /** Format: date-time */
+            renewalDate?: string;
+            /** Format: date-time */
+            startDate: string;
+            status: string;
+            subscriptionId?: string;
+            tier: string;
+        };
         TaskDocument: {
             /**
              * Format: uri
@@ -4172,9 +4490,11 @@ export interface components {
             /** Format: date-time */
             deadline?: string;
             id: string;
+            integration?: string;
             /** Format: date-time */
             lastEdited: string;
             notes?: string;
+            posted: boolean;
             /** Format: int64 */
             priority: number;
             public: boolean;
@@ -4207,9 +4527,12 @@ export interface components {
             blueprintId?: string;
             categoryID: string;
             checklist?: components["schemas"]["ChecklistItem"][];
+            completionDates?: string[];
             content: string;
             /** Format: date-time */
             deadline?: string;
+            /** Format: int64 */
+            highestStreak: number;
             id: string;
             /** Format: date-time */
             lastEdited: string;
@@ -4217,16 +4540,6 @@ export interface components {
             lastGenerated: string;
             /** Format: date-time */
             nextGenerated: string;
-            /** Format: int64 */
-            timesGenerated?: number;
-            /** Format: int64 */
-            timesCompleted?: number;
-            /** Format: int64 */
-            timesMissed?: number;
-            /** Format: int64 */
-            streak?: number;
-            /** Format: int64 */
-            highestStreak?: number;
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -4239,6 +4552,56 @@ export interface components {
             startDate?: string;
             /** Format: date-time */
             startTime?: string;
+            /** Format: int64 */
+            streak: number;
+            /** Format: int64 */
+            timesCompleted: number;
+            /** Format: int64 */
+            timesGenerated: number;
+            /** Format: int64 */
+            timesMissed: number;
+            userID: string;
+            /** Format: double */
+            value: number;
+        };
+        TemplateWithCategory: {
+            blueprintId?: string;
+            categoryID: string;
+            categoryName: string;
+            checklist?: components["schemas"]["ChecklistItem"][];
+            completionDates?: string[];
+            content: string;
+            /** Format: date-time */
+            deadline?: string;
+            /** Format: int64 */
+            highestStreak: number;
+            id: string;
+            /** Format: date-time */
+            lastEdited: string;
+            /** Format: date-time */
+            lastGenerated: string;
+            /** Format: date-time */
+            nextGenerated: string;
+            notes?: string;
+            /** Format: int64 */
+            priority: number;
+            public: boolean;
+            recurDetails: components["schemas"]["RecurDetails"];
+            recurFrequency?: string;
+            recurType: string;
+            reminders?: components["schemas"]["Reminder"][];
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            startTime?: string;
+            /** Format: int64 */
+            streak: number;
+            /** Format: int64 */
+            timesCompleted: number;
+            /** Format: int64 */
+            timesGenerated: number;
+            /** Format: int64 */
+            timesMissed: number;
             userID: string;
             /** Format: double */
             value: number;
@@ -4628,12 +4991,14 @@ export interface components {
              * @example https://example.com/schemas/UpdateTaskDocument.json
              */
             readonly $schema?: string;
-            active: boolean;
+            active?: boolean;
             blueprintId?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
             deadline?: string;
+            generateTemplate?: boolean;
+            integration?: string;
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -4650,7 +5015,6 @@ export interface components {
             templateID?: string;
             /** Format: double */
             value: number;
-            generateTemplate?: boolean;
         };
         UpdateTaskNotesDocument: {
             /**
@@ -4756,6 +5120,29 @@ export interface components {
              */
             readonly $schema?: string;
             /** @example Template task updated successfully */
+            message: string;
+        };
+        UpdateTimezoneInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTimezoneInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description The IANA timezone identifier
+             * @example America/New_York
+             */
+            timezone: string;
+        };
+        UpdateTimezoneOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTimezoneOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Timezone updated successfully */
             message: string;
         };
         UserCredits: {
@@ -6557,6 +6944,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "generate-and-create-blueprint": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateAndCreateBlueprintParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDocument"];
                 };
             };
             /** @description Error */
@@ -8873,6 +9298,44 @@ export interface operations {
             };
         };
     };
+    "redeem-reward": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedeemRewardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedeemRewardResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "setup-default-workspace": {
         parameters: {
             query?: never;
@@ -9180,6 +9643,76 @@ export interface operations {
             };
         };
     };
+    "bulk-complete-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkCompleteTaskInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkCompleteTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "bulk-delete-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkDeleteTaskInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkDeleteTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "complete-task": {
         parameters: {
             query?: never;
@@ -9258,10 +9791,16 @@ export interface operations {
     };
     "get-completed-tasks-by-date": {
         parameters: {
-            query: {
-                /** @description Date in YYYY-MM-DD format */
-                date: string;
-                /** @description User's timezone (IANA format) */
+            query?: {
+                /**
+                 * @description Date in YYYY-MM-DD format
+                 * @example 2024-01-01
+                 */
+                date?: string;
+                /**
+                 * @description User's timezone (IANA format)
+                 * @example America/New_York
+                 */
                 timezone?: string;
             };
             header: {
@@ -9477,6 +10016,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TemplateTaskDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-templates": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetUserTemplatesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-timezone": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTimezoneInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTimezoneOutputBody"];
                 };
             };
             /** @description Error */

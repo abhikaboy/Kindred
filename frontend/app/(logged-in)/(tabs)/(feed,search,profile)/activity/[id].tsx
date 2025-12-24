@@ -8,8 +8,10 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
-import { activityAPI, getMonthlyActivityLevels, ActivityDocument } from "@/api/activity";
+import { activityAPI, getMonthlyActivityLevels, ActivityDocument, calculateActivityLevel } from "@/api/activity";
 import CompletedTasksBottomSheetModal from "@/components/modals/CompletedTasksBottomSheetModal";
+import RecurringTasksSelectionModal from "@/components/modals/RecurringTasksSelectionModal";
+import { getUserTemplatesAPI } from "@/api/task";
 
 type Props = {};
 
@@ -109,6 +111,10 @@ const Activity = (props: Props) => {
     const [error, setError] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
+    const [breakdownModalVisible, setBreakdownModalVisible] = useState(false);
+    const [breakdownMode, setBreakdownMode] = useState(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const userId = params.id as string;
@@ -128,6 +134,15 @@ const Activity = (props: Props) => {
 
                 const yearActivities = await activityAPI.getAllUserActivity(userId, year);
                 setActivities(yearActivities);
+
+                // Fetch templates for breakdown feature
+                try {
+                    const userTemplates = await getUserTemplatesAPI();
+                    setTemplates(userTemplates);
+                } catch (templateErr) {
+                    console.error("Failed to fetch templates:", templateErr);
+                    // Don't fail the whole page if templates fail
+                }
             } catch (err) {
                 console.error("Failed to fetch activity data:", err);
                 setError("Failed to load activity data");
@@ -147,6 +162,29 @@ const Activity = (props: Props) => {
         } else {
             setYear(year);
         }
+    };
+
+    const getBreakdownActivityLevels = (month: number): number[] => {
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const monthlyLevels: number[] = new Array(daysInMonth).fill(0);
+
+        selectedTemplateIds.forEach((templateId) => {
+            const template = templates.find((t) => t.id === templateId);
+            if (!template?.completionDates) return;
+
+            template.completionDates.forEach((dateStr: string) => {
+                const date = new Date(dateStr);
+                if (date.getFullYear() === year && date.getMonth() + 1 === month) {
+                    const day = date.getDate();
+                    if (day >= 1 && day <= daysInMonth) {
+                        monthlyLevels[day - 1]++;
+                    }
+                }
+            });
+        });
+
+        // Convert counts to activity levels (0-4)
+        return monthlyLevels.map((count) => calculateActivityLevel(count));
     };
 
     return (
@@ -181,6 +219,32 @@ const Activity = (props: Props) => {
                     </TouchableOpacity>
                 </View>
 
+                {!breakdownMode && templates.length > 0 && (
+                    <TouchableOpacity
+                        style={[styles.breakdownButton, { borderColor: ThemedColor.text }]}
+                        onPress={() => setBreakdownModalVisible(true)}>
+                        <Ionicons name="analytics-outline" size={20} color={ThemedColor.text} />
+                        <ThemedText type="lightBody">Break down by recurring tasks</ThemedText>
+                    </TouchableOpacity>
+                )}
+
+                {breakdownMode && (
+                    <View style={[styles.breakdownActiveBar, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.primary }]}>
+                        <ThemedText type="caption" style={{ color: ThemedColor.text }}>
+                            Showing {selectedTemplateIds.length} recurring task{selectedTemplateIds.length !== 1 ? "s" : ""}
+                        </ThemedText>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setBreakdownMode(false);
+                                setSelectedTemplateIds([]);
+                            }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                Clear
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {loading ? (
                     <ActivitySkeleton ThemedColor={ThemedColor} />
                 ) : error ? (
@@ -202,7 +266,9 @@ const Activity = (props: Props) => {
                                 return null;
                             }
 
-                            const monthlyLevels = getMonthlyActivityLevels(activities, year, monthNumber);
+                            const monthlyLevels = breakdownMode
+                                ? getBreakdownActivityLevels(monthNumber)
+                                : getMonthlyActivityLevels(activities, year, monthNumber);
 
                             return (
                                 <View key={monthName} style={styles.monthContainer}>
@@ -257,6 +323,17 @@ const Activity = (props: Props) => {
                 visible={modalVisible} 
                 setVisible={setModalVisible} 
                 date={selectedDate} 
+            />
+            <RecurringTasksSelectionModal
+                visible={breakdownModalVisible}
+                setVisible={setBreakdownModalVisible}
+                templates={templates}
+                selectedTemplateIds={selectedTemplateIds}
+                onApply={(selectedIds) => {
+                    setSelectedTemplateIds(selectedIds);
+                    setBreakdownMode(selectedIds.length > 0);
+                    setBreakdownModalVisible(false);
+                }}
             />
         </ThemedView>
     );
@@ -344,6 +421,23 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         errorText: {
             color: "red",
+        },
+        breakdownButton: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            justifyContent: "center",
+            borderWidth: 1,
+            borderRadius: 24,
+            padding: 12,
+        },
+        breakdownActiveBar: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderWidth: 2,
+            borderRadius: 12,
+            padding: 12,
         },
     });
 

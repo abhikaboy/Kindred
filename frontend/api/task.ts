@@ -198,6 +198,23 @@ export const getTemplateByIDAPI = async (id: string): Promise<TemplateTaskDocume
 };
 
 /**
+ * Get all user templates with category names
+ * API: Makes GET request to retrieve all template tasks for the authenticated user
+ * Frontend: Used to display recurring tasks in activity breakdown
+ */
+export const getUserTemplatesAPI = async (): Promise<any[]> => {
+    const { data, error } = await client.GET("/v1/user/tasks/templates", {
+        params: withAuthHeaders({}),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get templates: ${JSON.stringify(error)}`);
+    }
+
+    return data?.body?.templates || [];
+};
+
+/**
  * Update a task with full task data
  * API: Makes PATCH request to update the task
  * Frontend: The task is updated in TaskContext

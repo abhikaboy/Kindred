@@ -98,11 +98,12 @@ type TemplateTaskDocument struct {
 	NextGenerated *time.Time         `bson:"nextGenerated" json:"nextGenerated"`
 
 	// Analytics
-	TimesGenerated int `bson:"timesGenerated" json:"timesGenerated"`
-	TimesCompleted int `bson:"timesCompleted" json:"timesCompleted"`
-	TimesMissed    int `bson:"timesMissed" json:"timesMissed"`
-	Streak         int `bson:"streak" json:"streak"`
-	HighestStreak  int `bson:"highestStreak" json:"highestStreak"`
+	TimesGenerated  int         `bson:"timesGenerated" json:"timesGenerated"`
+	TimesCompleted  int         `bson:"timesCompleted" json:"timesCompleted"`
+	TimesMissed     int         `bson:"timesMissed" json:"timesMissed"`
+	Streak          int         `bson:"streak" json:"streak"`
+	HighestStreak   int         `bson:"highestStreak" json:"highestStreak"`
+	CompletionDates []time.Time `bson:"completionDates,omitempty" json:"completionDates,omitempty"`
 
 	RecurFrequency string     `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"` // daily, weekly, monthly, yearly
 	RecurType      string     `bson:"recurType" json:"recurType"`                               // Occurence, Deadline, Window

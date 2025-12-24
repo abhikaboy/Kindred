@@ -754,6 +754,27 @@ func (h *Handler) UpdateTemplate(ctx context.Context, input *UpdateTemplateInput
 	return resp, nil
 }
 
+func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesInput) (*GetUserTemplatesOutput, error) {
+	userId, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	templates, err := h.service.GetTemplatesByUserWithCategory(userObjID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to fetch templates", err)
+	}
+
+	output := &GetUserTemplatesOutput{}
+	output.Body.Templates = templates
+	return output, nil
+}
+
 func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTasksInput) (*GetCompletedTasksOutput, error) {
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {

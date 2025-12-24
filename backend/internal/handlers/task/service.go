@@ -368,6 +368,9 @@ func (s *Service) CompleteTask(
 				{{Key: "$set", Value: bson.M{
 					"highestStreak": bson.M{"$max": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
 				}}},
+				{{Key: "$push", Value: bson.M{
+					"completionDates": xutils.NowUTC(),
+				}}},
 			},
 		)
 		if err != nil {
@@ -644,6 +647,9 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 				}}},
 				{{Key: "$set", Value: bson.M{
 					"highestStreak": bson.M{"$max": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
+				}}},
+				{{Key: "$push", Value: bson.M{
+					"completionDates": xutils.NowUTC(),
 				}}},
 			},
 		)
@@ -1894,6 +1900,55 @@ func (s *Service) UpdateTemplateTask(id primitive.ObjectID, updated UpdateTempla
 	return nil
 }
 
+// GetTemplatesByUserWithCategory retrieves all template tasks for a user with category names
+func (s *Service) GetTemplatesByUserWithCategory(userID primitive.ObjectID) ([]TemplateWithCategory, error) {
+	ctx := context.Background()
+
+	// Use aggregation to join with categories collection for category names
+	pipeline := mongo.Pipeline{
+		// Match templates for this user
+		{{Key: "$match", Value: bson.M{"userID": userID}}},
+		// Lookup category name
+		{{Key: "$lookup", Value: bson.M{
+			"from":         "categories",
+			"localField":   "categoryID",
+			"foreignField": "_id",
+			"as":           "categoryInfo",
+		}}},
+		// Add category name field
+		{{Key: "$addFields", Value: bson.M{
+			"categoryName": bson.M{
+				"$ifNull": bson.A{
+					bson.M{"$arrayElemAt": bson.A{"$categoryInfo.name", 0}},
+					"Unknown",
+				},
+			},
+		}}},
+		// Remove the temporary categoryInfo array
+		{{Key: "$project", Value: bson.M{
+			"categoryInfo": 0,
+		}}},
+		// Sort by category name, then content
+		{{Key: "$sort", Value: bson.D{
+			{Key: "categoryName", Value: 1},
+			{Key: "content", Value: 1},
+		}}},
+	}
+
+	cursor, err := s.TemplateTasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var templates []TemplateWithCategory
+	if err := cursor.All(ctx, &templates); err != nil {
+		return nil, err
+	}
+
+	return templates, nil
+}
+
 func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit int) ([]TaskDocument, int64, error) {
 	ctx := context.Background()
 
@@ -1901,7 +1956,7 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 	skip := (page - 1) * limit
 
 	// Get total count of completed tasks for this user
-	totalCount, err := s.CompletedTasks.CountDocuments(ctx, bson.M{"userID": userId})
+	totalCount, err := s.CompletedTasks.CountDocuments(ctx, bson.M{"user": userId})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1913,7 +1968,7 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 		SetLimit(int64(limit)).
 		SetSkip(int64(skip))
 
-	cursor, err := s.CompletedTasks.Find(ctx, bson.M{"userID": userId}, findOptions)
+	cursor, err := s.CompletedTasks.Find(ctx, bson.M{"user": userId}, findOptions)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1945,7 +2000,7 @@ func (s *Service) GetCompletedTasksByDate(userId primitive.ObjectID, date time.T
 		slog.Time("endUTC", endOfDay.UTC()))
 
 	filter := bson.M{
-		"userID": userId,
+		"user": userId,
 		"timeCompleted": bson.M{
 			"$gte": startOfDay.UTC(),
 			"$lte": endOfDay.UTC(),

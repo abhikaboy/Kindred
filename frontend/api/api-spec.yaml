@@ -1601,6 +1601,48 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/blueprints/generate:
+        post:
+            tags:
+                - blueprints
+                - ai
+            summary: Generate and create blueprint with AI
+            description: Generate a complete blueprint using AI based on a description and save it to the database. Requires 1 AI credit.
+            operationId: generate-and-create-blueprint
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GenerateAndCreateBlueprintParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BlueprintDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/blueprints/subscribed:
         get:
             tags:
@@ -4051,6 +4093,47 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/rewards/redeem:
+        post:
+            tags:
+                - rewards
+            summary: Redeem a kudos reward
+            description: Redeem a reward using accumulated kudos from sending encouragements and congratulations
+            operationId: redeem-reward
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RedeemRewardRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RedeemRewardResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/setup-default-workspace:
         post:
             tags:
@@ -4415,6 +4498,70 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/bulk/complete:
+        post:
+            tags:
+                - tasks
+            summary: Bulk complete tasks
+            description: Mark multiple tasks as completed in a single request
+            operationId: bulk-complete-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BulkCompleteTaskInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BulkCompleteTaskOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/bulk/delete:
+        post:
+            tags:
+                - tasks
+            summary: Bulk delete tasks
+            description: Delete multiple tasks in a single request
+            operationId: bulk-delete-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BulkDeleteTaskInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BulkDeleteTaskOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/complete/{category}/{id}:
         post:
             tags:
@@ -4526,17 +4673,23 @@ paths:
                 - name: date
                   in: query
                   description: Date in YYYY-MM-DD format
-                  required: true
+                  explode: false
                   schema:
                     type: string
-                    example: "2024-01-01"
+                    description: Date in YYYY-MM-DD format
+                    examples:
+                        - "2024-01-01"
+                  example: "2024-01-01"
                 - name: timezone
                   in: query
                   description: User's timezone (IANA format)
-                  required: false
+                  explode: false
                   schema:
                     type: string
-                    example: "America/New_York"
+                    description: User's timezone (IANA format)
+                    examples:
+                        - America/New_York
+                  example: America/New_York
             responses:
                 "200":
                     description: OK
@@ -4727,6 +4880,74 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/TemplateTaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/templates:
+        get:
+            tags:
+                - tasks
+            summary: Get user's template tasks with category names
+            description: Retrieve all template tasks for the authenticated user with their category names
+            operationId: get-user-templates
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetUserTemplatesOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/timezone:
+        post:
+            tags:
+                - profiles
+                - user
+            summary: Update timezone
+            description: Update the authenticated user's timezone
+            operationId: update-timezone
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTimezoneInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTimezoneOutputBody'
                 default:
                     description: Error
                     content:
@@ -5358,6 +5579,181 @@ components:
                 - timestamp
                 - category
                 - categories
+        BulkCompleteTaskInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BulkCompleteTaskInputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: Array of tasks to complete
+                    items:
+                        $ref: '#/components/schemas/BulkCompleteTaskItem'
+                    minItems: 1
+                    maxItems: 100
+            required:
+                - tasks
+        BulkCompleteTaskItem:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                    description: The ID of the category the task belongs to
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                completeData:
+                    description: The completion data for the task
+                    $ref: '#/components/schemas/CompleteTaskDocument'
+                taskId:
+                    type: string
+                    description: The ID of the task to complete
+                    examples:
+                        - 507f1f77bcf86cd799439011
+            required:
+                - taskId
+                - categoryId
+                - completeData
+        BulkCompleteTaskOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BulkCompleteTaskOutputBody.json
+                    readOnly: true
+                currentStreak:
+                    type: integer
+                    description: The user's current streak count
+                    format: int64
+                    examples:
+                        - 5
+                failedTaskIds:
+                    type: array
+                    description: Array of task IDs that failed to complete
+                    items:
+                        type: string
+                message:
+                    type: string
+                    examples:
+                        - Bulk task completion completed
+                streakChanged:
+                    type: boolean
+                    description: Indicates if the user's streak increased
+                    examples:
+                        - true
+                tasksComplete:
+                    type: number
+                    description: Total tasks completed by user
+                    format: double
+                    examples:
+                        - 42
+                totalCompleted:
+                    type: integer
+                    description: Number of tasks successfully completed
+                    format: int64
+                    examples:
+                        - 5
+                totalFailed:
+                    type: integer
+                    description: Number of tasks that failed to complete
+                    format: int64
+                    examples:
+                        - 0
+            required:
+                - message
+                - totalCompleted
+                - totalFailed
+                - streakChanged
+                - currentStreak
+                - tasksComplete
+        BulkDeleteTaskInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BulkDeleteTaskInputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: Array of tasks to delete
+                    items:
+                        $ref: '#/components/schemas/BulkDeleteTaskItem'
+                    minItems: 1
+                    maxItems: 100
+            required:
+                - tasks
+        BulkDeleteTaskItem:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                    description: The ID of the category the task belongs to
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                deleteRecurring:
+                    type: boolean
+                    description: Optional. If true, also delete the recurring template. Defaults to false.
+                    examples:
+                        - false
+                taskId:
+                    type: string
+                    description: The ID of the task to delete
+                    examples:
+                        - 507f1f77bcf86cd799439011
+            required:
+                - taskId
+                - categoryId
+        BulkDeleteTaskOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BulkDeleteTaskOutputBody.json
+                    readOnly: true
+                failedTaskIds:
+                    type: array
+                    description: Array of task IDs that failed to delete
+                    items:
+                        type: string
+                message:
+                    type: string
+                    examples:
+                        - Bulk task deletion completed
+                totalDeleted:
+                    type: integer
+                    description: Number of tasks successfully deleted
+                    format: int64
+                    examples:
+                        - 5
+                totalFailed:
+                    type: integer
+                    description: Number of tasks that failed to delete
+                    format: int64
+                    examples:
+                        - 0
+            required:
+                - message
+                - totalDeleted
+                - totalFailed
         CategoryDocument:
             type: object
             additionalProperties: false
@@ -5849,6 +6245,11 @@ components:
                     description: Congratulation message
                     examples:
                         - Congratulations on completing your task!
+                postId:
+                    type: string
+                    description: Optional post ID associated with the congratulation
+                    examples:
+                        - 507f1f77bcf86cd799439013
                 receiver:
                     type: string
                     description: Receiver user ID
@@ -6092,6 +6493,8 @@ components:
                 deadline:
                     type: string
                     format: date-time
+                integration:
+                    type: string
                 notes:
                     type: string
                 priority:
@@ -6124,7 +6527,6 @@ components:
                 - value
                 - recurring
                 - public
-                - active
         CreateWaitlistParams:
             type: object
             additionalProperties: false
@@ -6648,6 +7050,24 @@ components:
                     maxItems: 1000
             required:
                 - numbers
+        GenerateAndCreateBlueprintParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GenerateAndCreateBlueprintParams.json
+                    readOnly: true
+                description:
+                    type: string
+                    description: Description of what the blueprint should contain
+                    examples:
+                        - Morning routine for productivity
+            required:
+                - description
         GenerateImageUploadURLOutputBody:
             type: object
             additionalProperties: false
@@ -6697,6 +7117,23 @@ components:
                         $ref: '#/components/schemas/FeatureDefinition'
             required:
                 - features
+        GetCompletedTasksByDateOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetCompletedTasksByDateOutputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+            required:
+                - tasks
         GetCompletedTasksOutputBody:
             type: object
             additionalProperties: false
@@ -6735,22 +7172,6 @@ components:
                 - limit
                 - total
                 - totalPages
-        GetCompletedTasksByDateOutputBody:
-            type: object
-            additionalProperties: false
-            properties:
-                $schema:
-                    type: string
-                    description: A URL to the JSON Schema for this object.
-                    format: uri
-                    readOnly: true
-                tasks:
-                    type: array
-                    description: List of completed tasks
-                    items:
-                        $ref: '#/components/schemas/TaskDocument'
-            required:
-                - tasks
         GetFeedOutputBody:
             type: object
             additionalProperties: false
@@ -6955,6 +7376,23 @@ components:
                         $ref: '#/components/schemas/GroupDocumentAPI'
             required:
                 - groups
+        GetUserTemplatesOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetUserTemplatesOutputBody.json
+                    readOnly: true
+                templates:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TemplateWithCategory'
+            required:
+                - templates
         GroupDocumentAPI:
             type: object
             additionalProperties: false
@@ -7595,6 +8033,60 @@ components:
                     items:
                         type: string
                         format: date-time
+        RedeemRewardRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RedeemRewardRequest.json
+                    readOnly: true
+                kudosType:
+                    type: string
+                    description: Type of kudos to use for redemption
+                    enum:
+                        - encouragements
+                        - congratulations
+                rewardType:
+                    type: string
+                    description: Type of reward to redeem
+                    enum:
+                        - voice
+                        - naturalLanguage
+                        - group
+                        - integration
+                        - analytics
+            required:
+                - rewardType
+                - kudosType
+        RedeemRewardResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RedeemRewardResponse.json
+                    readOnly: true
+                creditsReceived:
+                    type: integer
+                    description: Number of credits received (if applicable)
+                    format: int64
+                kudosRemaining:
+                    type: integer
+                    description: Remaining kudos after redemption
+                    format: int64
+                message:
+                    type: string
+                    description: Success message
+            required:
+                - message
+                - kudosRemaining
         ReferralDocument:
             type: object
             additionalProperties: false
@@ -7939,9 +8431,13 @@ components:
                     format: int64
                 streakEligible:
                     type: boolean
+                subscription:
+                    $ref: '#/components/schemas/Subscription'
                 tasks_complete:
                     type: number
                     format: double
+                timezone:
+                    type: string
             required:
                 - _id
                 - display_name
@@ -7959,6 +8455,7 @@ components:
                 - posts_made
                 - credits
                 - kudosRewards
+                - subscription
         SendOTPOutputBody:
             type: object
             additionalProperties: false
@@ -8010,6 +8507,34 @@ components:
                         - Subscribed to blueprint successfully
             required:
                 - message
+        Subscription:
+            type: object
+            additionalProperties: false
+            properties:
+                canceledAt:
+                    type: string
+                    format: date-time
+                endDate:
+                    type: string
+                    format: date-time
+                provider:
+                    type: string
+                renewalDate:
+                    type: string
+                    format: date-time
+                startDate:
+                    type: string
+                    format: date-time
+                status:
+                    type: string
+                subscriptionId:
+                    type: string
+                tier:
+                    type: string
+            required:
+                - tier
+                - status
+                - startDate
         TaskDocument:
             type: object
             additionalProperties: false
@@ -8038,11 +8563,15 @@ components:
                     format: date-time
                 id:
                     type: string
+                integration:
+                    type: string
                 lastEdited:
                     type: string
                     format: date-time
                 notes:
                     type: string
+                posted:
+                    type: boolean
                 priority:
                     type: integer
                     format: int64
@@ -8092,6 +8621,7 @@ components:
                 - timestamp
                 - lastEdited
                 - startDate
+                - posted
         TemplateTaskDocument:
             type: object
             additionalProperties: false
@@ -8111,11 +8641,19 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChecklistItem'
+                completionDates:
+                    type: array
+                    items:
+                        type: string
+                        format: date-time
                 content:
                     type: string
                 deadline:
                     type: string
                     format: date-time
+                highestStreak:
+                    type: integer
+                    format: int64
                 id:
                     type: string
                 lastEdited:
@@ -8127,21 +8665,6 @@ components:
                 nextGenerated:
                     type: string
                     format: date-time
-                timesGenerated:
-                    type: integer
-                    format: int64
-                timesCompleted:
-                    type: integer
-                    format: int64
-                timesMissed:
-                    type: integer
-                    format: int64
-                streak:
-                    type: integer
-                    format: int64
-                highestStreak:
-                    type: integer
-                    format: int64
                 notes:
                     type: string
                 priority:
@@ -8165,6 +8688,18 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                streak:
+                    type: integer
+                    format: int64
+                timesCompleted:
+                    type: integer
+                    format: int64
+                timesGenerated:
+                    type: integer
+                    format: int64
+                timesMissed:
+                    type: integer
+                    format: int64
                 userID:
                     type: string
                 value:
@@ -8182,6 +8717,108 @@ components:
                 - recurDetails
                 - lastGenerated
                 - nextGenerated
+                - timesGenerated
+                - timesCompleted
+                - timesMissed
+                - streak
+                - highestStreak
+                - recurType
+        TemplateWithCategory:
+            type: object
+            additionalProperties: false
+            properties:
+                blueprintId:
+                    type: string
+                categoryID:
+                    type: string
+                categoryName:
+                    type: string
+                checklist:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChecklistItem'
+                completionDates:
+                    type: array
+                    items:
+                        type: string
+                        format: date-time
+                content:
+                    type: string
+                deadline:
+                    type: string
+                    format: date-time
+                highestStreak:
+                    type: integer
+                    format: int64
+                id:
+                    type: string
+                lastEdited:
+                    type: string
+                    format: date-time
+                lastGenerated:
+                    type: string
+                    format: date-time
+                nextGenerated:
+                    type: string
+                    format: date-time
+                notes:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                public:
+                    type: boolean
+                recurDetails:
+                    $ref: '#/components/schemas/RecurDetails'
+                recurFrequency:
+                    type: string
+                recurType:
+                    type: string
+                reminders:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Reminder'
+                startDate:
+                    type: string
+                    format: date-time
+                startTime:
+                    type: string
+                    format: date-time
+                streak:
+                    type: integer
+                    format: int64
+                timesCompleted:
+                    type: integer
+                    format: int64
+                timesGenerated:
+                    type: integer
+                    format: int64
+                timesMissed:
+                    type: integer
+                    format: int64
+                userID:
+                    type: string
+                value:
+                    type: number
+                    format: double
+            required:
+                - categoryName
+                - id
+                - userID
+                - categoryID
+                - priority
+                - content
+                - value
+                - public
+                - lastEdited
+                - recurDetails
+                - lastGenerated
+                - nextGenerated
+                - timesGenerated
+                - timesCompleted
+                - timesMissed
+                - streak
+                - highestStreak
                 - recurType
         TestOutputBody:
             type: object
@@ -8758,6 +9395,10 @@ components:
                 deadline:
                     type: string
                     format: date-time
+                generateTemplate:
+                    type: boolean
+                integration:
+                    type: string
                 notes:
                     type: string
                 priority:
@@ -8767,6 +9408,10 @@ components:
                     type: boolean
                 recurDetails:
                     $ref: '#/components/schemas/RecurDetails'
+                recurFrequency:
+                    type: string
+                recurType:
+                    type: string
                 recurring:
                     type: boolean
                 reminders:
@@ -8779,6 +9424,8 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                templateID:
+                    type: string
                 value:
                     type: number
                     format: double
@@ -8789,7 +9436,6 @@ components:
                 - recurring
                 - recurDetails
                 - public
-                - active
         UpdateTaskNotesDocument:
             type: object
             additionalProperties: false
@@ -8966,6 +9612,41 @@ components:
                     type: string
                     examples:
                         - Template task updated successfully
+            required:
+                - message
+        UpdateTimezoneInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTimezoneInputBody.json
+                    readOnly: true
+                timezone:
+                    type: string
+                    description: The IANA timezone identifier
+                    examples:
+                        - America/New_York
+            required:
+                - timezone
+        UpdateTimezoneOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTimezoneOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Timezone updated successfully
             required:
                 - message
         UserCredits:

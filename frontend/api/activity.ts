@@ -101,7 +101,7 @@ export const activityAPI = {
 };
 
 // Helper function to calculate activity level from count
-function calculateActivityLevel(count: number): number {
+export function calculateActivityLevel(count: number): number {
   if (count === 0) return 0;
   if (count <= 2) return 1;
   if (count <= 5) return 2;
