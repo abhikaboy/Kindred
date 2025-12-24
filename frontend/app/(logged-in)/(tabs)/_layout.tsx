@@ -174,6 +174,9 @@ export default function TabLayout() {
                     alignItems: "center",
                     justifyContent: "flex-start", // Keep this for top alignment
                 },
+                sceneStyle: {
+                    backgroundColor: ThemedColor.background,
+                },
                 tabBarStyle: {
                     ...Platform.select({
                         ios: {

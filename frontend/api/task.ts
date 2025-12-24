@@ -203,15 +203,22 @@ export const getTemplateByIDAPI = async (id: string): Promise<TemplateTaskDocume
  * Frontend: Used to display recurring tasks in activity breakdown
  */
 export const getUserTemplatesAPI = async (): Promise<any[]> => {
+    console.log("getUserTemplatesAPI: Starting fetch...");
     const { data, error } = await client.GET("/v1/user/tasks/templates", {
         params: withAuthHeaders({}),
     });
 
+    console.log("getUserTemplatesAPI: Response data:", data);
+    console.log("getUserTemplatesAPI: Response error:", error);
+
     if (error) {
+        console.error("getUserTemplatesAPI: Error occurred:", error);
         throw new Error(`Failed to get templates: ${JSON.stringify(error)}`);
     }
 
-    return data?.body?.templates || [];
+    const templates = data?.body?.templates || [];
+    console.log("getUserTemplatesAPI: Returning templates:", templates);
+    return templates;
 };
 
 /**

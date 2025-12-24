@@ -248,6 +248,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 // Separate component to use the CreateModal context
 const LayoutContent = () => {
     const { visible, setVisible, modalConfig } = useCreateModal();
+    const ThemedColor = useThemeColor();
     
     return (
         <BlueprintCreationProvider>
@@ -255,6 +256,9 @@ const LayoutContent = () => {
                 screenOptions={{
                     headerShown: false,
                     header: (props) => <BackButton {...props} />,
+                    contentStyle: {
+                        backgroundColor: ThemedColor.background,
+                    },
                 }}>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 {/* <Stack.Screen

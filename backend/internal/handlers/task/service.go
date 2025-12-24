@@ -1904,6 +1904,9 @@ func (s *Service) UpdateTemplateTask(id primitive.ObjectID, updated UpdateTempla
 func (s *Service) GetTemplatesByUserWithCategory(userID primitive.ObjectID) ([]TemplateWithCategory, error) {
 	ctx := context.Background()
 
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetTemplatesByUserWithCategory called",
+		slog.String("userID", userID.Hex()))
+
 	// Use aggregation to join with categories collection for category names
 	pipeline := mongo.Pipeline{
 		// Match templates for this user
@@ -1945,6 +1948,9 @@ func (s *Service) GetTemplatesByUserWithCategory(userID primitive.ObjectID) ([]T
 	if err := cursor.All(ctx, &templates); err != nil {
 		return nil, err
 	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetTemplatesByUserWithCategory returning",
+		slog.Int("templateCount", len(templates)))
 
 	return templates, nil
 }

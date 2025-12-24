@@ -760,6 +760,9 @@ func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesI
 		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetUserTemplates handler called",
+		slog.String("userId", userId))
+
 	userObjID, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
@@ -767,8 +770,13 @@ func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesI
 
 	templates, err := h.service.GetTemplatesByUserWithCategory(userObjID)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to fetch templates",
+			slog.String("error", err.Error()))
 		return nil, huma.Error500InternalServerError("Failed to fetch templates", err)
 	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetUserTemplates handler returning",
+		slog.Int("templateCount", len(templates)))
 
 	output := &GetUserTemplatesOutput{}
 	output.Body.Templates = templates

@@ -12,6 +12,7 @@ import { activityAPI, getMonthlyActivityLevels, ActivityDocument, calculateActiv
 import CompletedTasksBottomSheetModal from "@/components/modals/CompletedTasksBottomSheetModal";
 import RecurringTasksSelectionModal from "@/components/modals/RecurringTasksSelectionModal";
 import { getUserTemplatesAPI } from "@/api/task";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 
 type Props = {};
 
@@ -138,10 +139,12 @@ const Activity = (props: Props) => {
                 // Fetch templates for breakdown feature
                 try {
                     const userTemplates = await getUserTemplatesAPI();
+                    console.log("Fetched templates:", userTemplates);
                     setTemplates(userTemplates);
                 } catch (templateErr) {
                     console.error("Failed to fetch templates:", templateErr);
                     // Don't fail the whole page if templates fail
+                    setTemplates([]);
                 }
             } catch (err) {
                 console.error("Failed to fetch activity data:", err);
@@ -219,13 +222,21 @@ const Activity = (props: Props) => {
                     </TouchableOpacity>
                 </View>
 
-                {!breakdownMode && templates.length > 0 && (
-                    <TouchableOpacity
-                        style={[styles.breakdownButton, { borderColor: ThemedColor.text }]}
-                        onPress={() => setBreakdownModalVisible(true)}>
-                        <Ionicons name="analytics-outline" size={20} color={ThemedColor.text} />
-                        <ThemedText type="lightBody">Break down by recurring tasks</ThemedText>
-                    </TouchableOpacity>
+                {!breakdownMode && (
+                    <View style={styles.breakdownButtonContainer}>
+                        <PrimaryButton
+                            title={templates.length === 0 ? "No recurring tasks yet" : "Break down by recurring tasks"}
+                            outline
+                            onPress={() => setBreakdownModalVisible(true)}
+                            style={styles.breakdownButton}
+                            disabled={templates.length === 0}
+                        />
+                        {templates.length === 0 && (
+                            <ThemedText type="caption" style={{ textAlign: "center", marginTop: 8, color: ThemedColor.caption }}>
+                                Create a recurring task to use this feature
+                            </ThemedText>
+                        )}
+                    </View>
                 )}
 
                 {breakdownMode && (
@@ -422,14 +433,11 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         errorText: {
             color: "red",
         },
+        breakdownButtonContainer: {
+            width: "100%",
+        },
         breakdownButton: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            justifyContent: "center",
-            borderWidth: 1,
-            borderRadius: 24,
-            padding: 12,
+            width: "100%",
         },
         breakdownActiveBar: {
             flexDirection: "row",
