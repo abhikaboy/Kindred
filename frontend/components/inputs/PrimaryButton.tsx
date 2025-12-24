@@ -11,9 +11,10 @@ type Props = {
     disabled?: boolean;
     children?: React.ReactNode;
     textStyle?: TextStyle;
+    colorOverride?: string;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, disabled, children, textStyle }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, disabled, children, textStyle, colorOverride }: Props) {
     let ThemedColor = useThemeColor();
 
     return (
@@ -40,7 +41,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
             {children}
             <Text
                 style={{
-                    color: ghost || outline || dottedOutline ? ThemedColor.primary : ThemedColor.buttonText,
+                    color: colorOverride ? colorOverride : ghost || outline || dottedOutline ? ThemedColor.primary : ThemedColor.buttonText,
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,

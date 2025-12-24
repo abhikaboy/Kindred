@@ -67,8 +67,14 @@ export default function RecurringTasksSelectionModal({
                     styles.templateItem,
                     {
                         backgroundColor: ThemedColor.lightenedCard,
-                        borderColor: isSelected ? ThemedColor.primary : ThemedColor.tertiary,
-                        borderWidth: isSelected ? 2 : 1,
+                        borderColor: ThemedColor.tertiary,
+                    },
+                    isSelected && {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.10,
+                        shadowRadius: 4,
+                        elevation: 2,
                     },
                 ]}
                 onPress={() => toggleSelection(item.id)}
@@ -85,10 +91,16 @@ export default function RecurringTasksSelectionModal({
                             </ThemedText>
                         )}
                     </View>
-                    <View style={[styles.checkbox, { borderColor: ThemedColor.text }]}>
-                        {isSelected && (
-                            <Ionicons name="checkmark" size={18} color={ThemedColor.primary} />
-                        )}
+                    <View
+                        style={[
+                            styles.checkbox,
+                            {
+                                backgroundColor: isSelected ? ThemedColor.primary : "transparent",
+                                borderColor: isSelected ? "transparent" : ThemedColor.text,
+                                borderWidth: isSelected ? 0 : 1.5,
+                            },
+                        ]}>
+                        {isSelected && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -179,7 +191,6 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 6,
-        borderWidth: 2,
         alignItems: "center",
         justifyContent: "center",
         marginLeft: 12,

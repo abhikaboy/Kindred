@@ -131,7 +131,7 @@ const Daily = (props: Props) => {
             onDrawerOpen={() => setIsDrawerOpen(true)}
             onDrawerClose={() => setIsDrawerOpen(false)}>
             
-            <View style={[styles.container, { flex: 1, paddingTop: insets.top }]}>
+            <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
                 <View style={{ flex: 1 }}>
                     {activeTab === "List" ? (
                         <Animated.ScrollView 

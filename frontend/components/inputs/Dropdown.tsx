@@ -133,6 +133,7 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                                 style={{
                                     backgroundColor: ThemedColor.background,
                                     padding: 8,
+                                    paddingHorizontal: 16,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
                                     borderRadius: 12,
@@ -147,7 +148,8 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                         borderBottomLeftRadius: 12,
                         backgroundColor: ThemedColor.background,
                         borderBottomRightRadius: 12,
-                        paddingVertical: 4,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
                     }}>
 
                     {footerOptions && footerOptions.map((item, index) => {

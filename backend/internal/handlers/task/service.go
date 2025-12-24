@@ -1981,7 +1981,19 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 	defer cursor.Close(ctx)
 
 	var results []TaskDocument
-	if err := cursor.All(ctx, &results); err != nil {
+	// Decode tasks one by one to handle errors gracefully
+	for cursor.Next(ctx) {
+		var task TaskDocument
+		if err := cursor.Decode(&task); err != nil {
+			// Log the error but continue processing other tasks
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to unmarshal task in GetCompletedTasks",
+				slog.String("error", err.Error()))
+			continue // Skip this task and continue with others
+		}
+		results = append(results, task)
+	}
+
+	if err := cursor.Err(); err != nil {
 		return nil, 0, err
 	}
 	return results, totalCount, nil
@@ -2013,15 +2025,57 @@ func (s *Service) GetCompletedTasksByDate(userId primitive.ObjectID, date time.T
 		},
 	}
 
+	// First, count total completed tasks for this user (for debugging)
+	totalUserTasks, _ := s.CompletedTasks.CountDocuments(ctx, bson.M{"user": userId})
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetCompletedTasksByDate executing query",
+		slog.String("filter", fmt.Sprintf("%+v", filter)),
+		slog.Int64("totalUserCompletedTasks", totalUserTasks))
+
 	cursor, err := s.CompletedTasks.Find(ctx, filter)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "GetCompletedTasksByDate cursor error",
+			slog.String("error", err.Error()))
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var results []TaskDocument
-	if err := cursor.All(ctx, &results); err != nil {
+	// Decode tasks one by one to handle errors gracefully
+	for cursor.Next(ctx) {
+		var task TaskDocument
+		if err := cursor.Decode(&task); err != nil {
+			// Log the error but continue processing other tasks
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to unmarshal task",
+				slog.String("error", err.Error()))
+			// Try to get the raw document for debugging
+			var rawDoc bson.M
+			if err := cursor.Decode(&rawDoc); err == nil {
+				slog.LogAttrs(ctx, slog.LevelError, "Raw document that failed",
+					slog.Any("document", rawDoc))
+			}
+			continue // Skip this task and continue with others
+		}
+		results = append(results, task)
+	}
+
+	if err := cursor.Err(); err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "GetCompletedTasksByDate cursor error",
+			slog.String("error", err.Error()))
 		return nil, err
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetCompletedTasksByDate returning",
+		slog.Int("taskCount", len(results)))
+
+	// Log first few tasks for debugging
+	for i, task := range results {
+		if i < 3 { // Only log first 3 tasks
+			slog.LogAttrs(ctx, slog.LevelInfo, "GetCompletedTasksByDate task",
+				slog.Int("index", i),
+				slog.String("content", task.Content),
+				slog.Time("timeCompleted", *task.TimeCompleted))
+		}
 	}
 
 	return results, nil

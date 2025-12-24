@@ -173,7 +173,7 @@ const Review = (props: Props) => {
 
         const completeData = {
             timeCompleted: new Date().toISOString(),
-            timeTaken: "0", // You may want to track actual time taken
+            timeTaken: "PT0S", // ISO 8601 duration: 0 seconds
         };
 
         await markAsCompletedAPI(task.categoryID, task.id, completeData);

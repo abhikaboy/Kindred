@@ -98,7 +98,7 @@ const ReviewTaskCard = ({
                         <ThemedText type="defaultSemiBold" style={styles.categoryName}>
                             {task?.categoryName || "Uncategorized"}
                         </ThemedText>
-                        <ThemedText type="title">
+                        <ThemedText type="title" numberOfLines={2}>
                             {task?.content || ""}
                         </ThemedText>
                     </View>

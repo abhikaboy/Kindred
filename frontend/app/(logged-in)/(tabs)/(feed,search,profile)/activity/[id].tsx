@@ -225,11 +225,12 @@ const Activity = (props: Props) => {
                 {!breakdownMode && (
                     <View style={styles.breakdownButtonContainer}>
                         <PrimaryButton
-                            title={templates.length === 0 ? "No recurring tasks yet" : "Break down by recurring tasks"}
+                            title={templates.length === 0 ? "No recurring tasks yet" : "Break Down by Recurring Tasks"}
                             outline
                             onPress={() => setBreakdownModalVisible(true)}
                             style={styles.breakdownButton}
                             disabled={templates.length === 0}
+                            colorOverride={ThemedColor.text}
                         />
                         {templates.length === 0 && (
                             <ThemedText type="caption" style={{ textAlign: "center", marginTop: 8, color: ThemedColor.caption }}>
@@ -240,7 +241,7 @@ const Activity = (props: Props) => {
                 )}
 
                 {breakdownMode && (
-                    <View style={[styles.breakdownActiveBar, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.primary }]}>
+                    <View style={[styles.breakdownActiveBar, { backgroundColor: ThemedColor.lightenedCard}]}>
                         <ThemedText type="caption" style={{ color: ThemedColor.text }}>
                             Showing {selectedTemplateIds.length} recurring task{selectedTemplateIds.length !== 1 ? "s" : ""}
                         </ThemedText>
@@ -438,14 +439,17 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         breakdownButton: {
             width: "100%",
+            borderRadius: 24,
+            borderColor: ThemedColor.text,
+            paddingVertical: 12,
+            fontWeight: "300",
         },
         breakdownActiveBar: {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            borderWidth: 2,
             borderRadius: 12,
-            padding: 12,
+            padding: 16,
         },
     });
 

@@ -35,7 +35,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         try {
             const res = await markAsCompletedAPI(categoryId, taskId, {
                 timeCompleted: new Date().toISOString(),
-                timeTaken: new Date().toISOString(),
+                timeTaken: "PT0S", // ISO 8601 duration: 0 seconds (not tracked)
             });
             console.log("Task completion result:", res);
 

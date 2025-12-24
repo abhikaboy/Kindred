@@ -216,7 +216,7 @@ export const getUserTemplatesAPI = async (): Promise<any[]> => {
         throw new Error(`Failed to get templates: ${JSON.stringify(error)}`);
     }
 
-    const templates = data?.body?.templates || [];
+    const templates = data?.templates || [];
     console.log("getUserTemplatesAPI: Returning templates:", templates);
     return templates;
 };

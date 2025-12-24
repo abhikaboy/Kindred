@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator, Image } from "react-native";
+import { ScrollView, View, ActivityIndicator } from "react-native";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
@@ -19,14 +19,13 @@ import {
 } from "@/utils/notificationService";
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
-import { MotiView } from "moti";
-import { Skeleton } from "moti/skeleton";
 import { ThemedView } from "@/components/ThemedView";
 import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
 import CreateModal from "@/components/modals/CreateModal";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { updateTimezone } from "@/api/profile";
 import * as Localization from 'expo-localization';
+import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -64,6 +63,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
     const authInitialized = useRef(false);
+    const [canTransition, setCanTransition] = useState(false);
     const ThemedColor = useThemeColor();
     const router = useRouter();
 
@@ -184,29 +184,13 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
-    if (isLoading) {
-        return (
-            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <MotiView
-                    from={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{
-                        type: "timing",
-                        duration: 500,
-                    }}
-                    exit={{ opacity: 0, scale: 0.9 }}>
-                    <Image
-                        source={require("@/assets/splash-icon.png")}
-                        style={{
-                            width: 120,
-                            height: 120,
-                            resizeMode: "contain",
-                        }}
-                    />
-                </MotiView>
+    const handleAnimationComplete = () => {
+        setCanTransition(true);
+    };
 
-            </ThemedView>
-        );
+    // Show splash while loading or waiting for animation
+    if (isLoading || !canTransition) {
+        return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;
     }
 
     // If no user after loading, redirect based on onboarding status
@@ -214,28 +198,8 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         if (redirectPath) {
             return <Redirect href={redirectPath as any} />;
         }
-        // Still determining redirect path
-        return (
-            <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <MotiView
-                    from={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{
-                        type: "timing",
-                        duration: 500,
-                    }}
-                    exit={{ opacity: 0, scale: 0.9 }}>
-                    <Image
-                        source={require("@/assets/splash-icon.png")}
-                        style={{
-                            width: 120,
-                            height: 120,
-                            resizeMode: "contain",
-                        }}
-                    />
-                </MotiView>
-            </ThemedView>
-        );
+        // Still determining redirect path (shouldn't happen, but fallback)
+        return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;
     }
 
     return (

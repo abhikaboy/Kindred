@@ -72,7 +72,7 @@ export default function CompletedTasksBottomSheetModal({ visible, setVisible, da
 
 const styles = StyleSheet.create({
     container: {
-        padding: 16,
+        paddingHorizontal: 4,
         height: '100%',
     },
     title: {

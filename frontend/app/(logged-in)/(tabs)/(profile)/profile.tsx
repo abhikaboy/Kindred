@@ -35,7 +35,7 @@ export default function Profile() {
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
-    const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
+    const HEADER_HEIGHT = Dimensions.get("screen").height * 0.4;
 
     type TaskDocument = components["schemas"]["TaskDocument"];
 

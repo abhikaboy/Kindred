@@ -79,6 +79,12 @@ export const activityAPI = {
       const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+      console.log('📅 getCompletedTasksByDate: Fetching tasks for date:', {
+        date: date.toISOString(),
+        dateStr,
+        timezone
+      });
+
       const { data, error } = await client.GET('/v1/user/tasks/completed/date', {
         params: withAuthHeaders({ 
           query: { 
@@ -88,13 +94,23 @@ export const activityAPI = {
         })
       });
       
+      console.log('📅 getCompletedTasksByDate: Response received:', {
+        data,
+        error,
+        taskCount: data?.tasks?.length || 0
+      });
+
       if (error) {
+        console.error('📅 getCompletedTasksByDate: Error occurred:', error);
         throw new Error(`Failed to fetch completed tasks by date: ${JSON.stringify(error)}`);
       }
       
-      return data?.body?.tasks || [];
+      const tasks = data?.tasks || [];
+      console.log('📅 getCompletedTasksByDate: Returning tasks:', tasks);
+      
+      return tasks;
     } catch (error) {
-      console.error('Error fetching completed tasks by date:', error);
+      console.error('📅 getCompletedTasksByDate: Exception caught:', error);
       throw error;
     }
   }

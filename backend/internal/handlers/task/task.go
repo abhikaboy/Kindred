@@ -861,8 +861,15 @@ func (h *Handler) GetCompletedTasksByDate(ctx context.Context, input *GetComplet
 
 	tasks, err := h.service.GetCompletedTasksByDate(userObjID, dateInLoc)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "GetCompletedTasksByDate: service error",
+			slog.String("error", err.Error()))
 		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
 	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "GetCompletedTasksByDate: returning tasks",
+		slog.String("date", input.Date),
+		slog.String("timezone", input.Timezone),
+		slog.Int("taskCount", len(tasks)))
 
 	output := &GetCompletedTasksByDateOutput{}
 	output.Body.Tasks = tasks
