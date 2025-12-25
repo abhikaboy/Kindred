@@ -242,6 +242,7 @@ type Props = {
     timeTaken?: number;
     reactions?: SlackReaction[];
     images?: string[];
+    dual?: string;
     id?: string;
     comments?: CommentProps[];
     category?: string;
@@ -263,6 +264,7 @@ const PostCard = React.memo(({
     timeTaken,
     reactions = [],
     images,
+    dual,
     comments,
     category,
     taskName,
@@ -717,6 +719,7 @@ const PostCard = React.memo(({
         showToast("Report submitted. Thank you for helping keep Kindred safe.", "info");
     };
 
+
     const styles = stylesheet(ThemedColor);
 
     return (
@@ -774,6 +777,15 @@ const PostCard = React.memo(({
                                         style={[styles.image, { height: imageHeight }]}
                                         onLongPress={() => openModal(0)}
                                     />
+                                    {dual && (
+                                        <View style={styles.dualOverlay}>
+                                            <Image 
+                                                source={{ uri: dual }}
+                                                style={styles.dualImage}
+                                                resizeMode="cover"
+                                            />
+                                        </View>
+                                    )}
                                 </View>
                             ) : (
                                 <View style={styles.carouselContainer}>
@@ -798,6 +810,15 @@ const PostCard = React.memo(({
                                                     style={[styles.image, { height: imageHeight }]}
                                                     onLongPress={() => openModal(index)}
                                                 />
+                                                {dual && (
+                                                    <View style={styles.dualOverlay}>
+                                                        <Image 
+                                                            source={{ uri: dual }}
+                                                            style={styles.dualImage}
+                                                            resizeMode="cover"
+                                                        />
+                                                    </View>
+                                                )}
                                             </View>
                                         )}
                                     />
@@ -1167,6 +1188,26 @@ const stylesheet = (ThemedColor: any) =>
             height: 6,
             borderRadius: 3,
             opacity: 0.8,
+        },
+        dualOverlay: {
+            position: "absolute",
+            top: 16,
+            left: 16,
+            width: Dimensions.get("window").width * 0.23,
+            aspectRatio: 3 / 4,
+            borderRadius: 12,
+            borderWidth: 3,
+            borderColor: "#fff",
+            overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.3,
+            shadowRadius: 4,
+            elevation: 5,
+        },
+        dualImage: {
+            width: "100%",
+            height: "100%",
         },
     });
 export default PostCard;

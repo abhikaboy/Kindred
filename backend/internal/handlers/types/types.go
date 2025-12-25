@@ -266,6 +266,7 @@ type PostDocument struct {
 	User UserExtendedReferenceInternal `bson:"user" json:"user"`
 
 	Images  []string   `bson:"images" json:"images"`
+	Dual    *string    `bson:"dual,omitempty" json:"dual,omitempty"`
 	Caption string     `bson:"caption" json:"caption"`
 	Size    *ImageSize `bson:"size,omitempty" json:"size,omitempty"`
 

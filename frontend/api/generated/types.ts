@@ -3287,6 +3287,7 @@ export interface components {
             blueprintId?: string;
             blueprintIsPublic?: boolean;
             caption: string;
+            dual?: string;
             groups?: string[];
             images: string[];
             isPublic: boolean;
@@ -4103,6 +4104,7 @@ export interface components {
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
             comments: components["schemas"]["CommentDocument"][];
+            dual?: string;
             groups?: string[];
             images: string[];
             metadata: components["schemas"]["PostMetadata"];

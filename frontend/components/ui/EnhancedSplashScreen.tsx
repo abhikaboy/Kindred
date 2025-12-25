@@ -24,7 +24,7 @@ interface EnhancedSplashScreenProps {
  */
 export default function EnhancedSplashScreen({ 
     onAnimationComplete,
-    minDisplayTime = 2500 
+    minDisplayTime = 2000 
 }: EnhancedSplashScreenProps) {
     const ThemedColor = useThemeColor();
     const [animationComplete, setAnimationComplete] = useState(false);
@@ -35,6 +35,7 @@ export default function EnhancedSplashScreen({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const floatAnim = useRef(new Animated.Value(0)).current;
     const fadeOutAnim = useRef(new Animated.Value(1)).current;
+    const logoFadeOutAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         const startTime = Date.now();
@@ -82,6 +83,14 @@ export default function EnhancedSplashScreen({
             floatLoop.stop();
             setStartExit(true);
             
+            // Start fading out the logo immediately when circles start
+            Animated.timing(logoFadeOutAnim, {
+                toValue: 0,
+                duration: 800,
+                easing: RNEasing.out(RNEasing.ease),
+                useNativeDriver: true,
+            }).start();
+            
             // Wait for circles to expand (now 1000ms), then fade out everything
             setTimeout(() => {
                 Animated.timing(fadeOutAnim, {
@@ -92,7 +101,7 @@ export default function EnhancedSplashScreen({
                 }).start(() => {
                     setAnimationComplete(true);
                 });
-            }, 1000); // Wait for circles to expand
+            }, 1500); // Wait for circles to expand
         }, minDisplayTime - 500); // Start 500ms earlier
 
         return () => {
@@ -123,7 +132,7 @@ export default function EnhancedSplashScreen({
                 animate={{ scale: startExit ? 100 : 0, opacity: startExit ? 1 : 0.8 }}
                 transition={{
                     type: 'timing',
-                    duration: startExit ? 1000 : 0,
+                    duration: startExit ? 1500 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
                 style={[styles.expandingCircle, { 
@@ -135,7 +144,7 @@ export default function EnhancedSplashScreen({
                 animate={{ scale: startExit ? 100 : 0, opacity: startExit ? 1 : 0.8 }}
                 transition={{
                     type: 'timing',
-                    duration: startExit ? 1000 : 0,
+                    duration: startExit ? 1500 : 0,
                     delay: startExit ? 150 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
@@ -148,7 +157,7 @@ export default function EnhancedSplashScreen({
                 animate={{ scale: startExit ? 100 : 0, opacity: startExit ? 1 : 0.8 }}
                 transition={{
                     type: 'timing',
-                    duration: startExit ? 1000 : 0,
+                    duration: startExit ? 1500 : 0,
                     delay: startExit ? 300 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
@@ -162,7 +171,7 @@ export default function EnhancedSplashScreen({
                 style={[
                     styles.logoContainer,
                     {
-                        opacity: fadeAnim,
+                        opacity: Animated.multiply(fadeAnim, logoFadeOutAnim),
                         transform: [
                             { scale: scaleAnim },
                             { translateY: floatAnim },

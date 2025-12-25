@@ -51,6 +51,7 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 			ProfilePicture: user.ProfilePicture,
 		},
 		Images:    input.Body.Images,
+		Dual:      input.Body.Dual,
 		Caption:   input.Body.Caption,
 		Size:      input.Body.Size,
 		Task:      input.Body.Task,

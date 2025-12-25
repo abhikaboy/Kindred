@@ -22,6 +22,7 @@ type CreatePostOutput struct {
 
 type CreatePostParams struct {
 	Images            []string                         `json:"images" validate:"omitempty,dive,url"`
+	Dual              *string                          `json:"dual,omitempty" validate:"omitempty,url"`
 	Caption           string                           `json:"caption" validate:"required"`
 	Size              *types.ImageSize                 `json:"size,omitempty"`
 	Task              *types.PostTaskExtendedReference `json:"task,omitempty"`

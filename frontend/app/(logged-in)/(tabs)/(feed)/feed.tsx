@@ -37,6 +37,7 @@ type PostData = {
         profile_picture: string;
     };
     images: string[];
+    dual?: string;
     caption: string;
     size?: {
         width: number;
@@ -430,6 +431,7 @@ export default function Feed() {
                         userId={post.user?._id || ""}
                         id={post._id}
                         images={post.images}
+                        dual={post.dual}
                         caption={post.caption}
                         size={post.size}
                         time={postTime}

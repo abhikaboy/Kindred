@@ -17,6 +17,7 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 export default function Caption() {
     const params = useLocalSearchParams();
     const photos = params.photos ? JSON.parse(params.photos as string) : [];
+    const dualPhoto = params.dualPhoto ? (params.dualPhoto as string) : null;
     const flatListRef = useRef<FlatList>(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
     const [data, setData] = useState({ caption: "" });
@@ -51,7 +52,7 @@ export default function Caption() {
         });
     };
 
-    const uploadPhotos = async (photoUris: string[]): Promise<{ urls: string[]; sizeInfo?: { width: number; height: number; bytes: number } }> => {
+    const uploadPhotos = async (photoUris: string[], dualUri: string | null): Promise<{ urls: string[]; sizeInfo?: { width: number; height: number; bytes: number }; dualUrl?: string }> => {
         if (!hasActualPhotos) {
             return { urls: [] };
         }
@@ -82,7 +83,25 @@ export default function Caption() {
                 throw new Error(`Failed to upload photo ${i + 1}. Please try again.`);
             }
         }
-        return { urls: uploadedUrls, sizeInfo };
+
+        // Upload dual photo if it exists
+        let dualUrl: string | undefined;
+        if (dualUri) {
+            try {
+                const dualResult = await uploadImageSmart(
+                    "post",
+                    taskInfo?.id || new ObjectId().toString(),
+                    dualUri,
+                    { variant: "medium", returnFullResult: true }
+                ) as ImageUploadResult;
+                dualUrl = dualResult.public_url;
+            } catch (error) {
+                console.error('Failed to upload dual photo:', error);
+                // Continue without dual photo rather than failing
+            }
+        }
+
+        return { urls: uploadedUrls, sizeInfo, dualUrl };
     };
     const handlePost = async () => {
         if (!data.caption.trim()) {
@@ -96,7 +115,7 @@ export default function Caption() {
         setIsPosting(true);
 
         try {
-            const uploadResult = await uploadPhotos(hasActualPhotos ? photos : []);
+            const uploadResult = await uploadPhotos(hasActualPhotos ? photos : [], dualPhoto);
             const taskReference = taskInfo
                 ? {
                       id: taskInfo.id,
@@ -117,7 +136,8 @@ export default function Caption() {
                 undefined, 
                 taskInfo?.public ?? false,
                 uploadResult.sizeInfo,
-                selectedGroups
+                selectedGroups,
+                uploadResult.dualUrl
             );
 
             // Update user stats locally if available

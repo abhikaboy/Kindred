@@ -23,12 +23,36 @@ export default function Posting() {
     const [flash, setFlash] = useState<FlashMode>("off");
     const [viewMode, setViewMode] = useState<"camera" | "preview">("camera");
     const flatListRef = useRef<FlatList>(null);
+    const [dualPhoto, setDualPhoto] = useState<string | null>(null);
+    const [isCapturingDual, setIsCapturingDual] = useState(false);
+    const [dualModeEnabled, setDualModeEnabled] = useState(true); // Default to enabled
+    const [capturingMessage, setCapturingMessage] = useState<string>("");
+    const [justCapturedPhoto, setJustCapturedPhoto] = useState<string | null>(null);
+    const [countdown, setCountdown] = useState<number>(0);
+    const [isCameraReady, setIsCameraReady] = useState(false);
+    const [waitingForCamera, setWaitingForCamera] = useState(false);
+    const cameraReadyRef = useRef(false);
+    const previewCamera = useRef<CameraView>(null);
     let ThemedColor = useThemeColor();
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
 
     const params = useLocalSearchParams();
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
+
+    // BeReal-style capture messages
+    const backCameraMessages = [
+        "Show us what you're up to!",
+        "What's happening?",
+        "Capture the moment!",
+        "What are you doing?",
+    ];
+    const frontCameraMessages = [
+        "Smile!",
+        "Say cheese!",
+        "Look at the camera!",
+        "Show your reaction!",
+    ];
 
     useEffect(() => {
         if (viewMode === "preview" && flatListRef.current && photos.length > 0) {
@@ -42,13 +66,40 @@ export default function Posting() {
     }, [viewMode, currentPhotoIndex]);
 
     const takePicture = async () => {
-        const photo = await camera.current?.takePictureAsync({
-            quality: 0.5,
-        });
-        if (photo?.uri) {
+        try {
+            const photo = await camera.current?.takePictureAsync({
+                quality: 0.5,
+            });
+            
+            if (!photo?.uri) {
+                console.error("Failed to capture photo - no URI returned");
+                return;
+            }
+            
             setPhotos([...photos, photo.uri]);
             setCurrentPhotoIndex(photos.length);
+            
+            // Automatically capture dual photo if dual mode is enabled
+            if (dualModeEnabled) {
+                // Show the just-captured photo with a message
+                setJustCapturedPhoto(photo.uri);
+                
+                // Get appropriate message based on which camera will capture next
+                const messages = facing === "back" ? frontCameraMessages : backCameraMessages;
+                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                setCapturingMessage(randomMessage);
+                
+                await captureDualPhotoAutomatic();
+            }
+            
+            // Only switch to preview after dual capture is complete
             setViewMode("preview");
+        } catch (error) {
+            console.error("Error in takePicture:", error);
+            // Still try to go to preview if we have photos
+            if (photos.length > 0) {
+                setViewMode("preview");
+            }
         }
     };
 
@@ -67,6 +118,142 @@ export default function Posting() {
         }
     };
 
+    const captureDualPhotoAutomatic = async () => {
+        if (isCapturingDual) return;
+        
+        setIsCapturingDual(true);
+        let isCancelled = false;
+        
+        try {
+            // Switch to opposite camera immediately
+            const dualFacing: CameraType = facing === "back" ? "front" : "back";
+            setFacing(dualFacing);
+            cameraReadyRef.current = false;
+            setIsCameraReady(false);
+            setWaitingForCamera(true);
+            
+            // Wait for camera ready callback using ref
+            let attempts = 0;
+            while (!cameraReadyRef.current && attempts < 50 && !isCancelled) { // Max 5 seconds wait
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (isCancelled) return;
+            
+            if (!cameraReadyRef.current) {
+                console.error("Camera did not become ready in time");
+                return;
+            }
+            
+            setWaitingForCamera(false);
+            
+            // Additional stabilization time after camera is ready
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            if (isCancelled) return;
+            
+            // Start countdown from 3
+            for (let i = 3; i > 0; i--) {
+                if (isCancelled) return;
+                setCountdown(i);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            if (isCancelled) return;
+            setCountdown(0);
+            
+            // Extra delay after countdown before capture
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Check if preview camera ref is valid (we use preview camera during dual capture)
+            if (!previewCamera.current) {
+                console.error("Preview camera ref is null, cannot capture dual photo");
+                return;
+            }
+            
+            console.log("Attempting to capture dual photo...");
+            
+            // Capture photo from the preview camera ref
+            const photo = await previewCamera.current.takePictureAsync({
+                quality: 0.5,
+            });
+            
+            console.log("Dual photo captured:", photo?.uri ? "success" : "failed");
+            
+            if (photo?.uri && !isCancelled) {
+                setDualPhoto(photo.uri);
+            }
+            
+        } catch (error) {
+            console.error("Failed to capture dual photo:", error);
+        } finally {
+            // Clean up all states - no need to switch camera back since we're going to preview
+            if (!isCancelled) {
+                setIsCapturingDual(false);
+                setJustCapturedPhoto(null);
+                setCapturingMessage("");
+                setCountdown(0);
+                setWaitingForCamera(false);
+            }
+        }
+    };
+
+    const captureDualPhoto = async () => {
+        if (isCapturingDual) return;
+        
+        setIsCapturingDual(true);
+        const wasInPreview = viewMode === "preview";
+        
+        try {
+            // If in preview, temporarily switch to camera
+            if (wasInPreview) {
+                setViewMode("camera");
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            // Switch to opposite camera
+            const dualFacing: CameraType = facing === "back" ? "front" : "back";
+            setFacing(dualFacing);
+            
+            // Wait for camera to switch
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // Capture photo
+            const photo = await camera.current?.takePictureAsync({
+                quality: 0.5,
+            });
+            
+            if (photo?.uri) {
+                setDualPhoto(photo.uri);
+            }
+            
+            // Return to preview if we were there (no need to switch camera back)
+            if (wasInPreview) {
+                setViewMode("preview");
+            }
+        } catch (error) {
+            console.error("Failed to capture dual photo:", error);
+        } finally {
+            setIsCapturingDual(false);
+        }
+    };
+
+    const swapPhotos = () => {
+        if (!dualPhoto || photos.length === 0) return;
+        
+        // Swap the main photo with the dual photo
+        const currentMainPhoto = photos[currentPhotoIndex];
+        const newPhotos = [...photos];
+        newPhotos[currentPhotoIndex] = dualPhoto;
+        setPhotos(newPhotos);
+        setDualPhoto(currentMainPhoto);
+    };
+
+    const removeDualPhoto = () => {
+        setDualPhoto(null);
+    };
+
     const removePhoto = (index: number) => {
         const newPhotos = photos.filter((_, i) => i !== index);
         setPhotos(newPhotos);
@@ -83,6 +270,7 @@ export default function Posting() {
             pathname: "/posting/caption",
             params: {
                 photos: JSON.stringify(photos),
+                dualPhoto: dualPhoto || "",
                 taskInfo: taskInfo ? JSON.stringify(taskInfo) : null,
             },
         });
@@ -93,6 +281,7 @@ export default function Posting() {
             pathname: "/posting/caption",
             params: {
                 photos: JSON.stringify([]),
+                dualPhoto: "",
                 taskInfo: taskInfo ? JSON.stringify(taskInfo) : null,
             },
         });
@@ -194,18 +383,206 @@ export default function Posting() {
                                             }}
                                             resizeMode="cover"
                                         />
+                                        {dualPhoto && (
+                                            <TouchableOpacity
+                                                onPress={swapPhotos}
+                                                activeOpacity={1}
+                                                style={{
+                                                    position: "absolute",
+                                                    top: insets.top + 20,
+                                                    left: 20,
+                                                    width: Dimensions.get("window").width * 0.3,
+                                                    aspectRatio: 3 / 4,
+                                                    borderRadius: 12,
+                                                    borderWidth: 3,
+                                                    borderColor: "#fff",
+                                                    overflow: "hidden",
+                                                    shadowColor: "#000",
+                                                    shadowOffset: { width: 0, height: 2 },
+                                                    shadowOpacity: 0.3,
+                                                    shadowRadius: 4,
+                                                    elevation: 5,
+                                                    zIndex: 10,
+                                                }}>
+                                                <Image
+                                                    source={{ uri: dualPhoto }}
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "100%",
+                                                    }}
+                                                    resizeMode="cover"
+                                                />
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
                                 )}
                                 keyExtractor={(item, index) => index.toString()}
                             />
                         </>
                     ) : (
-                        <CameraView
-                            style={{ width: "100%", height: Dimensions.get("window").height }}
-                            facing={facing}
-                            ref={camera}
-                            flash={flash}
-                        />
+                        <>
+                            {/* Main camera view - only render when NOT capturing dual */}
+                            {!isCapturingDual && (
+                                <View style={{ 
+                                    width: "100%", 
+                                    height: Dimensions.get("window").height,
+                                }}>
+                                    <CameraView
+                                        style={{ width: "100%", height: "100%" }}
+                                        facing={facing}
+                                        ref={camera}
+                                        flash={flash}
+                                        zoom={0}
+                                        selectedLens="builtInWideAngleCamera"
+                                        onCameraReady={() => {
+                                            cameraReadyRef.current = true;
+                                            setIsCameraReady(true);
+                                        }}
+                                    />
+                                </View>
+                            )}
+                            
+                            {/* Preview box indicator (always visible when dual mode is on and not capturing) */}
+                            {dualModeEnabled && !isCapturingDual && (
+                                <View
+                                    style={{
+                                        position: "absolute",
+                                        top: insets.top + 20,
+                                        right: 20,
+                                        width: Dimensions.get("window").width * 0.3,
+                                        aspectRatio: 3 / 4,
+                                        borderRadius: 12,
+                                        borderWidth: 3,
+                                        borderColor: "#fff",
+                                        borderStyle: "dashed",
+                                        backgroundColor: "rgba(0, 0, 0, 0.3)",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        zIndex: 10,
+                                    }}>
+                                    <Ionicons
+                                        name="camera-outline"
+                                        size={32}
+                                        color="#fff"
+                                        style={{ opacity: 0.6 }}
+                                    />
+                                </View>
+                            )}
+                            
+                            {/* BeReal-style capture overlay - replaces camera view */}
+                            {justCapturedPhoto && isCapturingDual && (
+                                <View
+                                    style={{
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        zIndex: 1000,
+                                    }}>
+                                    {/* Full-screen captured photo (replaces camera) */}
+                                    <Image
+                                        source={{ uri: justCapturedPhoto }}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                        }}
+                                        resizeMode="cover"
+                                    />
+                                    
+                                    {/* Dark overlay for dimming */}
+                                    <View
+                                        style={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                                        }}
+                                    />
+                                    
+                                    {/* Live preview camera in top-right corner */}
+                                    <View
+                                        style={{
+                                            position: "absolute",
+                                            top: insets.top + 20,
+                                            right: 20,
+                                            width: Dimensions.get("window").width * 0.3,
+                                            aspectRatio: 3 / 4,
+                                            borderRadius: 12,
+                                            borderWidth: 3,
+                                            borderColor: "#fff",
+                                            overflow: "hidden",
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.5,
+                                            shadowRadius: 8,
+                                            elevation: 10,
+                                            zIndex: 1001,
+                                        }}>
+                                        <CameraView
+                                            style={{ width: "100%", height: "100%" }}
+                                            facing={facing}
+                                            ref={previewCamera}
+                                            flash={flash}
+                                            zoom={0}
+                                            selectedLens="builtInWideAngleCamera"
+                                            onCameraReady={() => {
+                                                cameraReadyRef.current = true;
+                                                setIsCameraReady(true);
+                                            }}
+                                        />
+                                    </View>
+                                    
+                                    {/* Centered message and countdown */}
+                                    <View
+                                        style={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            paddingHorizontal: 40,
+                                            zIndex: 1002,
+                                        }}>
+                                        {waitingForCamera ? (
+                                            <ThemedText
+                                                style={{
+                                                    fontSize: 24,
+                                                    fontWeight: "600",
+                                                    color: "#fff",
+                                                    textAlign: "center",
+                                                }}>
+                                                Preparing camera...
+                                            </ThemedText>
+                                        ) : countdown > 0 ? (
+                                            <ThemedText
+                                                style={{
+                                                    fontSize: 120,
+                                                    fontWeight: "900",
+                                                    color: "#fff",
+                                                    textAlign: "center",
+                                                }}>
+                                                {countdown}
+                                            </ThemedText>
+                                        ) : (
+                                            <ThemedText
+                                                style={{
+                                                    fontSize: 36,
+                                                    fontWeight: "700",
+                                                    color: "#fff",
+                                                    textAlign: "center",
+                                                }}>
+                                                {capturingMessage}
+                                            </ThemedText>
+                                        )}
+                                    </View>
+                                </View>
+                            )}
+                        </>
                     )}
 
                     {photos.length > 0 && (
@@ -290,12 +667,25 @@ export default function Posting() {
                         {viewMode === "camera" ? (
                             <>
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 24 }}>
-                                    <Ionicons
-                                        name={flash === "off" ? "flash-outline" : "flash"}
-                                        size={32}
-                                        color={ThemedColor.background === "#000" ? "#fff" : "#000"}
-                                        style={{ opacity: 0 }}
-                                    />
+                                    <TouchableOpacity
+                                        onPress={() => setDualModeEnabled(!dualModeEnabled)}
+                                        style={{
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: 24,
+                                            backgroundColor:
+                                                "transparent",
+                                            borderWidth: dualModeEnabled ? 0 : 2,
+                                            borderColor: ThemedColor.background === "#000" ? "#fff" : "#000",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                        }}>
+                                        <Ionicons
+                                            name="people"
+                                            size={24}
+                                            color="#fff" 
+                                        />
+                                    </TouchableOpacity>
                                     <Ionicons
                                         name={flash === "off" ? "flash-outline" : "flash"}
                                         size={32}
@@ -391,6 +781,41 @@ export default function Posting() {
                                         }}
                                     />
                                 </View>
+
+                                <TouchableOpacity
+                                    onPress={dualPhoto ? removeDualPhoto : captureDualPhoto}
+                                    disabled={isCapturingDual}
+                                    style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "100%",
+                                        paddingVertical: 12,
+                                        paddingHorizontal: 20,
+                                        backgroundColor: dualPhoto 
+                                            ? (ThemedColor.tint || "#9333ea") 
+                                            : "transparent",
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: ThemedColor.tint || "#9333ea",
+                                        borderStyle: dualPhoto ? "solid" : "dashed",
+                                        opacity: isCapturingDual ? 0.5 : 1,
+                                    }}>
+                                    <Ionicons 
+                                        name={dualPhoto ? "checkmark-circle" : "camera-reverse-outline"} 
+                                        size={20} 
+                                        color={dualPhoto ? "#fff" : (ThemedColor.tint || "#9333ea")} 
+                                    />
+                                    <ThemedText
+                                        style={{
+                                            marginLeft: 8,
+                                            color: dualPhoto ? "#fff" : (ThemedColor.tint || "#9333ea"),
+                                            fontSize: 16,
+                                            fontWeight: "600",
+                                        }}>
+                                        {isCapturingDual ? "Capturing..." : dualPhoto ? "Dual Photo Added ✓" : "Add Dual Photo"}
+                                    </ThemedText>
+                                </TouchableOpacity>
 
                                 <TouchableOpacity
                                     onPress={() => setViewMode("camera")}

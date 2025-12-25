@@ -6389,6 +6389,8 @@ components:
                     type: boolean
                 caption:
                     type: string
+                dual:
+                    type: string
                 groups:
                     type: array
                     items:
@@ -7762,6 +7764,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentDocument'
+                dual:
+                    type: string
                 groups:
                     type: array
                     items:

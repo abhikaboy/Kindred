@@ -26,6 +26,7 @@ export type Post = PostDocumentAPI;
  * @param isPublic
  * @param size
  * @param groups - Array of group IDs to share the post with
+ * @param dual - Optional front-facing camera image URL for dual camera posts
  */
 export const createPost = async (
     images: string[],
@@ -34,7 +35,8 @@ export const createPost = async (
     blueprintId?: string,
     isPublic: boolean = true,
     size?: { width: number; height: number; bytes: number },
-    groups?: string[]
+    groups?: string[],
+    dual?: string
 ): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {    
     const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
@@ -45,7 +47,8 @@ export const createPost = async (
             blueprintId, 
             isPublic,
             size,
-            groups
+            groups,
+            dual
         },
     });
 
@@ -372,10 +375,11 @@ export const createPostToBackend = async (
     blueprintId?: string, 
     isPublic: boolean = false,
     size?: { width: number; height: number; bytes: number },
-    groups?: string[]
+    groups?: string[],
+    dual?: string
 ): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
     try {
-        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups);
+        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual);
         return result;
     } catch (error) {
         console.log(`Failed to create post to backend: ${JSON.stringify(error)}`);
