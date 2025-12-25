@@ -384,35 +384,59 @@ export default function Posting() {
                                             resizeMode="cover"
                                         />
                                         {dualPhoto && (
-                                            <TouchableOpacity
-                                                onPress={swapPhotos}
-                                                activeOpacity={1}
+                                            <View
                                                 style={{
                                                     position: "absolute",
                                                     top: insets.top + 20,
                                                     left: 20,
                                                     width: Dimensions.get("window").width * 0.3,
                                                     aspectRatio: 3 / 4,
-                                                    borderRadius: 12,
-                                                    borderWidth: 3,
-                                                    borderColor: "#fff",
-                                                    overflow: "hidden",
-                                                    shadowColor: "#000",
-                                                    shadowOffset: { width: 0, height: 2 },
-                                                    shadowOpacity: 0.3,
-                                                    shadowRadius: 4,
-                                                    elevation: 5,
                                                     zIndex: 10,
                                                 }}>
-                                                <Image
-                                                    source={{ uri: dualPhoto }}
+                                                <TouchableOpacity
+                                                    onPress={swapPhotos}
+                                                    activeOpacity={1}
                                                     style={{
                                                         width: "100%",
                                                         height: "100%",
-                                                    }}
-                                                    resizeMode="cover"
-                                                />
-                                            </TouchableOpacity>
+                                                        borderRadius: 12,
+                                                        borderWidth: 3,
+                                                        borderColor: "#fff",
+                                                        overflow: "hidden",
+                                                        shadowColor: "#000",
+                                                        shadowOffset: { width: 0, height: 2 },
+                                                        shadowOpacity: 0.3,
+                                                        shadowRadius: 4,
+                                                        elevation: 5,
+                                                    }}>
+                                                    <Image
+                                                        source={{ uri: dualPhoto }}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                        }}
+                                                        resizeMode="cover"
+                                                    />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={removeDualPhoto}
+                                                    style={{
+                                                        position: "absolute",
+                                                        top: -8,
+                                                        right: -8,
+                                                        width: 28,
+                                                        height: 28,
+                                                        borderRadius: 14,
+                                                        backgroundColor: "#000",
+                                                        borderWidth: 2,
+                                                        borderColor: "#fff",
+                                                        justifyContent: "center",
+                                                        alignItems: "center",
+                                                        zIndex: 11,
+                                                    }}>
+                                                    <Ionicons name="close" size={18} color="#fff" />
+                                                </TouchableOpacity>
+                                            </View>
                                         )}
                                     </View>
                                 )}
@@ -675,15 +699,15 @@ export default function Posting() {
                                             borderRadius: 24,
                                             backgroundColor:
                                                 "transparent",
-                                            borderWidth: dualModeEnabled ? 0 : 2,
+                                            borderWidth: 0,
                                             borderColor: ThemedColor.background === "#000" ? "#fff" : "#000",
                                             justifyContent: "center",
                                             alignItems: "center",
                                         }}>
                                         <Ionicons
-                                            name="people"
-                                            size={24}
-                                            color="#fff" 
+                                            name={dualModeEnabled ? "people" : "people-outline"}
+                                            size={32}
+                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"} 
                                         />
                                     </TouchableOpacity>
                                     <Ionicons
@@ -772,77 +796,25 @@ export default function Posting() {
                             </>
                         ) : (
                             <>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "100%" }}>
+
+                                <View style={{ flexDirection: "column", alignItems: "center", gap: 12, width: "100%" }}>
                                     <PrimaryButton
-                                        onPress={continueWithPhotos}
-                                        title={`Done with ${photos.length} photo${photos.length !== 1 ? "s" : ""}`}
+                                        onPress={() => setViewMode("camera")}
+                                        title="Take More Photos"
+                                        ghost
+                                        colorOverride={ThemedColor.primary}
                                         style={{
-                                            flex: 1,
+                                            width: "100%",
                                         }}
                                     />
+                                        <PrimaryButton
+                                            onPress={continueWithPhotos}
+                                            title={`Done with ${photos.length} photo${photos.length !== 1 ? "s" : ""}`}
+                                            style={{
+                                                width: "100%",
+                                            }}
+                                        />
                                 </View>
-
-                                <TouchableOpacity
-                                    onPress={dualPhoto ? removeDualPhoto : captureDualPhoto}
-                                    disabled={isCapturingDual}
-                                    style={{
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        width: "100%",
-                                        paddingVertical: 12,
-                                        paddingHorizontal: 20,
-                                        backgroundColor: dualPhoto 
-                                            ? (ThemedColor.tint || "#9333ea") 
-                                            : "transparent",
-                                        borderRadius: 8,
-                                        borderWidth: 1,
-                                        borderColor: ThemedColor.tint || "#9333ea",
-                                        borderStyle: dualPhoto ? "solid" : "dashed",
-                                        opacity: isCapturingDual ? 0.5 : 1,
-                                    }}>
-                                    <Ionicons 
-                                        name={dualPhoto ? "checkmark-circle" : "camera-reverse-outline"} 
-                                        size={20} 
-                                        color={dualPhoto ? "#fff" : (ThemedColor.tint || "#9333ea")} 
-                                    />
-                                    <ThemedText
-                                        style={{
-                                            marginLeft: 8,
-                                            color: dualPhoto ? "#fff" : (ThemedColor.tint || "#9333ea"),
-                                            fontSize: 16,
-                                            fontWeight: "600",
-                                        }}>
-                                        {isCapturingDual ? "Capturing..." : dualPhoto ? "Dual Photo Added ✓" : "Add Dual Photo"}
-                                    </ThemedText>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => setViewMode("camera")}
-                                    style={{
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        width: "100%",
-                                        paddingVertical: 12,
-                                        paddingHorizontal: 20,
-                                        backgroundColor: ThemedColor.primaryPressed,
-                                        borderRadius: 8,
-                                        borderWidth: 1,
-                                        borderColor: ThemedColor.tint || "#9333ea",
-                                        borderStyle: "dashed",
-                                    }}>
-                                    <Ionicons name="camera-outline" size={20} color={ThemedColor.tint || "#9333ea"} />
-                                    <Text
-                                        style={{
-                                            marginLeft: 8,
-                                            color: ThemedColor.tint || "#9333ea",
-                                            fontSize: 16,
-                                            fontWeight: "600",
-                                        }}>
-                                        Take More Photos
-                                    </Text>
-                                </TouchableOpacity>
                             </>
                         )}
                     </BlurView>
