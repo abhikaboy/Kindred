@@ -144,7 +144,8 @@ export default function PostDetail() {
                     name={post.user.display_name}
                     username={post.user.handle}
                     userId={post.user._id}
-                    caption={post.caption}
+                    dual={post.dual}
+                    caption={post.caption || ""}
                     time={
                         post.metadata?.createdAt
                             ? Math.abs(new Date().getTime() - new Date(post.metadata.createdAt).getTime()) / 36e5
@@ -166,7 +167,6 @@ export default function PostDetail() {
                     }
                     comments={post.comments || []}
                     images={post.images || []}
-                    dual={post.dual}
                     size={post.size}
                     onReactionUpdate={refreshPost}
                     id={post._id}

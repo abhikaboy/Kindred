@@ -1193,7 +1193,7 @@ const stylesheet = (ThemedColor: any) =>
             position: "absolute",
             top: 16,
             left: 16,
-            width: Dimensions.get("window").width * 0.23,
+            width: Dimensions.get("window").width * 0.3,
             aspectRatio: 3 / 4,
             borderRadius: 12,
             borderWidth: 3,

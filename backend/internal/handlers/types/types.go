@@ -468,6 +468,7 @@ type PostDocumentAPI struct {
 	User UserExtendedReference `json:"user"`
 
 	Images    []string                    `json:"images"`
+	Dual      *string                     `json:"dual,omitempty"`
 	Caption   string                      `json:"caption"`
 	Size      *ImageSize                  `json:"size,omitempty"`
 	Category  *CategoryExtendedReference  `json:"category,omitempty"`
@@ -506,6 +507,7 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		ID:        p.ID,
 		User:      *p.User.ToAPI(),
 		Images:    p.Images,
+		Dual:      p.Dual,
 		Caption:   p.Caption,
 		Size:      p.Size,
 		Category:  p.Category,

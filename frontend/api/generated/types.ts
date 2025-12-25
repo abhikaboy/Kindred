@@ -4129,6 +4129,7 @@ export interface components {
             comments: components["schemas"]["CommentDocumentAPI"][];
             groups?: string[];
             images: string[];
+            dual?: string;
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
                 [key: string]: string[];

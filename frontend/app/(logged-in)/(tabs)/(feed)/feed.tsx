@@ -419,7 +419,7 @@ export default function Feed() {
                 );
             } else if (item.type === "post" && item.post) {
                 // Render post card
-                const post = item.post;
+                const post = item.post as any;
                 const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
                 const postReactions = post.reactions ? transformReactions(post.reactions) : [];
 
@@ -460,6 +460,7 @@ export default function Feed() {
                     userId={post.user?._id || ""}
                     caption={post.caption || ""}
                     time={postTime}
+                    dual={post.dual}
                     priority="low"
                     points={0}
                     timeTaken={0}

@@ -7819,6 +7819,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentDocumentAPI'
+                dual:
+                    type: string
+                    description: Optional dual camera image URL for BeReal-style posts
                 groups:
                     type: array
                     items:
