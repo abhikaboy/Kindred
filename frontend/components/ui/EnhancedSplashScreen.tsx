@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Image, Animated, StyleSheet, Dimensions } from 'react-native';
+import { View, Image, Animated, StyleSheet, Dimensions, useColorScheme } from 'react-native';
 import { Easing as RNEasing } from 'react-native';
 import { Easing as ReanimatedEasing } from 'react-native-reanimated';
 import { MotiView } from 'moti';
@@ -16,19 +16,23 @@ interface EnhancedSplashScreenProps {
  * Enhanced splash screen with interesting animations
  * - Primary color background
  * - Gentle logo entrance with subtle float
- * - Expanding circles that transition from purple to white
- * - Smooth swipe exit transition
+ * - Expanding circles that transition to themed background (darker in dark mode, lighter in light mode)
+ * - Smooth exit transition
  * 
  * @param onAnimationComplete - Callback fired when entrance animation completes
- * @param minDisplayTime - Minimum time to show splash screen (default: 2500ms)
+ * @param minDisplayTime - Minimum time to show splash screen (default: 2000ms)
  */
 export default function EnhancedSplashScreen({ 
     onAnimationComplete,
     minDisplayTime = 2000 
 }: EnhancedSplashScreenProps) {
     const ThemedColor = useThemeColor();
+    const colorScheme = useColorScheme();
     const [animationComplete, setAnimationComplete] = useState(false);
     const [startExit, setStartExit] = useState(false);
+    
+    // Detect dark mode
+    const isDarkMode = colorScheme === 'dark';
     
     // Animation values
     const scaleAnim = useRef(new Animated.Value(0.5)).current;
@@ -118,25 +122,24 @@ export default function EnhancedSplashScreen({
     }, [animationComplete, onAnimationComplete]);
 
     return (
-        <Animated.View 
+        <View 
             style={[
                 styles.container, 
                 { 
                     backgroundColor: ThemedColor.primary,
-                    opacity: fadeOutAnim,
                 }
             ]}>
-            {/* Expanding circles from bottom - purple to white gradient */}
+            {/* Expanding circles from bottom - transition to themed background */}
             <MotiView
                 from={{ scale: 0, opacity: 0.8 }}
                 animate={{ scale: startExit ? 100 : 0, opacity: startExit ? 1 : 0.8 }}
                 transition={{
                     type: 'timing',
-                    duration: startExit ? 1500 : 0,
+                    duration: startExit ? 2000 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
                 style={[styles.expandingCircle, { 
-                    backgroundColor: '#A67FFF', // Lighter purple (between primary and white)
+                    backgroundColor: isDarkMode ? '#4A1F8F' : '#A67FFF', // Darker purple in dark mode, lighter in light mode
                 }]}
             />
             <MotiView
@@ -144,12 +147,12 @@ export default function EnhancedSplashScreen({
                 animate={{ scale: startExit ? 100 : 0, opacity: startExit ? 1 : 0.8 }}
                 transition={{
                     type: 'timing',
-                    duration: startExit ? 1500 : 0,
+                    duration: startExit ? 2000 : 0,
                     delay: startExit ? 150 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
                 style={[styles.expandingCircle, { 
-                    backgroundColor: '#D4C5FF', // Even lighter purple (more white)
+                    backgroundColor: isDarkMode ? '#1A1A1A' : '#D4C5FF', // Dark gray in dark mode, light purple in light mode
                 }]}
             />
             <MotiView
@@ -157,12 +160,12 @@ export default function EnhancedSplashScreen({
                 animate={{ scale: startExit ? 100 : 0, opacity: startExit ? 1 : 0.8 }}
                 transition={{
                     type: 'timing',
-                    duration: startExit ? 1500 : 0,
+                    duration: startExit ? 2000 : 0,
                     delay: startExit ? 300 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
                 style={[styles.expandingCircle, { 
-                    backgroundColor: '#FFFFFF', // Pure white
+                    backgroundColor: ThemedColor.background, // Final themed background
                 }]}
             />
 
@@ -184,7 +187,19 @@ export default function EnhancedSplashScreen({
                     resizeMode="contain"
                 />
             </Animated.View>
-        </Animated.View>
+            
+            {/* Fade out overlay - only fades the entire splash at the very end */}
+            <Animated.View
+                pointerEvents="none"
+                style={[
+                    StyleSheet.absoluteFill,
+                    {
+                        backgroundColor: ThemedColor.background,
+                        opacity: Animated.subtract(1, fadeOutAnim),
+                    },
+                ]}
+            />
+        </View>
     );
 }
 

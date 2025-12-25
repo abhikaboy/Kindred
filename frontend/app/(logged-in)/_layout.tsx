@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator } from "react-native";
+import { ScrollView, View, ActivityIndicator, Animated } from "react-native";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
@@ -213,33 +213,44 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 const LayoutContent = () => {
     const { visible, setVisible, modalConfig } = useCreateModal();
     const ThemedColor = useThemeColor();
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    
+    useEffect(() => {
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+        }).start();
+    }, []);
     
     return (
-        <BlueprintCreationProvider>
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    header: (props) => <BackButton {...props} />,
-                    contentStyle: {
-                        backgroundColor: ThemedColor.background,
-                    },
-                }}>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                {/* <Stack.Screen
-                    name="profile/settings"
-                    options={{
-                        headerShown: true,
-                        headerTitle: "Settings",
-                        presentation: "modal",
-                    }}
-                /> */}
-            </Stack>
-            <CreateModal 
-                visible={visible} 
-                setVisible={setVisible}
-                {...modalConfig}
-            />
-        </BlueprintCreationProvider>
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+            <BlueprintCreationProvider>
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        header: (props) => <BackButton {...props} />,
+                        contentStyle: {
+                            backgroundColor: ThemedColor.background,
+                        },
+                    }}>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    {/* <Stack.Screen
+                        name="profile/settings"
+                        options={{
+                            headerShown: true,
+                            headerTitle: "Settings",
+                            presentation: "modal",
+                        }}
+                    /> */}
+                </Stack>
+                <CreateModal 
+                    visible={visible} 
+                    setVisible={setVisible}
+                    {...modalConfig}
+                />
+            </BlueprintCreationProvider>
+        </Animated.View>
     );
 };
 
