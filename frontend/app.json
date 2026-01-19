@@ -14,7 +14,7 @@
       "web"
     ],
     "ios": {
-      "buildNumber": "55",
+      "buildNumber": "56",
       "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to look up nearby restaurants and addresses.",
