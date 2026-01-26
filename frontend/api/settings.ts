@@ -55,7 +55,16 @@ export const updateUserSettings = async (settings: Partial<UserSettings>): Promi
 export const updateNotificationSettings = async (
     notifications: Partial<NotificationSettings>
 ): Promise<{ message: string }> => {
-    return updateUserSettings({ notifications });
+    // Fetch current settings first to merge with the update
+    const currentSettings = await getUserSettings();
+    
+    return updateUserSettings({
+        ...currentSettings,
+        notifications: {
+            ...currentSettings.notifications,
+            ...notifications,
+        },
+    });
 };
 
 /**
@@ -63,7 +72,16 @@ export const updateNotificationSettings = async (
  * Convenience method for updating just display preferences
  */
 export const updateDisplaySettings = async (display: Partial<DisplaySettings>): Promise<{ message: string }> => {
-    return updateUserSettings({ display });
+    // Fetch current settings first to merge with the update
+    const currentSettings = await getUserSettings();
+    
+    return updateUserSettings({
+        ...currentSettings,
+        display: {
+            ...currentSettings.display,
+            ...display,
+        },
+    });
 };
 
 /**
@@ -73,5 +91,14 @@ export const updateDisplaySettings = async (display: Partial<DisplaySettings>): 
 export const updateCheckinFrequency = async (
     frequency: "none" | "occasionally" | "regularly" | "frequently"
 ): Promise<{ message: string }> => {
-    return updateNotificationSettings({ checkin_frequency: frequency });
+    // Fetch current settings first to merge with the update
+    const currentSettings = await getUserSettings();
+    
+    return updateUserSettings({
+        ...currentSettings,
+        notifications: {
+            ...currentSettings.notifications,
+            checkin_frequency: frequency,
+        },
+    });
 };

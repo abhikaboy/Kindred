@@ -4127,9 +4127,10 @@ export interface components {
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
             comments: components["schemas"]["CommentDocumentAPI"][];
+            /** @description Optional dual camera image URL for BeReal-style posts */
+            dual?: string;
             groups?: string[];
             images: string[];
-            dual?: string;
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
                 [key: string]: string[];
