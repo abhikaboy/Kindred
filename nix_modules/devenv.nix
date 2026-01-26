@@ -227,6 +227,27 @@
               ./scripts/pre-commit-hook.sh
             '';
         };
+        "run-tests" = {
+            description = "Run all backend tests using make test-backend.";
+            exec = ''
+              cd "$DEVENV_ROOT"
+              make test-backend
+            '';
+        };
+        "run-tests-verbose" = {
+            description = "Run all backend tests with verbose output.";
+            exec = ''
+              cd "$DEVENV_ROOT"
+              make test-backend VERBOSE=1
+            '';
+        };
+        "run-tests-quiet" = {
+            description = "Run all backend tests with minimal output.";
+            exec = ''
+              cd "$DEVENV_ROOT"
+              make test-backend QUIET=1
+            '';
+        };
     };
   };
     };

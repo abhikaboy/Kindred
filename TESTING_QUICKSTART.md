@@ -15,15 +15,28 @@ make mongodb-start
 ```bash
 # Quick unit tests (no MongoDB needed)
 make ci-test-short
+# or in Nix shell:
+test-unit
 
 # Full test suite (with MongoDB)
 make test-backend
+# or in Nix shell:
+run-tests
 
 # Run with verbose output
 make test-backend VERBOSE=1
+# or in Nix shell:
+run-tests-verbose
+
+# Run with minimal output
+make test-backend QUIET=1
+# or in Nix shell:
+run-tests-quiet
 
 # Generate coverage report
 make ci-coverage
+# or in Nix shell:
+test-with-coverage
 ```
 
 ## 🪝 Git Workflow

@@ -34,11 +34,17 @@ Once in the Nix shell, you have access to these commands:
 ### Testing Commands
 
 ```bash
-# Run fast unit tests (no MongoDB)
-test-unit
+# Run all backend tests (using make test-backend)
+run-tests
 
-# Run all backend tests
-backend-test
+# Run with verbose output
+run-tests-verbose
+
+# Run with minimal output (summary only)
+run-tests-quiet
+
+# Run fast unit tests only (no MongoDB)
+test-unit
 
 # Run tests with coverage report
 test-with-coverage
@@ -163,7 +169,10 @@ make mongodb-start
 test-unit
 
 # 4. Run full test suite
-backend-test
+run-tests
+
+# Or with verbose output
+run-tests-verbose
 
 # 5. Make changes and commit (hooks run automatically)
 git add .
