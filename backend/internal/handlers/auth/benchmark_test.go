@@ -27,7 +27,7 @@ func BenchmarkTokenGeneration(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := service.GenerateToken(userID, exp, count)
+		_, err := service.GenerateToken(userID, exp, count, "America/New_York")
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -51,7 +51,7 @@ func BenchmarkTokenValidation(b *testing.B) {
 	count := float64(0)
 	exp := time.Now().Add(time.Hour).Unix()
 
-	token, err := service.GenerateToken(userID, exp, count)
+	token, err := service.GenerateToken(userID, exp, count, "America/New_York")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func BenchmarkAccessTokenGeneration(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := service.GenerateAccessToken(userID, count)
+		_, err := service.GenerateAccessToken(userID, count, "America/New_York")
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -111,7 +111,7 @@ func BenchmarkRefreshTokenGeneration(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := service.GenerateRefreshToken(userID, count)
+		_, err := service.GenerateRefreshToken(userID, count, "America/New_York")
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -136,7 +136,7 @@ func BenchmarkBothTokensGeneration(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _, err := service.GenerateTokens(userID, count)
+		_, _, err := service.GenerateTokens(userID, count, "America/New_York")
 		if err != nil {
 			b.Fatal(err)
 		}

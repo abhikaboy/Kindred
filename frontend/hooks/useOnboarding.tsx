@@ -29,7 +29,7 @@ interface OnboardingContextType {
     onboardingData: OnboardingData;
     validationErrors: ValidationErrors;
     isLoading: boolean;
-    
+
     // Update functions
     updateEmail: (email: string) => void;
     updatePassword: (password: string) => void;
@@ -38,10 +38,10 @@ interface OnboardingContextType {
     updateProfilePicture: (profilePicture: string) => void;
     updateAppleId: (appleId: string) => void;
     updateGoogleId: (googleId: string) => void;
-    
+
     // Bulk update
     updateOnboardingData: (data: Partial<OnboardingData>) => void;
-    
+
     // Validation
     validateEmail: (email: string) => string | null;
     validatePassword: (password: string) => string | null;
@@ -49,12 +49,12 @@ interface OnboardingContextType {
     validateHandle: (handle: string) => string | null;
     validateProfilePicture: (profilePicture: string) => string | null;
     validateAll: () => boolean;
-    
+
     // Registration
     registerWithEmail: (profilePictureUrl?: string) => Promise<void>;
     registerWithApple: (profilePictureUrl?: string) => Promise<void>;
     registerWithGoogle: () => Promise<void>;
-    
+
     // Reset
     reset: () => void;
 }
@@ -76,9 +76,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const [onboardingData, setOnboardingData] = useState<OnboardingData>(initialData);
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const { register, registerWithGoogle: authRegisterWithGoogle, setUser } = useAuth();
-    
+
     // Mutations
     const emailRegisterMutation = useTypedMutation("post", "/v1/auth/register" as any);
     const appleRegisterMutation = useTypedMutation("post", "/v1/auth/register/apple");
@@ -126,7 +126,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }
         // Ensure handle starts with @
         const handleToValidate = handle.startsWith('@') ? handle : `@${handle}`;
-        
+
         if (handleToValidate.length < 2) {
             return 'Handle must be at least 1 character (plus @)';
         }
@@ -146,7 +146,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             return 'Profile picture is required';
         }
         // Accept both URLs and local file URIs (file://, content://, etc.)
-        if (profilePicture.startsWith('http://') || 
+        if (profilePicture.startsWith('http://') ||
             profilePicture.startsWith('https://') ||
             profilePicture.startsWith('file://') ||
             profilePicture.startsWith('content://')) {
@@ -157,25 +157,25 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     const validateAll = (): boolean => {
         const errors: ValidationErrors = {};
-        
+
         const emailError = validateEmail(onboardingData.email);
         if (emailError) errors.email = emailError;
-        
+
         // Only validate password for email registration
         if (!onboardingData.appleId && !onboardingData.googleId) {
             const passwordError = validatePassword(onboardingData.password);
             if (passwordError) errors.password = passwordError;
         }
-        
+
         const displayNameError = validateDisplayName(onboardingData.displayName);
         if (displayNameError) errors.displayName = displayNameError;
-        
+
         const handleError = validateHandle(onboardingData.handle);
         if (handleError) errors.handle = handleError;
-        
+
         const profilePictureError = validateProfilePicture(onboardingData.profilePicture);
         if (profilePictureError) errors.profilePicture = profilePictureError;
-        
+
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -229,35 +229,35 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const registerWithEmail = async (profilePictureUrl?: string) => {
         // Use provided URL or fall back to state
         const profilePic = profilePictureUrl || onboardingData.profilePicture;
-        
+
         if (!profilePic) {
             throw new Error('Profile picture is required. Please select an image first.');
         }
-        
+
         // Validate required fields (email is optional, profile picture passed as param)
         const errors: ValidationErrors = {};
-        
+
         // Email is optional, only validate if provided
         if (onboardingData.email) {
             const emailError = validateEmail(onboardingData.email);
             if (emailError) errors.email = emailError;
         }
-        
+
         const passwordError = validatePassword(onboardingData.password);
         if (passwordError) errors.password = passwordError;
-        
+
         const displayNameError = validateDisplayName(onboardingData.displayName);
         if (displayNameError) errors.displayName = displayNameError;
-        
+
         const handleError = validateHandle(onboardingData.handle);
         if (handleError) errors.handle = handleError;
-        
+
         // Only validate profile picture from state if not provided as parameter
         if (!profilePictureUrl) {
             const profilePictureError = validateProfilePicture(onboardingData.profilePicture);
             if (profilePictureError) errors.profilePicture = profilePictureError;
         }
-        
+
         if (Object.keys(errors).length > 0) {
             console.error('Validation errors:', errors);
             throw new Error('Validation failed. Please check all fields.');
@@ -265,14 +265,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
         setIsLoading(true);
         try {
+            // Get user's timezone
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
             console.log('Registering with data:', {
                 email: onboardingData.email,
                 phone: onboardingData.phone,
                 display_name: onboardingData.displayName,
                 handle: onboardingData.handle,
                 profile_picture: profilePic,
+                timezone: timezone,
             });
-            
+
             // Use client.POST directly so we can access response headers
             const result = await client.POST("/v1/auth/register", {
                 body: {
@@ -282,38 +286,39 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                     display_name: onboardingData.displayName,
                     handle: onboardingData.handle,
                     profile_picture: profilePic,
+                    timezone: timezone,
                 }
             });
-            
+
             if (result.error) {
                 console.error('❌ Registration failed:', result.error);
                 throw new Error('Registration failed');
             }
-            
+
             console.log('✅ Registration successful!');
-            
+
             // Registration now returns the full user data in the response body!
             // No need for a separate login call
             const userData = result.data as any;
             setUser(userData);
-            
+
             console.log('✅ User registered and logged in!');
             console.log('👤 User ID:', userData._id);
             console.log('👤 User display name:', userData.display_name);
-            
+
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
-            
+
             // Reset after successful registration and login
             console.log('🧹 Resetting onboarding state...');
             reset();
             console.log('✅ Registration flow complete!');
         } catch (error: any) {
             console.error('Email registration failed:', error);
-            
+
             // Extract error message from backend response
             let errorMessage = 'Registration failed. Please try again.';
-            
+
             // openapi-fetch returns errors in a specific format
             if (error?.message) {
                 errorMessage = error.message;
@@ -324,9 +329,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-            
+
             console.error('❌ Registration error message:', errorMessage);
-            
+
             // Throw error with the backend message so the UI can display it
             throw new Error(errorMessage);
         } finally {
@@ -337,28 +342,28 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const registerWithApple = async (profilePictureUrl?: string) => {
         // Use provided URL or fall back to state
         const profilePic = profilePictureUrl || onboardingData.profilePicture;
-        
+
         if (!profilePic) {
             throw new Error('Profile picture is required. Please select an image first.');
         }
-        
+
         if (!onboardingData.appleId) {
             throw new Error('Apple ID is required');
         }
-        
+
         // Validate required fields for Apple registration
         const errors: ValidationErrors = {};
-        
+
         const displayNameError = validateDisplayName(onboardingData.displayName);
         if (displayNameError) errors.displayName = displayNameError;
-        
+
         const handleError = validateHandle(onboardingData.handle);
         if (handleError) errors.handle = handleError;
-        
+
         // Email is required for Apple
         const emailError = validateEmail(onboardingData.email);
         if (emailError) errors.email = emailError;
-        
+
         if (Object.keys(errors).length > 0) {
             console.error('Validation errors:', errors);
             throw new Error('Validation failed. Please check all fields.');
@@ -376,7 +381,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 handle: onboardingData.handle,
                 profile_picture: profilePic,
             });
-            
+
             // Use client.POST directly so we can access response headers
             const result = await client.POST("/v1/auth/register/apple", {
                 body: {
@@ -387,36 +392,36 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                     profile_picture: profilePic,
                 }
             });
-            
+
             if (result.error) {
                 console.error('❌ Apple registration failed:', result.error);
                 throw new Error('Apple registration failed');
             }
-            
+
             console.log('✅ Apple registration successful!');
-            
+
             // Registration now returns the full user data in the response body!
             // No need for a separate login call
             const userData = result.data as any;
             setUser(userData);
-            
+
             console.log('✅ User registered and logged in!');
             console.log('👤 User ID:', userData._id);
             console.log('👤 User display name:', userData.display_name);
-            
+
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
-            
+
             // Reset after successful registration and login
             console.log('🧹 Resetting onboarding state...');
             reset();
             console.log('✅ Registration flow complete!');
         } catch (error: any) {
             console.error('Apple registration failed:', error);
-            
+
             // Extract error message from backend response
             let errorMessage = 'Apple registration failed. Please try again.';
-            
+
             // openapi-fetch returns errors in a specific format
             if (error?.message) {
                 errorMessage = error.message;
@@ -427,9 +432,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-            
+
             console.error('❌ Apple registration error message:', errorMessage);
-            
+
             // Throw error with the backend message so the UI can display it
             throw new Error(errorMessage);
         } finally {
@@ -441,7 +446,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         if (!onboardingData.googleId) {
             throw new Error('Google ID is required');
         }
-        
+
         if (!validateAll()) {
             throw new Error('Validation failed. Please check all fields.');
         }
@@ -449,7 +454,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         setIsLoading(true);
         try {
             await authRegisterWithGoogle(onboardingData.email, onboardingData.googleId);
-            
+
             // Also send the profile data
             await googleRegisterMutation.mutateAsync({
                 body: {
@@ -460,10 +465,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                     profile_picture: onboardingData.profilePicture,
                 }
             });
-            
+
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
-            
+
             reset();
         } catch (error) {
             console.error('Google registration failed:', error);

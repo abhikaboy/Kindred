@@ -29,7 +29,13 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 		return nil, huma.Error500InternalServerError("Login failed", err)
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
+	// Use user's timezone, default to UTC if not set
+	timezone := user.Timezone
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
@@ -70,7 +76,13 @@ func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneI
 		return nil, huma.Error500InternalServerError("Login failed", err)
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
+	// Use user's timezone, default to UTC if not set
+	timezone := user.Timezone
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
@@ -153,7 +165,13 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 		return nil, huma.Error500InternalServerError("Google login failed", err)
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
+	// Use user's timezone, default to UTC if not set
+	timezone := user.Timezone
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
@@ -242,7 +260,13 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 
 	id := primitive.NewObjectID()
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), 0) // new users use count = 0
+	// For new users, use timezone from request body if provided, otherwise default to UTC
+	timezone := "UTC"
+	if input.Body.Timezone != "" {
+		timezone = input.Body.Timezone
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), 0, timezone) // new users use count = 0
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during registration",
 			slog.String("error", err.Error()),
@@ -297,6 +321,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		DisplayName:    input.Body.DisplayName,
 		Handle:         input.Body.Handle,
 		ProfilePicture: input.Body.ProfilePicture,
+		Timezone:       timezone,
 
 		Encouragements:  2,
 		Congratulations: 2,
@@ -306,6 +331,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		PostsMade:       0,
 		Credits:         types.GetDefaultCredits(),
 		Subscription:    types.GetDefaultSubscription(),
+		Settings:        types.DefaultUserSettings(),
 
 		AppleID:  appleIDStr,
 		GoogleID: googleIDStr,
@@ -405,7 +431,13 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 		return nil, huma.Error500InternalServerError("Apple login failed", err)
 	}
 
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count)
+	// Use user's timezone, default to UTC if not set
+	timezone := user.Timezone
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
@@ -463,7 +495,7 @@ func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOu
 	}
 
 	// increase the count by one
-	user_id, _, err := h.service.ValidateToken(accessToken)
+	user_id, _, _, err := h.service.ValidateToken(accessToken)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Token validation failed", err)
 	}

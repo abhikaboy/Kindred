@@ -25,8 +25,8 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) GenerateTokens(id string, count float64) (string, string, error) {
-	args := m.Called(id, count)
+func (m *MockService) GenerateTokens(id string, count float64, timezone string) (string, string, error) {
+	args := m.Called(id, count, timezone)
 	return args.String(0), args.String(1), args.Error(2)
 }
 
@@ -50,9 +50,9 @@ func (m *MockService) CreateUser(user User) error {
 	return args.Error(0)
 }
 
-func (m *MockService) ValidateToken(token string) (string, float64, error) {
+func (m *MockService) ValidateToken(token string) (string, float64, string, error) {
 	args := m.Called(token)
-	return args.String(0), args.Get(1).(float64), args.Error(2)
+	return args.String(0), args.Get(1).(float64), args.String(2), args.Error(3)
 }
 
 func (m *MockService) InvalidateTokens(userID string) error {
@@ -267,7 +267,7 @@ func TestTokenGeneration(t *testing.T) {
 	exp := time.Now().Add(time.Hour).Unix()
 
 	t.Run("Generate token", func(t *testing.T) {
-		token, err := service.GenerateToken(userID, exp, count)
+		token, err := service.GenerateToken(userID, exp, count, "America/New_York")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token)
 
@@ -288,7 +288,7 @@ func TestTokenGeneration(t *testing.T) {
 	})
 
 	t.Run("Generate access token", func(t *testing.T) {
-		token, err := service.GenerateAccessToken(userID, count)
+		token, err := service.GenerateAccessToken(userID, count, "America/New_York")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token)
 
@@ -301,7 +301,7 @@ func TestTokenGeneration(t *testing.T) {
 	})
 
 	t.Run("Generate refresh token", func(t *testing.T) {
-		token, err := service.GenerateRefreshToken(userID, count)
+		token, err := service.GenerateRefreshToken(userID, count, "America/New_York")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, token)
 
@@ -314,7 +314,7 @@ func TestTokenGeneration(t *testing.T) {
 	})
 
 	t.Run("Generate both tokens", func(t *testing.T) {
-		access, refresh, err := service.GenerateTokens(userID, count)
+		access, refresh, err := service.GenerateTokens(userID, count, "America/New_York")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, access)
 		assert.NotEmpty(t, refresh)
@@ -942,7 +942,7 @@ func TestTokenValidationErrorCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := service.ValidateToken(tc.token)
+			_, _, _, err := service.ValidateToken(tc.token)
 			if tc.shouldFail {
 				assert.Error(t, err, tc.description)
 			} else {

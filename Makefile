@@ -15,10 +15,6 @@ build-backend: ## Build the backend server
 	@echo "🔨 Building backend..."
 	@cd backend && go build -o bin/server ./cmd/server
 
-lint-backend: ## Run golangci-lint (same as CI)
-	@echo "🔍 Running golangci-lint..."
-	@cd backend && golangci-lint run --timeout=5m
-
 test-backend: ## Run backend tests (use VERBOSE=1 for detailed output, QUIET=1 for minimal output)
 	@echo "\033[1;36m🧪 Running backend tests...\033[0m"
 	@TEMP_FILE=$$(mktemp); \

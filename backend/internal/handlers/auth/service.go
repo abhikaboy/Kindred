@@ -24,23 +24,24 @@ Health Service to be used by Health Handler to interact with the
 Database layer of the application
 */
 
-func (s *Service) GenerateToken(id string, exp int64, count float64) (string, error) {
+func (s *Service) GenerateToken(id string, exp int64, count float64, timezone string) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"iss":     "dev-server",
-			"sub":     "",
-			"user_id": id,
-			"role":    "user",
-			"iat":     time.Now().Unix(),
-			"exp":     exp,
-			"count":   count,
+			"iss":      "dev-server",
+			"sub":      "",
+			"user_id":  id,
+			"role":     "user",
+			"iat":      time.Now().Unix(),
+			"exp":      exp,
+			"count":    count,
+			"timezone": timezone,
 		})
 	// configure to use config in /internal/config/config.go
 	return t.SignedString([]byte(s.config.Auth.Secret))
 }
 
-func (s *Service) GenerateAccessToken(id string, count float64) (string, error) {
-	return s.GenerateToken(id, time.Now().Add(time.Hour*1).Unix(), count)
+func (s *Service) GenerateAccessToken(id string, count float64, timezone string) (string, error) {
+	return s.GenerateToken(id, time.Now().Add(time.Hour*1).Unix(), count, timezone)
 }
 
 func (s *Service) GetUserCount(id primitive.ObjectID) (float64, error) {
@@ -53,7 +54,7 @@ func (s *Service) GetUserCount(id primitive.ObjectID) (float64, error) {
 	return user.Count, nil
 }
 
-func (s *Service) ValidateToken(token string) (string, float64, error) {
+func (s *Service) ValidateToken(token string) (string, float64, string, error) {
 	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fiber.NewError(400, "Not Authorized")
@@ -62,40 +63,46 @@ func (s *Service) ValidateToken(token string) (string, float64, error) {
 	})
 
 	if err != nil {
-		return "", 0, err
+		return "", 0, "", err
 	}
 	claims, ok := t.Claims.(jwt.MapClaims)
 	if !ok || !t.Valid {
-		return "", 0, fiber.NewError(400, "Not Authorized, Invalid Token")
+		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid Token")
 	}
 
 	fmt.Println(claims)
 
 	idString, ok := claims["user_id"].(string)
 	if !ok {
-		return "", 0, fiber.NewError(400, "Not Authorized, Invalid user_id in token")
+		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid user_id in token")
 	}
 
 	id, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
-		return "", 0, err
+		return "", 0, "", err
 	}
 	// count matches the count in the database
 	db_count, err := s.GetUserCount(id)
 	if err != nil {
-		return "", 0, err
+		return "", 0, "", err
 	}
 
 	tokenCount, ok := claims["count"].(float64)
 	if !ok {
-		return "", 0, fiber.NewError(400, "Not Authorized, Invalid count in token")
+		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid count in token")
 	}
 
 	if tokenCount != db_count {
-		return "", 0, fiber.NewError(400, "Not Authorized, Revoked Token")
+		return "", 0, "", fiber.NewError(400, "Not Authorized, Revoked Token")
 	}
 
-	return idString, tokenCount, nil
+	// Extract timezone from token (optional for backward compatibility)
+	timezone := ""
+	if tz, ok := claims["timezone"].(string); ok {
+		timezone = tz
+	}
+
+	return idString, tokenCount, timezone, nil
 }
 
 func (s *Service) LoginFromCredentials(email string, password string) (*primitive.ObjectID, *float64, *User, error) {
@@ -170,9 +177,9 @@ func (s *Service) InvalidateTokens(user_id string) error {
 	return err
 }
 
-func (s *Service) GenerateRefreshToken(id string, count float64) (string, error) {
+func (s *Service) GenerateRefreshToken(id string, count float64, timezone string) (string, error) {
 	const toMonth = 24 * 7 * 30
-	return s.GenerateToken(id, time.Now().Add(time.Hour*toMonth).Unix(), count)
+	return s.GenerateToken(id, time.Now().Add(time.Hour*toMonth).Unix(), count, timezone)
 }
 
 func (s *Service) UseToken(user_id string) error {
@@ -190,12 +197,12 @@ func (s *Service) CheckIfTokenUsed(user_id primitive.ObjectID) (bool, error) {
 	return user.TokenUsed, nil
 }
 
-func (s *Service) GenerateTokens(id string, count float64) (string, string, error) {
-	access, err := s.GenerateAccessToken(id, count)
+func (s *Service) GenerateTokens(id string, count float64, timezone string) (string, string, error) {
+	access, err := s.GenerateAccessToken(id, count, timezone)
 	if err != nil {
 		return "", "", err
 	}
-	refresh, err := s.GenerateRefreshToken(id, count)
+	refresh, err := s.GenerateRefreshToken(id, count, timezone)
 	if err != nil {
 		return "", "", err
 	}

@@ -43,7 +43,7 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 
 		// Try to validate access token first
 		xlog.ValidationLog("Attempting to validate access token...")
-		userID, _, err := service.ValidateToken(accessToken)
+		userID, _, timezone, err := service.ValidateToken(accessToken)
 		if err != nil {
 			xlog.AuthError(fmt.Sprintf("Access token validation failed: %v", err))
 
@@ -60,7 +60,7 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			xlog.RefreshLog(fmt.Sprintf("Attempting refresh token validation (length: %d)", len(refreshToken)))
 
 			// Validate refresh token
-			newCount, err := validateRefreshTokenFiber(service, refreshToken)
+			newCount, newTimezone, err := validateRefreshTokenFiber(service, refreshToken)
 			if err != nil {
 				xlog.AuthError(fmt.Sprintf("Refresh token validation failed: %v", err))
 				return c.Status(401).JSON(fiber.Map{
@@ -72,8 +72,9 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			xlog.RefreshLog("Refresh token valid, generating new tokens...")
 
 			// Generate new tokens
-			userID, _, _ = service.ValidateToken(refreshToken)
-			newAccess, newRefresh, err := service.GenerateTokens(userID, newCount)
+			userID, _, _, _ = service.ValidateToken(refreshToken)
+			timezone = newTimezone
+			newAccess, newRefresh, err := service.GenerateTokens(userID, newCount, timezone)
 			if err != nil {
 				xlog.AuthError(fmt.Sprintf("Failed to generate new tokens: %v", err))
 				return c.Status(500).JSON(fiber.Map{
@@ -96,50 +97,65 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			c.Set("refresh_token", newRefresh)
 		}
 
-		// Add user ID to Fiber context locals
+		// Add user ID and timezone to Fiber context locals
 		c.Locals(UserIDContextKey, userID)
+		c.Locals(TimezoneContextKey, timezone)
 
 		// Continue to next handler
 		return c.Next()
 	}
 }
 
-// validateRefreshTokenFiber validates a refresh token and returns the count (Fiber version)
-func validateRefreshTokenFiber(service *Service, refreshToken string) (float64, error) {
+// validateRefreshTokenFiber validates a refresh token and returns the count and timezone (Fiber version)
+func validateRefreshTokenFiber(service *Service, refreshToken string) (float64, string, error) {
 	slog.Info("🔄 REFRESH TOKEN FIBER: Starting validation process")
 
 	// Validate the refresh token
-	userID, count, err := service.ValidateToken(refreshToken)
+	userID, count, timezone, err := service.ValidateToken(refreshToken)
 	if err != nil {
 		slog.Error("❌ REFRESH TOKEN FIBER: Token validation failed", "error", err.Error())
-		return 0, fmt.Errorf("refresh token invalid: %v", err)
+		return 0, "", fmt.Errorf("refresh token invalid: %v", err)
 	}
 
 	// Check if the refresh token is unused
 	id, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		slog.Error("❌ REFRESH TOKEN FIBER: Invalid user ID format", "user_id", userID, "error", err.Error())
-		return 0, fmt.Errorf("invalid user ID in refresh token: %v", err)
+		return 0, "", fmt.Errorf("invalid user ID in refresh token: %v", err)
 	}
 
 	used, err := service.CheckIfTokenUsed(id)
 	if err != nil {
 		slog.Error("❌ REFRESH TOKEN FIBER: Error checking token usage", "error", err.Error())
-		return 0, fmt.Errorf("error checking token usage: %v", err)
+		return 0, "", fmt.Errorf("error checking token usage: %v", err)
 	}
 
 	if used {
 		slog.Error("❌ REFRESH TOKEN FIBER: Token already used", "user_id", userID)
-		return 0, fmt.Errorf("refresh token has already been used")
+		return 0, "", fmt.Errorf("refresh token has already been used")
 	}
 
-	return count, nil
+	return count, timezone, nil
 }
 
 // GetUserIDFromFiberContext extracts the user ID from the Fiber context
 func GetUserIDFromFiberContext(c *fiber.Ctx) (string, bool) {
 	userID, ok := c.Locals(UserIDContextKey).(string)
 	return userID, ok
+}
+
+// GetTimezoneFromFiberContext extracts the timezone from the Fiber context
+func GetTimezoneFromFiberContext(c *fiber.Ctx) (string, bool) {
+	timezone, ok := c.Locals(TimezoneContextKey).(string)
+	return timezone, ok
+}
+
+// GetTimezoneOrDefaultFromFiber extracts the timezone from Fiber context, defaulting to UTC if not found
+func GetTimezoneOrDefaultFromFiber(c *fiber.Ctx) string {
+	if timezone, ok := GetTimezoneFromFiberContext(c); ok && timezone != "" {
+		return timezone
+	}
+	return "UTC"
 }
 
 // RequireAuthFiber is a helper function that can be used to check if a user is authenticated in Fiber

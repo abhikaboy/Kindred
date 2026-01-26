@@ -15,36 +15,28 @@ import (
 )
 
 // CheckinSchedule defines the time-to-message and title mapping for daily checkins
-// Times are specific moments in the day (hour:minute format)
+// Times are in local time (hour:minute format) and will be checked against each user's timezone
 type CheckinInfo struct {
 	Title    string // Title template with %s for user display name
 	Message  string // Message template with %d for scheduled tasks, %d for deadline tasks
 	SendTask bool   // Whether to send a task with the checkin
+	Hour     int    // Hour in user's local time (0-23)
+	Minute   int    // Minute in user's local time (0-59)
 }
 
-var CheckinSchedule = map[time.Time]CheckinInfo{
-	time.Date(0, 1, 1, 13+4, 1, 0, 0, time.UTC): {
+var CheckinTimes = []CheckinInfo{
+	{
 		Title:    "Afternoon Check-in 🌙",
 		Message:  "Hey %s, time to review the tasks you have scheduled!",
 		SendTask: false,
+		Hour:     17, // 5 PM local time
+		Minute:   1,
 	},
 }
 
 func (h *Handler) HandleCheckin() (fiber.Map, error) {
 	// Get current time in UTC
-	now := time.Now().UTC()
-
-	// Create a time key for comparison (using only hour and minute, ignoring date)
-	currentTimeKey := time.Date(0, 1, 1, now.Hour(), now.Minute(), 0, 0, time.UTC)
-
-	// Check if current time matches any checkin time
-	checkinInfo, exists := CheckinSchedule[currentTimeKey]
-	if !exists {
-		return fiber.Map{
-			"message":      "No checkin scheduled for this time",
-			"current_time": now.Format("15:04"),
-		}, nil
-	}
+	nowUTC := time.Now().UTC()
 
 	// Get all users with push tokens
 	users, err := h.service.GetUsersWithPushTokens()
@@ -58,21 +50,57 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 	if len(users) == 0 {
 		return fiber.Map{
 			"message":      "No users with push tokens found",
-			"current_time": now.Format("15:04"),
+			"current_time": nowUTC.Format("15:04"),
 		}, nil
 	}
 
-	// Filter users based on their check-in frequency preference
-	dayOfWeek := now.Weekday()
-	filteredUsers := []types.User{}
+	// Prepare notifications for users whose local time matches a check-in time
+	notifications := make([]xutils.Notification, 0)
 	skippedCount := 0
+	totalMatched := 0
 
 	for _, user := range users {
-		frequency := user.Settings.Notifications.CheckinFrequency
-
 		// Skip if user has disabled check-ins
+		frequency := user.Settings.Notifications.CheckinFrequency
 		if frequency == "none" {
 			skippedCount++
+			continue
+		}
+
+		// Get user's timezone, default to UTC if not set
+		userTimezone := user.Timezone
+		if userTimezone == "" {
+			userTimezone = "UTC"
+		}
+
+		// Load user's timezone location
+		loc, err := time.LoadLocation(userTimezone)
+		if err != nil {
+			slog.Warn("Invalid timezone for user, defaulting to UTC",
+				"user_id", user.ID,
+				"timezone", userTimezone,
+				"error", err)
+			loc = time.UTC
+		}
+
+		// Convert current UTC time to user's local time
+		userLocalTime := nowUTC.In(loc)
+		userHour := userLocalTime.Hour()
+		userMinute := userLocalTime.Minute()
+		userDayOfWeek := userLocalTime.Weekday()
+
+		// Check if current time matches any check-in time for this user
+		var matchedCheckin *CheckinInfo
+		for i := range CheckinTimes {
+			checkin := &CheckinTimes[i]
+			if checkin.Hour == userHour && checkin.Minute == userMinute {
+				matchedCheckin = checkin
+				break
+			}
+		}
+
+		if matchedCheckin == nil {
+			// No check-in scheduled for this user at this time
 			continue
 		}
 
@@ -80,52 +108,32 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 		shouldNotify := false
 		switch frequency {
 		case "occasionally": // 1-2x per week (Monday, Thursday)
-			shouldNotify = dayOfWeek == time.Monday || dayOfWeek == time.Thursday
+			shouldNotify = userDayOfWeek == time.Monday || userDayOfWeek == time.Thursday
 		case "regularly": // 3-4x per week (Mon, Wed, Fri, Sun)
-			shouldNotify = dayOfWeek == time.Monday || dayOfWeek == time.Wednesday ||
-				dayOfWeek == time.Friday || dayOfWeek == time.Sunday
+			shouldNotify = userDayOfWeek == time.Monday || userDayOfWeek == time.Wednesday ||
+				userDayOfWeek == time.Friday || userDayOfWeek == time.Sunday
 		case "frequently": // Daily
 			shouldNotify = true
 		default:
 			// Default to regularly if invalid value
-			shouldNotify = dayOfWeek == time.Monday || dayOfWeek == time.Wednesday ||
-				dayOfWeek == time.Friday || dayOfWeek == time.Sunday
+			shouldNotify = userDayOfWeek == time.Monday || userDayOfWeek == time.Wednesday ||
+				userDayOfWeek == time.Friday || userDayOfWeek == time.Sunday
 		}
 
-		if shouldNotify {
-			filteredUsers = append(filteredUsers, user)
-		} else {
+		if !shouldNotify {
 			skippedCount++
+			continue
 		}
-	}
 
-	slog.Info("Filtered users by check-in frequency",
-		"total_users", len(users),
-		"filtered_users", len(filteredUsers),
-		"skipped_users", skippedCount,
-		"day_of_week", dayOfWeek.String())
+		totalMatched++
 
-	if len(filteredUsers) == 0 {
-		return fiber.Map{
-			"message":        "No users to notify based on frequency preferences",
-			"total_users":    len(users),
-			"filtered_users": 0,
-			"skipped_users":  skippedCount,
-			"current_time":   now.Format("15:04"),
-			"day_of_week":    dayOfWeek.String(),
-		}, nil
-	}
-
-	// Prepare notifications for batch sending
-	notifications := make([]xutils.Notification, 0, len(filteredUsers))
-	for _, user := range filteredUsers {
 		// Skip users without push tokens (extra safety check)
 		if user.PushToken == "" {
 			continue
 		}
 
-		// Get task counts for this user
-		taskCounts, err := h.service.GetUserTaskCountsForToday(user.ID)
+		// Get task counts for this user using their timezone
+		taskCounts, err := h.service.GetUserTaskCountsForTodayWithTimezone(user.ID, loc)
 		if err != nil {
 			slog.Error("Error getting task counts for user", "user_id", user.ID, "error", err)
 			// Continue with zero counts if there's an error
@@ -133,16 +141,16 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 		}
 
 		// Personalize the message with the user's display name
-		personalizedMessage := fmt.Sprintf(checkinInfo.Message, user.DisplayName)
+		personalizedMessage := fmt.Sprintf(matchedCheckin.Message, user.DisplayName)
 
 		notifications = append(notifications, xutils.Notification{
 			Token:   user.PushToken,
 			Message: personalizedMessage,
-			Title:   checkinInfo.Title,
+			Title:   matchedCheckin.Title,
 			Data: map[string]string{
 				"type":            "checkin",
-				"time":            now.Format("15:04"),
-				"timestamp":       now.Format(time.RFC3339),
+				"time":            userLocalTime.Format("15:04"),
+				"timestamp":       userLocalTime.Format(time.RFC3339),
 				"scheduled_today": fmt.Sprintf("%d", taskCounts.ScheduledToday),
 				"deadline_today":  fmt.Sprintf("%d", taskCounts.DeadlineToday),
 				"url":             "/(logged-in)/(tabs)/(task)/review",
@@ -159,29 +167,22 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 				"error":              err.Error(),
 				"users_targeted":     len(users),
 				"notifications_sent": 0,
-				"current_time":       now.Format("15:04"),
-				"title_template":     checkinInfo.Title,
-				"message_template":   checkinInfo.Message,
+				"current_time":       nowUTC.Format("15:04"),
 			}, err
 		}
 
 		slog.Info("Checkin notifications sent successfully",
 			"users_count", len(notifications),
-			"time", now.Format("15:04"),
-			"title_template", checkinInfo.Title,
-			"message_template", checkinInfo.Message)
+			"time", nowUTC.Format("15:04"))
 	}
 
 	return fiber.Map{
-		"message":            "Checkin notifications sent successfully",
+		"message":            "Checkin notifications processed",
 		"total_users":        len(users),
-		"filtered_users":     len(filteredUsers),
+		"matched_users":      totalMatched,
 		"skipped_users":      skippedCount,
 		"notifications_sent": len(notifications),
-		"current_time":       now.Format("15:04"),
-		"day_of_week":        dayOfWeek.String(),
-		"title_template":     checkinInfo.Title,
-		"message_template":   checkinInfo.Message,
+		"current_time":       nowUTC.Format("15:04"),
 	}, nil
 }
 
@@ -191,8 +192,90 @@ type TaskCounts struct {
 	DeadlineToday  int
 }
 
+// GetUserTaskCountsForTodayWithTimezone returns the count of tasks on deck and due today for a specific user in their timezone
+func (s *Service) GetUserTaskCountsForTodayWithTimezone(userID primitive.ObjectID, loc *time.Location) (*TaskCounts, error) {
+	ctx := context.Background()
+
+	// Get today's date range in user's timezone
+	now := time.Now().In(loc)
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).UTC()
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, loc).UTC()
+
+	// Pipeline to find tasks for the user and count on deck and deadline tasks
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{"user": userID},
+		},
+		{
+			"$unwind": "$tasks",
+		},
+		{
+			"$group": bson.M{
+				"_id": nil,
+				"scheduledToday": bson.M{
+					"$sum": bson.M{
+						"$cond": []interface{}{
+							bson.M{
+								"$and": []bson.M{
+									{"$ne": []interface{}{"$tasks.startDate", nil}},
+									{"$lt": []interface{}{"$tasks.startDate", startOfDay}}, // Tasks with start date before today
+								},
+							},
+							1,
+							0,
+						},
+					},
+				},
+				"deadlineToday": bson.M{
+					"$sum": bson.M{
+						"$cond": []interface{}{
+							bson.M{
+								"$and": []bson.M{
+									{"$ne": []interface{}{"$tasks.deadline", nil}},
+									{"$gte": []interface{}{"$tasks.deadline", startOfDay}},
+									{"$lte": []interface{}{"$tasks.deadline", endOfDay}},
+								},
+							},
+							1,
+							0,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate task counts: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var result struct {
+		ScheduledToday int `bson:"scheduledToday"`
+		DeadlineToday  int `bson:"deadlineToday"`
+	}
+
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to decode task counts: %w", err)
+		}
+	}
+
+	return &TaskCounts{
+		ScheduledToday: result.ScheduledToday,
+		DeadlineToday:  result.DeadlineToday,
+	}, nil
+}
+
 // GetUserTaskCountsForToday returns the count of tasks on deck (start date before today) and due today for a specific user
+// This uses UTC for backward compatibility
 func (s *Service) GetUserTaskCountsForToday(userID primitive.ObjectID) (*TaskCounts, error) {
+	return s.GetUserTaskCountsForTodayWithTimezone(userID, time.UTC)
+}
+
+// Deprecated: Use GetUserTaskCountsForTodayWithTimezone instead
+func (s *Service) getUserTaskCountsForTodayUTC(userID primitive.ObjectID) (*TaskCounts, error) {
 	ctx := context.Background()
 
 	// Get today's date range (start and end of day in UTC)
@@ -279,11 +362,13 @@ func (s *Service) GetUsersWithPushTokens() ([]types.User, error) {
 		},
 	}
 
-	// Only select the fields we need for notifications
+	// Select the fields we need for notifications including timezone and settings
 	projection := bson.M{
 		"_id":          1,
 		"push_token":   1,
 		"display_name": 1,
+		"timezone":     1,
+		"settings":     1,
 	}
 
 	cursor, err := s.Users.Find(ctx, filter, &options.FindOptions{

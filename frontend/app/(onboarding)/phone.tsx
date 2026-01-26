@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, TextInput, TouchableOpacity, View, Animated, KeyboardAvoidingView, Platform } from "react-native";
+import { Dimensions, StyleSheet, TextInput, TouchableOpacity, View, Animated, KeyboardAvoidingView, Platform, Linking } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,6 +9,7 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -22,6 +23,7 @@ const PhoneOnboarding = (props: Props) => {
     const [show, setShow] = useState(false);
     const [countryCode, setCountryCode] = useState("+1");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -61,6 +63,15 @@ const PhoneOnboarding = (props: Props) => {
     };
 
     const isValidPhone = phoneNumber.length >= 10;
+    const canContinue = isValidPhone && agreedToTerms;
+
+    const handleTermsPress = () => {
+        Linking.openURL('https://kindredtodo.com/terms');
+    };
+
+    const handlePrivacyPress = () => {
+        Linking.openURL('https://kindredtodo.com/privacy');
+    };
 
     return (
         <ThemedView style={styles.mainContainer}>
@@ -184,6 +195,52 @@ const PhoneOnboarding = (props: Props) => {
                         </ThemedText>
                     </Animated.View>
 
+                    {/* Terms and Conditions Section */}
+                    <Animated.View
+                        style={[
+                            styles.termsContainer,
+                            {
+                                opacity: fadeAnimation,
+                            }
+                        ]}
+                    >
+                        <TouchableOpacity
+                            style={styles.checkboxContainer}
+                            onPress={() => setAgreedToTerms(!agreedToTerms)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[
+                                styles.checkbox,
+                                {
+                                    backgroundColor: agreedToTerms ? ThemedColor.tint : 'transparent',
+                                    borderColor: agreedToTerms ? ThemedColor.tint : ThemedColor.caption,
+                                }
+                            ]}>
+                                {agreedToTerms && (
+                                    <Ionicons name="checkmark" size={16} color="white" />
+                                )}
+                            </View>
+                            <View style={styles.termsTextContainer}>
+                                <ThemedText style={[styles.termsText, { color: ThemedColor.text }]}>
+                                    I agree to the{' '}
+                                    <ThemedText
+                                        style={[styles.termsLink, { color: ThemedColor.tint }]}
+                                        onPress={handleTermsPress}
+                                    >
+                                        Terms of Service
+                                    </ThemedText>
+                                    {' '}and{' '}
+                                    <ThemedText
+                                        style={[styles.termsLink, { color: ThemedColor.tint }]}
+                                        onPress={handlePrivacyPress}
+                                    >
+                                        Privacy Policy
+                                    </ThemedText>
+                                </ThemedText>
+                            </View>
+                        </TouchableOpacity>
+                    </Animated.View>
+
                     {/* Button Section */}
                     <Animated.View
                         style={[
@@ -196,7 +253,7 @@ const PhoneOnboarding = (props: Props) => {
                         <PrimaryButton
                             title="Continue"
                             onPress={handleContinue}
-                            disabled={!isValidPhone}
+                            disabled={!canContinue}
                         />
                     </Animated.View>
                 </View>
@@ -274,6 +331,35 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit',
         marginTop: 12,
         marginLeft: 4,
+    },
+    termsContainer: {
+        marginBottom: 16,
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+    },
+    checkbox: {
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        borderWidth: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    termsTextContainer: {
+        flex: 1,
+    },
+    termsText: {
+        fontSize: 14,
+        fontFamily: 'Outfit',
+        lineHeight: 20,
+    },
+    termsLink: {
+        fontWeight: '600',
+        textDecorationLine: 'underline',
     },
     buttonContainer: {
         width: '100%',

@@ -85,6 +85,7 @@ type RegisterRequest struct {
 	DisplayName    string `validate:"required" json:"display_name"`
 	Handle         string `validate:"required" json:"handle"`
 	ProfilePicture string `validate:"required" json:"profile_picture"`
+	Timezone       string `json:"timezone,omitempty"`
 }
 
 type UpdatePushTokenRequest struct {

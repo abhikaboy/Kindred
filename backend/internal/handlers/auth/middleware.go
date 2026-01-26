@@ -13,7 +13,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const UserIDContextKey contextKey = "user_id"
+const (
+	UserIDContextKey   contextKey = "user_id"
+	TimezoneContextKey contextKey = "timezone"
+)
 
 // AuthMiddleware creates a middleware function for validating JWT tokens
 func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config) func(http.Handler) http.Handler {
@@ -50,7 +53,7 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 
 			// Try to validate access token first
 			slog.Info("🔍 AUTH MIDDLEWARE: Attempting to validate access token...")
-			userID, count, err := service.ValidateToken(accessToken)
+			userID, count, timezone, err := service.ValidateToken(accessToken)
 			if err != nil {
 				slog.Error("❌ AUTH MIDDLEWARE: Access token validation failed", "error", err.Error())
 
@@ -65,7 +68,7 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 				slog.Info("🔄 AUTH MIDDLEWARE: Attempting refresh token validation", "refresh_token_length", len(refreshToken))
 
 				// Validate refresh token
-				newCount, err := validateRefreshToken(service, refreshToken)
+				newCount, newTimezone, err := validateRefreshToken(service, refreshToken)
 				if err != nil {
 					slog.Error("❌ AUTH MIDDLEWARE: Refresh token validation failed", "error", err.Error())
 					http.Error(w, fmt.Sprintf(`{"error":"Both access and refresh tokens are invalid: %v","status":401}`, err), http.StatusUnauthorized)
@@ -75,8 +78,9 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 				slog.Info("✅ AUTH MIDDLEWARE: Refresh token valid, generating new tokens...")
 
 				// Generate new tokens
-				userID, _, _ = service.ValidateToken(refreshToken)
-				newAccess, newRefresh, err := service.GenerateTokens(userID, newCount)
+				userID, _, _, _ = service.ValidateToken(refreshToken)
+				timezone = newTimezone
+				newAccess, newRefresh, err := service.GenerateTokens(userID, newCount, timezone)
 				if err != nil {
 					slog.Error("❌ AUTH MIDDLEWARE: Failed to generate new tokens", "error", err.Error())
 					http.Error(w, `{"error":"Failed to generate new tokens","status":500}`, http.StatusInternalServerError)
@@ -99,11 +103,13 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 			} else {
 				slog.Info("✅ AUTH MIDDLEWARE: Access token validation successful",
 					"user_id", userID,
-					"count", count)
+					"count", count,
+					"timezone", timezone)
 			}
 
-			// Add user ID to context (using custom type to avoid collisions)
+			// Add user ID and timezone to context (using custom type to avoid collisions)
 			ctx := context.WithValue(r.Context(), UserIDContextKey, userID)
+			ctx = context.WithValue(ctx, TimezoneContextKey, timezone)
 			r = r.WithContext(ctx)
 
 			slog.Info("🎯 AUTH MIDDLEWARE: Authentication complete, proceeding to handler", "user_id", userID)
@@ -114,39 +120,39 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 	}
 }
 
-// validateRefreshToken validates a refresh token and returns the count
-func validateRefreshToken(service *Service, refreshToken string) (float64, error) {
+// validateRefreshToken validates a refresh token and returns the count and timezone
+func validateRefreshToken(service *Service, refreshToken string) (float64, string, error) {
 	slog.Info("🔄 REFRESH TOKEN: Starting validation process")
 
 	// Validate the refresh token
-	userID, count, err := service.ValidateToken(refreshToken)
+	userID, count, timezone, err := service.ValidateToken(refreshToken)
 	if err != nil {
 		slog.Error("❌ REFRESH TOKEN: Token validation failed", "error", err.Error())
-		return 0, fmt.Errorf("refresh token invalid: %v", err)
+		return 0, "", fmt.Errorf("refresh token invalid: %v", err)
 	}
 
-	slog.Info("✅ REFRESH TOKEN: Token structure valid", "user_id", userID, "count", count)
+	slog.Info("✅ REFRESH TOKEN: Token structure valid", "user_id", userID, "count", count, "timezone", timezone)
 
 	// Check if the refresh token is unused
 	id, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		slog.Error("❌ REFRESH TOKEN: Invalid user ID format", "user_id", userID, "error", err.Error())
-		return 0, fmt.Errorf("invalid user ID in refresh token: %v", err)
+		return 0, "", fmt.Errorf("invalid user ID in refresh token: %v", err)
 	}
 
 	used, err := service.CheckIfTokenUsed(id)
 	if err != nil {
 		slog.Error("❌ REFRESH TOKEN: Error checking token usage", "error", err.Error())
-		return 0, fmt.Errorf("error checking token usage: %v", err)
+		return 0, "", fmt.Errorf("error checking token usage: %v", err)
 	}
 
 	if used {
 		slog.Error("❌ REFRESH TOKEN: Token already used", "user_id", userID)
-		return 0, fmt.Errorf("refresh token has already been used")
+		return 0, "", fmt.Errorf("refresh token has already been used")
 	}
 
-	slog.Info("✅ REFRESH TOKEN: Validation complete", "user_id", userID, "count", count)
-	return count, nil
+	slog.Info("✅ REFRESH TOKEN: Validation complete", "user_id", userID, "count", count, "timezone", timezone)
+	return count, timezone, nil
 }
 
 // GetUserIDFromContext extracts the user ID from the request context
@@ -185,4 +191,21 @@ func OptionalAuth(ctx context.Context) (string, bool) {
 		slog.Info("ℹ️ OPTIONAL AUTH: User not authenticated, proceeding without auth")
 	}
 	return userID, ok
+}
+
+// GetTimezoneFromContext extracts the timezone from the request context
+func GetTimezoneFromContext(ctx context.Context) (string, bool) {
+	// Try to get timezone from the standard context first (set by middleware)
+	if timezone, ok := ctx.Value(TimezoneContextKey).(string); ok && timezone != "" {
+		return timezone, true
+	}
+	return "", false
+}
+
+// GetTimezoneOrDefault extracts the timezone from context, defaulting to UTC if not found
+func GetTimezoneOrDefault(ctx context.Context) string {
+	if timezone, ok := GetTimezoneFromContext(ctx); ok {
+		return timezone
+	}
+	return "UTC"
 }

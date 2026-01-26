@@ -295,7 +295,7 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 	return err
 }
 
-// UpdateTimezone updates the timezone for a specific user
+// UpdateTimezone updates the timezone for a specific user and increments count to invalidate tokens
 func (s *Service) UpdateTimezone(id primitive.ObjectID, timezone string) error {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
@@ -303,6 +303,9 @@ func (s *Service) UpdateTimezone(id primitive.ObjectID, timezone string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"timezone": timezone,
+		},
+		"$inc": bson.M{
+			"count": 1, // Increment count to invalidate existing tokens
 		},
 	}
 
