@@ -165,8 +165,7 @@ linters:
     - goconst         # Finds repeated strings that could be constants
     - gocritic        # Provides diagnostics that check for bugs, performance and style issues
     - gocyclo         # Computes cyclomatic complexity
-    - gofmt           # Checks whether code was gofmt-ed
-    - goimports       # Checks import statements are formatted
+    - gofumpt         # Stricter gofmt
     - goprintffuncname # Checks that printf-like functions are named with f at the end
     - gosec           # Inspects source code for security problems
     - lll             # Reports long lines
