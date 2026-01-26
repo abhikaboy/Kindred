@@ -107,12 +107,12 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 
 	if len(filteredUsers) == 0 {
 		return fiber.Map{
-			"message":       "No users to notify based on frequency preferences",
-			"total_users":   len(users),
+			"message":        "No users to notify based on frequency preferences",
+			"total_users":    len(users),
 			"filtered_users": 0,
-			"skipped_users": skippedCount,
-			"current_time":  now.Format("15:04"),
-			"day_of_week":   dayOfWeek.String(),
+			"skipped_users":  skippedCount,
+			"current_time":   now.Format("15:04"),
+			"day_of_week":    dayOfWeek.String(),
 		}, nil
 	}
 

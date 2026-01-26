@@ -32,7 +32,7 @@ func TestCategoryService(t *testing.T) {
 
 func (s *CategoryServiceTestSuite) TestGetAllCategories_Success() {
 	categories, err := s.service.GetAllCategories()
-	
+
 	s.NoError(err)
 	s.NotNil(categories)
 	s.GreaterOrEqual(len(categories), 0)
@@ -44,9 +44,9 @@ func (s *CategoryServiceTestSuite) TestGetAllCategories_Success() {
 
 func (s *CategoryServiceTestSuite) TestGetCategoriesByUser_Success() {
 	user := s.GetUser(0)
-	
+
 	categories, err := s.service.GetCategoriesByUser(user.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(categories)
 	s.GreaterOrEqual(len(categories), 0)
@@ -54,9 +54,9 @@ func (s *CategoryServiceTestSuite) TestGetCategoriesByUser_Success() {
 
 func (s *CategoryServiceTestSuite) TestGetCategoriesByUser_NoCategories() {
 	newUserID := primitive.NewObjectID()
-	
+
 	categories, err := s.service.GetCategoriesByUser(newUserID)
-	
+
 	s.NoError(err)
 	s.NotNil(categories)
 	s.Equal(0, len(categories))
@@ -68,7 +68,7 @@ func (s *CategoryServiceTestSuite) TestGetCategoriesByUser_NoCategories() {
 
 func (s *CategoryServiceTestSuite) TestGetCategoryByID_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create a category
 	category := &CategoryDocument{
 		ID:    primitive.NewObjectID(),
@@ -76,13 +76,13 @@ func (s *CategoryServiceTestSuite) TestGetCategoryByID_Success() {
 		User:  user.ID,
 		Tasks: []types.TaskDocument{},
 	}
-	
+
 	created, err := s.service.CreateCategory(category)
 	s.NoError(err)
-	
+
 	// Get the category by ID
 	result, err := s.service.GetCategoryByID(created.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(created.ID, result.ID)
@@ -91,9 +91,9 @@ func (s *CategoryServiceTestSuite) TestGetCategoryByID_Success() {
 
 func (s *CategoryServiceTestSuite) TestGetCategoryByID_NotFound() {
 	invalidID := primitive.NewObjectID()
-	
+
 	category, err := s.service.GetCategoryByID(invalidID)
-	
+
 	s.Error(err)
 	s.Nil(category)
 }
@@ -104,16 +104,16 @@ func (s *CategoryServiceTestSuite) TestGetCategoryByID_NotFound() {
 
 func (s *CategoryServiceTestSuite) TestCreateCategory_Success() {
 	user := s.GetUser(0)
-	
+
 	category := &CategoryDocument{
 		ID:    primitive.NewObjectID(),
 		Name:  "New Category",
 		User:  user.ID,
 		Tasks: []types.TaskDocument{},
 	}
-	
+
 	result, err := s.service.CreateCategory(category)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal("New Category", result.Name)
@@ -127,7 +127,7 @@ func (s *CategoryServiceTestSuite) TestCreateCategory_Success() {
 
 func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create a category
 	category := &CategoryDocument{
 		ID:    primitive.NewObjectID(),
@@ -135,18 +135,18 @@ func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_Success() {
 		User:  user.ID,
 		Tasks: []types.TaskDocument{},
 	}
-	
+
 	created, err := s.service.CreateCategory(category)
 	s.NoError(err)
-	
+
 	// Update the category
 	newName := "Updated Name"
 	update := UpdateCategoryDocument{
 		Name: newName,
 	}
-	
+
 	result, err := s.service.UpdatePartialCategory(created.ID, update, user.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(newName, result.Name)
@@ -155,14 +155,14 @@ func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_Success() {
 func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_NotFound() {
 	user := s.GetUser(0)
 	invalidID := primitive.NewObjectID()
-	
+
 	newName := "Updated Name"
 	update := UpdateCategoryDocument{
 		Name: newName,
 	}
-	
+
 	result, err := s.service.UpdatePartialCategory(invalidID, update, user.ID)
-	
+
 	s.Error(err)
 	s.Nil(result)
 }
@@ -170,7 +170,7 @@ func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_NotFound() {
 func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_WrongUser() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create a category as user1
 	category := &CategoryDocument{
 		ID:    primitive.NewObjectID(),
@@ -178,18 +178,18 @@ func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_WrongUser() {
 		User:  user1.ID,
 		Tasks: []types.TaskDocument{},
 	}
-	
+
 	created, err := s.service.CreateCategory(category)
 	s.NoError(err)
-	
+
 	// Try to update as user2
 	newName := "Hacked Name"
 	update := UpdateCategoryDocument{
 		Name: newName,
 	}
-	
+
 	result, err := s.service.UpdatePartialCategory(created.ID, update, user2.ID)
-	
+
 	s.Error(err)
 	s.Nil(result)
 }
@@ -200,7 +200,7 @@ func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_WrongUser() {
 
 func (s *CategoryServiceTestSuite) TestDeleteCategory_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create a category
 	category := &CategoryDocument{
 		ID:    primitive.NewObjectID(),
@@ -208,15 +208,15 @@ func (s *CategoryServiceTestSuite) TestDeleteCategory_Success() {
 		User:  user.ID,
 		Tasks: []types.TaskDocument{},
 	}
-	
+
 	created, err := s.service.CreateCategory(category)
 	s.NoError(err)
-	
+
 	// Delete the category
 	err = s.service.DeleteCategory(user.ID, created.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify it's deleted
 	result, err := s.service.GetCategoryByID(created.ID)
 	s.Error(err)
@@ -226,9 +226,9 @@ func (s *CategoryServiceTestSuite) TestDeleteCategory_Success() {
 func (s *CategoryServiceTestSuite) TestDeleteCategory_NotFound() {
 	user := s.GetUser(0)
 	invalidID := primitive.NewObjectID()
-	
+
 	err := s.service.DeleteCategory(user.ID, invalidID)
-	
+
 	// Should not error on non-existent category (idempotent)
 	s.NoError(err)
 }
@@ -239,7 +239,7 @@ func (s *CategoryServiceTestSuite) TestDeleteCategory_NotFound() {
 
 func (s *CategoryServiceTestSuite) TestGetWorkspaces_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create categories with different workspace names
 	category1 := &CategoryDocument{
 		ID:            primitive.NewObjectID(),
@@ -255,14 +255,14 @@ func (s *CategoryServiceTestSuite) TestGetWorkspaces_Success() {
 		WorkspaceName: "Personal",
 		Tasks:         []types.TaskDocument{},
 	}
-	
+
 	_, err := s.service.CreateCategory(category1)
 	s.NoError(err)
 	_, err = s.service.CreateCategory(category2)
 	s.NoError(err)
-	
+
 	workspaces, err := s.service.GetWorkspaces(user.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(workspaces)
 	s.GreaterOrEqual(len(workspaces), 2)
@@ -270,9 +270,9 @@ func (s *CategoryServiceTestSuite) TestGetWorkspaces_Success() {
 
 func (s *CategoryServiceTestSuite) TestGetWorkspaces_NoWorkspaces() {
 	newUserID := primitive.NewObjectID()
-	
+
 	workspaces, err := s.service.GetWorkspaces(newUserID)
-	
+
 	s.NoError(err)
 	s.NotNil(workspaces)
 	s.Equal(0, len(workspaces))
@@ -284,7 +284,7 @@ func (s *CategoryServiceTestSuite) TestGetWorkspaces_NoWorkspaces() {
 
 func (s *CategoryServiceTestSuite) TestDeleteWorkspace_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create a category with a workspace
 	category := &CategoryDocument{
 		ID:            primitive.NewObjectID(),
@@ -293,19 +293,19 @@ func (s *CategoryServiceTestSuite) TestDeleteWorkspace_Success() {
 		WorkspaceName: "TestWorkspace",
 		Tasks:         []types.TaskDocument{},
 	}
-	
+
 	_, err := s.service.CreateCategory(category)
 	s.NoError(err)
-	
+
 	// Delete the workspace
 	err = s.service.DeleteWorkspace("TestWorkspace", user.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify categories in that workspace are deleted
 	workspaces, err := s.service.GetWorkspaces(user.ID)
 	s.NoError(err)
-	
+
 	for _, ws := range workspaces {
 		s.NotEqual("TestWorkspace", ws.Name)
 	}
@@ -317,7 +317,7 @@ func (s *CategoryServiceTestSuite) TestDeleteWorkspace_Success() {
 
 func (s *CategoryServiceTestSuite) TestRenameWorkspace_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create a category with a workspace
 	category := &CategoryDocument{
 		ID:            primitive.NewObjectID(),
@@ -326,15 +326,15 @@ func (s *CategoryServiceTestSuite) TestRenameWorkspace_Success() {
 		WorkspaceName: "OldWorkspace",
 		Tasks:         []types.TaskDocument{},
 	}
-	
+
 	created, err := s.service.CreateCategory(category)
 	s.NoError(err)
-	
+
 	// Rename the workspace
 	err = s.service.RenameWorkspace("OldWorkspace", "NewWorkspace", user.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify the workspace was renamed
 	result, err := s.service.GetCategoryByID(created.ID)
 	s.NoError(err)

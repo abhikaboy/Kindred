@@ -19,13 +19,13 @@ type Client struct {
 }
 
 type Photo struct {
-	ID          string `json:"id"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	Color       string `json:"color"`
-	Description string `json:"description"`
+	ID             string `json:"id"`
+	Width          int    `json:"width"`
+	Height         int    `json:"height"`
+	Color          string `json:"color"`
+	Description    string `json:"description"`
 	AltDescription string `json:"alt_description"`
-	URLs        struct {
+	URLs           struct {
 		Raw     string `json:"raw"`
 		Full    string `json:"full"`
 		Regular string `json:"regular"`
@@ -64,12 +64,12 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 	}
 
 	endpoint := fmt.Sprintf("%s/search/photos", baseURL)
-	
+
 	params := url.Values{}
 	params.Add("query", query)
 	params.Add("per_page", fmt.Sprintf("%d", perPage))
 	params.Add("orientation", "landscape")
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?%s", endpoint, params.Encode()), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -102,13 +102,13 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 // GetRandomPhoto gets a random photo, optionally filtered by query
 func (c *Client) GetRandomPhoto(ctx context.Context, query string) (*Photo, error) {
 	endpoint := fmt.Sprintf("%s/photos/random", baseURL)
-	
+
 	params := url.Values{}
 	if query != "" {
 		params.Add("query", query)
 	}
 	params.Add("orientation", "landscape")
-	
+
 	urlStr := endpoint
 	if len(params) > 0 {
 		urlStr = fmt.Sprintf("%s?%s", endpoint, params.Encode())
@@ -166,4 +166,3 @@ func (c *Client) TriggerDownload(ctx context.Context, downloadLocation string) e
 
 	return nil
 }
-

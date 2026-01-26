@@ -35,7 +35,7 @@ func (s *NotificationsServiceTestSuite) TestCreateNotification_Success() {
 	sender := s.GetUser(0)
 	receiver := s.GetUser(1)
 	referenceID := primitive.NewObjectID()
-	
+
 	err := s.service.CreateNotification(
 		sender.ID,
 		receiver.ID,
@@ -44,9 +44,9 @@ func (s *NotificationsServiceTestSuite) TestCreateNotification_Success() {
 		referenceID,
 		"https://example.com/thumbnail.jpg",
 	)
-	
+
 	s.NoError(err)
-	
+
 	// Verify notification was created
 	count, err := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
 		"receiver": receiver.ID,
@@ -60,7 +60,7 @@ func (s *NotificationsServiceTestSuite) TestCreateNotification_WithoutThumbnail(
 	sender := s.GetUser(0)
 	receiver := s.GetUser(1)
 	referenceID := primitive.NewObjectID()
-	
+
 	err := s.service.CreateNotification(
 		sender.ID,
 		receiver.ID,
@@ -68,7 +68,7 @@ func (s *NotificationsServiceTestSuite) TestCreateNotification_WithoutThumbnail(
 		notifications.NotificationTypePost,
 		referenceID,
 	)
-	
+
 	s.NoError(err)
 }
 
@@ -79,7 +79,7 @@ func (s *NotificationsServiceTestSuite) TestCreateNotification_WithoutThumbnail(
 func (s *NotificationsServiceTestSuite) TestGetUserNotifications_Success() {
 	user := s.GetUser(0)
 	sender := s.GetUser(1)
-	
+
 	// Create a notification first
 	err := s.service.CreateNotification(
 		sender.ID,
@@ -89,10 +89,10 @@ func (s *NotificationsServiceTestSuite) TestGetUserNotifications_Success() {
 		primitive.NewObjectID(),
 	)
 	s.NoError(err)
-	
+
 	// Get notifications
 	notifs, err := s.service.GetUserNotifications(user.ID, 10, 0)
-	
+
 	s.NoError(err)
 	s.NotNil(notifs)
 	s.GreaterOrEqual(len(notifs), 1)
@@ -101,7 +101,7 @@ func (s *NotificationsServiceTestSuite) TestGetUserNotifications_Success() {
 func (s *NotificationsServiceTestSuite) TestGetUserNotifications_WithPagination() {
 	user := s.GetUser(0)
 	sender := s.GetUser(1)
-	
+
 	// Create multiple notifications
 	for i := 0; i < 5; i++ {
 		err := s.service.CreateNotification(
@@ -113,12 +113,12 @@ func (s *NotificationsServiceTestSuite) TestGetUserNotifications_WithPagination(
 		)
 		s.NoError(err)
 	}
-	
+
 	// Get first page
 	page1, err := s.service.GetUserNotifications(user.ID, 3, 0)
 	s.NoError(err)
 	s.LessOrEqual(len(page1), 3)
-	
+
 	// Get second page
 	page2, err := s.service.GetUserNotifications(user.ID, 3, 3)
 	s.NoError(err)
@@ -133,7 +133,7 @@ func (s *NotificationsServiceTestSuite) TestMarkNotificationAsRead_Success() {
 	sender := s.GetUser(0)
 	receiver := s.GetUser(1)
 	referenceID := primitive.NewObjectID()
-	
+
 	// Create a notification
 	err := s.service.CreateNotification(
 		sender.ID,
@@ -143,7 +143,7 @@ func (s *NotificationsServiceTestSuite) TestMarkNotificationAsRead_Success() {
 		referenceID,
 	)
 	s.NoError(err)
-	
+
 	// Find the notification
 	var notif notifications.NotificationDocument
 	err = s.Collections["notifications"].FindOne(s.Ctx, bson.M{
@@ -151,13 +151,13 @@ func (s *NotificationsServiceTestSuite) TestMarkNotificationAsRead_Success() {
 		"user._id": sender.ID,
 	}).Decode(&notif)
 	s.NoError(err)
-	
+
 	// Mark as read - check if method exists, otherwise skip
 	// Note: If MarkNotificationAsRead doesn't exist, we can test via MarkAllAsRead
 	s.T().Skip("MarkNotificationAsRead method not found - testing via MarkAllAsRead instead")
-	
+
 	s.NoError(err)
-	
+
 	// Verify it's marked as read
 	var updated notifications.NotificationDocument
 	err = s.Collections["notifications"].FindOne(s.Ctx, bson.M{"_id": notif.ID}).Decode(&updated)
@@ -173,7 +173,7 @@ func (s *NotificationsServiceTestSuite) TestDeleteNotification_Success() {
 	sender := s.GetUser(0)
 	receiver := s.GetUser(1)
 	referenceID := primitive.NewObjectID()
-	
+
 	// Create a notification
 	err := s.service.CreateNotification(
 		sender.ID,
@@ -183,7 +183,7 @@ func (s *NotificationsServiceTestSuite) TestDeleteNotification_Success() {
 		referenceID,
 	)
 	s.NoError(err)
-	
+
 	// Find the notification
 	var notif notifications.NotificationDocument
 	err = s.Collections["notifications"].FindOne(s.Ctx, bson.M{
@@ -191,12 +191,12 @@ func (s *NotificationsServiceTestSuite) TestDeleteNotification_Success() {
 		"user._id": sender.ID,
 	}).Decode(&notif)
 	s.NoError(err)
-	
+
 	// Delete the notification
 	err = s.service.DeleteNotification(notif.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify it's deleted
 	count, err := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{"_id": notif.ID})
 	s.NoError(err)
@@ -210,7 +210,7 @@ func (s *NotificationsServiceTestSuite) TestDeleteNotification_Success() {
 func (s *NotificationsServiceTestSuite) TestGetUnreadCount_Success() {
 	user := s.GetUser(0)
 	sender := s.GetUser(1)
-	
+
 	// Create some unread notifications
 	for i := 0; i < 3; i++ {
 		err := s.service.CreateNotification(
@@ -222,9 +222,9 @@ func (s *NotificationsServiceTestSuite) TestGetUnreadCount_Success() {
 		)
 		s.NoError(err)
 	}
-	
+
 	count, err := s.service.GetUnreadCount(user.ID)
-	
+
 	s.NoError(err)
 	s.GreaterOrEqual(count, int64(3))
 }
@@ -236,7 +236,7 @@ func (s *NotificationsServiceTestSuite) TestGetUnreadCount_Success() {
 func (s *NotificationsServiceTestSuite) TestMarkAllAsRead_Success() {
 	user := s.GetUser(0)
 	sender := s.GetUser(1)
-	
+
 	// Create some unread notifications
 	for i := 0; i < 3; i++ {
 		err := s.service.CreateNotification(
@@ -248,12 +248,12 @@ func (s *NotificationsServiceTestSuite) TestMarkAllAsRead_Success() {
 		)
 		s.NoError(err)
 	}
-	
+
 	// Mark all as read
 	err := s.service.MarkAllAsReadForUser(user.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify unread count is 0
 	count, err := s.service.GetUnreadCount(user.ID)
 	s.NoError(err)

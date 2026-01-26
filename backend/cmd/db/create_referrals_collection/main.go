@@ -75,4 +75,3 @@ func fatal(ctx context.Context, msg string, err error) {
 	)
 	os.Exit(1)
 }
-

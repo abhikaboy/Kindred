@@ -19,6 +19,13 @@
             export PATH="$HOME/.local/bin:$PATH"
           fi
 
+          # Install golangci-lint from source if not already available or version mismatch
+          if ! command -v golangci-lint &> /dev/null || ! golangci-lint version 2>&1 | grep -q "built with go1.25"; then
+            echo "🔧 Installing golangci-lint from source with Go 1.25..."
+            (cd "$DEVENV_ROOT/backend" && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+            echo "✅ golangci-lint installed"
+          fi
+
           # Install pre-commit hooks if not already installed
           if [ -d .git ] && [ ! -f .git/hooks/pre-commit ]; then
             echo "🪝 Installing pre-commit hooks..."
@@ -62,7 +69,7 @@
           python3.pkgs.typer
           dos2unix
           pre-commit
-          golangci-lint
+          # golangci-lint installed from source in enterShell to match Go version
         ];
 
         scripts = {
@@ -73,7 +80,7 @@
               go mod tidy
               go fmt ./...
               go vet ./...
-              ${pkgs.golangci-lint}/bin/golangci-lint run ./...
+              golangci-lint run ./...
             '';
           };
           "backend-run" = {

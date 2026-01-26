@@ -81,4 +81,3 @@ func (h *Handler) callGeminiGenerateBlueprintFlow(ctx context.Context, userID, d
 
 	return &response, nil
 }
-

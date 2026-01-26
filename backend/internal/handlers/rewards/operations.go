@@ -23,4 +23,3 @@ func RegisterRedeemRewardOperation(api huma.API, handler *Handler) {
 func RegisterRewardsOperations(api huma.API, handler *Handler) {
 	RegisterRedeemRewardOperation(api, handler)
 }
-

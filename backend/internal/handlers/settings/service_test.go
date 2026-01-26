@@ -32,18 +32,18 @@ func TestSettingsService(t *testing.T) {
 
 func (s *SettingsServiceTestSuite) TestGetUserSettings_Success() {
 	user := s.GetUser(0)
-	
+
 	settings, err := s.service.GetUserSettings(user.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(settings)
 }
 
 func (s *SettingsServiceTestSuite) TestGetUserSettings_UserNotFound() {
 	nonExistentID := testpkg.NewObjectID()
-	
+
 	settings, err := s.service.GetUserSettings(nonExistentID)
-	
+
 	s.Error(err)
 	s.Nil(settings)
 }
@@ -54,7 +54,7 @@ func (s *SettingsServiceTestSuite) TestGetUserSettings_UserNotFound() {
 
 func (s *SettingsServiceTestSuite) TestUpdateUserSettings_Success() {
 	user := s.GetUser(0)
-	
+
 	newSettings := types.UserSettings{
 		Notifications: types.NotificationSettings{
 			FriendActivity: true,
@@ -64,11 +64,11 @@ func (s *SettingsServiceTestSuite) TestUpdateUserSettings_Success() {
 			ShowTaskDetails: true,
 		},
 	}
-	
+
 	err := s.service.UpdateUserSettings(user.ID, newSettings)
-	
+
 	s.NoError(err)
-	
+
 	// Verify settings were updated
 	updatedSettings, err := s.service.GetUserSettings(user.ID)
 	s.NoError(err)
@@ -78,18 +78,18 @@ func (s *SettingsServiceTestSuite) TestUpdateUserSettings_Success() {
 
 func (s *SettingsServiceTestSuite) TestUpdateUserSettings_PartialUpdate() {
 	user := s.GetUser(0)
-	
+
 	// Update only notifications
 	partialSettings := types.UserSettings{
 		Notifications: types.NotificationSettings{
 			FriendPosts: true,
 		},
 	}
-	
+
 	err := s.service.UpdateUserSettings(user.ID, partialSettings)
-	
+
 	s.NoError(err)
-	
+
 	// Verify notifications were updated
 	updatedSettings, err := s.service.GetUserSettings(user.ID)
 	s.NoError(err)
@@ -98,7 +98,7 @@ func (s *SettingsServiceTestSuite) TestUpdateUserSettings_PartialUpdate() {
 
 func (s *SettingsServiceTestSuite) TestUpdateUserSettings_MultipleFields() {
 	user := s.GetUser(0)
-	
+
 	newSettings := types.UserSettings{
 		Notifications: types.NotificationSettings{
 			FriendActivity: true,
@@ -106,16 +106,16 @@ func (s *SettingsServiceTestSuite) TestUpdateUserSettings_MultipleFields() {
 			FriendPosts:    true,
 		},
 		Display: types.DisplaySettings{
-			ShowTaskDetails:     true,
-			RecentWorkspaces:    true,
-			FriendActivityFeed:  true,
+			ShowTaskDetails:    true,
+			RecentWorkspaces:   true,
+			FriendActivityFeed: true,
 		},
 	}
-	
+
 	err := s.service.UpdateUserSettings(user.ID, newSettings)
-	
+
 	s.NoError(err)
-	
+
 	// Verify all settings were updated
 	updatedSettings, err := s.service.GetUserSettings(user.ID)
 	s.NoError(err)

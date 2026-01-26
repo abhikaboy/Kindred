@@ -18,4 +18,3 @@ package credits
 //
 //   // Or add credits when user completes an action
 //   err := types.AddCredits(ctx, userCollection, userID, types.CreditTypeVoice, 5)
-

@@ -54,7 +54,7 @@ func (h *TestHelper) FindDocuments(collection string, filter bson.M) []bson.M {
 	var results []bson.M
 	err = cursor.All(h.ctx, &results)
 	require.NoError(h.t, err, "Failed to decode documents")
-	
+
 	return results
 }
 

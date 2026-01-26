@@ -270,7 +270,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		slog.Warn("Failed to get blocked users, continuing without filter", "error", err)
 		blockedUserIDs = []primitive.ObjectID{}
 	}
-	
+
 	// Ensure blockedUserIDs is never nil for MongoDB aggregation
 	// Convert to bson.A to ensure proper serialization
 	var blockedUserIDsArray bson.A
@@ -971,20 +971,20 @@ func (s *Service) GetBlockedUserIDs(ctx context.Context, userID primitive.Object
 		"users":  userID,
 		"status": "blocked",
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to find blocked relationships: %w", err)
 	}
 	defer cursor.Close(ctx)
-	
+
 	var blockedRelationships []struct {
 		Users []primitive.ObjectID `bson:"users"`
 	}
-	
+
 	if err := cursor.All(ctx, &blockedRelationships); err != nil {
 		return nil, fmt.Errorf("failed to decode blocked relationships: %w", err)
 	}
-	
+
 	// Extract the other user IDs from each relationship
 	var blockedUserIDs []primitive.ObjectID
 	for _, rel := range blockedRelationships {
@@ -994,7 +994,7 @@ func (s *Service) GetBlockedUserIDs(ctx context.Context, userID primitive.Object
 			}
 		}
 	}
-	
+
 	return blockedUserIDs, nil
 }
 

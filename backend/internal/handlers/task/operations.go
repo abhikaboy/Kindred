@@ -103,13 +103,13 @@ type DeleteTaskOutput struct {
 
 // Bulk Complete Task
 type BulkCompleteTaskItem struct {
-	TaskID     string               `json:"taskId" example:"507f1f77bcf86cd799439011" doc:"The ID of the task to complete"`
-	CategoryID string               `json:"categoryId" example:"507f1f77bcf86cd799439011" doc:"The ID of the category the task belongs to"`
+	TaskID       string               `json:"taskId" example:"507f1f77bcf86cd799439011" doc:"The ID of the task to complete"`
+	CategoryID   string               `json:"categoryId" example:"507f1f77bcf86cd799439011" doc:"The ID of the category the task belongs to"`
 	CompleteData CompleteTaskDocument `json:"completeData" doc:"The completion data for the task"`
 }
 
 type BulkCompleteTaskInput struct {
-	Authorization string                 `header:"Authorization" required:"true"`
+	Authorization string `header:"Authorization" required:"true"`
 	Body          struct {
 		Tasks []BulkCompleteTaskItem `json:"tasks" minItems:"1" maxItems:"100" doc:"Array of tasks to complete"`
 	} `json:"body"`
@@ -117,20 +117,20 @@ type BulkCompleteTaskInput struct {
 
 type BulkCompleteTaskOutput struct {
 	Body struct {
-		Message         string  `json:"message" example:"Bulk task completion completed"`
-		TotalCompleted  int     `json:"totalCompleted" example:"5" doc:"Number of tasks successfully completed"`
-		TotalFailed     int     `json:"totalFailed" example:"0" doc:"Number of tasks that failed to complete"`
-		StreakChanged   bool    `json:"streakChanged" example:"true" doc:"Indicates if the user's streak increased"`
-		CurrentStreak   int     `json:"currentStreak" example:"5" doc:"The user's current streak count"`
-		TasksComplete   float64 `json:"tasksComplete" example:"42" doc:"Total tasks completed by user"`
-		FailedTaskIDs   []string `json:"failedTaskIds,omitempty" doc:"Array of task IDs that failed to complete"`
+		Message        string   `json:"message" example:"Bulk task completion completed"`
+		TotalCompleted int      `json:"totalCompleted" example:"5" doc:"Number of tasks successfully completed"`
+		TotalFailed    int      `json:"totalFailed" example:"0" doc:"Number of tasks that failed to complete"`
+		StreakChanged  bool     `json:"streakChanged" example:"true" doc:"Indicates if the user's streak increased"`
+		CurrentStreak  int      `json:"currentStreak" example:"5" doc:"The user's current streak count"`
+		TasksComplete  float64  `json:"tasksComplete" example:"42" doc:"Total tasks completed by user"`
+		FailedTaskIDs  []string `json:"failedTaskIds,omitempty" doc:"Array of task IDs that failed to complete"`
 	}
 }
 
 // Bulk Delete Task
 type BulkDeleteTaskItem struct {
-	TaskID         string `json:"taskId" example:"507f1f77bcf86cd799439011" doc:"The ID of the task to delete"`
-	CategoryID     string `json:"categoryId" example:"507f1f77bcf86cd799439011" doc:"The ID of the category the task belongs to"`
+	TaskID          string `json:"taskId" example:"507f1f77bcf86cd799439011" doc:"The ID of the task to delete"`
+	CategoryID      string `json:"categoryId" example:"507f1f77bcf86cd799439011" doc:"The ID of the category the task belongs to"`
 	DeleteRecurring bool   `json:"deleteRecurring,omitempty" example:"false" doc:"Optional. If true, also delete the recurring template. Defaults to false."`
 }
 

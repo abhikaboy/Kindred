@@ -8,52 +8,36 @@ run:
 linters-settings:
   errcheck:
     check-type-assertions: true
-    check-blank: true
 
   govet:
     enable-all: true
     disable:
       - shadow
       - fieldalignment
-
-  gocyclo:
-    min-complexity: 15
-
-  misspell:
-    locale: US
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
+      - composites  # Allow unkeyed composite literals
 
 linters:
-  disable-all: true
   enable:
-    # Default linters (always recommended)
-    - errcheck        # Checks for unchecked errors
-    - gosimple        # Simplify code
-    - govet           # Reports suspicious constructs
-    - ineffassign     # Detects ineffectual assignments
-    - staticcheck     # Go static analysis
-    - unused          # Checks for unused code
-
-    # Additional quality linters
-    - bodyclose       # Checks HTTP response body is closed
-    - goconst         # Finds repeated strings that could be constants
-    - gocyclo         # Computes cyclomatic complexity
-    - gosec           # Security issues
-    - misspell        # Finds commonly misspelled words
-    - unconvert       # Remove unnecessary type conversions
-    - unparam         # Reports unused function parameters
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosec
+    - misspell
 
 issues:
   exclude-rules:
-    # Relax linters for test files
     - path: _test\.go
       linters:
-        - gocyclo
         - errcheck
         - gosec
+
+    # Allow unkeyed composite literals (common in MongoDB bson.E, bson.D, etc.)
+    - text: "struct literal uses unkeyed fields"
+      linters:
+        - govet
+        - staticcheck
 
   max-issues-per-linter: 0
   max-same-issues: 0

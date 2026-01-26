@@ -39,10 +39,10 @@ func (c *HTTPTestClient) WithAuth(token string, userID string) *HTTPTestClient {
 func (c *HTTPTestClient) GET(path string) *HTTPResponse {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	c.addAuthHeaders(req)
-	
+
 	resp, err := c.app.Test(req, -1)
 	require.NoError(c.t, err, "Failed to perform GET request")
-	
+
 	return &HTTPResponse{t: c.t, resp: resp}
 }
 
@@ -50,14 +50,14 @@ func (c *HTTPTestClient) GET(path string) *HTTPResponse {
 func (c *HTTPTestClient) POST(path string, body interface{}) *HTTPResponse {
 	jsonBody, err := json.Marshal(body)
 	require.NoError(c.t, err, "Failed to marshal request body")
-	
+
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	c.addAuthHeaders(req)
-	
+
 	resp, err := c.app.Test(req, -1)
 	require.NoError(c.t, err, "Failed to perform POST request")
-	
+
 	return &HTTPResponse{t: c.t, resp: resp}
 }
 
@@ -65,14 +65,14 @@ func (c *HTTPTestClient) POST(path string, body interface{}) *HTTPResponse {
 func (c *HTTPTestClient) PUT(path string, body interface{}) *HTTPResponse {
 	jsonBody, err := json.Marshal(body)
 	require.NoError(c.t, err, "Failed to marshal request body")
-	
+
 	req := httptest.NewRequest(http.MethodPut, path, bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	c.addAuthHeaders(req)
-	
+
 	resp, err := c.app.Test(req, -1)
 	require.NoError(c.t, err, "Failed to perform PUT request")
-	
+
 	return &HTTPResponse{t: c.t, resp: resp}
 }
 
@@ -80,14 +80,14 @@ func (c *HTTPTestClient) PUT(path string, body interface{}) *HTTPResponse {
 func (c *HTTPTestClient) PATCH(path string, body interface{}) *HTTPResponse {
 	jsonBody, err := json.Marshal(body)
 	require.NoError(c.t, err, "Failed to marshal request body")
-	
+
 	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	c.addAuthHeaders(req)
-	
+
 	resp, err := c.app.Test(req, -1)
 	require.NoError(c.t, err, "Failed to perform PATCH request")
-	
+
 	return &HTTPResponse{t: c.t, resp: resp}
 }
 
@@ -95,10 +95,10 @@ func (c *HTTPTestClient) PATCH(path string, body interface{}) *HTTPResponse {
 func (c *HTTPTestClient) DELETE(path string) *HTTPResponse {
 	req := httptest.NewRequest(http.MethodDelete, path, nil)
 	c.addAuthHeaders(req)
-	
+
 	resp, err := c.app.Test(req, -1)
 	require.NoError(c.t, err, "Failed to perform DELETE request")
-	
+
 	return &HTTPResponse{t: c.t, resp: resp}
 }
 
@@ -125,7 +125,7 @@ func (r *HTTPResponse) Status() int {
 
 // AssertStatus asserts the status code
 func (r *HTTPResponse) AssertStatus(expected int) *HTTPResponse {
-	require.Equal(r.t, expected, r.resp.StatusCode, 
+	require.Equal(r.t, expected, r.resp.StatusCode,
 		"Expected status %d, got %d", expected, r.resp.StatusCode)
 	return r
 }
@@ -174,9 +174,9 @@ func (r *HTTPResponse) JSON(v interface{}) *HTTPResponse {
 func (r *HTTPResponse) AssertJSON(expected interface{}) *HTTPResponse {
 	expectedJSON, err := json.Marshal(expected)
 	require.NoError(r.t, err, "Failed to marshal expected JSON")
-	
+
 	actualJSON := r.Body()
-	
+
 	require.JSONEq(r.t, string(expectedJSON), string(actualJSON))
 	return r
 }

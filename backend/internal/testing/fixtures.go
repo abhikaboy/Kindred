@@ -9,67 +9,67 @@ import (
 
 // TestFixtures holds all test data fixtures
 type TestFixtures struct {
-	Users             []interface{}
-	Connections       []interface{}
-	Activity          []interface{}
-	Blueprints        []interface{}
-	Categories        []interface{}
-	Chats             []interface{}
-	CompletedTasks    []interface{}
-	Congratulations   []interface{}
-	Encouragements    []interface{}
-	FriendRequests    []interface{}
-	Groups            []interface{}
-	Notifications     []interface{}
-	Posts             []interface{}
-	Referrals         []interface{}
-	TemplateTasks     []interface{}
-	Waitlist          []interface{}
+	Users           []interface{}
+	Connections     []interface{}
+	Activity        []interface{}
+	Blueprints      []interface{}
+	Categories      []interface{}
+	Chats           []interface{}
+	CompletedTasks  []interface{}
+	Congratulations []interface{}
+	Encouragements  []interface{}
+	FriendRequests  []interface{}
+	Groups          []interface{}
+	Notifications   []interface{}
+	Posts           []interface{}
+	Referrals       []interface{}
+	TemplateTasks   []interface{}
+	Waitlist        []interface{}
 }
 
 // NewTestFixtures creates a new set of test fixtures
 func NewTestFixtures() *TestFixtures {
 	// Generate users first as they're referenced by other collections
 	users := generateTestUsers()
-	
+
 	return &TestFixtures{
-		Users:             users,
-		Connections:       generateTestConnections(users),
-		Activity:          generateTestActivity(users),
-		Blueprints:        generateTestBlueprints(users),
-		Categories:        generateTestCategories(users),
-		Chats:             generateTestChats(users),
-		CompletedTasks:    generateTestCompletedTasks(users),
-		Congratulations:   generateTestCongratulations(users),
-		Encouragements:    generateTestEncouragements(users),
-		FriendRequests:    []interface{}{}, // Deprecated: using Connections instead
-		Groups:            generateTestGroups(users),
-		Notifications:     generateTestNotifications(users),
-		Posts:             generateTestPosts(users),
-		Referrals:         generateTestReferrals(users),
-		TemplateTasks:     generateTestTemplateTasks(users),
-		Waitlist:          generateTestWaitlist(),
+		Users:           users,
+		Connections:     generateTestConnections(users),
+		Activity:        generateTestActivity(users),
+		Blueprints:      generateTestBlueprints(users),
+		Categories:      generateTestCategories(users),
+		Chats:           generateTestChats(users),
+		CompletedTasks:  generateTestCompletedTasks(users),
+		Congratulations: generateTestCongratulations(users),
+		Encouragements:  generateTestEncouragements(users),
+		FriendRequests:  []interface{}{}, // Deprecated: using Connections instead
+		Groups:          generateTestGroups(users),
+		Notifications:   generateTestNotifications(users),
+		Posts:           generateTestPosts(users),
+		Referrals:       generateTestReferrals(users),
+		TemplateTasks:   generateTestTemplateTasks(users),
+		Waitlist:        generateTestWaitlist(),
 	}
 }
 
 // AsMap returns fixtures as a map for seeding
 func (tf *TestFixtures) AsMap() map[string][]interface{} {
 	return map[string][]interface{}{
-		"users":            tf.Users,
-		"friend-requests":  tf.Connections, // Connections are stored in friend-requests collection
-		"activity":         tf.Activity,
-		"blueprints":       tf.Blueprints,
-		"categories":       tf.Categories,
-		"chats":            tf.Chats,
-		"completed-tasks":  tf.CompletedTasks,
-		"congratulations":  tf.Congratulations,
-		"encouragements":   tf.Encouragements,
-		"groups":           tf.Groups,
-		"notifications":    tf.Notifications,
-		"posts":            tf.Posts,
-		"referrals":        tf.Referrals,
-		"template-tasks":   tf.TemplateTasks,
-		"waitlist":         tf.Waitlist,
+		"users":           tf.Users,
+		"friend-requests": tf.Connections, // Connections are stored in friend-requests collection
+		"activity":        tf.Activity,
+		"blueprints":      tf.Blueprints,
+		"categories":      tf.Categories,
+		"chats":           tf.Chats,
+		"completed-tasks": tf.CompletedTasks,
+		"congratulations": tf.Congratulations,
+		"encouragements":  tf.Encouragements,
+		"groups":          tf.Groups,
+		"notifications":   tf.Notifications,
+		"posts":           tf.Posts,
+		"referrals":       tf.Referrals,
+		"template-tasks":  tf.TemplateTasks,
+		"waitlist":        tf.Waitlist,
 	}
 }
 
@@ -130,15 +130,15 @@ func generateTestUsers() []interface{} {
 
 // ConnectionDocumentInternal is a local copy to avoid import cycles
 type ConnectionDocumentInternal struct {
-	ID         primitive.ObjectID   `bson:"_id,omitempty"`
-	Users      []primitive.ObjectID `bson:"users"`
-	Status     string               `bson:"status"`
+	ID         primitive.ObjectID     `bson:"_id,omitempty"`
+	Users      []primitive.ObjectID   `bson:"users"`
+	Status     string                 `bson:"status"`
 	Requester  ConnectionUserInternal `bson:"requester"`
-	ReceiverID primitive.ObjectID   `bson:"receiver_id"`
-	CreatedAt  time.Time            `bson:"created_at"`
-	AcceptedAt *time.Time           `bson:"accepted_at,omitempty"`
-	BlockerID  *primitive.ObjectID  `bson:"blocker_id,omitempty"`
-	UpdatedAt  *time.Time           `bson:"updated_at,omitempty"`
+	ReceiverID primitive.ObjectID     `bson:"receiver_id"`
+	CreatedAt  time.Time              `bson:"created_at"`
+	AcceptedAt *time.Time             `bson:"accepted_at,omitempty"`
+	BlockerID  *primitive.ObjectID    `bson:"blocker_id,omitempty"`
+	UpdatedAt  *time.Time             `bson:"updated_at,omitempty"`
 }
 
 type ConnectionUserInternal struct {
@@ -248,7 +248,6 @@ func (tf *TestFixtures) GetTestGroup(index int) *types.GroupDocument {
 	return &group
 }
 
-
 // generateTestActivity creates test activity data
 func generateTestActivity(users []interface{}) []interface{} {
 	// Simplified - just return empty for now
@@ -260,9 +259,9 @@ func generateTestBlueprints(users []interface{}) []interface{} {
 	if len(users) == 0 {
 		return []interface{}{}
 	}
-	
+
 	user := users[0].(types.User)
-	
+
 	return []interface{}{
 		map[string]interface{}{
 			"_id":         primitive.NewObjectID(),
@@ -286,10 +285,10 @@ func generateTestChats(users []interface{}) []interface{} {
 	if len(users) < 2 {
 		return []interface{}{}
 	}
-	
+
 	user1 := users[0].(types.User)
 	user2 := users[1].(types.User)
-	
+
 	return []interface{}{
 		map[string]interface{}{
 			"_id":          primitive.NewObjectID(),
@@ -305,10 +304,10 @@ func generateTestCompletedTasks(users []interface{}) []interface{} {
 	if len(users) == 0 {
 		return []interface{}{}
 	}
-	
+
 	user := users[0].(types.User)
 	now := time.Now()
-	
+
 	return []interface{}{
 		map[string]interface{}{
 			"_id":          primitive.NewObjectID(),
@@ -325,10 +324,10 @@ func generateTestCongratulations(users []interface{}) []interface{} {
 	if len(users) < 2 {
 		return []interface{}{}
 	}
-	
+
 	user1 := users[0].(types.User)
 	user2 := users[1].(types.User)
-	
+
 	return []interface{}{
 		map[string]interface{}{
 			"_id":       primitive.NewObjectID(),
@@ -345,10 +344,10 @@ func generateTestEncouragements(users []interface{}) []interface{} {
 	if len(users) < 2 {
 		return []interface{}{}
 	}
-	
+
 	user1 := users[0].(types.User)
 	user2 := users[1].(types.User)
-	
+
 	return []interface{}{
 		map[string]interface{}{
 			"_id":       primitive.NewObjectID(),
@@ -365,10 +364,10 @@ func generateTestFriendRequests(users []interface{}) []interface{} {
 	if len(users) < 2 {
 		return []interface{}{}
 	}
-	
+
 	user1 := users[0].(types.User)
 	user2 := users[1].(types.User)
-	
+
 	return []interface{}{
 		map[string]interface{}{
 			"_id":       primitive.NewObjectID(),
@@ -439,10 +438,10 @@ func generateTestPosts(users []interface{}) []interface{} {
 	if len(users) == 0 {
 		return []interface{}{}
 	}
-	
+
 	user := users[0].(types.User)
 	now := time.Now()
-	
+
 	return []interface{}{
 		types.PostDocument{
 			ID:      primitive.NewObjectID(),
@@ -469,18 +468,18 @@ func generateTestReferrals(users []interface{}) []interface{} {
 	if len(users) < 2 {
 		return []interface{}{}
 	}
-	
+
 	user1 := users[0].(types.User)
 	user2 := users[1].(types.User)
-	
+
 	return []interface{}{
 		map[string]interface{}{
-			"_id":          primitive.NewObjectID(),
-			"referrer_id":  user1.ID,
-			"referred_id":  user2.ID,
-			"code":         "TEST123",
-			"status":       "completed",
-			"created_at":   time.Now(),
+			"_id":         primitive.NewObjectID(),
+			"referrer_id": user1.ID,
+			"referred_id": user2.ID,
+			"code":        "TEST123",
+			"status":      "completed",
+			"created_at":  time.Now(),
 		},
 	}
 }

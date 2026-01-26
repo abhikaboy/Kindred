@@ -3,32 +3,35 @@
 # Run manually: pre-commit run --all-files
 
 repos:
-  # Go formatting and linting
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
+  # Go formatting and linting (local hooks for backend/ subdirectory)
+  - repo: local
     hooks:
       - id: go-fmt
         name: Format Go code
-        files: \.go$
-        args: [-w]
+        entry: bash -c 'cd backend && go fmt ./...'
+        language: system
+        files: ^backend/.*\.go$
+        pass_filenames: false
 
       - id: go-vet
         name: Run go vet
-        files: \.go$
+        entry: bash -c 'cd backend && go vet -composites=false ./...'
+        language: system
+        files: ^backend/.*\.go$
+        pass_filenames: false
 
       - id: go-mod-tidy
         name: Run go mod tidy
-        files: (go\.mod|go\.sum)$
+        entry: bash -c 'cd backend && go mod tidy'
+        language: system
+        files: ^backend/(go\.mod|go\.sum)$
         pass_filenames: false
 
-  # Run Go tests
-  - repo: local
-    hooks:
       - id: go-test-short
         name: Run Go unit tests
         entry: bash -c 'cd backend && go test -short ./...'
         language: system
-        files: \.go$
+        files: ^backend/.*\.go$
         pass_filenames: false
 
   # General file checks

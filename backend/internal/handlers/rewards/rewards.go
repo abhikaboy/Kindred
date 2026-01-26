@@ -43,17 +43,17 @@ func (h *Handler) RedeemRewardHuma(ctx context.Context, input *RedeemRewardInput
 	response, err := h.service.RedeemReward(userObjID, rewardType, kudosType)
 	if err != nil {
 		slog.Error("Failed to redeem reward", "error", err, "user_id", userID, "reward_type", rewardType)
-		
+
 		// Check for specific error types
 		if err.Error() == "integration rewards are not yet available" {
 			return nil, huma.Error400BadRequest("integration rewards are not yet available")
 		}
-		
+
 		// Check for insufficient kudos
 		if err.Error()[:19] == "insufficient kudos:" {
 			return nil, huma.Error400BadRequest(err.Error())
 		}
-		
+
 		return nil, huma.Error500InternalServerError("failed to redeem reward")
 	}
 
@@ -73,4 +73,3 @@ func isValidRewardType(rt RewardType) bool {
 		return false
 	}
 }
-

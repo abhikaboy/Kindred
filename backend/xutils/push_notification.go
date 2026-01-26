@@ -87,8 +87,8 @@ func (e *ExpoPushNotificationSender) SendBatchNotification(notifications []Notif
 
 // MockPushNotificationSender is a mock implementation for testing
 type MockPushNotificationSender struct {
-	SentNotifications      []Notification
-	SendNotificationError  error
+	SentNotifications          []Notification
+	SendNotificationError      error
 	SendBatchNotificationError error
 }
 

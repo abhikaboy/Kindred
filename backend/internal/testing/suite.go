@@ -75,7 +75,7 @@ func (s *BaseSuite) GetConnection(index int) interface{} {
 func (s *BaseSuite) InsertOne(collectionName string, document interface{}) {
 	collection := s.Collections[collectionName]
 	s.Require().NotNil(collection, "Collection %s not found", collectionName)
-	
+
 	_, err := collection.InsertOne(s.Ctx, document)
 	s.Require().NoError(err, "Failed to insert document into %s", collectionName)
 }
@@ -84,7 +84,7 @@ func (s *BaseSuite) InsertOne(collectionName string, document interface{}) {
 func (s *BaseSuite) FindOne(collectionName string, filter interface{}, result interface{}) {
 	collection := s.Collections[collectionName]
 	s.Require().NotNil(collection, "Collection %s not found", collectionName)
-	
+
 	err := collection.FindOne(s.Ctx, filter).Decode(result)
 	s.Require().NoError(err, "Failed to find document in %s", collectionName)
 }
@@ -93,10 +93,10 @@ func (s *BaseSuite) FindOne(collectionName string, filter interface{}, result in
 func (s *BaseSuite) CountDocuments(collectionName string, filter interface{}) int64 {
 	collection := s.Collections[collectionName]
 	s.Require().NotNil(collection, "Collection %s not found", collectionName)
-	
+
 	count, err := collection.CountDocuments(s.Ctx, filter)
 	s.Require().NoError(err, "Failed to count documents in %s", collectionName)
-	
+
 	return count
 }
 

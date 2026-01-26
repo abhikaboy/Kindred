@@ -21,7 +21,7 @@ type EncouragementServiceTestSuite struct {
 // SetupTest runs before each test
 func (s *EncouragementServiceTestSuite) SetupTest() {
 	s.BaseSuite.SetupTest()
-	
+
 	// Initialize service with test database
 	s.service = encouragement.NewEncouragementService(s.Collections)
 }
@@ -38,19 +38,19 @@ func TestEncouragementService(t *testing.T) {
 func (s *EncouragementServiceTestSuite) TestGetAllEncouragements_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create test encouragements
 	enc1 := s.createTestEncouragement(user1.ID, user2.ID, "Great job!", "task", "Work", "Complete report", primitive.NewObjectID())
 	enc2 := s.createTestEncouragement(user1.ID, user2.ID, "Keep it up!", "profile", "", "", primitive.NilObjectID)
-	
+
 	// Fetch encouragements for user2
 	results, err := s.service.GetAllEncouragements(user2.ID)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(results)
 	s.GreaterOrEqual(len(results), 2)
-	
+
 	// Verify the encouragements are in the results
 	foundEnc1 := false
 	foundEnc2 := false
@@ -72,10 +72,10 @@ func (s *EncouragementServiceTestSuite) TestGetAllEncouragements_Success() {
 
 func (s *EncouragementServiceTestSuite) TestGetAllEncouragements_EmptyResult() {
 	user := s.GetUser(0)
-	
+
 	// Fetch encouragements for user with no encouragements
 	results, err := s.service.GetAllEncouragements(user.ID)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(results)
@@ -89,13 +89,13 @@ func (s *EncouragementServiceTestSuite) TestGetAllEncouragements_EmptyResult() {
 func (s *EncouragementServiceTestSuite) TestGetEncouragementByID_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create test encouragement
 	encID := s.createTestEncouragement(user1.ID, user2.ID, "Awesome work!", "task", "Personal", "Exercise", primitive.NewObjectID())
-	
+
 	// Fetch it via service
 	result, err := s.service.GetEncouragementByID(encID)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(result)
@@ -108,9 +108,9 @@ func (s *EncouragementServiceTestSuite) TestGetEncouragementByID_Success() {
 
 func (s *EncouragementServiceTestSuite) TestGetEncouragementByID_NotFound() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	result, err := s.service.GetEncouragementByID(fakeID)
-	
+
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
 	s.Nil(result)
@@ -125,23 +125,23 @@ func (s *EncouragementServiceTestSuite) TestGetEncouragementsByTaskAndReceiver_S
 	user2 := s.GetUser(1)
 	user3 := s.GetUser(2)
 	taskID := primitive.NewObjectID()
-	
+
 	// Create multiple encouragements for the same task
 	s.createTestEncouragement(user1.ID, user2.ID, "You can do it!", "task", "Work", "Project", taskID)
 	s.createTestEncouragement(user3.ID, user2.ID, "Keep going!", "task", "Work", "Project", taskID)
-	
+
 	// Create encouragement for different task (should not be returned)
 	differentTaskID := primitive.NewObjectID()
 	s.createTestEncouragement(user1.ID, user2.ID, "Different task", "task", "Work", "Other", differentTaskID)
-	
+
 	// Fetch encouragements for specific task and receiver
 	results, err := s.service.GetEncouragementsByTaskAndReceiver(taskID, user2.ID)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(results)
 	s.Equal(2, len(results))
-	
+
 	// Verify both encouragements are for the correct task
 	for _, enc := range results {
 		s.Equal(taskID, enc.TaskID)
@@ -152,9 +152,9 @@ func (s *EncouragementServiceTestSuite) TestGetEncouragementsByTaskAndReceiver_S
 func (s *EncouragementServiceTestSuite) TestGetEncouragementsByTaskAndReceiver_NoResults() {
 	user := s.GetUser(0)
 	fakeTaskID := testpkg.GenerateObjectID()
-	
+
 	results, err := s.service.GetEncouragementsByTaskAndReceiver(fakeTaskID, user.ID)
-	
+
 	s.NoError(err)
 	s.Empty(results)
 }
@@ -167,14 +167,14 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskScope_Succes
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
 	taskID := primitive.NewObjectID()
-	
+
 	// Ensure sender has encouragement balance
 	s.setUserEncouragementBalance(user1.ID, 5)
-	
+
 	// Get sender info
 	senderInfo, err := s.service.GetSenderInfo(user1.ID)
 	s.NoError(err)
-	
+
 	newEnc := &encouragement.EncouragementDocumentInternal{
 		Sender:       *senderInfo,
 		Receiver:     user2.ID,
@@ -185,9 +185,9 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskScope_Succes
 		TaskID:       taskID,
 		Type:         "message",
 	}
-	
+
 	result, err := s.service.CreateEncouragement(newEnc)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(result)
@@ -197,14 +197,14 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskScope_Succes
 	s.Equal("Morning run", result.TaskName)
 	s.Equal(taskID.Hex(), result.TaskID)
 	s.False(result.Read)
-	
+
 	// Verify it was inserted
 	var found encouragement.EncouragementDocumentInternal
 	encID, _ := primitive.ObjectIDFromHex(result.ID)
 	err = s.Collections["encouragements"].FindOne(s.Ctx, bson.M{"_id": encID}).Decode(&found)
 	s.NoError(err)
 	s.Equal("Great progress!", found.Message)
-	
+
 	// Verify balance was decremented
 	balance, err := s.service.GetUserBalance(user1.ID)
 	s.NoError(err)
@@ -214,14 +214,14 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskScope_Succes
 func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ProfileScope_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Ensure sender has encouragement balance
 	s.setUserEncouragementBalance(user1.ID, 3)
-	
+
 	// Get sender info
 	senderInfo, err := s.service.GetSenderInfo(user1.ID)
 	s.NoError(err)
-	
+
 	newEnc := &encouragement.EncouragementDocumentInternal{
 		Sender:   *senderInfo,
 		Receiver: user2.ID,
@@ -229,9 +229,9 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ProfileScope_Suc
 		Scope:    "profile",
 		Type:     "message",
 	}
-	
+
 	result, err := s.service.CreateEncouragement(newEnc)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(result)
@@ -240,7 +240,7 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ProfileScope_Suc
 	s.Empty(result.CategoryName)
 	s.Empty(result.TaskName)
 	s.Empty(result.TaskID)
-	
+
 	// Verify balance was decremented
 	balance, err := s.service.GetUserBalance(user1.ID)
 	s.NoError(err)
@@ -250,14 +250,14 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ProfileScope_Suc
 func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ImageType_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Ensure sender has encouragement balance
 	s.setUserEncouragementBalance(user1.ID, 2)
-	
+
 	// Get sender info
 	senderInfo, err := s.service.GetSenderInfo(user1.ID)
 	s.NoError(err)
-	
+
 	newEnc := &encouragement.EncouragementDocumentInternal{
 		Sender:   *senderInfo,
 		Receiver: user2.ID,
@@ -265,9 +265,9 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ImageType_Succes
 		Scope:    "profile",
 		Type:     "image",
 	}
-	
+
 	result, err := s.service.CreateEncouragement(newEnc)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(result)
@@ -278,14 +278,14 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ImageType_Succes
 func (s *EncouragementServiceTestSuite) TestCreateEncouragement_InsufficientBalance() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Set balance to 0
 	s.setUserEncouragementBalance(user1.ID, 0)
-	
+
 	// Get sender info
 	senderInfo, err := s.service.GetSenderInfo(user1.ID)
 	s.NoError(err)
-	
+
 	newEnc := &encouragement.EncouragementDocumentInternal{
 		Sender:   *senderInfo,
 		Receiver: user2.ID,
@@ -293,9 +293,9 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_InsufficientBala
 		Scope:    "profile",
 		Type:     "message",
 	}
-	
+
 	result, err := s.service.CreateEncouragement(newEnc)
-	
+
 	// Assertions
 	s.Error(err)
 	s.Nil(result)
@@ -309,10 +309,10 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_InsufficientBala
 func (s *EncouragementServiceTestSuite) TestUpdatePartialEncouragement_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create test encouragement
 	encID := s.createTestEncouragement(user1.ID, user2.ID, "Original message", "task", "Work", "Task", primitive.NewObjectID())
-	
+
 	// Update fields
 	newMessage := "Updated message"
 	newTaskName := "Updated task"
@@ -320,12 +320,12 @@ func (s *EncouragementServiceTestSuite) TestUpdatePartialEncouragement_Success()
 		Message:  &newMessage,
 		TaskName: &newTaskName,
 	}
-	
+
 	err := s.service.UpdatePartialEncouragement(encID, update)
-	
+
 	// Assertions
 	s.NoError(err)
-	
+
 	// Verify the update
 	result, err := s.service.GetEncouragementByID(encID)
 	s.NoError(err)
@@ -337,21 +337,21 @@ func (s *EncouragementServiceTestSuite) TestUpdatePartialEncouragement_Success()
 func (s *EncouragementServiceTestSuite) TestUpdatePartialEncouragement_MarkAsRead() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create test encouragement
 	encID := s.createTestEncouragement(user1.ID, user2.ID, "Message", "profile", "", "", primitive.NilObjectID)
-	
+
 	// Mark as read
 	readStatus := true
 	update := encouragement.UpdateEncouragementDocument{
 		Read: &readStatus,
 	}
-	
+
 	err := s.service.UpdatePartialEncouragement(encID, update)
-	
+
 	// Assertions
 	s.NoError(err)
-	
+
 	// Verify the update
 	result, err := s.service.GetEncouragementByID(encID)
 	s.NoError(err)
@@ -365,16 +365,16 @@ func (s *EncouragementServiceTestSuite) TestUpdatePartialEncouragement_MarkAsRea
 func (s *EncouragementServiceTestSuite) TestDeleteEncouragement_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create test encouragement
 	encID := s.createTestEncouragement(user1.ID, user2.ID, "To be deleted", "profile", "", "", primitive.NilObjectID)
-	
+
 	// Delete it
 	err := s.service.DeleteEncouragement(encID)
-	
+
 	// Assertions
 	s.NoError(err)
-	
+
 	// Verify it's deleted
 	result, err := s.service.GetEncouragementByID(encID)
 	s.Error(err)
@@ -384,10 +384,10 @@ func (s *EncouragementServiceTestSuite) TestDeleteEncouragement_Success() {
 
 func (s *EncouragementServiceTestSuite) TestDeleteEncouragement_NonExistent() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	// Try to delete non-existent encouragement
 	err := s.service.DeleteEncouragement(fakeID)
-	
+
 	// Should not error (MongoDB DeleteOne doesn't error on non-existent docs)
 	s.NoError(err)
 }
@@ -399,25 +399,25 @@ func (s *EncouragementServiceTestSuite) TestDeleteEncouragement_NonExistent() {
 func (s *EncouragementServiceTestSuite) TestMarkEncouragementsAsRead_Success() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create multiple unread encouragements
 	enc1ID := s.createTestEncouragement(user1.ID, user2.ID, "Message 1", "profile", "", "", primitive.NilObjectID)
 	enc2ID := s.createTestEncouragement(user1.ID, user2.ID, "Message 2", "profile", "", "", primitive.NilObjectID)
 	enc3ID := s.createTestEncouragement(user1.ID, user2.ID, "Message 3", "profile", "", "", primitive.NilObjectID)
-	
+
 	// Mark first two as read
 	ids := []primitive.ObjectID{enc1ID, enc2ID}
 	count, err := s.service.MarkEncouragementsAsRead(ids)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.Equal(int64(2), count)
-	
+
 	// Verify they are marked as read
 	enc1, _ := s.service.GetEncouragementByID(enc1ID)
 	enc2, _ := s.service.GetEncouragementByID(enc2ID)
 	enc3, _ := s.service.GetEncouragementByID(enc3ID)
-	
+
 	s.True(enc1.Read)
 	s.True(enc2.Read)
 	s.False(enc3.Read) // Should still be unread
@@ -426,7 +426,7 @@ func (s *EncouragementServiceTestSuite) TestMarkEncouragementsAsRead_Success() {
 func (s *EncouragementServiceTestSuite) TestMarkEncouragementsAsRead_EmptyArray() {
 	ids := []primitive.ObjectID{}
 	count, err := s.service.MarkEncouragementsAsRead(ids)
-	
+
 	// Should succeed with 0 count
 	s.NoError(err)
 	s.Equal(int64(0), count)
@@ -435,10 +435,10 @@ func (s *EncouragementServiceTestSuite) TestMarkEncouragementsAsRead_EmptyArray(
 func (s *EncouragementServiceTestSuite) TestMarkEncouragementsAsRead_NonExistentIDs() {
 	fakeID1 := testpkg.GenerateObjectID()
 	fakeID2 := testpkg.GenerateObjectID()
-	
+
 	ids := []primitive.ObjectID{fakeID1, fakeID2}
 	count, err := s.service.MarkEncouragementsAsRead(ids)
-	
+
 	// Should succeed with 0 count
 	s.NoError(err)
 	s.Equal(int64(0), count)
@@ -450,12 +450,12 @@ func (s *EncouragementServiceTestSuite) TestMarkEncouragementsAsRead_NonExistent
 
 func (s *EncouragementServiceTestSuite) TestGetUserBalance_Success() {
 	user := s.GetUser(0)
-	
+
 	// Set a specific balance
 	s.setUserEncouragementBalance(user.ID, 10)
-	
+
 	balance, err := s.service.GetUserBalance(user.ID)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.Equal(10, balance)
@@ -463,9 +463,9 @@ func (s *EncouragementServiceTestSuite) TestGetUserBalance_Success() {
 
 func (s *EncouragementServiceTestSuite) TestGetUserBalance_NonExistentUser() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	balance, err := s.service.GetUserBalance(fakeID)
-	
+
 	// Should error
 	s.Error(err)
 	s.Equal(0, balance)
@@ -477,19 +477,19 @@ func (s *EncouragementServiceTestSuite) TestGetUserBalance_NonExistentUser() {
 
 func (s *EncouragementServiceTestSuite) TestDecrementUserBalance_Success() {
 	user := s.GetUser(0)
-	
+
 	// Set initial balance
 	s.setUserEncouragementBalance(user.ID, 5)
-	
+
 	// Decrement
 	err := s.service.DecrementUserBalance(user.ID)
 	s.NoError(err)
-	
+
 	// Verify new balance
 	balance, err := s.service.GetUserBalance(user.ID)
 	s.NoError(err)
 	s.Equal(4, balance)
-	
+
 	// Verify kudosRewards.encouragements was incremented
 	var user_doc types.User
 	err = s.Collections["users"].FindOne(s.Ctx, bson.M{"_id": user.ID}).Decode(&user_doc)
@@ -499,14 +499,14 @@ func (s *EncouragementServiceTestSuite) TestDecrementUserBalance_Success() {
 
 func (s *EncouragementServiceTestSuite) TestDecrementUserBalance_CanGoNegative() {
 	user := s.GetUser(0)
-	
+
 	// Set balance to 0
 	s.setUserEncouragementBalance(user.ID, 0)
-	
+
 	// Decrement (should work, going negative)
 	err := s.service.DecrementUserBalance(user.ID)
 	s.NoError(err)
-	
+
 	// Verify new balance is negative
 	balance, err := s.service.GetUserBalance(user.ID)
 	s.NoError(err)
@@ -519,9 +519,9 @@ func (s *EncouragementServiceTestSuite) TestDecrementUserBalance_CanGoNegative()
 
 func (s *EncouragementServiceTestSuite) TestGetSenderInfo_Success() {
 	user := s.GetUser(0)
-	
+
 	senderInfo, err := s.service.GetSenderInfo(user.ID)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(senderInfo)
@@ -532,9 +532,9 @@ func (s *EncouragementServiceTestSuite) TestGetSenderInfo_Success() {
 
 func (s *EncouragementServiceTestSuite) TestGetSenderInfo_NonExistentUser() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	senderInfo, err := s.service.GetSenderInfo(fakeID)
-	
+
 	// Should error
 	s.Error(err)
 	s.Nil(senderInfo)
@@ -549,14 +549,14 @@ func (s *EncouragementServiceTestSuite) TestNotifyEncouragersOfCompletion_Succes
 	user2 := s.GetUser(1) // Task owner
 	user3 := s.GetUser(2) // Another encourager
 	taskID := primitive.NewObjectID()
-	
+
 	// Create encouragements from multiple users
 	s.createTestEncouragement(user1.ID, user2.ID, "You got this!", "task", "Work", "Project", taskID)
 	s.createTestEncouragement(user3.ID, user2.ID, "Keep going!", "task", "Work", "Project", taskID)
-	
+
 	// Notify encouragers
 	err := s.service.NotifyEncouragersOfCompletion(taskID, user2.ID, "Project")
-	
+
 	// Should not error (notifications might fail silently if push tokens are invalid)
 	s.NoError(err)
 }
@@ -564,10 +564,10 @@ func (s *EncouragementServiceTestSuite) TestNotifyEncouragersOfCompletion_Succes
 func (s *EncouragementServiceTestSuite) TestNotifyEncouragersOfCompletion_NoEncouragements() {
 	user := s.GetUser(0)
 	fakeTaskID := testpkg.GenerateObjectID()
-	
+
 	// Try to notify for task with no encouragements
 	err := s.service.NotifyEncouragersOfCompletion(fakeTaskID, user.ID, "Task")
-	
+
 	// Should not error
 	s.NoError(err)
 }
@@ -576,14 +576,14 @@ func (s *EncouragementServiceTestSuite) TestNotifyEncouragersOfCompletion_Duplic
 	user1 := s.GetUser(0) // Encourager
 	user2 := s.GetUser(1) // Task owner
 	taskID := primitive.NewObjectID()
-	
+
 	// Create multiple encouragements from same user
 	s.createTestEncouragement(user1.ID, user2.ID, "First encouragement", "task", "Work", "Project", taskID)
 	s.createTestEncouragement(user1.ID, user2.ID, "Second encouragement", "task", "Work", "Project", taskID)
-	
+
 	// Notify encouragers (should only notify user1 once)
 	err := s.service.NotifyEncouragersOfCompletion(taskID, user2.ID, "Project")
-	
+
 	// Should not error
 	s.NoError(err)
 }
@@ -602,7 +602,7 @@ func (s *EncouragementServiceTestSuite) createTestEncouragement(
 	var sender types.User
 	err := s.Collections["users"].FindOne(s.Ctx, bson.M{"_id": senderID}).Decode(&sender)
 	s.Require().NoError(err)
-	
+
 	enc := encouragement.EncouragementDocumentInternal{
 		ID: primitive.NewObjectID(),
 		Sender: encouragement.EncouragementSenderInternal{
@@ -620,10 +620,10 @@ func (s *EncouragementServiceTestSuite) createTestEncouragement(
 		Read:         false,
 		Type:         "message",
 	}
-	
+
 	_, err = s.Collections["encouragements"].InsertOne(s.Ctx, enc)
 	s.Require().NoError(err)
-	
+
 	return enc.ID
 }
 

@@ -9,7 +9,7 @@ import (
 
 func main() {
 	log.Println("Creating ephemeral test database...")
-	
+
 	// Setup ephemeral test environment
 	testDB, fixtures, err := testing.SetupTestEnvironment()
 	if err != nil {
@@ -41,6 +41,6 @@ func main() {
 
 	// Don't teardown - let user inspect the database
 	log.Printf("\n💡 To inspect: mongosh %s", testDB.DatabaseName)
-	
+
 	os.Exit(0)
 }

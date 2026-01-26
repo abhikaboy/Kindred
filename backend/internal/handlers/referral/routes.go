@@ -58,4 +58,3 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 		Tags:        []string{"referrals"},
 	}, handler.GetAvailableFeaturesHuma)
 }
-

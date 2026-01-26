@@ -156,7 +156,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	// Create notification in the database with thumbnail (first image from post if available)
 	notificationContent := fmt.Sprintf("%s has sent you a congratulation on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
 	var thumbnail string
-	
+
 	// If we have a post ID, try to fetch the post to get the thumbnail
 	if r.PostID != nil && !r.PostID.IsZero() {
 		if s.Posts != nil {
@@ -169,7 +169,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 			}
 		}
 	}
-	
+
 	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id, thumbnail)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created

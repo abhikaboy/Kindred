@@ -36,9 +36,9 @@ func (s *WaitlistServiceTestSuite) TestCreateWaitlist_Success() {
 		Email: "test@example.com",
 		Name:  "Test User",
 	}
-	
+
 	result, err := s.service.CreateWaitlist(newWaitlist)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.NotEmpty(result.ID)
@@ -55,16 +55,16 @@ func (s *WaitlistServiceTestSuite) TestGetWaitlistByID_Success() {
 		Email: "findme@example.com",
 		Name:  "Find Me",
 	}
-	
+
 	created, err := s.service.CreateWaitlist(newWaitlist)
 	s.NoError(err)
-	
+
 	waitlistID, err := primitive.ObjectIDFromHex(created.ID)
 	s.NoError(err)
-	
+
 	// Retrieve it
 	result, err := s.service.GetWaitlistByID(waitlistID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(created.ID, result.ID)
@@ -72,9 +72,9 @@ func (s *WaitlistServiceTestSuite) TestGetWaitlistByID_Success() {
 
 func (s *WaitlistServiceTestSuite) TestGetWaitlistByID_NotFound() {
 	nonExistentID := primitive.NewObjectID()
-	
+
 	result, err := s.service.GetWaitlistByID(nonExistentID)
-	
+
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
 	s.Nil(result)
@@ -86,7 +86,7 @@ func (s *WaitlistServiceTestSuite) TestGetWaitlistByID_NotFound() {
 
 func (s *WaitlistServiceTestSuite) TestGetAllWaitlists_Success() {
 	waitlists, err := s.service.GetAllWaitlists()
-	
+
 	s.NoError(err)
 	s.NotNil(waitlists)
 	s.GreaterOrEqual(len(waitlists), 0)
@@ -102,18 +102,18 @@ func (s *WaitlistServiceTestSuite) TestDeleteWaitlist_Success() {
 		Email: "delete@example.com",
 		Name:  "Delete Me",
 	}
-	
+
 	created, err := s.service.CreateWaitlist(newWaitlist)
 	s.NoError(err)
-	
+
 	waitlistID, err := primitive.ObjectIDFromHex(created.ID)
 	s.NoError(err)
-	
+
 	// Delete it
 	err = s.service.DeleteWaitlist(waitlistID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify it's deleted
 	_, err = s.service.GetWaitlistByID(waitlistID)
 	s.Error(err)

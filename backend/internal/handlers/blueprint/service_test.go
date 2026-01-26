@@ -21,7 +21,7 @@ type BlueprintServiceTestSuite struct {
 // SetupTest runs before each test
 func (s *BlueprintServiceTestSuite) SetupTest() {
 	s.BaseSuite.SetupTest()
-	
+
 	// Initialize service with test database
 	s.service = Blueprint.NewService(s.Collections)
 }
@@ -78,10 +78,10 @@ func (s *BlueprintServiceTestSuite) createTestBlueprint(name string, owner *type
 			ProfilePicture: owner.ProfilePicture,
 		},
 	}
-	
+
 	_, err := s.Collections["blueprints"].InsertOne(s.Ctx, blueprint)
 	s.Require().NoError(err)
-	
+
 	return blueprint
 }
 
@@ -91,19 +91,19 @@ func (s *BlueprintServiceTestSuite) createTestBlueprint(name string, owner *type
 
 func (s *BlueprintServiceTestSuite) TestGetAllBlueprints_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create test blueprints
 	bp1 := s.createTestBlueprint("Blueprint 1", user)
 	bp2 := s.createTestBlueprint("Blueprint 2", user)
-	
+
 	// Fetch all blueprints
 	result, err := s.service.GetAllBlueprints()
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(result)
 	s.GreaterOrEqual(len(result), 2)
-	
+
 	// Find our test blueprints in the result
 	foundBp1 := false
 	foundBp2 := false
@@ -125,9 +125,9 @@ func (s *BlueprintServiceTestSuite) TestGetAllBlueprints_EmptyCollection() {
 	// Clear all blueprints
 	_, err := s.Collections["blueprints"].DeleteMany(s.Ctx, bson.M{})
 	s.Require().NoError(err)
-	
+
 	result, err := s.service.GetAllBlueprints()
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(0, len(result))
@@ -140,9 +140,9 @@ func (s *BlueprintServiceTestSuite) TestGetAllBlueprints_EmptyCollection() {
 func (s *BlueprintServiceTestSuite) TestGetBlueprintByID_Success() {
 	user := s.GetUser(0)
 	blueprint := s.createTestBlueprint("Test Blueprint", user)
-	
+
 	result, err := s.service.GetBlueprintByID(blueprint.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(blueprint.ID.Hex(), result.ID)
@@ -153,9 +153,9 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintByID_Success() {
 
 func (s *BlueprintServiceTestSuite) TestGetBlueprintByID_NotFound() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	result, err := s.service.GetBlueprintByID(fakeID)
-	
+
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
 	s.Nil(result)
@@ -167,7 +167,7 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintByID_NotFound() {
 
 func (s *BlueprintServiceTestSuite) TestCreateBlueprint_Success() {
 	user := s.GetUser(0)
-	
+
 	newBlueprint := &Blueprint.BlueprintDocumentInternal{
 		Banner:      "https://example.com/new-banner.jpg",
 		Name:        "New Blueprint",
@@ -189,9 +189,9 @@ func (s *BlueprintServiceTestSuite) TestCreateBlueprint_Success() {
 			ID: user.ID,
 		},
 	}
-	
+
 	result, err := s.service.CreateBlueprint(newBlueprint)
-	
+
 	// Assertions
 	s.NoError(err)
 	s.NotNil(result)
@@ -201,7 +201,7 @@ func (s *BlueprintServiceTestSuite) TestCreateBlueprint_Success() {
 	s.Equal(int64(0), result.SubscribersCount)
 	s.NotNil(result.Owner)
 	s.Equal(user.Handle, result.Owner.Handle)
-	
+
 	// Verify it was inserted in database
 	var found Blueprint.BlueprintDocumentInternal
 	objID, err := primitive.ObjectIDFromHex(result.ID)
@@ -213,7 +213,7 @@ func (s *BlueprintServiceTestSuite) TestCreateBlueprint_Success() {
 
 func (s *BlueprintServiceTestSuite) TestCreateBlueprint_WithCategories() {
 	user := s.GetUser(0)
-	
+
 	newBlueprint := &Blueprint.BlueprintDocumentInternal{
 		Banner:      "https://example.com/banner.jpg",
 		Name:        "Blueprint with Categories",
@@ -257,9 +257,9 @@ func (s *BlueprintServiceTestSuite) TestCreateBlueprint_WithCategories() {
 			ID: user.ID,
 		},
 	}
-	
+
 	result, err := s.service.CreateBlueprint(newBlueprint)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(2, len(result.Categories))
@@ -274,18 +274,18 @@ func (s *BlueprintServiceTestSuite) TestCreateBlueprint_WithCategories() {
 func (s *BlueprintServiceTestSuite) TestUpdatePartialBlueprint_Success() {
 	user := s.GetUser(0)
 	blueprint := s.createTestBlueprint("Original Name", user)
-	
+
 	newName := "Updated Name"
 	newDescription := "Updated description"
 	update := Blueprint.UpdateBlueprintDocument{
 		Name:        &newName,
 		Description: &newDescription,
 	}
-	
+
 	err := s.service.UpdatePartialBlueprint(blueprint.ID, update)
-	
+
 	s.NoError(err)
-	
+
 	// Verify update
 	var updated Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&updated)
@@ -299,16 +299,16 @@ func (s *BlueprintServiceTestSuite) TestUpdatePartialBlueprint_OnlyName() {
 	user := s.GetUser(0)
 	blueprint := s.createTestBlueprint("Original Name", user)
 	originalDesc := blueprint.Description
-	
+
 	newName := "Only Name Updated"
 	update := Blueprint.UpdateBlueprintDocument{
 		Name: &newName,
 	}
-	
+
 	err := s.service.UpdatePartialBlueprint(blueprint.ID, update)
-	
+
 	s.NoError(err)
-	
+
 	// Verify only name changed
 	var updated Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&updated)
@@ -319,14 +319,14 @@ func (s *BlueprintServiceTestSuite) TestUpdatePartialBlueprint_OnlyName() {
 
 func (s *BlueprintServiceTestSuite) TestUpdatePartialBlueprint_NotFound() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	newName := "Updated Name"
 	update := Blueprint.UpdateBlueprintDocument{
 		Name: &newName,
 	}
-	
+
 	err := s.service.UpdatePartialBlueprint(fakeID, update)
-	
+
 	// Should not error even if not found (UpdateOne returns 0 matched)
 	s.NoError(err)
 }
@@ -338,11 +338,11 @@ func (s *BlueprintServiceTestSuite) TestUpdatePartialBlueprint_NotFound() {
 func (s *BlueprintServiceTestSuite) TestDeleteBlueprint_Success() {
 	user := s.GetUser(0)
 	blueprint := s.createTestBlueprint("To Delete", user)
-	
+
 	err := s.service.DeleteBlueprint(blueprint.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify deletion
 	var found Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&found)
@@ -352,9 +352,9 @@ func (s *BlueprintServiceTestSuite) TestDeleteBlueprint_Success() {
 
 func (s *BlueprintServiceTestSuite) TestDeleteBlueprint_NotFound() {
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	err := s.service.DeleteBlueprint(fakeID)
-	
+
 	// Should not error even if not found (DeleteOne returns 0 deleted)
 	s.NoError(err)
 }
@@ -367,18 +367,18 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_Success() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
 	blueprint := s.createTestBlueprint("Subscribe Test", user)
-	
+
 	err := s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify subscription
 	var updated Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&updated)
 	s.NoError(err)
 	s.Equal(int64(1), updated.SubscribersCount)
 	s.Contains(updated.Subscribers, subscriber.ID)
-	
+
 	// Verify categories were created for the subscriber
 	count, err := s.Collections["categories"].CountDocuments(s.Ctx, bson.M{
 		"user":        subscriber.ID,
@@ -393,18 +393,18 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_AlreadySubscribed()
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
 	blueprint := s.createTestBlueprint("Subscribe Test", user)
-	
+
 	// First subscription
 	err := s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Try to subscribe again
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
-	
+
 	// Should return error (already subscribed)
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
-	
+
 	// Verify count didn't increase
 	var updated Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&updated)
@@ -415,9 +415,9 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_AlreadySubscribed()
 func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_NotFound() {
 	subscriber := s.GetUser(1)
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	err := s.service.SubscribeToBlueprint(fakeID, subscriber.ID)
-	
+
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
 }
@@ -427,15 +427,15 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_MultipleSubscribers
 	subscriber1 := s.GetUser(1)
 	subscriber2 := s.GetUser(2)
 	blueprint := s.createTestBlueprint("Multi Subscribe Test", user)
-	
+
 	// First subscriber
 	err := s.service.SubscribeToBlueprint(blueprint.ID, subscriber1.ID)
 	s.NoError(err)
-	
+
 	// Second subscriber
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber2.ID)
 	s.NoError(err)
-	
+
 	// Verify both subscriptions
 	var updated Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&updated)
@@ -453,22 +453,22 @@ func (s *BlueprintServiceTestSuite) TestUnsubscribeFromBlueprint_Success() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
 	blueprint := s.createTestBlueprint("Unsubscribe Test", user)
-	
+
 	// First subscribe
 	err := s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Then unsubscribe
 	err = s.service.UnsubscribeFromBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Verify unsubscription
 	var updated Blueprint.BlueprintDocumentInternal
 	err = s.Collections["blueprints"].FindOne(s.Ctx, bson.M{"_id": blueprint.ID}).Decode(&updated)
 	s.NoError(err)
 	s.Equal(int64(0), updated.SubscribersCount)
 	s.NotContains(updated.Subscribers, subscriber.ID)
-	
+
 	// Verify categories were deleted
 	count, err := s.Collections["categories"].CountDocuments(s.Ctx, bson.M{
 		"user":        subscriber.ID,
@@ -483,10 +483,10 @@ func (s *BlueprintServiceTestSuite) TestUnsubscribeFromBlueprint_NotSubscribed()
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
 	blueprint := s.createTestBlueprint("Unsubscribe Test", user)
-	
+
 	// Try to unsubscribe without subscribing first
 	err := s.service.UnsubscribeFromBlueprint(blueprint.ID, subscriber.ID)
-	
+
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
 }
@@ -494,9 +494,9 @@ func (s *BlueprintServiceTestSuite) TestUnsubscribeFromBlueprint_NotSubscribed()
 func (s *BlueprintServiceTestSuite) TestUnsubscribeFromBlueprint_NotFound() {
 	subscriber := s.GetUser(1)
 	fakeID := testpkg.GenerateObjectID()
-	
+
 	err := s.service.UnsubscribeFromBlueprint(fakeID, subscriber.ID)
-	
+
 	s.Error(err)
 	s.Equal(mongo.ErrNoDocuments, err)
 }
@@ -508,24 +508,24 @@ func (s *BlueprintServiceTestSuite) TestUnsubscribeFromBlueprint_NotFound() {
 func (s *BlueprintServiceTestSuite) TestGetUserSubscribedBlueprints_Success() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
-	
+
 	// Create and subscribe to multiple blueprints
 	bp1 := s.createTestBlueprint("Subscribed Blueprint 1", user)
 	bp2 := s.createTestBlueprint("Subscribed Blueprint 2", user)
 	bp3 := s.createTestBlueprint("Not Subscribed Blueprint", user)
-	
+
 	err := s.service.SubscribeToBlueprint(bp1.ID, subscriber.ID)
 	s.NoError(err)
 	err = s.service.SubscribeToBlueprint(bp2.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Get subscribed blueprints
 	result, err := s.service.GetUserSubscribedBlueprints(subscriber.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(2, len(result))
-	
+
 	// Verify correct blueprints returned
 	foundBp1 := false
 	foundBp2 := false
@@ -548,9 +548,9 @@ func (s *BlueprintServiceTestSuite) TestGetUserSubscribedBlueprints_Success() {
 
 func (s *BlueprintServiceTestSuite) TestGetUserSubscribedBlueprints_NoSubscriptions() {
 	subscriber := s.GetUser(1)
-	
+
 	result, err := s.service.GetUserSubscribedBlueprints(subscriber.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(0, len(result))
@@ -563,19 +563,19 @@ func (s *BlueprintServiceTestSuite) TestGetUserSubscribedBlueprints_NoSubscripti
 func (s *BlueprintServiceTestSuite) TestGetBlueprintsByCreator_Success() {
 	creator := s.GetUser(0)
 	otherUser := s.GetUser(1)
-	
+
 	// Create blueprints by different users
 	bp1 := s.createTestBlueprint("Creator Blueprint 1", creator)
 	bp2 := s.createTestBlueprint("Creator Blueprint 2", creator)
 	bp3 := s.createTestBlueprint("Other User Blueprint", otherUser)
-	
+
 	// Get blueprints by creator
 	result, err := s.service.GetBlueprintsByCreator(creator.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(2, len(result))
-	
+
 	// Verify correct blueprints returned
 	foundBp1 := false
 	foundBp2 := false
@@ -598,9 +598,9 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintsByCreator_Success() {
 
 func (s *BlueprintServiceTestSuite) TestGetBlueprintsByCreator_NoBlueprints() {
 	creator := s.GetUser(2)
-	
+
 	result, err := s.service.GetBlueprintsByCreator(creator.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal(0, len(result))
@@ -612,34 +612,34 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintsByCreator_NoBlueprints() {
 
 func (s *BlueprintServiceTestSuite) TestGetBlueprintByCategory_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create blueprints with different categories
 	bp1 := s.createTestBlueprint("Productivity Blueprint", user)
 	bp1.Category = "productivity"
 	_, err := s.Collections["blueprints"].UpdateOne(s.Ctx, bson.M{"_id": bp1.ID}, bson.M{"$set": bson.M{"category": "productivity"}})
 	s.NoError(err)
-	
+
 	bp2 := s.createTestBlueprint("Health Blueprint", user)
 	bp2.Category = "health"
 	_, err = s.Collections["blueprints"].UpdateOne(s.Ctx, bson.M{"_id": bp2.ID}, bson.M{"$set": bson.M{"category": "health"}})
 	s.NoError(err)
-	
+
 	bp3 := s.createTestBlueprint("Another Productivity Blueprint", user)
 	bp3.Category = "productivity"
 	_, err = s.Collections["blueprints"].UpdateOne(s.Ctx, bson.M{"_id": bp3.ID}, bson.M{"$set": bson.M{"category": "productivity"}})
 	s.NoError(err)
-	
+
 	// Get blueprints grouped by category
 	result, err := s.service.GetBlueprintByCategory()
-	
+
 	s.NoError(err)
 	s.NotNil(result)
 	s.GreaterOrEqual(len(result), 2)
-	
+
 	// Find productivity and health categories
 	var productivityGroup *Blueprint.BlueprintCategoryGroup
 	var healthGroup *Blueprint.BlueprintCategoryGroup
-	
+
 	for i := range result {
 		if result[i].Category == "productivity" {
 			productivityGroup = &result[i]
@@ -648,7 +648,7 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintByCategory_Success() {
 			healthGroup = &result[i]
 		}
 	}
-	
+
 	s.NotNil(productivityGroup, "Should have productivity category")
 	s.NotNil(healthGroup, "Should have health category")
 	s.GreaterOrEqual(len(productivityGroup.Blueprints), 2)
@@ -657,17 +657,17 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintByCategory_Success() {
 
 func (s *BlueprintServiceTestSuite) TestGetBlueprintByCategory_EmptyCategory() {
 	user := s.GetUser(0)
-	
+
 	// Create blueprint with empty category
 	bp := s.createTestBlueprint("No Category Blueprint", user)
 	_, err := s.Collections["blueprints"].UpdateOne(s.Ctx, bson.M{"_id": bp.ID}, bson.M{"$set": bson.M{"category": ""}})
 	s.NoError(err)
-	
+
 	result, err := s.service.GetBlueprintByCategory()
-	
+
 	s.NoError(err)
 	s.NotNil(result)
-	
+
 	// Should have "Uncategorized" group
 	var uncategorizedGroup *Blueprint.BlueprintCategoryGroup
 	for i := range result {
@@ -676,7 +676,7 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintByCategory_EmptyCategory() {
 			break
 		}
 	}
-	
+
 	s.NotNil(uncategorizedGroup, "Should have Uncategorized category")
 	s.GreaterOrEqual(len(uncategorizedGroup.Blueprints), 1)
 }
@@ -687,16 +687,16 @@ func (s *BlueprintServiceTestSuite) TestGetBlueprintByCategory_EmptyCategory() {
 
 func (s *BlueprintServiceTestSuite) TestSearchBlueprints_ByName() {
 	user := s.GetUser(0)
-	
+
 	// Create blueprints with searchable names
 	s.createTestBlueprint("Morning Routine Blueprint", user)
 	s.createTestBlueprint("Evening Routine Blueprint", user)
 	s.createTestBlueprint("Workout Plan", user)
-	
+
 	// Note: This test may fail if MongoDB Atlas Search is not configured
 	// In that case, we just verify the function doesn't crash
 	result, err := s.service.SearchBlueprints("routine")
-	
+
 	// We can't guarantee search results without Atlas Search configured
 	// So we just verify no error and result is not nil
 	if err == nil {
@@ -706,7 +706,7 @@ func (s *BlueprintServiceTestSuite) TestSearchBlueprints_ByName() {
 
 func (s *BlueprintServiceTestSuite) TestSearchBlueprints_EmptyQuery() {
 	result, err := s.service.SearchBlueprints("")
-	
+
 	// Should handle empty query gracefully
 	if err == nil {
 		s.NotNil(result)
@@ -719,15 +719,15 @@ func (s *BlueprintServiceTestSuite) TestSearchBlueprints_EmptyQuery() {
 
 func (s *BlueprintServiceTestSuite) TestAutocompleteBlueprints_Success() {
 	user := s.GetUser(0)
-	
+
 	// Create blueprints with autocomplete-able names
 	s.createTestBlueprint("Morning Meditation", user)
 	s.createTestBlueprint("Morning Exercise", user)
 	s.createTestBlueprint("Evening Routine", user)
-	
+
 	// Note: This test may fail if MongoDB Atlas Search is not configured
 	result, err := s.service.AutocompleteBlueprints("morn")
-	
+
 	// We can't guarantee search results without Atlas Search configured
 	if err == nil {
 		s.NotNil(result)
@@ -736,7 +736,7 @@ func (s *BlueprintServiceTestSuite) TestAutocompleteBlueprints_Success() {
 
 func (s *BlueprintServiceTestSuite) TestAutocompleteBlueprints_ShortQuery() {
 	result, err := s.service.AutocompleteBlueprints("m")
-	
+
 	// Should handle short query gracefully
 	if err == nil {
 		s.NotNil(result)
@@ -750,12 +750,12 @@ func (s *BlueprintServiceTestSuite) TestAutocompleteBlueprints_ShortQuery() {
 func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithTaskTimeFields() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
-	
+
 	now := time.Now()
 	startDate := now.Add(24 * time.Hour)
 	startTime := now.Add(2 * time.Hour)
 	deadline := now.Add(48 * time.Hour)
-	
+
 	// Create blueprint with tasks that have time-related fields
 	blueprint := &Blueprint.BlueprintDocumentInternal{
 		ID:          primitive.NewObjectID(),
@@ -790,13 +790,13 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithTaskTimeFields(
 						Deadline:   &deadline,
 						Reminders: []*types.Reminder{
 							{
-								TriggerTime:    now.Add(1 * time.Hour),
-								Type:           "before_start",
-								Sent:           false,
-								BeforeStart:    true,
-								CustomMessage:  testpkg.StringPtr("Test reminder"),
-								Sound:          testpkg.StringPtr("default"),
-								Vibration:      true,
+								TriggerTime:   now.Add(1 * time.Hour),
+								Type:          "before_start",
+								Sent:          false,
+								BeforeStart:   true,
+								CustomMessage: testpkg.StringPtr("Test reminder"),
+								Sound:         testpkg.StringPtr("default"),
+								Vibration:     true,
 							},
 						},
 					},
@@ -813,14 +813,14 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithTaskTimeFields(
 			ProfilePicture: user.ProfilePicture,
 		},
 	}
-	
+
 	_, err := s.Collections["blueprints"].InsertOne(s.Ctx, blueprint)
 	s.Require().NoError(err)
-	
+
 	// Subscribe to blueprint
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Verify categories were created with adjusted time fields
 	var categories []types.CategoryDocument
 	cursor, err := s.Collections["categories"].Find(s.Ctx, bson.M{
@@ -832,19 +832,19 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithTaskTimeFields(
 	err = cursor.All(s.Ctx, &categories)
 	s.NoError(err)
 	s.Equal(1, len(categories))
-	
+
 	// Verify task was created with time fields
 	category := categories[0]
 	s.Equal(1, len(category.Tasks))
 	task := category.Tasks[0]
-	
+
 	s.Equal("Task with all time fields", task.Content)
 	s.NotNil(task.StartDate)
 	s.NotNil(task.StartTime)
 	s.NotNil(task.Deadline)
 	s.NotNil(task.Reminders)
 	s.Equal(1, len(task.Reminders))
-	
+
 	// Verify reminder was processed
 	reminder := task.Reminders[0]
 	s.Equal("before_start", reminder.Type)
@@ -855,9 +855,9 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithTaskTimeFields(
 func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithRecurringTasks() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
-	
+
 	now := time.Now()
-	
+
 	// Create blueprint with recurring tasks
 	blueprint := &Blueprint.BlueprintDocumentInternal{
 		ID:          primitive.NewObjectID(),
@@ -907,14 +907,14 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithRecurringTasks(
 			ProfilePicture: user.ProfilePicture,
 		},
 	}
-	
+
 	_, err := s.Collections["blueprints"].InsertOne(s.Ctx, blueprint)
 	s.Require().NoError(err)
-	
+
 	// Subscribe to blueprint
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Verify recurring task was created properly
 	var categories []types.CategoryDocument
 	cursor, err := s.Collections["categories"].Find(s.Ctx, bson.M{
@@ -925,7 +925,7 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithRecurringTasks(
 	err = cursor.All(s.Ctx, &categories)
 	s.NoError(err)
 	s.Equal(1, len(categories))
-	
+
 	task := categories[0].Tasks[0]
 	s.True(task.Recurring)
 	s.Equal("daily", task.RecurType)
@@ -937,9 +937,9 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithRecurringTasks(
 func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleReminders() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
-	
+
 	now := time.Now()
-	
+
 	// Create blueprint with task that has multiple reminders
 	blueprint := &Blueprint.BlueprintDocumentInternal{
 		ID:          primitive.NewObjectID(),
@@ -970,22 +970,22 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleReminde
 						UserID:     user.ID,
 						Reminders: []*types.Reminder{
 							{
-								TriggerTime:    now.Add(1 * time.Hour),
-								Type:           "before_start",
-								Sent:           true, // Should be reset to false
-								BeforeStart:    true,
-								CustomMessage:  testpkg.StringPtr("First reminder"),
-								Sound:          testpkg.StringPtr("default"),
-								Vibration:      true,
+								TriggerTime:   now.Add(1 * time.Hour),
+								Type:          "before_start",
+								Sent:          true, // Should be reset to false
+								BeforeStart:   true,
+								CustomMessage: testpkg.StringPtr("First reminder"),
+								Sound:         testpkg.StringPtr("default"),
+								Vibration:     true,
 							},
 							{
-								TriggerTime:     now.Add(2 * time.Hour),
-								Type:            "before_deadline",
-								Sent:            true, // Should be reset to false
-								BeforeDeadline:  true,
-								CustomMessage:   testpkg.StringPtr("Second reminder"),
-								Sound:           testpkg.StringPtr("alert"),
-								Vibration:       false,
+								TriggerTime:    now.Add(2 * time.Hour),
+								Type:           "before_deadline",
+								Sent:           true, // Should be reset to false
+								BeforeDeadline: true,
+								CustomMessage:  testpkg.StringPtr("Second reminder"),
+								Sound:          testpkg.StringPtr("alert"),
+								Vibration:      false,
 							},
 							nil, // Test nil reminder handling
 						},
@@ -1003,14 +1003,14 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleReminde
 			ProfilePicture: user.ProfilePicture,
 		},
 	}
-	
+
 	_, err := s.Collections["blueprints"].InsertOne(s.Ctx, blueprint)
 	s.Require().NoError(err)
-	
+
 	// Subscribe to blueprint
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Verify reminders were created and sent status was reset
 	var categories []types.CategoryDocument
 	cursor, err := s.Collections["categories"].Find(s.Ctx, bson.M{
@@ -1020,21 +1020,21 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleReminde
 	s.NoError(err)
 	err = cursor.All(s.Ctx, &categories)
 	s.NoError(err)
-	
+
 	task := categories[0].Tasks[0]
 	s.NotNil(task.Reminders)
 	s.Equal(3, len(task.Reminders))
-	
+
 	// Check first reminder
 	s.NotNil(task.Reminders[0])
 	s.False(task.Reminders[0].Sent, "Sent status should be reset to false")
 	s.Equal("before_start", task.Reminders[0].Type)
-	
+
 	// Check second reminder
 	s.NotNil(task.Reminders[1])
 	s.False(task.Reminders[1].Sent, "Sent status should be reset to false")
 	s.Equal("before_deadline", task.Reminders[1].Type)
-	
+
 	// Check nil reminder
 	s.Nil(task.Reminders[2])
 }
@@ -1042,9 +1042,9 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleReminde
 func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithChecklist() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
-	
+
 	now := time.Now()
-	
+
 	// Create blueprint with task that has checklist
 	blueprint := &Blueprint.BlueprintDocumentInternal{
 		ID:          primitive.NewObjectID(),
@@ -1098,14 +1098,14 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithChecklist() {
 			ProfilePicture: user.ProfilePicture,
 		},
 	}
-	
+
 	_, err := s.Collections["blueprints"].InsertOne(s.Ctx, blueprint)
 	s.Require().NoError(err)
-	
+
 	// Subscribe to blueprint
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Verify checklist was copied
 	var categories []types.CategoryDocument
 	cursor, err := s.Collections["categories"].Find(s.Ctx, bson.M{
@@ -1115,7 +1115,7 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithChecklist() {
 	s.NoError(err)
 	err = cursor.All(s.Ctx, &categories)
 	s.NoError(err)
-	
+
 	task := categories[0].Tasks[0]
 	s.NotNil(task.Checklist)
 	s.Equal(2, len(task.Checklist))
@@ -1127,9 +1127,9 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithChecklist() {
 func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleCategories() {
 	user := s.GetUser(0)
 	subscriber := s.GetUser(1)
-	
+
 	now := time.Now()
-	
+
 	// Create blueprint with multiple categories
 	blueprint := &Blueprint.BlueprintDocumentInternal{
 		ID:          primitive.NewObjectID(),
@@ -1205,14 +1205,14 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleCategor
 			ProfilePicture: user.ProfilePicture,
 		},
 	}
-	
+
 	_, err := s.Collections["blueprints"].InsertOne(s.Ctx, blueprint)
 	s.Require().NoError(err)
-	
+
 	// Subscribe to blueprint
 	err = s.service.SubscribeToBlueprint(blueprint.ID, subscriber.ID)
 	s.NoError(err)
-	
+
 	// Verify all categories were created
 	count, err := s.Collections["categories"].CountDocuments(s.Ctx, bson.M{
 		"user":        subscriber.ID,
@@ -1221,7 +1221,7 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleCategor
 	})
 	s.NoError(err)
 	s.Equal(int64(2), count)
-	
+
 	// Verify tasks in each category
 	var categories []types.CategoryDocument
 	cursor, err := s.Collections["categories"].Find(s.Ctx, bson.M{
@@ -1231,7 +1231,7 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleCategor
 	s.NoError(err)
 	err = cursor.All(s.Ctx, &categories)
 	s.NoError(err)
-	
+
 	// Find morning and evening categories
 	var morningCat, eveningCat *types.CategoryDocument
 	for i := range categories {
@@ -1241,7 +1241,7 @@ func (s *BlueprintServiceTestSuite) TestSubscribeToBlueprint_WithMultipleCategor
 			eveningCat = &categories[i]
 		}
 	}
-	
+
 	s.NotNil(morningCat)
 	s.NotNil(eveningCat)
 	s.Equal(1, len(morningCat.Tasks))

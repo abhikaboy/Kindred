@@ -15,4 +15,3 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 	// Register all rewards operations
 	RegisterRewardsOperations(api, &handler)
 }
-

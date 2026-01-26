@@ -176,15 +176,15 @@ func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection, unspl
 			}
 
 			return FetchUnsplashImageOutput{
-				URL:            photo.URLs.Regular,
-				ThumbnailURL:   photo.URLs.Small,
-				Description:    photo.Description,
-				AltDescription: photo.AltDescription,
-				Color:          photo.Color,
-				Photographer:   photo.User.Name,
+				URL:                  photo.URLs.Regular,
+				ThumbnailURL:         photo.URLs.Small,
+				Description:          photo.Description,
+				AltDescription:       photo.AltDescription,
+				Color:                photo.Color,
+				Photographer:         photo.User.Name,
 				PhotographerUsername: photo.User.Username,
-				Width:          photo.Width,
-				Height:         photo.Height,
+				Width:                photo.Width,
+				Height:               photo.Height,
 			}, nil
 		},
 	)

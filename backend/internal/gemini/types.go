@@ -165,13 +165,13 @@ type GenerateBlueprintOutput struct {
 
 // BlueprintData represents the structure of a generated blueprint
 type BlueprintData struct {
-	Name        string                  `json:"name" jsonschema_description:"Name of the blueprint (e.g., 'Morning Routine', 'Meal Prep Blueprint')"`
-	Description string                  `json:"description" jsonschema_description:"Detailed description of the blueprint and its purpose"`
-	Banner      string                  `json:"banner" jsonschema_description:"Banner image URL or color scheme suggestion"`
-	Tags        []string                `json:"tags" jsonschema_description:"Tags for categorizing the blueprint (e.g., 'productivity', 'health', 'morning')"`
-	Duration    string                  `json:"duration" jsonschema_description:"Expected duration to complete all tasks in the blueprint (e.g., '1h', '30m')"`
-	Category    string                  `json:"category" jsonschema_description:"Primary category of the blueprint (e.g., 'productivity', 'health', 'learning')"`
-	Categories  []BlueprintCategory     `json:"categories" jsonschema_description:"Categories containing organized tasks for this blueprint"`
+	Name        string              `json:"name" jsonschema_description:"Name of the blueprint (e.g., 'Morning Routine', 'Meal Prep Blueprint')"`
+	Description string              `json:"description" jsonschema_description:"Detailed description of the blueprint and its purpose"`
+	Banner      string              `json:"banner" jsonschema_description:"Banner image URL or color scheme suggestion"`
+	Tags        []string            `json:"tags" jsonschema_description:"Tags for categorizing the blueprint (e.g., 'productivity', 'health', 'morning')"`
+	Duration    string              `json:"duration" jsonschema_description:"Expected duration to complete all tasks in the blueprint (e.g., '1h', '30m')"`
+	Category    string              `json:"category" jsonschema_description:"Primary category of the blueprint (e.g., 'productivity', 'health', 'learning')"`
+	Categories  []BlueprintCategory `json:"categories" jsonschema_description:"Categories containing organized tasks for this blueprint"`
 }
 
 // BlueprintCategory represents a category within a blueprint with its tasks

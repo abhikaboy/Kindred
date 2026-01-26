@@ -33,7 +33,7 @@ func TestProfileService(t *testing.T) {
 
 func (s *ProfileServiceTestSuite) TestGetAllProfiles_Success() {
 	profiles, err := s.service.GetAllProfiles()
-	
+
 	s.NoError(err)
 	s.NotNil(profiles)
 	s.GreaterOrEqual(len(profiles), 1) // Should have at least fixture users
@@ -45,9 +45,9 @@ func (s *ProfileServiceTestSuite) TestGetAllProfiles_Success() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileByID_Success() {
 	user := s.GetUser(0)
-	
+
 	profile, err := s.service.GetProfileByID(user.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(profile)
 	s.Equal(user.ID, profile.ID)
@@ -56,9 +56,9 @@ func (s *ProfileServiceTestSuite) TestGetProfileByID_Success() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileByID_NotFound() {
 	invalidID := primitive.NewObjectID()
-	
+
 	profile, err := s.service.GetProfileByID(invalidID)
-	
+
 	s.Error(err)
 	s.Nil(profile)
 }
@@ -69,9 +69,9 @@ func (s *ProfileServiceTestSuite) TestGetProfileByID_NotFound() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileByEmail_Success() {
 	user := s.GetUser(0)
-	
+
 	profile, err := s.service.GetProfileByEmail(user.Email)
-	
+
 	s.NoError(err)
 	s.NotNil(profile)
 	s.Equal(user.ID, profile.ID)
@@ -79,7 +79,7 @@ func (s *ProfileServiceTestSuite) TestGetProfileByEmail_Success() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileByEmail_NotFound() {
 	profile, err := s.service.GetProfileByEmail("nonexistent@example.com")
-	
+
 	s.Error(err)
 	s.Nil(profile)
 }
@@ -90,15 +90,15 @@ func (s *ProfileServiceTestSuite) TestGetProfileByEmail_NotFound() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileByPhone_Success() {
 	user := s.GetUser(0)
-	
+
 	// Set a phone number for the test user
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{"phone": "+1234567890"},
 	})
 	s.NoError(err)
-	
+
 	profile, err := s.service.GetProfileByPhone("+1234567890")
-	
+
 	s.NoError(err)
 	s.NotNil(profile)
 	s.Equal(user.ID, profile.ID)
@@ -106,7 +106,7 @@ func (s *ProfileServiceTestSuite) TestGetProfileByPhone_Success() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileByPhone_NotFound() {
 	profile, err := s.service.GetProfileByPhone("+9999999999")
-	
+
 	s.Error(err)
 	s.Nil(profile)
 }
@@ -140,16 +140,16 @@ func (s *ProfileServiceTestSuite) TestAutocompleteProfiles_Success() {
 
 func (s *ProfileServiceTestSuite) TestUpdatePartialProfile_Success() {
 	user := s.GetUser(0)
-	
+
 	newDisplayName := "Updated Name"
 	update := UpdateProfileDocument{
 		DisplayName: newDisplayName,
 	}
-	
+
 	err := s.service.UpdatePartialProfile(user.ID, update)
-	
+
 	s.NoError(err)
-	
+
 	// Verify the update
 	profile, err := s.service.GetProfileByID(user.ID)
 	s.NoError(err)
@@ -158,14 +158,14 @@ func (s *ProfileServiceTestSuite) TestUpdatePartialProfile_Success() {
 
 func (s *ProfileServiceTestSuite) TestUpdatePartialProfile_NotFound() {
 	invalidID := primitive.NewObjectID()
-	
+
 	newDisplayName := "Updated Name"
 	update := UpdateProfileDocument{
 		DisplayName: newDisplayName,
 	}
-	
+
 	err := s.service.UpdatePartialProfile(invalidID, update)
-	
+
 	// UpdatePartialProfile is idempotent - doesn't error on non-existent user
 	s.NoError(err)
 }
@@ -176,11 +176,11 @@ func (s *ProfileServiceTestSuite) TestUpdatePartialProfile_NotFound() {
 
 func (s *ProfileServiceTestSuite) TestDeleteProfile_Success() {
 	user := s.GetUser(0)
-	
+
 	err := s.service.DeleteProfile(user.ID)
-	
+
 	s.NoError(err)
-	
+
 	// Verify profile is deleted
 	profile, err := s.service.GetProfileByID(user.ID)
 	s.Error(err)
@@ -189,9 +189,9 @@ func (s *ProfileServiceTestSuite) TestDeleteProfile_Success() {
 
 func (s *ProfileServiceTestSuite) TestDeleteProfile_NotFound() {
 	invalidID := primitive.NewObjectID()
-	
+
 	err := s.service.DeleteProfile(invalidID)
-	
+
 	// Delete of non-existent profile should not error (idempotent)
 	s.NoError(err)
 }
@@ -202,12 +202,12 @@ func (s *ProfileServiceTestSuite) TestDeleteProfile_NotFound() {
 
 func (s *ProfileServiceTestSuite) TestUpdateProfilePicture_Success() {
 	user := s.GetUser(0)
-	
+
 	newPictureURL := "https://example.com/new-picture.jpg"
 	err := s.service.UpdateProfilePicture(user.ID, newPictureURL)
-	
+
 	s.NoError(err)
-	
+
 	// Verify the update
 	profile, err := s.service.GetProfileByID(user.ID)
 	s.NoError(err)
@@ -221,12 +221,12 @@ func (s *ProfileServiceTestSuite) TestUpdateProfilePicture_Success() {
 
 func (s *ProfileServiceTestSuite) TestUpdateTimezone_Success() {
 	user := s.GetUser(0)
-	
+
 	newTimezone := "America/New_York"
 	err := s.service.UpdateTimezone(user.ID, newTimezone)
-	
+
 	s.NoError(err)
-	
+
 	// Verify the update
 	var result struct {
 		Timezone string `bson:"timezone"`
@@ -242,9 +242,9 @@ func (s *ProfileServiceTestSuite) TestUpdateTimezone_Success() {
 
 func (s *ProfileServiceTestSuite) TestGetProfileTasks_Success() {
 	user := s.GetUser(0)
-	
+
 	tasks, err := s.service.GetProfileTasks(user.ID)
-	
+
 	s.NoError(err)
 	// May return nil or empty slice depending on implementation
 	if tasks != nil {
@@ -263,9 +263,9 @@ func (s *ProfileServiceTestSuite) TestGetProfileTasks_NoTasks() {
 		"friends":      []primitive.ObjectID{},
 	})
 	s.NoError(err)
-	
+
 	tasks, err := s.service.GetProfileTasks(newUserID)
-	
+
 	s.NoError(err)
 	// May return nil or empty slice
 	if tasks != nil {
@@ -280,13 +280,13 @@ func (s *ProfileServiceTestSuite) TestGetProfileTasks_NoTasks() {
 func (s *ProfileServiceTestSuite) TestCheckRelationship_Friends() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
-	
+
 	// Create a friendship connection
 	sortedIDs := Connection.SortUserIDs(user1.ID, user2.ID)
 	_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
-		"_id":         primitive.NewObjectID(),
-		"users":       sortedIDs,
-		"status":      Connection.StatusFriends,
+		"_id":    primitive.NewObjectID(),
+		"users":  sortedIDs,
+		"status": Connection.StatusFriends,
 		"requester": bson.M{
 			"_id":     user1.ID,
 			"name":    user1.DisplayName,
@@ -296,9 +296,9 @@ func (s *ProfileServiceTestSuite) TestCheckRelationship_Friends() {
 		"receiver_id": user2.ID,
 	})
 	s.NoError(err)
-	
+
 	relationship, err := s.service.CheckRelationship(user1.ID, user2.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(relationship)
 	// The status is a custom type, check the string value
@@ -308,16 +308,16 @@ func (s *ProfileServiceTestSuite) TestCheckRelationship_Friends() {
 func (s *ProfileServiceTestSuite) TestCheckRelationship_None() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(2)
-	
+
 	// Ensure no relationship exists
 	sortedIDs := Connection.SortUserIDs(user1.ID, user2.ID)
 	_, err := s.Collections["friend-requests"].DeleteMany(s.Ctx, bson.M{
 		"users": sortedIDs,
 	})
 	s.NoError(err)
-	
+
 	relationship, err := s.service.CheckRelationship(user1.ID, user2.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(relationship)
 	s.Equal("none", string(relationship.Status))
@@ -329,7 +329,7 @@ func (s *ProfileServiceTestSuite) TestCheckRelationship_None() {
 
 func (s *ProfileServiceTestSuite) TestGetSuggestedUsers_Success() {
 	users, err := s.service.GetSuggestedUsers()
-	
+
 	s.NoError(err)
 	s.NotNil(users)
 	// May have 0 or more suggested users
@@ -342,24 +342,24 @@ func (s *ProfileServiceTestSuite) TestGetSuggestedUsers_Success() {
 
 func (s *ProfileServiceTestSuite) TestFindUsersByPhoneNumbers_Success() {
 	user := s.GetUser(0)
-	
+
 	// Set a phone number for the test user
 	testPhone := "+1234567890"
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{"phone": testPhone},
 	})
 	s.NoError(err)
-	
+
 	// Search for this phone number
 	phoneNumbers := []string{testPhone, "+9999999999"}
 	excludeUserID := primitive.NewObjectID()
-	
+
 	users, err := s.service.FindUsersByPhoneNumbers(phoneNumbers, excludeUserID)
-	
+
 	s.NoError(err)
 	s.NotNil(users)
 	s.GreaterOrEqual(len(users), 1)
-	
+
 	// Verify the found user
 	found := false
 	for _, u := range users {
@@ -374,22 +374,22 @@ func (s *ProfileServiceTestSuite) TestFindUsersByPhoneNumbers_Success() {
 
 func (s *ProfileServiceTestSuite) TestFindUsersByPhoneNumbers_ExcludeUser() {
 	user := s.GetUser(0)
-	
+
 	// Set a phone number for the test user
 	testPhone := "+1234567890"
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{"phone": testPhone},
 	})
 	s.NoError(err)
-	
+
 	// Search but exclude this user
 	phoneNumbers := []string{testPhone}
-	
+
 	users, err := s.service.FindUsersByPhoneNumbers(phoneNumbers, user.ID)
-	
+
 	s.NoError(err)
 	s.NotNil(users)
-	
+
 	// Verify the user is excluded
 	for _, u := range users {
 		s.NotEqual(user.ID.Hex(), u.ID, "Should exclude the specified user")
@@ -399,9 +399,9 @@ func (s *ProfileServiceTestSuite) TestFindUsersByPhoneNumbers_ExcludeUser() {
 func (s *ProfileServiceTestSuite) TestFindUsersByPhoneNumbers_NoResults() {
 	phoneNumbers := []string{"+9999999999", "+8888888888"}
 	excludeUserID := primitive.NewObjectID()
-	
+
 	users, err := s.service.FindUsersByPhoneNumbers(phoneNumbers, excludeUserID)
-	
+
 	s.NoError(err)
 	s.NotNil(users)
 	s.Equal(0, len(users))
