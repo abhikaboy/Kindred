@@ -218,6 +218,8 @@ type User struct {
 	Subscription    Subscription `bson:"subscription" json:"subscription"`
 	Timezone        string       `bson:"timezone,omitempty" json:"timezone,omitempty"`
 	Settings        UserSettings `bson:"settings" json:"settings"`
+	TermsAcceptedAt *time.Time   `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
+	TermsVersion    string       `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 }
 
 type SafeUser struct {
@@ -240,6 +242,8 @@ type SafeUser struct {
 	Subscription    Subscription         `bson:"subscription" json:"subscription"`
 	Timezone        string               `bson:"timezone,omitempty" json:"timezone,omitempty"`
 	Settings        UserSettings         `bson:"settings" json:"settings"`
+	TermsAcceptedAt *time.Time           `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
+	TermsVersion    string               `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 }
 
 // UserSettings contains all user preference settings
@@ -339,6 +343,7 @@ type CommentDocument struct {
 	User     *UserExtendedReferenceInternal `bson:"user" json:"user"`
 	Content  string                         `bson:"content" json:"content"`
 	ParentID *primitive.ObjectID            `bson:"parentId,omitempty" json:"parentId,omitempty"`
+	Mentions []MentionReference             `bson:"mentions,omitempty" json:"mentions,omitempty"`
 	Metadata CommentMetadata                `bson:"metadata" json:"metadata"`
 }
 
@@ -347,6 +352,7 @@ type CommentDocumentAPI struct {
 	User     *UserExtendedReference `json:"user"`
 	Content  string                 `json:"content"`
 	ParentID *string                `json:"parentId,omitempty"`
+	Mentions []MentionReference     `json:"mentions,omitempty"`
 	Metadata CommentMetadata        `json:"metadata"`
 }
 
@@ -355,6 +361,7 @@ func (c *CommentDocument) ToAPI() *CommentDocumentAPI {
 		ID:       c.ID,
 		User:     c.User.ToAPI(),
 		Content:  c.Content,
+		Mentions: c.Mentions,
 		Metadata: c.Metadata,
 	}
 
@@ -370,6 +377,11 @@ type CommentMetadata struct {
 	CreatedAt  time.Time `bson:"createdAt" json:"createdAt"`
 	IsDeleted  bool      `bson:"isDeleted" json:"isDeleted"`
 	LastEdited time.Time `bson:"lastEdited" json:"lastEdited"`
+}
+
+type MentionReference struct {
+	ID     primitive.ObjectID `bson:"_id" json:"id"`
+	Handle string             `bson:"handle" json:"handle"`
 }
 
 type ReactDocument struct {
@@ -630,5 +642,71 @@ func NewEnhancedBlueprintReference(blueprintID primitive.ObjectID, isPublic bool
 	return &EnhancedBlueprintReference{
 		ID:       blueprintID,
 		IsPublic: isPublic,
+	}
+}
+
+// Report types for content moderation
+type ReportStatus string
+
+const (
+	ReportStatusPending  ReportStatus = "pending"
+	ReportStatusReviewed ReportStatus = "reviewed"
+	ReportStatusResolved ReportStatus = "resolved"
+)
+
+type ReportReason string
+
+const (
+	ReportReasonInappropriate ReportReason = "inappropriate"
+	ReportReasonSpam          ReportReason = "spam"
+	ReportReasonHarassment    ReportReason = "harassment"
+	ReportReasonOther         ReportReason = "other"
+)
+
+type ContentType string
+
+const (
+	ContentTypePost    ContentType = "post"
+	ContentTypeComment ContentType = "comment"
+)
+
+type ReportDocument struct {
+	ID             primitive.ObjectID `bson:"_id" json:"_id"`
+	ReporterID     primitive.ObjectID `bson:"reporter_id" json:"reporter_id"`
+	ContentType    ContentType        `bson:"content_type" json:"content_type"`
+	ContentID      primitive.ObjectID `bson:"content_id" json:"content_id"`
+	ContentOwnerID primitive.ObjectID `bson:"content_owner_id" json:"content_owner_id"`
+	Reason         ReportReason       `bson:"reason" json:"reason"`
+	Description    string             `bson:"description,omitempty" json:"description,omitempty"`
+	Status         ReportStatus       `bson:"status" json:"status"`
+	CreatedAt      time.Time          `bson:"created_at" json:"created_at"`
+	ReviewedAt     *time.Time         `bson:"reviewed_at,omitempty" json:"reviewed_at,omitempty"`
+}
+
+type ReportDocumentAPI struct {
+	ID             string       `json:"_id"`
+	ReporterID     string       `json:"reporter_id"`
+	ContentType    ContentType  `json:"content_type"`
+	ContentID      string       `json:"content_id"`
+	ContentOwnerID string       `json:"content_owner_id"`
+	Reason         ReportReason `json:"reason"`
+	Description    string       `json:"description,omitempty"`
+	Status         ReportStatus `json:"status"`
+	CreatedAt      time.Time    `json:"created_at"`
+	ReviewedAt     *time.Time   `json:"reviewed_at,omitempty"`
+}
+
+func (r *ReportDocument) ToAPI() *ReportDocumentAPI {
+	return &ReportDocumentAPI{
+		ID:             r.ID.Hex(),
+		ReporterID:     r.ReporterID.Hex(),
+		ContentType:    r.ContentType,
+		ContentID:      r.ContentID.Hex(),
+		ContentOwnerID: r.ContentOwnerID.Hex(),
+		Reason:         r.Reason,
+		Description:    r.Description,
+		Status:         r.Status,
+		CreatedAt:      r.CreatedAt,
+		ReviewedAt:     r.ReviewedAt,
 	}
 }

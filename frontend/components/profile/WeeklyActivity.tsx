@@ -13,7 +13,7 @@ interface WeeklyActivityProps {
     displayName?: string;
 }
 
-export default function WeeklyActivity({ userid, displayName }: WeeklyActivityProps) {
+const WeeklyActivityComponent = ({ userid, displayName }: WeeklyActivityProps) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const [activityLevels, setActivityLevels] = useState<number[]>([0, 0, 0, 0, 0, 0, 0, 0]);
@@ -128,4 +128,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
     },
+});
+
+// Memoize WeeklyActivity to prevent unnecessary re-renders
+export default React.memo(WeeklyActivityComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.userid === nextProps.userid &&
+        prevProps.displayName === nextProps.displayName
+    );
 });

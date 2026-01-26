@@ -15,7 +15,7 @@ interface TaskListViewProps {
     onQuickSchedule: (task: any, type: 'deadline' | 'startDate') => void;
 }
 
-export const TaskListView: React.FC<TaskListViewProps> = ({
+const TaskListViewComponent: React.FC<TaskListViewProps> = ({
     selectedDate,
     tasksForSelectedDate,
     overdueTasks,
@@ -73,6 +73,18 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
         </View>
     );
 };
+
+// Memoize TaskListView to prevent unnecessary re-renders when hidden
+export const TaskListView = React.memo(TaskListViewComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime() &&
+        prevProps.tasksForSelectedDate === nextProps.tasksForSelectedDate &&
+        prevProps.overdueTasks === nextProps.overdueTasks &&
+        prevProps.upcomingTasks === nextProps.upcomingTasks &&
+        prevProps.pastTasks === nextProps.pastTasks &&
+        prevProps.unscheduledTasks === nextProps.unscheduledTasks
+    );
+});
 
 const styles = StyleSheet.create({
     container: {

@@ -22,11 +22,11 @@ interface TaskListProps {
     };
 }
 
-export default function TaskList({
+const TaskListComponent = ({
     todayTasks,
     completedTasks,
     encouragementConfig,
-}: TaskListProps) {
+}: TaskListProps) => {
     const colorScheme = useColorScheme();
     const isEmpty = todayTasks.length === 0 && completedTasks.length === 0;
 
@@ -112,4 +112,13 @@ const styles = StyleSheet.create({
     invertedImage: {
         tintColor: '#ffffff',
     },
+});
+
+// Memoize TaskList to prevent unnecessary re-renders
+export default React.memo(TaskListComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.todayTasks === nextProps.todayTasks &&
+        prevProps.completedTasks === nextProps.completedTasks &&
+        prevProps.encouragementConfig === nextProps.encouragementConfig
+    );
 });

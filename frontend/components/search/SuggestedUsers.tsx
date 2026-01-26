@@ -8,7 +8,7 @@ type SuggestedUsersProps = {
     users: UserExtendedReference[];
 };
 
-export const SuggestedUsers: React.FC<SuggestedUsersProps> = ({ users }) => {
+const SuggestedUsersComponent: React.FC<SuggestedUsersProps> = ({ users }) => {
     const renderUser = useCallback(
         ({ item }: { item: UserExtendedReference }) => (
             <ContactCard
@@ -55,4 +55,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingBottom: 3, 
     },
+});
+
+// Memoize SuggestedUsers to prevent unnecessary re-renders
+export const SuggestedUsers = React.memo(SuggestedUsersComponent, (prevProps, nextProps) => {
+    return prevProps.users === nextProps.users;
 });

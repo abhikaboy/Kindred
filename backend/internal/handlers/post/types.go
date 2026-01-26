@@ -181,8 +181,14 @@ type AddCommentInput struct {
 }
 
 type AddCommentParams struct {
-	Content  string  `json:"content" validate:"required,min=1"`
-	ParentID *string `json:"parentId,omitempty"`
+	Content  string         `json:"content" validate:"required,min=1"`
+	ParentID *string        `json:"parentId,omitempty"`
+	Mentions []MentionInput `json:"mentions,omitempty"`
+}
+
+type MentionInput struct {
+	ID     string `json:"id" validate:"required"`
+	Handle string `json:"handle" validate:"required"`
 }
 
 type AddCommentOutput struct {

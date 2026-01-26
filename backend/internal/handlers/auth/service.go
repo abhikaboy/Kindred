@@ -636,3 +636,27 @@ func (s *Service) CreateReferralDocumentForUser(ctx context.Context, userID prim
 
 	return nil
 }
+
+// AcceptTerms records the user's acceptance of Terms of Service
+func (s *Service) AcceptTerms(ctx context.Context, userID primitive.ObjectID, termsVersion string) (*time.Time, error) {
+	now := time.Now()
+	
+	// Update user document with terms acceptance
+	update := bson.M{
+		"$set": bson.M{
+			"terms_accepted_at": now,
+			"terms_version":     termsVersion,
+		},
+	}
+	
+	_, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update terms acceptance: %w", err)
+	}
+	
+	slog.LogAttrs(ctx, slog.LevelInfo, "User accepted terms",
+		slog.String("userId", userID.Hex()),
+		slog.String("termsVersion", termsVersion))
+	
+	return &now, nil
+}

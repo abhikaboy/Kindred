@@ -27,7 +27,9 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
-import { toggleReaction, updatePost, deletePost } from "@/api/post";
+import { toggleReaction, updatePost, deletePost, reportPost } from "@/api/post";
+import { blockUser } from "@/api/connection";
+import { useAlert } from "@/contexts/AlertContext";
 import { useQueryClient } from '@tanstack/react-query';
 import { useTasks } from "@/contexts/tasksContext";
 import type { components } from "@/api/generated/types";
@@ -37,7 +39,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as SMS from 'expo-sms';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { Confetti } from "phosphor-react-native";
-import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { AlertButton } from "@/components/modals/CustomAlert";
 
 type ImageSize = components["schemas"]["ImageSize"];
 
@@ -286,10 +288,8 @@ const PostCard = React.memo(({
     const { fetchWorkspaces } = useTasks();
 
     // Alert state
-    const [alertVisible, setAlertVisible] = useState(false);
-    const [alertTitle, setAlertTitle] = useState("");
-    const [alertMessage, setAlertMessage] = useState("");
-    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+    // Use alert queue instead of local state
+    const { showAlert } = useAlert();
 
     // Memoize stringified reactions to avoid expensive JSON operations on every render
     const reactionsStringified = useMemo(() => JSON.stringify(reactions), [reactions]);
@@ -634,35 +634,42 @@ const PostCard = React.memo(({
                 style: "destructive" as const,
                 onPress: () => handleReportPost(),
             });
+            
+            options.push({
+                text: "Block User",
+                style: "destructive" as const,
+                onPress: () => handleBlockUser(),
+            });
         }
 
         options.push({
             text: "Cancel",
             style: "cancel" as const,
-            onPress: () => {},
         });
 
-        setAlertTitle("Post Options");
-        setAlertMessage("");
-        setAlertButtons(options);
-        setAlertVisible(true);
+        showAlert({
+            title: "Post Options",
+            message: "",
+            buttons: options,
+        });
     };
 
     const showDeleteConfirmation = () => {
-        setAlertTitle("Delete Post");
-        setAlertMessage("Are you sure you want to delete this post? This action cannot be undone.");
-        setAlertButtons([
-            {
-                text: "Cancel",
-                style: "cancel",
-            },
-            {
-                text: "Delete",
-                style: "destructive",
-                onPress: handleDeletePost,
-            },
-        ]);
-        setAlertVisible(true);
+        showAlert({
+            title: "Delete Post",
+            message: "Are you sure you want to delete this post? This action cannot be undone.",
+            buttons: [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: handleDeletePost,
+                },
+            ],
+        });
     };
 
     const handleDeletePost = async () => {
@@ -686,37 +693,74 @@ const PostCard = React.memo(({
     };
 
     const handleReportPost = () => {
-        setAlertTitle("Report Post");
-        setAlertMessage("Why are you reporting this post?");
-        setAlertButtons([
-            {
-                text: "Inappropriate content",
-                onPress: () => submitReport("inappropriate"),
-            },
-            {
-                text: "Spam",
-                onPress: () => submitReport("spam"),
-            },
-            {
-                text: "Harassment",
-                onPress: () => submitReport("harassment"),
-            },
-            {
-                text: "Other",
-                onPress: () => submitReport("other"),
-            },
-            {
-                text: "Cancel",
-                style: "cancel",
-            },
-        ]);
-        setAlertVisible(true);
+        showAlert({
+            title: "Report Post",
+            message: "Why are you reporting this post?",
+            buttons: [
+                {
+                    text: "Inappropriate content",
+                    onPress: () => submitReport("inappropriate"),
+                },
+                {
+                    text: "Spam",
+                    onPress: () => submitReport("spam"),
+                },
+                {
+                    text: "Harassment",
+                    onPress: () => submitReport("harassment"),
+                },
+                {
+                    text: "Other",
+                    onPress: () => submitReport("other"),
+                },
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+            ],
+        });
     };
 
     const submitReport = async (reason: string) => {
-        // TODO: Implement report submission to backend
-        console.log(`Reporting post ${id} for: ${reason}`);
-        showToast("Report submitted. Thank you for helping keep Kindred safe.", "info");
+        if (!id) return;
+        
+        try {
+            await reportPost(id, reason as 'inappropriate' | 'spam' | 'harassment' | 'other');
+            showToast("Report submitted. Thank you for helping keep Kindred safe.", "success");
+        } catch (error) {
+            console.error(`Failed to report post ${id}:`, error);
+            showToast("Failed to submit report. Please try again.", "danger");
+        }
+    };
+
+    const handleBlockUser = () => {
+        showAlert({
+            title: "Block User",
+            message: `Are you sure you want to block ${name}? You won't see their posts or comments, and they won't be able to see yours.`,
+            buttons: [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Block",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await blockUser(userId);
+                            showToast(`${name} has been blocked`, "success");
+                            
+                            // Invalidate queries to refresh feed and remove blocked user's content
+                            queryClient.invalidateQueries({ queryKey: ['posts'] });
+                            queryClient.invalidateQueries({ queryKey: ['friendsPosts'] });
+                        } catch (error) {
+                            console.error(`Failed to block user ${userId}:`, error);
+                            showToast("Failed to block user. Please try again.", "danger");
+                        }
+                    },
+                },
+            ],
+        });
     };
 
 
@@ -999,14 +1043,6 @@ const PostCard = React.memo(({
                         categoryName: category || "General",
                         postId: id, // Pass the post ID for thumbnail
                     }}
-                />
-
-                <CustomAlert
-                    visible={alertVisible}
-                    setVisible={setAlertVisible}
-                    title={alertTitle}
-                    message={alertMessage}
-                    buttons={alertButtons}
                 />
         </View>
     );

@@ -515,3 +515,156 @@ func (s *Service) GetPendingRequestsByReceiver(userID primitive.ObjectID) ([]Con
 
 	return results, nil
 }
+
+// BlockUser blocks a user by creating/updating a blocked relationship
+func (s *Service) BlockUser(ctx context.Context, blockerID, blockedID primitive.ObjectID) error {
+	sortedIDs := SortUserIDs(blockerID, blockedID)
+	
+	// Check if relationship already exists
+	var existing ConnectionDocumentInternal
+	err := s.Connections.FindOne(ctx, bson.M{"users": sortedIDs}).Decode(&existing)
+	
+	if err == nil {
+		// Relationship exists, update to blocked
+		now := time.Now()
+		_, err = s.Connections.UpdateOne(
+			ctx,
+			bson.M{"users": sortedIDs},
+			bson.M{
+				"$set": bson.M{
+					"status":     StatusBlocked,
+					"blocker_id": blockerID,
+					"updated_at": now,
+				},
+			},
+		)
+		return err
+	}
+	
+	if err != mongo.ErrNoDocuments {
+		return fmt.Errorf("failed to check existing relationship: %w", err)
+	}
+	
+	// No relationship exists, create new blocked relationship
+	now := time.Now()
+	blockedRelationship := &ConnectionDocumentInternal{
+		ID:        primitive.NewObjectID(),
+		Users:     sortedIDs,
+		Status:    StatusBlocked,
+		BlockerID: &blockerID,
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+	
+	_, err = s.Connections.InsertOne(ctx, blockedRelationship)
+	if err != nil {
+		return fmt.Errorf("failed to create blocked relationship: %w", err)
+	}
+	
+	slog.LogAttrs(ctx, slog.LevelInfo, "User blocked",
+		slog.String("blockerId", blockerID.Hex()),
+		slog.String("blockedId", blockedID.Hex()))
+	
+	return nil
+}
+
+// UnblockUser removes a blocked relationship
+func (s *Service) UnblockUser(ctx context.Context, blockerID, blockedID primitive.ObjectID) error {
+	sortedIDs := SortUserIDs(blockerID, blockedID)
+	
+	// Delete the blocked relationship
+	result, err := s.Connections.DeleteOne(ctx, bson.M{
+		"users":      sortedIDs,
+		"status":     StatusBlocked,
+		"blocker_id": blockerID,
+	})
+	
+	if err != nil {
+		return fmt.Errorf("failed to unblock user: %w", err)
+	}
+	
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("no blocked relationship found")
+	}
+	
+	slog.LogAttrs(ctx, slog.LevelInfo, "User unblocked",
+		slog.String("blockerId", blockerID.Hex()),
+		slog.String("unblockedId", blockedID.Hex()))
+	
+	return nil
+}
+
+// GetBlockedUsers retrieves all users blocked by the given user
+func (s *Service) GetBlockedUsers(ctx context.Context, userID primitive.ObjectID) ([]ConnectionUser, error) {
+	// Find all blocked relationships where this user is the blocker
+	cursor, err := s.Connections.Find(ctx, bson.M{
+		"status":     StatusBlocked,
+		"blocker_id": userID,
+	})
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to find blocked users: %w", err)
+	}
+	defer cursor.Close(ctx)
+	
+	var blockedRelationships []ConnectionDocumentInternal
+	if err := cursor.All(ctx, &blockedRelationships); err != nil {
+		return nil, fmt.Errorf("failed to decode blocked relationships: %w", err)
+	}
+	
+	// Extract the blocked user IDs
+	var blockedUsers []ConnectionUser
+	for _, rel := range blockedRelationships {
+		// Find which user in the pair is the blocked one (not the blocker)
+		var blockedUserID primitive.ObjectID
+		if rel.Users[0] == userID {
+			blockedUserID = rel.Users[1]
+		} else {
+			blockedUserID = rel.Users[0]
+		}
+		
+		// Fetch user details
+		var user struct {
+			ID             primitive.ObjectID `bson:"_id"`
+			DisplayName    string             `bson:"display_name"`
+			Handle         string             `bson:"handle"`
+			ProfilePicture *string            `bson:"profile_picture"`
+		}
+		
+		err := s.Users.FindOne(ctx, bson.M{"_id": blockedUserID}).Decode(&user)
+		if err != nil {
+			slog.Warn("Failed to fetch blocked user details", "userId", blockedUserID.Hex(), "error", err)
+			continue
+		}
+		
+		blockedUsers = append(blockedUsers, ConnectionUser{
+			ID:      user.ID.Hex(),
+			Name:    user.DisplayName,
+			Handle:  user.Handle,
+			Picture: user.ProfilePicture,
+		})
+	}
+	
+	return blockedUsers, nil
+}
+
+// IsBlocked checks if userA has blocked userB or vice versa
+func (s *Service) IsBlocked(ctx context.Context, userA, userB primitive.ObjectID) (bool, error) {
+	sortedIDs := SortUserIDs(userA, userB)
+	
+	var relationship ConnectionDocumentInternal
+	err := s.Connections.FindOne(ctx, bson.M{
+		"users":  sortedIDs,
+		"status": StatusBlocked,
+	}).Decode(&relationship)
+	
+	if err == mongo.ErrNoDocuments {
+		return false, nil
+	}
+	
+	if err != nil {
+		return false, fmt.Errorf("failed to check block status: %w", err)
+	}
+	
+	return true, nil
+}

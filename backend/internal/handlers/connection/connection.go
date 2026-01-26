@@ -213,3 +213,85 @@ func (h *Handler) GetFriendsHuma(ctx context.Context, input *GetFriendsInput) (*
 
 	return &GetFriendsOutput{Body: friends}, nil
 }
+
+// BlockUserHuma handles blocking a user
+func (h *Handler) BlockUserHuma(ctx context.Context, input *BlockUserInput) (*BlockUserOutput, error) {
+	// Extract user_id from context (blocker)
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	blockerID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	blockedID, err := primitive.ObjectIDFromHex(input.UserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid blocked user ID format", err)
+	}
+
+	// Cannot block yourself
+	if blockerID == blockedID {
+		return nil, huma.Error400BadRequest("Cannot block yourself", nil)
+	}
+
+	err = h.service.BlockUser(ctx, blockerID, blockedID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to block user", err)
+	}
+
+	resp := &BlockUserOutput{}
+	resp.Body.Message = "User blocked successfully"
+	return resp, nil
+}
+
+// UnblockUserHuma handles unblocking a user
+func (h *Handler) UnblockUserHuma(ctx context.Context, input *UnblockUserInput) (*UnblockUserOutput, error) {
+	// Extract user_id from context (blocker)
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	blockerID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	blockedID, err := primitive.ObjectIDFromHex(input.UserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid blocked user ID format", err)
+	}
+
+	err = h.service.UnblockUser(ctx, blockerID, blockedID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to unblock user", err)
+	}
+
+	resp := &UnblockUserOutput{}
+	resp.Body.Message = "User unblocked successfully"
+	return resp, nil
+}
+
+// GetBlockedUsersHuma handles retrieving list of blocked users
+func (h *Handler) GetBlockedUsersHuma(ctx context.Context, input *GetBlockedUsersInput) (*GetBlockedUsersOutput, error) {
+	// Extract user_id from context
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userOID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	blockedUsers, err := h.service.GetBlockedUsers(ctx, userOID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to get blocked users", err)
+	}
+
+	return &GetBlockedUsersOutput{Body: blockedUsers}, nil
+}

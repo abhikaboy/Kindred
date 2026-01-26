@@ -233,7 +233,8 @@ export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
 export const addComment = async (
     postId: string, 
     content: string, 
-    parentId?: string
+    parentId?: string,
+    mentions?: Array<{ id: string; handle: string }>
 ): Promise<CommentDocumentAPI> => {
     if (!postId) {
         throw new Error("PostId is required");
@@ -253,7 +254,8 @@ export const addComment = async (
         params: withAuthHeaders({path: { postId: cleanPostId }}), 
         body: { 
             content,
-            parentId 
+            parentId,
+            mentions
         },
     });
     
@@ -342,6 +344,52 @@ export const deletePost = async (postId: string): Promise<void> => {
     if (error) {
         throw new Error(`Failed to delete post: ${JSON.stringify(error)}`);
     }
+};
+
+/**
+ * Report a post
+ * @param postId - ID of the post to report
+ * @param reason - Reason for reporting (inappropriate, spam, harassment, other)
+ * @param description - Optional additional details
+ */
+export const reportPost = async (
+    postId: string,
+    reason: 'inappropriate' | 'spam' | 'harassment' | 'other',
+    description?: string
+): Promise<{ message: string; report_id: string }> => {
+    const { data, error } = await client.POST("/v1/user/reports/post/{postId}", {
+        params: withAuthHeaders({ path: { postId } }),
+        body: { reason, description },
+    });
+
+    if (error) {
+        throw new Error(`Failed to report post: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};
+
+/**
+ * Report a comment
+ * @param commentId - ID of the comment to report
+ * @param reason - Reason for reporting (inappropriate, spam, harassment, other)
+ * @param description - Optional additional details
+ */
+export const reportComment = async (
+    commentId: string,
+    reason: 'inappropriate' | 'spam' | 'harassment' | 'other',
+    description?: string
+): Promise<{ message: string; report_id: string }> => {
+    const { data, error } = await client.POST("/v1/user/reports/comment/{commentId}", {
+        params: withAuthHeaders({ path: { commentId } }),
+        body: { reason, description },
+    });
+
+    if (error) {
+        throw new Error(`Failed to report comment: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
 };
 
 /**

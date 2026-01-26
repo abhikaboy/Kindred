@@ -30,7 +30,7 @@ interface CalendarViewProps {
     headerContent?: React.ReactNode;
 }
 
-export const CalendarView: React.FC<CalendarViewProps> = ({
+const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     selectedDate,
     tasksWithSpecificTime,
     tasksForTodayNoTime,
@@ -464,4 +464,16 @@ const styles = StyleSheet.create({
         height: "100%",
         overflow: "hidden",
     },
+});
+
+// Memoize CalendarView to prevent unnecessary re-renders when hidden
+export const CalendarView = React.memo(CalendarViewComponent, (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+        prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime() &&
+        prevProps.tasksWithSpecificTime === nextProps.tasksWithSpecificTime &&
+        prevProps.tasksForTodayNoTime === nextProps.tasksForTodayNoTime &&
+        prevProps.tasksUnscheduled === nextProps.tasksUnscheduled
+        // Note: We don't compare animatedScrollY, scrollViewRef, or headerContent as they're refs/nodes
+    );
 });

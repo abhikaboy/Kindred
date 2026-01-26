@@ -119,3 +119,31 @@ export const deleteAccount = async (): Promise<void> => {
         throw new Error("Failed to delete account. Please try again later.");
     }
 };
+
+/**
+ * Accept Terms of Service
+ * API: Makes POST request to record user's acceptance of Terms of Service
+ * @param termsVersion - Version of terms being accepted (e.g., "1.0")
+ * @throws {Error} When the request fails
+ */
+export const acceptTerms = async (termsVersion: string = "1.0"): Promise<{
+    message: string;
+    terms_accepted_at: string;
+    terms_version: string;
+}> => {
+    try {
+        const { data, error } = await client.POST("/v1/user/accept-terms", {
+            params: withAuthHeaders(),
+            body: { terms_version: termsVersion },
+        });
+
+        if (error) {
+            throw new Error(`Failed to accept terms: ${JSON.stringify(error)}`);
+        }
+
+        return data as any;
+    } catch (error) {
+        console.error("Terms acceptance failed:", error);
+        throw new Error("Failed to accept terms. Please try again later.");
+    }
+};

@@ -21,6 +21,7 @@ export type CommentProps = {
     };
     content: string;
     parentId?: string;
+    mentions?: Array<{ id: string; handle: string }>;
     metadata: {
         createdAt: string;
         isDeleted: boolean;
@@ -193,12 +194,25 @@ const Comment = ({
             const parentId = replyingTo?.id;
             let finalCommentText = commentText.trim();
 
-            // Add mention if needed
-            if (replyingTo && !finalCommentText.includes(`@${replyingTo.name}`)) {
-                finalCommentText = `@${replyingTo.name} ${finalCommentText}`;
+            // Build mentions array
+            const mentions = [];
+            if (replyingTo) {
+                // Find the user being replied to from localComments
+                const parentComment = localComments.find(c => c.id === replyingTo.immediateParent);
+                if (parentComment) {
+                    mentions.push({
+                        id: parentComment.user._id,
+                        handle: parentComment.user.handle,
+                    });
+                }
+
+                // Add mention text if not already present
+                if (!finalCommentText.includes(`@${replyingTo.name}`)) {
+                    finalCommentText = `@${replyingTo.name} ${finalCommentText}`;
+                }
             }
 
-            const newComment = await addComment(postId, finalCommentText, parentId);
+            const newComment = await addComment(postId, finalCommentText, parentId, mentions);
             setCommentText("");
             setReplyingTo(null);
 

@@ -106,15 +106,15 @@ export default function Profile() {
 
                 <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                <ConditionalView condition={activeTab == 0}>
-                    <TaskList 
-                    {...tasks}
-                    />
-                </ConditionalView>
+                {/* Tasks Tab - Keep mounted but hide when not active */}
+                <View style={{ display: activeTab === 0 ? "flex" : "none" }}>
+                    <TaskList {...tasks} />
+                </View>
 
-                <ConditionalView condition={activeTab == 1}>
+                {/* Gallery Tab - Keep mounted but hide when not active */}
+                <View style={{ display: activeTab === 1 ? "flex" : "none" }}>
                     <ProfileGallery userId={user?._id} />
-                </ConditionalView>
+                </View>
             </View>
         </Animated.ScrollView>
     );

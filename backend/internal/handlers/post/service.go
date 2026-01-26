@@ -259,6 +259,13 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		limit = 8
 	}
 
+	// Get blocked user IDs to filter them out
+	blockedUserIDs, err := s.GetBlockedUserIDs(ctx, userID)
+	if err != nil {
+		slog.Warn("Failed to get blocked users, continuing without filter", "error", err)
+		blockedUserIDs = []primitive.ObjectID{}
+	}
+
 	// Get user's groups to check group membership
 	userGroups, err := s.GetUserGroups(userID)
 	if err != nil {
@@ -353,6 +360,15 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 							{
 								"$or": visibilityConditions,
 							},
+							// Filter out posts from blocked users
+							{
+								"$not": bson.M{
+									"$in": []interface{}{
+										bson.M{"$toObjectId": "$user._id"},
+										blockedUserIDs,
+									},
+								},
+							},
 						},
 					},
 				}}},
@@ -416,6 +432,15 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 							{"$eq": []interface{}{"$metadata.isDeleted", false}},
 							{
 								"$or": visibilityConditions,
+							},
+							// Filter out posts from blocked users
+							{
+								"$not": bson.M{
+									"$in": []interface{}{
+										bson.M{"$toObjectId": "$user._id"},
+										blockedUserIDs,
+									},
+								},
 							},
 						},
 					},
@@ -713,6 +738,31 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		}
 	}
 
+	// Notify mentioned users
+	for _, mention := range comment.Mentions {
+		// Don't notify if mentioning yourself or the post owner (already notified)
+		if mention.ID == comment.User.ID || mention.ID == post.User.ID {
+			continue
+		}
+
+		notificationContent := fmt.Sprintf("%s mentioned you in a comment: \"%s\"", comment.User.DisplayName, comment.Content)
+		var thumbnail string
+		if len(post.Images) > 0 {
+			thumbnail = post.Images[0]
+		}
+
+		err = s.NotificationService.CreateNotification(comment.User.ID, mention.ID, notificationContent, notifications.NotificationTypeComment, post.ID, thumbnail)
+		if err != nil {
+			slog.Error("Failed to create mention notification", "error", err, "mentioned_user_id", mention.ID)
+		}
+
+		// Send push notification
+		err = s.sendCommentNotification(mention.ID, comment.User.DisplayName, comment.Content)
+		if err != nil {
+			slog.Error("Failed to send mention push notification", "error", err, "mentioned_user_id", mention.ID)
+		}
+	}
+
 	return nil
 }
 
@@ -880,6 +930,11 @@ func (s *Service) CheckRelationship(viewerID, profileUserID primitive.ObjectID) 
 		return false, err
 	}
 
+	// If users are blocked, deny access
+	if connection.Status == "blocked" {
+		return false, nil
+	}
+
 	// Check if status is "friends"
 	return connection.Status == "friends", nil
 }
@@ -890,6 +945,40 @@ func sortUserIDs(userA, userB primitive.ObjectID) []primitive.ObjectID {
 		return []primitive.ObjectID{userA, userB}
 	}
 	return []primitive.ObjectID{userB, userA}
+}
+
+// GetBlockedUserIDs retrieves all user IDs that are blocked by or have blocked the given user
+func (s *Service) GetBlockedUserIDs(ctx context.Context, userID primitive.ObjectID) ([]primitive.ObjectID, error) {
+	// Find all blocked relationships involving this user
+	cursor, err := s.Connections.Find(ctx, bson.M{
+		"users":  userID,
+		"status": "blocked",
+	})
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to find blocked relationships: %w", err)
+	}
+	defer cursor.Close(ctx)
+	
+	var blockedRelationships []struct {
+		Users []primitive.ObjectID `bson:"users"`
+	}
+	
+	if err := cursor.All(ctx, &blockedRelationships); err != nil {
+		return nil, fmt.Errorf("failed to decode blocked relationships: %w", err)
+	}
+	
+	// Extract the other user IDs from each relationship
+	var blockedUserIDs []primitive.ObjectID
+	for _, rel := range blockedRelationships {
+		for _, id := range rel.Users {
+			if id != userID {
+				blockedUserIDs = append(blockedUserIDs, id)
+			}
+		}
+	}
+	
+	return blockedUserIDs, nil
 }
 
 // NotifyRandomFriendsOfPost notifies a random subset of friends about a new post

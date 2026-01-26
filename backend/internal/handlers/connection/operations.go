@@ -114,6 +114,42 @@ type GetRelationshipOutput struct {
 	}
 }
 
+// Block User
+type BlockUserInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	UserID        string `path:"userId" example:"507f1f77bcf86cd799439011" doc:"User ID to block"`
+}
+
+type BlockUserOutput struct {
+	Body struct {
+		Message string `json:"message" example:"User blocked successfully"`
+	}
+}
+
+// Unblock User
+type UnblockUserInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	UserID        string `path:"userId" example:"507f1f77bcf86cd799439011" doc:"User ID to unblock"`
+}
+
+type UnblockUserOutput struct {
+	Body struct {
+		Message string `json:"message" example:"User unblocked successfully"`
+	}
+}
+
+// Get Blocked Users
+type GetBlockedUsersInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
+
+type GetBlockedUsersOutput struct {
+	Body []ConnectionUser `json:"body"`
+}
+
 // Operation registrations
 
 func RegisterCreateConnectionOperation(api huma.API, handler *Handler) {
@@ -215,6 +251,42 @@ func RegisterAcceptConnectionOperation(api huma.API, handler *Handler) {
 	}, handler.AcceptConnectionHuma)
 }
 
+// RegisterBlockUserOperation registers the block user endpoint
+func RegisterBlockUserOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "block-user",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/connections/block/{userId}",
+		Summary:     "Block a user",
+		Description: "Block a user to prevent them from seeing your content and interacting with you",
+		Tags:        []string{"connections"},
+	}, handler.BlockUserHuma)
+}
+
+// RegisterUnblockUserOperation registers the unblock user endpoint
+func RegisterUnblockUserOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "unblock-user",
+		Method:      http.MethodDelete,
+		Path:        "/v1/user/connections/block/{userId}",
+		Summary:     "Unblock a user",
+		Description: "Unblock a previously blocked user",
+		Tags:        []string{"connections"},
+	}, handler.UnblockUserHuma)
+}
+
+// RegisterGetBlockedUsersOperation registers the get blocked users endpoint
+func RegisterGetBlockedUsersOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-blocked-users",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/connections/blocked",
+		Summary:     "Get blocked users",
+		Description: "Retrieve list of users you have blocked",
+		Tags:        []string{"connections"},
+	}, handler.GetBlockedUsersHuma)
+}
+
 // Register all connection operations
 func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterGetFriendsOperation(api, handler)
@@ -226,4 +298,7 @@ func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterUpdateConnectionOperation(api, handler)
 	RegisterDeleteConnectionOperation(api, handler)
 	RegisterAcceptConnectionOperation(api, handler)
+	RegisterBlockUserOperation(api, handler)
+	RegisterUnblockUserOperation(api, handler)
+	RegisterGetBlockedUsersOperation(api, handler)
 }

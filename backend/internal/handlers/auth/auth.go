@@ -611,3 +611,39 @@ func (h *Handler) DeleteAccountHuma(ctx context.Context, input *DeleteAccountInp
 	slog.Info("Account deleted", "user_id", user_id)
 	return resp, nil
 }
+
+// AcceptTermsHuma handles user acceptance of Terms of Service
+func (h *Handler) AcceptTermsHuma(ctx context.Context, input *AcceptTermsInput) (*AcceptTermsOutput, error) {
+	// Validate input
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	user_id, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	// Convert user_id to ObjectID
+	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	// Record terms acceptance
+	acceptedAt, err := h.service.AcceptTerms(ctx, user_id_obj, input.Body.TermsVersion)
+	if err != nil {
+		slog.Error("Failed to accept terms", "error", err, "user_id", user_id)
+		return nil, huma.Error500InternalServerError("Failed to accept terms", err)
+	}
+
+	resp := &AcceptTermsOutput{}
+	resp.Body.Message = "Terms accepted successfully"
+	resp.Body.TermsAcceptedAt = acceptedAt.Format(time.RFC3339)
+	resp.Body.TermsVersion = input.Body.TermsVersion
+
+	slog.Info("Terms accepted", "user_id", user_id, "version", input.Body.TermsVersion)
+	return resp, nil
+}

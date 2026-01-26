@@ -7,8 +7,9 @@ import {
     Keyboard,
     RefreshControl,
     useColorScheme,
+    InteractionManager,
 } from "react-native";
-import React, { useEffect, useCallback, useMemo, useRef, useReducer } from "react";
+import React, { useEffect, useCallback, useMemo, useRef, useReducer, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { SearchBox, AutocompleteSuggestion } from "@/components/SearchBox";
@@ -113,6 +114,7 @@ const Search = (props: Props) => {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [activeTab, setActiveTab] = React.useState(1); // Default to Friends (index 1)
+    const [shouldRenderBlueprints, setShouldRenderBlueprints] = useState(false);
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
@@ -540,16 +542,37 @@ const Search = (props: Props) => {
         );
     }
 
-    // Handle toggle press
+    // Handle toggle press with deferred rendering
     const handleTogglePress = useCallback((option: string) => {
-        setActiveTab(option === "Blueprints" ? 0 : 1);
+        const newTab = option === "Blueprints" ? 0 : 1;
+        setActiveTab(newTab);
+        
+        // Defer Blueprints tab rendering until after interaction completes
+        if (newTab === 0) {
+            const handle = InteractionManager.runAfterInteractions(() => {
+                setShouldRenderBlueprints(true);
+            });
+            return () => handle.cancel();
+        }
     }, []);
+
+    // Ensure Blueprints render when initially selected
+    useEffect(() => {
+        if (activeTab === 0) {
+            const handle = InteractionManager.runAfterInteractions(() => {
+                setShouldRenderBlueprints(true);
+            });
+            return () => handle.cancel();
+        }
+    }, [activeTab]);
 
     return (
         <View style={[styles.container, { paddingTop: 0, paddingBottom: insets.bottom }]}>
             <ThemedView style={{ flex: 1 }}>
                 <ScrollView
                     style={[styles.scrollView, { paddingTop: insets.top + 140 }]}
+                    scrollEventThrottle={16}
+                    removeClippedSubviews={true}
                     refreshControl={
                         <RefreshControl
                             refreshing={false}
@@ -560,7 +583,11 @@ const Search = (props: Props) => {
                     }>
                     {mode === "categories" && (
                         <>
-                            <View style={{ display: activeTab === 1 ? "flex" : "none", paddingBottom: 120 }}>
+                            {/* Friends Tab - Keep mounted but hide when not active */}
+                            <View 
+                                style={{ display: activeTab === 1 ? "flex" : "none", paddingBottom: 120 }}
+                                removeClippedSubviews={activeTab !== 1}
+                            >
                                 <View style={styles.betterTogetherContainer}>
                                     <BetterTogetherCard
                                         onSyncContacts={handleAddContacts}
@@ -577,10 +604,17 @@ const Search = (props: Props) => {
                                     <SuggestedUsers users={suggestedUsers} />
                                 )}
                             </View>
-                            <View style={{ display: activeTab === 0 ? "flex" : "none" }}>
-                                <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
-                                    <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
-                                </Pressable>
+
+                            {/* Blueprints Tab - Lazy render after interaction completes */}
+                            <View 
+                                style={{ display: activeTab === 0 ? "flex" : "none" }}
+                                removeClippedSubviews={activeTab !== 0}
+                            >
+                                {shouldRenderBlueprints && (
+                                    <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
+                                        <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
+                                    </Pressable>
+                                )}
                             </View>
                         </>
                     )}

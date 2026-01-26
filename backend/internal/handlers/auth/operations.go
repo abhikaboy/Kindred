@@ -129,6 +129,24 @@ type DeleteAccountOutput struct {
 	}
 }
 
+// Accept Terms Operation Types
+type AcceptTermsInput struct {
+	Authorization string             `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	Body          AcceptTermsRequest `json:"body"`
+}
+
+type AcceptTermsRequest struct {
+	TermsVersion string `json:"terms_version" validate:"required" example:"1.0" doc:"Version of terms being accepted"`
+}
+
+type AcceptTermsOutput struct {
+	Body struct {
+		Message         string `json:"message" example:"Terms accepted successfully"`
+		TermsAcceptedAt string `json:"terms_accepted_at"`
+		TermsVersion    string `json:"terms_version"`
+	}
+}
+
 // RegisterLoginOperation registers the login endpoint
 func RegisterLoginOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
@@ -321,6 +339,20 @@ func RegisterVerifyOTPOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *VerifyOTPInput) (*VerifyOTPOutput, error) {
 		return handler.VerifyOTPHuma(ctx, input)
+	})
+}
+
+// RegisterAcceptTermsOperation registers the accept terms endpoint
+func RegisterAcceptTermsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "accept-terms",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/accept-terms",
+		Summary:     "Accept Terms of Service",
+		Description: "Record user's acceptance of Terms of Service",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *AcceptTermsInput) (*AcceptTermsOutput, error) {
+		return handler.AcceptTermsHuma(ctx, input)
 	})
 }
 

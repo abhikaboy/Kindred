@@ -1,5 +1,5 @@
-import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useRef, useState } from "react";
+import { Dimensions, StyleSheet, TouchableOpacity, View, InteractionManager } from "react-native";
+import React, { useRef, useState, useEffect } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -49,6 +49,18 @@ const Daily = (props: Props) => {
     });
     const [selectedDate, setSelectedDate] = useState(centerDate);
     const [activeTab, setActiveTab] = useState("List");
+    const [shouldRenderCalendar, setShouldRenderCalendar] = useState(false);
+
+    // Defer Calendar view rendering until after interactions complete
+    useEffect(() => {
+        if (activeTab === "Calendar") {
+            // Use InteractionManager to defer heavy rendering
+            const handle = InteractionManager.runAfterInteractions(() => {
+                setShouldRenderCalendar(true);
+            });
+            return () => handle.cancel();
+        }
+    }, [activeTab]);
 
     // Shared Value for Scroll Logic (List View)
     const animatedScrollY = useSharedValue(0);
@@ -133,13 +145,21 @@ const Daily = (props: Props) => {
             
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
                 <View style={{ flex: 1 }}>
-                    {activeTab === "List" ? (
+                    {/* List View - Keep mounted but hide when not active */}
+                    <View 
+                        style={{ 
+                            flex: 1, 
+                            display: activeTab === "List" ? "flex" : "none" 
+                        }}
+                        removeClippedSubviews={activeTab !== "List"}
+                    >
                         <Animated.ScrollView 
                             ref={scrollViewRef}
                             style={{ flex: 1 }}
                             showsVerticalScrollIndicator={false}
                             onScroll={listScrollHandler}
-                            scrollEventThrottle={1}
+                            scrollEventThrottle={16}
+                            removeClippedSubviews={true}
                             contentContainerStyle={{ paddingBottom: 128 }}>
                             {renderHeader()}
                             <TaskListView 
@@ -152,8 +172,17 @@ const Daily = (props: Props) => {
                                 onQuickSchedule={handleQuickSchedule}
                             />
                         </Animated.ScrollView>
-                    ) : (
-                        <View style={{ flex: 1 }}>
+                    </View>
+
+                    {/* Calendar View - Lazy render after interaction completes */}
+                    <View 
+                        style={{ 
+                            flex: 1, 
+                            display: activeTab === "Calendar" ? "flex" : "none" 
+                        }}
+                        removeClippedSubviews={activeTab !== "Calendar"}
+                    >
+                        {shouldRenderCalendar && (
                             <CalendarView 
                                 selectedDate={selectedDate}
                                 tasksWithSpecificTime={tasksWithSpecificTime}
@@ -163,8 +192,8 @@ const Daily = (props: Props) => {
                                 scrollViewRef={calendarScrollViewRef}
                                 headerContent={renderHeader()}
                             />
-                        </View>
-                    )}
+                        )}
+                    </View>
                 </View>
             </View>
         </DrawerLayout>

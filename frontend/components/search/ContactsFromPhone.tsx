@@ -13,7 +13,7 @@ type ContactsFromPhoneProps = {
     contacts: MatchedContact[];
 };
 
-export const ContactsFromPhone: React.FC<ContactsFromPhoneProps> = ({ contacts }) => {
+const ContactsFromPhoneComponent: React.FC<ContactsFromPhoneProps> = ({ contacts }) => {
     const renderContact = useCallback(
         ({ item }: { item: MatchedContact }) => (
             <ContactCard
@@ -61,4 +61,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         overflow: "visible",
     },
+});
+
+// Memoize ContactsFromPhone to prevent unnecessary re-renders
+export const ContactsFromPhone = React.memo(ContactsFromPhoneComponent, (prevProps, nextProps) => {
+    return prevProps.contacts === nextProps.contacts;
 });

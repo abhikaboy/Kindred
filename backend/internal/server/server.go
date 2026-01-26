@@ -18,6 +18,7 @@ import (
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	referral "github.com/abhikaboy/Kindred/internal/handlers/referral"
+	report "github.com/abhikaboy/Kindred/internal/handlers/report"
 	"github.com/abhikaboy/Kindred/internal/handlers/rewards"
 	"github.com/abhikaboy/Kindred/internal/handlers/settings"
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
@@ -124,6 +125,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register settings routes
 	settings.Router(api, collections)
+
+	// Register report routes
+	report.Routes(api, collections)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)

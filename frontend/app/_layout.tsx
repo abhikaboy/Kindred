@@ -32,6 +32,7 @@ import { AnimatePresence } from "moti";
 import * as Sentry from "@sentry/react-native";
 import { KudosProvider } from "@/contexts/kudosContext";
 import { SelectedGroupProvider } from "@/contexts/SelectedGroupContext";
+import { AlertProvider } from "@/contexts/AlertContext";
 
 Sentry.init({
     dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
@@ -149,17 +150,19 @@ export default Sentry.wrap(function RootLayout() {
                                                         <GestureHandlerRootView style={{ flex: 1 }}>
                                                             <PortalProvider>
                                                                 <BottomSheetModalProvider>
-                                                                    <Toastable
-                                                                        statusMap={{
-                                                                            success: ThemedColor.success,
-                                                                            danger: ThemedColor.error,
-                                                                            warning: ThemedColor.warning,
-                                                                            info: ThemedColor.primary,
-                                                                        }}
-                                                                        offset={top}
-                                                                    />
-                                                                    <Slot />
-                                                                    <StatusBar style="light" />
+                                                                    <AlertProvider>
+                                                                        <Toastable
+                                                                            statusMap={{
+                                                                                success: ThemedColor.success,
+                                                                                danger: ThemedColor.error,
+                                                                                warning: ThemedColor.warning,
+                                                                                info: ThemedColor.primary,
+                                                                            }}
+                                                                            offset={top}
+                                                                        />
+                                                                        <Slot />
+                                                                        <StatusBar style="light" />
+                                                                    </AlertProvider>
                                                                 </BottomSheetModalProvider>
                                                             </PortalProvider>
                                                         </GestureHandlerRootView>

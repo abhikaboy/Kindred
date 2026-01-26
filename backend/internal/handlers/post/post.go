@@ -545,6 +545,21 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 		return nil, huma.Error500InternalServerError("Failed to get user info", err)
 	}
 
+	// Parse mentions
+	var mentions []types.MentionReference
+	if input.Body.Mentions != nil {
+		for _, m := range input.Body.Mentions {
+			mentionID, err := primitive.ObjectIDFromHex(m.ID)
+			if err != nil {
+				continue // Skip invalid IDs
+			}
+			mentions = append(mentions, types.MentionReference{
+				ID:     mentionID,
+				Handle: m.Handle,
+			})
+		}
+	}
+
 	doc := types.CommentDocument{
 		ID: primitive.NewObjectID(),
 		User: &types.UserExtendedReferenceInternal{
@@ -554,6 +569,7 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 			ProfilePicture: user.ProfilePicture,
 		},
 		Content:  input.Body.Content,
+		Mentions: mentions,
 		Metadata: types.NewCommentMetadata(),
 	}
 

@@ -21,7 +21,7 @@ type ExplorePageProps = {
     loading?: boolean;
 };
 
-export const ExplorePage: React.FC<ExplorePageProps> = ({ categoryGroups, focusStyle, loading = false }) => {
+const ExplorePageComponent: React.FC<ExplorePageProps> = ({ categoryGroups, focusStyle, loading = false }) => {
     const router = useRouter(); // Initialize router for navigation
 
     // Handle navigation to category page
@@ -152,4 +152,13 @@ const styles = StyleSheet.create({
     suggestedSkeletonHeader: {
         paddingHorizontal: 16,
     },
+});
+
+// Memoize ExplorePage to prevent unnecessary re-renders
+export const ExplorePage = React.memo(ExplorePageComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.categoryGroups === nextProps.categoryGroups &&
+        prevProps.loading === nextProps.loading
+        // Don't compare focusStyle as it's an animated style
+    );
 });

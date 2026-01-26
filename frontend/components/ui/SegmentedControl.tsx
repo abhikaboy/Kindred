@@ -24,19 +24,22 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
     useEffect(() => {
         if (segmentWidth > 0) {
             const index = options.indexOf(selectedOption);
-            translateX.value = withTiming(index * segmentWidth);
+            translateX.value = withTiming(index * segmentWidth, {
+                duration: 200,
+            });
         }
     }, [selectedOption, segmentWidth, options]);
 
     const handlePress = (option: string) => {
         const index = options.indexOf(option);
-        // Animate immediately
-        translateX.value = withTiming(index * segmentWidth);
         
-        // Defer state update slightly to allow animation frame to start
-        requestAnimationFrame(() => {
-            onOptionPress(option);
+        // Start animation immediately with optimized config
+        translateX.value = withTiming(index * segmentWidth, {
+            duration: 200,
         });
+        
+        // Call the handler immediately - the animation will continue independently
+        onOptionPress(option);
     };
 
     const animatedStyle = useAnimatedStyle(() => {

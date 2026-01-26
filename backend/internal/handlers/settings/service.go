@@ -43,8 +43,8 @@ func (s *Service) UpdateUserSettings(userID primitive.ObjectID, settings types.U
 
 	// Prefix all fields with "settings." for nested update
 	prefixedFields := bson.M{}
-	for key, value := range updateFields {
-		prefixedFields["settings."+key] = value
+	for _, elem := range *updateFields {
+		prefixedFields["settings."+elem.Key] = elem.Value
 	}
 
 	update := bson.M{"$set": prefixedFields}

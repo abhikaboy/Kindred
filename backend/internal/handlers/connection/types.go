@@ -69,13 +69,15 @@ type ConnectionDocument struct {
 
 // Internal version for MongoDB operations
 type ConnectionDocumentInternal struct {
-	ID         primitive.ObjectID     `bson:"_id,omitempty"`
-	Users      []primitive.ObjectID   `bson:"users"` // Always sorted
-	Status     RelationshipStatus     `bson:"status"`
-	Requester  ConnectionUserInternal `bson:"requester"`
-	ReceiverID primitive.ObjectID     `bson:"receiver_id"`
-	CreatedAt  time.Time              `bson:"created_at"`
-	AcceptedAt *time.Time             `bson:"accepted_at,omitempty"`
+	ID         primitive.ObjectID      `bson:"_id,omitempty"`
+	Users      []primitive.ObjectID    `bson:"users"` // Always sorted
+	Status     RelationshipStatus      `bson:"status"`
+	Requester  ConnectionUserInternal  `bson:"requester"`
+	ReceiverID primitive.ObjectID      `bson:"receiver_id"`
+	CreatedAt  time.Time               `bson:"created_at"`
+	AcceptedAt *time.Time              `bson:"accepted_at,omitempty"`
+	BlockerID  *primitive.ObjectID     `bson:"blocker_id,omitempty"` // For blocked relationships
+	UpdatedAt  *time.Time              `bson:"updated_at,omitempty"`
 }
 
 // Helper function to convert from internal to API type

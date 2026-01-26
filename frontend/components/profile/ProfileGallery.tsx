@@ -91,7 +91,7 @@ const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
     );
 };
 
-export default function ProfileGallery({ userId, images }: ProfileGalleryProps) {
+const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
     const { user } = useAuth();
     const ThemedColor = useThemeColor();
     const [postImages, setPostImages] = useState<PostImage[]>([]);
@@ -391,4 +391,12 @@ const styles = StyleSheet.create({
         textAlign: "center",
         lineHeight: 20,
     },
+});
+
+// Memoize ProfileGallery to prevent unnecessary re-renders
+export default React.memo(ProfileGalleryComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.userId === nextProps.userId &&
+        prevProps.images === nextProps.images
+    );
 });

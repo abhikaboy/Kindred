@@ -400,6 +400,12 @@ export default function Settings() {
                             <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />
                         </TouchableOpacity>
                     </SettingsCard>
+                    
+                    <SettingsActionRow 
+                        label="Blocked Users" 
+                        onPress={() => router.push('/(logged-in)/(tabs)/(task)/blocked-users')}
+                        icon="ban-outline"
+                    />
                 </SettingsSection>
 
                 <SettingsSection title="RESOURCES">

@@ -671,10 +671,10 @@ export default function Feed() {
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
                 removeClippedSubviews={true}
-                maxToRenderPerBatch={3}
-                updateCellsBatchingPeriod={50}
-                initialNumToRender={3}
-                windowSize={5}
+                maxToRenderPerBatch={5}
+                updateCellsBatchingPeriod={100}
+                initialNumToRender={5}
+                windowSize={10}
             />
         </View>
     );
