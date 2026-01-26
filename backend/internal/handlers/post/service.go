@@ -34,6 +34,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllPosts fetches all Post documents from MongoDB with pagination
 func (s *Service) GetAllPosts(limit, offset int) ([]types.PostDocument, int, error) {
 	ctx := context.Background()

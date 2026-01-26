@@ -39,6 +39,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllCongratulations fetches all Congratulation documents from MongoDB for a specific receiver
 func (s *Service) GetAllCongratulations(receiverID primitive.ObjectID) ([]CongratulationDocument, error) {
 	if s.Congratulations == nil {

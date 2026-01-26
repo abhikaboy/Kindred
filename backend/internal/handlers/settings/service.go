@@ -17,6 +17,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetUserSettings retrieves settings for a user
 func (s *Service) GetUserSettings(userID primitive.ObjectID) (*types.UserSettings, error) {
 	ctx := context.Background()

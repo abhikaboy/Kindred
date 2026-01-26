@@ -23,6 +23,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllConnections fetches all Connection documents from MongoDB
 func (s *Service) GetAllConnections() ([]ConnectionDocument, error) {
 	ctx := context.Background()
@@ -613,7 +618,7 @@ func (s *Service) GetBlockedUsers(ctx context.Context, userID primitive.ObjectID
 	}
 	
 	// Extract the blocked user IDs
-	var blockedUsers []ConnectionUser
+	blockedUsers := []ConnectionUser{} // Initialize as empty slice instead of nil
 	for _, rel := range blockedRelationships {
 		// Find which user in the pair is the blocked one (not the blocker)
 		var blockedUserID primitive.ObjectID

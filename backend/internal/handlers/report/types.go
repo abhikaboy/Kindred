@@ -24,6 +24,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // Input/Output types for report operations
 
 // Report Post

@@ -1,11 +1,6 @@
 package xutils
 
-import (
-	expo "github.com/oliveroneill/exponent-server-sdk-golang/sdk"
-)
-
-var Client *expo.PushClient
-
+// Notification represents a push notification to be sent
 type Notification struct {
 	Token    string
 	Message  string
@@ -14,81 +9,28 @@ type Notification struct {
 	ImageURL string // Optional image URL for notification thumbnail
 }
 
-func initExpoClient() {
-	Client = expo.NewPushClient(nil)
+// DefaultPushSender is the global push notification sender used by the application
+// It can be replaced with a mock for testing
+var DefaultPushSender PushNotificationSender
+
+func init() {
+	// Initialize with the real Expo sender by default
+	DefaultPushSender = NewExpoPushNotificationSender()
 }
 
-func SendBatchNotification(notifications []Notification) error {
-	if Client == nil {
-		initExpoClient()
-	}
-
-	pushMessages := make([]expo.PushMessage, len(notifications))
-	for i, notification := range notifications {
-		data := notification.Data
-		// Add image URL to data if provided
-		if notification.ImageURL != "" {
-			if data == nil {
-				data = make(map[string]string)
-			}
-			data["imageUrl"] = notification.ImageURL
-		}
-
-		message := expo.PushMessage{
-			To:    []expo.ExponentPushToken{expo.ExponentPushToken(notification.Token)},
-			Body:  notification.Message,
-			Data:  data,
-			Title: notification.Title,
-			Sound: "default",
-		}
-		pushMessages[i] = message
-	}
-
-	_, err := Client.PublishMultiple(pushMessages)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// SendNotification sends a single push notification using the default sender
+// This function maintains backward compatibility with existing code
 func SendNotification(notification Notification) error {
-	pushToken, err := expo.NewExponentPushToken(notification.Token)
-	if err != nil {
-		return err
-	}
+	return DefaultPushSender.SendNotification(notification)
+}
 
-	if Client == nil {
-		initExpoClient()
-	}
+// SendBatchNotification sends multiple push notifications using the default sender
+// This function maintains backward compatibility with existing code
+func SendBatchNotification(notifications []Notification) error {
+	return DefaultPushSender.SendBatchNotification(notifications)
+}
 
-	data := notification.Data
-	// Add image data if provided (Expo will show it as attachment/thumbnail)
-	if notification.ImageURL != "" {
-		if data == nil {
-			data = make(map[string]string)
-		}
-		data["imageUrl"] = notification.ImageURL
-	}
-
-	message := &expo.PushMessage{
-		To:    []expo.ExponentPushToken{pushToken},
-		Body:  notification.Message,
-		Data:  data,
-		Title: notification.Title,
-		Sound: "default",
-	}
-
-	response, err := Client.Publish(message)
-
-	if err != nil {
-		return err
-	}
-
-	if response.ValidateResponse() != nil {
-		return response.ValidateResponse()
-	}
-
-	return nil
+// SetPushNotificationSender sets a custom push notification sender (useful for testing)
+func SetPushNotificationSender(sender PushNotificationSender) {
+	DefaultPushSender = sender
 }

@@ -38,7 +38,7 @@ func New() {
 		}
 		defer resp.Body.Close()
 
-		fmt.Printf("http://localhost:8080/ws/" + user_type.(string) + "/" + id.(string) + "\n")
+		fmt.Printf("http://localhost:8080/ws/%s/%s\n", user_type.(string), id.(string))
 
 		if err != nil {
 			slog.LogAttrs(ctx, slog.LevelError, "Error creating request", slog.String("error", err.Error()))

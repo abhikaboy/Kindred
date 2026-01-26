@@ -142,7 +142,8 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 		slog.String("categoryID", id.Hex()),
 		slog.String("newName", updated.Name))
 
-	return nil, nil
+	// Fetch and return the updated category
+	return s.GetCategoryByID(id)
 }
 
 // DeleteCategory removes a Category document by ObjectID.

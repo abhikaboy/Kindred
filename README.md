@@ -55,4 +55,41 @@ nix develop --impure
 
 <!-- markdownlint-enable MD013 -->
 
+# Testing
+
+## Backend Tests
+
+The backend uses an **ephemeral database** system for testing. Each test gets a fresh, isolated MongoDB database that's automatically created and destroyed.
+
+### Quick Start
+
+**[→ 5-Minute Quick Start Guide](TESTING_QUICKSTART.md)**
+
+```bash
+# 1. Install MongoDB
+brew install mongodb-community && brew services start mongodb-community
+
+# 2. Verify setup
+make check-mongodb
+
+# 3. Run tests
+make test-backend
+```
+
+### Documentation
+
+- **[Quick Start](TESTING_QUICKSTART.md)** - Get running in 5 minutes ⚡
+- **[Testing Setup](TESTING_SETUP.md)** - Complete reference guide
+- **[MongoDB Setup](backend/internal/testing/MONGODB_SETUP.md)** - Detailed installation instructions
+- **[Testing README](backend/internal/testing/README.md)** - Test infrastructure details
+- **[Architecture](backend/internal/testing/ARCHITECTURE.md)** - Design decisions and patterns
+
+### Key Features
+
+- ✅ **True isolation** - Each test gets its own database
+- ✅ **Parallel safe** - Run tests concurrently
+- ✅ **Auto cleanup** - Databases automatically dropped
+- ✅ **Fixtures included** - All 16 collections pre-seeded
+- ✅ **Works anywhere** - Local MongoDB or Atlas
+
 

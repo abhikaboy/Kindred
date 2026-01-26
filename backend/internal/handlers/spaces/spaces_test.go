@@ -22,11 +22,25 @@ import (
 */
 
 func TestUploadFlow(t *testing.T) {
+	// Skip this test in CI or when backend is not running
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	BACKEND_BASE_URL := "http://localhost:8080"
 	RESOURCE_TYPE := "test"
 	RESOURCE_ID := "507f1f77bcf86cd799439011"
 	FILE_TYPE := "image/jpeg"
 	IMAGE_API_URL := "https://picsum.photos/200"
+
+	// Check if backend is running
+	healthCheck, err := http.Get(BACKEND_BASE_URL + "/health")
+	if err != nil || healthCheck.StatusCode != http.StatusOK {
+		t.Skip("Backend server is not running at " + BACKEND_BASE_URL)
+	}
+	if healthCheck != nil {
+		healthCheck.Body.Close()
+	}
 
 	// 1. Fetch a random image from the API
 	imageRes, err := http.Get(IMAGE_API_URL)
@@ -42,13 +56,17 @@ func TestUploadFlow(t *testing.T) {
 	// 2. Get a presigned upload URL from your backend
 	// URI Encode the file type
 	encodedFileType := url.QueryEscape(FILE_TYPE)
-	presignRes, err := http.Get(
-		fmt.Sprintf("%s/v1/uploads/%s/%s/url?file_type=%s", BACKEND_BASE_URL, RESOURCE_TYPE, RESOURCE_ID, encodedFileType),
-	)
+	uploadURLEndpoint := fmt.Sprintf("%s/v1/uploads/%s/%s/url?file_type=%s", BACKEND_BASE_URL, RESOURCE_TYPE, RESOURCE_ID, encodedFileType)
+	presignRes, err := http.Get(uploadURLEndpoint)
 	if err != nil {
 		t.Fatalf("Failed to get presigned upload URL: %v", err)
 	}
 	defer presignRes.Body.Close()
+
+	if presignRes.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(presignRes.Body)
+		t.Fatalf("Failed to get presigned upload URL. Status: %d, Response: %s", presignRes.StatusCode, string(body))
+	}
 
 	// 3. Parse the JSON response to extract the upload_url
 	presignedURLBytes, err := io.ReadAll(presignRes.Body)
@@ -65,7 +83,7 @@ func TestUploadFlow(t *testing.T) {
 		}
 	
 	if err := json.Unmarshal(presignedURLBytes, &response); err != nil {
-		t.Fatalf("Failed to parse JSON response: %v", err)
+		t.Fatalf("Failed to parse JSON response: %v\nStatus: %d\nResponse body: %s", err, presignRes.StatusCode, string(presignedURLBytes))
 	}
 
 	slog.Info("Presigned URL:", "url", response.UploadURL, "public_url", response.PublicURL)	

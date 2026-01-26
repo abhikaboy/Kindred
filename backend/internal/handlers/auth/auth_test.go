@@ -146,19 +146,20 @@ func TestHeaderStructure(t *testing.T) {
 	})
 
 	t.Run("RegisterOutput header structure", func(t *testing.T) {
+		objID, _ := primitive.ObjectIDFromHex("507f1f77bcf86cd799439011")
 		registerOutput := &RegisterOutput{
 			AccessToken:  "test-access-token",
 			RefreshToken: "test-refresh-token",
-			Body: struct {
-				Message string `json:"message" example:"User Created Successfully"`
-			}{
-				Message: "User Created Successfully",
+			Body: SafeUser{
+				ID:          objID,
+				DisplayName: "Test User",
+				Handle:      "testuser",
 			},
 		}
 
 		assert.Equal(t, "test-access-token", registerOutput.AccessToken)
 		assert.Equal(t, "test-refresh-token", registerOutput.RefreshToken)
-		assert.Equal(t, "User Created Successfully", registerOutput.Body.Message)
+		assert.Equal(t, "Test User", registerOutput.Body.DisplayName)
 	})
 }
 
@@ -477,13 +478,14 @@ func TestSeparateTokenHeaders(t *testing.T) {
 
 	t.Run("Register output has separate token headers", func(t *testing.T) {
 		// Create a RegisterOutput
+		objID, _ := primitive.ObjectIDFromHex("507f1f77bcf86cd799439011")
 		output := &RegisterOutput{
 			AccessToken:  "access-789",
 			RefreshToken: "refresh-012",
-			Body: struct {
-				Message string `json:"message" example:"User Created Successfully"`
-			}{
-				Message: "User Created Successfully",
+			Body: SafeUser{
+				ID:          objID,
+				DisplayName: "Test User",
+				Handle:      "testuser",
 			},
 		}
 
@@ -658,8 +660,11 @@ func TestBadInputValidation(t *testing.T) {
 			{
 				name: "Valid registration",
 				registerReq: RegisterRequest{
-					Email:    "test@example.com",
-					Password: "password123",
+					Email:          "test@example.com",
+					Password:       "password123",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
 				},
 				shouldFail:  false,
 				description: "Should pass with valid email and password",
@@ -667,8 +672,11 @@ func TestBadInputValidation(t *testing.T) {
 			{
 				name: "Empty email",
 				registerReq: RegisterRequest{
-					Email:    "",
-					Password: "password123",
+					Email:          "",
+					Password:       "password123",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
 				},
 				shouldFail:  true,
 				description: "Should fail with empty email",
@@ -676,8 +684,11 @@ func TestBadInputValidation(t *testing.T) {
 			{
 				name: "Invalid email format",
 				registerReq: RegisterRequest{
-					Email:    "not-an-email",
-					Password: "password123",
+					Email:          "not-an-email",
+					Password:       "password123",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
 				},
 				shouldFail:  true,
 				description: "Should fail with invalid email format",
@@ -685,8 +696,11 @@ func TestBadInputValidation(t *testing.T) {
 			{
 				name: "Empty password",
 				registerReq: RegisterRequest{
-					Email:    "test@example.com",
-					Password: "",
+					Email:          "test@example.com",
+					Password:       "",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
 				},
 				shouldFail:  true,
 				description: "Should fail with empty password",
@@ -694,8 +708,11 @@ func TestBadInputValidation(t *testing.T) {
 			{
 				name: "Password too short",
 				registerReq: RegisterRequest{
-					Email:    "test@example.com",
-					Password: "short",
+					Email:          "test@example.com",
+					Password:       "short",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
 				},
 				shouldFail:  true,
 				description: "Should fail with password shorter than 8 characters",
@@ -703,11 +720,50 @@ func TestBadInputValidation(t *testing.T) {
 			{
 				name: "Password exactly 8 chars - should pass",
 				registerReq: RegisterRequest{
-					Email:    "test@example.com",
-					Password: "12345678",
+					Email:          "test@example.com",
+					Password:       "12345678",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
 				},
 				shouldFail:  false,
 				description: "Should pass with password exactly 8 characters",
+			},
+			{
+				name: "Missing DisplayName",
+				registerReq: RegisterRequest{
+					Email:          "test@example.com",
+					Password:       "password123",
+					DisplayName:    "",
+					Handle:         "testuser",
+					ProfilePicture: "https://example.com/pic.jpg",
+				},
+				shouldFail:  true,
+				description: "Should fail with missing DisplayName",
+			},
+			{
+				name: "Missing Handle",
+				registerReq: RegisterRequest{
+					Email:          "test@example.com",
+					Password:       "password123",
+					DisplayName:    "Test User",
+					Handle:         "",
+					ProfilePicture: "https://example.com/pic.jpg",
+				},
+				shouldFail:  true,
+				description: "Should fail with missing Handle",
+			},
+			{
+				name: "Missing ProfilePicture",
+				registerReq: RegisterRequest{
+					Email:          "test@example.com",
+					Password:       "password123",
+					DisplayName:    "Test User",
+					Handle:         "testuser",
+					ProfilePicture: "",
+				},
+				shouldFail:  true,
+				description: "Should fail with missing ProfilePicture",
 			},
 		}
 

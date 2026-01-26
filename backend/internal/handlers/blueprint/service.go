@@ -21,6 +21,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllBlueprints fetches all Blueprint documents from MongoDB
 func (s *Service) GetAllBlueprints() ([]BlueprintDocument, error) {
 	ctx := context.Background()

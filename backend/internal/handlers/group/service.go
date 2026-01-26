@@ -19,6 +19,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // CreateGroup adds a new Group document
 func (s *Service) CreateGroup(r *types.GroupDocument) (*types.GroupDocument, error) {
 	ctx := context.Background()
@@ -54,7 +59,7 @@ func (s *Service) GetAllGroups(userID primitive.ObjectID) ([]types.GroupDocument
 	}
 	defer cursor.Close(ctx)
 
-	var results []types.GroupDocument
+	results := []types.GroupDocument{} // Initialize as empty slice instead of nil
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}

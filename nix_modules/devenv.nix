@@ -22,6 +22,7 @@
         '';
 
         env-help.enable = true;
+        
         languages = {
           go.enable = true;
           javascript = {

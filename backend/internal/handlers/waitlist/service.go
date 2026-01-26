@@ -16,6 +16,11 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
+// NewService is the exported version for testing
+func NewService(collections map[string]*mongo.Collection) *Service {
+	return newService(collections)
+}
+
 // GetAllWaitlists fetches all Waitlist documents from MongoDB
 func (s *Service) GetAllWaitlists() ([]WaitlistDocument, error) {
 	ctx := context.Background()
