@@ -1,6 +1,6 @@
 # Kindred Project Makefile
 
-.PHONY: help generate-api build-backend test-backend dev-frontend generate-types clean
+.PHONY: help generate-api build-backend test-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit
 
 # Default target
 help: ## Show this help message
@@ -223,3 +223,64 @@ create-test-db: ## Create an ephemeral test database with fixtures (for inspecti
 	@echo "🌱 Creating ephemeral test database..."
 	@cd backend && go run ./cmd/seed-test-db
 	@echo "✅ Ephemeral test database created"
+
+# Git Hooks
+install-hooks: ## Install pre-commit hooks
+	@echo "🪝 Installing pre-commit hooks..."
+	@if [ -f .git/hooks/pre-commit ]; then \
+		echo "⚠️  Pre-commit hook already exists. Backing up to .git/hooks/pre-commit.backup"; \
+		mv .git/hooks/pre-commit .git/hooks/pre-commit.backup; \
+	fi
+	@ln -s ../../scripts/pre-commit-hook.sh .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "✅ Pre-commit hooks installed"
+	@echo "💡 To skip hooks on commit, use: git commit --no-verify"
+
+uninstall-hooks: ## Uninstall pre-commit hooks
+	@echo "🗑️  Uninstalling pre-commit hooks..."
+	@rm -f .git/hooks/pre-commit
+	@if [ -f .git/hooks/pre-commit.backup ]; then \
+		echo "📦 Restoring backup..."; \
+		mv .git/hooks/pre-commit.backup .git/hooks/pre-commit; \
+	fi
+	@echo "✅ Pre-commit hooks uninstalled"
+
+test-hook: ## Test the pre-commit hook without committing
+	@echo "🧪 Testing pre-commit hook..."
+	@./scripts/pre-commit-hook.sh
+
+# CI/CD
+ci-test: ## Run tests as they would run in CI (with MongoDB)
+	@echo "🔄 Running CI tests..."
+	@$(MAKE) mongodb-start
+	@sleep 2
+	@echo "🧪 Running tests with MongoDB..."
+	@cd backend && MONGO_URI=mongodb://localhost:27017 TEST_MONGO_URI=mongodb://localhost:27017 go test -v -race ./...
+	@$(MAKE) mongodb-stop
+
+ci-test-short: ## Run only unit tests (fast, no MongoDB required)
+	@echo "⚡ Running unit tests..."
+	@cd backend && go test -short -v ./...
+
+ci-coverage: ## Generate test coverage report
+	@echo "📊 Generating coverage report..."
+	@cd backend && go test -short -coverprofile=coverage.out ./...
+	@cd backend && go tool cover -html=coverage.out -o coverage.html
+	@echo "✅ Coverage report generated: backend/coverage.html"
+	@cd backend && go tool cover -func=coverage.out | grep total
+
+# Pre-commit framework (optional)
+install-pre-commit-framework: ## Install pre-commit framework (requires Python)
+	@echo "📦 Installing pre-commit framework..."
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		echo "✅ pre-commit already installed"; \
+	else \
+		echo "Installing pre-commit..."; \
+		pip install pre-commit || pip3 install pre-commit; \
+	fi
+	@pre-commit install
+	@echo "✅ Pre-commit framework installed"
+
+run-pre-commit: ## Run pre-commit on all files
+	@echo "🔍 Running pre-commit on all files..."
+	@pre-commit run --all-files

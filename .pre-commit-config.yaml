@@ -1,0 +1,70 @@
+# Pre-commit hooks configuration
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Go formatting and linting
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+        name: Format Go code
+        files: \.go$
+        args: [-w]
+
+      - id: go-vet
+        name: Run go vet
+        files: \.go$
+
+      - id: go-mod-tidy
+        name: Run go mod tidy
+        files: (go\.mod|go\.sum)$
+        pass_filenames: false
+
+  # Run Go tests
+  - repo: local
+    hooks:
+      - id: go-test-short
+        name: Run Go unit tests
+        entry: bash -c 'cd backend && go test -short ./...'
+        language: system
+        files: \.go$
+        pass_filenames: false
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+
+      - id: end-of-file-fixer
+        name: Fix end of files
+
+      - id: check-yaml
+        name: Check YAML syntax
+        exclude: ^(frontend/|nix_modules/)
+
+      - id: check-json
+        name: Check JSON syntax
+
+      - id: check-added-large-files
+        name: Check for large files
+        args: ['--maxkb=1000']
+
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+
+      - id: detect-private-key
+        name: Detect private keys
+
+  # TypeScript/JavaScript linting (if you have ESLint configured)
+  # - repo: https://github.com/pre-commit/mirrors-eslint
+  #   rev: v8.56.0
+  #   hooks:
+  #     - id: eslint
+  #       files: \.(ts|tsx|js|jsx)$
+  #       args: [--fix]
+  #       additional_dependencies:
+  #         - eslint
+  #         - typescript

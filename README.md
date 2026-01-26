@@ -80,6 +80,8 @@ make test-backend
 
 - **[Quick Start](TESTING_QUICKSTART.md)** - Get running in 5 minutes ⚡
 - **[Testing Setup](TESTING_SETUP.md)** - Complete reference guide
+- **[CI/CD & Hooks](TESTING_CI_CD.md)** - GitHub Actions and pre-commit hooks
+- **[Nix Integration](NIX_TESTING_SETUP.md)** - Automatic setup in Nix environment
 - **[MongoDB Setup](backend/internal/testing/MONGODB_SETUP.md)** - Detailed installation instructions
 - **[Testing README](backend/internal/testing/README.md)** - Test infrastructure details
 - **[Architecture](backend/internal/testing/ARCHITECTURE.md)** - Design decisions and patterns
@@ -91,5 +93,5 @@ make test-backend
 - ✅ **Auto cleanup** - Databases automatically dropped
 - ✅ **Fixtures included** - All 16 collections pre-seeded
 - ✅ **Works anywhere** - Local MongoDB or Atlas
-
-
+- ✅ **CI/CD ready** - GitHub Actions workflows included
+- ✅ **Pre-commit hooks** - Auto-installed in Nix environment

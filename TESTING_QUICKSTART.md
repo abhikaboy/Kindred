@@ -1,127 +1,123 @@
 # Testing Quick Start Guide
 
-Get up and running with tests in 5 minutes.
-
-## Step 1: Install MongoDB
-
-### macOS (Recommended)
+## 🚀 Setup (One Time)
 
 ```bash
-brew install mongodb-community
-brew services start mongodb-community
+# Install pre-commit hooks
+make install-hooks
+
+# Start MongoDB for tests
+make mongodb-start
 ```
 
-### Docker (Alternative)
+## 🧪 Running Tests
 
 ```bash
-docker run -d --name mongodb-test -p 27017:27017 mongo:latest
-```
+# Quick unit tests (no MongoDB needed)
+make ci-test-short
 
-## Step 2: Verify Setup
-
-```bash
-make check-mongodb
-```
-
-You should see:
-```
-✅ MongoDB is ready for testing!
-```
-
-## Step 3: Run Tests
-
-```bash
+# Full test suite (with MongoDB)
 make test-backend
+
+# Run with verbose output
+make test-backend VERBOSE=1
+
+# Generate coverage report
+make ci-coverage
 ```
 
-That's it! 🎉
+## 🪝 Git Workflow
 
-## What Just Happened?
+```bash
+# Make your changes
+git add .
 
-1. **MongoDB Started** - Running on `localhost:27017`
-2. **Tests Run** - Each test gets a fresh database
-3. **Auto Cleanup** - Test databases are automatically dropped
+# Commit (hooks run automatically)
+git commit -m "Your message"
 
-## Example Test
+# If hooks fail, fix issues and try again
+# Or skip hooks (not recommended)
+git commit --no-verify -m "Your message"
+```
+
+## 📊 Test the Hook Manually
+
+```bash
+# Test without committing
+make test-hook
+```
+
+## 🔄 GitHub Actions
+
+Tests run automatically on:
+- Every push to `main` or `develop`
+- Every pull request to `main` or `develop`
+
+View results at: `https://github.com/YOUR_USERNAME/Kindred/actions`
+
+## 🛠️ Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `make install-hooks` | Install pre-commit hooks |
+| `make test-hook` | Test hooks without committing |
+| `make ci-test-short` | Fast unit tests only |
+| `make ci-test` | Full CI test suite |
+| `make ci-coverage` | Generate coverage report |
+| `make mongodb-start` | Start MongoDB for tests |
+| `make mongodb-stop` | Stop MongoDB |
+| `make uninstall-hooks` | Remove pre-commit hooks |
+
+## ⚡ What the Pre-commit Hook Does
+
+1. ✅ Checks Go code formatting
+2. ✅ Runs `go vet` for static analysis
+3. ✅ Runs unit tests (fast)
+4. ⚠️ Warns about TODO/FIXME comments
+5. ⚠️ Warns about debug print statements
+
+## 📝 Writing Tests
 
 ```go
-func TestMyFeature(t *testing.T) {
-    // Setup: Creates fresh database with fixtures
-    testDB, fixtures, err := testing.SetupTestEnvironment()
-    if err != nil {
-        t.Fatalf("Setup failed: %v", err)
+// Use the testing framework
+type MyServiceTestSuite struct {
+    testpkg.BaseSuite
+    service *MyService
+}
+
+// Each test gets a fresh database
+func (s *MyServiceTestSuite) TestMyFeature() {
+    user := s.GetUser(0)  // Get test user
+    // Your test code
+}
+
+// Mark integration tests
+func TestIntegration(t *testing.T) {
+    if testing.Short() {
+        t.Skip("Skipping integration test")
     }
-    defer testing.TeardownTestEnvironment(testDB) // Auto cleanup
-    
-    // Get test data
-    user := fixtures.GetTestUser(0)
-    
-    // Your test logic here
-    // ...
-    
-    // Database drops automatically when test completes
+    // test code
 }
 ```
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
-### "Connection refused"
-
-MongoDB isn't running. Start it:
-
+**Hook not running?**
 ```bash
-# macOS
-brew services start mongodb-community
-
-# Docker
-docker start mongodb-test
+make uninstall-hooks
+make install-hooks
 ```
 
-### "mongosh: command not found"
-
-Install mongosh:
-
+**MongoDB not connecting?**
 ```bash
-brew install mongosh
-```
-
-### Tests are slow
-
-Use local MongoDB (not Atlas) for faster tests:
-
-```bash
-export TEST_MONGO_URI="mongodb://localhost:27017"
-```
-
-## Next Steps
-
-- **[Full Testing Guide](TESTING_SETUP.md)** - Complete documentation
-- **[MongoDB Setup](backend/internal/testing/MONGODB_SETUP.md)** - Detailed installation
-- **[Architecture](backend/internal/testing/ARCHITECTURE.md)** - How it works
-
-## Common Commands
-
-```bash
-# Check MongoDB status
+make mongodb-start
 make check-mongodb
-
-# Run all tests
-make test-backend
-
-# Run specific test
-cd backend && go test ./internal/handlers/post -v
-
-# Create test database to inspect
-make create-test-db
-
-# Clean up leftover test databases
-mongosh --eval 'db.adminCommand("listDatabases").databases.filter(d => d.name.startsWith("test_")).forEach(d => db.getSiblingDB(d.name).dropDatabase())'
 ```
 
-## Key Features
+**Tests failing in CI but not locally?**
+- Check MongoDB is running: `make mongodb-start`
+- Run CI tests locally: `make ci-test`
 
-✅ **Isolated** - Each test gets its own database  
-✅ **Fast** - Local MongoDB is quick  
-✅ **Parallel** - Tests can run concurrently  
-✅ **Clean** - Automatic cleanup  
-✅ **Realistic** - Pre-seeded fixtures for all collections
+## 📚 More Info
+
+See [TESTING_CI_CD.md](./TESTING_CI_CD.md) for detailed documentation.

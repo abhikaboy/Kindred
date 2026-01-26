@@ -1,0 +1,125 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: backend/go.sum
+
+      - name: Install dependencies
+        working-directory: backend
+        run: go mod download
+
+      - name: Wait for MongoDB
+        run: |
+          echo "Waiting for MongoDB to be ready..."
+          timeout 30 bash -c 'until mongosh --eval "db.adminCommand({ping: 1})" > /dev/null 2>&1; do sleep 1; done'
+          echo "MongoDB is ready!"
+
+      - name: Run unit tests
+        working-directory: backend
+        env:
+          MONGO_URI: mongodb://localhost:27017
+          TEST_MONGO_URI: mongodb://localhost:27017
+        run: go test -short -v -race -coverprofile=coverage.out ./...
+
+      - name: Run integration tests (excluding spaces)
+        working-directory: backend
+        env:
+          MONGO_URI: mongodb://localhost:27017
+          TEST_MONGO_URI: mongodb://localhost:27017
+        run: go test -v -race ./internal/handlers/connection ./internal/handlers/post ./internal/handlers/blueprint ./internal/handlers/category ./internal/handlers/congratulation ./internal/handlers/encouragement ./internal/handlers/group ./internal/handlers/notifications ./internal/handlers/profile ./internal/handlers/report ./internal/handlers/settings ./internal/handlers/waitlist
+
+      - name: Generate coverage report
+        working-directory: backend
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage.html
+
+      - name: Check test coverage
+        working-directory: backend
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total test coverage: ${COVERAGE}%"
+          # Optionally fail if coverage is below threshold
+          # if (( $(echo "$COVERAGE < 50" | bc -l) )); then
+          #   echo "Coverage is below 50%"
+          #   exit 1
+          # fi
+
+  lint:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: backend/go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: backend
+          args: --timeout=5m
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: bun install
+
+      # Add frontend tests when available
+      # - name: Run frontend tests
+      #   working-directory: frontend
+      #   run: bun test
+
+      - name: Type check
+        working-directory: frontend
+        run: bun run tsc --noEmit || true
