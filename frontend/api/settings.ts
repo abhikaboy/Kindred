@@ -32,9 +32,29 @@ export const getUserSettings = async (): Promise<UserSettings> => {
  * Updates settings for the authenticated user (supports partial updates)
  */
 export const updateUserSettings = async (settings: Partial<UserSettings>): Promise<{ message: string }> => {
+    // Fetch current settings first to merge with the update
+    const currentSettings = await getUserSettings();
+    
+    // Deep merge the settings
+    const mergedSettings: UserSettings = {
+        ...currentSettings,
+        ...settings,
+        notifications: {
+            ...currentSettings.notifications,
+            ...(settings.notifications || {}),
+        },
+        display: {
+            ...currentSettings.display,
+            ...(settings.display || {}),
+        },
+    };
+    
+    // Log to debug false value handling
+    console.log('Merged settings being sent:', JSON.stringify(mergedSettings, null, 2));
+    
     const { data, error } = await client.PATCH("/v1/user/settings", {
         params: withAuthHeaders({}),
-        body: settings as UserSettings,
+        body: mergedSettings,
     });
 
     if (error) {

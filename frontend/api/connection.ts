@@ -59,3 +59,18 @@ export const getBlockedUsers = async (): Promise<BlockedUser[]> => {
 
     return data as any;
 };
+
+/**
+ * Get list of friends
+ */
+export const getFriendsAPI = async (): Promise<any[]> => {
+    const { data, error } = await client.GET("/v1/user/connections/friends", {
+        params: withAuthHeaders(),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get friends: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};

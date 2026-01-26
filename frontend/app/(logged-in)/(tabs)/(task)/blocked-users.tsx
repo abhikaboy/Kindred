@@ -74,7 +74,7 @@ export default function BlockedUsersScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <X size={24} color={ThemedColor.text} weight="bold" />
                 </TouchableOpacity>
-                <ThemedText type="title" style={styles.headerTitle}>
+                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
                     Blocked Users
                 </ThemedText>
                 <View style={styles.placeholder} />
