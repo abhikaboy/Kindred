@@ -138,13 +138,13 @@ const VerifyPhoneOnboarding = (props: Props) => {
                 <OnboardingBackground />
             </View>
 
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
                 <View style={styles.contentContainer}>
                     {/* Header Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.headerContainer,
                             {
@@ -153,7 +153,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
                             }
                         ]}
                     >
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={handleBack}
                             style={styles.backButton}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -170,7 +170,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
                     </Animated.View>
 
                     {/* OTP Input Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.otpContainer,
                             {
@@ -198,8 +198,8 @@ const VerifyPhoneOnboarding = (props: Props) => {
                                             width: screenWidth * 0.18,
                                             height: screenWidth * 0.20,
                                             borderWidth: 2,
-                                            borderColor: verifyOTPError 
-                                                ? '#ff3b30' 
+                                            borderColor: verifyOTPError
+                                                ? '#ff3b30'
                                                     : 'transparent',
                                         },
                                         pinCodeTextStyle: {
@@ -260,7 +260,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
                     </Animated.View>
 
                     {/* Button Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.buttonContainer,
                             {
@@ -350,14 +350,15 @@ const styles = StyleSheet.create({
     },
     successContainer: {
         marginTop: 16,
-        alignSelf: 'flex-start',
+        width: '100%',
+        alignSelf: 'center',
     },
     successText: {
         color: '#34c759',
         fontSize: 16,
         fontFamily: 'Outfit',
         fontWeight: '600',
-        textAlign: 'left',
+        textAlign: 'center',
     },
     resendContainer: {
         flexDirection: 'row',

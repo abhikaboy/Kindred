@@ -18,7 +18,7 @@ const PhoneOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updateOnboardingData } = useOnboarding();
-    
+
     const [show, setShow] = useState(false);
     const [countryCode, setCountryCode] = useState("+1");
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -48,7 +48,7 @@ const PhoneOnboarding = (props: Props) => {
     const handleContinue = () => {
         // Store phone number in onboarding context
         const fullPhoneNumber = `${countryCode}${phoneNumber}`;
-        updateOnboardingData({ 
+        updateOnboardingData({
             phone: fullPhoneNumber
         });
         router.push("/(onboarding)/verify-phone");
@@ -105,7 +105,7 @@ const PhoneOnboarding = (props: Props) => {
                         borderRadius: 16,
                         padding: 16,
                         backgroundColor: ThemedColor.lightened,
-                        paddingVertical: 24,
+                        paddingVertical: 20,
                         color: ThemedColor.text,
                         fontFamily: "Outfit",
                     },
@@ -116,13 +116,13 @@ const PhoneOnboarding = (props: Props) => {
                 }}
             />
 
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
                 <View style={styles.contentContainer}>
                     {/* Header Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.headerContainer,
                             {
@@ -140,7 +140,7 @@ const PhoneOnboarding = (props: Props) => {
                     </Animated.View>
 
                     {/* Input Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.inputContainer,
                             {
@@ -161,7 +161,7 @@ const PhoneOnboarding = (props: Props) => {
                                     {countryCode}
                                 </ThemedText>
                             </TouchableOpacity>
-                            
+
                             <TextInput
                                 style={[
                                     styles.phoneInput,
@@ -178,14 +178,14 @@ const PhoneOnboarding = (props: Props) => {
                                 maxLength={15}
                             />
                         </View>
-                        
+
                         <ThemedText style={[styles.helperText, { color: ThemedColor.caption }]}>
                             Standard messaging rates may apply
                         </ThemedText>
                     </Animated.View>
 
                     {/* Button Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.buttonContainer,
                             {

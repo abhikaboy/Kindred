@@ -71,7 +71,8 @@ func createTestUser() *User {
 	userID := primitive.NewObjectID()
 	return &User{
 		ID:              userID,
-		Email:           "test@example.com",
+		Email:           "",
+		Phone:           "+1234567890",
 		Password:        "password123",
 		DisplayName:     "Test User",
 		Handle:          "@testuser",
@@ -224,13 +225,20 @@ func TestRequestValidation(t *testing.T) {
 	})
 
 	t.Run("RegisterRequest validation", func(t *testing.T) {
-		validRegister := RegisterRequest{
+		validRegisterWithEmail := RegisterRequest{
 			Email:    "test@example.com",
 			Password: "password123",
 		}
 
-		assert.Equal(t, "test@example.com", validRegister.Email)
-		assert.Equal(t, "password123", validRegister.Password)
+		validRegisterWithPhone := RegisterRequest{
+			Phone:    "+1234567890",
+			Password: "password123",
+		}
+
+		assert.Equal(t, "test@example.com", validRegisterWithEmail.Email)
+		assert.Equal(t, "password123", validRegisterWithEmail.Password)
+		assert.Equal(t, "+1234567890", validRegisterWithPhone.Phone)
+		assert.Equal(t, "password123", validRegisterWithPhone.Password)
 	})
 
 	t.Run("LoginRequestApple validation", func(t *testing.T) {
@@ -373,15 +381,24 @@ func TestInputOutputTypes(t *testing.T) {
 	})
 
 	t.Run("RegisterInput structure", func(t *testing.T) {
-		registerInput := &RegisterInput{
+		registerInputWithEmail := &RegisterInput{
 			Body: RegisterRequest{
 				Email:    "test@example.com",
 				Password: "password123",
 			},
 		}
 
-		assert.Equal(t, "test@example.com", registerInput.Body.Email)
-		assert.Equal(t, "password123", registerInput.Body.Password)
+		registerInputWithPhone := &RegisterInput{
+			Body: RegisterRequest{
+				Phone:    "+1234567890",
+				Password: "password123",
+			},
+		}
+
+		assert.Equal(t, "test@example.com", registerInputWithEmail.Body.Email)
+		assert.Equal(t, "password123", registerInputWithEmail.Body.Password)
+		assert.Equal(t, "+1234567890", registerInputWithPhone.Body.Phone)
+		assert.Equal(t, "password123", registerInputWithPhone.Body.Password)
 	})
 
 	t.Run("LogoutInput structure", func(t *testing.T) {
@@ -664,7 +681,7 @@ func TestBadInputValidation(t *testing.T) {
 			description string
 		}{
 			{
-				name: "Valid registration",
+				name: "Valid registration with email",
 				registerReq: RegisterRequest{
 					Email:          "test@example.com",
 					Password:       "password123",
@@ -676,16 +693,17 @@ func TestBadInputValidation(t *testing.T) {
 				description: "Should pass with valid email and password",
 			},
 			{
-				name: "Empty email",
+				name: "Valid registration with phone (no email)",
 				registerReq: RegisterRequest{
 					Email:          "",
+					Phone:          "+1234567890",
 					Password:       "password123",
 					DisplayName:    "Test User",
 					Handle:         "testuser",
 					ProfilePicture: "https://example.com/pic.jpg",
 				},
-				shouldFail:  true,
-				description: "Should fail with empty email",
+				shouldFail:  false,
+				description: "Should pass with phone and no email",
 			},
 			{
 				name: "Invalid email format",

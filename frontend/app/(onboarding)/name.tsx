@@ -17,7 +17,7 @@ const NameOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updateDisplayName, updateHandle, validationErrors } = useOnboarding();
-    
+
     const [name, setName] = useState(onboardingData.displayName);
     const [handle, setHandle] = useState(onboardingData.handle.replace('@', ''));
     const [showErrors, setShowErrors] = useState(false);
@@ -48,7 +48,7 @@ const NameOnboarding = (props: Props) => {
         updateDisplayName(name);
         updateHandle(handle);
         setShowErrors(true);
-        
+
         if (!validationErrors.displayName && !validationErrors.handle && isValid) {
             // If Apple ID is present, skip password screen and go directly to photo
             // Apple users don't need a password
@@ -75,13 +75,13 @@ const NameOnboarding = (props: Props) => {
                 <OnboardingBackground />
             </View>
 
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? -20 : 0}
                 enabled
             >
-                <ScrollView 
+                <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
@@ -89,7 +89,7 @@ const NameOnboarding = (props: Props) => {
                 >
                     <View style={styles.innerContainer}>
                         {/* Header Section */}
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.headerContainer,
                                 {
@@ -107,7 +107,7 @@ const NameOnboarding = (props: Props) => {
                         </Animated.View>
 
                         {/* Input Section */}
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.inputContainer,
                                 {
@@ -181,7 +181,7 @@ const NameOnboarding = (props: Props) => {
                 </ScrollView>
 
                 {/* Button Section - Always at bottom */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.buttonContainer,
                         {
@@ -263,11 +263,11 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     input: {
-        fontSize: 18,
+        fontSize: 16,
         fontFamily: 'Outfit',
         fontWeight: '400',
-        paddingVertical: 20,
-        paddingHorizontal: 24,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
         borderRadius: 16,
     },
     unifiedInputWrapper: {
@@ -277,17 +277,17 @@ const styles = StyleSheet.create({
         paddingLeft: 24,
     },
     prefixText: {
-        fontSize: 18,
+        fontSize: 16,
         fontFamily: 'Outfit',
         fontWeight: '500',
         marginRight: 4,
     },
     unifiedInput: {
         flex: 1,
-        fontSize: 18,
+        fontSize: 16,
         fontFamily: 'Outfit',
         fontWeight: '400',
-        paddingVertical: 20,
+        paddingVertical: 16,
         paddingRight: 24,
         backgroundColor: 'transparent',
     },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         width: '100%',
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingBottom: 20,
+        paddingBottom: 28,
     },
 });
 

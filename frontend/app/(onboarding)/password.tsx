@@ -18,7 +18,7 @@ const PasswordOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updatePassword, validationErrors } = useOnboarding();
-    
+
     const [password, setPassword] = useState(onboardingData.password);
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -50,7 +50,7 @@ const PasswordOnboarding = (props: Props) => {
     const handleContinue = () => {
         updatePassword(password);
         setShowErrors(true);
-        
+
         if (!validationErrors.password && isValid && passwordsMatch) {
             router.push("/(onboarding)/photo");
         }
@@ -66,13 +66,13 @@ const PasswordOnboarding = (props: Props) => {
                 <OnboardingBackground />
             </View>
 
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? -20 : 0}
                 enabled
             >
-                <ScrollView 
+                <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
@@ -80,7 +80,7 @@ const PasswordOnboarding = (props: Props) => {
                 >
                     <View style={styles.innerContainer}>
                         {/* Header Section */}
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.headerContainer,
                                 {
@@ -98,7 +98,7 @@ const PasswordOnboarding = (props: Props) => {
                         </Animated.View>
 
                         {/* Input Section */}
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.inputContainer,
                                 {
@@ -130,15 +130,15 @@ const PasswordOnboarding = (props: Props) => {
                                         autoCorrect={false}
                                         maxLength={128}
                                     />
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={styles.eyeButton}
                                         onPress={() => setShowPassword(!showPassword)}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons 
-                                            name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                                            size={24} 
-                                            color={ThemedColor.caption} 
+                                        <Ionicons
+                                            name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                            size={24}
+                                            color={ThemedColor.caption}
                                         />
                                     </TouchableOpacity>
                                 </View>
@@ -177,15 +177,15 @@ const PasswordOnboarding = (props: Props) => {
                                         autoCorrect={false}
                                         maxLength={128}
                                     />
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={styles.eyeButton}
                                         onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons 
-                                            name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
-                                            size={24} 
-                                            color={ThemedColor.caption} 
+                                        <Ionicons
+                                            name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                            size={24}
+                                            color={ThemedColor.caption}
                                         />
                                     </TouchableOpacity>
                                 </View>
@@ -200,7 +200,7 @@ const PasswordOnboarding = (props: Props) => {
                 </ScrollView>
 
                 {/* Button Section - Always at bottom */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.buttonContainer,
                         {
@@ -288,8 +288,8 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'Outfit',
         fontWeight: '400',
-        paddingVertical: 20,
-        paddingHorizontal: 24,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
         paddingRight: 60,
         borderRadius: 16,
     },

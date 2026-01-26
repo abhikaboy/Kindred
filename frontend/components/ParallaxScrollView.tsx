@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactElement } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Dimensions } from "react-native";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -7,7 +7,7 @@ import { useBottomTabOverflow } from "@/components/ui/TabBarBackground";
 import { useColorScheme } from "react-native";
 import React from "react";
 
-const HEADER_HEIGHT = 250;
+const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
 
 type Props = PropsWithChildren<{
     headerImage: ReactElement;

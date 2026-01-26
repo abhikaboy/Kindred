@@ -139,7 +139,7 @@ Builds and deploys the Docker image on pushes to `main`.
    make mongodb-stop
    ```
 
-2. **Go 1.25+** installed
+2. **Go 1.25.6** installed
 
 ### Test Commands
 
