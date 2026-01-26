@@ -265,6 +265,18 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		slog.Warn("Failed to get blocked users, continuing without filter", "error", err)
 		blockedUserIDs = []primitive.ObjectID{}
 	}
+	
+	// Ensure blockedUserIDs is never nil for MongoDB aggregation
+	// Convert to bson.A to ensure proper serialization
+	var blockedUserIDsArray bson.A
+	if blockedUserIDs == nil || len(blockedUserIDs) == 0 {
+		blockedUserIDsArray = bson.A{}
+	} else {
+		blockedUserIDsArray = make(bson.A, len(blockedUserIDs))
+		for i, id := range blockedUserIDs {
+			blockedUserIDsArray[i] = id
+		}
+	}
 
 	// Get user's groups to check group membership
 	userGroups, err := s.GetUserGroups(userID)
@@ -365,7 +377,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 								"$not": bson.M{
 									"$in": []interface{}{
 										bson.M{"$toObjectId": "$user._id"},
-										blockedUserIDs,
+										blockedUserIDsArray,
 									},
 								},
 							},
@@ -438,7 +450,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 								"$not": bson.M{
 									"$in": []interface{}{
 										bson.M{"$toObjectId": "$user._id"},
-										blockedUserIDs,
+										blockedUserIDsArray,
 									},
 								},
 							},
