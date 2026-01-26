@@ -481,13 +481,18 @@ export default function Task() {
                                         autoSave={true}
                                         onChecklistChange={(checklist) => {
                                             // Update local task state for immediate UI feedback
-                                            if (task) {
+                                            if (task && categoryId && id) {
                                                 task.checklist = checklist.map((item) => ({
                                                     id: item.id || "",
                                                     content: item.content,
                                                     completed: item.completed,
                                                     order: item.order,
                                                 }));
+                                                
+                                                // ✅ FIX: Update task context to invalidate cache
+                                                updateTask(categoryId as string, id as string, {
+                                                    checklist: task.checklist
+                                                });
                                             }
                                         }}
                                     />

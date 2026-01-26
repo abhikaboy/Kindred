@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Animated, Linking } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -153,6 +153,33 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                             </View>
                         </View>
 
+                        {/* Subscription Links - Required by App Store Guidelines 3.1.2 */}
+                        <View style={[styles.linksSection, { borderTopColor: ThemedColor.tertiary }]}>
+                            <ThemedText type="default" style={[styles.linksTitle, { color: ThemedColor.caption }]}>
+                                Subscription Information
+                            </ThemedText>
+                            <View style={styles.linksContainer}>
+                                <TouchableOpacity 
+                                    onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
+                                    style={styles.linkButton}
+                                >
+                                    <ThemedText type="default" style={[styles.linkText, { color: ThemedColor.primary }]}>
+                                        Privacy Policy
+                                    </ThemedText>
+                                    <Ionicons name="open-outline" size={16} color={ThemedColor.primary} />
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
+                                    style={styles.linkButton}
+                                >
+                                    <ThemedText type="default" style={[styles.linkText, { color: ThemedColor.primary }]}>
+                                        Terms of Use
+                                    </ThemedText>
+                                    <Ionicons name="open-outline" size={16} color={ThemedColor.primary} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
                     </ScrollView>
                 </Animated.View>
             </View>
@@ -241,6 +268,29 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 12,
         marginTop: 8,
+    },
+    linksSection: {
+        marginTop: 32,
+        paddingTop: 24,
+        borderTopWidth: 1,
+    },
+    linksTitle: {
+        fontSize: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 12,
+    },
+    linksContainer: {
+        gap: 12,
+    },
+    linkButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 4,
+    },
+    linkText: {
+        fontSize: 14,
     },
 });
 

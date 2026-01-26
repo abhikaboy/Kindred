@@ -389,7 +389,7 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
     const [reorderedCategories, setReorderedCategories] = useState<any[]>(categories);
     const [hasChanges, setHasChanges] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Create a proper copy of workspaces array
         const workspacesCopy = [...workspaces];
         const workspaceIndex = workspacesCopy.findIndex((ws) => ws.name === selected);
@@ -401,6 +401,14 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
                 categories: reorderedCategories,
             };
             setWorkSpaces(workspacesCopy);
+            
+            // ✅ CRITICAL FIX: Invalidate cache after reordering
+            try {
+                await AsyncStorage.removeItem(`workspaces_cache_${workspacesCopy[0]?.categories[0]?.tasks[0]?.userID || 'default'}`);
+                console.log("Workspaces cache invalidated after reorder");
+            } catch (error) {
+                console.error("Error invalidating workspaces cache:", error);
+            }
         }
 
         onSave();
@@ -477,7 +485,7 @@ type SortDirection = "ascending" | "descending";
 
 const SortContent = ({ onApply }: { onApply: () => void }) => {
     const ThemedColor = useThemeColor();
-    const { setWorkSpaces, workspaces, selected } = useTasks();
+    const { setWorkSpaces, workspaces, selected, fetchWorkspaces } = useTasks();
     const [selectedSort, setSelectedSort] = useState<SortOption>("task-count");
     const [sortDirection, setSortDirection] = useState<SortDirection>("descending");
 
@@ -550,6 +558,14 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
 
             workspacesCopy[workspaceIndex].categories = sortedCategories;
             setWorkSpaces(workspacesCopy);
+            
+            // ✅ CRITICAL FIX: Invalidate cache after sorting
+            try {
+                await AsyncStorage.removeItem(`workspaces_cache_${workspacesCopy[0]?.categories[0]?.tasks[0]?.userID || 'default'}`);
+                console.log("Workspaces cache invalidated after sort");
+            } catch (error) {
+                console.error("Error invalidating workspaces cache:", error);
+            }
         }
 
         // Save sort option and direction to AsyncStorage

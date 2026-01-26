@@ -217,6 +217,7 @@ type User struct {
 	KudosRewards    KudosRewards `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
 	Subscription    Subscription `bson:"subscription" json:"subscription"`
 	Timezone        string       `bson:"timezone,omitempty" json:"timezone,omitempty"`
+	Settings        UserSettings `bson:"settings" json:"settings"`
 }
 
 type SafeUser struct {
@@ -238,7 +239,59 @@ type SafeUser struct {
 	KudosRewards    KudosRewards         `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
 	Subscription    Subscription         `bson:"subscription" json:"subscription"`
 	Timezone        string               `bson:"timezone,omitempty" json:"timezone,omitempty"`
+	Settings        UserSettings         `bson:"settings" json:"settings"`
 }
+
+// UserSettings contains all user preference settings
+type UserSettings struct {
+	Notifications NotificationSettings `bson:"notifications" json:"notifications"`
+	Display       DisplaySettings      `bson:"display" json:"display"`
+}
+
+// NotificationSettings controls notification preferences
+type NotificationSettings struct {
+	CheckinFrequency string `bson:"checkin_frequency" json:"checkin_frequency"` // none, occasionally, regularly, frequently
+	FriendActivity   bool   `bson:"friend_activity" json:"friend_activity"`
+	NearDeadlines    bool   `bson:"near_deadlines" json:"near_deadlines"`
+	FriendPosts      bool   `bson:"friend_posts" json:"friend_posts"`
+	Comments         bool   `bson:"comments" json:"comments"`
+	Reactions        bool   `bson:"reactions" json:"reactions"`
+	Encouragements   bool   `bson:"encouragements" json:"encouragements"`
+	Congratulations  bool   `bson:"congratulations" json:"congratulations"`
+	FriendRequests   bool   `bson:"friend_requests" json:"friend_requests"`
+}
+
+// DisplaySettings controls UI display preferences
+type DisplaySettings struct {
+	ShowTaskDetails     bool `bson:"show_task_details" json:"show_task_details"`
+	RecentWorkspaces    bool `bson:"recent_workspaces" json:"recent_workspaces"`
+	FriendActivityFeed  bool `bson:"friend_activity_feed" json:"friend_activity_feed"`
+	NearDeadlinesWidget bool `bson:"near_deadlines_widget" json:"near_deadlines_widget"`
+}
+
+// DefaultUserSettings returns default settings for new users
+func DefaultUserSettings() UserSettings {
+	return UserSettings{
+		Notifications: NotificationSettings{
+			CheckinFrequency: "regularly",
+			FriendActivity:   true,
+			NearDeadlines:    true,
+			FriendPosts:      true,
+			Comments:         true,
+			Reactions:        true,
+			Encouragements:   true,
+			Congratulations:  true,
+			FriendRequests:   true,
+		},
+		Display: DisplaySettings{
+			ShowTaskDetails:     true,
+			RecentWorkspaces:    true,
+			FriendActivityFeed:  true,
+			NearDeadlinesWidget: true,
+		},
+	}
+}
+
 type ActivityDocument struct {
 	ID          primitive.ObjectID `bson:"_id" json:"_id"`
 	User        primitive.ObjectID `bson:"user" json:"user"`

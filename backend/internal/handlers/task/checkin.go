@@ -62,9 +62,63 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 		}, nil
 	}
 
-	// Prepare notifications for batch sending
-	notifications := make([]xutils.Notification, 0, len(users))
+	// Filter users based on their check-in frequency preference
+	dayOfWeek := now.Weekday()
+	filteredUsers := []types.User{}
+	skippedCount := 0
+
 	for _, user := range users {
+		frequency := user.Settings.Notifications.CheckinFrequency
+
+		// Skip if user has disabled check-ins
+		if frequency == "none" {
+			skippedCount++
+			continue
+		}
+
+		// Apply frequency-based filtering
+		shouldNotify := false
+		switch frequency {
+		case "occasionally": // 1-2x per week (Monday, Thursday)
+			shouldNotify = dayOfWeek == time.Monday || dayOfWeek == time.Thursday
+		case "regularly": // 3-4x per week (Mon, Wed, Fri, Sun)
+			shouldNotify = dayOfWeek == time.Monday || dayOfWeek == time.Wednesday ||
+				dayOfWeek == time.Friday || dayOfWeek == time.Sunday
+		case "frequently": // Daily
+			shouldNotify = true
+		default:
+			// Default to regularly if invalid value
+			shouldNotify = dayOfWeek == time.Monday || dayOfWeek == time.Wednesday ||
+				dayOfWeek == time.Friday || dayOfWeek == time.Sunday
+		}
+
+		if shouldNotify {
+			filteredUsers = append(filteredUsers, user)
+		} else {
+			skippedCount++
+		}
+	}
+
+	slog.Info("Filtered users by check-in frequency",
+		"total_users", len(users),
+		"filtered_users", len(filteredUsers),
+		"skipped_users", skippedCount,
+		"day_of_week", dayOfWeek.String())
+
+	if len(filteredUsers) == 0 {
+		return fiber.Map{
+			"message":       "No users to notify based on frequency preferences",
+			"total_users":   len(users),
+			"filtered_users": 0,
+			"skipped_users": skippedCount,
+			"current_time":  now.Format("15:04"),
+			"day_of_week":   dayOfWeek.String(),
+		}, nil
+	}
+
+	// Prepare notifications for batch sending
+	notifications := make([]xutils.Notification, 0, len(filteredUsers))
+	for _, user := range filteredUsers {
 		// Skip users without push tokens (extra safety check)
 		if user.PushToken == "" {
 			continue
@@ -120,9 +174,12 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 
 	return fiber.Map{
 		"message":            "Checkin notifications sent successfully",
-		"users_targeted":     len(users),
+		"total_users":        len(users),
+		"filtered_users":     len(filteredUsers),
+		"skipped_users":      skippedCount,
 		"notifications_sent": len(notifications),
 		"current_time":       now.Format("15:04"),
+		"day_of_week":        dayOfWeek.String(),
 		"title_template":     checkinInfo.Title,
 		"message_template":   checkinInfo.Message,
 	}, nil

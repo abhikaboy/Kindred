@@ -145,7 +145,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             if (result.error) {
                 console.log("Error details:", JSON.stringify(result.error, null, 2));
-                throw new Error(`Login failed: ${JSON.stringify(result.error)}`);
+                
+                // Check if this is a "account doesn't exist" error (404)
+                const errorDetail = result.error?.detail || '';
+                const errorStatus = result.response?.status;
+                
+                if (errorStatus === 404 || errorDetail.includes('Account does not exist')) {
+                    // User-friendly error for account not found
+                    throw new Error("ACCOUNT_NOT_FOUND");
+                }
+                
+                // For other errors, provide a generic message
+                throw new Error(`Login failed: ${errorDetail || 'An unexpected error occurred'}`);
             }
             
             if (result.data) {
@@ -173,7 +184,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Login failed with exception:", error);
             console.error("Error stack:", error.stack);
-            alert("Looks like we couldn't find your account, try to register instead!");
             throw error;
         }
     }
@@ -198,7 +208,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             if (result.error) {
                 console.log("Error details:", JSON.stringify(result.error, null, 2));
-                throw new Error(`Google login failed: ${JSON.stringify(result.error)}`);
+                
+                // Check if this is a "account doesn't exist" error (404)
+                const errorDetail = result.error?.detail || '';
+                const errorStatus = result.response?.status;
+                
+                if (errorStatus === 404 || errorDetail.includes('Account does not exist')) {
+                    // User-friendly error for account not found
+                    throw new Error("ACCOUNT_NOT_FOUND");
+                }
+                
+                // For other errors, provide a generic message
+                throw new Error(`Google login failed: ${errorDetail || 'An unexpected error occurred'}`);
             }
             
             if (result.data) {
@@ -226,7 +247,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error("Google login failed with exception:", error);
             console.error("Error stack:", error.stack);
-            alert("Looks like we couldn't find your Google account, try to register instead!");
             throw error;
         }
     }

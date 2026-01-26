@@ -58,16 +58,25 @@ export const OnboardModal = (props: Props) => {
                         router.push("/(logged-in)/(tabs)/(task)");
                     }
                     setVisible(false);
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Google authentication error:", error);
-                    if (mode === "register") {
+                    
+                    if (error?.message === "ACCOUNT_NOT_FOUND") {
+                        // Account doesn't exist - show friendly message
+                        if (mode === "login") {
+                            alert("No account found. Please sign up first!");
+                        }
+                    } else if (mode === "register") {
                         // Try login if registration fails (user might already exist)
                         try {
                             await loginWithGoogle(result.user.id);
                             router.push("/(logged-in)/(tabs)/(task)");
                             setVisible(false);
-                        } catch (loginError) {
+                        } catch (loginError: any) {
                             console.error("Google login fallback failed:", loginError);
+                            if (loginError?.message === "ACCOUNT_NOT_FOUND") {
+                                alert("No account found. Please complete the sign up process!");
+                            }
                         }
                     }
                 }
@@ -151,22 +160,43 @@ export const OnboardModal = (props: Props) => {
             });
             console.log(credential);
             const appleAccountID = credential.user;
-            const email = credential.email || "user@gmail.com"; // Fallback email if Apple doesn't provide one
+            const email = credential.email;
             const firstName = credential.fullName?.givenName;
             const lastName = credential.fullName?.familyName;
 
             console.log("DEBUG - Apple credential email:", credential.email);
-            console.log("DEBUG - Email after fallback:", email);
+            console.log("DEBUG - Apple credential name:", firstName, lastName);
 
-            // If Apple doesn't provide name/email, user is signing in again (not first time)
-            if (!email || email === "user@gmail.com" || !firstName || !lastName) {
-                console.log("We think you already have an account: trying to log in instead");
-                await login(appleAccountID);
-                router.push("/(logged-in)/(tabs)/(task)");
-                // Success - modal will be closed by caller
+            // If Apple doesn't provide name/email, they might have authorized before
+            // Try to login first to check if account exists
+            if (!email || !firstName || !lastName) {
+                console.log("Apple didn't provide email/name. Checking if account exists...");
+                try {
+                    await login(appleAccountID);
+                    // Login succeeded - they have an account!
+                    console.log("Account exists! Logging in...");
+                    router.push("/(logged-in)/(tabs)/(task)");
+                    return;
+                } catch (loginError: any) {
+                    if (loginError.message === "ACCOUNT_NOT_FOUND") {
+                        // Account doesn't exist - they need to provide info manually
+                        console.log("No account found. User needs to provide email/name manually.");
+                        alert(
+                            "Apple didn't share your email and name with us. This usually happens if you've authorized this app before but didn't complete sign-up.\n\n" +
+                            "To fix this:\n" +
+                            "1. Go to Settings > Apple ID > Password & Security > Apps Using Apple ID\n" +
+                            "2. Find 'Kindred' and tap 'Stop Using Apple ID'\n" +
+                            "3. Come back and try signing up again\n\n" +
+                            "Or use a different sign-up method."
+                        );
+                        throw new Error("Apple authorization incomplete");
+                    } else {
+                        // Some other login error
+                        throw loginError;
+                    }
+                }
             } else {
-                // Pre-fill onboarding data with Apple credentials
-                // Don't create account yet - wait until user completes onboarding
+                // Apple provided email/name - proceed with normal registration
                 const displayName = `${firstName} ${lastName}`.trim();
                 updateOnboardingData({
                     email: email,
@@ -178,7 +208,6 @@ export const OnboardModal = (props: Props) => {
 
                 // Navigate directly to name screen (skip phone/OTP for Apple users)
                 router.replace("/(onboarding)/name");
-                // Success - modal will be closed by caller
             }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
@@ -186,7 +215,10 @@ export const OnboardModal = (props: Props) => {
                 // Don't show error for user cancellation
             } else {
                 console.error("Apple registration error:", e.code, e);
-                alert(`Apple sign up failed: ${e.message || "An unexpected error occurred"}`);
+                // Only show alert if we haven't already shown one
+                if (e.message !== "Apple authorization incomplete") {
+                    alert(`Apple sign up failed: ${e.message || "An unexpected error occurred"}`);
+                }
             }
             // Re-throw to let caller know it failed
             throw e;
@@ -212,6 +244,10 @@ export const OnboardModal = (props: Props) => {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("User cancelled Apple sign in");
                 // Don't show error for user cancellation
+            } else if (e.message === "ACCOUNT_NOT_FOUND") {
+                // Account doesn't exist - show friendly message
+                console.log("Account not found, directing to sign up");
+                alert("No account found. Please sign up first!");
             } else {
                 console.error("Apple login error:", e.code, e);
                 alert(`Apple sign in failed: ${e.message || "An unexpected error occurred"}`);

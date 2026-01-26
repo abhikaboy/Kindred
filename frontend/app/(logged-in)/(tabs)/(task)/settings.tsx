@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Switch, Dimensions, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -9,6 +9,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as StoreReview from 'expo-store-review';
 import { deleteAccount } from '@/api/auth';
 import { showToast } from '@/utils/showToast';
+import { useContactConsent } from '@/hooks/useContactConsent';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SettingsSection } from '@/components/settings/SettingsSection';
+import { SettingsCard } from '@/components/settings/SettingsCard';
+import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
+import { SettingsActionRow } from '@/components/settings/SettingsActionRow';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@/hooks/useSettings';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -16,26 +24,89 @@ export default function Settings() {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { logout } = useAuth();
+    const { hasConsent, resetConsent } = useContactConsent();
+    const insets = useSafeAreaInsets();
     
-    // State for all toggle switches
-    const [settings, setSettings] = useState({
+    // Fetch user settings
+    const { data: userSettings, isLoading: isLoadingSettings, error: settingsError } = useUserSettings();
+    const { mutate: updateSettings, isPending: isUpdating } = useUpdateSettings();
+    const { mutate: updateCheckinFreq } = useUpdateCheckinFrequency();
+    
+    // Local state for settings (synced with server data)
+    const [localSettings, setLocalSettings] = useState({
         friendActivity: true,
         nearDeadlines: true,
         showTaskDetails: true,
         recentWorkspaces: true,
     });
 
-    const handleToggle = (key: keyof typeof settings) => {
-        setSettings(prev => ({
+    // Check-in frequency options
+    const checkinFrequencyOptions = ['None', 'Occasionally', 'Regularly', 'Frequently'];
+    const [checkinFrequency, setCheckinFrequency] = useState('Regularly');
+
+    // Sync local state with fetched settings
+    useEffect(() => {
+        if (userSettings) {
+            setLocalSettings({
+                friendActivity: userSettings.display?.friend_activity_feed ?? true,
+                nearDeadlines: userSettings.display?.near_deadlines_widget ?? true,
+                showTaskDetails: userSettings.display?.show_task_details ?? true,
+                recentWorkspaces: userSettings.display?.recent_workspaces ?? true,
+            });
+
+            // Map backend frequency to display format
+            const frequencyMap: Record<string, string> = {
+                'none': 'None',
+                'occasionally': 'Occasionally',
+                'regularly': 'Regularly',
+                'frequently': 'Frequently',
+            };
+            setCheckinFrequency(frequencyMap[userSettings.notifications?.checkin_frequency ?? 'regularly'] ?? 'Regularly');
+        }
+    }, [userSettings]);
+
+    const handleToggle = (key: keyof typeof localSettings) => {
+        const newValue = !localSettings[key];
+        setLocalSettings(prev => ({
             ...prev,
-            [key]: !prev[key],
+            [key]: newValue,
         }));
+
+        // Immediately save to backend
+        const settingKeyMap: Record<string, string> = {
+            friendActivity: 'friend_activity_feed',
+            nearDeadlines: 'near_deadlines_widget',
+            showTaskDetails: 'show_task_details',
+            recentWorkspaces: 'recent_workspaces',
+        };
+
+        updateSettings({
+            display: {
+                [settingKeyMap[key]]: newValue,
+            },
+        });
+    };
+
+    const handleCheckinFrequencyChange = (option: string) => {
+        setCheckinFrequency(option);
+
+        // Map display format to backend format
+        const frequencyMap: Record<string, "none" | "occasionally" | "regularly" | "frequently"> = {
+            'None': 'none',
+            'Occasionally': 'occasionally',
+            'Regularly': 'regularly',
+            'Frequently': 'frequently',
+        };
+
+        const backendFrequency = frequencyMap[option];
+        if (backendFrequency) {
+            updateCheckinFreq(backendFrequency);
+        }
     };
 
     const handleSave = () => {
-        // TODO: Implement save functionality
-        console.log('Saving settings:', settings);
-        // Could show a toast here
+        // Settings are auto-saved on change, but this can trigger a manual sync
+        showToast('All settings are saved automatically', 'success');
     };
 
     const handleBack = () => {
@@ -130,12 +201,90 @@ export default function Settings() {
         );
     };
 
+    const handleResetContactConsent = () => {
+        const statusMessage = hasConsent === null 
+            ? 'You haven\'t been asked about syncing your phone contacts yet.\n\nWhen you tap "Sync Contacts" in the Search tab, you\'ll see a detailed explanation of how your phone contacts are used to help you find friends on Kindred.'
+            : hasConsent === true
+            ? 'Phone contact syncing is currently enabled.\n\nYour phone contact numbers are uploaded to our server to match with existing Kindred users and help you find friends.\n\nTap "Reset" to clear this preference and be asked again.'
+            : 'Phone contact syncing is currently disabled.\n\nYou previously chose not to sync your phone contacts.\n\nTap "Reset" to clear this preference and be asked again when you try to sync contacts.';
+
+        Alert.alert(
+            'Phone Contacts',
+            statusMessage,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                ...(hasConsent !== null ? [{ 
+                    text: 'Reset Preference', 
+                    onPress: async () => {
+                        try {
+                            await resetConsent();
+                            showToast('Contact sync preference reset', 'success');
+                        } catch (error) {
+                            console.error('Error resetting consent:', error);
+                            showToast('Failed to reset preference', 'danger');
+                        }
+                    }
+                }] : [])
+            ]
+        );
+    };
+
+
     const styles = createStyles(ThemedColor, screenWidth);
+
+    // Show loading state
+    if (isLoadingSettings) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                        Settings
+                    </ThemedText>
+                    <View style={styles.saveButton} />
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={ThemedColor.primary} />
+                    <ThemedText style={{ marginTop: 16, color: ThemedColor.caption }}>
+                        Loading settings...
+                    </ThemedText>
+                </View>
+            </ThemedView>
+        );
+    }
+
+    // Show error state
+    if (settingsError) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                        Settings
+                    </ThemedText>
+                    <View style={styles.saveButton} />
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                    <Ionicons name="alert-circle-outline" size={48} color={ThemedColor.error} />
+                    <ThemedText style={{ marginTop: 16, color: ThemedColor.text, textAlign: 'center' }}>
+                        Failed to load settings
+                    </ThemedText>
+                    <ThemedText style={{ marginTop: 8, color: ThemedColor.caption, textAlign: 'center' }}>
+                        Please try again later
+                    </ThemedText>
+                </View>
+            </ThemedView>
+        );
+    }
 
     return (
         <ThemedView style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
@@ -144,125 +293,158 @@ export default function Settings() {
                     Settings
                 </ThemedText>
                 
-                <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-                    <ThemedText type="defaultSemiBold" style={styles.saveText}>
-                        Save
-                    </ThemedText>
+                <TouchableOpacity 
+                    onPress={handleSave} 
+                    style={styles.saveButton}
+                    disabled={isUpdating}
+                >
+                    {isUpdating ? (
+                        <ActivityIndicator size="small" color={ThemedColor.text} />
+                    ) : (
+                        <ThemedText type="defaultSemiBold" style={styles.saveText}>
+                            Save
+                        </ThemedText>
+                    )}
                 </TouchableOpacity>
             </View>
 
-            {/* Display Section */}
-            <View style={styles.content}>
-                <ThemedText type="caption" style={styles.sectionHeader}>
-                    DISPLAY
-                </ThemedText>
-                
-                <View style={styles.settingsContainer}>
-                    <View style={styles.settingRow}>
-                        <ThemedText type="lightBody" style={styles.settingLabel}>
-                            Friend Activity
+            {/* Scrollable Content */}
+            <ScrollView 
+                style={styles.scrollView}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 44 }]}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.content}>
+                <SettingsSection title="NOTIFICATIONS">
+                    <View style={styles.checkinSection}>
+                        <ThemedText type="lightBody" style={[styles.settingLabel, { color: ThemedColor.caption }]}>
+                            Check-in Frequency
                         </ThemedText>
-                        <Switch
-                            value={settings.friendActivity}
-                            onValueChange={() => handleToggle('friendActivity')}
-                            trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                            thumbColor={'#ffffff'}
-                            ios_backgroundColor={ThemedColor.tertiary}
+                        <ThemedText type="caption" style={[styles.checkinDescription, { color: ThemedColor.text + '80' }]}>
+                            How often you'd like reminders about overdue tasks
+                        </ThemedText>
+                        <SegmentedControl
+                            options={checkinFrequencyOptions}
+                            selectedOption={checkinFrequency}
+                            onOptionPress={handleCheckinFrequencyChange}
+                            size="small"
                         />
                     </View>
+                </SettingsSection>
 
-                    <View style={styles.settingRow}>
-                        <ThemedText type="lightBody" style={styles.settingLabel}>
-                            Near Deadlines
-                        </ThemedText>
-                        <Switch
-                            value={settings.nearDeadlines}
-                            onValueChange={() => handleToggle('nearDeadlines')}
-                            trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                            thumbColor={'#ffffff'}
-                            ios_backgroundColor={ThemedColor.tertiary}
+                <SettingsSection title="DISPLAY">
+                    <SettingsCard>
+                        <SettingsToggleRow 
+                            label="Friend Activity" 
+                            value={localSettings.friendActivity} 
+                            onValueChange={() => handleToggle('friendActivity')} 
                         />
-                    </View>
-
-                    <View style={styles.settingRow}>
-                        <ThemedText type="lightBody" style={styles.settingLabel}>
-                            Show Task Details
-                        </ThemedText>
-                        <Switch
-                            value={settings.showTaskDetails}
-                            onValueChange={() => handleToggle('showTaskDetails')}
-                            trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                            thumbColor={'#ffffff'}
-                            ios_backgroundColor={ThemedColor.tertiary}
+                        <SettingsToggleRow 
+                            label="Near Deadlines" 
+                            value={localSettings.nearDeadlines} 
+                            onValueChange={() => handleToggle('nearDeadlines')} 
                         />
-                    </View>
-
-                    <View style={styles.settingRow}>
-                        <ThemedText type="lightBody" style={styles.settingLabel}>
-                            Recent Workspaces
-                        </ThemedText>
-                        <Switch
-                            value={settings.recentWorkspaces}
-                            onValueChange={() => handleToggle('recentWorkspaces')}
-                            trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                            thumbColor={'#ffffff'}
-                            ios_backgroundColor={ThemedColor.tertiary}
+                        <SettingsToggleRow 
+                            label="Show Task Details" 
+                            value={localSettings.showTaskDetails} 
+                            onValueChange={() => handleToggle('showTaskDetails')} 
                         />
-                    </View>
-                </View>
+                        <SettingsToggleRow 
+                            label="Recent Workspaces" 
+                            value={localSettings.recentWorkspaces} 
+                            onValueChange={() => handleToggle('recentWorkspaces')} 
+                        />
+                    </SettingsCard>
+                </SettingsSection>
 
-                {/* Resources Section */}
-                <View style={styles.resourcesSection}>
-                    <ThemedText type="caption" style={styles.sectionHeader}>
-                        RESOURCES
-                    </ThemedText>
-                    
-                    <TouchableOpacity 
-                        style={styles.resourceItem} 
-                        onPress={handleContactSupport}
-                        activeOpacity={0.7}
-                    >
-                        <ThemedText type="lightBody" style={styles.resourceLabel}>
-                            Contact Support
-                        </ThemedText>
-                    </TouchableOpacity>
+                <SettingsSection title="PRIVACY & DATA">
+                    <SettingsCard>
+                        <TouchableOpacity 
+                            style={styles.privacyRow}
+                            onPress={handleResetContactConsent}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.privacyInfo}>
+                                <View style={styles.privacyTitleRow}>
+                                    <ThemedText type="lightBody" style={[styles.settingLabel, { color: ThemedColor.caption }]}>
+                                        Phone Contacts
+                                    </ThemedText>
+                                    <View style={[
+                                        styles.statusBadge,
+                                        { 
+                                            backgroundColor: hasConsent === true 
+                                                ? ThemedColor.primary + '20' 
+                                                : ThemedColor.tertiary 
+                                        }
+                                    ]}>
+                                        <ThemedText type="caption" style={[
+                                            styles.statusBadgeText,
+                                            { 
+                                                color: hasConsent === true 
+                                                    ? ThemedColor.primary 
+                                                    : ThemedColor.text + 'AA'
+                                            }
+                                        ]}>
+                                            {hasConsent === null && 'Not Set'}
+                                            {hasConsent === true && 'Enabled'}
+                                            {hasConsent === false && 'Disabled'}
+                                        </ThemedText>
+                                    </View>
+                                </View>
+                                <ThemedText type="caption" style={[styles.privacyDescription, { color: ThemedColor.text + '80' }]}>
+                                    {hasConsent === null && 'Sync contacts to find friends'}
+                                    {hasConsent === true && 'Contacts are synced'}
+                                    {hasConsent === false && 'Contact sync disabled'}
+                                </ThemedText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />
+                        </TouchableOpacity>
+                    </SettingsCard>
+                </SettingsSection>
 
-                    <TouchableOpacity 
-                        style={styles.resourceItem} 
+                <SettingsSection title="RESOURCES">
+                    <SettingsActionRow 
+                        label="Contact Support" 
+                        onPress={handleContactSupport} 
+                    />
+                    <SettingsActionRow 
+                        label="Rate Kindred" 
                         onPress={handleRateKindred}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.rateRow}>
-                            <ThemedText type="lightBody" style={styles.resourceLabel}>
-                                Rate Kindred
-                            </ThemedText>
-                            <Ionicons name="star-outline" size={24} color={ThemedColor.text} />
-                        </View>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                        style={styles.deleteAccountItem} 
+                        icon="star-outline"
+                    />
+                </SettingsSection>
+
+                <SettingsSection title="LEGAL">
+                    <SettingsActionRow 
+                        label="Privacy Policy" 
+                        onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
+                        icon="open-outline"
+                        iconColor={ThemedColor.text + '60'}
+                    />
+                    <SettingsActionRow 
+                        label="Terms & Conditions" 
+                        onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
+                        icon="open-outline"
+                        iconColor={ThemedColor.text + '60'}
+                    />
+                </SettingsSection>
+
+                <SettingsSection title="ACCOUNT" marginBottom={20}>
+                    <SettingsActionRow 
+                        label="Delete Account" 
                         onPress={handleDeleteAccount}
-                        activeOpacity={0.7}
-                    >
-                        <ThemedText type="lightBody"> 
-                            Delete Account
-                        </ThemedText>
-                        <Ionicons name="trash-outline" size={24} color={ThemedColor.error} />
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                        style={styles.logoutItem} 
+                        icon="trash-outline"
+                        iconColor={ThemedColor.error}
+                    />
+                    <SettingsActionRow 
+                        label="Logout" 
                         onPress={handleLogout}
-                        activeOpacity={0.7}
-                    >
-                        <ThemedText type="lightBody">
-                            Logout
-                        </ThemedText>
-                        <Ionicons name="log-out-outline" size={24} color={ThemedColor.error} />
-                    </TouchableOpacity>
-                </View>
+                        icon="log-out-outline"
+                        iconColor={ThemedColor.error}
+                    />
+                </SettingsSection>
             </View>
+            </ScrollView>
         </ThemedView>
     );
 }
@@ -273,14 +455,21 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
     return StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: 60,
         },
         header: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: horizontalPadding,
-            marginBottom: 40,
+            paddingBottom: 16,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: ThemedColor.tertiary,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        scrollContent: {
+            paddingTop: 24,
         },
         backButton: {
             minWidth: 40,
@@ -298,74 +487,49 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
             color: ThemedColor.text,
         },
         content: {
-            flex: 1,
             paddingHorizontal: horizontalPadding,
         },
-        sectionHeader: {
-            marginBottom: 16,
-            fontSize: 12,
-            letterSpacing: 1,
+        settingLabel: {
+            flex: 1,
         },
-        settingsContainer: {
-            backgroundColor: ThemedColor.lightened,
-            borderRadius: 12,
-            paddingHorizontal: 20,
-            paddingVertical: 15,
-            marginBottom: 40,
-            shadowColor: '#000',
-            shadowOffset: {
-                width: 0,
-                height: 1,
-            },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
-        },
-        settingRow: {
+        privacyRow: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingVertical: 12,
             minHeight: 36,
         },
-        settingLabel: {
+        privacyInfo: {
             flex: 1,
-            color: ThemedColor.caption,
+            gap: 6,
         },
-        resourcesSection: {
-            flex: 1,
-        },
-        resourceItem: {
-            paddingVertical: 15,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: ThemedColor.tertiary,
-        },
-        resourceLabel: {
-            color: ThemedColor.text,
-        },
-        rateRow: {
+        privacyTitleRow: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: 12,
         },
-        deleteAccountItem: {
-            paddingVertical: 15,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: ThemedColor.tertiary,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+        statusBadge: {
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
         },
-        logoutItem: {
-            paddingVertical: 15,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: ThemedColor.tertiary,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+        statusBadgeText: {
+            fontSize: 11,
+            fontWeight: '600',
         },
-        logoutLabel: {
-            color: ThemedColor.destructive,
+        privacyDescription: {
+            fontSize: 12,
+            lineHeight: 16,
+        },
+        checkinSection: {
+            borderRadius: 12,
+        },
+        checkinDescription: {
+            fontSize: 12,
+            lineHeight: 16,
+            marginTop: 4,
+            marginBottom: 8,
         },
     });
 };

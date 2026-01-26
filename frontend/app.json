@@ -16,6 +16,7 @@
     "ios": {
       "buildNumber": "56",
       "supportsTablet": false,
+      "requireFullScreen": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We use your location to look up nearby restaurants and addresses.",
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,7 +29,7 @@
             }
           }
         },
-        "NSContactsUsageDescription": "To find who else is on Kindred to connect with them!",
+        "NSContactsUsageDescription": "Kindred needs access to your contacts to find friends who are already using the app. Your contact information will be securely uploaded to our server to match with existing users and help you connect with friends.",
         "NSCameraUsageDescription": "This app needs access to camera to take photos for your profile and posts.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select photos for your profile and posts.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save photos to your photo library.",

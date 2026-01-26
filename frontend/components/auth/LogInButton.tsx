@@ -33,6 +33,10 @@ export default function LogInButton() {
                     if (e.code === "ERR_REQUEST_CANCELED") {
                         console.log("User cancelled Apple sign in");
                         // Don't show error for user cancellation
+                    } else if (e.message === "ACCOUNT_NOT_FOUND") {
+                        // Account doesn't exist - show friendly message
+                        console.log("Account not found, directing to sign up");
+                        alert("No account found. Please sign up first!");
                     } else {
                         console.error('Apple login error:', e.code, e);
                         alert(`Apple sign in failed: ${e.message || 'An unexpected error occurred. Please try again.'}`);

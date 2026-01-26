@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
@@ -889,4 +890,134 @@ func sortUserIDs(userA, userB primitive.ObjectID) []primitive.ObjectID {
 		return []primitive.ObjectID{userA, userB}
 	}
 	return []primitive.ObjectID{userB, userA}
+}
+
+// NotifyRandomFriendsOfPost notifies a random subset of friends about a new post
+// Each friend has a configurable probability (default 30%) of being notified
+func (s *Service) NotifyRandomFriendsOfPost(postID primitive.ObjectID, posterID primitive.ObjectID, posterName string, postCaption string, notificationProbability float64) error {
+	ctx := context.Background()
+
+	// Default to 30% probability if not specified or invalid
+	if notificationProbability <= 0 || notificationProbability > 1 {
+		notificationProbability = 0.30
+	}
+
+	// Get the poster's friends list
+	var posterUser struct {
+		Friends []primitive.ObjectID `bson:"friends"`
+	}
+	err := s.Users.FindOne(ctx, bson.M{"_id": posterID}).Decode(&posterUser)
+	if err != nil {
+		return fmt.Errorf("failed to get poster's friends: %w", err)
+	}
+
+	if len(posterUser.Friends) == 0 {
+		slog.Info("No friends to notify", "poster_id", posterID)
+		return nil
+	}
+
+	// Randomly select friends to notify based on probability
+	var selectedFriends []primitive.ObjectID
+	for _, friendID := range posterUser.Friends {
+		if rand.Float64() < notificationProbability {
+			selectedFriends = append(selectedFriends, friendID)
+		}
+	}
+
+	if len(selectedFriends) == 0 {
+		slog.Info("No friends randomly selected for notification", "poster_id", posterID, "total_friends", len(posterUser.Friends))
+		return nil
+	}
+
+	// Get the post to extract thumbnail
+	post, err := s.GetPostByID(postID)
+	if err != nil {
+		return fmt.Errorf("failed to get post for notification: %w", err)
+	}
+
+	var thumbnail string
+	if len(post.Images) > 0 {
+		thumbnail = post.Images[0]
+	}
+
+	// Truncate caption for notification if too long
+	notificationCaption := postCaption
+	if len(notificationCaption) > 40 {
+		notificationCaption = notificationCaption[:37] + "..."
+	}
+
+	// Send notifications to selected friends
+	successCount := 0
+	errorCount := 0
+
+	// Possible call-to-action phrases - supportive and encouraging
+	callToActions := []string{
+		"Show them some love!",
+		"Cheer them on!",
+		"Send them some encouragement!",
+		"Celebrate with them!",
+		"Let them know you're proud!",
+		"Support their progress!",
+		"LFG!",
+		"Bang!",
+	}
+
+	for _, friendID := range selectedFriends {
+		// Get friend's push token
+		var friend types.User
+		err := s.Users.FindOne(ctx, bson.M{"_id": friendID}).Decode(&friend)
+		if err != nil {
+			slog.Warn("Failed to get friend user for notification", "friend_id", friendID, "error", err)
+			errorCount++
+			continue
+		}
+
+		// Pick a random call to action
+		callToAction := callToActions[rand.Intn(len(callToActions))]
+
+		// Send push notification if friend has a push token
+		if friend.PushToken != "" {
+			// Personalized notification: "John just completed 'Morning workout' - Check it out!"
+			notificationTitle := fmt.Sprintf("%s just completed \"%s\"", posterName, notificationCaption)
+			notification := xutils.Notification{
+				Token:   friend.PushToken,
+				Title:   notificationTitle,
+				Message: callToAction,
+				Data: map[string]string{
+					"type":        "new_post",
+					"post_id":     postID.Hex(),
+					"poster_name": posterName,
+					"poster_id":   posterID.Hex(),
+				},
+			}
+
+			err = xutils.SendNotification(notification)
+			if err != nil {
+				slog.Error("Failed to send push notification for new post", "error", err, "friend_id", friendID)
+				errorCount++
+			}
+		}
+
+		// Create notification in database with personalized message
+		notificationContent := fmt.Sprintf("%s just completed \"%s\"", posterName, notificationCaption)
+		err = s.NotificationService.CreateNotification(posterID, friendID, notificationContent, notifications.NotificationTypePost, postID, thumbnail)
+		if err != nil {
+			slog.Error("Failed to create database notification for new post", "error", err, "friend_id", friendID)
+			errorCount++
+		} else {
+			successCount++
+		}
+	}
+
+	slog.Info("Notified random subset of friends about new post",
+		"post_id", postID,
+		"poster_id", posterID,
+		"total_friends", len(posterUser.Friends),
+		"selected_friends", len(selectedFriends),
+		"success_count", successCount,
+		"error_count", errorCount,
+		"probability", notificationProbability,
+	)
+
+	return nil
 }

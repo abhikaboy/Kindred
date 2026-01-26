@@ -8,10 +8,12 @@ interface SegmentedControlProps {
     options: string[];
     selectedOption: string;
     onOptionPress: (option: string) => void;
+    size?: 'default' | 'small';
 }
 
-const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOption, onOptionPress }) => {
-    const ThemedColor = useThemeColor();
+const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOption, onOptionPress, size = 'default' }) => {
+    const ThemedColor = useThemeColor() as any;
+    const styles = stylesheet(ThemedColor);
     const [containerWidth, setContainerWidth] = useState(0);
     const translateX = useSharedValue(0);
 
@@ -48,9 +50,15 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
         setContainerWidth(width);
     };
 
+    const isSmall = size === 'small';
+
     return (
         <View 
-            style={[styles.container, { backgroundColor: ThemedColor.background }]} // Use tertiary for container background
+            style={[
+                styles.container, 
+                { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary, borderWidth: 1 },
+                isSmall && styles.containerSmall
+            ]}
             onLayout={onLayout}
         >
             {containerWidth > 0 && (
@@ -73,7 +81,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
                     activeOpacity={0.8}>
                     <ThemedText
                         type={selectedOption === option ? "defaultSemiBold" : "default"}
->
+                        style={isSmall && styles.textSmall}
+                    >
                         {option}
                     </ThemedText>
                 </TouchableOpacity>
@@ -82,7 +91,7 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
     );
 };
 
-const styles = StyleSheet.create({
+const stylesheet = (ThemedColor: any) => StyleSheet.create({
     container: {
         flexDirection: "row",
         borderRadius: 18,
@@ -92,22 +101,19 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         width: "100%", // Ensure it takes full available width
     },
+    containerSmall: {
+        paddingVertical: 24,
+        borderRadius: 24,
+    },
     activeBox: {
         position: "absolute",
         top: 2,
         bottom: 2,
         left: 0,
-        borderRadius: 16,
+        borderRadius: 24,
         marginHorizontal: 2, // Creates a small gap for the 'pill' look
-        // width is set dynamically
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        borderWidth: 2,
+        borderColor: ThemedColor.background, 
     },
     option: {
         justifyContent: "center",
@@ -116,6 +122,9 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 14,
+    },
+    textSmall: {
+        fontSize: 13,
     },
 });
 

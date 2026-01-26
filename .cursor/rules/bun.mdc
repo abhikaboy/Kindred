@@ -1,6 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Please always use `bun` instead of `npm`

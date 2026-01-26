@@ -39,6 +39,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import ContactConsentModal from "@/components/modals/ContactConsentModal";
+import { useContactConsent } from "@/hooks/useContactConsent";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -115,12 +117,16 @@ const Search = (props: Props) => {
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
     const { matchedContacts, addMatchedContacts, isLoading: isLoadingMatchedContacts } = useMatchedContacts();
+    const { hasConsent, grantConsent, denyConsent } = useContactConsent();
 
     // Alert state
     const [alertVisible, setAlertVisible] = React.useState(false);
     const [alertTitle, setAlertTitle] = React.useState("");
     const [alertMessage, setAlertMessage] = React.useState("");
     const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
+    
+    // Consent modal state
+    const [consentModalVisible, setConsentModalVisible] = React.useState(false);
 
     // TanStack Query for fetching suggested users
     const { data: suggestedUsers = [], isLoading: isLoadingSuggestedUsers } = useQuery({
@@ -431,8 +437,8 @@ const Search = (props: Props) => {
     const colorScheme = useColorScheme();
     const gradientColors = getGradient(colorScheme ?? "light") as [string, string, ...string[]];
 
-    // Handle contacts import
-    const handleAddContacts = useCallback(async () => {
+    // Handle the actual contact syncing after consent is granted
+    const performContactSync = useCallback(async () => {
         try {
             const contactsResponse = await getContacts();
 
@@ -475,6 +481,55 @@ const Search = (props: Props) => {
             setAlertVisible(true);
         }
     }, [getContacts, findUsersMutation]);
+
+    // Handle consent acceptance
+    const handleConsentAccept = useCallback(async () => {
+        try {
+            await grantConsent();
+            setConsentModalVisible(false);
+            // Proceed with contact sync
+            await performContactSync();
+        } catch (error) {
+            console.error("Error granting consent:", error);
+            setAlertTitle("Error");
+            setAlertMessage("Failed to save your consent. Please try again.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
+        }
+    }, [grantConsent, performContactSync]);
+
+    // Handle consent decline
+    const handleConsentDecline = useCallback(async () => {
+        try {
+            await denyConsent();
+            setConsentModalVisible(false);
+            setAlertTitle("Contact Sync Declined");
+            setAlertMessage("You can enable contact syncing later from your account settings.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
+        } catch (error) {
+            console.error("Error denying consent:", error);
+            setConsentModalVisible(false);
+        }
+    }, [denyConsent]);
+
+    // Handle contacts import - check consent first
+    const handleAddContacts = useCallback(async () => {
+        // Check if user has already granted consent
+        if (hasConsent === true) {
+            // User has already consented, proceed directly
+            await performContactSync();
+        } else if (hasConsent === false) {
+            // User previously declined, show message
+            setAlertTitle("Contact Sync Disabled");
+            setAlertMessage("You previously declined contact syncing. You can enable it in your account settings.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
+        } else {
+            // User hasn't been asked yet, show consent modal
+            setConsentModalVisible(true);
+        }
+    }, [hasConsent, performContactSync]);
 
     // Error state
     if (error) {
@@ -607,6 +662,11 @@ const Search = (props: Props) => {
                 title={alertTitle}
                 message={alertMessage}
                 buttons={alertButtons}
+            />
+            <ContactConsentModal
+                visible={consentModalVisible}
+                onAccept={handleConsentAccept}
+                onDecline={handleConsentDecline}
             />
         </View>
     );

@@ -390,10 +390,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * Restores a workspace to the workspaces list (for rollback after failed API calls)
      * @param workspace - The workspace to restore
      */
-    const restoreWorkspace = (workspace: Workspace) => {
+    const restoreWorkspace = async (workspace: Workspace) => {
         let workspacesCopy = workspaces.slice();
         workspacesCopy.push(workspace);
         setWorkSpaces(workspacesCopy);
+        
+        // Invalidate cache after local update for consistency
+        await invalidateWorkspacesCache();
         
         // If no workspace is currently selected, select the restored one
         if (selected === "") {
@@ -531,6 +534,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                     workspacesCopy[workspaceIndex].name = oldName;
                     setWorkSpaces(workspacesCopy);
                     
+                    // Invalidate cache after rollback for consistency
+                    await invalidateWorkspacesCache();
+                    
                     // Restore the original selection if it was changed
                     if (selected === newName) {
                         setSelected(oldName);
@@ -590,6 +596,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 let workspacesCopy = workspaces.slice();
                 workspacesCopy[workspaceIndex].categories[categoryIndex].name = originalCategory.name;
                 setWorkSpaces(workspacesCopy);
+                
+                // Invalidate cache after rollback for consistency
+                await invalidateWorkspacesCache();
             }
             
             throw error;

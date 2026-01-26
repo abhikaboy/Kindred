@@ -19,6 +19,7 @@ import (
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	referral "github.com/abhikaboy/Kindred/internal/handlers/referral"
 	"github.com/abhikaboy/Kindred/internal/handlers/rewards"
+	"github.com/abhikaboy/Kindred/internal/handlers/settings"
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
@@ -120,6 +121,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register rewards routes
 	rewards.Routes(api, collections)
+
+	// Register settings routes
+	settings.Router(api, collections)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)

@@ -28,8 +28,16 @@ export default function SignUpButton() {
                     const email = credential.email;
                     const firstName = credential.fullName?.givenName;
                     const lastName = credential.fullName?.familyName;
+                    
                     if (!email || !firstName || !lastName) {
-                        alert("Either you already have an account or didn't give us the required permissions. Please try again or use login instead.");
+                        alert(
+                            "Apple didn't share your email and name with us. This usually happens if you've authorized this app before but didn't complete sign-up.\n\n" +
+                            "To fix this:\n" +
+                            "1. Go to Settings > Apple ID > Password & Security > Apps Using Apple ID\n" +
+                            "2. Find 'Kindred' and tap 'Stop Using Apple ID'\n" +
+                            "3. Come back and try signing up again\n\n" +
+                            "Or use the 'Sign In' button if you already have an account."
+                        );
                         return;
                     }
                     let data = await register(email, appleAccountID);
