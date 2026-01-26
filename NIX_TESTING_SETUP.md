@@ -6,7 +6,7 @@ The Nix development environment automatically sets up everything you need for te
 
 When you enter the Nix dev shell, you automatically get:
 
-- ✅ **Go 1.23+** - For running backend tests
+- ✅ **Go 1.25.6** - For running backend tests
 - ✅ **pre-commit** - For git hooks
 - ✅ **golangci-lint** - For code linting
 - ✅ **Python 3** - For additional tooling
@@ -253,7 +253,7 @@ direnv allow
 The Nix environment is for local development. CI/CD uses GitHub Actions with:
 - Ubuntu runners
 - Docker MongoDB service
-- Go 1.23 from GitHub Actions
+- Go 1.25.6 from GitHub Actions
 - Same test commands
 
 See [TESTING_CI_CD.md](./TESTING_CI_CD.md) for CI/CD details.

@@ -471,4 +471,4 @@ The testing framework is **ready for production use** and can be easily extended
 
 *Generated: January 26, 2026*
 *Test Framework Version: 1.0*
-*Go Version: 1.25.0*
+*Go Version: 1.25.6*

@@ -2,6 +2,7 @@ package Waitlist
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -74,7 +75,10 @@ func (s *Service) CreateWaitlist(r *WaitlistDocumentInternal) (*WaitlistDocument
 	}
 
 	// Cast the inserted ID to ObjectID and update the internal document
-	id := result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert InsertedID to ObjectID")
+	}
 	r.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Waitlist inserted", slog.String("id", id.Hex()))
 

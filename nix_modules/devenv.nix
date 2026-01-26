@@ -20,10 +20,14 @@
           fi
 
           # Install golangci-lint from source if not already available or version mismatch
-          if ! command -v golangci-lint &> /dev/null || ! golangci-lint version 2>&1 | grep -q "built with go1.25"; then
-            echo "🔧 Installing golangci-lint from source with Go 1.25..."
+          GOLANGCI_VERSION=$(golangci-lint version 2>&1 || echo "not found")
+          if ! echo "$GOLANGCI_VERSION" | grep -q "built with go1.25.6"; then
+            echo "🔧 Installing golangci-lint from source with Go 1.25.6..."
+            echo "   Current: $GOLANGCI_VERSION"
             (cd "$DEVENV_ROOT/backend" && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
-            echo "✅ golangci-lint installed"
+            # Ensure it's in PATH
+            export PATH="$(go env GOPATH)/bin:$PATH"
+            echo "✅ golangci-lint installed: $(golangci-lint version 2>&1 | head -1)"
           fi
 
           # Install pre-commit hooks if not already installed

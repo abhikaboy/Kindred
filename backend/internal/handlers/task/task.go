@@ -10,7 +10,6 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
-	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -74,37 +73,6 @@ func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput
 	}
 
 	return &GetTasksByUserOutput{Body: tasks}, nil
-}
-
-// parseTimesToUTC parses deadline, startTime, and startDate to UTC format
-func parseTimesToUTC(params *CreateTaskParams) (*time.Time, *time.Time, *time.Time, error) {
-	var deadline, startTime, startDate *time.Time
-
-	if params.Deadline != nil {
-		parsedDeadline, err := xutils.ParseTimeToUTC(*params.Deadline)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("invalid deadline format: %w", err)
-		}
-		deadline = &parsedDeadline
-	}
-
-	if params.StartTime != nil {
-		parsedStartTime, err := xutils.ParseTimeToUTC(*params.StartTime)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("invalid start time format: %w", err)
-		}
-		startTime = &parsedStartTime
-	}
-
-	if params.StartDate != nil {
-		parsedStartDate, err := xutils.ParseTimeToUTC(*params.StartDate)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("invalid start date format: %w", err)
-		}
-		startDate = &parsedStartDate
-	}
-
-	return deadline, startTime, startDate, nil
 }
 
 func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*CreateTaskOutput, error) {

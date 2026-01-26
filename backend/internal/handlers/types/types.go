@@ -9,9 +9,9 @@ import (
 type RecurMode string
 
 const (
-	RecurModeOccurence RecurMode = "occurence"
-	RecurModeDeadline  RecurMode = "deadline"
-	RecurModeWindow    RecurMode = "window"
+	RecurModeOccurrence RecurMode = "occurrence"
+	RecurModeDeadline   RecurMode = "deadline"
+	RecurModeWindow     RecurMode = "window"
 )
 
 type CategoryDocument struct {
@@ -106,7 +106,7 @@ type TemplateTaskDocument struct {
 	CompletionDates []time.Time `bson:"completionDates,omitempty" json:"completionDates,omitempty"`
 
 	RecurFrequency string     `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"` // daily, weekly, monthly, yearly
-	RecurType      string     `bson:"recurType" json:"recurType"`                               // Occurence, Deadline, Window
+	RecurType      string     `bson:"recurType" json:"recurType"`                               // Occurrence, Deadline, Window
 	Deadline       *time.Time `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	StartTime      *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate      *time.Time `bson:"startDate,omitempty" json:"startDate,omitempty"` // Defaults to today

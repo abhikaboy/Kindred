@@ -2,9 +2,9 @@ package testutils
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -226,8 +226,14 @@ func (tdb *TestDB) WaitForIndex(ctx context.Context, collectionName string, time
 func generateTestDBName() string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, 8)
+	// Use crypto/rand for secure random generation
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to timestamp-only name if random generation fails
+		return fmt.Sprintf("test_%d", time.Now().Unix())
+	}
+	// Map random bytes to charset
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		b[i] = charset[int(b[i])%len(charset)]
 	}
 
 	return fmt.Sprintf("test_%s_%d", string(b), time.Now().Unix())

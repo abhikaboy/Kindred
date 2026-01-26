@@ -65,9 +65,16 @@ func (s *Service) ValidateToken(token string) (string, float64, error) {
 		return "", 0, err
 	}
 	claims, ok := t.Claims.(jwt.MapClaims)
+	if !ok || !t.Valid {
+		return "", 0, fiber.NewError(400, "Not Authorized, Invalid Token")
+	}
 
 	fmt.Println(claims)
-	idString := claims["user_id"].(string)
+
+	idString, ok := claims["user_id"].(string)
+	if !ok {
+		return "", 0, fiber.NewError(400, "Not Authorized, Invalid user_id in token")
+	}
 
 	id, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
@@ -78,14 +85,17 @@ func (s *Service) ValidateToken(token string) (string, float64, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	if claims["count"].(float64) != db_count {
+
+	tokenCount, ok := claims["count"].(float64)
+	if !ok {
+		return "", 0, fiber.NewError(400, "Not Authorized, Invalid count in token")
+	}
+
+	if tokenCount != db_count {
 		return "", 0, fiber.NewError(400, "Not Authorized, Revoked Token")
 	}
 
-	if !ok || !t.Valid {
-		return claims["user_id"].(string), 0, fiber.NewError(400, "Not Authorized, Invalid Token")
-	}
-	return claims["user_id"].(string), claims["count"].(float64), nil
+	return idString, tokenCount, nil
 }
 
 func (s *Service) LoginFromCredentials(email string, password string) (*primitive.ObjectID, *float64, *User, error) {

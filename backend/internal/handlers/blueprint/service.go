@@ -95,6 +95,9 @@ func (s *Service) CreateBlueprint(r *BlueprintDocumentInternal) (*BlueprintDocum
 			"$project": bson.M{"handle": 1, "display_name": 1, "profile_picture": 1},
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
 	defer cursor.Close(ctx)
 
 	var user types.UserExtendedReferenceInternal

@@ -132,6 +132,7 @@ func (s *ExamplePushNotificationTestSuite) TestResetBetweenSteps() {
 	s.MockPushSender.Reset()
 
 	// Step 2: Accept friend request
+	// nolint:staticcheck // DecodeBytes is deprecated but still functional for this test
 	connectionID, err := s.Collections["friend-requests"].FindOne(s.Ctx, bson.M{
 		"users": bson.M{"$all": []interface{}{requester.ID, receiver.ID}},
 	}).DecodeBytes()
@@ -161,6 +162,7 @@ func (s *ExamplePushNotificationTestSuite) TestFilterByType() {
 	connection, err := s.service.CreateConnectionRequest(requester.ID, receiver.ID)
 	s.NoError(err)
 
+	// nolint:staticcheck // DecodeBytes is deprecated but still functional for this test
 	connectionID, err := s.Collections["friend-requests"].FindOne(s.Ctx, bson.M{
 		"users": bson.M{"$all": []interface{}{requester.ID, receiver.ID}},
 	}).DecodeBytes()

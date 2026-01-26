@@ -35,7 +35,10 @@ func (s *Service) CreateGroup(r *types.GroupDocument) (*types.GroupDocument, err
 	}
 
 	// Cast the inserted ID to ObjectID
-	id := result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert InsertedID to ObjectID")
+	}
 	r.ID = id
 	return r, nil
 }
@@ -107,7 +110,9 @@ func (s *Service) UpdateGroup(id primitive.ObjectID, params UpdateGroupParams, u
 	}
 
 	if params.Name != nil {
-		updateDoc["$set"].(bson.M)["name"] = *params.Name
+		if setMap, ok := updateDoc["$set"].(bson.M); ok {
+			setMap["name"] = *params.Name
+		}
 	}
 
 	filter := bson.M{"_id": id}

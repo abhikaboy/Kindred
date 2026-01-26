@@ -37,7 +37,9 @@ func (h *Handler) JoinRoom(c *fiber.Ctx) error {
 
 		// Every websocket connection has an optional session key => value storage
 		kws.SetAttribute("user_id", userId)
-		h.service.JoinRoom(userId, kws.UUID)
+		if err := h.service.JoinRoom(userId, kws.UUID); err != nil {
+			xslog.Error(err)
+		}
 
 		kws.Emit([]byte(fmt.Sprintf("Hello user: %s with UUID: %s", userId, kws.UUID)))
 	})

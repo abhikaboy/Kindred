@@ -178,6 +178,7 @@ func killProcessOnPort(port int) error {
 
 	switch runtime.GOOS {
 	case "windows":
+		// #nosec G204 - port is validated as integer, not user input
 		output, err = exec.Command("netstat", "-ano", "|", "findstr", ":"+strconv.Itoa(port)).Output()
 		if err != nil {
 			return fmt.Errorf("failed to find process: %w", err)
@@ -186,6 +187,7 @@ func killProcessOnPort(port int) error {
 		cmd = exec.Command("taskkill", "/F", "/PID", pid)
 
 	case "darwin", "linux":
+		// #nosec G204 - port is validated as integer, not user input
 		output, err = exec.Command("lsof", "-i", ":"+strconv.Itoa(port)).Output()
 		if err != nil {
 			return fmt.Errorf("failed to find process: %w", err)
@@ -220,7 +222,8 @@ func generateOpenAPISpec(api huma.API, outputPath string) error {
 		return fmt.Errorf("failed to marshal OpenAPI spec to YAML: %w", err)
 	}
 
-	// Write to file
+	// Write to file with secure permissions
+	// #nosec G306 - OpenAPI spec is public documentation, 0644 is appropriate
 	if err := os.WriteFile(outputPath, yamlData, 0644); err != nil {
 		return fmt.Errorf("failed to write OpenAPI spec to file: %w", err)
 	}

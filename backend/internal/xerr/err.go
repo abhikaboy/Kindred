@@ -43,7 +43,7 @@ func WriteException(c *fiber.Ctx, err mongo.WriteException) error {
 	if strings.Contains(msg, "duplicate key error") {
 		// Handle duplicate key errors with a friendly message
 		fieldInfo := "document"
-		if err.WriteErrors != nil && len(err.WriteErrors) > 0 {
+		if len(err.WriteErrors) > 0 {
 			if strings.Contains(err.WriteErrors[0].Message, "email") {
 				fieldInfo = "email address"
 			} else if strings.Contains(err.WriteErrors[0].Message, "username") {
@@ -112,9 +112,7 @@ func FailedValidation(c *fiber.Ctx, err mongo.CommandError) error {
 // ErrorHandler is the central error handler for Fiber
 func ErrorHandler(c *fiber.Ctx, err error) error {
 	var e *fiber.Error
-	if errors.As(err, &e) {
-		e = err.(*fiber.Error)
-	} else {
+	if !errors.As(err, &e) {
 		ise := InternalServerError()
 		e = &ise
 	}
@@ -127,30 +125,6 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 	)
 
 	return c.Status(e.Code).JSON(e)
-}
-
-// getSuggestionForError provides helpful suggestions based on error types
-func getSuggestionForError(e *fiber.Error) string {
-	switch e.Code {
-	case http.StatusBadRequest:
-		return "Please check your request data and ensure it is correctly formatted"
-	case http.StatusUnauthorized:
-		return "Try logging in again with valid credentials"
-	case http.StatusForbidden:
-		return "You don't have permission to access this resource"
-	case http.StatusNotFound:
-		return "The requested resource could not be found"
-	case http.StatusRequestTimeout:
-		return "Please try again later"
-	case http.StatusConflict:
-		return "Please resolve conflicts before proceeding"
-	case http.StatusTooManyRequests:
-		return "Please wait a moment before trying again"
-	case http.StatusInternalServerError:
-		return "This is our fault, not yours. We're working on fixing it!"
-	default:
-		return ""
-	}
 }
 
 // BadRequest returns a formatted bad request error

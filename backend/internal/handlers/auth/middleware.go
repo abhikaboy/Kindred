@@ -102,7 +102,7 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 					"count", count)
 			}
 
-			// Add user ID to context
+			// Add user ID to context (using custom type to avoid collisions)
 			ctx := context.WithValue(r.Context(), UserIDContextKey, userID)
 			r = r.WithContext(ctx)
 

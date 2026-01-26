@@ -51,7 +51,10 @@ func (h *Handler) callGeminiFlow(ctx context.Context, userID, text, timezone str
 
 	// Check for error
 	if !callResults[1].IsNil() {
-		return nil, callResults[1].Interface().(error)
+		if err, ok := callResults[1].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, fmt.Errorf("unexpected error type from gemini flow")
 	}
 
 	// Convert result to local type

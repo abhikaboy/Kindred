@@ -322,7 +322,7 @@ lsof -ti:27017 | xargs kill -9
 **Tests failing in CI but passing locally:**
 1. Check MongoDB service is running in workflow
 2. Verify environment variables are set
-3. Check Go version matches (1.25.0)
+3. Check Go version matches (1.25.6)
 4. Look at full logs in Actions tab
 
 **Secrets not working:**

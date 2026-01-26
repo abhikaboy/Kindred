@@ -50,6 +50,7 @@ func NewPresigner() (*s3.PresignClient, *s3.Client) {
 	endpoint := "https://" + cfg.DO.SpacesRegion + ".digitaloceanspaces.com"
 
 	// Load AWS configuration with custom endpoint resolver
+	// nolint:staticcheck // Using deprecated API until migration to service-specific endpoint resolution
 	awsCfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
 		awsconfig.WithCredentialsProvider(creds),
 		awsconfig.WithRegion(cfg.DO.SpacesRegion),

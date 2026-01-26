@@ -6,6 +6,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Context key types to avoid collisions
+type contextKey string
+
+const (
+	appleIDContextKey  contextKey = "apple_id"
+	googleIDContextKey contextKey = "google_id"
+)
+
 type Service struct {
 	users      *mongo.Collection
 	categories *mongo.Collection

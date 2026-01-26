@@ -65,7 +65,8 @@ func (m *MockService) UpdatePushToken(userID primitive.ObjectID, pushToken strin
 	return args.Error(0)
 }
 
-// Helper function to create test user
+// Helper function to create test user (currently unused but kept for future tests)
+// nolint:unused
 func createTestUser() *User {
 	userID := primitive.NewObjectID()
 	return &User{

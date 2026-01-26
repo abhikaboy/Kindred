@@ -1,6 +1,6 @@
 # Kindred Project Makefile
 
-.PHONY: help generate-api build-backend test-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit
+.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit
 
 # Default target
 help: ## Show this help message
@@ -14,6 +14,10 @@ generate-api: ## Generate OpenAPI spec and TypeScript types (auto-detects Nix en
 build-backend: ## Build the backend server
 	@echo "🔨 Building backend..."
 	@cd backend && go build -o bin/server ./cmd/server
+
+lint-backend: ## Run golangci-lint (same as CI)
+	@echo "🔍 Running golangci-lint..."
+	@cd backend && golangci-lint run --timeout=5m
 
 test-backend: ## Run backend tests (use VERBOSE=1 for detailed output, QUIET=1 for minimal output)
 	@echo "\033[1;36m🧪 Running backend tests...\033[0m"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,6 +17,10 @@ useful for testing schema changes and experimental database operations without a
 */
 func (db *DB) Clone(ctx context.Context, collections map[string]*mongo.Collection, name string, limit uint) error {
 	eg, egCtx := errgroup.WithContext(ctx)
+	// Safely convert uint to int with overflow check
+	if limit > math.MaxInt {
+		return fmt.Errorf("limit value too large: %d", limit)
+	}
 	eg.SetLimit(int(limit))
 
 	for collName, collection := range collections {

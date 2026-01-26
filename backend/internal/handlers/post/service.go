@@ -2,9 +2,10 @@ package Post
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log/slog"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
@@ -111,7 +112,10 @@ func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, *UserS
 	}
 
 	// Cast the inserted ID to ObjectID
-	id := result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, nil, fmt.Errorf("failed to convert InsertedID to ObjectID")
+	}
 	r.ID = id
 
 	// If this post is linked to a task, mark the task as posted
@@ -206,16 +210,21 @@ func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostPar
 			"metadata.isEdited":  true,
 		},
 	}
+	setMap, ok := updateDoc["$set"].(bson.M)
+	if !ok {
+		return fmt.Errorf("failed to get $set map from update document")
+	}
+
 	if updated.Caption != nil {
-		updateDoc["$set"].(bson.M)["caption"] = *updated.Caption
+		setMap["caption"] = *updated.Caption
 	}
 
 	if updated.IsPublic != nil {
-		updateDoc["$set"].(bson.M)["metadata.isPublic"] = *updated.IsPublic
+		setMap["metadata.isPublic"] = *updated.IsPublic
 	}
 
 	if updated.Size != nil {
-		updateDoc["$set"].(bson.M)["size"] = *updated.Size
+		setMap["size"] = *updated.Size
 	}
 
 	_, err := s.Posts.UpdateOne(ctx, filter, updateDoc)
@@ -274,7 +283,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 	// Ensure blockedUserIDs is never nil for MongoDB aggregation
 	// Convert to bson.A to ensure proper serialization
 	var blockedUserIDsArray bson.A
-	if blockedUserIDs == nil || len(blockedUserIDs) == 0 {
+	if len(blockedUserIDs) == 0 {
 		blockedUserIDsArray = bson.A{}
 	} else {
 		blockedUserIDsArray = make(bson.A, len(blockedUserIDs))
@@ -1025,7 +1034,13 @@ func (s *Service) NotifyRandomFriendsOfPost(postID primitive.ObjectID, posterID 
 	// Randomly select friends to notify based on probability
 	var selectedFriends []primitive.ObjectID
 	for _, friendID := range posterUser.Friends {
-		if rand.Float64() < notificationProbability {
+		// Use crypto/rand for secure random number generation
+		randNum, err := rand.Int(rand.Reader, big.NewInt(1000))
+		if err != nil {
+			slog.Warn("Failed to generate random number for friend selection", "error", err)
+			continue
+		}
+		if float64(randNum.Int64())/1000.0 < notificationProbability {
 			selectedFriends = append(selectedFriends, friendID)
 		}
 	}
@@ -1078,8 +1093,13 @@ func (s *Service) NotifyRandomFriendsOfPost(postID primitive.ObjectID, posterID 
 			continue
 		}
 
-		// Pick a random call to action
-		callToAction := callToActions[rand.Intn(len(callToActions))]
+		// Pick a random call to action using crypto/rand
+		randIdx, err := rand.Int(rand.Reader, big.NewInt(int64(len(callToActions))))
+		if err != nil {
+			slog.Warn("Failed to generate random index for call to action", "error", err)
+			continue
+		}
+		callToAction := callToActions[randIdx.Int64()]
 
 		// Send push notification if friend has a push token
 		if friend.PushToken != "" {

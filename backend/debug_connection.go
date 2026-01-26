@@ -40,7 +40,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to test database: %v", err)
 	}
-	defer testDB.TearDown(ctx)
+	defer func() {
+		if err := testDB.TearDown(ctx); err != nil {
+			log.Printf("Failed to tear down test database: %v", err)
+		}
+	}()
 
 	fmt.Println("✅ Successfully connected to test database!")
 	fmt.Printf("Test database name: %s\n", testDB.DB.DB.Name())

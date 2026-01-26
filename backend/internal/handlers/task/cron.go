@@ -31,7 +31,7 @@ func Cron(collections map[string]*mongo.Collection) {
 		tasks = append(tasks, recurringTasks...)
 
 		for _, task := range tasks {
-			// TOOD: Optimize to take the template itself rather than the ID
+			// TODO: Optimize to take the template itself rather than the ID
 			newTask, err := service.CreateTaskFromTemplate(task.ID)
 			if err != nil {
 				slog.Error("Error creating task from template", "error", err)

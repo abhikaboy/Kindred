@@ -98,7 +98,10 @@ func (s *Service) RedeemReward(userID primitive.ObjectID, rewardType RewardType,
 	update := bson.M{"$inc": bson.M{}}
 	creditsReceived := 0
 
-	incMap := update["$inc"].(bson.M)
+	incMap, ok := update["$inc"].(bson.M)
+	if !ok {
+		return nil, fmt.Errorf("failed to get $inc map from update document")
+	}
 
 	// Add credit increment based on reward type
 	switch rewardType {

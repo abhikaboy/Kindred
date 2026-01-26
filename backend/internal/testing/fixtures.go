@@ -154,9 +154,18 @@ func generateTestConnections(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
-	user3 := users[2].(types.User)
+	user1, ok := users[0].(types.User)
+	if !ok {
+		return []interface{}{}
+	}
+	user2, ok := users[1].(types.User)
+	if !ok {
+		return []interface{}{}
+	}
+	user3, ok := users[2].(types.User)
+	if !ok {
+		return []interface{}{}
+	}
 	now := time.Now()
 
 	// Create sorted user ID arrays for connections
@@ -198,17 +207,15 @@ func generateTestConnections(users []interface{}) []interface{} {
 	return connections
 }
 
-// Helper function to create string pointers
-func stringPtr(s string) *string {
-	return &s
-}
-
 // GetTestUser returns a test user by index
 func (tf *TestFixtures) GetTestUser(index int) *types.User {
 	if index >= len(tf.Users) {
 		return nil
 	}
-	user := tf.Users[index].(types.User)
+	user, ok := tf.Users[index].(types.User)
+	if !ok {
+		return nil
+	}
 	return &user
 }
 
@@ -217,7 +224,10 @@ func (tf *TestFixtures) GetTestConnection(index int) *ConnectionDocumentInternal
 	if index >= len(tf.Connections) {
 		return nil
 	}
-	connection := tf.Connections[index].(ConnectionDocumentInternal)
+	connection, ok := tf.Connections[index].(ConnectionDocumentInternal)
+	if !ok {
+		return nil
+	}
 	return &connection
 }
 
@@ -226,7 +236,10 @@ func (tf *TestFixtures) GetTestPost(index int) *types.PostDocument {
 	if index >= len(tf.Posts) {
 		return nil
 	}
-	post := tf.Posts[index].(types.PostDocument)
+	post, ok := tf.Posts[index].(types.PostDocument)
+	if !ok {
+		return nil
+	}
 	return &post
 }
 
@@ -354,26 +367,6 @@ func generateTestEncouragements(users []interface{}) []interface{} {
 			"from_user": user1.ID,
 			"to_user":   user2.ID,
 			"message":   "Keep up the good work!",
-			"timestamp": time.Now(),
-		},
-	}
-}
-
-// generateTestFriendRequests creates test friend request data
-func generateTestFriendRequests(users []interface{}) []interface{} {
-	if len(users) < 2 {
-		return []interface{}{}
-	}
-
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
-
-	return []interface{}{
-		map[string]interface{}{
-			"_id":       primitive.NewObjectID(),
-			"requester": user1.ID,
-			"receiver":  user2.ID,
-			"status":    "pending",
 			"timestamp": time.Now(),
 		},
 	}

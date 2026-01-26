@@ -133,7 +133,10 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 	}
 
 	// Cast the inserted ID to ObjectID and update the internal document
-	id := result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert InsertedID to ObjectID")
+	}
 	r.ID = id
 
 	// Send push notification to receiver (no database notification)

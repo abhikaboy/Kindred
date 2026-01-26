@@ -45,12 +45,6 @@ func getBaseTaskPipeline() []bson.D {
 	}
 }
 
-func getTaskByIdPipeline(id primitive.ObjectID) []bson.D {
-	return append(getBaseTaskPipeline(), bson.D{
-		{Key: "$match", Value: bson.M{"_id": id}},
-	})
-}
-
 func getTaskArrayFilterOptions(taskId primitive.ObjectID) *options.UpdateOptions {
 	return &options.UpdateOptions{
 		ArrayFilters: &options.ArrayFilters{
@@ -158,6 +152,9 @@ func (s *Service) GetTaskByID(id primitive.ObjectID, user primitive.ObjectID) (*
 	err = cursor.All(ctx, &Task)
 	if len(Task) == 0 {
 		return nil, mongo.ErrNoDocuments
+	}
+	if len(Task) == 0 {
+		return nil, fmt.Errorf("task not found")
 	}
 
 	return &Task[0], nil
@@ -907,6 +904,9 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 				"_id": id,
 			}},
 		}})
+	if err != nil {
+		return err
+	}
 	if cursor.RemainingBatchLength() == 0 {
 		return fiber.ErrNotFound // 404
 	}
@@ -1131,8 +1131,14 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	}
 
 	if deletedCount > 0 {
-		update["$inc"].(bson.M)["timesMissed"] = deletedCount
-		update["$set"].(bson.M)["streak"] = 0
+		incMap, ok := update["$inc"].(bson.M)
+		if ok {
+			incMap["timesMissed"] = deletedCount
+		}
+		setMap, ok := update["$set"].(bson.M)
+		if ok {
+			setMap["streak"] = 0
+		}
 
 		// Send push notification to user about missed task
 		go func() {
@@ -1144,7 +1150,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 			}
 
 			if user.PushToken != "" {
-				xutils.SendNotification(xutils.Notification{
+				if err := xutils.SendNotification(xutils.Notification{
 					Token:   user.PushToken,
 					Title:   "Task Missed",
 					Message: fmt.Sprintf("You missed your recurring task: %s", templateDoc.Content),
@@ -1152,7 +1158,9 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 						"taskId": templateDoc.ID.Hex(),
 						"type":   "TASK_MISSED",
 					},
-				})
+				}); err != nil {
+					slog.Error("Failed to send missed task notification", "error", err)
+				}
 			}
 		}()
 	} else {
@@ -1175,7 +1183,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 				}
 
 				if user.PushToken != "" {
-					xutils.SendNotification(xutils.Notification{
+					if err := xutils.SendNotification(xutils.Notification{
 						Token:   user.PushToken,
 						Title:   "Great Job!",
 						Message: fmt.Sprintf("We've added '%s' back to your todo list.", templateDoc.Content),
@@ -1183,7 +1191,9 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 							"taskId": templateDoc.ID.Hex(),
 							"type":   "TASK_REGENERATED",
 						},
-					})
+					}); err != nil {
+						slog.Error("Failed to send task regenerated notification", "error", err)
+					}
 				}
 			}()
 		}
@@ -1305,27 +1315,27 @@ func (s *Service) CreateTemplateForTask(
 		Reminders:     relativeReminders,
 	}
 
-	var next_occurence time.Time
+	var nextOccurrence time.Time
 	var err error
 
 	if recurType == "OCCURRENCE" {
-		next_occurence, err = s.ComputeNextOccurrence(&template_doc)
+		nextOccurrence, err = s.ComputeNextOccurrence(&template_doc)
 		if err != nil {
 			return fmt.Errorf("error creating OCCURRENCE template task: %w", err)
 		}
 	} else if recurType == "DEADLINE" {
-		next_occurence, err = s.ComputeNextDeadline(&template_doc)
+		nextOccurrence, err = s.ComputeNextDeadline(&template_doc)
 		if err != nil {
 			return fmt.Errorf("error creating DEADLINE template task: %w", err)
 		}
 	} else if recurType == "WINDOW" {
-		next_occurence, err = s.ComputeNextOccurrence(&template_doc)
+		nextOccurrence, err = s.ComputeNextOccurrence(&template_doc)
 		if err != nil {
 			return fmt.Errorf("error creating WINDOW template task: %w", err)
 		}
 	}
 
-	template_doc.NextGenerated = &next_occurence
+	template_doc.NextGenerated = &nextOccurrence
 
 	_, err = s.CreateTemplateTask(categoryID, &template_doc)
 	if err != nil {
@@ -1651,24 +1661,6 @@ func handleMongoError(ctx context.Context, operation string, err error) error {
 		return err
 	}
 	return nil
-}
-
-/*
-This returns a bson.D that can be used to update a task
-*/
-func getCommonTaskUpdateFields() bson.D {
-	return bson.D{
-		{Key: "tasks.$[t].lastEdited", Value: xutils.NowUTC()},
-	}
-}
-
-func (s *Service) createTaskInCategory(ctx context.Context, categoryId primitive.ObjectID, task *TaskDocument) error {
-	_, err := s.Tasks.UpdateOne(
-		ctx,
-		bson.M{"_id": categoryId},
-		bson.M{"$push": bson.M{"tasks": task}},
-	)
-	return handleMongoError(ctx, "create task", err)
 }
 
 func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {

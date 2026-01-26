@@ -172,7 +172,10 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	}
 
 	// Cast the inserted ID to ObjectID and update the internal document
-	id := result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert InsertedID to ObjectID")
+	}
 	encouragement.ID = id
 	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", id.Hex()))
 

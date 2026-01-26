@@ -57,7 +57,10 @@ func (h *Handler) callGeminiGenerateBlueprintFlow(ctx context.Context, userID, d
 
 	// Check for error
 	if !callResults[1].IsNil() {
-		return nil, callResults[1].Interface().(error)
+		if err, ok := callResults[1].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, fmt.Errorf("unexpected error type from gemini flow")
 	}
 
 	// Extract the blueprint from the response

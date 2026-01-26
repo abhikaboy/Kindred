@@ -254,24 +254,70 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		// Extract user data from the task document
 		var taskUser *types.UserExtendedReference
 		if userDoc, ok := task["user"].(bson.M); ok {
-			taskUser = &types.UserExtendedReference{
-				ID:             userDoc["_id"].(primitive.ObjectID).Hex(),
-				Handle:         userDoc["handle"].(string),
-				DisplayName:    userDoc["display_name"].(string),
-				ProfilePicture: userDoc["profile_picture"].(string),
+			if id, ok := userDoc["_id"].(primitive.ObjectID); ok {
+				if handle, ok := userDoc["handle"].(string); ok {
+					if displayName, ok := userDoc["display_name"].(string); ok {
+						if profilePicture, ok := userDoc["profile_picture"].(string); ok {
+							taskUser = &types.UserExtendedReference{
+								ID:             id.Hex(),
+								Handle:         handle,
+								DisplayName:    displayName,
+								ProfilePicture: profilePicture,
+							}
+						}
+					}
+				}
 			}
 		}
 
+		// Extract task fields with type assertions
+		taskID, ok := task["_id"].(primitive.ObjectID)
+		if !ok {
+			continue
+		}
+		content, ok := task["content"].(string)
+		if !ok {
+			continue
+		}
+		priority, ok := task["priority"].(int32)
+		if !ok {
+			continue
+		}
+		value, ok := task["value"].(float64)
+		if !ok {
+			continue
+		}
+		public, ok := task["public"].(bool)
+		if !ok {
+			continue
+		}
+		timestamp, ok := task["timestamp"].(primitive.DateTime)
+		if !ok {
+			continue
+		}
+		categoryID, ok := task["categoryId"].(primitive.ObjectID)
+		if !ok {
+			continue
+		}
+		categoryName, ok := task["categoryName"].(string)
+		if !ok {
+			continue
+		}
+		workspaceName, ok := task["workspaceName"].(string)
+		if !ok {
+			continue
+		}
+
 		feedTask := FeedTaskData{
-			ID:            task["_id"].(primitive.ObjectID).Hex(),
-			Content:       task["content"].(string),
-			Priority:      int(task["priority"].(int32)),
-			Value:         task["value"].(float64),
-			Public:        task["public"].(bool),
-			Timestamp:     task["timestamp"].(primitive.DateTime).Time().Format(time.RFC3339),
-			CategoryID:    task["categoryId"].(primitive.ObjectID).Hex(),
-			CategoryName:  task["categoryName"].(string),
-			WorkspaceName: task["workspaceName"].(string),
+			ID:            taskID.Hex(),
+			Content:       content,
+			Priority:      int(priority),
+			Value:         value,
+			Public:        public,
+			Timestamp:     timestamp.Time().Format(time.RFC3339),
+			CategoryID:    categoryID.Hex(),
+			CategoryName:  categoryName,
+			WorkspaceName: workspaceName,
 			User:          taskUser,
 		}
 		feedTasks = append(feedTasks, feedTask)

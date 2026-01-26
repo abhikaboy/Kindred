@@ -124,7 +124,7 @@ func (h *Handler) RegisterHuma(ctx context.Context, input *RegisterInput) (*Regi
 // RegisterWithAppleHuma handles Apple registration
 func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
 	// Convert to regular register input and add Apple ID to context
-	ctxWithApple := context.WithValue(ctx, "apple_id", input.Body.AppleID)
+	ctxWithApple := context.WithValue(ctx, appleIDContextKey, input.Body.AppleID)
 
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
@@ -184,7 +184,7 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 // RegisterWithGoogleHuma handles Google registration
 func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWithGoogleInput) (*RegisterOutput, error) {
 	// Convert to regular register input and add Google ID to context
-	ctxWithGoogle := context.WithValue(ctx, "google_id", input.Body.GoogleID)
+	ctxWithGoogle := context.WithValue(ctx, googleIDContextKey, input.Body.GoogleID)
 
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
@@ -250,15 +250,21 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
 
-	aaid := ctx.Value("apple_id")
-	googleid := ctx.Value("google_id")
+	aaid := ctx.Value(appleIDContextKey)
+	googleid := ctx.Value(googleIDContextKey)
 
-	if aaid == nil {
-		aaid = ""
+	appleIDStr := ""
+	if aaid != nil {
+		if str, ok := aaid.(string); ok {
+			appleIDStr = str
+		}
 	}
 
-	if googleid == nil {
-		googleid = ""
+	googleIDStr := ""
+	if googleid != nil {
+		if str, ok := googleid.(string); ok {
+			googleIDStr = str
+		}
 	}
 
 	// Hash the password before storing it
@@ -301,8 +307,8 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		Credits:         types.GetDefaultCredits(),
 		Subscription:    types.GetDefaultSubscription(),
 
-		AppleID:  aaid.(string),
-		GoogleID: googleid.(string),
+		AppleID:  appleIDStr,
+		GoogleID: googleIDStr,
 	}
 
 	err = h.service.CreateUser(user)

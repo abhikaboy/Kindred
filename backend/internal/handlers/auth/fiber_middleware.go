@@ -94,7 +94,6 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			// Set new tokens in response headers
 			c.Set("access_token", newAccess)
 			c.Set("refresh_token", newRefresh)
-		} else {
 		}
 
 		// Add user ID to Fiber context locals

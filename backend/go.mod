@@ -1,6 +1,6 @@
 module github.com/abhikaboy/Kindred
 
-go 1.25.0
+go 1.25.6
 
 require (
 	github.com/danielgtaylor/huma/v2 v2.26.0

@@ -1,16 +1,9 @@
 package Activity
 
 import (
-	"time"
-
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type ActivityPoint struct {
-	date  time.Time
-	value float64
-}
 
 type ActivityDocument = types.ActivityDocument
 type ActivityDay = types.ActivityDay

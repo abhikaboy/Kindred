@@ -36,7 +36,9 @@ func NewTestHelper(t *testing.T, db *mongo.Database) *TestHelper {
 func (h *TestHelper) InsertDocument(collection string, doc interface{}) primitive.ObjectID {
 	result, err := h.db.Collection(collection).InsertOne(h.ctx, doc)
 	require.NoError(h.t, err, "Failed to insert document")
-	return result.InsertedID.(primitive.ObjectID)
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	require.True(h.t, ok, "Failed to convert InsertedID to ObjectID")
+	return id
 }
 
 // FindDocument finds a single document
