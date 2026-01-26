@@ -150,7 +150,7 @@ func BenchmarkHeaderStructureCreation(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = &LoginOutput{
+		output := &LoginOutput{
 			AccessToken:  "access-token-" + userID,
 			RefreshToken: "refresh-token-" + userID,
 			Body: SafeUser{
@@ -158,5 +158,7 @@ func BenchmarkHeaderStructureCreation(b *testing.B) {
 				Handle:      "@testuser",
 			},
 		}
+		// Use the tokens to prevent optimization
+		_ = output.AccessToken + output.RefreshToken
 	}
 }

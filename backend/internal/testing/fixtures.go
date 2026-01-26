@@ -248,7 +248,10 @@ func (tf *TestFixtures) GetTestNotification(index int) *NotificationDocument {
 	if index >= len(tf.Notifications) {
 		return nil
 	}
-	notification := tf.Notifications[index].(NotificationDocument)
+	notification, ok := tf.Notifications[index].(NotificationDocument)
+	if !ok {
+		return nil
+	}
 	return &notification
 }
 
@@ -257,7 +260,10 @@ func (tf *TestFixtures) GetTestGroup(index int) *types.GroupDocument {
 	if index >= len(tf.Groups) {
 		return nil
 	}
-	group := tf.Groups[index].(types.GroupDocument)
+	group, ok := tf.Groups[index].(types.GroupDocument)
+	if !ok {
+		return nil
+	}
 	return &group
 }
 
@@ -273,7 +279,10 @@ func generateTestBlueprints(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user := users[0].(types.User)
+	user, ok := users[0].(types.User)
+	if !ok {
+		return []interface{}{}
+	}
 
 	return []interface{}{
 		map[string]interface{}{
@@ -299,8 +308,11 @@ func generateTestChats(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
+	user1, ok1 := users[0].(types.User)
+	user2, ok2 := users[1].(types.User)
+	if !ok1 || !ok2 {
+		return []interface{}{}
+	}
 
 	return []interface{}{
 		map[string]interface{}{
@@ -318,7 +330,10 @@ func generateTestCompletedTasks(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user := users[0].(types.User)
+	user, ok := users[0].(types.User)
+	if !ok {
+		return []interface{}{}
+	}
 	now := time.Now()
 
 	return []interface{}{
@@ -338,8 +353,11 @@ func generateTestCongratulations(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
+	user1, ok1 := users[0].(types.User)
+	user2, ok2 := users[1].(types.User)
+	if !ok1 || !ok2 {
+		return []interface{}{}
+	}
 
 	return []interface{}{
 		map[string]interface{}{
@@ -358,8 +376,11 @@ func generateTestEncouragements(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
+	user1, ok1 := users[0].(types.User)
+	user2, ok2 := users[1].(types.User)
+	if !ok1 || !ok2 {
+		return []interface{}{}
+	}
 
 	return []interface{}{
 		map[string]interface{}{
@@ -404,8 +425,11 @@ func generateTestNotifications(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
+	user1, ok1 := users[0].(types.User)
+	user2, ok2 := users[1].(types.User)
+	if !ok1 || !ok2 {
+		return []interface{}{}
+	}
 
 	return []interface{}{
 		NotificationDocument{
@@ -432,7 +456,10 @@ func generateTestPosts(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user := users[0].(types.User)
+	user, ok := users[0].(types.User)
+	if !ok {
+		return []interface{}{}
+	}
 	now := time.Now()
 
 	return []interface{}{
@@ -462,8 +489,11 @@ func generateTestReferrals(users []interface{}) []interface{} {
 		return []interface{}{}
 	}
 
-	user1 := users[0].(types.User)
-	user2 := users[1].(types.User)
+	user1, ok1 := users[0].(types.User)
+	user2, ok2 := users[1].(types.User)
+	if !ok1 || !ok2 {
+		return []interface{}{}
+	}
 
 	return []interface{}{
 		map[string]interface{}{

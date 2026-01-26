@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const UserIDContextKey = "user_id"
+const UserIDContextKey contextKey = "user_id"
 
 // AuthMiddleware creates a middleware function for validating JWT tokens
 func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config) func(http.Handler) http.Handler {

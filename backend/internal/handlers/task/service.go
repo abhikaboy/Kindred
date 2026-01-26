@@ -149,12 +149,11 @@ func (s *Service) GetTaskByID(id primitive.ObjectID, user primitive.ObjectID) (*
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	err = cursor.All(ctx, &Task)
-	if len(Task) == 0 {
-		return nil, mongo.ErrNoDocuments
+	if err = cursor.All(ctx, &Task); err != nil {
+		return nil, err
 	}
 	if len(Task) == 0 {
-		return nil, fmt.Errorf("task not found")
+		return nil, mongo.ErrNoDocuments
 	}
 
 	return &Task[0], nil

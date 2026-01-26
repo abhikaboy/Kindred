@@ -373,7 +373,8 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			return c.Status(fiber.StatusInternalServerError).JSON(err)
 		}
 
-		doc.TemplateID = &template_id
+		// Note: doc.TemplateID could be set here if needed for return value
+		// but currently the function returns nil immediately after template creation
 	}
 
 	return nil

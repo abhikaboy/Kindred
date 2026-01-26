@@ -206,11 +206,13 @@ func TestRequestValidation(t *testing.T) {
 			Email:    "invalid-email",
 			Password: "password123",
 		}
+		_ = invalidEmailLogin // Used for validation testing
 
 		shortPasswordLogin := LoginRequest{
 			Email:    "test@example.com",
 			Password: "123", // Too short
 		}
+		_ = shortPasswordLogin // Used for validation testing
 
 		// These would normally be validated by the validator package
 		// Here we just test the struct fields are set correctly
@@ -440,6 +442,9 @@ func TestJSONSerialization(t *testing.T) {
 			RefreshToken: "refresh-token-123",
 			Body:         *user,
 		}
+		// Tokens are used in headers, not body
+		_ = loginOutput.AccessToken
+		_ = loginOutput.RefreshToken
 
 		// Marshal to JSON (body only, headers are separate)
 		jsonData, err := json.Marshal(loginOutput.Body)
