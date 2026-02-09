@@ -23,6 +23,7 @@ type CategoryDocument struct {
 	User          primitive.ObjectID  `bson:"user" json:"user"`
 	IsBlueprint   bool                `bson:"isBlueprint,omitempty" json:"isBlueprint,omitempty"`
 	BlueprintID   *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
+	Integration   string              `bson:"integration,omitempty" json:"integration,omitempty"` // Format: "gcal:{connection_id}:{calendar_id}"
 }
 
 type WorkspaceResult struct {

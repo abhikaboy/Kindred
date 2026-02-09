@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/gemini"
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	Blueprint "github.com/abhikaboy/Kindred/internal/handlers/blueprint"
+	"github.com/abhikaboy/Kindred/internal/handlers/calendar"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	congratulation "github.com/abhikaboy/Kindred/internal/handlers/congratulation"
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
@@ -38,7 +40,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, geminiService *gemini.GeminiService) (huma.API, *fiber.App) {
+func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, geminiService *gemini.GeminiService, cfg config.Config) (huma.API, *fiber.App) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			slog.Error("🚨 FIBER ERROR:", "error", err.Error(), "path", c.Path())
@@ -128,6 +130,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register report routes
 	report.Routes(api, collections)
+
+	// Register calendar routes
+	calendar.Routes(api, collections, cfg)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)

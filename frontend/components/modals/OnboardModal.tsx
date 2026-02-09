@@ -60,7 +60,7 @@ export const OnboardModal = (props: Props) => {
                     setVisible(false);
                 } catch (error: any) {
                     console.error("Google authentication error:", error);
-                    
+
                     if (error?.message === "ACCOUNT_NOT_FOUND") {
                         // Account doesn't exist - show friendly message
                         if (mode === "login") {
@@ -360,16 +360,13 @@ export const OnboardModal = (props: Props) => {
                                                 console.error("Google sign in failed:", error);
                                             }
                                         }}
-                                        disabled={true} // Disable while in development
+                                        disabled={googleLoading}
                                     >
                                         <View style={styles.buttonContent}>
                                             <AntDesign name="google" size={20} color={ThemedColor.primary} />
                                             <ThemedText style={styles.googleButtonText}>
                                                 {mode === "register" ? "Continue with Google" : "Sign in with Google"}
                                             </ThemedText>
-                                        </View>
-                                        <View style={styles.developmentBadge}>
-                                            <ThemedText style={styles.developmentBadgeText}>Coming Soon</ThemedText>
                                         </View>
                                     </TouchableOpacity>
                                 </Animated.View>

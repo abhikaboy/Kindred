@@ -108,6 +108,40 @@ var Indexes = []Index{
 			Keys: bson.D{{Key: "receiver", Value: 1}},
 		},
 	},
+	// Calendar connections indexes
+	{
+		Collection: "calendar_connections",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "user_id", Value: 1},
+				{Key: "provider", Value: 1},
+			},
+		},
+	},
+	{
+		Collection: "calendar_connections",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "user_id", Value: 1},
+				{Key: "provider_account_id", Value: 1},
+			},
+			Options: options.Index().SetUnique(true),
+		},
+	},
+	// Unique index on tasks.integration to prevent duplicate calendar events
+	{
+		Collection: "categories",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "tasks.integration", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetSparse(true).
+				SetPartialFilterExpression(bson.D{
+					{Key: "tasks.integration", Value: bson.D{{Key: "$exists", Value: true}}},
+					{Key: "tasks.integration", Value: bson.D{{Key: "$ne", Value: ""}}},
+				}),
+		},
+	},
 	// {
 	// 	Collection: "users",
 	// 	Model: mongo.IndexModel{Keys: bson.D{

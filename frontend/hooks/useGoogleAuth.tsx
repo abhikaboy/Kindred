@@ -30,32 +30,15 @@ export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
   const [userInfo, setUserInfo] = useState<GoogleAuthResult['user'] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Force use of Expo's auth proxy for Expo Go compatibility
-  // Manually construct the proxy URL since makeRedirectUri isn't working
-  const redirectUri = __DEV__
-    ? 'https://auth.expo.io/@suntex/Kindred'  // Expo Go proxy
-    : AuthSession.makeRedirectUri({
-        scheme: 'com.googleusercontent.apps.955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6'
-      });
-
-  console.log('🔗 Google OAuth Redirect URI:', redirectUri);
-  console.log('🔗 Using expoClientId for Expo Go');
-  console.log('🔗 __DEV__ mode:', __DEV__);
-
   // Configure Google Auth Request
-  const [request, response, promptAsync] = Google.useAuthRequest(
-    {
-      expoClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com', // For Expo Go
-      iosClientId: '955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6.apps.googleusercontent.com', // For standalone iOS
-      webClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com', // For web/Android
-      scopes: ['openid', 'profile', 'email'],
-    },
-    {
-      // Discovery document for Google OAuth
-      useProxy: true, // Force use of Expo proxy
-      redirectUri: redirectUri, // Explicitly use the proxy redirect
-    }
-  );
+  // Note: Even for iOS standalone apps, we need both client IDs:
+  // - iosClientId: Used for the native iOS OAuth flow
+  // - webClientId: Used for server-side token validation (required by expo-auth-session)
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6.apps.googleusercontent.com',
+    webClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com',
+    scopes: ['openid', 'profile', 'email'],
+  });
 
   // Handle the authentication response
   useEffect(() => {

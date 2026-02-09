@@ -92,7 +92,7 @@ func run(stderr io.Writer, args []string) {
 	fmt.Printf("Gemini service initialized\n")
 
 	// API Server Setup
-	api, fiberApp := server.New(db.Collections, db.Stream, geminiService)
+	api, fiberApp := server.New(db.Collections, db.Stream, geminiService, config)
 	fmt.Printf("Server initialized\n")
 
 	// Handle OpenAPI generation if flag is set
