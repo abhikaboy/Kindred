@@ -125,91 +125,6 @@ func TestWatchChannelModel(t *testing.T) {
 	}
 }
 
-func TestCalendarConnectionWithWatchChannels(t *testing.T) {
-	now := time.Now()
-	expiration := now.Add(30 * 24 * time.Hour)
-
-	connection := CalendarConnection{
-		ID:                primitive.NewObjectID(),
-		UserID:            primitive.NewObjectID(),
-		Provider:          ProviderGoogle,
-		ProviderAccountID: "user@example.com",
-		AccessToken:       "access-token",
-		RefreshToken:      "refresh-token",
-		TokenExpiry:       now.Add(time.Hour),
-		Scopes:            []string{"calendar.readonly"},
-		IsPrimary:         true,
-		LastSync:          now,
-		WatchChannels: []WatchChannel{
-			{
-				CalendarID: "primary",
-				ChannelID:  "channel-123",
-				ResourceID: "resource-456",
-				Expiration: expiration,
-				CreatedAt:  now,
-			},
-			{
-				CalendarID: "work@example.com",
-				ChannelID:  "channel-789",
-				ResourceID: "resource-012",
-				Expiration: expiration,
-				CreatedAt:  now,
-			},
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	if len(connection.WatchChannels) != 2 {
-		t.Errorf("Expected 2 watch channels, got %d", len(connection.WatchChannels))
-	}
-
-	if connection.WatchChannels[0].CalendarID != "primary" {
-		t.Errorf("Expected first watch channel CalendarID 'primary', got '%s'", connection.WatchChannels[0].CalendarID)
-	}
-
-	if connection.WatchChannels[1].CalendarID != "work@example.com" {
-		t.Errorf("Expected second watch channel CalendarID 'work@example.com', got '%s'", connection.WatchChannels[1].CalendarID)
-	}
-}
-
-func TestWebhookInput(t *testing.T) {
-	input := WebhookInput{
-		ConnectionID:  "507f1f77bcf86cd799439011",
-		ChannelID:     "channel-123",
-		ResourceID:    "resource-456",
-		ResourceState: "exists",
-		ResourceURI:   "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-		MessageNumber: "1",
-		ChannelToken:  "token-123",
-	}
-
-	if input.ConnectionID != "507f1f77bcf86cd799439011" {
-		t.Errorf("Expected ConnectionID '507f1f77bcf86cd799439011', got '%s'", input.ConnectionID)
-	}
-
-	if input.ChannelID != "channel-123" {
-		t.Errorf("Expected ChannelID 'channel-123', got '%s'", input.ChannelID)
-	}
-
-	if input.ResourceID != "resource-456" {
-		t.Errorf("Expected ResourceID 'resource-456', got '%s'", input.ResourceID)
-	}
-
-	if input.ResourceState != "exists" {
-		t.Errorf("Expected ResourceState 'exists', got '%s'", input.ResourceState)
-	}
-}
-
-func TestWebhookOutput(t *testing.T) {
-	output := WebhookOutput{}
-	output.Body.Success = true
-
-	if !output.Body.Success {
-		t.Error("Expected Success to be true")
-	}
-}
-
 func TestWatchChannelExpiration(t *testing.T) {
 	now := time.Now()
 
@@ -248,11 +163,7 @@ func TestWatchChannelExpiration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			watch := WatchChannel{
-				CalendarID: "primary",
-				ChannelID:  "channel-123",
-				ResourceID: "resource-456",
 				Expiration: tt.expiration,
-				CreatedAt:  now,
 			}
 
 			isExpiring := watch.Expiration.Before(tt.threshold)

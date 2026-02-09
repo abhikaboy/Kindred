@@ -62,7 +62,7 @@ func TestWebhookRateLimiter_GetStats(t *testing.T) {
 	connectionID := "test-connection"
 
 	// No stats initially
-	count, _, exists := limiter.GetStats(connectionID)
+	_, _, exists := limiter.GetStats(connectionID)
 	if exists {
 		t.Error("Stats should not exist for new connection")
 	}
