@@ -442,6 +442,25 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 			// Convert event to task params
 			taskParams := ConvertEventToTaskParams(event, userID, category.ID)
 
+			// Check if task with this integration ID already exists in this category
+			var existingCategory struct {
+				ID primitive.ObjectID `bson:"_id"`
+			}
+			err := s.categories.FindOne(ctx, bson.M{
+				"_id":               category.ID,
+				"tasks.integration": taskParams.Integration,
+			}).Decode(&existingCategory)
+
+			if err == nil {
+				// Task already exists, skip it
+				slog.Debug("Task already exists, skipping", "event_id", event.ID, "integration", taskParams.Integration, "category_id", category.ID)
+				tasksSkipped++
+				continue
+			} else if err != mongo.ErrNoDocuments {
+				slog.Error("Failed to check for existing task", "event_id", event.ID, "category_id", category.ID, "error", err)
+				return nil, fmt.Errorf("failed to check for existing task: %w", err)
+			}
+
 			// Create task document
 			taskDoc := bson.M{
 				"_id":         primitive.NewObjectID(),
@@ -468,26 +487,20 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 				taskDoc["deadline"] = taskParams.Deadline
 			}
 
-			// Try to add task to category
-			_, err := s.categories.UpdateOne(
+			// Add task to category
+			_, err = s.categories.UpdateOne(
 				ctx,
 				bson.M{"_id": category.ID},
 				bson.M{"$push": bson.M{"tasks": taskDoc}},
 			)
 
 			if err != nil {
-				// Check if it's a duplicate key error
-				if mongo.IsDuplicateKeyError(err) {
-					slog.Debug("Task already exists, skipping", "event_id", event.ID, "integration", taskParams.Integration)
-					tasksSkipped++
-				} else {
-					slog.Error("Failed to create task", "event_id", event.ID, "category_id", category.ID, "error", err)
-					return nil, fmt.Errorf("failed to create task: %w", err)
-				}
-			} else {
-				slog.Debug("Task created", "event_id", event.ID, "category_id", category.ID, "task_content", taskParams.Content)
-				tasksCreated++
+				slog.Error("Failed to create task", "event_id", event.ID, "category_id", category.ID, "error", err)
+				return nil, fmt.Errorf("failed to create task: %w", err)
 			}
+
+			slog.Debug("Task created", "event_id", event.ID, "category_id", category.ID, "task_content", taskParams.Content)
+			tasksCreated++
 		}
 
 		result.TasksCreated += tasksCreated

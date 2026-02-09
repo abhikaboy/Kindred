@@ -32,7 +32,7 @@ export interface SyncEventsResponse {
  * Get all calendar connections for the authenticated user
  */
 export async function getCalendarConnections(): Promise<CalendarConnectionsResponse> {
-    const response = await client.GET("/v1/user/calendar/connections");
+    const response = await client.GET("/v1/user/calendar/connections" as any, {});
 
     if (response.error) {
         throw new Error(response.error.detail || "Failed to fetch calendar connections");
@@ -45,30 +45,13 @@ export async function getCalendarConnections(): Promise<CalendarConnectionsRespo
  * Initiate Google Calendar OAuth flow
  */
 export async function connectGoogleCalendar(): Promise<ConnectGoogleResponse> {
-    const response = await client.GET("/v1/user/calendar/connect/google");
+    const response = await client.GET("/v1/user/calendar/connect/google" as any, {});
 
     if (response.error) {
         throw new Error(response.error.detail || "Failed to initiate Google Calendar connection");
     }
 
     return response.data as ConnectGoogleResponse;
-}
-
-/**
- * Disconnect a calendar connection
- */
-export async function disconnectCalendar(connectionId: string): Promise<void> {
-    const response = await client.DELETE("/v1/user/calendar/connections/{connectionId}", {
-        params: {
-            path: {
-                connectionId,
-            },
-        },
-    });
-
-    if (response.error) {
-        throw new Error(response.error.detail || "Failed to disconnect calendar");
-    }
 }
 
 /**
@@ -79,7 +62,7 @@ export async function syncCalendarEvents(
     startDate?: string,
     endDate?: string
 ): Promise<SyncEventsResponse> {
-    const response = await client.POST("/v1/user/calendar/connections/{connectionId}/sync", {
+    const response = await client.POST("/v1/user/calendar/connections/{connectionId}/sync" as any, {
         params: {
             path: {
                 connectionId,
@@ -99,6 +82,25 @@ export async function syncCalendarEvents(
 }
 
 /**
+ * Disconnect a calendar connection
+ */
+export async function disconnectCalendar(connectionId: string): Promise<{ success: boolean; message: string }> {
+    const response = await client.DELETE("/v1/user/calendar/connections/{connectionId}" as any, {
+        params: {
+            path: {
+                connectionId,
+            },
+        },
+    });
+
+    if (response.error) {
+        throw new Error(response.error.detail || "Failed to disconnect calendar");
+    }
+
+    return response.data as { success: boolean; message: string };
+}
+
+/**
  * Get calendar events (without syncing to tasks)
  */
 export async function getCalendarEvents(
@@ -106,7 +108,7 @@ export async function getCalendarEvents(
     startDate?: string,
     endDate?: string
 ) {
-    const response = await client.GET("/v1/user/calendar/connections/{connectionId}/events", {
+    const response = await client.GET("/v1/user/calendar/connections/{connectionId}/events" as any, {
         params: {
             path: {
                 connectionId,

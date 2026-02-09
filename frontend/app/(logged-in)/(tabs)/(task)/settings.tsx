@@ -17,6 +17,7 @@ import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
 import { SettingsActionRow } from '@/components/settings/SettingsActionRow';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@/hooks/useSettings';
+import { getCalendarConnections, disconnectCalendar } from '@/api/calendar';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -26,12 +27,12 @@ export default function Settings() {
     const { logout } = useAuth();
     const { hasConsent, resetConsent } = useContactConsent();
     const insets = useSafeAreaInsets();
-    
+
     // Fetch user settings
     const { data: userSettings, isLoading: isLoadingSettings, error: settingsError } = useUserSettings();
     const { mutate: updateSettings, isPending: isUpdating } = useUpdateSettings();
     const { mutate: updateCheckinFreq } = useUpdateCheckinFrequency();
-    
+
     // Local state for settings (synced with server data)
     const [localSettings, setLocalSettings] = useState({
         friendActivity: true,
@@ -43,6 +44,10 @@ export default function Settings() {
     // Check-in frequency options
     const checkinFrequencyOptions = ['None', 'Occasionally', 'Regularly', 'Frequently'];
     const [checkinFrequency, setCheckinFrequency] = useState('Regularly');
+
+    // Calendar integration state
+    const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
+    const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
 
     // Sync local state with fetched settings
     useEffect(() => {
@@ -64,6 +69,20 @@ export default function Settings() {
             setCheckinFrequency(frequencyMap[userSettings.notifications?.checkin_frequency ?? 'regularly'] ?? 'Regularly');
         }
     }, [userSettings]);
+
+    // Load calendar connections
+    useEffect(() => {
+        loadCalendarConnections();
+    }, []);
+
+    const loadCalendarConnections = async () => {
+        try {
+            const { connections } = await getCalendarConnections();
+            setCalendarConnections(connections || []);
+        } catch (error) {
+            console.error('Error loading calendar connections:', error);
+        }
+    };
 
     const handleToggle = (key: keyof typeof localSettings) => {
         const newValue = !localSettings[key];
@@ -122,7 +141,7 @@ export default function Settings() {
         try {
             // Check if store review is available on this platform
             const isAvailable = await StoreReview.isAvailableAsync();
-            
+
             if (isAvailable) {
                 // Request the native in-app review
                 await StoreReview.requestReview();
@@ -133,8 +152,8 @@ export default function Settings() {
                     'We\'d love your feedback! Would you like to rate us in the app store?',
                     [
                         { text: 'Cancel', style: 'cancel' },
-                        { 
-                            text: 'Rate Now', 
+                        {
+                            text: 'Rate Now',
                             onPress: async () => {
                                 const storeUrl = StoreReview.storeUrl();
                                 if (storeUrl) {
@@ -152,7 +171,7 @@ export default function Settings() {
         } catch (error) {
             console.error('Error requesting store review:', error);
             Alert.alert(
-                'Error', 
+                'Error',
                 'Unable to open review at this time. Please try again later.'
             );
         }
@@ -164,8 +183,8 @@ export default function Settings() {
             'Are you sure you want to permanently delete your account? This action cannot be undone and will delete all your data including tasks, categories, and friend connections.',
             [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Delete Account', 
+                {
+                    text: 'Delete Account',
                     style: 'destructive',
                     onPress: async () => {
                         try {
@@ -189,8 +208,8 @@ export default function Settings() {
             'Are you sure you want to logout?',
             [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Logout', 
+                {
+                    text: 'Logout',
                     style: 'destructive',
                     onPress: () => {
                         logout();
@@ -202,7 +221,7 @@ export default function Settings() {
     };
 
     const handleResetContactConsent = () => {
-        const statusMessage = hasConsent === null 
+        const statusMessage = hasConsent === null
             ? 'You haven\'t been asked about syncing your phone contacts yet.\n\nWhen you tap "Sync Contacts" in the Search tab, you\'ll see a detailed explanation of how your phone contacts are used to help you find friends on Kindred.'
             : hasConsent === true
             ? 'Phone contact syncing is currently enabled.\n\nYour phone contact numbers are uploaded to our server to match with existing Kindred users and help you find friends.\n\nTap "Reset" to clear this preference and be asked again.'
@@ -213,8 +232,8 @@ export default function Settings() {
             statusMessage,
             [
                 { text: 'Cancel', style: 'cancel' },
-                ...(hasConsent !== null ? [{ 
-                    text: 'Reset Preference', 
+                ...(hasConsent !== null ? [{
+                    text: 'Reset Preference',
                     onPress: async () => {
                         try {
                             await resetConsent();
@@ -225,6 +244,33 @@ export default function Settings() {
                         }
                     }
                 }] : [])
+            ]
+        );
+    };
+
+    const handleDisconnectCalendar = (connection: any) => {
+        Alert.alert(
+            'Disconnect Google Calendar',
+            `Are you sure you want to disconnect "${connection.provider_account_id}"?\n\nThis will remove the connection but keep your synced events as tasks.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Disconnect',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsLoadingCalendar(true);
+                        try {
+                            await disconnectCalendar(connection.id);
+                            showToast('Google Calendar disconnected', 'success');
+                            await loadCalendarConnections();
+                        } catch (error) {
+                            console.error('Error disconnecting calendar:', error);
+                            showToast('Failed to disconnect calendar', 'danger');
+                        } finally {
+                            setIsLoadingCalendar(false);
+                        }
+                    }
+                }
             ]
         );
     };
@@ -288,13 +334,13 @@ export default function Settings() {
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                
+
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
                     Settings
                 </ThemedText>
-                
-                <TouchableOpacity 
-                    onPress={handleSave} 
+
+                <TouchableOpacity
+                    onPress={handleSave}
                     style={styles.saveButton}
                     disabled={isUpdating}
                 >
@@ -309,7 +355,7 @@ export default function Settings() {
             </View>
 
             {/* Scrollable Content */}
-            <ScrollView 
+            <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 44 }]}
                 showsVerticalScrollIndicator={false}
@@ -334,32 +380,103 @@ export default function Settings() {
 
                 <SettingsSection title="DISPLAY">
                     <SettingsCard>
-                        <SettingsToggleRow 
-                            label="Friend Activity" 
-                            value={localSettings.friendActivity} 
-                            onValueChange={() => handleToggle('friendActivity')} 
+                        <SettingsToggleRow
+                            label="Friend Activity"
+                            value={localSettings.friendActivity}
+                            onValueChange={() => handleToggle('friendActivity')}
                         />
-                        <SettingsToggleRow 
-                            label="Near Deadlines" 
-                            value={localSettings.nearDeadlines} 
-                            onValueChange={() => handleToggle('nearDeadlines')} 
+                        <SettingsToggleRow
+                            label="Near Deadlines"
+                            value={localSettings.nearDeadlines}
+                            onValueChange={() => handleToggle('nearDeadlines')}
                         />
-                        <SettingsToggleRow 
-                            label="Show Task Details" 
-                            value={localSettings.showTaskDetails} 
-                            onValueChange={() => handleToggle('showTaskDetails')} 
+                        <SettingsToggleRow
+                            label="Show Task Details"
+                            value={localSettings.showTaskDetails}
+                            onValueChange={() => handleToggle('showTaskDetails')}
                         />
-                        <SettingsToggleRow 
-                            label="Recent Workspaces" 
-                            value={localSettings.recentWorkspaces} 
-                            onValueChange={() => handleToggle('recentWorkspaces')} 
+                        <SettingsToggleRow
+                            label="Recent Workspaces"
+                            value={localSettings.recentWorkspaces}
+                            onValueChange={() => handleToggle('recentWorkspaces')}
                         />
                     </SettingsCard>
                 </SettingsSection>
 
+                <SettingsSection title="INTEGRATIONS">
+                    {calendarConnections.length > 0 ? (
+                        <SettingsCard>
+                            {calendarConnections.map((connection, index) => (
+                                <TouchableOpacity
+                                    key={connection.id}
+                                    style={[
+                                        styles.integrationRow,
+                                        index < calendarConnections.length - 1 && {
+                                            borderBottomWidth: StyleSheet.hairlineWidth,
+                                            borderBottomColor: ThemedColor.tertiary,
+                                        }
+                                    ]}
+                                    onPress={() => handleDisconnectCalendar(connection)}
+                                    activeOpacity={0.7}
+                                    disabled={isLoadingCalendar}
+                                >
+                                    <View style={styles.integrationIconContainer}>
+                                        <Ionicons name="calendar" size={24} color={ThemedColor.primary} />
+                                    </View>
+                                    <View style={styles.integrationContent}>
+                                        <View style={styles.integrationHeader}>
+                                            <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                                Google Calendar
+                                            </ThemedText>
+                                            <View style={[
+                                                styles.connectedBadge,
+                                                { backgroundColor: ThemedColor.primary + '15' }
+                                            ]}>
+                                                <View style={[styles.connectedDot, { backgroundColor: ThemedColor.primary }]} />
+                                                <ThemedText type="caption" style={[
+                                                    styles.connectedText,
+                                                    { color: ThemedColor.primary }
+                                                ]}>
+                                                    Connected
+                                                </ThemedText>
+                                            </View>
+                                        </View>
+                                        <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                            {connection.provider_account_id}
+                                        </ThemedText>
+                                    </View>
+                                    <View style={styles.integrationAction}>
+                                        {isLoadingCalendar ? (
+                                            <ActivityIndicator size="small" color={ThemedColor.caption} />
+                                        ) : (
+                                            <Ionicons name="link-outline" size={22} color={ThemedColor.caption} style={{ transform: [{ rotate: '-45deg' }] }} />
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </SettingsCard>
+                    ) : (
+                        <SettingsCard>
+                            <View style={styles.emptyIntegrationRow}>
+                                <View style={[styles.emptyIconContainer, { backgroundColor: ThemedColor.tertiary }]}>
+                                    <Ionicons name="link-outline" size={20} color={ThemedColor.caption} />
+                                </View>
+                                <View style={styles.emptyContent}>
+                                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                        No integrations
+                                    </ThemedText>
+                                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                        Connect Google Calendar from the home screen
+                                    </ThemedText>
+                                </View>
+                            </View>
+                        </SettingsCard>
+                    )}
+                </SettingsSection>
+
                 <SettingsSection title="PRIVACY & DATA">
                     <SettingsCard>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.privacyRow}
                             onPress={handleResetContactConsent}
                             activeOpacity={0.7}
@@ -371,17 +488,17 @@ export default function Settings() {
                                     </ThemedText>
                                     <View style={[
                                         styles.statusBadge,
-                                        { 
-                                            backgroundColor: hasConsent === true 
-                                                ? ThemedColor.primary + '20' 
-                                                : ThemedColor.tertiary 
+                                        {
+                                            backgroundColor: hasConsent === true
+                                                ? ThemedColor.primary + '20'
+                                                : ThemedColor.tertiary
                                         }
                                     ]}>
                                         <ThemedText type="caption" style={[
                                             styles.statusBadgeText,
-                                            { 
-                                                color: hasConsent === true 
-                                                    ? ThemedColor.primary 
+                                            {
+                                                color: hasConsent === true
+                                                    ? ThemedColor.primary
                                                     : ThemedColor.text + 'AA'
                                             }
                                         ]}>
@@ -400,35 +517,35 @@ export default function Settings() {
                             <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />
                         </TouchableOpacity>
                     </SettingsCard>
-                    
-                    <SettingsActionRow 
-                        label="Blocked Users" 
+
+                    <SettingsActionRow
+                        label="Blocked Users"
                         onPress={() => router.push('/(logged-in)/(tabs)/(task)/blocked-users')}
                         icon="ban-outline"
                     />
                 </SettingsSection>
 
                 <SettingsSection title="RESOURCES">
-                    <SettingsActionRow 
-                        label="Contact Support" 
-                        onPress={handleContactSupport} 
+                    <SettingsActionRow
+                        label="Contact Support"
+                        onPress={handleContactSupport}
                     />
-                    <SettingsActionRow 
-                        label="Rate Kindred" 
+                    <SettingsActionRow
+                        label="Rate Kindred"
                         onPress={handleRateKindred}
                         icon="star-outline"
                     />
                 </SettingsSection>
 
                 <SettingsSection title="LEGAL">
-                    <SettingsActionRow 
-                        label="Privacy Policy" 
+                    <SettingsActionRow
+                        label="Privacy Policy"
                         onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
                         icon="open-outline"
                         iconColor={ThemedColor.text + '60'}
                     />
-                    <SettingsActionRow 
-                        label="Terms & Conditions" 
+                    <SettingsActionRow
+                        label="Terms & Conditions"
                         onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
                         icon="open-outline"
                         iconColor={ThemedColor.text + '60'}
@@ -436,14 +553,14 @@ export default function Settings() {
                 </SettingsSection>
 
                 <SettingsSection title="ACCOUNT" marginBottom={20}>
-                    <SettingsActionRow 
-                        label="Delete Account" 
+                    <SettingsActionRow
+                        label="Delete Account"
                         onPress={handleDeleteAccount}
                         icon="trash-outline"
                         iconColor={ThemedColor.error}
                     />
-                    <SettingsActionRow 
-                        label="Logout" 
+                    <SettingsActionRow
+                        label="Logout"
                         onPress={handleLogout}
                         icon="log-out-outline"
                         iconColor={ThemedColor.error}
@@ -457,7 +574,7 @@ export default function Settings() {
 
 const createStyles = (ThemedColor: any, screenWidth: number) => {
     const horizontalPadding = Math.max(20, screenWidth * 0.05);
-    
+
     return StyleSheet.create({
         container: {
             flex: 1,
@@ -536,6 +653,68 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
             lineHeight: 16,
             marginTop: 4,
             marginBottom: 8,
+        },
+        integrationRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 8,
+            gap: 12,
+        },
+        integrationIconContainer: {
+            width: 32,
+            height: 32,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        integrationContent: {
+            flex: 1,
+            gap: 2,
+        },
+        integrationHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+        },
+        connectedBadge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+            gap: 4,
+        },
+        connectedDot: {
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+        },
+        connectedText: {
+            fontSize: 11,
+            fontWeight: '500',
+        },
+        integrationAction: {
+            width: 32,
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        emptyIntegrationRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 8,
+            gap: 12,
+        },
+        emptyIconContainer: {
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        emptyContent: {
+            flex: 1,
+            gap: 2,
         },
     });
 };

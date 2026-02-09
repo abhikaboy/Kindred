@@ -128,18 +128,13 @@ var Indexes = []Index{
 			Options: options.Index().SetUnique(true),
 		},
 	},
-	// Unique index on tasks.integration to prevent duplicate calendar events
+	// Index on tasks.integration for faster duplicate checking during calendar sync
+	// Note: Cannot use unique constraint on array fields, so we check manually in code
 	{
 		Collection: "categories",
 		Model: mongo.IndexModel{
-			Keys: bson.D{{Key: "tasks.integration", Value: 1}},
-			Options: options.Index().
-				SetUnique(true).
-				SetSparse(true).
-				SetPartialFilterExpression(bson.D{
-					{Key: "tasks.integration", Value: bson.D{{Key: "$exists", Value: true}}},
-					{Key: "tasks.integration", Value: bson.D{{Key: "$ne", Value: ""}}},
-				}),
+			Keys:    bson.D{{Key: "tasks.integration", Value: 1}},
+			Options: options.Index().SetSparse(true),
 		},
 	},
 	// {

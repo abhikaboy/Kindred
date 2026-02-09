@@ -182,6 +182,66 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/admin/reports:
+        get:
+            tags:
+                - reports
+            summary: Get reports
+            description: Retrieve content reports for moderation (admin only)
+            operationId: get-reports
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: status
+                  in: query
+                  description: Filter by status (pending, reviewed, resolved)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Filter by status (pending, reviewed, resolved)
+                    examples:
+                        - pending
+                  example: pending
+                - name: limit
+                  in: query
+                  description: Number of reports to return
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Number of reports to return
+                    format: int64
+                    examples:
+                        - 50
+                  example: 50
+                - name: offset
+                  in: query
+                  description: Offset for pagination
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Offset for pagination
+                    format: int64
+                    examples:
+                        - 0
+                  example: 0
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetReportsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/assets/{key}/url:
         get:
             tags:
@@ -678,6 +738,44 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/BlueprintDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/calendar/oauth2/callback:
+        get:
+            tags:
+                - Calendar
+            summary: Google Calendar OAuth callback
+            description: Handles OAuth callback from Google. This is called by Google after user grants permissions. This endpoint is NOT behind auth middleware since Google calls it directly.
+            operationId: google-calendar-oauth-callback
+            parameters:
+                - name: code
+                  in: query
+                  required: true
+                  explode: false
+                  schema:
+                    type: string
+                - name: state
+                  in: query
+                  required: true
+                  explode: false
+                  schema:
+                    type: string
+                - name: error
+                  in: query
+                  explode: false
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OAuthCallbackOutputBody'
                 default:
                     description: Error
                     content:
@@ -1317,6 +1415,40 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/accept-terms:
+        post:
+            tags:
+                - auth
+            summary: Accept Terms of Service
+            description: Record user's acceptance of Terms of Service
+            operationId: accept-terms
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AcceptTermsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AcceptTermsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/account:
         delete:
             tags:
@@ -1674,6 +1806,152 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/BlueprintDocumentWithoutSubscribers'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connect/google:
+        get:
+            tags:
+                - Calendar
+            summary: Initiate Google Calendar OAuth
+            description: Returns OAuth consent URL for Google Calendar. User must be authenticated.
+            operationId: connect-google-calendar
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConnectGoogleOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connections:
+        get:
+            tags:
+                - Calendar
+            summary: List calendar connections
+            description: Returns all calendar connections for the authenticated user
+            operationId: get-calendar-connections
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetConnectionsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connections/{connectionId}:
+        delete:
+            tags:
+                - Calendar
+            summary: Disconnect calendar
+            description: Removes a calendar connection and its OAuth tokens
+            operationId: disconnect-calendar
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DisconnectOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connections/{connectionId}/events:
+        get:
+            tags:
+                - Calendar
+            summary: Fetch calendar events
+            description: Fetches events from a connected calendar within a date range. Automatically refreshes access token if needed.
+            operationId: get-calendar-events
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: start
+                  in: query
+                  description: Start date in RFC3339 format (defaults to 2 days ago)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Start date in RFC3339 format (defaults to 2 days ago)
+                - name: end
+                  in: query
+                  description: End date in RFC3339 format (defaults to 2 days from now)
+                  explode: false
+                  schema:
+                    type: string
+                    description: End date in RFC3339 format (defaults to 2 days from now)
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetEventsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connections/{connectionId}/sync:
+        post:
+            tags:
+                - Calendar
+            summary: Sync calendar events to tasks
+            description: Fetches calendar events and creates tasks in appropriate categories. Events are automatically grouped by calendar and placed in matching categories. Duplicate events are skipped using unique integration IDs.
+            operationId: sync-calendar-events
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: start
+                  in: query
+                  description: Start date in RFC3339 format (defaults to 2 days ago)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Start date in RFC3339 format (defaults to 2 days ago)
+                - name: end
+                  in: query
+                  description: End date in RFC3339 format (defaults to 2 days from now)
+                  explode: false
+                  schema:
+                    type: string
+                    description: End date in RFC3339 format (defaults to 2 days from now)
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SyncEventsOutputBody'
                 default:
                     description: Error
                     content:
@@ -2531,6 +2809,132 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/AcceptConnectionOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/connections/block/{userId}:
+        post:
+            tags:
+                - connections
+            summary: Block a user
+            description: Block a user to prevent them from seeing your content and interacting with you
+            operationId: block-user
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: userId
+                  in: path
+                  description: User ID to block
+                  required: true
+                  schema:
+                    type: string
+                    description: User ID to block
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BlockUserOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        delete:
+            tags:
+                - connections
+            summary: Unblock a user
+            description: Unblock a previously blocked user
+            operationId: unblock-user
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: userId
+                  in: path
+                  description: User ID to unblock
+                  required: true
+                  schema:
+                    type: string
+                    description: User ID to unblock
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnblockUserOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/connections/blocked:
+        get:
+            tags:
+                - connections
+            summary: Get blocked users
+            description: Retrieve list of users you have blocked
+            operationId: get-blocked-users
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ConnectionUser'
                 default:
                     description: Error
                     content:
@@ -4093,6 +4497,94 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/reports/comment/{commentId}:
+        post:
+            tags:
+                - reports
+            summary: Report a comment
+            description: Report a comment for inappropriate content, spam, harassment, or other violations
+            operationId: report-comment
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: commentId
+                  in: path
+                  description: Comment ID to report
+                  required: true
+                  schema:
+                    type: string
+                    description: Comment ID to report
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReportCommentRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReportCommentOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/reports/post/{postId}:
+        post:
+            tags:
+                - reports
+            summary: Report a post
+            description: Report a post for inappropriate content, spam, harassment, or other violations
+            operationId: report-post
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: postId
+                  in: path
+                  description: Post ID to report
+                  required: true
+                  schema:
+                    type: string
+                    description: Post ID to report
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ReportPostRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReportPostOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/rewards/redeem:
         post:
             tags:
@@ -4128,6 +4620,69 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/RedeemRewardResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings:
+        get:
+            tags:
+                - settings
+                - user
+            summary: Get user settings
+            description: Retrieve all settings for the authenticated user
+            operationId: get-user-settings
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserSettings'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        patch:
+            tags:
+                - settings
+                - user
+            summary: Update user settings
+            description: Update settings for the authenticated user (partial updates supported)
+            operationId: update-user-settings
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserSettings'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateUserSettingsOutputBody'
                 default:
                     description: Error
                     content:
@@ -5169,6 +5724,47 @@ components:
                         - Connection request accepted successfully
             required:
                 - message
+        AcceptTermsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AcceptTermsOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Terms accepted successfully
+                terms_accepted_at:
+                    type: string
+                terms_version:
+                    type: string
+            required:
+                - message
+                - terms_accepted_at
+                - terms_version
+        AcceptTermsRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AcceptTermsRequest.json
+                    readOnly: true
+                terms_version:
+                    type: string
+                    description: Version of terms being accepted
+                    examples:
+                        - "1.0"
+            required:
+                - terms_version
         ActivateTaskOutputBody:
             type: object
             additionalProperties: false
@@ -5275,6 +5871,10 @@ components:
                     readOnly: true
                 content:
                     type: string
+                mentions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MentionInput'
                 parentId:
                     type: string
             required:
@@ -5382,6 +5982,23 @@ components:
                     type: boolean
             required:
                 - success
+                - message
+        BlockUserOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BlockUserOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - User blocked successfully
+            required:
                 - message
         BlueprintCategoryGroup:
             type: object
@@ -5754,6 +6371,83 @@ components:
                 - message
                 - totalDeleted
                 - totalFailed
+        CalendarConnection:
+            type: object
+            additionalProperties: false
+            properties:
+                created_at:
+                    type: string
+                    format: date-time
+                id:
+                    type: string
+                is_primary:
+                    type: boolean
+                last_sync:
+                    type: string
+                    format: date-time
+                provider:
+                    type: string
+                provider_account_id:
+                    type: string
+                scopes:
+                    type: array
+                    items:
+                        type: string
+                updated_at:
+                    type: string
+                    format: date-time
+                user_id:
+                    type: string
+            required:
+                - id
+                - user_id
+                - provider
+                - provider_account_id
+                - scopes
+                - is_primary
+                - last_sync
+                - created_at
+                - updated_at
+        CalendarEventDTO:
+            type: object
+            additionalProperties: false
+            properties:
+                attendees:
+                    type: array
+                    items:
+                        type: string
+                calendar_id:
+                    type: string
+                calendar_name:
+                    type: string
+                description:
+                    type: string
+                end_time:
+                    type: string
+                id:
+                    type: string
+                is_all_day:
+                    type: boolean
+                location:
+                    type: string
+                start_time:
+                    type: string
+                status:
+                    type: string
+                summary:
+                    type: string
+            required:
+                - id
+                - calendar_id
+                - calendar_name
+                - summary
+                - description
+                - location
+                - start_time
+                - end_time
+                - is_all_day
+                - attendees
+                - status
         CategoryDocument:
             type: object
             additionalProperties: false
@@ -5768,6 +6462,8 @@ components:
                 blueprintId:
                     type: string
                 id:
+                    type: string
+                integration:
                     type: string
                 isBlueprint:
                     type: boolean
@@ -5846,6 +6542,10 @@ components:
                     type: string
                 id:
                     type: string
+                mentions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MentionReference'
                 metadata:
                     $ref: '#/components/schemas/CommentMetadata'
                 parentId:
@@ -5865,6 +6565,10 @@ components:
                     type: string
                 id:
                     type: string
+                mentions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MentionReference'
                 metadata:
                     $ref: '#/components/schemas/CommentMetadata'
                 parentId:
@@ -6069,6 +6773,22 @@ components:
                 - name
                 - picture
                 - id
+        ConnectGoogleOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ConnectGoogleOutputBody.json
+                    readOnly: true
+                auth_url:
+                    type: string
+                    description: Google OAuth consent URL
+            required:
+                - auth_url
         ConnectionDocument:
             type: object
             additionalProperties: false
@@ -6794,6 +7514,41 @@ components:
                         - Workspace deleted successfully
             required:
                 - message
+        DisconnectOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DisconnectOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                success:
+                    type: boolean
+            required:
+                - success
+                - message
+        DisplaySettings:
+            type: object
+            additionalProperties: false
+            properties:
+                friend_activity_feed:
+                    type: boolean
+                near_deadlines_widget:
+                    type: boolean
+                recent_workspaces:
+                    type: boolean
+                show_task_details:
+                    type: boolean
+            required:
+                - show_task_details
+                - recent_workspaces
+                - friend_activity_feed
+                - near_deadlines_widget
         EncouragementDocument:
             type: object
             additionalProperties: false
@@ -7174,6 +7929,40 @@ components:
                 - limit
                 - total
                 - totalPages
+        GetConnectionsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetConnectionsOutputBody.json
+                    readOnly: true
+                connections:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CalendarConnection'
+            required:
+                - connections
+        GetEventsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetEventsOutputBody.json
+                    readOnly: true
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CalendarEventDTO'
+            required:
+                - events
         GetFeedOutputBody:
             type: object
             additionalProperties: false
@@ -7361,6 +8150,27 @@ components:
                 - unlocksRemaining
                 - unlockedFeatures
                 - referredUsers
+        GetReportsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetReportsOutputBody.json
+                    readOnly: true
+                reports:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ReportDocumentAPI'
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - reports
+                - total
         GetUserGroupsOutputBody:
             type: object
             additionalProperties: false
@@ -7715,6 +8525,28 @@ components:
             required:
                 - message
                 - count
+        MentionInput:
+            type: object
+            additionalProperties: false
+            properties:
+                handle:
+                    type: string
+                id:
+                    type: string
+            required:
+                - id
+                - handle
+        MentionReference:
+            type: object
+            additionalProperties: false
+            properties:
+                handle:
+                    type: string
+                id:
+                    type: string
+            required:
+                - id
+                - handle
         NotificationDocument:
             type: object
             additionalProperties: false
@@ -7748,6 +8580,49 @@ components:
                 - notificationType
                 - reference_id
                 - read
+        NotificationSettings:
+            type: object
+            additionalProperties: false
+            properties:
+                checkin_frequency:
+                    type: string
+                comments:
+                    type: boolean
+                congratulations:
+                    type: boolean
+                encouragements:
+                    type: boolean
+                friend_activity:
+                    type: boolean
+                friend_posts:
+                    type: boolean
+                friend_requests:
+                    type: boolean
+                near_deadlines:
+                    type: boolean
+                reactions:
+                    type: boolean
+            required:
+                - checkin_frequency
+                - friend_activity
+                - near_deadlines
+                - friend_posts
+                - comments
+                - reactions
+                - encouragements
+                - congratulations
+                - friend_requests
+        OAuthCallbackOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/OAuthCallbackOutputBody.json
+                    readOnly: true
         PostDocument:
             type: object
             additionalProperties: false
@@ -7821,7 +8696,6 @@ components:
                         $ref: '#/components/schemas/CommentDocumentAPI'
                 dual:
                     type: string
-                    description: Optional dual camera image URL for BeReal-style posts
                 groups:
                     type: array
                     items:
@@ -8215,6 +9089,8 @@ components:
                     type: string
                 profile_picture:
                     type: string
+                timezone:
+                    type: string
             required:
                 - email
                 - phone
@@ -8386,6 +9262,127 @@ components:
                         - Workspace renamed successfully
             required:
                 - message
+        ReportCommentOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReportCommentOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Report submitted successfully
+                report_id:
+                    type: string
+            required:
+                - message
+                - report_id
+        ReportCommentRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReportCommentRequest.json
+                    readOnly: true
+                description:
+                    type: string
+                    description: Optional additional details
+                    examples:
+                        - This comment is spam
+                reason:
+                    type: string
+                    description: Reason for reporting
+                    examples:
+                        - spam
+            required:
+                - reason
+        ReportDocumentAPI:
+            type: object
+            additionalProperties: false
+            properties:
+                _id:
+                    type: string
+                content_id:
+                    type: string
+                content_owner_id:
+                    type: string
+                content_type:
+                    type: string
+                created_at:
+                    type: string
+                    format: date-time
+                description:
+                    type: string
+                reason:
+                    type: string
+                reporter_id:
+                    type: string
+                reviewed_at:
+                    type: string
+                    format: date-time
+                status:
+                    type: string
+            required:
+                - _id
+                - reporter_id
+                - content_type
+                - content_id
+                - content_owner_id
+                - reason
+                - status
+                - created_at
+        ReportPostOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReportPostOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Report submitted successfully
+                report_id:
+                    type: string
+            required:
+                - message
+                - report_id
+        ReportPostRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReportPostRequest.json
+                    readOnly: true
+                description:
+                    type: string
+                    description: Optional additional details
+                    examples:
+                        - This post contains offensive content
+                reason:
+                    type: string
+                    description: Reason for reporting
+                    examples:
+                        - inappropriate
+            required:
+                - reason
         SafeUser:
             type: object
             additionalProperties: false
@@ -8433,6 +9430,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ActivityDocument'
+                settings:
+                    $ref: '#/components/schemas/UserSettings'
                 streak:
                     type: integer
                     format: int64
@@ -8443,6 +9442,11 @@ components:
                 tasks_complete:
                     type: number
                     format: double
+                terms_accepted_at:
+                    type: string
+                    format: date-time
+                terms_version:
+                    type: string
                 timezone:
                     type: string
             required:
@@ -8463,6 +9467,7 @@ components:
                 - credits
                 - kudosRewards
                 - subscription
+                - settings
         SendOTPOutputBody:
             type: object
             additionalProperties: false
@@ -8542,6 +9547,39 @@ components:
                 - tier
                 - status
                 - startDate
+        SyncEventsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SyncEventsOutputBody.json
+                    readOnly: true
+                categories_synced:
+                    type: object
+                    additionalProperties:
+                        type: integer
+                        format: int64
+                events_total:
+                    type: integer
+                    format: int64
+                tasks_created:
+                    type: integer
+                    format: int64
+                tasks_skipped:
+                    type: integer
+                    format: int64
+                workspace_name:
+                    type: string
+            required:
+                - tasks_created
+                - tasks_skipped
+                - events_total
+                - categories_synced
+                - workspace_name
         TaskDocument:
             type: object
             additionalProperties: false
@@ -8842,6 +9880,23 @@ components:
                     type: string
                     examples:
                         - Authorized!
+            required:
+                - message
+        UnblockUserOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UnblockUserOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - User unblocked successfully
             required:
                 - message
         UnlockFeatureInputBody:
@@ -9656,6 +10711,23 @@ components:
                         - Timezone updated successfully
             required:
                 - message
+        UpdateUserSettingsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateUserSettingsOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Settings updated successfully
+            required:
+                - message
         UserCredits:
             type: object
             additionalProperties: false
@@ -9791,6 +10863,24 @@ components:
                 - display_name
                 - handle
                 - profile_picture
+        UserSettings:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UserSettings.json
+                    readOnly: true
+                display:
+                    $ref: '#/components/schemas/DisplaySettings'
+                notifications:
+                    $ref: '#/components/schemas/NotificationSettings'
+            required:
+                - notifications
+                - display
         VerifyOTPOutputBody:
             type: object
             additionalProperties: false

@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get reports
+         * @description Retrieve content reports for moderation (admin only)
+         */
+        get: operations["get-reports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assets/{key}/url": {
         parameters: {
             query?: never;
@@ -436,6 +456,26 @@ export interface paths {
          * @description Search for blueprints by name, description, tags, or owner handle
          */
         get: operations["search-blueprints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar/oauth2/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Calendar OAuth callback
+         * @description Handles OAuth callback from Google. This is called by Google after user grants permissions. This endpoint is NOT behind auth middleware since Google calls it directly.
+         */
+        get: operations["google-calendar-oauth-callback"];
         put?: never;
         post?: never;
         delete?: never;
@@ -828,6 +868,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/accept-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Terms of Service
+         * @description Record user's acceptance of Terms of Service
+         */
+        post: operations["accept-terms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/account": {
         parameters: {
             query?: never;
@@ -986,6 +1046,106 @@ export interface paths {
         get: operations["get-user-subscribed-blueprints"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/calendar/connect/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Initiate Google Calendar OAuth
+         * @description Returns OAuth consent URL for Google Calendar. User must be authenticated.
+         */
+        get: operations["connect-google-calendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/calendar/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List calendar connections
+         * @description Returns all calendar connections for the authenticated user
+         */
+        get: operations["get-calendar-connections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/calendar/connections/{connectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect calendar
+         * @description Removes a calendar connection and its OAuth tokens
+         */
+        delete: operations["disconnect-calendar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/calendar/connections/{connectionId}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch calendar events
+         * @description Fetches events from a connected calendar within a date range. Automatically refreshes access token if needed.
+         */
+        get: operations["get-calendar-events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/calendar/connections/{connectionId}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync calendar events to tasks
+         * @description Fetches calendar events and creates tasks in appropriate categories. Events are automatically grouped by calendar and placed in matching categories. Duplicate events are skipped using unique integration IDs.
+         */
+        post: operations["sync-calendar-events"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1278,6 +1438,50 @@ export interface paths {
          * @description Accept a friend connection request
          */
         post: operations["accept-connection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/connections/block/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block a user
+         * @description Block a user to prevent them from seeing your content and interacting with you
+         */
+        post: operations["block-user"];
+        /**
+         * Unblock a user
+         * @description Unblock a previously blocked user
+         */
+        delete: operations["unblock-user"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/connections/blocked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get blocked users
+         * @description Retrieve list of users you have blocked
+         */
+        get: operations["get-blocked-users"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1964,6 +2168,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/reports/comment/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a comment
+         * @description Report a comment for inappropriate content, spam, harassment, or other violations
+         */
+        post: operations["report-comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/reports/post/{postId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a post
+         * @description Report a post for inappropriate content, spam, harassment, or other violations
+         */
+        post: operations["report-post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/rewards/redeem": {
         parameters: {
             query?: never;
@@ -1982,6 +2226,30 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/user/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user settings
+         * @description Retrieve all settings for the authenticated user
+         */
+        get: operations["get-user-settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update user settings
+         * @description Update settings for the authenticated user (partial updates supported)
+         */
+        patch: operations["update-user-settings"];
         trace?: never;
     };
     "/v1/user/setup-default-workspace": {
@@ -2474,6 +2742,31 @@ export interface components {
             /** @example Connection request accepted successfully */
             message: string;
         };
+        AcceptTermsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AcceptTermsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Terms accepted successfully */
+            message: string;
+            terms_accepted_at: string;
+            terms_version: string;
+        };
+        AcceptTermsRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AcceptTermsRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Version of terms being accepted
+             * @example 1.0
+             */
+            terms_version: string;
+        };
         ActivateTaskOutputBody: {
             /**
              * Format: uri
@@ -2530,6 +2823,7 @@ export interface components {
              */
             readonly $schema?: string;
             content: string;
+            mentions?: components["schemas"]["MentionInput"][];
             parentId?: string;
         };
         AddMemberOutputBody: {
@@ -2591,6 +2885,16 @@ export interface components {
             message: string;
             referrer?: components["schemas"]["ReferrerInfo"];
             success: boolean;
+        };
+        BlockUserOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BlockUserOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example User blocked successfully */
+            message: string;
         };
         BlueprintCategoryGroup: {
             /** @description List of blueprints in this category */
@@ -2867,6 +3171,33 @@ export interface components {
              */
             totalFailed: number;
         };
+        CalendarConnection: {
+            /** Format: date-time */
+            created_at: string;
+            id: string;
+            is_primary: boolean;
+            /** Format: date-time */
+            last_sync: string;
+            provider: string;
+            provider_account_id: string;
+            scopes: string[];
+            /** Format: date-time */
+            updated_at: string;
+            user_id: string;
+        };
+        CalendarEventDTO: {
+            attendees: string[];
+            calendar_id: string;
+            calendar_name: string;
+            description: string;
+            end_time: string;
+            id: string;
+            is_all_day: boolean;
+            location: string;
+            start_time: string;
+            status: string;
+            summary: string;
+        };
         CategoryDocument: {
             /**
              * Format: uri
@@ -2876,6 +3207,7 @@ export interface components {
             readonly $schema?: string;
             blueprintId?: string;
             id: string;
+            integration?: string;
             isBlueprint?: boolean;
             /** Format: date-time */
             lastEdited: string;
@@ -2907,6 +3239,7 @@ export interface components {
         CommentDocument: {
             content: string;
             id: string;
+            mentions?: components["schemas"]["MentionReference"][];
             metadata: components["schemas"]["CommentMetadata"];
             parentId?: string;
             user: components["schemas"]["UserExtendedReferenceInternal"];
@@ -2914,6 +3247,7 @@ export interface components {
         CommentDocumentAPI: {
             content: string;
             id: string;
+            mentions?: components["schemas"]["MentionReference"][];
             metadata: components["schemas"]["CommentMetadata"];
             parentId?: string;
             user: components["schemas"]["UserExtendedReference"];
@@ -3049,6 +3383,16 @@ export interface components {
              * @example https://example.com/avatar.jpg
              */
             picture: string;
+        };
+        ConnectGoogleOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ConnectGoogleOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Google OAuth consent URL */
+            auth_url: string;
         };
         ConnectionDocument: {
             /**
@@ -3523,6 +3867,22 @@ export interface components {
             /** @example Workspace deleted successfully */
             message: string;
         };
+        DisconnectOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DisconnectOutputBody.json
+             */
+            readonly $schema?: string;
+            message: string;
+            success: boolean;
+        };
+        DisplaySettings: {
+            friend_activity_feed: boolean;
+            near_deadlines_widget: boolean;
+            recent_workspaces: boolean;
+            show_task_details: boolean;
+        };
         EncouragementDocument: {
             /**
              * Format: uri
@@ -3770,6 +4130,24 @@ export interface components {
              */
             totalPages: number;
         };
+        GetConnectionsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetConnectionsOutputBody.json
+             */
+            readonly $schema?: string;
+            connections: components["schemas"]["CalendarConnection"][];
+        };
+        GetEventsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetEventsOutputBody.json
+             */
+            readonly $schema?: string;
+            events: components["schemas"]["CalendarEventDTO"][];
+        };
         GetFeedOutputBody: {
             /**
              * Format: uri
@@ -3880,6 +4258,17 @@ export interface components {
             unlockedFeatures: components["schemas"]["UnlockedFeature"][];
             /** Format: int64 */
             unlocksRemaining: number;
+        };
+        GetReportsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetReportsOutputBody.json
+             */
+            readonly $schema?: string;
+            reports: components["schemas"]["ReportDocumentAPI"][];
+            /** Format: int64 */
+            total: number;
         };
         GetUserGroupsOutputBody: {
             /**
@@ -4085,6 +4474,14 @@ export interface components {
             /** @example Notifications marked as read successfully */
             message: string;
         };
+        MentionInput: {
+            handle: string;
+            id: string;
+        };
+        MentionReference: {
+            handle: string;
+            id: string;
+        };
         NotificationDocument: {
             content: string;
             id: string;
@@ -4097,6 +4494,25 @@ export interface components {
             /** Format: date-time */
             time: string;
             user: components["schemas"]["UserReference"];
+        };
+        NotificationSettings: {
+            checkin_frequency: string;
+            comments: boolean;
+            congratulations: boolean;
+            encouragements: boolean;
+            friend_activity: boolean;
+            friend_posts: boolean;
+            friend_requests: boolean;
+            near_deadlines: boolean;
+            reactions: boolean;
+        };
+        OAuthCallbackOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OAuthCallbackOutputBody.json
+             */
+            readonly $schema?: string;
         };
         PostDocument: {
             _id: string;
@@ -4127,7 +4543,6 @@ export interface components {
             caption: string;
             category?: components["schemas"]["CategoryExtendedReference"];
             comments: components["schemas"]["CommentDocumentAPI"][];
-            /** @description Optional dual camera image URL for BeReal-style posts */
             dual?: string;
             groups?: string[];
             images: string[];
@@ -4320,6 +4735,7 @@ export interface components {
             password: string;
             phone: string;
             profile_picture: string;
+            timezone?: string;
         };
         RegisterRequestApple: {
             /**
@@ -4403,6 +4819,78 @@ export interface components {
             /** @example Workspace renamed successfully */
             message: string;
         };
+        ReportCommentOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReportCommentOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Report submitted successfully */
+            message: string;
+            report_id: string;
+        };
+        ReportCommentRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReportCommentRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Optional additional details
+             * @example This comment is spam
+             */
+            description?: string;
+            /**
+             * @description Reason for reporting
+             * @example spam
+             */
+            reason: string;
+        };
+        ReportDocumentAPI: {
+            _id: string;
+            content_id: string;
+            content_owner_id: string;
+            content_type: string;
+            /** Format: date-time */
+            created_at: string;
+            description?: string;
+            reason: string;
+            reporter_id: string;
+            /** Format: date-time */
+            reviewed_at?: string;
+            status: string;
+        };
+        ReportPostOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReportPostOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Report submitted successfully */
+            message: string;
+            report_id: string;
+        };
+        ReportPostRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReportPostRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Optional additional details
+             * @example This post contains offensive content
+             */
+            description?: string;
+            /**
+             * @description Reason for reporting
+             * @example inappropriate
+             */
+            reason: string;
+        };
         SafeUser: {
             /**
              * Format: uri
@@ -4427,12 +4915,16 @@ export interface components {
             posts_made: number;
             profile_picture: string;
             recent_activity: components["schemas"]["ActivityDocument"][];
+            settings: components["schemas"]["UserSettings"];
             /** Format: int64 */
             streak: number;
             streakEligible: boolean;
             subscription: components["schemas"]["Subscription"];
             /** Format: double */
             tasks_complete: number;
+            /** Format: date-time */
+            terms_accepted_at?: string;
+            terms_version?: string;
             timezone?: string;
         };
         SendOTPOutputBody: {
@@ -4478,6 +4970,24 @@ export interface components {
             status: string;
             subscriptionId?: string;
             tier: string;
+        };
+        SyncEventsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SyncEventsOutputBody.json
+             */
+            readonly $schema?: string;
+            categories_synced: {
+                [key: string]: number;
+            };
+            /** Format: int64 */
+            events_total: number;
+            /** Format: int64 */
+            tasks_created: number;
+            /** Format: int64 */
+            tasks_skipped: number;
+            workspace_name: string;
         };
         TaskDocument: {
             /**
@@ -4618,6 +5128,16 @@ export interface components {
              */
             readonly $schema?: string;
             /** @example Authorized! */
+            message: string;
+        };
+        UnblockUserOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnblockUserOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example User unblocked successfully */
             message: string;
         };
         UnlockFeatureInputBody: {
@@ -5149,6 +5669,16 @@ export interface components {
             /** @example Timezone updated successfully */
             message: string;
         };
+        UpdateUserSettingsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateUserSettingsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Settings updated successfully */
+            message: string;
+        };
         UserCredits: {
             /**
              * Format: uri
@@ -5242,6 +5772,16 @@ export interface components {
             handle: string;
             id: string;
             profile_picture: string;
+        };
+        UserSettings: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UserSettings.json
+             */
+            readonly $schema?: string;
+            display: components["schemas"]["DisplaySettings"];
+            notifications: components["schemas"]["NotificationSettings"];
         };
         VerifyOTPOutputBody: {
             /**
@@ -5472,6 +6012,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-reports": {
+        parameters: {
+            query?: {
+                /**
+                 * @description Filter by status (pending, reviewed, resolved)
+                 * @example pending
+                 */
+                status?: string;
+                /**
+                 * @description Number of reports to return
+                 * @example 50
+                 */
+                limit?: number;
+                /**
+                 * @description Offset for pagination
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetReportsOutputBody"];
                 };
             };
             /** @description Error */
@@ -6032,6 +6620,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlueprintDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "google-calendar-oauth-callback": {
+        parameters: {
+            query: {
+                code: string;
+                state: string;
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthCallbackOutputBody"];
                 };
             };
             /** @description Error */
@@ -6704,6 +7325,42 @@ export interface operations {
             };
         };
     };
+    "accept-terms": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptTermsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptTermsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "delete-account": {
         parameters: {
             query?: never;
@@ -7020,6 +7677,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlueprintDocumentWithoutSubscribers"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "connect-google-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectGoogleOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-calendar-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetConnectionsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "disconnect-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisconnectOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-calendar-events": {
+        parameters: {
+            query?: {
+                /** @description Start date in RFC3339 format (defaults to 2 days ago) */
+                start?: string;
+                /** @description End date in RFC3339 format (defaults to 2 days from now) */
+                end?: string;
+            };
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetEventsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "sync-calendar-events": {
+        parameters: {
+            query?: {
+                /** @description Start date in RFC3339 format (defaults to 2 days ago) */
+                start?: string;
+                /** @description End date in RFC3339 format (defaults to 2 days from now) */
+                end?: string;
+            };
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncEventsOutputBody"];
                 };
             };
             /** @description Error */
@@ -7800,6 +8618,120 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcceptConnectionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "block-user": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /**
+                 * @description User ID to block
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockUserOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "unblock-user": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /**
+                 * @description User ID to unblock
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnblockUserOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-blocked-users": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionUser"][];
                 };
             };
             /** @description Error */
@@ -9302,6 +10234,90 @@ export interface operations {
             };
         };
     };
+    "report-comment": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path: {
+                /**
+                 * @description Comment ID to report
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportCommentOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "report-post": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path: {
+                /**
+                 * @description Post ID to report
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                postId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportPostRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportPostOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "redeem-reward": {
         parameters: {
             query?: never;
@@ -9327,6 +10343,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RedeemRewardResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-settings": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-user-settings": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserSettings"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateUserSettingsOutputBody"];
                 };
             };
             /** @description Error */
