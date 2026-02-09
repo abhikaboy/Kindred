@@ -25,6 +25,10 @@ type Provider interface {
 	CreateEvent(ctx context.Context, token *oauth2.Token, event ProviderEvent) (ProviderEvent, error)
 	UpdateEvent(ctx context.Context, token *oauth2.Token, eventID string, event ProviderEvent) (ProviderEvent, error)
 	DeleteEvent(ctx context.Context, token *oauth2.Token, eventID string) error
+
+	// Watch methods
+	WatchCalendar(ctx context.Context, token *oauth2.Token, calendarID string, channelID string, webhookURL string) (*WatchResponse, error)
+	StopWatch(ctx context.Context, token *oauth2.Token, channelID string, resourceID string) error
 }
 
 // AccountInfo represents provider account information
@@ -56,4 +60,11 @@ type ProviderEvent struct {
 	IsAllDay     bool
 	Attendees    []string
 	Status       string // confirmed, tentative, cancelled
+}
+
+// WatchResponse represents the response from creating a watch channel
+type WatchResponse struct {
+	ChannelID  string
+	ResourceID string
+	Expiration time.Time
 }

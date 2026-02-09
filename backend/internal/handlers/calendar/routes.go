@@ -49,5 +49,8 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, cfg config.C
 	// Sync endpoints
 	RegisterSyncEventsOperation(api, handler)
 
+	// Webhook endpoints
+	RegisterWebhookOperation(api, handler)
+
 	slog.Info("Calendar routes registered successfully")
 }

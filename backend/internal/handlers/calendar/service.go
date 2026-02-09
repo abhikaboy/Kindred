@@ -10,13 +10,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/oauth2"
 )
 
 type Service struct {
-	connections *mongo.Collection
-	categories  *mongo.Collection
-	providers   map[CalendarProvider]Provider
+	connections     *mongo.Collection
+	categories      *mongo.Collection
+	processedEvents *mongo.Collection
+	providers       map[CalendarProvider]Provider
+	config          config.Config
 }
 
 func NewService(connections *mongo.Collection, categories *mongo.Collection, cfg config.Config) *Service {
@@ -25,10 +28,15 @@ func NewService(connections *mongo.Collection, categories *mongo.Collection, cfg
 		// Future: ProviderOutlook: NewOutlookProvider(cfg.OutlookCalendar),
 	}
 
+	// Get processed events collection from the same database
+	processedEvents := connections.Database().Collection("calendar_processed_events")
+
 	return &Service{
-		connections: connections,
-		categories:  categories,
-		providers:   providers,
+		connections:     connections,
+		categories:      categories,
+		processedEvents: processedEvents,
+		providers:       providers,
+		config:          cfg,
 	}
 }
 
@@ -126,6 +134,15 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 			// User can manually sync later
 		}
 
+		// Setup watch channels for real-time notifications (Google only for now)
+		if provider == ProviderGoogle {
+			err = s.SetupWatchChannels(ctx, &connection, token, s.config.GoogleCalendar.WebhookBaseURL)
+			if err != nil {
+				slog.Error("Failed to setup watch channels", "connection_id", connection.ID, "error", err)
+				// Don't fail the connection creation, user can still manually sync
+			}
+		}
+
 		return &connection, nil
 	} else if err != nil {
 		slog.Error("Failed to check existing connection", "user_id", userID, "provider", provider, "error", err)
@@ -153,6 +170,15 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 	existingConn.RefreshToken = token.RefreshToken
 	existingConn.TokenExpiry = token.Expiry
 	existingConn.UpdatedAt = now
+
+	// Setup watch channels if not already set up (Google only for now)
+	if provider == ProviderGoogle && len(existingConn.WatchChannels) == 0 {
+		err = s.SetupWatchChannels(ctx, &existingConn, token, s.config.GoogleCalendar.WebhookBaseURL)
+		if err != nil {
+			slog.Error("Failed to setup watch channels", "connection_id", existingConn.ID, "error", err)
+			// Don't fail the connection update
+		}
+	}
 
 	slog.Info("Calendar connection updated successfully", "connection_id", existingConn.ID, "user_id", userID, "provider", provider)
 	return &existingConn, nil
@@ -250,6 +276,31 @@ func (s *Service) GetConnections(ctx context.Context, userID primitive.ObjectID)
 func (s *Service) DisconnectProvider(ctx context.Context, userID, connectionID primitive.ObjectID) error {
 	slog.Info("Disconnecting calendar", "user_id", userID, "connection_id", connectionID)
 
+	// First, get the connection to stop watch channels
+	var connection CalendarConnection
+	err := s.connections.FindOne(ctx, bson.M{
+		"_id":     connectionID,
+		"user_id": userID,
+	}).Decode(&connection)
+
+	if err == mongo.ErrNoDocuments {
+		slog.Warn("Connection not found or doesn't belong to user", "user_id", userID, "connection_id", connectionID)
+		return fmt.Errorf("connection not found or does not belong to user")
+	} else if err != nil {
+		slog.Error("Failed to find connection", "user_id", userID, "connection_id", connectionID, "error", err)
+		return fmt.Errorf("failed to find connection: %w", err)
+	}
+
+	// Stop watch channels before deleting
+	if len(connection.WatchChannels) > 0 {
+		err = s.StopWatchChannels(ctx, &connection)
+		if err != nil {
+			slog.Error("Failed to stop watch channels", "connection_id", connectionID, "error", err)
+			// Continue with deletion anyway
+		}
+	}
+
+	// Delete the connection
 	result, err := s.connections.DeleteOne(ctx, bson.M{
 		"_id":     connectionID,
 		"user_id": userID,
@@ -260,8 +311,8 @@ func (s *Service) DisconnectProvider(ctx context.Context, userID, connectionID p
 	}
 
 	if result.DeletedCount == 0 {
-		slog.Warn("Connection not found or doesn't belong to user", "user_id", userID, "connection_id", connectionID)
-		return fmt.Errorf("connection not found or does not belong to user")
+		slog.Warn("Connection not found during deletion", "user_id", userID, "connection_id", connectionID)
+		return fmt.Errorf("connection not found during deletion")
 	}
 
 	slog.Info("Calendar disconnected successfully", "user_id", userID, "connection_id", connectionID)
@@ -442,23 +493,24 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 			// Convert event to task params
 			taskParams := ConvertEventToTaskParams(event, userID, category.ID)
 
-			// Check if task with this integration ID already exists in this category
-			var existingCategory struct {
-				ID primitive.ObjectID `bson:"_id"`
-			}
-			err := s.categories.FindOne(ctx, bson.M{
-				"_id":               category.ID,
-				"tasks.integration": taskParams.Integration,
-			}).Decode(&existingCategory)
+			// Check if this event has already been processed using the dedicated collection
+			// We need to check if the event_id exists in the event_ids array
+			count, err := s.processedEvents.CountDocuments(ctx, bson.M{
+				"user_id":       userID,
+				"connection_id": connectionID,
+				"event_ids":     bson.M{"$in": []string{taskParams.Integration}},
+			})
 
-			if err == nil {
-				// Task already exists, skip it
-				slog.Debug("Task already exists, skipping", "event_id", event.ID, "integration", taskParams.Integration, "category_id", category.ID)
+			if err != nil {
+				slog.Error("Failed to check processed events", "event_id", event.ID, "error", err)
+				return nil, fmt.Errorf("failed to check processed events: %w", err)
+			}
+
+			if count > 0 {
+				// Event already processed, skip it
+				slog.Debug("Event already processed, skipping", "event_id", event.ID, "integration", taskParams.Integration)
 				tasksSkipped++
 				continue
-			} else if err != mongo.ErrNoDocuments {
-				slog.Error("Failed to check for existing task", "event_id", event.ID, "category_id", category.ID, "error", err)
-				return nil, fmt.Errorf("failed to check for existing task: %w", err)
 			}
 
 			// Create task document
@@ -499,6 +551,29 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 				return nil, fmt.Errorf("failed to create task: %w", err)
 			}
 
+			// Mark event as processed in the dedicated collection
+			now := time.Now()
+			_, err = s.processedEvents.UpdateOne(
+				ctx,
+				bson.M{
+					"user_id":       userID,
+					"connection_id": connectionID,
+				},
+				bson.M{
+					"$addToSet": bson.M{"event_ids": taskParams.Integration},
+					"$set":      bson.M{"updated_at": now},
+					"$setOnInsert": bson.M{
+						"created_at": now,
+					},
+				},
+				options.Update().SetUpsert(true),
+			)
+
+			if err != nil {
+				slog.Error("Failed to mark event as processed", "event_id", event.ID, "integration", taskParams.Integration, "error", err)
+				// Don't fail the sync, just log the error
+			}
+
 			slog.Debug("Task created", "event_id", event.ID, "category_id", category.ID, "task_content", taskParams.Content)
 			tasksCreated++
 		}
@@ -523,4 +598,221 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 
 	slog.Info("Sync completed", "connection_id", connectionID, "tasks_created", result.TasksCreated, "tasks_skipped", result.TasksSkipped, "events_total", result.EventsTotal)
 	return result, nil
+}
+
+// SetupWatchChannels creates watch channels for all calendars in a connection
+func (s *Service) SetupWatchChannels(ctx context.Context, connection *CalendarConnection, token *oauth2.Token, webhookBaseURL string) error {
+	slog.Info("Setting up watch channels", "connection_id", connection.ID, "provider", connection.Provider)
+
+	p, ok := s.providers[connection.Provider]
+	if !ok {
+		return fmt.Errorf("unsupported provider: %s", connection.Provider)
+	}
+
+	// Get list of calendars
+	calendars, err := p.ListCalendars(ctx, token)
+	if err != nil {
+		slog.Error("Failed to list calendars for watch setup", "connection_id", connection.ID, "error", err)
+		return fmt.Errorf("failed to list calendars: %w", err)
+	}
+
+	slog.Info("Setting up watches for calendars", "connection_id", connection.ID, "calendar_count", len(calendars))
+
+	// Build webhook URL with connection ID
+	webhookURL := fmt.Sprintf("%s/%s", webhookBaseURL, connection.ID.Hex())
+
+	watchChannels := make([]WatchChannel, 0, len(calendars))
+
+	// Create watch channel for each calendar
+	for _, cal := range calendars {
+		// Generate UUID for channel ID
+		channelID := primitive.NewObjectID().Hex()
+
+		slog.Info("Creating watch channel", "connection_id", connection.ID, "calendar_id", cal.ID, "calendar_name", cal.Name, "channel_id", channelID)
+
+		watchResp, err := p.WatchCalendar(ctx, token, cal.ID, channelID, webhookURL)
+		if err != nil {
+			slog.Error("Failed to create watch channel, continuing with other calendars", "connection_id", connection.ID, "calendar_id", cal.ID, "error", err)
+			continue
+		}
+
+		watchChannel := WatchChannel{
+			CalendarID: cal.ID,
+			ChannelID:  watchResp.ChannelID,
+			ResourceID: watchResp.ResourceID,
+			Expiration: watchResp.Expiration,
+			CreatedAt:  time.Now(),
+		}
+
+		watchChannels = append(watchChannels, watchChannel)
+		slog.Info("Watch channel created successfully", "connection_id", connection.ID, "calendar_id", cal.ID, "channel_id", watchResp.ChannelID, "expiration", watchResp.Expiration)
+	}
+
+	// Update connection with watch channels
+	if len(watchChannels) > 0 {
+		_, err = s.connections.UpdateOne(
+			ctx,
+			bson.M{"_id": connection.ID},
+			bson.M{
+				"$set": bson.M{
+					"watch_channels": watchChannels,
+					"updated_at":     time.Now(),
+				},
+			},
+		)
+		if err != nil {
+			slog.Error("Failed to update connection with watch channels", "connection_id", connection.ID, "error", err)
+			return fmt.Errorf("failed to update connection: %w", err)
+		}
+
+		slog.Info("Watch channels saved to database", "connection_id", connection.ID, "watch_count", len(watchChannels))
+	}
+
+	return nil
+}
+
+// StopWatchChannels stops all watch channels for a connection
+func (s *Service) StopWatchChannels(ctx context.Context, connection *CalendarConnection) error {
+	slog.Info("Stopping watch channels", "connection_id", connection.ID, "watch_count", len(connection.WatchChannels))
+
+	if len(connection.WatchChannels) == 0 {
+		slog.Info("No watch channels to stop", "connection_id", connection.ID)
+		return nil
+	}
+
+	p, ok := s.providers[connection.Provider]
+	if !ok {
+		return fmt.Errorf("unsupported provider: %s", connection.Provider)
+	}
+
+	// Get fresh token
+	token := &oauth2.Token{
+		AccessToken:  connection.AccessToken,
+		RefreshToken: connection.RefreshToken,
+		Expiry:       connection.TokenExpiry,
+	}
+
+	// Refresh if needed
+	if time.Now().After(connection.TokenExpiry) {
+		slog.Info("Refreshing token before stopping watches", "connection_id", connection.ID)
+		newToken, err := p.RefreshToken(ctx, connection.RefreshToken)
+		if err != nil {
+			slog.Error("Failed to refresh token for stopping watches", "connection_id", connection.ID, "error", err)
+			// Continue anyway, try to stop with existing token
+		} else {
+			token = newToken
+		}
+	}
+
+	// Stop each watch channel
+	for _, watch := range connection.WatchChannels {
+		slog.Info("Stopping watch channel", "connection_id", connection.ID, "channel_id", watch.ChannelID, "calendar_id", watch.CalendarID)
+
+		err := p.StopWatch(ctx, token, watch.ChannelID, watch.ResourceID)
+		if err != nil {
+			slog.Error("Failed to stop watch channel, continuing", "connection_id", connection.ID, "channel_id", watch.ChannelID, "error", err)
+			// Continue with other channels
+			continue
+		}
+
+		slog.Info("Watch channel stopped successfully", "connection_id", connection.ID, "channel_id", watch.ChannelID)
+	}
+
+	slog.Info("All watch channels processed", "connection_id", connection.ID)
+	return nil
+}
+
+// RenewWatchChannel renews a single watch channel before it expires
+func (s *Service) RenewWatchChannel(ctx context.Context, connection *CalendarConnection, oldChannel WatchChannel, webhookBaseURL string) error {
+	slog.Info("Renewing watch channel", "connection_id", connection.ID, "channel_id", oldChannel.ChannelID, "calendar_id", oldChannel.CalendarID)
+
+	p, ok := s.providers[connection.Provider]
+	if !ok {
+		return fmt.Errorf("unsupported provider: %s", connection.Provider)
+	}
+
+	// Get fresh token
+	token := &oauth2.Token{
+		AccessToken:  connection.AccessToken,
+		RefreshToken: connection.RefreshToken,
+		Expiry:       connection.TokenExpiry,
+	}
+
+	// Refresh if needed
+	if time.Now().After(connection.TokenExpiry) {
+		slog.Info("Refreshing token for watch renewal", "connection_id", connection.ID)
+		newToken, err := p.RefreshToken(ctx, connection.RefreshToken)
+		if err != nil {
+			slog.Error("Failed to refresh token for watch renewal", "connection_id", connection.ID, "error", err)
+			return fmt.Errorf("failed to refresh token: %w", err)
+		}
+		token = newToken
+
+		// Update connection with new token
+		_, err = s.connections.UpdateOne(
+			ctx,
+			bson.M{"_id": connection.ID},
+			bson.M{
+				"$set": bson.M{
+					"access_token":  newToken.AccessToken,
+					"refresh_token": newToken.RefreshToken,
+					"token_expiry":  newToken.Expiry,
+					"updated_at":    time.Now(),
+				},
+			},
+		)
+		if err != nil {
+			slog.Error("Failed to update connection with new token", "connection_id", connection.ID, "error", err)
+		}
+	}
+
+	// Stop old channel
+	slog.Info("Stopping old watch channel", "connection_id", connection.ID, "channel_id", oldChannel.ChannelID)
+	err := p.StopWatch(ctx, token, oldChannel.ChannelID, oldChannel.ResourceID)
+	if err != nil {
+		slog.Error("Failed to stop old watch channel", "connection_id", connection.ID, "channel_id", oldChannel.ChannelID, "error", err)
+		// Continue anyway to create new channel
+	}
+
+	// Create new watch channel
+	newChannelID := primitive.NewObjectID().Hex()
+	webhookURL := fmt.Sprintf("%s/%s", webhookBaseURL, connection.ID.Hex())
+
+	slog.Info("Creating new watch channel", "connection_id", connection.ID, "new_channel_id", newChannelID, "calendar_id", oldChannel.CalendarID)
+	watchResp, err := p.WatchCalendar(ctx, token, oldChannel.CalendarID, newChannelID, webhookURL)
+	if err != nil {
+		slog.Error("Failed to create new watch channel", "connection_id", connection.ID, "calendar_id", oldChannel.CalendarID, "error", err)
+		return fmt.Errorf("failed to create new watch channel: %w", err)
+	}
+
+	// Update the watch channel in the database
+	newChannel := WatchChannel{
+		CalendarID: oldChannel.CalendarID,
+		ChannelID:  watchResp.ChannelID,
+		ResourceID: watchResp.ResourceID,
+		Expiration: watchResp.Expiration,
+		CreatedAt:  time.Now(),
+	}
+
+	// Replace the old channel with the new one in the array
+	_, err = s.connections.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":                       connection.ID,
+			"watch_channels.channel_id": oldChannel.ChannelID,
+		},
+		bson.M{
+			"$set": bson.M{
+				"watch_channels.$": newChannel,
+				"updated_at":       time.Now(),
+			},
+		},
+	)
+	if err != nil {
+		slog.Error("Failed to update connection with new watch channel", "connection_id", connection.ID, "error", err)
+		return fmt.Errorf("failed to update connection: %w", err)
+	}
+
+	slog.Info("Watch channel renewed successfully", "connection_id", connection.ID, "new_channel_id", watchResp.ChannelID, "expiration", watchResp.Expiration)
+	return nil
 }

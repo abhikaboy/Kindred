@@ -316,3 +316,66 @@ func (p *GoogleProvider) convertToGoogleEvent(event ProviderEvent) *calendar.Eve
 
 	return googleEvent
 }
+
+func (p *GoogleProvider) WatchCalendar(ctx context.Context, token *oauth2.Token, calendarID string, channelID string, webhookURL string) (*WatchResponse, error) {
+	slog.Info("Google: Creating watch channel", "calendar_id", calendarID, "channel_id", channelID)
+
+	client := p.config.Client(ctx, token)
+	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		slog.Error("Google: Failed to create calendar service", "error", err)
+		return nil, err
+	}
+
+	// Set up watch channel
+	channel := &calendar.Channel{
+		Id:      channelID,
+		Type:    "web_hook",
+		Address: webhookURL,
+		Params:  map[string]string{"ttl": "2592000"}, // 30 days (max)
+	}
+
+	// Call watch endpoint
+	watchChannel, err := calendarService.Events.Watch(calendarID, channel).Do()
+	if err != nil {
+		slog.Error("Google: Failed to create watch channel", "calendar_id", calendarID, "error", err)
+		return nil, err
+	}
+
+	expiration := time.Unix(watchChannel.Expiration/1000, 0)
+	slog.Info("Google: Watch channel created successfully",
+		"channel_id", watchChannel.Id,
+		"resource_id", watchChannel.ResourceId,
+		"expiration", expiration)
+
+	return &WatchResponse{
+		ChannelID:  watchChannel.Id,
+		ResourceID: watchChannel.ResourceId,
+		Expiration: expiration,
+	}, nil
+}
+
+func (p *GoogleProvider) StopWatch(ctx context.Context, token *oauth2.Token, channelID string, resourceID string) error {
+	slog.Info("Google: Stopping watch channel", "channel_id", channelID, "resource_id", resourceID)
+
+	client := p.config.Client(ctx, token)
+	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		slog.Error("Google: Failed to create calendar service", "error", err)
+		return err
+	}
+
+	channel := &calendar.Channel{
+		Id:         channelID,
+		ResourceId: resourceID,
+	}
+
+	err = calendarService.Channels.Stop(channel).Do()
+	if err != nil {
+		slog.Error("Google: Failed to stop watch channel", "channel_id", channelID, "error", err)
+		return err
+	}
+
+	slog.Info("Google: Watch channel stopped successfully", "channel_id", channelID)
+	return nil
+}

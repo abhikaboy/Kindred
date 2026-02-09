@@ -69,3 +69,15 @@ func RegisterSyncEventsOperation(api huma.API, handler *Handler) {
 		DefaultStatus: 200,
 	}, handler.SyncEvents)
 }
+
+func RegisterWebhookOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "calendar-webhook",
+		Method:      "POST",
+		Path:        "/v1/calendar/webhook/{connection_id}",
+		Summary:     "Google Calendar webhook receiver",
+		Description: "Receives push notifications from Google Calendar API. This endpoint is NOT behind auth middleware since Google calls it directly.",
+		Tags:        []string{"Calendar"},
+		Security:    []map[string][]string{}, // No auth - Google calls this
+	}, handler.HandleWebhook)
+}

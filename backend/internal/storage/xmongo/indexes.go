@@ -151,6 +151,29 @@ var Indexes = []Index{
 	// 		}),
 	// 	},
 	// },
+	// Calendar processed events indexes
+	{
+		Collection: "calendar_processed_events",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "user_id", Value: 1},
+				{Key: "connection_id", Value: 1},
+			},
+			Options: options.Index().SetUnique(true),
+		},
+	},
+	{
+		Collection: "calendar_processed_events",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "user_id", Value: 1}},
+		},
+	},
+	{
+		Collection: "calendar_processed_events",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "event_ids", Value: 1}},
+		},
+	},
 }
 
 var SearchIndexes = []SearchIndex{

@@ -12,11 +12,16 @@ import (
 )
 
 type Handler struct {
-	service *Service
+	service        *Service
+	webhookLimiter *WebhookRateLimiter
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service: service,
+		// 10 requests per minute per connection_id
+		webhookLimiter: NewWebhookRateLimiter(10, 60),
+	}
 }
 
 // ConnectGoogle initiates OAuth flow
@@ -169,9 +174,10 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	var startTime, endTime time.Time
 
 	if input.StartDate == "" {
-		// Default: 2 days ago
-		startTime = time.Now().AddDate(0, 0, -2)
-		slog.Info("Using default start date", "start", startTime)
+		// Default: start of today
+		now := time.Now()
+		startTime = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		slog.Info("Using default start date (today)", "start", startTime)
 	} else {
 		startTime, err = time.Parse(time.RFC3339, input.StartDate)
 		if err != nil {
@@ -180,9 +186,10 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	}
 
 	if input.EndDate == "" {
-		// Default: 2 days from now
-		endTime = time.Now().AddDate(0, 0, 2)
-		slog.Info("Using default end date", "end", endTime)
+		// Default: 7 days from now (next week)
+		now := time.Now()
+		endTime = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location()).AddDate(0, 0, 7)
+		slog.Info("Using default end date (7 days from now)", "end", endTime)
 	} else {
 		endTime, err = time.Parse(time.RFC3339, input.EndDate)
 		if err != nil {
@@ -245,9 +252,10 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 	var startTime, endTime time.Time
 
 	if input.StartDate == "" {
-		// Default: 2 days ago
-		startTime = time.Now().AddDate(0, 0, -2)
-		slog.Info("Using default start date", "start", startTime)
+		// Default: start of today
+		now := time.Now()
+		startTime = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		slog.Info("Using default start date (today)", "start", startTime)
 	} else {
 		startTime, err = time.Parse(time.RFC3339, input.StartDate)
 		if err != nil {
@@ -256,9 +264,10 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 	}
 
 	if input.EndDate == "" {
-		// Default: 2 days from now
-		endTime = time.Now().AddDate(0, 0, 2)
-		slog.Info("Using default end date", "end", endTime)
+		// Default: 7 days from now (next week)
+		now := time.Now()
+		endTime = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location()).AddDate(0, 0, 7)
+		slog.Info("Using default end date (7 days from now)", "end", endTime)
 	} else {
 		endTime, err = time.Parse(time.RFC3339, input.EndDate)
 		if err != nil {
