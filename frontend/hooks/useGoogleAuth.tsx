@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
+import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 
 // Complete the auth session for web browser
@@ -29,17 +30,32 @@ export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
   const [userInfo, setUserInfo] = useState<GoogleAuthResult['user'] | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Force use of Expo's auth proxy for Expo Go compatibility
+  // Manually construct the proxy URL since makeRedirectUri isn't working
+  const redirectUri = __DEV__
+    ? 'https://auth.expo.io/@suntex/Kindred'  // Expo Go proxy
+    : AuthSession.makeRedirectUri({
+        scheme: 'com.googleusercontent.apps.955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6'
+      });
+
+  console.log('🔗 Google OAuth Redirect URI:', redirectUri);
+  console.log('🔗 Using expoClientId for Expo Go');
+  console.log('🔗 __DEV__ mode:', __DEV__);
+
   // Configure Google Auth Request
-  // Note: You'll need to configure these client IDs in your Google Console
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    // Add your client IDs from Google Console here
-    // For Expo Go development, you can use these:
-    clientId: 'GOOGLE_GUID.apps.googleusercontent.com', // Replace with your Expo client ID
-    iosClientId: 'GOOGLE_GUID.apps.googleusercontent.com',   // Replace with your iOS client ID  
-    androidClientId: 'GOOGLE_GUID.apps.googleusercontent.com', // Replace with your Android client ID
-    webClientId: 'GOOGLE_GUID.apps.googleusercontent.com',   // Replace with your Web client ID
-    scopes: ['openid', 'profile', 'email'],
-  });
+  const [request, response, promptAsync] = Google.useAuthRequest(
+    {
+      expoClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com', // For Expo Go
+      iosClientId: '955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6.apps.googleusercontent.com', // For standalone iOS
+      webClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com', // For web/Android
+      scopes: ['openid', 'profile', 'email'],
+    },
+    {
+      // Discovery document for Google OAuth
+      useProxy: true, // Force use of Expo proxy
+      redirectUri: redirectUri, // Explicitly use the proxy redirect
+    }
+  );
 
   // Handle the authentication response
   useEffect(() => {
@@ -74,7 +90,7 @@ export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
       // Decode the ID token to get user info (JWT payload)
       const base64Payload = idToken.split('.')[1];
       const payload = JSON.parse(atob(base64Payload));
-      
+
       const user = {
         id: payload.sub,
         email: payload.email,
@@ -99,7 +115,7 @@ export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
     try {
       setLoading(true);
       const result = await promptAsync();
-      
+
       if (result.type === 'success') {
         const userResult = await fetchUserInfo(result.params.id_token);
         setUserInfo(userResult.user);
@@ -107,16 +123,16 @@ export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
       } else if (result.type === 'cancel') {
         return { type: 'cancel' };
       } else {
-        return { 
-          type: 'error', 
-          error: 'Authentication failed' 
+        return {
+          type: 'error',
+          error: 'Authentication failed'
         };
       }
     } catch (error) {
       console.error('Google sign in error:', error);
-      return { 
-        type: 'error', 
-        error: error instanceof Error ? error.message : 'Authentication failed' 
+      return {
+        type: 'error',
+        error: error instanceof Error ? error.message : 'Authentication failed'
       };
     } finally {
       setLoading(false);
