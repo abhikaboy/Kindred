@@ -37,16 +37,28 @@ func (h *Handler) ConnectGoogle(ctx context.Context, input *ConnectGoogleInput) 
 	return resp, nil
 }
 
-// OAuthCallback handles Google's OAuth callback
+// OAuthCallback handles Google's OAuth callback and returns HTML redirect
 func (h *Handler) OAuthCallback(ctx context.Context, input *OAuthCallbackInput) (*OAuthCallbackOutput, error) {
 	slog.Info("OAuth callback received", "has_code", input.Code != "", "has_state", input.State != "", "has_error", input.Error != "")
 	resp := &OAuthCallbackOutput{}
 
+	var redirectURL string
+
 	// Check for OAuth error
 	if input.Error != "" {
 		slog.Warn("OAuth error from provider", "error", input.Error)
-		resp.Body.Success = false
-		resp.Body.Message = fmt.Sprintf("OAuth error: %s", input.Error)
+		redirectURL = fmt.Sprintf("kindred://calendar/error?message=%s", input.Error)
+		resp.Body.HTML = fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0;url=%s">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to app...</p>
+</body>
+</html>`, redirectURL)
 		return resp, nil
 	}
 
@@ -54,12 +66,37 @@ func (h *Handler) OAuthCallback(ctx context.Context, input *OAuthCallbackInput) 
 	connection, err := h.service.HandleCallback(ctx, ProviderGoogle, input.Code, input.State)
 	if err != nil {
 		slog.Error("Failed to handle OAuth callback", "error", err)
-		return nil, huma.Error500InternalServerError("Failed to complete OAuth", err)
+		redirectURL = "kindred://calendar/error?message=connection_failed"
+		resp.Body.HTML = fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0;url=%s">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to app...</p>
+</body>
+</html>`, redirectURL)
+		return resp, nil
 	}
 
-	slog.Info("OAuth callback completed successfully", "account", connection.ProviderAccountID)
-	resp.Body.Success = true
-	resp.Body.Message = fmt.Sprintf("Google Calendar connected successfully for account: %s", connection.ProviderAccountID)
+	slog.Info("OAuth callback completed successfully", "account", connection.ProviderAccountID, "connection_id", connection.ID.Hex())
+
+	// Success - redirect to deep link
+	redirectURL = fmt.Sprintf("kindred://calendar/linked?connectionId=%s", connection.ID.Hex())
+	resp.Body.HTML = fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0;url=%s">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to app...</p>
+</body>
+</html>`, redirectURL)
+
 	return resp, nil
 }
 

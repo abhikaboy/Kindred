@@ -17,9 +17,8 @@ type OAuthCallbackInput struct {
 
 type OAuthCallbackOutput struct {
 	Body struct {
-		Success bool   `json:"success"`
-		Message string `json:"message"`
-	}
+		HTML string `json:"-"` // HTML response for redirect
+	} `contentType:"text/html"`
 }
 
 type GetConnectionsInput struct{}

@@ -15,6 +15,12 @@ import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AttachStep } from "react-native-spotlight-tour";
+import { GoogleCalendarCard } from "../cards/GoogleCalendarCard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as WebBrowser from "expo-web-browser";
+import { getCalendarConnections, connectGoogleCalendar, syncCalendarEvents, CalendarConnection } from "@/api/calendar";
+import { useAlert } from "@/contexts/AlertContext";
+
 interface HomeScrollContentProps {
     encouragementCount: number;
     congratulationCount: number;
@@ -49,11 +55,117 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     onRefresh,
 }) => {
     const router = useRouter();
+    const { showAlert } = useAlert();
+    const [showGoogleCalendarCard, setShowGoogleCalendarCard] = React.useState(true);
+    const [calendarLoading, setCalendarLoading] = React.useState(false);
+    const [isCalendarLinked, setIsCalendarLinked] = React.useState(false);
+    const [calendarConnection, setCalendarConnection] = React.useState<CalendarConnection | null>(null);
+
+    // Check if user has dismissed the card or has a calendar connection
+    React.useEffect(() => {
+        const checkCalendarStatus = async () => {
+            try {
+                // Check if dismissed
+                const dismissed = await AsyncStorage.getItem("google_calendar_card_dismissed");
+                if (dismissed === "true") {
+                    setShowGoogleCalendarCard(false);
+                    return;
+                }
+
+                // Check for existing connections
+                const { connections } = await getCalendarConnections();
+                if (connections && connections.length > 0) {
+                    setIsCalendarLinked(true);
+                    setCalendarConnection(connections[0]); // Use first connection
+                    setShowGoogleCalendarCard(true); // Always show if linked
+                }
+            } catch (error) {
+                console.error("Error checking calendar status:", error);
+            }
+        };
+        checkCalendarStatus();
+    }, []);
+
+    const handleCalendarAction = async () => {
+        if (isCalendarLinked && calendarConnection) {
+            // Sync events
+            await handleSyncCalendar();
+        } else {
+            // Connect calendar
+            await handleConnectCalendar();
+        }
+    };
+
+    const handleConnectCalendar = async () => {
+        setCalendarLoading(true);
+        try {
+            // Get OAuth URL from backend
+            const { auth_url } = await connectGoogleCalendar();
+
+            // Open OAuth flow in browser - backend will redirect to kindred://calendar/linked
+            await WebBrowser.openAuthSessionAsync(auth_url);
+
+            // The deep link handler will take care of the rest
+            // Just refresh the connection status when user returns
+            const { connections } = await getCalendarConnections();
+            if (connections && connections.length > 0) {
+                setIsCalendarLinked(true);
+                setCalendarConnection(connections[0]);
+            }
+        } catch (error) {
+            console.error("Error connecting Google Calendar:", error);
+            showAlert({
+                title: "Error",
+                message: "Failed to connect Google Calendar. Please try again.",
+                buttons: [{ text: "OK", style: "default" }],
+            });
+        } finally {
+            setCalendarLoading(false);
+        }
+    };
+
+    const handleSyncCalendar = async () => {
+        if (!calendarConnection) return;
+
+        setCalendarLoading(true);
+        try {
+            const result = await syncCalendarEvents(calendarConnection.id);
+
+            showAlert({
+                title: "Sync Complete",
+                message: `Synced ${result.tasks_created} events to "${result.workspace_name}" workspace.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}\nTotal: ${result.events_total}`,
+                buttons: [{ text: "OK", style: "default" }],
+            });
+
+            // Refresh tasks after sync
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (error) {
+            console.error("Error syncing calendar:", error);
+            showAlert({
+                title: "Error",
+                message: "Failed to sync calendar events. Please try again.",
+                buttons: [{ text: "OK", style: "default" }],
+            });
+        } finally {
+            setCalendarLoading(false);
+        }
+    };
+
+    const handleDismissGoogleCalendar = async () => {
+        try {
+            await AsyncStorage.setItem("google_calendar_card_dismissed", "true");
+            setShowGoogleCalendarCard(false);
+        } catch (error) {
+            console.error("Error dismissing Google Calendar card:", error);
+        }
+    };
 
     return (
-        <ScrollView 
-            style={{ gap: 8 }} 
-            contentContainerStyle={{ gap: 8 }} 
+        <ScrollView
+            style={{ gap: 8 }}
+            contentContainerStyle={{ gap: 8 }}
             showsVerticalScrollIndicator={false}
             refreshControl={
                 onRefresh ? (
@@ -111,7 +223,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 </View>
 
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                         onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}
                     >
@@ -131,6 +243,18 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                     <TextInput placeholder="Whats on your mind?" style={{ backgroundColor: ThemedColor.lightened, borderRadius: 8, padding: 16, fontSize: 16, fontFamily: "OutfitLight" }} />
                 </View> */}
+
+                {/* Google Calendar Connection Card */}
+                {showGoogleCalendarCard && (
+                    <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
+                        <GoogleCalendarCard
+                            isLinked={isCalendarLinked}
+                            onAction={handleCalendarAction}
+                            onDismiss={!isCalendarLinked ? handleDismissGoogleCalendar : undefined}
+                            loading={calendarLoading}
+                        />
+                    </View>
+                )}
 
                 {/* Recent Workspaces Section */}
                 <View
