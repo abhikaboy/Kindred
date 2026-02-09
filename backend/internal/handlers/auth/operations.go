@@ -118,6 +118,17 @@ type VerifyOTPOutput struct {
 	}
 }
 
+// Login with OTP Operation Types
+type LoginWithOTPInput struct {
+	Body LoginWithOTPRequest `json:"body"`
+}
+
+type LoginWithOTPOutput struct {
+	AccessToken  string   `header:"access_token"`
+	RefreshToken string   `header:"refresh_token"`
+	Body         SafeUser `json:"body"`
+}
+
 // Delete Account Operation Types
 type DeleteAccountInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
@@ -339,6 +350,20 @@ func RegisterVerifyOTPOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *VerifyOTPInput) (*VerifyOTPOutput, error) {
 		return handler.VerifyOTPHuma(ctx, input)
+	})
+}
+
+// RegisterLoginWithOTPOperation registers the login with OTP endpoint
+func RegisterLoginWithOTPOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "login-otp",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/login/otp",
+		Summary:     "Login with OTP",
+		Description: "Login using phone number and OTP code (passwordless authentication)",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *LoginWithOTPInput) (*LoginWithOTPOutput, error) {
+		return handler.LoginWithOTPHuma(ctx, input)
 	})
 }
 

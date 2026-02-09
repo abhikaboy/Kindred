@@ -100,3 +100,8 @@ type VerifyOTPRequest struct {
 	PhoneNumber string `validate:"required" json:"phone_number"`
 	Code        string `validate:"required" json:"code"`
 }
+
+type LoginWithOTPRequest struct {
+	PhoneNumber string `validate:"required" json:"phone_number"`
+	Code        string `validate:"required" json:"code"`
+}

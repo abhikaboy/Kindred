@@ -53,7 +53,7 @@ interface OnboardingContextType {
     // Registration
     registerWithEmail: (profilePictureUrl?: string) => Promise<void>;
     registerWithApple: (profilePictureUrl?: string) => Promise<void>;
-    registerWithGoogle: () => Promise<void>;
+    registerWithGoogle: (profilePictureUrl?: string) => Promise<void>;
 
     // Reset
     reset: () => void;
@@ -442,37 +442,101 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const registerWithGoogle = async () => {
+    const registerWithGoogle = async (profilePictureUrl?: string) => {
+        // Use provided URL or fall back to state
+        const profilePic = profilePictureUrl || onboardingData.profilePicture;
+
+        if (!profilePic) {
+            throw new Error('Profile picture is required. Please select an image first.');
+        }
+
         if (!onboardingData.googleId) {
             throw new Error('Google ID is required');
         }
 
-        if (!validateAll()) {
+        // Validate required fields for Google registration
+        const errors: ValidationErrors = {};
+
+        const displayNameError = validateDisplayName(onboardingData.displayName);
+        if (displayNameError) errors.displayName = displayNameError;
+
+        const handleError = validateHandle(onboardingData.handle);
+        if (handleError) errors.handle = handleError;
+
+        // Email is required for Google
+        const emailError = validateEmail(onboardingData.email);
+        if (emailError) errors.email = emailError;
+
+        if (Object.keys(errors).length > 0) {
+            console.error('Validation errors:', errors);
             throw new Error('Validation failed. Please check all fields.');
         }
 
         setIsLoading(true);
         try {
-            await authRegisterWithGoogle(onboardingData.email, onboardingData.googleId);
+            console.log('Registering with Google data:', {
+                google_id: onboardingData.googleId,
+                email: onboardingData.email,
+                display_name: onboardingData.displayName,
+                handle: onboardingData.handle,
+                profile_picture: profilePic,
+            });
 
-            // Also send the profile data
-            await googleRegisterMutation.mutateAsync({
+            // Use client.POST directly so we can access response headers
+            const result = await client.POST("/v1/auth/register/google", {
                 body: {
                     google_id: onboardingData.googleId,
                     email: onboardingData.email,
                     display_name: onboardingData.displayName,
                     handle: onboardingData.handle,
-                    profile_picture: onboardingData.profilePicture,
+                    profile_picture: profilePic,
                 }
             });
+
+            if (result.error) {
+                console.error('❌ Google registration failed:', result.error);
+                throw new Error('Google registration failed');
+            }
+
+            console.log('✅ Google registration successful!');
+
+            // Registration now returns the full user data in the response body!
+            // No need for a separate login call
+            const userData = result.data as any;
+            setUser(userData);
+
+            console.log('✅ User registered and logged in!');
+            console.log('👤 User ID:', userData._id);
+            console.log('👤 User display name:', userData.display_name);
 
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
 
+            // Reset after successful registration and login
+            console.log('🧹 Resetting onboarding state...');
             reset();
-        } catch (error) {
+            console.log('✅ Registration flow complete!');
+        } catch (error: any) {
             console.error('Google registration failed:', error);
-            throw error;
+
+            // Extract error message from backend response
+            let errorMessage = 'Google registration failed. Please try again.';
+
+            // openapi-fetch returns errors in a specific format
+            if (error?.message) {
+                errorMessage = error.message;
+            } else if (error?.error?.message) {
+                errorMessage = error.error.message;
+            } else if (error?.detail) {
+                errorMessage = error.detail;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            }
+
+            console.error('❌ Google registration error message:', errorMessage);
+
+            // Throw error with the backend message so the UI can display it
+            throw new Error(errorMessage);
         } finally {
             setIsLoading(false);
         }

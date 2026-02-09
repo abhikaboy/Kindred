@@ -171,6 +171,19 @@ func (s *Service) LoginFromGoogle(google_id string) (*primitive.ObjectID, *float
 	return &user.ID, &user.Count, &user, nil
 }
 
+func (s *Service) LoginFromPhoneOTP(phone_number string) (*primitive.ObjectID, *float64, *User, error) {
+
+	var user User
+	err := s.users.FindOne(context.Background(), bson.M{"phone": phone_number}).Decode(&user)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, nil, nil, fiber.NewError(404, "Account does not exist, Try to register")
+	}
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return &user.ID, &user.Count, &user, nil
+}
+
 func (s *Service) InvalidateTokens(user_id string) error {
 	// increase the count by one
 	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$inc": bson.M{"count": 1}})

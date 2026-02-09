@@ -22,9 +22,9 @@ type Props = {};
 const PhotoOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { onboardingData, updateProfilePicture, validationErrors, registerWithEmail, registerWithApple, isLoading } = useOnboarding();
+    const { onboardingData, updateProfilePicture, validationErrors, registerWithEmail, registerWithApple, registerWithGoogle, isLoading } = useOnboarding();
     const { user } = useAuth();
-    
+
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -54,7 +54,7 @@ const PhotoOnboarding = (props: Props) => {
 
     const pickImage = async () => {
         const result = await pickImageFromLibrary();
-        
+
         if (result && !result.canceled && result.assets && result.assets[0]) {
             const uri = result.assets[0].uri;
             setSelectedImage(uri);
@@ -66,49 +66,51 @@ const PhotoOnboarding = (props: Props) => {
             showToast('Please select a profile photo to continue', 'warning');
             return;
         }
-        
+
         setIsUploading(true);
-        
+
         try {
             // Step 1: Generate a temporary ObjectID for the upload
             // This follows the same pattern as banner image upload in Details.tsx
             const tempUserId = new ObjectId().toString();
             console.log('Generated temporary user ID for upload:', tempUserId);
-            
+
             // Step 2: Upload the profile picture with the temporary ID
             console.log('Uploading profile picture with temporary ID...');
             const profilePictureUrl = await uploadImageSmart("profile", tempUserId, selectedImage, { variant: "medium" });
-            
-            const uploadedUrl = typeof profilePictureUrl === 'string' 
-                ? profilePictureUrl 
+
+            const uploadedUrl = typeof profilePictureUrl === 'string'
+                ? profilePictureUrl
                 : profilePictureUrl.public_url;
-            
+
             console.log('Profile picture uploaded successfully:', uploadedUrl);
-            
+
             // Step 3: Update onboarding data with the uploaded URL
             updateProfilePicture(uploadedUrl);
-            
+
             // Step 4: Register the user with the uploaded profile picture URL
             console.log('Registering user with uploaded profile picture...');
-            
-            // Check if this is an Apple registration or email registration
+
+            // Check if this is an Apple, Google, or email registration
             if (onboardingData.appleId) {
                 await registerWithApple(uploadedUrl);
+            } else if (onboardingData.googleId) {
+                await registerWithGoogle(uploadedUrl);
             } else {
                 await registerWithEmail(uploadedUrl);
             }
-            
+
             console.log('User registered successfully!');
             showToast('Account created successfully! 🎉', 'success');
-            
+
             // Step 5: Navigate to referral screen
             router.push('/(onboarding)/referral');
-            
+
         } catch (error: any) {
             console.error('Registration or upload error:', error);
-            
+
             let errorMessage = 'Unable to create account. Please try again.';
-            
+
             if (error.message) {
                 if (error.message.includes('upload') || error.message.includes('image')) {
                     errorMessage = 'Failed to upload profile picture. Please try again.';
@@ -122,7 +124,7 @@ const PhotoOnboarding = (props: Props) => {
             } else if (error.toString().includes('handle')) {
                 errorMessage = 'This handle is already taken. Please choose a different one.';
             }
-            
+
             showToast(errorMessage, 'danger');
         } finally {
             setIsUploading(false);
@@ -133,30 +135,32 @@ const PhotoOnboarding = (props: Props) => {
         // Set a default profile picture and register directly
         const defaultPicture = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
         updateProfilePicture(defaultPicture);
-        
+
         setIsUploading(true);
-        
+
         try {
             console.log('Registering user with default profile picture...');
-            
-            // Check if this is an Apple registration or email registration
+
+            // Check if this is an Apple, Google, or email registration
             if (onboardingData.appleId) {
                 await registerWithApple(defaultPicture);
+            } else if (onboardingData.googleId) {
+                await registerWithGoogle(defaultPicture);
             } else {
                 await registerWithEmail(defaultPicture);
             }
-            
+
             console.log('User registered successfully!');
             showToast('Account created successfully! 🎉', 'success');
-            
+
             // Navigate to referral screen
             router.push('/(onboarding)/referral');
-            
+
         } catch (error: any) {
             console.error('Registration error:', error);
-            
+
             let errorMessage = 'Unable to create account. Please try again.';
-            
+
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             } else if (error.toString().includes('email')) {
@@ -164,7 +168,7 @@ const PhotoOnboarding = (props: Props) => {
             } else if (error.toString().includes('handle')) {
                 errorMessage = 'This handle is already taken. Please choose a different one.';
             }
-            
+
             showToast(errorMessage, 'danger');
         } finally {
             setIsUploading(false);
@@ -180,7 +184,7 @@ const PhotoOnboarding = (props: Props) => {
 
             <View style={styles.contentContainer}>
                 {/* Header Section */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.headerContainer,
                         {
@@ -198,7 +202,7 @@ const PhotoOnboarding = (props: Props) => {
                 </Animated.View>
 
                 {/* Photo Section */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.photoContainer,
                         {
@@ -206,7 +210,7 @@ const PhotoOnboarding = (props: Props) => {
                         }
                     ]}
                 >
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={pickImage}
                         disabled={isLoading || isUploading}
                     >
@@ -246,7 +250,7 @@ const PhotoOnboarding = (props: Props) => {
                 </Animated.View>
 
                 {/* Button Section */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.buttonContainer,
                         {
@@ -259,7 +263,7 @@ const PhotoOnboarding = (props: Props) => {
                         onPress={handleContinue}
                         disabled={isLoading || isUploading || !selectedImage}
                     />
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.skipButton}
                         onPress={handleSkip}
                         disabled={isLoading || isUploading}

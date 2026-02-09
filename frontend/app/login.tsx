@@ -41,7 +41,14 @@ const login = (props: Props) => {
         if (user) {
             router.push("/");
         }
-    }, [user]);    return (
+    }, [user]);
+
+    // Landing page is always light mode
+    const heroCardBg = Colors.dark.background;
+    const heroCardText = Colors.dark.text;
+    const heroCardBorder = Colors.light.background;
+
+    return (
         <View
             style={{
                 backgroundColor: Colors.light.background,
@@ -51,7 +58,7 @@ const login = (props: Props) => {
             }}>
             <View
                 style={{
-                    backgroundColor: Colors.dark.background,
+                    backgroundColor: heroCardBg,
                     height: Dimensions.get("screen").height * 0.4,
                     width: "95%",
                     alignSelf: "center",
@@ -67,16 +74,16 @@ const login = (props: Props) => {
                         paddingVertical: 4,
                         borderRadius: 24,
                         borderWidth: 1,
-                        borderColor: Colors.light.background,
+                        borderColor: heroCardBorder,
                     }}>
-                    <ThemedText type="lightBody" style={{ color: Colors.dark.text }}>
+                    <ThemedText type="lightBody" style={{ color: heroCardText }}>
                         Beta
                     </ThemedText>
                 </View>
                 <ThemedText
                     type="titleFraunces"
                     style={{
-                        color: Colors.dark.text,
+                        color: heroCardText,
                         fontWeight: 600,
                         letterSpacing: -2,
                         justifyContent: "center",
@@ -90,7 +97,7 @@ const login = (props: Props) => {
                 <ThemedText
                     type="lightBody"
                     style={{
-                        color: Colors.dark.text,
+                        color: heroCardText,
                         fontFamily: "Outfit",
                         fontSize: 20,
                         fontStyle: "italic",
@@ -132,8 +139,8 @@ const login = (props: Props) => {
                         bottom: 64,
                     }}>
                     <OnboardModal visible={visible} setVisible={setVisible} mode={mode} />
-                    <PrimaryButton 
-                        title="Join Kindred" 
+                    <PrimaryButton
+                        title="Join Kindred"
                         onPress={() => {
                             setMode("register");
                             setVisible(true);
@@ -147,10 +154,10 @@ const login = (props: Props) => {
                         }}
                     />
                     <ThemedText style={{ textAlign: "center", alignItems: "center" }}>
-                        <Text style={{ color: "#000" }}>    
+                        <Text style={{ color: Colors.light.text }}>
                             Already have an account?{" "}
                         </Text>
-                            
+
                         <TouchableOpacity
                             style={{
                                 alignSelf: "center",

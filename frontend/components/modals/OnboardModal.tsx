@@ -44,20 +44,27 @@ export const OnboardModal = (props: Props) => {
             if (result.user && result.user.id && result.user.email) {
                 try {
                     if (mode === "register") {
-                        await registerWithGoogle(result.user.email, result.user.id);
-                        router.replace({
-                            pathname: "/(onboarding)/phone",
-                            params: {
-                                initialFirstName: result.user.given_name || "",
-                                initialLastName: result.user.family_name || "",
-                                initialPhoneNumber: "",
-                            },
+                        // Store Google info in onboarding context (don't register yet)
+                        const displayName = result.user.name ||
+                            `${result.user.given_name || ''} ${result.user.family_name || ''}`.trim();
+
+                        updateOnboardingData({
+                            email: result.user.email,
+                            googleId: result.user.id,
+                            displayName: displayName,
                         });
+
+                        console.log("Stored Google credentials in onboarding context");
+
+                        // Navigate to name screen (skip phone for Google users like Apple)
+                        router.replace("/(onboarding)/name");
+                        setVisible(false);
                     } else {
+                        // Login mode - try to log in
                         await loginWithGoogle(result.user.id);
                         router.push("/(logged-in)/(tabs)/(task)");
+                        setVisible(false);
                     }
-                    setVisible(false);
                 } catch (error: any) {
                     console.error("Google authentication error:", error);
 
@@ -65,18 +72,6 @@ export const OnboardModal = (props: Props) => {
                         // Account doesn't exist - show friendly message
                         if (mode === "login") {
                             alert("No account found. Please sign up first!");
-                        }
-                    } else if (mode === "register") {
-                        // Try login if registration fails (user might already exist)
-                        try {
-                            await loginWithGoogle(result.user.id);
-                            router.push("/(logged-in)/(tabs)/(task)");
-                            setVisible(false);
-                        } catch (loginError: any) {
-                            console.error("Google login fallback failed:", loginError);
-                            if (loginError?.message === "ACCOUNT_NOT_FOUND") {
-                                alert("No account found. Please complete the sign up process!");
-                            }
                         }
                     }
                 }

@@ -622,6 +622,70 @@ func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*Ve
 	return resp, nil
 }
 
+// LoginWithOTPHuma handles login via OTP verification
+func (h *Handler) LoginWithOTPHuma(ctx context.Context, input *LoginWithOTPInput) (*LoginWithOTPOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	// Step 1: Verify the OTP code
+	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
+	if err != nil {
+		slog.Error("Failed to verify OTP during login", "error", err, "phone", input.Body.PhoneNumber)
+		return nil, huma.Error500InternalServerError("Failed to verify OTP", err)
+	}
+
+	if !valid {
+		slog.Warn("Invalid OTP code during login", "phone", input.Body.PhoneNumber, "status", status)
+		return nil, huma.Error401Unauthorized("Invalid or expired OTP code", nil)
+	}
+
+	// Step 2: Look up user by phone number
+	id, count, user, err := h.service.LoginFromPhoneOTP(input.Body.PhoneNumber)
+	if err != nil {
+		slog.Error("Failed to find user by phone", "error", err, "phone", input.Body.PhoneNumber)
+		return nil, huma.Error404NotFound("Account does not exist", err)
+	}
+
+	// Step 3: Use user's timezone, default to UTC if not set
+	timezone := user.Timezone
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	// Step 4: Generate tokens
+	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
+	if err != nil {
+		slog.Error("Token generation failed during OTP login", "error", err, "user_id", id.Hex())
+		return nil, huma.Error500InternalServerError("Token generation failed", err)
+	}
+
+	// Step 5: Build response
+	resp := &LoginWithOTPOutput{}
+	resp.AccessToken = access
+	resp.RefreshToken = refresh
+	resp.Body = types.SafeUser{
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
+	}
+
+	slog.Info("OTP login successful", "user_id", id.Hex(), "phone", input.Body.PhoneNumber)
+	return resp, nil
+}
+
 // DeleteAccountHuma handles account deletion (PROTECTED ROUTE)
 func (h *Handler) DeleteAccountHuma(ctx context.Context, input *DeleteAccountInput) (*DeleteAccountOutput, error) {
 	// Extract user_id from context (set by auth middleware)
