@@ -64,6 +64,7 @@ jobs:
                   GOOGLE_CALENDAR_CLIENT_ID=${{ secrets.GOOGLE_CALENDAR_CLIENT_ID }}
                   GOOGLE_CALENDAR_CLIENT_SECRET=${{ secrets.GOOGLE_CALENDAR_CLIENT_SECRET }}
                   GOOGLE_CALENDAR_REDIRECT_URL=${{ secrets.GOOGLE_CALENDAR_REDIRECT_URL }}
+                  GOOGLE_CALENDAR_WEBHOOK_BASE_URL=${{ secrets.GOOGLE_CALENDAR_WEBHOOK_BASE_URL }}
                   EOF
 
             - name: Log in to the Container registry
