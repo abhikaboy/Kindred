@@ -60,9 +60,6 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	app.Use(recover.New())
 	app.Use(compress.New())
 
-	// Add PostHog analytics middleware (before auth, after logger)
-	app.Use(posthog.FiberMiddleware())
-
 	// Add CORS middleware
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000", // Specific origins for development
@@ -86,6 +83,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		// Apply the Fiber auth middleware
 		return authMW(c)
 	})
+
+	// Add PostHog analytics middleware (after auth, so we can capture user IDs)
+	app.Use(posthog.FiberMiddleware())
 
 	// Create Huma API with Fiber adapter
 	config := huma.DefaultConfig("Kindred API", "1.0.0")
