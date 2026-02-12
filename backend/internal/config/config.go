@@ -10,6 +10,7 @@ type Config struct {
 	Twillio        `envPrefix:"TWILLIO_"`
 	Sinch          `envPrefix:"SINCH_"`
 	Unsplash       `envPrefix:"UNSPLASH_"`
+	Posthog        `envPrefix:"POSTHOG_"`
 	GoogleCalendar `envPrefix:"GOOGLE_CALENDAR_"`
 }
 

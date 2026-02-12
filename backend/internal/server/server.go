@@ -26,6 +26,7 @@ import (
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
+	"github.com/abhikaboy/Kindred/internal/posthog"
 	"github.com/abhikaboy/Kindred/internal/xlog"
 
 	"log/slog"
@@ -58,6 +59,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	app.Use(logger.New())
 	app.Use(recover.New())
 	app.Use(compress.New())
+
+	// Add PostHog analytics middleware (before auth, after logger)
+	app.Use(posthog.FiberMiddleware())
 
 	// Add CORS middleware
 	app.Use(cors.New(cors.Config{

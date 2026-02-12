@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/danielgtaylor/huma/v2 v2.26.0
 	github.com/go-chi/chi/v5 v5.1.0
-	github.com/goccy/go-json v0.10.4
+	github.com/goccy/go-json v0.10.5
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/mongo-driver v1.17.1
@@ -23,6 +23,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/lmittmann/tint v1.1.2
 	github.com/oliveroneill/exponent-server-sdk-golang v0.0.0-20210823140141-d050598be512
+	github.com/posthog/posthog-go v1.10.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	golang.org/x/oauth2 v0.35.0
@@ -66,6 +67,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
