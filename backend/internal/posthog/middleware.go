@@ -17,36 +17,45 @@ func FiberMiddleware() fiber.Handler {
 		}
 
 		startTime := time.Now()
+
+		userID := "anonymous"
+		if id, ok := auth.GetUserIDFromFiberContext(c); ok && id != "" {
+			userID = id
+		}
+
+		timezone := ""
+		if tz, ok := auth.GetTimezoneFromFiberContext(c); ok {
+			timezone = tz
+		}
+
+		method := c.Method()
+		path := c.Path()
+		userAgent := c.Get("User-Agent")
+		ip := c.IP()
+
 		err := c.Next()
+
+		statusCode := c.Response().StatusCode()
+		var errorMessage string
+		if statusCode >= 400 {
+			errorMessage = string(c.Response().Body())
+			if len(errorMessage) > 500 {
+				errorMessage = errorMessage[:500] + "..."
+			}
+		}
 
 		go func() {
 			duration := time.Since(startTime)
 
-			userID := "anonymous"
-			if id, ok := auth.GetUserIDFromFiberContext(c); ok && id != "" {
-				userID = id
-			}
-
-			timezone := ""
-			if tz, ok := auth.GetTimezoneFromFiberContext(c); ok {
-				timezone = tz
-			}
-
 			props := EventProperties{
-				Method:     c.Method(),
-				Path:       c.Path(),
-				StatusCode: c.Response().StatusCode(),
-				Duration:   duration,
-				UserAgent:  c.Get("User-Agent"),
-				IP:         c.IP(),
-				Timezone:   timezone,
-			}
-
-			if props.StatusCode >= 400 {
-				props.ErrorMessage = string(c.Response().Body())
-				if len(props.ErrorMessage) > 500 {
-					props.ErrorMessage = props.ErrorMessage[:500] + "..."
-				}
+				Method:       method,
+				Path:         path,
+				StatusCode:   statusCode,
+				Duration:     duration,
+				UserAgent:    userAgent,
+				IP:           ip,
+				Timezone:     timezone,
+				ErrorMessage: errorMessage,
 			}
 
 			client := GetClient()
