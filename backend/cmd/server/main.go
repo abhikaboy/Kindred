@@ -79,18 +79,15 @@ func run(stderr io.Writer, args []string) {
 	// SendGrid Setup
 	twillio.InitSendGrid(config.Twillio.SG_Token)
 
-	// PostHog Setup (singleton pattern)
-	if err := posthog.Init(ctx, config.Posthog.APIKey, config.Posthog.Endpoint, config.Posthog.Enabled); err != nil {
+	// PostHog Setup
+	if err := posthog.Init(ctx, config.Posthog.APIKey); err != nil {
 		slog.Warn("PostHog initialization failed, analytics will be disabled", "error", err)
-	} else if config.Posthog.Enabled {
-		slog.Info("PostHog analytics initialized successfully")
-		// Ensure PostHog client is closed on shutdown
-		defer func() {
-			if err := posthog.Close(); err != nil {
-				slog.Error("Failed to close PostHog client", "error", err)
-			}
-		}()
 	}
+	defer func() {
+		if err := posthog.Close(); err != nil {
+			slog.Error("Failed to close PostHog client", "error", err)
+		}
+	}()
 
 	// Unsplash Setup
 	var unsplashClient *unsplash.Client

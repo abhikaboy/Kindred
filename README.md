@@ -8,8 +8,20 @@
 -   **Backend:** Go, Fiber, Websockets + Genkit
 -   **Frontend**: React Native, TypeScript, Expo SDK 52
 -   **Database**: MongoDB Atlas
+-   **Analytics**: PostHog
 
 # Environment Setup
+
+## PostHog Analytics
+
+PostHog is integrated for automatic event tracking across all API endpoints. See [backend/POSTHOG_SETUP.md](backend/POSTHOG_SETUP.md) for detailed setup instructions.
+
+Required environment variable:
+```bash
+POSTHOG_API_KEY=your_api_key_here
+```
+
+# Development Environment Setup
 
 ```text
 DEVELOPMENT ENVIRONMENT
