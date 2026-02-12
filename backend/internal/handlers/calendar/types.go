@@ -78,6 +78,7 @@ type SyncEventsOutput struct {
 	Body struct {
 		TasksCreated     int            `json:"tasks_created"`
 		TasksSkipped     int            `json:"tasks_skipped"`
+		TasksDeleted     int            `json:"tasks_deleted"`
 		EventsTotal      int            `json:"events_total"`
 		CategoriesSynced map[string]int `json:"categories_synced"` // category_name -> task_count
 		WorkspaceName    string         `json:"workspace_name"`

@@ -20,13 +20,13 @@ import (
 func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your email and password", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromCredentials(input.Body.Email, input.Body.Password)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Login failed", err)
+		return nil, huma.Error401Unauthorized("Invalid email or password", err)
 	}
 
 	// Use user's timezone, default to UTC if not set
@@ -37,7 +37,7 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Token generation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -73,7 +73,7 @@ func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneI
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromPhone(input.Body.PhoneNumber, input.Body.Password)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Login failed", err)
+		return nil, huma.Error401Unauthorized("Invalid phone number or password", err)
 	}
 
 	// Use user's timezone, default to UTC if not set
@@ -84,7 +84,7 @@ func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneI
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Token generation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -115,12 +115,12 @@ func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenI
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := RequireAuthFromHuma(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	user, err := h.service.GetUser(user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("User retrieval failed", err)
+		return nil, huma.Error500InternalServerError("Unable to load your profile. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -162,7 +162,7 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromGoogle(input.Body.GoogleID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Google login failed", err)
+		return nil, huma.Error401Unauthorized("Unable to sign in with Google. Please try again.", err)
 	}
 
 	// Use user's timezone, default to UTC if not set
@@ -173,7 +173,7 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Token generation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -299,7 +299,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 			slog.LogAttrs(ctx, slog.LevelError, "Password hashing failed during registration",
 				slog.String("error", err.Error()),
 			)
-			return nil, huma.Error500InternalServerError("Password hashing failed", err)
+			return nil, huma.Error500InternalServerError("Unable to create account. Please try again.", err)
 		}
 		hashedPassword = string(hashedBytes)
 	}
@@ -428,7 +428,7 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromApple(input.Body.AppleID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Apple login failed", err)
+		return nil, huma.Error401Unauthorized("Unable to sign in with Apple. Please try again.", err)
 	}
 
 	// Use user's timezone, default to UTC if not set
@@ -439,7 +439,7 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 
 	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Token generation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -470,7 +470,7 @@ func (h *Handler) TestHuma(ctx context.Context, input *TestInput) (*TestOutput, 
 	// Extract user_id from context to verify auth middleware is working
 	user_id, err := RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	resp := &TestOutput{}
@@ -481,28 +481,28 @@ func (h *Handler) TestHuma(ctx context.Context, input *TestInput) (*TestOutput, 
 // LogoutHuma handles user logout
 func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOutput, error) {
 	if len(input.Authorization) == 0 {
-		return nil, huma.Error400BadRequest("Not Authorized, Tokens not passed", nil)
+		return nil, huma.Error401Unauthorized("Please log in to log out", nil)
 	}
 
 	split := strings.Split(input.Authorization, " ")
 	if len(split) != 2 {
-		return nil, huma.Error400BadRequest("Not Authorized, Invalid Token Format", nil)
+		return nil, huma.Error400BadRequest("Invalid authorization format", nil)
 	}
 
 	tokenType, accessToken := split[0], split[1]
 	if tokenType != "Bearer" {
-		return nil, huma.Error400BadRequest("Not Authorized, Invalid Token Type", nil)
+		return nil, huma.Error400BadRequest("Invalid authorization type", nil)
 	}
 
 	// increase the count by one
 	user_id, _, _, err := h.service.ValidateToken(accessToken)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Token validation failed", err)
+		return nil, huma.Error401Unauthorized("Invalid or expired session", err)
 	}
 
 	err = h.service.InvalidateTokens(user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Token invalidation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to log out. Please try again.", err)
 	}
 
 	resp := &LogoutOutput{}
@@ -539,7 +539,7 @@ func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushToke
 	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
 		slog.Error("❌ Invalid user ID format", "user_id", user_id, "error", err)
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 	slog.Info("✅ User ID converted to ObjectID", "user_id_obj", user_id_obj.Hex())
 
@@ -547,7 +547,7 @@ func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushToke
 	err = h.service.UpdatePushToken(user_id_obj, input.Body.PushToken)
 	if err != nil {
 		slog.Error("❌ Push token update service failed", "user_id", user_id_obj.Hex(), "error", err, "error_type", fmt.Sprintf("%T", err))
-		return nil, huma.Error500InternalServerError("Push token update failed", err)
+		return nil, huma.Error500InternalServerError("Unable to update push notifications. Please try again.", err)
 	}
 	slog.Info("✅ Push token updated successfully in database", "user_id", user_id_obj.Hex())
 
@@ -585,7 +585,7 @@ func (h *Handler) SendOTPHuma(ctx context.Context, input *SendOTPInput) (*SendOT
 	verificationID, err := h.service.SendOTP(ctx, input.Body.PhoneNumber)
 	if err != nil {
 		slog.Error("Failed to send OTP", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error500InternalServerError("Failed to send OTP", err)
+		return nil, huma.Error500InternalServerError("Unable to send verification code. Please try again.", err)
 	}
 
 	resp := &SendOTPOutput{}
@@ -606,7 +606,7 @@ func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*Ve
 	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
 	if err != nil {
 		slog.Error("Failed to verify OTP", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error500InternalServerError("Failed to verify OTP", err)
+		return nil, huma.Error500InternalServerError("Unable to verify code. Please try again.", err)
 	}
 
 	resp := &VerifyOTPOutput{}
@@ -633,19 +633,19 @@ func (h *Handler) LoginWithOTPHuma(ctx context.Context, input *LoginWithOTPInput
 	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
 	if err != nil {
 		slog.Error("Failed to verify OTP during login", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error500InternalServerError("Failed to verify OTP", err)
+		return nil, huma.Error500InternalServerError("Unable to verify code. Please try again.", err)
 	}
 
 	if !valid {
 		slog.Warn("Invalid OTP code during login", "phone", input.Body.PhoneNumber, "status", status)
-		return nil, huma.Error401Unauthorized("Invalid or expired OTP code", nil)
+		return nil, huma.Error401Unauthorized("Invalid or expired verification code. Please request a new one.", nil)
 	}
 
 	// Step 2: Look up user by phone number
 	id, count, user, err := h.service.LoginFromPhoneOTP(input.Body.PhoneNumber)
 	if err != nil {
 		slog.Error("Failed to find user by phone", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error404NotFound("Account does not exist", err)
+		return nil, huma.Error404NotFound("No account found with this phone number. Please sign up first.", err)
 	}
 
 	// Step 3: Use user's timezone, default to UTC if not set
@@ -691,7 +691,7 @@ func (h *Handler) DeleteAccountHuma(ctx context.Context, input *DeleteAccountInp
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	// Convert user_id to ObjectID
@@ -704,7 +704,7 @@ func (h *Handler) DeleteAccountHuma(ctx context.Context, input *DeleteAccountInp
 	err = h.service.DeleteAccount(ctx, user_id_obj)
 	if err != nil {
 		slog.Error("Failed to delete account", "error", err, "user_id", user_id)
-		return nil, huma.Error500InternalServerError("Failed to delete account", err)
+		return nil, huma.Error500InternalServerError("Unable to delete account. Please try again or contact support.", err)
 	}
 
 	resp := &DeleteAccountOutput{}
@@ -725,7 +725,7 @@ func (h *Handler) AcceptTermsHuma(ctx context.Context, input *AcceptTermsInput) 
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	// Convert user_id to ObjectID
@@ -738,7 +738,7 @@ func (h *Handler) AcceptTermsHuma(ctx context.Context, input *AcceptTermsInput) 
 	acceptedAt, err := h.service.AcceptTerms(ctx, user_id_obj, input.Body.TermsVersion)
 	if err != nil {
 		slog.Error("Failed to accept terms", "error", err, "user_id", user_id)
-		return nil, huma.Error500InternalServerError("Failed to accept terms", err)
+		return nil, huma.Error500InternalServerError("Unable to accept terms. Please try again.", err)
 	}
 
 	resp := &AcceptTermsOutput{}

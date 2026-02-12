@@ -29,12 +29,12 @@ func (h *Handler) ConnectGoogle(ctx context.Context, input *ConnectGoogleInput) 
 	// Get user ID from context (set by auth middleware)
 	userID, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
-		return nil, huma.Error401Unauthorized("User not authenticated")
+		return nil, huma.Error401Unauthorized("Please log in to connect your calendar")
 	}
 
 	authURL, err := h.service.InitiateOAuth(ProviderGoogle, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to generate auth URL", err)
+		return nil, huma.Error500InternalServerError("Unable to initiate Google Calendar connection. Please try again.", err)
 	}
 
 	resp := &ConnectGoogleOutput{}
@@ -109,17 +109,17 @@ func (h *Handler) OAuthCallback(ctx context.Context, input *OAuthCallbackInput) 
 func (h *Handler) GetConnections(ctx context.Context, input *GetConnectionsInput) (*GetConnectionsOutput, error) {
 	userID, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
-		return nil, huma.Error401Unauthorized("User not authenticated")
+		return nil, huma.Error401Unauthorized("Please log in to view your calendar connections")
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID")
+		return nil, huma.Error400BadRequest("Invalid user ID format")
 	}
 
 	connections, err := h.service.GetConnections(ctx, userObjID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch connections", err)
+		return nil, huma.Error500InternalServerError("Unable to load calendar connections. Please try again.", err)
 	}
 
 	resp := &GetConnectionsOutput{}
@@ -131,21 +131,21 @@ func (h *Handler) GetConnections(ctx context.Context, input *GetConnectionsInput
 func (h *Handler) Disconnect(ctx context.Context, input *DisconnectInput) (*DisconnectOutput, error) {
 	userID, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
-		return nil, huma.Error401Unauthorized("User not authenticated")
+		return nil, huma.Error401Unauthorized("Please log in to disconnect your calendar")
 	}
 
 	connectionID, err := primitive.ObjectIDFromHex(input.ConnectionID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid connection ID")
+		return nil, huma.Error400BadRequest("Invalid connection ID format")
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID")
+		return nil, huma.Error400BadRequest("Invalid user ID format")
 	}
 
 	if err := h.service.DisconnectProvider(ctx, userObjID, connectionID); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to disconnect", err)
+		return nil, huma.Error500InternalServerError("Unable to disconnect calendar. Please try again.", err)
 	}
 
 	resp := &DisconnectOutput{}
@@ -161,13 +161,13 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	// Verify user is authenticated
 	_, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
-		return nil, huma.Error401Unauthorized("User not authenticated")
+		return nil, huma.Error401Unauthorized("Please log in to view calendar events")
 	}
 
 	// Parse connection ID
 	connectionID, err := primitive.ObjectIDFromHex(input.ConnectionID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid connection ID")
+		return nil, huma.Error400BadRequest("Invalid connection ID format")
 	}
 
 	// Parse dates with defaults
@@ -181,7 +181,7 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	} else {
 		startTime, err = time.Parse(time.RFC3339, input.StartDate)
 		if err != nil {
-			return nil, huma.Error400BadRequest("Invalid start date format, use RFC3339")
+			return nil, huma.Error400BadRequest("Invalid start date format. Please use ISO 8601 format (e.g., 2024-01-15T00:00:00Z)")
 		}
 	}
 
@@ -193,14 +193,14 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	} else {
 		endTime, err = time.Parse(time.RFC3339, input.EndDate)
 		if err != nil {
-			return nil, huma.Error400BadRequest("Invalid end date format, use RFC3339")
+			return nil, huma.Error400BadRequest("Invalid end date format. Please use ISO 8601 format (e.g., 2024-01-15T23:59:59Z)")
 		}
 	}
 
 	// Fetch events
 	events, err := h.service.FetchEvents(ctx, connectionID, startTime, endTime)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch events", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch calendar events. Please try again.", err)
 	}
 
 	// Convert to DTOs
@@ -233,19 +233,19 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 	// Verify user is authenticated
 	userID, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
-		return nil, huma.Error401Unauthorized("User not authenticated")
+		return nil, huma.Error401Unauthorized("Please log in to sync calendar events")
 	}
 
 	// Parse connection ID
 	connectionID, err := primitive.ObjectIDFromHex(input.ConnectionID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid connection ID")
+		return nil, huma.Error400BadRequest("Invalid connection ID format")
 	}
 
 	// Parse user ID
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID")
+		return nil, huma.Error400BadRequest("Invalid user ID format")
 	}
 
 	// Parse dates with defaults
@@ -259,7 +259,7 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 	} else {
 		startTime, err = time.Parse(time.RFC3339, input.StartDate)
 		if err != nil {
-			return nil, huma.Error400BadRequest("Invalid start date format, use RFC3339")
+			return nil, huma.Error400BadRequest("Invalid start date format. Please use ISO 8601 format (e.g., 2024-01-15T00:00:00Z)")
 		}
 	}
 
@@ -271,23 +271,24 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 	} else {
 		endTime, err = time.Parse(time.RFC3339, input.EndDate)
 		if err != nil {
-			return nil, huma.Error400BadRequest("Invalid end date format, use RFC3339")
+			return nil, huma.Error400BadRequest("Invalid end date format. Please use ISO 8601 format (e.g., 2024-01-15T23:59:59Z)")
 		}
 	}
 
 	// Sync events to tasks
 	result, err := h.service.SyncEventsToTasks(ctx, connectionID, userObjID, startTime, endTime)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to sync events", err)
+		return nil, huma.Error500InternalServerError("Unable to sync calendar events. Please try again.", err)
 	}
 
 	resp := &SyncEventsOutput{}
 	resp.Body.TasksCreated = result.TasksCreated
 	resp.Body.TasksSkipped = result.TasksSkipped
+	resp.Body.TasksDeleted = result.TasksDeleted
 	resp.Body.EventsTotal = result.EventsTotal
 	resp.Body.CategoriesSynced = result.CategoriesSynced
 	resp.Body.WorkspaceName = result.WorkspaceName
 
-	slog.Info("Sync completed", "connection_id", input.ConnectionID, "tasks_created", result.TasksCreated, "tasks_skipped", result.TasksSkipped)
+	slog.Info("Sync completed", "connection_id", input.ConnectionID, "tasks_created", result.TasksCreated, "tasks_skipped", result.TasksSkipped, "tasks_deleted", result.TasksDeleted)
 	return resp, nil
 }

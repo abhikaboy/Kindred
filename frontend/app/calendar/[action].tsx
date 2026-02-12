@@ -5,6 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { syncCalendarEvents } from "@/api/calendar";
 import { useAlert } from "@/contexts/AlertContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { formatErrorForAlert, ERROR_MESSAGES } from "@/utils/errorParser";
 
 export default function CalendarCallback() {
     const { action, connectionId, message } = useLocalSearchParams<{
@@ -23,9 +24,10 @@ export default function CalendarCallback() {
                 try {
                     const result = await syncCalendarEvents(connectionId);
 
+                    const deletedText = result.tasks_deleted ? `\nDeleted: ${result.tasks_deleted}` : "";
                     showAlert({
                         title: "Calendar Linked!",
-                        message: `Successfully synced ${result.tasks_created} events to "${result.workspace_name}" workspace.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}\nTotal: ${result.events_total}`,
+                        message: `Successfully synced ${result.tasks_created} events to "${result.workspace_name}" workspace.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}${deletedText}\nTotal: ${result.events_total}`,
                         buttons: [
                             {
                                 text: "OK",
@@ -36,9 +38,10 @@ export default function CalendarCallback() {
                     });
                 } catch (error) {
                     console.error("Error syncing calendar:", error);
+                    const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_SYNC_FAILED);
                     showAlert({
                         title: "Calendar Linked",
-                        message: "Your calendar was linked successfully, but we couldn't sync events automatically. You can sync manually from the home page.",
+                        message: `Your calendar was linked successfully, but we couldn't sync events automatically.\n\n${errorInfo.message}\n\nYou can sync manually from the home page.`,
                         buttons: [
                             {
                                 text: "OK",
@@ -50,9 +53,10 @@ export default function CalendarCallback() {
                 }
             } else if (action === "error") {
                 // OAuth error occurred
+                const errorMessage = message || "Unable to connect your Google Calendar. Please try again.";
                 showAlert({
                     title: "Connection Failed",
-                    message: message ? `Error: ${message}` : "Failed to connect Google Calendar. Please try again.",
+                    message: errorMessage,
                     buttons: [
                         {
                             text: "OK",

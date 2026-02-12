@@ -46,12 +46,12 @@ func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	// Construct bson.D for sorting based on input parameters
@@ -69,7 +69,7 @@ func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput
 
 	tasks, err := h.service.GetTasksByUser(user_id_obj, sortDocument)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
+		return nil, huma.Error500InternalServerError("Unable to load tasks. Please try again.", err)
 	}
 
 	return &GetTasksByUserOutput{Body: tasks}, nil
@@ -78,24 +78,24 @@ func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput
 func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*CreateTaskOutput, error) {
 	errs := validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your task details", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	categoryIDFromPath := input.Category
 	categoryID, err := primitive.ObjectIDFromHex(categoryIDFromPath)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid category ID", err)
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
 	}
 
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	taskParams := input.Body
@@ -196,13 +196,13 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 			taskParams.Reminders,
 		)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Failed to create recurring task template", err)
+			return nil, huma.Error500InternalServerError("Unable to create recurring task. Please try again.", err)
 		}
 	}
 
 	doc, err := h.service.CreateTask(categoryID, &task)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create task", err)
+		return nil, huma.Error500InternalServerError("Unable to create task. Please try again.", err)
 	}
 
 	return &CreateTaskOutput{Body: *doc}, nil
@@ -211,7 +211,7 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 func (h *Handler) GetTasks(ctx context.Context, input *GetTasksInput) (*GetTasksOutput, error) {
 	tasks, err := h.service.GetAllTasks()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
+		return nil, huma.Error500InternalServerError("Unable to load tasks. Please try again.", err)
 	}
 
 	return &GetTasksOutput{Body: tasks}, nil
@@ -221,12 +221,12 @@ func (h *Handler) GetTask(ctx context.Context, input *GetTaskInput) (*GetTaskOut
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	user_id_obj, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	id, err := primitive.ObjectIDFromHex(input.ID)
@@ -236,7 +236,7 @@ func (h *Handler) GetTask(ctx context.Context, input *GetTaskInput) (*GetTaskOut
 
 	task, err := h.service.GetTaskByID(id, user_id_obj)
 	if err != nil {
-		return nil, huma.Error404NotFound("Task not found", err)
+		return nil, huma.Error404NotFound("Task not found. It may have been deleted.", err)
 	}
 
 	return &GetTaskOutput{Body: *task}, nil
@@ -261,12 +261,12 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 	// Extract user_id from context (set by auth middleware)
 	userIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	updateData := input.Body
@@ -302,7 +302,7 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 			updateData.Reminders,
 		)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Failed to create recurring template", err)
+			return nil, huma.Error500InternalServerError("Unable to create recurring template. Please try again.", err)
 		}
 
 		// Set the template ID in the update data
@@ -322,7 +322,7 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 	// Use the UpdatePartialTask service method which matches the available service signature
 	_, err = h.service.UpdatePartialTask(id, categoryID, updateData)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task", err)
+		return nil, huma.Error500InternalServerError("Unable to update task. Please try again.", err)
 	}
 
 	resp := &UpdateTaskOutput{}
@@ -349,18 +349,18 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	// Use the CompleteTask service method and get streak info
 	result, err := h.service.CompleteTask(userObjID, id, categoryID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to complete task", err)
+		return nil, huma.Error500InternalServerError("Unable to complete task. Please try again.", err)
 	}
 
 	// Delete the task from the tasks collection
@@ -369,7 +369,7 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 		Category: input.Category,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete task", err)
+		return nil, huma.Error500InternalServerError("Unable to delete task. Please try again.", err)
 	}
 
 	resp := &CompleteTaskOutput{}
@@ -398,7 +398,7 @@ func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*Dele
 	// Extract user_id from context (set by auth middleware)
 	userIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
@@ -422,7 +422,7 @@ func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*Dele
 	// Delete the task
 	err = h.service.DeleteTask(categoryID, id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete task", err)
+		return nil, huma.Error500InternalServerError("Unable to delete task. Please try again.", err)
 	}
 
 	// If requested and template exists, delete the recurring template as well
@@ -450,12 +450,12 @@ func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskI
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	// Validate input
@@ -470,7 +470,7 @@ func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskI
 	// Call the bulk complete service method
 	result, err := h.service.BulkCompleteTask(userObjID, input.Body.Tasks)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to complete tasks", err)
+		return nil, huma.Error500InternalServerError("Unable to complete tasks. Please try again.", err)
 	}
 
 	return result, nil
@@ -480,12 +480,12 @@ func (h *Handler) BulkDeleteTask(ctx context.Context, input *BulkDeleteTaskInput
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	// Validate input
@@ -500,7 +500,7 @@ func (h *Handler) BulkDeleteTask(ctx context.Context, input *BulkDeleteTaskInput
 	// Call the bulk delete service method
 	result, err := h.service.BulkDeleteTask(userObjID, input.Body.Tasks)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete tasks", err)
+		return nil, huma.Error500InternalServerError("Unable to delete tasks. Please try again.", err)
 	}
 
 	return result, nil
@@ -520,12 +520,12 @@ func (h *Handler) ActivateTask(ctx context.Context, input *ActivateTaskInput) (*
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	active, err := strconv.ParseBool(input.Active)
@@ -566,7 +566,7 @@ func (h *Handler) CreateTaskFromTemplate(ctx context.Context, input *CreateTaskF
 	// Extract user_id from context (set by auth middleware)
 	_, err = auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	doc, err := h.service.CreateTaskFromTemplate(templateID)
@@ -584,17 +584,17 @@ func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(ctx context.Context, inp
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay(userObjID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch tasks", err)
+		return nil, huma.Error500InternalServerError("Unable to load tasks. Please try again.", err)
 	}
 
 	return &GetTasksWithStartTimesOlderThanOneDayOutput{Body: tasks}, nil
@@ -604,12 +604,12 @@ func (h *Handler) GetRecurringTasksWithPastDeadlines(ctx context.Context, input 
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	tasks, err := h.service.GetRecurringTasksWithPastDeadlines(userObjID)
@@ -635,12 +635,12 @@ func (h *Handler) UpdateTaskNotes(ctx context.Context, input *UpdateTaskNotesInp
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	err = h.service.UpdateTaskNotes(id, categoryID, userObjID, input.Body)
@@ -668,12 +668,12 @@ func (h *Handler) UpdateTaskChecklist(ctx context.Context, input *UpdateTaskChec
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	err = h.service.UpdateTaskChecklist(id, categoryID, userObjID, input.Body)
@@ -704,7 +704,7 @@ func (h *Handler) UpdateTemplate(ctx context.Context, input *UpdateTemplateInput
 	// Extract user_id from context for authorization
 	_, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	id, err := primitive.ObjectIDFromHex(input.ID)
@@ -725,7 +725,7 @@ func (h *Handler) UpdateTemplate(ctx context.Context, input *UpdateTemplateInput
 func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesInput) (*GetUserTemplatesOutput, error) {
 	userId, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "GetUserTemplates handler called",
@@ -733,7 +733,7 @@ func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesI
 
 	userObjID, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	templates, err := h.service.GetTemplatesByUserWithCategory(userObjID)
@@ -754,12 +754,12 @@ func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesI
 func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTasksInput) (*GetCompletedTasksOutput, error) {
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	// Use default values if not provided
@@ -799,12 +799,12 @@ func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTask
 func (h *Handler) GetCompletedTasksByDate(ctx context.Context, input *GetCompletedTasksByDateInput) (*GetCompletedTasksByDateOutput, error) {
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	// Parse timezone or default to UTC
@@ -861,12 +861,12 @@ func (h *Handler) UpdateTaskDeadline(ctx context.Context, input *UpdateTaskDeadl
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	err = h.service.UpdateTaskDeadline(id, categoryID, userObjID, input.Body)
@@ -894,12 +894,12 @@ func (h *Handler) UpdateTaskStart(ctx context.Context, input *UpdateTaskStartInp
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	err = h.service.UpdateTaskStart(id, categoryID, userObjID, input.Body)
@@ -927,12 +927,12 @@ func (h *Handler) UpdateTaskReminders(ctx context.Context, input *UpdateTaskRemi
 	// Extract user_id from context (set by auth middleware)
 	context_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(context_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	err = h.service.UpdateTaskReminders(id, categoryID, userObjID, input.Body)
@@ -955,7 +955,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 	// Extract and validate user ID
 	userID, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Authentication required", err)
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)

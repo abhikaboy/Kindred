@@ -2,10 +2,10 @@ package calendar
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,14 +42,14 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 		slog.Warn("Webhook rate limit exceeded",
 			"connection_id", input.ConnectionID,
 			"channel_id", input.ChannelID)
-		return nil, fmt.Errorf("rate limit exceeded for connection")
+		return nil, huma.Error429TooManyRequests("Rate limit exceeded. Please try again later.")
 	}
 
 	// Parse connection ID
 	connectionID, err := primitive.ObjectIDFromHex(input.ConnectionID)
 	if err != nil {
 		slog.Error("Invalid connection ID in webhook", "connection_id", input.ConnectionID, "error", err)
-		return nil, fmt.Errorf("invalid connection ID: %w", err)
+		return nil, huma.Error400BadRequest("Invalid connection ID format", err)
 	}
 
 	// Look up connection by ID
@@ -57,10 +57,10 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 	err = h.service.connections.FindOne(ctx, bson.M{"_id": connectionID}).Decode(&connection)
 	if err == mongo.ErrNoDocuments {
 		slog.Error("Connection not found for webhook", "connection_id", input.ConnectionID)
-		return nil, fmt.Errorf("connection not found")
+		return nil, huma.Error404NotFound("Calendar connection not found. Please reconnect your calendar.")
 	} else if err != nil {
 		slog.Error("Failed to find connection for webhook", "connection_id", input.ConnectionID, "error", err)
-		return nil, fmt.Errorf("failed to find connection: %w", err)
+		return nil, huma.Error500InternalServerError("Failed to verify calendar connection", err)
 	}
 
 	// Validate channel ID and resource ID match one of the connection's watch channels
@@ -77,7 +77,7 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 			"connection_id", input.ConnectionID,
 			"channel_id", input.ChannelID,
 			"resource_id", input.ResourceID)
-		return nil, fmt.Errorf("invalid channel or resource ID")
+		return nil, huma.Error403Forbidden("Invalid webhook channel. This notification is not authorized for this connection.")
 	}
 
 	// Handle different resource states

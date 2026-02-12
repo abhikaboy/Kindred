@@ -1,4 +1,5 @@
 import client from "./client";
+import { ERROR_MESSAGES } from "@/utils/errorParser";
 
 export interface CalendarConnection {
     id: string;
@@ -23,6 +24,7 @@ export interface ConnectGoogleResponse {
 export interface SyncEventsResponse {
     tasks_created: number;
     tasks_skipped: number;
+    tasks_deleted?: number;
     events_total: number;
     workspace_name: string;
     categories_synced: Record<string, number>;
@@ -35,7 +37,10 @@ export async function getCalendarConnections(): Promise<CalendarConnectionsRespo
     const response = await client.GET("/v1/user/calendar/connections" as any, {});
 
     if (response.error) {
-        throw new Error(response.error.detail || "Failed to fetch calendar connections");
+        const error = new Error(response.error.detail || "Unable to load calendar connections");
+        (error as any).status = response.error.status;
+        (error as any).errors = response.error.errors;
+        throw error;
     }
 
     return response.data as CalendarConnectionsResponse;
@@ -48,7 +53,12 @@ export async function connectGoogleCalendar(): Promise<ConnectGoogleResponse> {
     const response = await client.GET("/v1/user/calendar/connect/google" as any, {});
 
     if (response.error) {
-        throw new Error(response.error.detail || "Failed to initiate Google Calendar connection");
+        const error = new Error(
+            response.error.detail || ERROR_MESSAGES.CALENDAR_CONNECT_FAILED
+        );
+        (error as any).status = response.error.status;
+        (error as any).errors = response.error.errors;
+        throw error;
     }
 
     return response.data as ConnectGoogleResponse;
@@ -75,7 +85,12 @@ export async function syncCalendarEvents(
     });
 
     if (response.error) {
-        throw new Error(response.error.detail || "Failed to sync calendar events");
+        const error = new Error(
+            response.error.detail || ERROR_MESSAGES.CALENDAR_SYNC_FAILED
+        );
+        (error as any).status = response.error.status;
+        (error as any).errors = response.error.errors;
+        throw error;
     }
 
     return response.data as SyncEventsResponse;
@@ -94,7 +109,12 @@ export async function disconnectCalendar(connectionId: string): Promise<{ succes
     });
 
     if (response.error) {
-        throw new Error(response.error.detail || "Failed to disconnect calendar");
+        const error = new Error(
+            response.error.detail || ERROR_MESSAGES.CALENDAR_DISCONNECT_FAILED
+        );
+        (error as any).status = response.error.status;
+        (error as any).errors = response.error.errors;
+        throw error;
     }
 
     return response.data as { success: boolean; message: string };
@@ -121,7 +141,12 @@ export async function getCalendarEvents(
     });
 
     if (response.error) {
-        throw new Error(response.error.detail || "Failed to fetch calendar events");
+        const error = new Error(
+            response.error.detail || "Unable to fetch calendar events"
+        );
+        (error as any).status = response.error.status;
+        (error as any).errors = response.error.errors;
+        throw error;
     }
 
     return response.data;

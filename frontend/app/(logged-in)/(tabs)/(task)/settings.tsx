@@ -18,6 +18,7 @@ import { SettingsActionRow } from '@/components/settings/SettingsActionRow';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@/hooks/useSettings';
 import { getCalendarConnections, disconnectCalendar } from '@/api/calendar';
+import { formatErrorForToast, ERROR_MESSAGES } from '@/utils/errorParser';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -261,11 +262,12 @@ export default function Settings() {
                         setIsLoadingCalendar(true);
                         try {
                             await disconnectCalendar(connection.id);
-                            showToast('Google Calendar disconnected', 'success');
+                            showToast('Calendar disconnected successfully', 'success', 'Disconnected');
                             await loadCalendarConnections();
                         } catch (error) {
                             console.error('Error disconnecting calendar:', error);
-                            showToast('Failed to disconnect calendar', 'danger');
+                            const errorMessage = formatErrorForToast(error, ERROR_MESSAGES.CALENDAR_DISCONNECT_FAILED);
+                            showToast(errorMessage, 'danger');
                         } finally {
                             setIsLoadingCalendar(false);
                         }

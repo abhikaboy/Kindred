@@ -20,6 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as WebBrowser from "expo-web-browser";
 import { getCalendarConnections, connectGoogleCalendar, syncCalendarEvents, CalendarConnection } from "@/api/calendar";
 import { useAlert } from "@/contexts/AlertContext";
+import { formatErrorForAlert, ERROR_MESSAGES } from "@/utils/errorParser";
 
 interface HomeScrollContentProps {
     encouragementCount: number;
@@ -114,9 +115,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             }
         } catch (error) {
             console.error("Error connecting Google Calendar:", error);
+            const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_CONNECT_FAILED);
             showAlert({
-                title: "Error",
-                message: "Failed to connect Google Calendar. Please try again.",
+                title: errorInfo.title,
+                message: errorInfo.message,
                 buttons: [{ text: "OK", style: "default" }],
             });
         } finally {
@@ -131,9 +133,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
         try {
             const result = await syncCalendarEvents(calendarConnection.id);
 
+            const deletedText = result.tasks_deleted ? `\nDeleted: ${result.tasks_deleted}` : "";
             showAlert({
                 title: "Sync Complete",
-                message: `Synced ${result.tasks_created} events to "${result.workspace_name}" workspace.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}\nTotal: ${result.events_total}`,
+                message: `Synced ${result.tasks_created} events to "${result.workspace_name}" workspace.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}${deletedText}\nTotal: ${result.events_total}`,
                 buttons: [{ text: "OK", style: "default" }],
             });
 
@@ -143,9 +146,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             }
         } catch (error) {
             console.error("Error syncing calendar:", error);
+            const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_SYNC_FAILED);
             showAlert({
-                title: "Error",
-                message: "Failed to sync calendar events. Please try again.",
+                title: errorInfo.title,
+                message: errorInfo.message,
                 buttons: [{ text: "OK", style: "default" }],
             });
         } finally {

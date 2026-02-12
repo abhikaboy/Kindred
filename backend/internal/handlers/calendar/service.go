@@ -72,7 +72,12 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 		slog.Error("Failed to exchange code", "provider", provider, "error", err)
 		return nil, fmt.Errorf("failed to exchange code: %w", err)
 	}
-	slog.Info("Successfully exchanged code for tokens", "provider", provider, "has_refresh_token", token.RefreshToken != "")
+	slog.Info("Successfully exchanged code for tokens",
+		"provider", provider,
+		"has_refresh_token", token.RefreshToken != "",
+		"has_access_token", token.AccessToken != "",
+		"token_expiry", token.Expiry,
+		"token_type", token.TokenType)
 
 	// Get account info
 	slog.Info("Fetching account info", "provider", provider)
@@ -124,7 +129,13 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 			return nil, fmt.Errorf("failed to store connection: %w", err)
 		}
 
-		slog.Info("Calendar connection created successfully", "connection_id", connection.ID, "user_id", userID, "provider", provider)
+		slog.Info("Calendar connection created successfully",
+			"connection_id", connection.ID,
+			"user_id", userID,
+			"provider", provider,
+			"has_access_token", connection.AccessToken != "",
+			"has_refresh_token", connection.RefreshToken != "",
+			"token_expiry", connection.TokenExpiry)
 
 		// Create workspace and categories for this connection
 		err = s.CreateWorkspaceAndCategories(ctx, &connection, token)
@@ -406,6 +417,7 @@ func (s *Service) FetchEvents(ctx context.Context, connectionID primitive.Object
 type SyncResult struct {
 	TasksCreated     int
 	TasksSkipped     int
+	TasksDeleted     int
 	EventsTotal      int
 	CategoriesSynced map[string]int // category_name -> task_count
 	WorkspaceName    string
@@ -585,6 +597,16 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 		slog.Info("Finished processing calendar", "calendar_id", calendarID, "category_name", category.Name, "created", tasksCreated, "skipped", tasksSkipped)
 	}
 
+	// Detect and delete tasks for events that no longer exist
+	tasksDeleted, err := s.deleteTasksForMissingEvents(ctx, connectionID, userID, events)
+	if err != nil {
+		slog.Error("Failed to delete tasks for missing events", "connection_id", connectionID, "error", err)
+		// Don't fail the sync, just log the error
+	} else {
+		result.TasksDeleted = tasksDeleted
+		slog.Info("Deleted tasks for missing events", "connection_id", connectionID, "tasks_deleted", tasksDeleted)
+	}
+
 	// Update last sync time
 	_, err = s.connections.UpdateOne(
 		ctx,
@@ -596,7 +618,7 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 		// Don't fail the sync, just log the error
 	}
 
-	slog.Info("Sync completed", "connection_id", connectionID, "tasks_created", result.TasksCreated, "tasks_skipped", result.TasksSkipped, "events_total", result.EventsTotal)
+	slog.Info("Sync completed", "connection_id", connectionID, "tasks_created", result.TasksCreated, "tasks_skipped", result.TasksSkipped, "tasks_deleted", result.TasksDeleted, "events_total", result.EventsTotal)
 	return result, nil
 }
 
@@ -815,4 +837,100 @@ func (s *Service) RenewWatchChannel(ctx context.Context, connection *CalendarCon
 
 	slog.Info("Watch channel renewed successfully", "connection_id", connection.ID, "new_channel_id", watchResp.ChannelID, "expiration", watchResp.Expiration)
 	return nil
+}
+
+// deleteTasksForMissingEvents finds and deletes tasks for events that are no longer returned by the API
+func (s *Service) deleteTasksForMissingEvents(ctx context.Context, connectionID, userID primitive.ObjectID, currentEvents []ProviderEvent) (int, error) {
+	slog.Info("Checking for deleted events", "connection_id", connectionID, "user_id", userID)
+
+	// Get all processed events for this connection
+	var processedDoc ProcessedEvents
+	err := s.processedEvents.FindOne(ctx, bson.M{
+		"user_id":       userID,
+		"connection_id": connectionID,
+	}).Decode(&processedDoc)
+
+	if err == mongo.ErrNoDocuments {
+		// No processed events yet, nothing to delete
+		slog.Info("No processed events found, skipping deletion check", "connection_id", connectionID)
+		return 0, nil
+	} else if err != nil {
+		slog.Error("Failed to get processed events", "connection_id", connectionID, "error", err)
+		return 0, fmt.Errorf("failed to get processed events: %w", err)
+	}
+
+	// Build a set of current event integration IDs
+	currentEventIDs := make(map[string]bool)
+	for _, event := range currentEvents {
+		integrationID := fmt.Sprintf("gcal:%s:%s", event.CalendarID, event.ID)
+		currentEventIDs[integrationID] = true
+	}
+
+	// Find events that were processed but are no longer in the current events
+	missingEventIDs := make([]string, 0)
+	for _, processedID := range processedDoc.EventIDs {
+		if !currentEventIDs[processedID] {
+			missingEventIDs = append(missingEventIDs, processedID)
+		}
+	}
+
+	if len(missingEventIDs) == 0 {
+		slog.Info("No deleted events detected", "connection_id", connectionID)
+		return 0, nil
+	}
+
+	slog.Info("Detected deleted events", "connection_id", connectionID, "count", len(missingEventIDs), "event_ids", missingEventIDs)
+
+	// Delete tasks with these integration IDs from all categories
+	tasksDeleted := 0
+	for _, integrationID := range missingEventIDs {
+		// Find and remove tasks with this integration ID
+		result, err := s.categories.UpdateMany(
+			ctx,
+			bson.M{
+				"user":              userID,
+				"tasks.integration": integrationID,
+			},
+			bson.M{
+				"$pull": bson.M{
+					"tasks": bson.M{"integration": integrationID},
+				},
+			},
+		)
+
+		if err != nil {
+			slog.Error("Failed to delete task for missing event", "integration_id", integrationID, "error", err)
+			continue
+		}
+
+		if result.ModifiedCount > 0 {
+			tasksDeleted += int(result.ModifiedCount)
+			slog.Info("Deleted task for missing event", "integration_id", integrationID, "categories_modified", result.ModifiedCount)
+		}
+	}
+
+	// Remove the missing event IDs from the processed events collection
+	if len(missingEventIDs) > 0 {
+		_, err = s.processedEvents.UpdateOne(
+			ctx,
+			bson.M{
+				"user_id":       userID,
+				"connection_id": connectionID,
+			},
+			bson.M{
+				"$pull": bson.M{
+					"event_ids": bson.M{"$in": missingEventIDs},
+				},
+				"$set": bson.M{"updated_at": time.Now()},
+			},
+		)
+
+		if err != nil {
+			slog.Error("Failed to remove missing events from processed list", "connection_id", connectionID, "error", err)
+			// Don't fail, just log
+		}
+	}
+
+	slog.Info("Finished deleting tasks for missing events", "connection_id", connectionID, "tasks_deleted", tasksDeleted)
+	return tasksDeleted, nil
 }
