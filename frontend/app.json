@@ -105,8 +105,7 @@
           "setCommits": false
         }
       ],
-      "expo-localization",
-      "react-native-reanimated/plugin"
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
