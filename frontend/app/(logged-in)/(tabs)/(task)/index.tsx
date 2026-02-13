@@ -57,7 +57,7 @@ const Home = (props: Props) => {
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
     const { spotlightState, setSpotlightShown } = useSpotlight();
-    
+
     // Cache keys and duration
     const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
     const CACHE_DURATION = 1 * 60 * 1000; // 1 minute
@@ -119,7 +119,7 @@ const Home = (props: Props) => {
     // Fetch encouragement and congratulation counts with caching
     const fetchKudosCounts = React.useCallback(async (forceRefresh: boolean = false) => {
         if (!user?._id) return;
-        
+
         // Check cache first if not forcing refresh
         if (!forceRefresh) {
             try {
@@ -127,7 +127,7 @@ const Home = (props: Props) => {
                 if (cached) {
                     const { data, timestamp } = JSON.parse(cached);
                     const now = Date.now();
-                    
+
                     // Use cache if it's less than 5 minutes old
                     if ((now - timestamp) < CACHE_DURATION) {
                         console.log("Using cached kudos (age: " + Math.floor((now - timestamp) / 1000) + "s)");
@@ -154,7 +154,7 @@ const Home = (props: Props) => {
 
             setEncouragementCount(unreadEncouragements);
             setCongratulationCount(unreadCongratulations);
-            
+
             // Save to cache
             try {
                 await AsyncStorage.setItem(KUDOS_CACHE_KEY, JSON.stringify({
@@ -242,9 +242,14 @@ const Home = (props: Props) => {
                     title="Menu"
                     description="Tap here to access your workspaces, settings, and more!"
                     onNext={() => {
-                        drawerRef.current?.openDrawer();
+                        // Mark home spotlight as shown
                         setSpotlightShown("homeSpotlight");
-                        setTimeout(next, 500);
+
+                        // Open drawer
+                        drawerRef.current?.openDrawer();
+
+                        // Stop this tour - the drawer tour will start automatically
+                        stop();
                     }}
                     isLastStep
                 />
@@ -306,7 +311,7 @@ const HomeContent = ({
 }: any) => {
     const { start } = useSpotlightTour();
     const { selected } = useTasks();
-    
+
     // Track which workspaces have been visited for lazy mounting
     const [visitedWorkspaces, setVisitedWorkspaces] = React.useState<Set<string>>(new Set());
 
@@ -411,7 +416,7 @@ const HomeContent = ({
                         if (!visitedWorkspaces.has(workspace.name)) {
                             return null;
                         }
-                        
+
                         const isThisWorkspace = selected === workspace.name && isWorkspace;
                         return (
                             <AnimatedView key={workspace.name} visible={isThisWorkspace}>

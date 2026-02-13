@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, useColorScheme } from "react-native";
+import { View, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { deletePost, getPostsByBlueprint } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -151,9 +152,33 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
         showPostOptions(postId, postUserId);
     };
 
+    // Memoize render function BEFORE any conditional returns
+    const renderItem = React.useCallback(({ item }: { item: PostImage }) => {
+        const isDeleting = deletingPosts.has(item.postId);
+
+        return (
+            <TouchableOpacity
+                style={[styles.galleryItem, isDeleting && styles.deletingItem]}
+                onPress={() => handleImagePress(item.postId)}
+                onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
+                delayLongPress={500}
+                activeOpacity={isDeleting ? 1 : 0.8}>
+                <CachedImage
+                    style={[styles.galleryImage, isDeleting && styles.deletingImage]}
+                    source={{
+                        uri: item.imageUrl,
+                    }}
+                    variant="thumbnail"
+                    cachePolicy="disk"
+                    transition={100}
+                />
+            </TouchableOpacity>
+        );
+    }, [deletingPosts]);
+
     const renderEmptyState = () => {
         const colorScheme = useColorScheme();
-        
+
         return (
             <View style={styles.emptyContainer}>
                 <Image
@@ -202,43 +227,26 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
 
     return (
         <>
-            <FlatList
-                numColumns={3}
-                data={postImages}
-                renderItem={({ item }) => {
-                    const isDeleting = deletingPosts.has(item.postId);
-
-                    return (
-                        <TouchableOpacity
-                            style={[styles.galleryItem, isDeleting && styles.deletingItem]}
-                            onPress={() => handleImagePress(item.postId)}
-                            onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
-                            delayLongPress={500}
-                            activeOpacity={isDeleting ? 1 : 0.8}>
-                            <CachedImage
-                                style={[styles.galleryImage, isDeleting && styles.deletingImage]}
-                                source={{
-                                    uri: item.imageUrl,
-                                }}
-                                variant="thumbnail"
-                                cachePolicy="disk"
-                                transition={100}
-                            />
-                        </TouchableOpacity>
-                    );
-                }}
-                keyExtractor={(item, index) => `blueprint-gallery-${item.postId}-${index}`}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.galleryContainer}
-            />
-            <CustomAlert
-                visible={alertVisible}
-                setVisible={setAlertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                buttons={alertButtons}
-            />
+            <View style={{ minHeight: 2, flex: 1 }}>
+                <FlashList
+                    numColumns={3}
+                    data={postImages}
+                    renderItem={renderItem}
+                    keyExtractor={(item, index) => `blueprint-gallery-${item.postId}-${index}`}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.galleryContainer}
+                    removeClippedSubviews={true}
+                />
+            </View>
+            {alertVisible && (
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title={alertTitle}
+                    message={alertMessage}
+                    buttons={alertButtons}
+                />
+            )}
         </>
     );
 }

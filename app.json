@@ -1,3 +1,7 @@
 {
-  "expo": {}
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.suntex.kindred"
+    }
+  }
 }

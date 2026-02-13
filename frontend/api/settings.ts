@@ -1,6 +1,9 @@
 import { client } from "@/hooks/useTypedAPI";
 import type { components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('SettingsAPI');
 
 // Extract type definitions from generated types
 export type UserSettings = components["schemas"]["UserSettings"];
@@ -34,7 +37,7 @@ export const getUserSettings = async (): Promise<UserSettings> => {
 export const updateUserSettings = async (settings: Partial<UserSettings>): Promise<{ message: string }> => {
     // Fetch current settings first to merge with the update
     const currentSettings = await getUserSettings();
-    
+
     // Deep merge the settings
     const mergedSettings: UserSettings = {
         ...currentSettings,
@@ -48,10 +51,10 @@ export const updateUserSettings = async (settings: Partial<UserSettings>): Promi
             ...(settings.display || {}),
         },
     };
-    
+
     // Log to debug false value handling
-    console.log('Merged settings being sent:', JSON.stringify(mergedSettings, null, 2));
-    
+    logger.debug('Merged settings being sent', mergedSettings);
+
     const { data, error } = await client.PATCH("/v1/user/settings", {
         params: withAuthHeaders({}),
         body: mergedSettings,
@@ -77,7 +80,7 @@ export const updateNotificationSettings = async (
 ): Promise<{ message: string }> => {
     // Fetch current settings first to merge with the update
     const currentSettings = await getUserSettings();
-    
+
     return updateUserSettings({
         ...currentSettings,
         notifications: {
@@ -94,7 +97,7 @@ export const updateNotificationSettings = async (
 export const updateDisplaySettings = async (display: Partial<DisplaySettings>): Promise<{ message: string }> => {
     // Fetch current settings first to merge with the update
     const currentSettings = await getUserSettings();
-    
+
     return updateUserSettings({
         ...currentSettings,
         display: {
@@ -113,7 +116,7 @@ export const updateCheckinFrequency = async (
 ): Promise<{ message: string }> => {
     // Fetch current settings first to merge with the update
     const currentSettings = await getUserSettings();
-    
+
     return updateUserSettings({
         ...currentSettings,
         notifications: {

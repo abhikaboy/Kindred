@@ -1,6 +1,9 @@
 import { client } from "@/hooks/useTypedAPI";
 import { components } from './generated/types';
 import { withAuthHeaders } from "./utils";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('ActivityAPI');
 
 // Use generated types
 export type ActivityDocument = components['schemas']['ActivityDocument'];
@@ -15,14 +18,14 @@ export const activityAPI = {
       const { data, error } = await client.GET('/v1/activity/user/{userID}/recent', {
         params: withAuthHeaders({ path: { userID: userId } })
       });
-      
+
       if (error) {
         throw new Error(`Failed to fetch recent activity: ${JSON.stringify(error)}`);
       }
-      
+
       return data || [];
     } catch (error) {
-      console.error('Error fetching recent activity:', error);
+      logger.error('Error fetching recent activity', error);
       throw error;
     }
   },
@@ -31,22 +34,22 @@ export const activityAPI = {
   async getActivityByUserAndPeriod(userId: string, year: number, month: number): Promise<ActivityDocument | null> {
     try {
       const { data, error } = await client.GET('/v1/activity/user/{userID}', {
-        params: withAuthHeaders({ 
+        params: withAuthHeaders({
           path: { userID: userId },
           query: { year, month }
         })
       });
-      
+
       if (error) {
         if (error.status === 404) {
           return null; // No activity found for this period
         }
         throw new Error(`Failed to fetch activity: ${JSON.stringify(error)}`);
       }
-      
+
       return data || null;
     } catch (error) {
-      console.error('Error fetching activity by user and period:', error);
+      logger.error('Error fetching activity by user and period', error);
       throw error;
     }
   },
@@ -55,19 +58,19 @@ export const activityAPI = {
   async getAllUserActivity(userId: string, year: number): Promise<ActivityDocument[]> {
     try {
       const { data, error } = await client.GET('/v1/activity/user/{userID}/year', {
-        params: withAuthHeaders({ 
+        params: withAuthHeaders({
           path: { userID: userId },
           query: { year }
         })
       });
-      
+
       if (error) {
         throw new Error(`Failed to fetch yearly activity: ${JSON.stringify(error)}`);
       }
-      
+
       return data || [];
     } catch (error) {
-      console.error('Error fetching all user activity:', error);
+      logger.error('Error fetching all user activity', error);
       throw error;
     }
   },
@@ -79,38 +82,38 @@ export const activityAPI = {
       const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      console.log('📅 getCompletedTasksByDate: Fetching tasks for date:', {
+      logger.debug('getCompletedTasksByDate: Fetching tasks for date', {
         date: date.toISOString(),
         dateStr,
         timezone
       });
 
       const { data, error } = await client.GET('/v1/user/tasks/completed/date', {
-        params: withAuthHeaders({ 
-          query: { 
+        params: withAuthHeaders({
+          query: {
             date: dateStr,
             timezone: timezone
           }
         })
       });
-      
-      console.log('📅 getCompletedTasksByDate: Response received:', {
-        data,
-        error,
+
+      logger.debug('getCompletedTasksByDate: Response received', {
+        hasData: !!data,
+        hasError: !!error,
         taskCount: data?.tasks?.length || 0
       });
 
       if (error) {
-        console.error('📅 getCompletedTasksByDate: Error occurred:', error);
+        logger.error('getCompletedTasksByDate: Error occurred', error);
         throw new Error(`Failed to fetch completed tasks by date: ${JSON.stringify(error)}`);
       }
-      
+
       const tasks = data?.tasks || [];
-      console.log('📅 getCompletedTasksByDate: Returning tasks:', tasks);
-      
+      logger.debug('getCompletedTasksByDate: Returning tasks', { count: tasks.length });
+
       return tasks;
     } catch (error) {
-      console.error('📅 getCompletedTasksByDate: Exception caught:', error);
+      logger.error('getCompletedTasksByDate: Exception caught', error);
       throw error;
     }
   }
@@ -128,21 +131,21 @@ export function calculateActivityLevel(count: number): number {
 // Helper function to convert activity data to weekly activity levels
 export function convertToWeeklyActivityLevels(activities: ActivityDocument[]): number[] {
   const weeklyLevels: number[] = new Array(8).fill(0); // 8 days (last 7 days + today)
-  
+
   if (!activities || activities.length === 0) {
     return weeklyLevels;
   }
 
   const today = new Date();
   const daysInWeek = 8;
-  
+
   // Process each activity document
   activities.forEach(activity => {
     if (activity.days) {
       activity.days.forEach(day => {
         const activityDate = new Date(activity.year, activity.month - 1, day.day);
         const daysDiff = Math.floor((today.getTime() - activityDate.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         // Check if this day is within the last 8 days
         if (daysDiff >= 0 && daysDiff < daysInWeek) {
           const index = daysInWeek - 1 - daysDiff; // Reverse order (most recent first)
@@ -154,24 +157,24 @@ export function convertToWeeklyActivityLevels(activities: ActivityDocument[]): n
       });
     }
   });
-  
+
   return weeklyLevels;
 }
 
 // Helper function to get activity levels for a specific month
 export function getMonthlyActivityLevels(activities: ActivityDocument[], year: number, month: number): number[] {
   const activity = activities.find(a => a.year === year && a.month === month);
-  
+
   if (!activity || !activity.days) {
     // Return array of zeros for the number of days in the month
     const daysInMonth = new Date(year, month, 0).getDate();
     return new Array(daysInMonth).fill(0);
   }
-  
+
   // Create array for all days in the month
   const daysInMonth = new Date(year, month, 0).getDate();
   const monthlyLevels: number[] = new Array(daysInMonth).fill(0);
-  
+
   // Fill in the activity levels for days that have data
   activity.days.forEach(day => {
     if (day.day >= 1 && day.day <= daysInMonth) {
@@ -179,6 +182,6 @@ export function getMonthlyActivityLevels(activities: ActivityDocument[], year: n
       monthlyLevels[day.day - 1] = calculateActivityLevel(day.count); // Convert to 0-indexed
     }
   });
-  
+
   return monthlyLevels;
 }

@@ -6,6 +6,9 @@ import { useTypedMutation } from "@/hooks/useTypedAPI";
 import { components } from "@/api/generated/types";
 import { router } from "expo-router";
 import client from "@/api/client";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('AuthHook');
 
 // Use types from generated schema
 type SafeUser = components["schemas"]["SafeUser"];
@@ -19,23 +22,23 @@ interface AuthData {
 
 export async function saveAuthData(authData: AuthData): Promise<boolean> {
     try {
-        console.log("Saving auth data!: ", authData);
+        logger.debug("Saving auth data");
         await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
         return true;
     } catch (error) {
-        console.error("Error saving auth data:", error);
+        logger.error("Error saving auth data", error);
         return false;
     }
 }
 
 export async function getAuthData(): Promise<AuthData | null> {
-    console.warn("Requested Auth Data");
+    logger.debug("Requested Auth Data");
     try {
         const authDataString = await SecureStore.getItemAsync("auth_data");
-        console.log("authDataString: ", authDataString);
+        logger.debug("Auth data string retrieved");
         return authDataString ? JSON.parse(authDataString) : null;
     } catch (error) {
-        console.error("Error retrieving auth data:", error);
+        logger.error("Error retrieving auth data", error);
         return null;
     }
 }
@@ -97,10 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             });
 
-            console.log("Registration successful:", result);
+            logger.info("Registration successful");
             return result;
         } catch (error) {
-            console.error("Registration failed:", error);
+            logger.error("Registration failed", error);
             alert("Unable to complete registration. Please try again.");
             throw error;
         }
@@ -115,22 +118,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } as any
             });
 
-            console.log("Google registration successful:", result);
+            logger.info("Google registration successful");
             return result;
         } catch (error) {
-            console.error("Google registration failed:", error);
+            logger.error("Google registration failed", error);
             throw error;
         }
     }
 
     async function login(appleAccountID: string): Promise<SafeUser | void> {
-        console.log(appleAccountID);
-        console.log("Logging in...");
-        console.log(process.env.EXPO_PUBLIC_URL + "/api")
-        console.log(process.env.EXPO_PUBLIC_URL + "/api/v1/auth/login/apple")
+        logger.debug("Logging in with Apple", {
+            appleAccountID,
+            apiUrl: process.env.EXPO_PUBLIC_URL + "/api"
+        });
 
         try {
-            console.log("About to make POST request...");
+            logger.debug("About to make POST request");
             console.log("Request body:", { apple_id: appleAccountID });
 
             const result = await client.POST("/v1/auth/login/apple", {
@@ -139,13 +142,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             });
 
-            console.log("Raw result from client.POST:", result);
-            console.log("Result data:", result.data);
-            console.log("Result error:", result.error);
-            console.log("Result response:", result.response);
+            logger.debug("Raw result from client.POST", result);
+            logger.debug("Result data", result.data);
+            logger.debug("Result error", result.error);
+            logger.debug("Result response", result.response);
 
             if (result.error) {
-                console.log("Error details:", JSON.stringify(result.error, null, 2));
+                logger.error("Error details", JSON.stringify(result.error, null, 2));
 
                 // Check if this is a "account doesn't exist" error (404)
                 const errorDetail = result.error?.detail || '';
@@ -165,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(userData);
 
                 // Save tokens if they exist in response headers
-                console.log(result.response?.headers);
+                logger.debug("Response headers", result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');
@@ -181,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return userData;
             }
 
-            console.log("No data or error in response - this is unexpected");
+            logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Login failed with exception:", error);
             console.error("Error stack:", error.stack);
@@ -190,11 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function loginWithGoogle(googleID: string): Promise<SafeUser | void> {
-        console.log("Google login with ID:", googleID);
+        logger.debug("Google login with ID", googleID);
 
         try {
-            console.log("About to make POST request to Google login endpoint...");
-            console.log("Request body:", { google_id: googleID });
+            logger.debug("About to make POST request to Google login endpoint...");
+            logger.debug("Request body", { google_id: googleID });
 
             const result = await client.POST("/v1/auth/login/google" as any, {
                 body: {
@@ -202,13 +205,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } as any
             });
 
-            console.log("Raw result from client.POST:", result);
-            console.log("Result data:", result.data);
-            console.log("Result error:", result.error);
-            console.log("Result response:", result.response);
+            logger.debug("Raw result from client.POST", result);
+            logger.debug("Result data", result.data);
+            logger.debug("Result error", result.error);
+            logger.debug("Result response", result.response);
 
             if (result.error) {
-                console.log("Error details:", JSON.stringify(result.error, null, 2));
+                logger.error("Error details", JSON.stringify(result.error, null, 2));
 
                 // Check if this is a "account doesn't exist" error (404)
                 const errorDetail = result.error?.detail || '';
@@ -228,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(userData);
 
                 // Save tokens if they exist in response headers
-                console.log(result.response?.headers);
+                logger.debug("Response headers", result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');
@@ -244,7 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return userData;
             }
 
-            console.log("No data or error in response - this is unexpected");
+            logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Google login failed with exception:", error);
             console.error("Error stack:", error.stack);
@@ -253,11 +256,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function loginWithPhone(phoneNumber: string, password: string): Promise<SafeUser | void> {
-        console.log("Phone login with number:", phoneNumber);
+        logger.debug("Phone login with number", phoneNumber);
 
         try {
-            console.log("About to make POST request to phone login endpoint...");
-            console.log("Request body:", { phone_number: phoneNumber, password: "***" });
+            logger.debug("About to make POST request to phone login endpoint...");
+            logger.debug("Request body", { phone_number: phoneNumber, password: "***" });
 
             const result = await client.POST("/v1/auth/login/phone" as any, {
                 body: {
@@ -307,11 +310,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function loginWithOTP(phoneNumber: string, code: string): Promise<SafeUser | void> {
-        console.log("OTP login with number:", phoneNumber);
+        logger.debug("OTP login with number", phoneNumber);
 
         try {
-            console.log("About to make POST request to OTP login endpoint...");
-            console.log("Request body:", { phone_number: phoneNumber, code: "***" });
+            logger.debug("About to make POST request to OTP login endpoint...");
+            logger.debug("Request body", { phone_number: phoneNumber, code: "***" });
 
             const result = await client.POST("/v1/auth/login/otp" as any, {
                 body: {
@@ -320,13 +323,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } as any
             });
 
-            console.log("Raw result from client.POST:", result);
-            console.log("Result data:", result.data);
-            console.log("Result error:", result.error);
-            console.log("Result response:", result.response);
+            logger.debug("Raw result from client.POST", result);
+            logger.debug("Result data", result.data);
+            logger.debug("Result error", result.error);
+            logger.debug("Result response", result.response);
 
             if (result.error) {
-                console.log("Error details:", JSON.stringify(result.error, null, 2));
+                logger.error("Error details", JSON.stringify(result.error, null, 2));
 
                 // Check for specific error types
                 const errorDetail = result.error?.detail || '';
@@ -346,7 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(userData);
 
                 // Save tokens if they exist in response headers
-                console.log(result.response?.headers);
+                logger.debug("Response headers", result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');
@@ -362,7 +365,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return userData;
             }
 
-            console.log("No data or error in response - this is unexpected");
+            logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("OTP login failed with exception:", error);
             console.error("Error stack:", error.stack);
@@ -375,7 +378,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         SecureStore.deleteItemAsync("auth_data");
         // Clear React Query cache
         queryClient.clear();
-        console.log("logging out");
+        logger.debug("logging out");
     }
 
     async function refresh() {
@@ -396,7 +399,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const rateLimit = 2000;
         if (timeSinceLastFetch < rateLimit) {
             const remainingTime = rateLimit - timeSinceLastFetch;
-            console.log(`Rate limiting fetchAuthData, waiting ${remainingTime}ms before next call`);
+            logger.debug(`Rate limiting fetchAuthData, waiting ${remainingTime}ms before next call`);
 
             const promise = new Promise<SafeUser | null>((resolve) => {
                 setTimeout(() => {
@@ -410,21 +413,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Otherwise, execute the fetch
-        console.warn("Authenticating with Saved Login");
+        logger.warn("Authenticating with Saved Login");
         lastFetchTime.current = now;
 
         const fetchPromise = (async (): Promise<SafeUser | null> => {
             try {
-                console.log("🔐 fetchAuthData: Step 1 - Getting stored auth tokens");
+                logger.debug("🔐 fetchAuthData: Step 1 - Getting stored auth tokens");
                 const authData = await getAuthData();
-                console.log("🔐 fetchAuthData: Auth data retrieved:", authData ? 'Tokens exist' : 'NO TOKENS');
+                logger.debug("🔐 fetchAuthData: Auth data retrieved:", authData ? 'Tokens exist' : 'NO TOKENS');
 
                 if (authData) {
-                    console.log("🔐 fetchAuthData: Step 2 - Attempting token login");
-                    console.log("🔐 Access token preview:", authData.access_token?.substring(0, 20) + '...');
+                    logger.debug("🔐 fetchAuthData: Step 2 - Attempting token login");
+                    logger.debug("🔐 Access token preview:", authData.access_token?.substring(0, 20) + '...');
 
                     try {
-                        console.log("🔐 Making POST to /v1/user/login with Bearer token");
+                        logger.debug("🔐 Making POST to /v1/user/login with Bearer token");
                         const result = await client.POST("/v1/user/login", {
                             params: {
                                 header: {
@@ -433,20 +436,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             }
                         });
 
-                        console.log("🔐 Token login response received");
-                        console.log("🔐 Has error:", !!result.error);
-                        console.log("🔐 Has data:", !!result.data);
+                        logger.debug("🔐 Token login response received");
+                        logger.debug("🔐 Has error:", !!result.error);
+                        logger.debug("🔐 Has data:", !!result.data);
 
                         if (result.error) {
-                            console.error("❌ Token login failed with error:", JSON.stringify(result.error));
+                            logger.error("❌ Token login failed with error:", JSON.stringify(result.error));
                             throw new Error(`Token login failed: ${JSON.stringify(result.error)}`);
                         }
 
                         if (result.data) {
                             const userData = result.data as SafeUser;
-                            console.log("✅ Token login successful!");
-                            console.log("👤 User ID:", userData._id);
-                            console.log("👤 Display name:", userData.display_name);
+                            logger.debug("✅ Token login successful!");
+                            logger.debug("👤 User ID:", userData._id);
+                            logger.debug("👤 Display name:", userData.display_name);
                             setUser(userData);
 
                             // Update tokens if provided in response headers
@@ -455,7 +458,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 const refreshToken = result.response.headers.get('refresh_token');
 
                                 if (accessToken && refreshToken) {
-                                    console.log("🔄 Updating tokens from login response");
+                                    logger.debug("🔄 Updating tokens from login response");
                                     await saveAuthData({
                                         access_token: accessToken,
                                         refresh_token: refreshToken
@@ -467,20 +470,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             return userData;
                         }
 
-                        console.error("❌ Token login returned no data and no error - unexpected state");
+                        logger.error("❌ Token login returned no data and no error - unexpected state");
                     } catch (tokenError) {
-                        console.error("❌ Token login exception:", tokenError);
-                        console.error("❌ Error details:", tokenError.message);
+                        logger.error("❌ Token login exception:", tokenError);
+                        logger.error("❌ Error details:", tokenError.message);
                         logout();
                         return null;
                     }
                 }
 
-                console.warn("⚠️ No auth data found in storage, returning null");
+                logger.warn("⚠️ No auth data found in storage, returning null");
                 logout();
                 return null;
             } catch (error) {
-                console.error("Error fetching auth data:", error);
+                logger.error("Error fetching auth data:", error);
                 logout();
                 return null;
             }

@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import Entry from "@/components/daily/Entry";
 import { Feather } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { 
+import {
     addMonths,
     subMonths
 } from "date-fns";
@@ -29,10 +29,10 @@ function getDateArray(startDate: Date, numDays: number) {
     });
 }
 
-export const DatePager: React.FC<DatePagerProps> = ({ 
-    centerDate, 
-    selectedDate, 
-    onDateSelected, 
+export const DatePager: React.FC<DatePagerProps> = ({
+    centerDate,
+    selectedDate,
+    onDateSelected,
     onPageChange,
     setCenterDate
 }) => {
@@ -109,15 +109,15 @@ export const DatePager: React.FC<DatePagerProps> = ({
                     <ThemedText type="subtitle">
                         {centerDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                     </ThemedText>
-                    <TouchableOpacity onPress={toggleExpanded} style={styles.arrowButton}>
-                        <Feather 
-                            name={isExpanded ? "chevron-up" : "chevron-down"} 
-                            size={20} 
-                            color={ThemedColor.text} 
+                    {/* <TouchableOpacity onPress={toggleExpanded} style={styles.arrowButton}>
+                        <Feather
+                            name={isExpanded ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color={ThemedColor.text}
                         />
                     </TouchableOpacity>
                 </View>
-                
+
                 {isExpanded && (
                     <View style={{ flexDirection: "row", gap: 16 }}>
                         <TouchableOpacity onPress={() => handleMonthChange("prev")}>
@@ -155,7 +155,7 @@ export const DatePager: React.FC<DatePagerProps> = ({
                         {renderDatePage(nextDates)}
                     </View>
                 </PagerView>
-            )}
+            )} */}
         </View>
     );
 };
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
         height: "auto",
     },
     header: {
-        flexDirection: "row", 
+        flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         paddingHorizontal: 24,
@@ -180,4 +180,3 @@ const styles = StyleSheet.create({
         padding: 4,
     },
 });
-

@@ -2,6 +2,9 @@ import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import { useRequest } from "@/hooks/useRequest";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('NotificationsAPI');
 
 // Extract the type definitions from the generated types
 type NotificationDocument = components["schemas"]["NotificationDocument"];
@@ -25,7 +28,7 @@ export const getNotifications = async (limit: number = 20, skip: number = 0): Pr
         const response = await request("GET", url);
         return response;
     } catch (error) {
-        console.error("Error fetching notifications:", error);
+        logger.error("Error fetching notifications", error);
         throw new Error("Failed to fetch notifications. Please try again later.");
     }
 };
@@ -45,7 +48,7 @@ export const markNotificationsAsRead = async (notificationIds: string[]): Promis
         });
         return response;
     } catch (error) {
-        console.error("Error marking notifications as read:", error);
+        logger.error("Error marking notifications as read", error);
         throw new Error("Failed to mark notifications as read. Please try again later.");
     }
 };
@@ -62,7 +65,7 @@ export const markAllNotificationsAsRead = async (): Promise<MarkAllNotifications
         const response = await request("PATCH", "/user/notifications/read-all");
         return response;
     } catch (error) {
-        console.error("Error marking all notifications as read:", error);
+        logger.error("Error marking all notifications as read", error);
         throw new Error("Failed to mark all notifications as read. Please try again later.");
     }
 };
@@ -80,7 +83,7 @@ export const deleteNotification = async (notificationId: string): Promise<Delete
         const response = await request("DELETE", `/user/notifications/${notificationId}`);
         return response;
     } catch (error) {
-        console.error("Error deleting notification:", error);
+        logger.error("Error deleting notification", error);
         throw new Error("Failed to delete notification. Please try again later.");
     }
 };

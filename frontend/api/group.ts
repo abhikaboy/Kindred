@@ -1,6 +1,9 @@
 import client from "./client";
 import { withAuthHeaders } from "./utils";
 import { components } from "./generated/types";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('GroupAPI');
 
 // Types
 export type GroupDocument = components["schemas"]["GroupDocumentAPI"];
@@ -49,24 +52,23 @@ export const getGroupById = async (groupId: string): Promise<GroupDocument> => {
  * Create a new group
  */
 export const createGroup = async (params: CreateGroupParams): Promise<GroupDocument> => {
-    console.log('🔵 createGroup called with params:', params);
-    
+    logger.debug('createGroup called', params);
+
     const { data, error } = await client.POST("/v1/user/groups", {
         params: withAuthHeaders({}),
         body: params,
     });
 
-    console.log('🔵 createGroup response - data:', data);
-    console.log('🔵 createGroup response - error:', error);
+    logger.debug('createGroup response received', { hasData: !!data, hasError: !!error });
 
     if (error) {
-        console.error('🔴 createGroup error:', JSON.stringify(error, null, 2));
+        logger.error('createGroup error', error);
         throw new Error(`Failed to create group: ${JSON.stringify(error)}`);
     }
 
     // The response data IS the group document (not nested under body)
     const result = data as unknown as GroupDocument;
-    console.log('🔵 createGroup returning:', result);
+    logger.debug('createGroup returning', { groupId: result?.id });
     return result;
 };
 
@@ -102,4 +104,3 @@ export const deleteGroup = async (groupId: string): Promise<void> => {
         throw new Error(`Failed to delete group: ${JSON.stringify(error)}`);
     }
 };
-

@@ -95,6 +95,11 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
     const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
     const menuSpotlightShown = spotlightState.menuSpotlight;
 
+    // Reset trigger ref when workspace changes
+    useEffect(() => {
+        hasTriggeredRef.current = false;
+    }, [selected]);
+
     useEffect(() => {
         if (hasTriggeredRef.current) return;
 
@@ -103,9 +108,10 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
 
         if (shouldTrigger && !hasTriggeredRef.current) {
             hasTriggeredRef.current = true;
+            // Increased delay to ensure drawer is fully closed and workspace is mounted
             setTimeout(() => {
                 start();
-            }, 1000);
+            }, 1200);
         }
     }, [workspaceSpotlightShown, menuSpotlightShown, selected, start]);
 
@@ -255,4 +261,3 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
 });
-

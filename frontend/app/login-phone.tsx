@@ -98,11 +98,17 @@ const LoginPhone = () => {
             setCanResend(false);
             setResendTimer(30);
             setOtpCode("");
+            setError(""); // Clear any existing errors
             try {
                 await sendOTP(phoneNumber);
+                // Show success feedback
+                console.log("Code resent successfully");
             } catch (err) {
                 console.error("Resend failed:", err);
                 setError("Failed to resend code. Please try again.");
+                // Reset timer on failure so user can try again
+                setCanResend(true);
+                setResendTimer(0);
             }
         }
     };
@@ -181,7 +187,11 @@ const LoginPhone = () => {
 
                                     <OtpInput
                                         numberOfDigits={4}
-                                        onTextChange={setOtpCode}
+                                        onTextChange={(text) => {
+                                            setOtpCode(text);
+                                            // Clear error when user starts typing
+                                            if (error) setError("");
+                                        }}
                                         onFilled={handleLogin}
                                         theme={{
                                             containerStyle: styles.otpInputContainer,
@@ -191,7 +201,7 @@ const LoginPhone = () => {
                                                 width: width * 0.18,
                                                 height: width * 0.20,
                                                 borderWidth: 2,
-                                                borderColor: error ? '#ff3b30' : 'transparent',
+                                                borderColor: 'transparent',
                                             },
                                             pinCodeTextStyle: {
                                                 color: ThemedColor.text,
@@ -201,6 +211,10 @@ const LoginPhone = () => {
                                             },
                                             focusedPinCodeContainerStyle: {
                                                 borderColor: ThemedColor.tint,
+                                                borderWidth: 2,
+                                            },
+                                            filledPinCodeContainerStyle: {
+                                                borderColor: 'transparent',
                                             },
                                         }}
                                         disabled={loading}

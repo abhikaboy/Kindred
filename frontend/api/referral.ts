@@ -2,6 +2,9 @@ import { client } from "@/hooks/useTypedAPI";
 import type { components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import { useRequest } from "@/hooks/useRequest";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('ReferralAPI');
 
 // TODO: Regenerate OpenAPI types after backend updates
 // For now, define types manually until we run the schema generator
@@ -87,7 +90,7 @@ export const getReferralInfo = async (): Promise<ReferralDocument> => {
     const response = await request("GET", "/user/referrals");
     return response;
   } catch (error) {
-    console.error("Error fetching referral info:", error);
+    logger.error("Error fetching referral info", error);
     throw new Error("Failed to fetch referral information. Please try again later.");
   }
 };
@@ -107,8 +110,8 @@ export const applyReferralCode = async (code: string): Promise<ApplyReferralCode
     });
     return response;
   } catch (error: any) {
-    console.error("Error applying referral code:", error);
-    
+    logger.error("Error applying referral code", error);
+
     // Handle specific error messages
     if (error.message?.includes("already has a referrer")) {
       throw new Error("You've already used a referral code");
@@ -117,7 +120,7 @@ export const applyReferralCode = async (code: string): Promise<ApplyReferralCode
     } else if (error.message?.includes("cannot refer yourself")) {
       throw new Error("You cannot use your own referral code");
     }
-    
+
     throw new Error("Failed to apply referral code. Please try again later.");
   }
 };
@@ -137,7 +140,7 @@ export const unlockFeature = async (featureId: string): Promise<UnlockFeatureOut
     });
     return response;
   } catch (error) {
-    console.error("Error unlocking feature:", error);
+    logger.error("Error unlocking feature", error);
     throw new Error("Failed to unlock feature. Please try again later.");
   }
 };
@@ -154,7 +157,7 @@ export const getReferralStats = async (): Promise<ReferralStatsOutputBody> => {
     const response = await request("GET", "/user/referrals/stats");
     return response;
   } catch (error) {
-    console.error("Error fetching referral stats:", error);
+    logger.error("Error fetching referral stats", error);
     throw new Error("Failed to fetch referral statistics. Please try again later.");
   }
 };
@@ -171,7 +174,7 @@ export const getAvailableFeatures = async (): Promise<AvailableFeaturesOutputBod
     const response = await request("GET", "/referrals/features");
     return response;
   } catch (error) {
-    console.error("Error fetching available features:", error);
+    logger.error("Error fetching available features", error);
     throw new Error("Failed to fetch available features. Please try again later.");
   }
 };

@@ -9,22 +9,22 @@ import EditWorkspace from "../modals/edit/EditWorkspace";
 import CreateWorkspaceBottomSheetModal from "../modals/CreateWorkspaceBottomSheetModal";
 import QuickImportBottomSheet from "../modals/QuickImportBottomSheet";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import { 
-    Gear, 
-    User, 
-    FileText, 
-    Archive 
+import {
+    Gear,
+    User,
+    FileText,
+    Archive
 } from "phosphor-react-native";
 import { router, usePathname } from "expo-router";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
-import { 
-    House, 
-    Calendar, 
-    ChartLine, 
-    Microphone, 
+import {
+    House,
+    Calendar,
+    ChartLine,
+    Microphone,
     ChatTeardropText,
     BookOpen,
     CalendarBlank,
@@ -81,7 +81,7 @@ export const Drawer = ({ close }) => {
                     title="Your Workspaces 📝"
                     description="Current workspaces can be found in 'Personal Workspaces' below. Tap any workspace to view its tasks."
                     onNext={() => {
-                        // Immediately update state (synchronous - no waiting needed)
+                        // Mark menu spotlight as shown
                         setSpotlightShown("menuSpotlight");
 
                         // Find and navigate to Kindred Guide workspace
@@ -91,7 +91,9 @@ export const Drawer = ({ close }) => {
                             close();
                         }
 
-                        next();
+                        // Call stop instead of next since we're transitioning to a new screen
+                        // The workspace spotlight will start automatically when the workspace loads
+                        stop();
                     }}
                     isLastStep
                 />
@@ -421,7 +423,7 @@ type DrawerItemProps = {
 const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, icon, style }: DrawerItemProps) => {
     const ThemedColor = useThemeColor();
     const isSelected = selected === title;
-    
+
     return (
         <TouchableOpacity
             style={[
@@ -460,7 +462,7 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
                 }}>
                     <ThemedText
                         style={{
-                        fontSize: 10, 
+                        fontSize: 10,
                             fontWeight: "600",
                         color: ThemedColor.primary,
                     }}>

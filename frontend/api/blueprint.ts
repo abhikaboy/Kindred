@@ -1,5 +1,8 @@
-import {client } from "@/hooks/useTypedAPI"; 
+import {client } from "@/hooks/useTypedAPI";
 import type { paths, components} from "./generated/types";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('BlueprintAPI');
 
 // Helper to inject auth headers that will be overridden by middleware
 const withAuthHeaders = (params: any = {}) => ({
@@ -19,15 +22,15 @@ type UnsubscribeFromBlueprintOutputBody = components["schemas"]["UnsubscribeFrom
 
 
 /**
- * Create blueprints from backend 
- * @param banner 
- * @param name 
- * @param tags 
- * @param description 
- * @param duration 
- * @param category 
- * @param categories 
- * @returns 
+ * Create blueprints from backend
+ * @param banner
+ * @param name
+ * @param tags
+ * @param description
+ * @param duration
+ * @param category
+ * @param categories
+ * @returns
  */
 export async function createBlueprintToBackend(
     banner: string,
@@ -40,134 +43,134 @@ export async function createBlueprintToBackend(
 ) {
     try {
         const result = await createBlueprint(banner, name, tags, description, duration, category, categories);
-        console.log("Blueprint created successfully:", result);
+        logger.info("Blueprint created successfully", { blueprintId: result?.id });
         return result;
     } catch (error) {
-        console.error("Failed to create blueprint:", error);
+        logger.error("Failed to create blueprint", error);
         throw error;
     }
 }
 
 /**
  * Update blueprints from backend
- * @param blueprintId 
- * @param updateData 
- * @returns 
+ * @param blueprintId
+ * @param updateData
+ * @returns
  */
 export async function updateBlueprintToBackend(
-    blueprintId: string, 
+    blueprintId: string,
     updateData: UpdateBlueprintDocument
 ) {
     try {
         const result = await updateBlueprint(blueprintId, updateData);
-        console.log("Blueprint updated successfully:", result);
+        logger.info("Blueprint updated successfully", { blueprintId });
         return result;
     } catch (error) {
-        console.error("Failed to update blueprint:", error);
+        logger.error("Failed to update blueprint", error);
         throw error;
     }
 }
 
 /**
  * Delete blueprint to backend
- * @param blueprintId 
- * @returns 
+ * @param blueprintId
+ * @returns
  */
 export async function deleteBlueprintToBackend(
-    blueprintId: string, 
+    blueprintId: string,
 ) {
     try {
         const result = await deleteBlueprint(blueprintId);
-        console.log("Blueprint deleted successfully:", result);
+        logger.info("Blueprint deleted successfully", { blueprintId });
         return result;
     } catch (error) {
-        console.error("Failed to delete blueprint:", error);
+        logger.error("Failed to delete blueprint", error);
         throw error;
     }
 }
 
 /**
  * Get blueprint by id to backend
- * @param blueprintId 
- * @returns 
+ * @param blueprintId
+ * @returns
  */
 export async function getBlueprintByIdToBackend(
-    blueprintId: string, 
+    blueprintId: string,
 ) {
     try {
         const result = await getBlueprintById(blueprintId);
-        console.log("Blueprint got successfully:", result);
+        logger.debug("Blueprint fetched successfully", { blueprintId });
         return result;
     } catch (error) {
-        console.error("Failed to get blueprint:", error);
+        logger.error("Failed to get blueprint", error);
         throw error;
     }
 }
 
 /**
  * get blueprints to backend
- * @returns 
+ * @returns
  */
 export async function getBlueprintsToBackend(
 ) {
     try {
         const result = await getAllBlueprints();
-        console.log("Blueprints got successfully:", result);
+        logger.debug("Blueprints fetched successfully", { count: result?.length });
         return result;
     } catch (error) {
-        console.error("Failed to get blueprints:", error);
+        logger.error("Failed to get blueprints", error);
         throw error;
     }
 }
 
 /**
  * subscribe to blueprint to backend
- * @param blueprintId 
- * @returns 
+ * @param blueprintId
+ * @returns
  */
 export async function subscribeToBlueprintToBackend(
-    blueprintId: string, 
+    blueprintId: string,
 ) {
     try {
         const result = await subscribeToBlueprint(blueprintId);
-        console.log("Blueprint subscribed to successfully:", result);
+        logger.info("Blueprint subscribed to successfully", { blueprintId });
         return result;
     } catch (error) {
-        console.error("Failed to subscribe to blueprint:", error);
+        logger.error("Failed to subscribe to blueprint", error);
         throw error;
     }
 }
 
 /**
  * un subscribe to blueprint to backend
- * @param blueprintId 
- * @returns 
+ * @param blueprintId
+ * @returns
  */
 export async function unsubscribeToBlueprintToBackend(
-    blueprintId: string, 
+    blueprintId: string,
 ) {
     try {
         const result = await unSubscribeToBlueprint(blueprintId);
-        console.log("Blueprint unsubscribed to successfully:", result);
+        logger.info("Blueprint unsubscribed to successfully", { blueprintId });
         return result;
     } catch (error) {
-        console.error("Failed to unsubscribe to blueprint:", error);
+        logger.error("Failed to unsubscribe to blueprint", error);
         throw error;
     }
 }
 
 /**
  * Search blueprints from backend
- * @param query 
- * @returns 
+ * @param query
+ * @returns
  */
 export async function searchBlueprintsFromBackend(query: string) {
     try {
         const results = await searchBlueprints(query);
-        console.log("Search results:", results);
+        logger.debug("Search results", { query, count: results?.length });
         return results;
     } catch (error) {
-        console.error("Failed to search blueprints:", error);
+        logger.error("Failed to search blueprints", error);
         throw error;
     }
 }
@@ -177,7 +180,7 @@ export async function searchBlueprintsFromBackend(query: string) {
  */
 export async function autocompleteBlueprintsFromBackend(query: string) {
     if (query.length < 2) return [];
-    
+
     try {
         const { data, error } = await client.GET("/v1/blueprints/autocomplete", {
             params: { query: { query } },
@@ -189,37 +192,37 @@ export async function autocompleteBlueprintsFromBackend(query: string) {
 
         return data || [];
     } catch (error) {
-        console.error("Failed to autocomplete blueprints:", error);
+        logger.error("Failed to autocomplete blueprints", error);
         throw error;
     }
 }
 
 /**
  * Get blueprints by category from backend
- * @returns 
+ * @returns
  */
 export async function getBlueprintsByCategoryFromBackend() {
     try {
         const results = await getBlueprintsByCategory();
-        console.log("Blueprints by category:", results);
+        logger.debug("Blueprints by category fetched", { count: results?.length });
         return results;
     } catch (error) {
-        console.error("Failed to get blueprints by category:", error);
+        logger.error("Failed to get blueprints by category", error);
         throw error;
     }
 }
 
 
 /**
- * Creates a new blueprint 
- * @param banner 
- * @param name 
- * @param tags 
- * @param description 
- * @param duration 
- * @param category 
- * @param categories 
- * @returns 
+ * Creates a new blueprint
+ * @param banner
+ * @param name
+ * @param tags
+ * @param description
+ * @param duration
+ * @param category
+ * @param categories
+ * @returns
  */
 export const createBlueprint = async (
     banner: string,
@@ -245,8 +248,8 @@ export const createBlueprint = async (
 
 /**
  * Update Blueprint
- * @param blueprintId 
- * @param updateData 
+ * @param blueprintId
+ * @param updateData
  */
 export const updateBlueprint = async (
     blueprintId: string,
@@ -255,7 +258,7 @@ export const updateBlueprint = async (
     const { error } = await client.PATCH("/v1/user/blueprints/{id}", {
         params: withAuthHeaders({ path: {id: blueprintId}}),
         body: updateData,
-    }) 
+    })
 
     if (error) {
         throw new Error(`Failed to update blueprint: ${JSON.stringify(error)}`);
@@ -264,7 +267,7 @@ export const updateBlueprint = async (
 
 /**
  * Get user's subscribed blueprints
- * @returns 
+ * @returns
  */
 export const getUserSubscribedBlueprints = async (): Promise<BlueprintDocumentWithoutSubscribers[]> => {
     const {data, error} = await client.GET("/v1/user/blueprints/subscribed", {
@@ -279,8 +282,8 @@ export const getUserSubscribedBlueprints = async (): Promise<BlueprintDocumentWi
 }
 
 /**
- * Delete Blueprint 
- * @param blueprintId 
+ * Delete Blueprint
+ * @param blueprintId
  */
 export const deleteBlueprint = async (blueprintId: string): Promise<void> => {
     const { error } = await client.DELETE("/v1/user/blueprints/{id}", {
@@ -292,75 +295,75 @@ export const deleteBlueprint = async (blueprintId: string): Promise<void> => {
 }
 
 /**
- * Get blueprint by ID 
- * @param blueprintId 
- * @returns 
+ * Get blueprint by ID
+ * @param blueprintId
+ * @returns
  */
 export const getBlueprintById = async (blueprintId: string): Promise<BlueprintDocument> => {
     const {data, error} = await client.GET("/v1/blueprints/{id}", {
-        params: withAuthHeaders({path: {id: blueprintId}}), 
-    }); 
+        params: withAuthHeaders({path: {id: blueprintId}}),
+    });
     if (error) {
         throw new Error(`Failed to get blueprint: ${JSON.stringify(error)}`);
     }
 
-    return data; 
+    return data;
 }
 
 /**
- * Get all blueprint 
- * @param blueprintId 
- * @returns 
+ * Get all blueprint
+ * @param blueprintId
+ * @returns
  */
 export const getAllBlueprints = async (): Promise<BlueprintDocument[]> => {
     const {data, error} = await client.GET("/v1/blueprints", {
-        params: withAuthHeaders({}), 
-    }); 
+        params: withAuthHeaders({}),
+    });
     if (error) {
         throw new Error(`Failed to get all blueprints: ${JSON.stringify(error)}`);
     }
 
-    return data || []; 
+    return data || [];
 }
 
 
 /**
  * Subscribe to blueprint
- * @param blueprintId 
- * @returns 
+ * @param blueprintId
+ * @returns
  */
 export const subscribeToBlueprint = async (blueprintId: string): Promise<SubscribeToBlueprintOutputBody> => {
     const { data, error } = await client.PATCH("/v1/user/blueprints/{id}/subscribe", {
-        params: withAuthHeaders({ path: { id: blueprintId } }), 
-    }); 
+        params: withAuthHeaders({ path: { id: blueprintId } }),
+    });
     if (error) {
         throw new Error(`Failed to subscribe to blueprint: ${JSON.stringify(error)}`);
     }
-    return data; 
+    return data;
 }
 
 /**
  * Un Subscribe to blueprint
- * @param blueprintId 
- * @returns 
+ * @param blueprintId
+ * @returns
  */
 export const unSubscribeToBlueprint = async (blueprintId: string): Promise<UnsubscribeFromBlueprintOutputBody> => {
     const { data, error } = await client.PATCH("/v1/user/blueprints/{id}/unsubscribe", {
-        params: withAuthHeaders({ path: { id: blueprintId } }), 
-    }); 
+        params: withAuthHeaders({ path: { id: blueprintId } }),
+    });
     if (error) {
         throw new Error(`Failed to unsubscribe to blueprint: ${JSON.stringify(error)}`);
     }
-    return data; 
+    return data;
 }
 /**
  * search blueprints
- * @param query 
- * @returns 
+ * @param query
+ * @returns
  */
 export const searchBlueprints = async (query: string): Promise<BlueprintDocument[]> => {
     const { data, error } = await client.GET("/v1/blueprints/search", {
-        params: withAuthHeaders({ 
+        params: withAuthHeaders({
             query: { query : query },
         }),
     });
@@ -374,7 +377,7 @@ export const searchBlueprints = async (query: string): Promise<BlueprintDocument
 
 /**
  * Get blueprints grouped by category
- * @returns 
+ * @returns
  */
 export const getBlueprintsByCategory = async (): Promise<BlueprintCategoryGroup[]> => {
     const { data, error } = await client.GET("/v1/blueprints/by-category", {
@@ -391,7 +394,7 @@ export const getBlueprintsByCategory = async (): Promise<BlueprintCategoryGroup[
 /**
  * Get blueprints created by a specific user
  * @param creatorId - The ID of the user who created the blueprints
- * @returns 
+ * @returns
  */
 export const getBlueprintsByCreator = async (creatorId: string): Promise<BlueprintDocumentWithoutSubscribers[]> => {
     const { data, error } = await client.GET("/v1/user/blueprints/creator/{creatorId}", {

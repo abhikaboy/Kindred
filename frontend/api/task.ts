@@ -42,7 +42,7 @@ export const createTaskAPI = async (categoryId: string, task: CreateTaskParams):
  */
 export const removeFromCategoryAPI = async (categoryId: string, taskId: string, deleteRecurring: boolean = false): Promise<void> => {
     const { error } = await client.DELETE("/v1/user/tasks/{category}/{id}", {
-        params: withAuthHeaders({ 
+        params: withAuthHeaders({
             path: { category: categoryId, id: taskId },
             query: { deleteRecurring }
         }),
@@ -203,21 +203,18 @@ export const getTemplateByIDAPI = async (id: string): Promise<TemplateTaskDocume
  * Frontend: Used to display recurring tasks in activity breakdown
  */
 export const getUserTemplatesAPI = async (): Promise<any[]> => {
-    console.log("getUserTemplatesAPI: Starting fetch...");
+    logger.debug("Starting fetch for user templates");
     const { data, error } = await client.GET("/v1/user/tasks/templates", {
         params: withAuthHeaders({}),
     });
 
-    console.log("getUserTemplatesAPI: Response data:", data);
-    console.log("getUserTemplatesAPI: Response error:", error);
-
     if (error) {
-        console.error("getUserTemplatesAPI: Error occurred:", error);
+        logger.error("Error fetching user templates", error);
         throw new Error(`Failed to get templates: ${JSON.stringify(error)}`);
     }
 
     const templates = data?.templates || [];
-    console.log("getUserTemplatesAPI: Returning templates:", templates);
+    logger.debug("User templates fetched", { count: templates.length });
     return templates;
 };
 
@@ -283,8 +280,8 @@ export interface PaginatedCompletedTasksResponse {
  * @param limit - Number of tasks per page (default: 20, max: 100)
  */
 export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20): Promise<PaginatedCompletedTasksResponse> => {
-    console.log(`getCompletedTasksAPI called with page=${page}, limit=${limit}`);
-    
+    logger.debug("Fetching completed tasks", { page, limit });
+
     try {
         const { data, error } = await client.GET("/v1/user/tasks/completed", {
             params: withAuthHeaders({
@@ -293,18 +290,18 @@ export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20)
         });
 
         if (error) {
-            console.error("API Error:", error);
+            logger.error("API Error fetching completed tasks", error);
             throw new Error(`Failed to get completed tasks: ${JSON.stringify(error)}`);
         }
 
-        console.log("API Response data:", data);
+        logger.debug("Completed tasks response received");
 
         // Type assertion since the generated types may not be up to date
         // The backend returns the data structure directly
         const response = (data as any);
-        
+
         if (!response) {
-            console.warn("No data returned from API, using defaults");
+            logger.warn("No data returned from API, using defaults");
             return { tasks: [], page: 1, limit: 20, total: 0, totalPages: 0 };
         }
 
@@ -317,7 +314,7 @@ export const getCompletedTasksAPI = async (page: number = 1, limit: number = 20)
             totalPages: response.totalPages || 0,
         };
     } catch (err) {
-        console.error("Exception in getCompletedTasksAPI:", err);
+        logger.error("Exception in getCompletedTasksAPI", err);
         throw err;
     }
 };
@@ -333,7 +330,7 @@ export const getTodayCompletedTasksCount = async (): Promise<number> => {
         const completedTasks = response.tasks;
         const today = new Date();
         const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        
+
         const todayCompletedTasks = completedTasks.filter((task: any) => {
             if ((task as any).timeCompleted) {
                 const completedDate = new Date((task as any).timeCompleted);
@@ -341,10 +338,10 @@ export const getTodayCompletedTasksCount = async (): Promise<number> => {
             }
             return false;
         });
-        
+
         return todayCompletedTasks.length;
     } catch (error) {
-        console.error('Error getting today completed tasks count:', error);
+        logger.error('Error getting today completed tasks count', error);
         return 0;
     }
 };
@@ -360,7 +357,7 @@ export const getTotalPointsFromCompletedTasks = async (): Promise<number> => {
         const completedTasks = response.tasks;
         return completedTasks.reduce((total, task) => total + (task.value || 0), 0);
     } catch (error) {
-        console.error('Error getting total points from completed tasks:', error);
+        logger.error('Error getting total points from completed tasks', error);
         return 0;
     }
 };
@@ -372,13 +369,13 @@ export const getTotalPointsFromCompletedTasks = async (): Promise<number> => {
  * @param deadline - The new deadline date (or null to remove)
  */
 export const updateTaskDeadlineAPI = async (
-    categoryId: string, 
-    taskId: string, 
+    categoryId: string,
+    taskId: string,
     deadline: Date | null
 ): Promise<void> => {
     const { error } = await client.PATCH("/v1/user/category/{category}/task/{id}/deadline", {
-        params: withAuthHeaders({ 
-            path: { category: categoryId, id: taskId } 
+        params: withAuthHeaders({
+            path: { category: categoryId, id: taskId }
         }),
         body: { deadline: deadline?.toISOString() || null },
     });
@@ -402,10 +399,10 @@ export const updateTaskStartAPI = async (
     startTime?: Date | null
 ): Promise<void> => {
     const { error } = await client.PATCH("/v1/user/category/{category}/task/{id}/start", {
-        params: withAuthHeaders({ 
-            path: { category: categoryId, id: taskId } 
+        params: withAuthHeaders({
+            path: { category: categoryId, id: taskId }
         }),
-        body: { 
+        body: {
             startDate: startDate?.toISOString() || null,
             startTime: startTime?.toISOString() || null
         },
@@ -428,8 +425,8 @@ export const updateTaskRemindersAPI = async (
     reminders: any[]
 ): Promise<void> => {
     const { error } = await client.PATCH("/v1/user/category/{category}/task/{id}/reminders", {
-        params: withAuthHeaders({ 
-            path: { category: categoryId, id: taskId } 
+        params: withAuthHeaders({
+            path: { category: categoryId, id: taskId }
         }),
         body: { reminders },
     });
@@ -463,17 +460,17 @@ export interface NaturalLanguageTaskCreationResponse {
  * Create tasks from natural language description using AI
  * API: Makes POST request to process natural language and create tasks/categories
  * Frontend: The created tasks will need to be refetched or added to TaskContext
- * 
+ *
  * @param text - Natural language description of tasks to create
  * @returns Response containing created tasks count, categories count, and task details
- * 
+ *
  * @example
  * ```typescript
  * const result = await createTasksFromNaturalLanguageAPI(
  *   "Buy groceries tomorrow at 3pm, finish project report by Friday"
  * );
- * console.log(result.message); // "Successfully created 2 tasks in 2 new categories"
- * console.log(result.tasks); // Array of created TaskDocuments
+ * logger.info(result.message); // "Successfully created 2 tasks in 2 new categories"
+ * logger.debug('Created tasks', result.tasks); // Array of created TaskDocuments
  * ```
  */
 export const createTasksFromNaturalLanguageAPI = async (
@@ -481,10 +478,10 @@ export const createTasksFromNaturalLanguageAPI = async (
 ): Promise<NaturalLanguageTaskCreationResponse> => {
     // Get the user's timezone
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
+
     const { data, error } = await client.POST("/v1/user/tasks/natural-language", {
         params: withAuthHeaders({}),
-        body: { 
+        body: {
             text,
             timezone,
         },

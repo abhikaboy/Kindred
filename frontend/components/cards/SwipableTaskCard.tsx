@@ -26,10 +26,10 @@ type Props = {
     highlightContent?: boolean;
 };
 
-export default function SwipableTaskCard({ redirect = false, categoryId, task, categoryName, highlightContent = false }: Props) {
+const SwipableTaskCard = ({ redirect = false, categoryId, task, categoryName, highlightContent = false }: Props) => {
     const { removeFromCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
-    
+
     // Alert state
     const [alertVisible, setAlertVisible] = React.useState(false);
     const [alertTitle, setAlertTitle] = React.useState("");
@@ -37,13 +37,13 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
     const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
 
     const finalCategoryName =
-        categoryName || 
-        task.categoryName || 
-        categories?.find((cat) => cat.id === categoryId)?.name || 
+        categoryName ||
+        task.categoryName ||
+        categories?.find((cat) => cat.id === categoryId)?.name ||
         "Unknown Category";
 
 
-    /* 
+    /*
   Mark as completed function
 
 */
@@ -121,7 +121,7 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
             // Build title and message based on streak status
             let title = "Task completed!";
             let message = "Congrats! Click here to post and document your task!";
-            
+
             if (res.streakChanged) {
                 title = `🔥 Task completed - ${res.currentStreak} day streak!`;
                 message = `Keep it up! You're on a ${res.currentStreak} day streak! Click here to post!`;
@@ -215,14 +215,16 @@ export default function SwipableTaskCard({ redirect = false, categoryId, task, c
                     highlightContent={highlightContent}
                 />
             </ReanimatedSwipeable>
-            
-            <CustomAlert
-                visible={alertVisible}
-                setVisible={setAlertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                buttons={alertButtons}
-            />
+
+            {alertVisible && (
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title={alertTitle}
+                    message={alertMessage}
+                    buttons={alertButtons}
+                />
+            )}
         </>
     );
 }
@@ -300,10 +302,10 @@ function RightAction(
     return (
         <Reanimated.View
             style={[
-                styleAnimation, 
-                { 
-                    backgroundColor: color, 
-                    justifyContent: "center", 
+                styleAnimation,
+                {
+                    backgroundColor: color,
+                    justifyContent: "center",
                     alignItems: "center",
                     width: RIGHT_ACTION_WIDTH,
                 }
@@ -314,6 +316,22 @@ function RightAction(
         </Reanimated.View>
     );
 }
+
+// Memoize SwipableTaskCard to prevent unnecessary re-renders
+export default React.memo(SwipableTaskCard, (prevProps, nextProps) => {
+    return (
+        prevProps.redirect === nextProps.redirect &&
+        prevProps.categoryId === nextProps.categoryId &&
+        prevProps.task.id === nextProps.task.id &&
+        prevProps.task.content === nextProps.task.content &&
+        prevProps.task.priority === nextProps.task.priority &&
+        prevProps.task.value === nextProps.task.value &&
+        prevProps.task.deadline === nextProps.task.deadline &&
+        prevProps.task.startDate === nextProps.task.startDate &&
+        prevProps.task.active === nextProps.task.active &&
+        prevProps.highlightContent === nextProps.highlightContent
+    );
+});
 
 const styles = StyleSheet.create({
     swipeable: {

@@ -3,6 +3,9 @@ import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('EncouragementAPI');
 
 // Extract the type definitions from the generated types
 type EncouragementDocument = components["schemas"]["EncouragementDocument"];
@@ -53,13 +56,13 @@ export const getEncouragementsAPI = async (): Promise<EncouragementDocument[]> =
  * @param ids - Array of encouragement IDs to mark as read
  */
 export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count: number; message: string }> => {
-    console.log("🎆 DEBUG - markEncouragementsReadAPI called with ids:", ids);
-    
+    logger.debug("markEncouragementsReadAPI called", { ids });
+
     // Get auth data from SecureStore
     let headers: any = {
         "Content-Type": "application/json",
     };
-    
+
     try {
         const authData = await SecureStore.getItemAsync("auth_data");
         if (authData) {
@@ -72,13 +75,13 @@ export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count:
             }
         }
     } catch (error) {
-        console.log("Error getting auth data for request:", error);
+        logger.error("Error getting auth data for request", error);
     }
-    
+
     // ✅ CORRECT: Send { id: [...] } directly, not { body: { id: [...] } }
     const requestBody = { id: ids };
-    console.log("🎆 DEBUG - Request body being sent:", JSON.stringify(requestBody, null, 2));
-    
+    logger.debug("Request body being sent", requestBody);
+
     try {
         // ✅ Use axios directly instead of useRequest() hook
         const response = await axios({
@@ -87,11 +90,11 @@ export const markEncouragementsReadAPI = async (ids: string[]): Promise<{ count:
             headers: headers,
             data: requestBody,
         });
-        
-        console.log("✅ Mark as read successful:", response.data);
+
+        logger.info("Mark as read successful");
         return response.data;
     } catch (error: any) {
-        console.error("❌ Mark as read failed:", error.response?.data || error.message);
+        logger.error("Mark as read failed", error.response?.data || error.message);
         throw new Error(`Failed to mark encouragements as read: ${JSON.stringify(error.response?.data || error.message)}`);
     }
 };

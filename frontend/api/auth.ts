@@ -1,6 +1,9 @@
 import { LoginRequest, LoginResponse, RegisterRequest, User } from "./types";
 import { client } from "@/hooks/useTypedAPI";
 import { withAuthHeaders } from "./utils";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('AuthAPI');
 
 /**
  * Logs in a user
@@ -23,7 +26,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
         return data;
     } catch (error) {
         // Log the error for debugging
-        console.error("Login failed:", error);
+        logger.error("Login failed", error);
         // Re-throw with a more user-friendly message
         throw new Error("Failed to login. Please check your credentials and try again.");
     }
@@ -46,7 +49,7 @@ export const register = async (credentials: RegisterRequest): Promise<void> => {
             throw new Error(`Failed to register: ${JSON.stringify(error)}`);
         }
     } catch (error) {
-        console.error("Registration failed:", error);
+        logger.error("Registration failed", error);
         throw new Error("Failed to register. Please try again later.");
     }
 };
@@ -59,7 +62,7 @@ export const register = async (credentials: RegisterRequest): Promise<void> => {
  */
 export const loginWithToken = async (): Promise<User> => {
     try {
-        console.log("logging in with token");
+        logger.info("Logging in with token");
         const { data, error } = await client.POST("/v1/user/login", {
             params: withAuthHeaders(),
         });
@@ -70,7 +73,7 @@ export const loginWithToken = async (): Promise<User> => {
 
         return data;
     } catch (error) {
-        console.error("Token login failed:", error);
+        logger.error("Token login failed", error);
         throw new Error("Session expired. Please login again.");
     }
 };
@@ -89,13 +92,13 @@ export const updatePushToken = async (pushToken: string): Promise<void> => {
         });
 
         if (error) {
-            console.error("Push token update error:", error);
+            logger.error("Push token update error", error);
             throw new Error(`Failed to update push token: ${JSON.stringify(error)}`);
         }
 
-        console.log("Push token updated successfully:", data);
+        logger.info("Push token updated successfully");
     } catch (error) {
-        console.error("Push token update failed:", error);
+        logger.error("Push token update failed", error);
         throw error;
     }
 };
@@ -115,7 +118,7 @@ export const deleteAccount = async (): Promise<void> => {
             throw new Error(`Failed to delete account: ${JSON.stringify(error)}`);
         }
     } catch (error) {
-        console.error("Account deletion failed:", error);
+        logger.error("Account deletion failed", error);
         throw new Error("Failed to delete account. Please try again later.");
     }
 };
@@ -143,7 +146,7 @@ export const acceptTerms = async (termsVersion: string = "1.0"): Promise<{
 
         return data as any;
     } catch (error) {
-        console.error("Terms acceptance failed:", error);
+        logger.error("Terms acceptance failed", error);
         throw new Error("Failed to accept terms. Please try again later.");
     }
 };

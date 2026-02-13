@@ -2,6 +2,9 @@ import createClient from "openapi-fetch";
 import type { paths } from "./generated/types";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('API');
 
 // Create the base client
 const baseClient = createClient<paths>({
@@ -11,9 +14,10 @@ const baseClient = createClient<paths>({
 // Add request interceptor for authentication
 baseClient.use({
     async onRequest({ request }) {
-        console.log("🚀 Making request to:", request.url);
-        console.log("🚀 Request method:", request.method);
-        console.log("🚀 Request headers:", Object.fromEntries(request.headers.entries()));
+        logger.debug("Making request", {
+            url: request.url,
+            method: request.method
+        });
 
         try {
             const authData = await SecureStore.getItemAsync("auth_data");
@@ -25,25 +29,23 @@ baseClient.use({
                 if (access_token) {
                     request.headers.set("Authorization", `Bearer ${access_token}`);
                 } else {
-                    console.log("No access token found");
+                    logger.warn("No access token found");
                 }
 
                 if (refresh_token) {
                     request.headers.set("refresh_token", refresh_token);
                 } else {
-                    console.log("No refresh token found");
+                    logger.warn("No refresh token found");
                 }
             } else {
-                console.log("No auth data found for request");
+                logger.debug("No auth data found for request");
             }
         } catch (error) {
-            console.error("Error in request interceptor:", error);
+            logger.error("Error in request interceptor", error);
         }
 
         request.headers.set("Content-Type", "application/json");
-        
-        console.log("🚀 Final request headers:", Object.fromEntries(request.headers.entries()));
-        
+
         return request;
     },
 
@@ -53,26 +55,27 @@ baseClient.use({
         const refresh_token = response.headers.get("refresh_token");
 
         if (access_token && refresh_token) {
-            console.log("📦 Saving tokens from response headers");
+            logger.debug("Saving tokens from response headers");
             const authData = {
                 access_token: access_token,
                 refresh_token: refresh_token,
             };
 
             await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
-            console.log("✅ Tokens saved successfully");
+            logger.debug("Tokens saved successfully");
 
             // Verify what was actually saved
             const savedData = await SecureStore.getItemAsync("auth_data");
-            console.log("🔍 Verified saved data:", savedData ? "Tokens exist" : "Save failed");
+            logger.debug("Verified saved data", { exists: !!savedData });
 
             // Update axios defaults for compatibility with existing code
             axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
             axios.defaults.headers.common["refresh_token"] = refresh_token;
         } else if (access_token || refresh_token) {
-            console.warn("⚠️ Incomplete token pair in response headers");
-            console.warn("⚠️ Access token:", access_token ? "exists" : "missing");
-            console.warn("⚠️ Refresh token:", refresh_token ? "exists" : "missing");
+            logger.warn("Incomplete token pair in response headers", {
+                hasAccessToken: !!access_token,
+                hasRefreshToken: !!refresh_token
+            });
         }
 
         return response;

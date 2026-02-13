@@ -46,7 +46,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: HORIZONTAL_PADDING,
     },
     headerContainer: {
-        paddingBottom: 24,
         paddingTop: 20,
     },
     title: {
@@ -57,4 +56,3 @@ const styles = StyleSheet.create({
         paddingTop: 12,
     },
 });
-

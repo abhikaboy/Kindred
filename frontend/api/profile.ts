@@ -1,6 +1,9 @@
 import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('ProfileAPI');
 
 // Extract the type definitions from the generated types
 type ProfileDocument = components["schemas"]["ProfileDocument"];
@@ -70,20 +73,18 @@ export const getProfileByPhone = async (phone: string): Promise<ProfileDocument>
  * Search profiles (type-safe)
  */
 export const searchProfiles = async (query?: string): Promise<ProfileDocument[]> => {
-    console.log("🔍 searchProfiles API called with query:", query);
-    console.log("🔍 API URL: /v1/user/profiles/search");
-    console.log("🔍 Query params:", query ? { query } : {});
-    
+    logger.debug("searchProfiles API called", { query });
+
     const { data, error } = await client.GET("/v1/user/profiles/search", {
         params: withAuthHeaders({ query: query ? { query } : {} }),
     });
 
     if (error) {
-        console.error("🔍 searchProfiles API error:", error);
+        logger.error("searchProfiles API error", error);
         throw new Error(`Failed to search profiles: ${JSON.stringify(error)}`);
     }
 
-    console.log("🔍 searchProfiles raw API response:", data);
+    logger.debug("searchProfiles raw API response", { resultCount: data?.profiles?.length });
     return data || [];
 };
 
@@ -92,7 +93,7 @@ export const searchProfiles = async (query?: string): Promise<ProfileDocument[]>
  */
 export const autocompleteProfiles = async (query: string): Promise<ProfileDocument[]> => {
     if (query.length < 2) return [];
-    
+
     const { data, error } = await client.GET("/v1/user/profiles/autocomplete", {
         params: withAuthHeaders({ query: { query } }),
     });

@@ -44,6 +44,7 @@ import RecurringInfoCard from "@/components/task/RecurringInfoCard";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { logger } from "@/utils/logger";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -99,8 +100,8 @@ export default function Task() {
 
     // Handle deadline update
     const handleDeadlineUpdate = (deadline: Date | null) => {
-        console.log("Deadline updated:", deadline);
-        
+        logger.debug("Deadline updated", { deadline });
+
         // Update the local task state immediately for UI responsiveness
         if (task && categoryId && id) {
             updateTask(categoryId as string, id as string, {
@@ -148,7 +149,7 @@ export default function Task() {
         });
 
         if (error) {
-            console.error("Error loading base time:", error);
+            logger.error("Error loading base time", error);
         }
     };
 
@@ -156,7 +157,7 @@ export default function Task() {
         try {
             await AsyncStorage.setItem(`task_${id}_baseTime`, time.getTime().toString());
         } catch (error) {
-            console.error("Error saving base time:", error);
+            logger.error("Error saving base time", error);
         }
     };
 
@@ -166,13 +167,13 @@ export default function Task() {
 
     const getTemplate = async (id: string) => {
         const template = await getTemplateByIDAPI(id);
-        console.log(template);
+        logger.debug("Template fetched", { template });
         setTemplate(template);
         setRecurDetails(template?.recurDetails as RecurDetails);
     };
 
     useEffect(() => {
-        console.log(task);
+        logger.debug("Task data updated", { task });
         if (task?.templateID != null) {
             setHasTemplate(true);
             getTemplate(task.templateID);
@@ -217,7 +218,7 @@ export default function Task() {
                 setBaseTime(new Date());
             }
         } catch (error) {
-            console.error("Error starting timer:", error);
+            logger.error("Error starting timer", error);
         }
     };
 
@@ -235,7 +236,7 @@ export default function Task() {
                 setIsRunning(false);
             }
         } catch (error) {
-            console.error("Error pausing timer:", error);
+            logger.error("Error pausing timer", error);
         }
     };
 
@@ -256,7 +257,7 @@ export default function Task() {
 
     const router = useRouter();
 
-    console.log(task);
+    logger.debug("Current task state", { task });
     const updateNotes = useDebounce(async (notes: string) => {
         if (task && categoryId && id) {
             try {
@@ -264,7 +265,7 @@ export default function Task() {
                 // Update the task in context so it persists when navigating away
                 updateTask(categoryId as string, id as string, { notes });
             } catch (error) {
-                console.error("Error updating notes:", error);
+                logger.error("Error updating notes", error);
             }
         }
     }, 2000);
@@ -301,7 +302,7 @@ export default function Task() {
                 removeFromCategory(categoryId as string, id as string);
                 router.back();
             } catch (error) {
-                console.error("Error deleting task:", error);
+                logger.error("Error deleting task", error);
                 showToastable({
                     title: "Error",
                     status: "danger",
@@ -403,7 +404,7 @@ export default function Task() {
                         onPress={() => {
                             // Load task data into the context and open edit modal
                             if (task) {
-                                console.log("task", task);
+                                logger.debug("Opening edit modal for task", { task });
                                 loadTaskData(task);
                                 openModal({
                                     edit: true,
@@ -439,8 +440,8 @@ export default function Task() {
                             style={{ flex: 1 }}
                             keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
                             <View style={{ gap: 20 }}>
-                                <DataCard 
-                                    title="Notes" 
+                                <DataCard
+                                    title="Notes"
                                     key="notes"
                                     icon={<Note size={20} color={ThemedColor.text} weight="regular" />}
                                 >
@@ -462,8 +463,8 @@ export default function Task() {
                                         }}
                                     />
                                 </DataCard>
-                                <DataCard 
-                                    title="Checklist" 
+                                <DataCard
+                                    title="Checklist"
                                     key="checklist"
                                     icon={<ListChecks size={20} color={ThemedColor.text} weight="regular" />}
                                 >
@@ -488,7 +489,7 @@ export default function Task() {
                                                     completed: item.completed,
                                                     order: item.order,
                                                 }));
-                                                
+
                                                 // ✅ FIX: Update task context to invalidate cache
                                                 updateTask(categoryId as string, id as string, {
                                                     checklist: task.checklist
@@ -498,7 +499,7 @@ export default function Task() {
                                     />
                                 </DataCard>
                                 <ConditionalView condition={task?.startDate != null} key="startDate">
-                                    <DataCard 
+                                    <DataCard
                                         title="Start Date"
                                         icon={<Calendar size={20} color={ThemedColor.text} weight="regular" />}
                                     >
@@ -519,7 +520,7 @@ export default function Task() {
                                     </DataCard>
                                 </ConditionalView>
                                 <ConditionalView condition={task?.deadline != null} key="deadline">
-                                    <DataCard 
+                                    <DataCard
                                         title="Deadline"
                                         icon={<Flag size={20} color={ThemedColor.text} weight="regular" />}
                                     >
@@ -567,7 +568,7 @@ export default function Task() {
                                     />
                                 </ConditionalView>
                                 <ConditionalView condition={task?.reminders != null} key="reminders">
-                                    <DataCard 
+                                    <DataCard
                                         title="Reminders"
                                         icon={<Bell size={20} color={ThemedColor.text} weight="regular" />}
                                     >
@@ -581,11 +582,11 @@ export default function Task() {
                                     </DataCard>
                                 </ConditionalView>
                                 <ConditionalView condition={task?.integration != null} key="integration">
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         onPress={handleIntegrationPress}
                                         activeOpacity={0.7}
                                     >
-                                        <DataCard 
+                                        <DataCard
                                             title="Integration"
                                             icon={<Plugs size={20} color={ThemedColor.text} weight="regular" />}
                                         >
@@ -666,7 +667,7 @@ export default function Task() {
                         <PrimaryButton
                             title="Set Timer"
                             onPress={() => {
-                                console.log(hours, minutes);
+                                logger.debug("Timer set", { hours, minutes });
                             }}
                         />
                     </View>
@@ -705,4 +706,3 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         </View>
     );
 }
-

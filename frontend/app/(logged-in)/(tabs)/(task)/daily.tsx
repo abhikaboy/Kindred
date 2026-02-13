@@ -19,6 +19,7 @@ import { DailyHeader } from "@/components/daily/DailyHeader";
 import { DatePager } from "@/components/daily/DatePager";
 import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView } from "@/components/daily/CalendarView";
+import { FloatingDateNav } from "@/components/daily/FloatingDateNav";
 
 // Hooks
 import { useDailyTasks } from "@/hooks/useDailyTasks";
@@ -31,17 +32,17 @@ const Daily = (props: Props) => {
     const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
     // For calendar view - it manages its own scroll ref internally but we might need to expose it if we wanted parent control
     // For now, CalendarView handles its own scrolling
-    
+
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const { loadTaskData } = useTaskCreation();
     const { openModal } = useCreateModal();
     const { setIsDrawerOpen } = useDrawer();
-    
+
     // State
     const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
     const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
-    
+
     const [centerDate, setCenterDate] = useState(() => {
         const d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -64,7 +65,7 @@ const Daily = (props: Props) => {
 
     // Shared Value for Scroll Logic (List View)
     const animatedScrollY = useSharedValue(0);
-    
+
     // Shared Value for Calendar View Scroll Logic
     const calendarAnimatedScrollY = useSharedValue(0);
     const calendarScrollViewRef = useAnimatedRef<Animated.ScrollView>();
@@ -84,6 +85,26 @@ const Daily = (props: Props) => {
     // Handlers
     const handleDateChange = (date: Date) => {
         setSelectedDate(date);
+
+        // Check if the new date is outside the current page window
+        // Current page shows dates from centerDate to centerDate + PAGE_SIZE (6 days)
+        const PAGE_SIZE = 6;
+        const pageStart = new Date(centerDate);
+        const pageEnd = new Date(centerDate);
+        pageEnd.setDate(centerDate.getDate() + PAGE_SIZE - 1);
+
+        // If date is before the current page, shift center back
+        if (date < pageStart) {
+            const newCenter = new Date(date);
+            newCenter.setHours(0, 0, 0, 0);
+            setCenterDate(newCenter);
+        }
+        // If date is after the current page, shift center forward
+        else if (date > pageEnd) {
+            const newCenter = new Date(date);
+            newCenter.setHours(0, 0, 0, 0);
+            setCenterDate(newCenter);
+        }
     };
 
     const handlePageChange = (direction: "prev" | "next") => {
@@ -115,19 +136,19 @@ const Daily = (props: Props) => {
 
     const renderHeader = () => (
         <View style={{  marginBottom: 12 }}>
-            <DailyHeader 
+            <DailyHeader
                 onOpenDrawer={() => drawerRef.current?.openDrawer()}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 selectedDate={selectedDate}
             />
-            <DatePager 
+            {/* <DatePager
                 centerDate={centerDate}
                 selectedDate={selectedDate}
                 onDateSelected={handleDateChange}
                 onPageChange={handlePageChange}
                 setCenterDate={setCenterDate}
-            />
+            /> */}
         </View>
     );
 
@@ -142,18 +163,18 @@ const Daily = (props: Props) => {
             drawerType="front"
             onDrawerOpen={() => setIsDrawerOpen(true)}
             onDrawerClose={() => setIsDrawerOpen(false)}>
-            
+
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
                 <View style={{ flex: 1 }}>
                     {/* List View - Keep mounted but hide when not active */}
-                    <View 
-                        style={{ 
-                            flex: 1, 
-                            display: activeTab === "List" ? "flex" : "none" 
+                    <View
+                        style={{
+                            flex: 1,
+                            display: activeTab === "List" ? "flex" : "none"
                         }}
                         removeClippedSubviews={activeTab !== "List"}
                     >
-                        <Animated.ScrollView 
+                        <Animated.ScrollView
                             ref={scrollViewRef}
                             style={{ flex: 1 }}
                             showsVerticalScrollIndicator={false}
@@ -162,7 +183,7 @@ const Daily = (props: Props) => {
                             removeClippedSubviews={true}
                             contentContainerStyle={{ paddingBottom: 128 }}>
                             {renderHeader()}
-                            <TaskListView 
+                            <TaskListView
                                 selectedDate={selectedDate}
                                 tasksForSelectedDate={tasksForSelectedDate}
                                 overdueTasks={overdueTasks}
@@ -175,15 +196,15 @@ const Daily = (props: Props) => {
                     </View>
 
                     {/* Calendar View - Lazy render after interaction completes */}
-                    <View 
-                        style={{ 
-                            flex: 1, 
-                            display: activeTab === "Calendar" ? "flex" : "none" 
+                    <View
+                        style={{
+                            flex: 1,
+                            display: activeTab === "Calendar" ? "flex" : "none"
                         }}
                         removeClippedSubviews={activeTab !== "Calendar"}
                     >
                         {shouldRenderCalendar && (
-                            <CalendarView 
+                            <CalendarView
                                 selectedDate={selectedDate}
                                 tasksWithSpecificTime={tasksWithSpecificTime}
                                 tasksForTodayNoTime={tasksForTodayNoTime}
@@ -195,6 +216,12 @@ const Daily = (props: Props) => {
                         )}
                     </View>
                 </View>
+
+                {/* Floating Date Navigation - Available on both List and Calendar views */}
+                <FloatingDateNav
+                    selectedDate={selectedDate}
+                    onDateChange={handleDateChange}
+                />
             </View>
         </DrawerLayout>
     );

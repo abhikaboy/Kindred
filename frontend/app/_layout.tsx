@@ -33,6 +33,8 @@ import * as Sentry from "@sentry/react-native";
 import { KudosProvider } from "@/contexts/kudosContext";
 import { SelectedGroupProvider } from "@/contexts/SelectedGroupContext";
 import { AlertProvider } from "@/contexts/AlertContext";
+import { useCacheCleanup } from "@/hooks/useCacheCleanup";
+import { logger } from "@/utils/logger";
 
 Sentry.init({
     dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
@@ -64,6 +66,20 @@ Sentry.init({
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+// Create QueryClient outside component to prevent recreation on every render
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            refetchOnWindowFocus: false,
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            retry: false,
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            gcTime: 1000 * 60 * 10, // 10 minutes - garbage collect unused data after this time
+        },
+    },
+});
+
 export default Sentry.wrap(function RootLayout() {
     const colorScheme = useColorScheme();
     const ThemedColor = useThemeColor();
@@ -77,6 +93,13 @@ export default Sentry.wrap(function RootLayout() {
     const [shakeDetected, setShakeDetected] = useState(false);
     const [subscription, setSubscription] = useState(null);
     const safeAsync = useSafeAsync();
+
+    // Automatically clean up old cache entries to prevent unbounded growth
+    useCacheCleanup({
+        maxAgeMs: 7 * 24 * 60 * 60 * 1000, // 7 days
+        patterns: ['cache_', 'workspaces_cache_', 'temp_'],
+        enableLogging: __DEV__, // Only log in development
+    });
 
     Accelerometer.setUpdateInterval(500); // Adjust update interval as needed
 
@@ -109,7 +132,7 @@ export default Sentry.wrap(function RootLayout() {
                 });
 
                 if (error) {
-                    console.error("Error hiding splash screen:", error);
+                    logger.error("Error hiding splash screen", error);
                 }
             }
         };
@@ -118,17 +141,6 @@ export default Sentry.wrap(function RootLayout() {
     }, [loaded]);
 
     const { top } = useSafeAreaInsets();
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: {
-                refetchOnWindowFocus: false,
-                refetchOnMount: false,
-                refetchOnReconnect: false,
-                retry: false,
-                staleTime: 1000 * 60 * 5, // 5 minutes
-            },
-        },
-    });
 
     if (!loaded) {
         return null;

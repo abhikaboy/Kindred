@@ -1,4 +1,7 @@
 import * as SecureStore from "expo-secure-store";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('APIUtils');
 
 /**
  * Utility function to add auth headers to API request parameters
@@ -17,11 +20,11 @@ export const withAuthHeaders = (params: any = {}) => ({
 export const debugAuthData = async () => {
     try {
         const authData = await SecureStore.getItemAsync("auth_data");
-        console.log("🔍 DEBUG AUTH DATA:", authData);
+        logger.debug("Auth data retrieved", { exists: !!authData });
 
         if (authData) {
             const parsed = JSON.parse(authData);
-            console.log("🔍 PARSED DEBUG DATA:", {
+            logger.debug("Parsed auth data", {
                 hasAccessToken: !!parsed.access_token,
                 hasRefreshToken: !!parsed.refresh_token,
                 accessTokenPreview: parsed.access_token ? `${parsed.access_token.substring(0, 20)}...` : null,
@@ -29,11 +32,11 @@ export const debugAuthData = async () => {
             });
             return parsed;
         } else {
-            console.log("❌ NO AUTH DATA FOUND IN STORE");
+            logger.warn("No auth data found in store");
             return null;
         }
     } catch (error) {
-        console.error("❌ ERROR READING AUTH DATA:", error);
+        logger.error("Error reading auth data", error);
         return null;
     }
 };

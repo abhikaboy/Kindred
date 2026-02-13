@@ -1,5 +1,8 @@
 import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('PostAPI');
 
 // Helper to inject auth headers that will be overridden by middleware
 const withAuthHeaders = (params: any = {}) => ({
@@ -19,10 +22,10 @@ export type Post = PostDocumentAPI;
 
 /**
  * Create a new post
- * @param images 
+ * @param images
  * @param caption
- * @param taskReference 
- * @param blueprintId 
+ * @param taskReference
+ * @param blueprintId
  * @param isPublic
  * @param size
  * @param groups - Array of group IDs to share the post with
@@ -37,14 +40,14 @@ export const createPost = async (
     size?: { width: number; height: number; bytes: number },
     groups?: string[],
     dual?: string
-): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {    
+): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
     const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
-        body: { 
-            images, 
-            caption, 
-            task: taskReference,  
-            blueprintId, 
+        body: {
+            images,
+            caption,
+            task: taskReference,
+            blueprintId,
             isPublic,
             size,
             groups,
@@ -87,7 +90,7 @@ export const getAllPosts = async (limit: number = 8, offset: number = 0): Promis
     if (error) {
         throw new Error(`Failed to get posts: ${JSON.stringify(error)}`);
     }
-    
+
     // @ts-ignore - OpenAPI types not yet regenerated with pagination fields
     return {
         posts: data?.posts || [],
@@ -115,7 +118,7 @@ export const getFriendsPosts = async (limit: number = 8, offset: number = 0): Pr
     if (error) {
         throw new Error(`Failed to get friends posts: ${JSON.stringify(error)}`);
     }
-    
+
     // @ts-ignore - OpenAPI types not yet regenerated with pagination fields
     return {
         posts: data?.posts || [],
@@ -175,7 +178,7 @@ export const getFeed = async (limit: number = 20, offset: number = 0): Promise<P
     if (error) {
         throw new Error(`Failed to get feed: ${JSON.stringify(error)}`);
     }
-    
+
     // @ts-ignore - OpenAPI types not yet regenerated
     return {
         // @ts-ignore
@@ -208,7 +211,7 @@ export const getPostById = async (postId: string): Promise<PostDocumentAPI> => {
 
 /**
  * Get user's posts
- * @param userId 
+ * @param userId
  */
 export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
     // @ts-ignore - Path updated to /v1/user/{userId}/posts but OpenAPI spec needs regeneration
@@ -221,63 +224,63 @@ export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
     }
 
     // @ts-ignore - Backend returns { body: PostDocument[] } (lowercase b per JSON tag)
-    return data || [] 
+    return data || []
 };
 
 /**
  * Add comment to post
- * @param postId 
- * @param content 
- * @param parentId 
+ * @param postId
+ * @param content
+ * @param parentId
  */
 export const addComment = async (
-    postId: string, 
-    content: string, 
+    postId: string,
+    content: string,
     parentId?: string,
     mentions?: Array<{ id: string; handle: string }>
 ): Promise<CommentDocumentAPI> => {
     if (!postId) {
         throw new Error("PostId is required");
     }
-    
+
     if (typeof postId !== 'string') {
         throw new Error(`PostId must be string, got ${typeof postId}`);
     }
-    
+
     const cleanPostId = postId.trim();
     const objectIdRegex = /^[0-9a-fA-F]{24}$/;
     if (!objectIdRegex.test(cleanPostId)) {
         throw new Error(`Invalid post ID format: ${cleanPostId}`);
     }
-        
+
     const { data, error } = await client.POST("/v1/user/posts/{postId}/comment", {
-        params: withAuthHeaders({path: { postId: cleanPostId }}), 
-        body: { 
+        params: withAuthHeaders({path: { postId: cleanPostId }}),
+        body: {
             content,
             parentId,
             mentions
         },
     });
-    
+
     if (error) {
         throw new Error(`Failed to add comment: ${JSON.stringify(error)}`);
     }
-    
+
     if (data && typeof data === 'object' && 'comment' in data) {
         return (data as any).comment as CommentDocumentAPI;
     }
-    
+
     throw new Error("Invalid API response structure");
 };
 
 /**
  * Delete comment from post
- * @param postId 
- * @param commentId 
+ * @param postId
+ * @param commentId
  */
 export const deleteComment = async (postId: string, commentId: string): Promise<void> => {
     const { error } = await client.DELETE("/v1/user/posts/{postId}/comment/{commentId}", {
-        params: withAuthHeaders({ 
+        params: withAuthHeaders({
             path: {
                 postId,
                 commentId
@@ -292,49 +295,49 @@ export const deleteComment = async (postId: string, commentId: string): Promise<
 
 /**
  * Toggle reaction on post
- * @param postId 
+ * @param postId
  * @param emoji
  */
 export const toggleReaction = async (
-    postId: string, 
+    postId: string,
     emoji: string
 ): Promise<{ added: boolean; message: string }> => {
     // Validate inputs
     if (!postId) {
         throw new Error("PostId is required");
     }
-    
+
     if (!emoji || typeof emoji !== 'string') {
         throw new Error("Emoji is required and must be a string");
     }
-    
+
     const cleanPostId = postId.trim();
     const objectIdRegex = /^[0-9a-fA-F]{24}$/;
     if (!objectIdRegex.test(cleanPostId)) {
         throw new Error(`Invalid post ID format: ${cleanPostId}`);
     }
-        
+
     const { data, error } = await client.POST("/v1/user/posts/{postId}/reaction", {
-        params: withAuthHeaders({ path: { postId: cleanPostId } }), 
-        body: { 
+        params: withAuthHeaders({ path: { postId: cleanPostId } }),
+        body: {
             emoji: emoji.trim()
         },
     });
-    
+
     if (error) {
         throw new Error(`Failed to toggle reaction: ${JSON.stringify(error)}`);
     }
-    
+
     if (data && typeof data === 'object' && 'added' in data && 'message' in data) {
         return data as { added: boolean; message: string };
     }
-    
+
     throw new Error("Invalid API response structure");
 };
 
 /**
  * Delete post
- * @param postId 
+ * @param postId
  */
 export const deletePost = async (postId: string): Promise<void> => {
     const { error } = await client.DELETE("/v1/user/posts/{id}", {
@@ -394,14 +397,14 @@ export const reportComment = async (
 
 /**
  * Update post
- * @param postId 
- * @param caption 
- * @param isPublic 
- * @param size 
+ * @param postId
+ * @param caption
+ * @param isPublic
+ * @param size
  */
 export const updatePost = async (
-    postId: string, 
-    caption?: string, 
+    postId: string,
+    caption?: string,
     isPublic?: boolean,
     size?: { width: number; height: number; bytes: number }
 ): Promise<void> => {
@@ -417,10 +420,10 @@ export const updatePost = async (
 
 
 export const createPostToBackend = async (
-    images: string[], 
-    caption: string, 
-    taskReference?: { id: any; content: any; category: { id: any; name: any; }; }, 
-    blueprintId?: string, 
+    images: string[],
+    caption: string,
+    taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
+    blueprintId?: string,
     isPublic: boolean = false,
     size?: { width: number; height: number; bytes: number },
     groups?: string[],
@@ -430,7 +433,7 @@ export const createPostToBackend = async (
         const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual);
         return result;
     } catch (error) {
-        console.log(`Failed to create post to backend: ${JSON.stringify(error)}`);
+        logger.error("Failed to create post to backend", error);
         throw error;
     }
 };
@@ -440,7 +443,7 @@ export const getPostsFromBackend = async (limit: number = 8, offset: number = 0)
         const result = await getAllPosts(limit, offset);
         return result;
     } catch (error) {
-        console.log(`Failed to get all posts from backend: ${JSON.stringify(error)}`);
+        logger.error("Failed to get all posts from backend", error);
         throw error;
     }
 };
@@ -456,11 +459,11 @@ export const getPostsByBlueprint = async (blueprintId: string): Promise<PostDocu
             header: { Authorization: "" }
         }
     });
-    
+
     if (response.error) {
-        console.error("Error fetching posts by blueprint:", response.error);
+        logger.error("Error fetching posts by blueprint", response.error);
         throw new Error("Failed to fetch posts by blueprint");
     }
-    
+
     return response.data?.posts || [];
 };

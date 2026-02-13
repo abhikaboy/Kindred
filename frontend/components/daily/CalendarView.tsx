@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { View, TouchableOpacity, StyleSheet, Pressable } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
     useSharedValue,
@@ -17,6 +17,12 @@ import { isSameDay } from "date-fns";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
+import { getCategoryDuotoneColors } from "@/utils/categoryColors";
+import DefaultModal from "@/components/modals/DefaultModal";
+import { Ionicons } from "@expo/vector-icons";
+import { useTasks } from "@/contexts/tasksContext";
+import { updateTaskAPI } from "@/api/task";
+import { CalendarEventCard } from "./CalendarEventCard";
 
 const TIME_LABEL_WIDTH = 40;
 
@@ -40,12 +46,19 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     headerContent,
 }) => {
     const ThemedColor = useThemeColor();
+    const { setSelected, updateTask } = useTasks();
     const currentTimeLineRef = useRef<View>(null);
+    const hasScrolledToFirstEvent = useRef(false);
+
+    // Context menu state
+    const [contextMenuVisible, setContextMenuVisible] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [isHiding, setIsHiding] = useState(false);
 
     // Shared values for pinch gesture
-    const hourHeightShared = useSharedValue(40);
-    const [hourHeight, setHourHeight] = useState(40);
-    const initialPinchHeightShared = useSharedValue(40);
+    const hourHeightShared = useSharedValue(60);
+    const [hourHeight, setHourHeight] = useState(60);
+    const initialPinchHeightShared = useSharedValue(60);
     const initialScrollPositionShared = useSharedValue(0);
     const focalPointYShared = useSharedValue(0);
     const isPinchingShared = useSharedValue(false);
@@ -80,7 +93,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         })
         .onUpdate((event) => {
             const newHeight = initialPinchHeightShared.value * event.scale;
-            const clampedHeight = Math.max(20, Math.min(80, newHeight));
+            const clampedHeight = Math.max(30, Math.min(120, newHeight));
             hourHeightShared.value = clampedHeight;
             if (Math.abs(clampedHeight - hourHeight) > 2) {
                 runOnJS(setHourHeight)(clampedHeight);
@@ -101,42 +114,29 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
     // Styles
     const themedStyles = StyleSheet.create({
-        scheduleTaskContent: {
-            height: "100%",
-            maxHeight: "100%",
-            overflow: "hidden",
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: ThemedColor.text,
-            justifyContent: "center",
-            backgroundColor: ThemedColor.lightened,
-        },
-        deadlineTaskContent: {
-            borderColor: ThemedColor.error,
-            backgroundColor: ThemedColor.error,
-        },
-        deadlineText: {
-            color: ThemedColor.background,
-        },
         currentTimeLine: {
             position: "absolute",
             left: 0,
             right: 0,
-            height: 2,
-            backgroundColor: ThemedColor.primary,
+            height: 3,
+            backgroundColor: '#ef4444', // Red color
             zIndex: 10,
+            shadowColor: '#ef4444',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.5,
+            shadowRadius: 3,
         },
         currentTimeIndicator: {
-            width: 12,
-            height: 12,
-            borderRadius: 6,
-            backgroundColor: ThemedColor.primary,
+            width: 14,
+            height: 14,
+            borderRadius: 7,
+            backgroundColor: '#ef4444', // Red color
             position: "absolute",
-            top: -5,
-            left: -6,
+            top: -6,
+            left: -7,
             zIndex: 11,
+            borderWidth: 2,
+            borderColor: '#ffffff',
         },
         hourLine: {
             position: "absolute",
@@ -191,12 +191,12 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         height: 24 * hourHeightShared.value,
     }));
 
-    const animatedPositionStyles = Array.from({ length: 24 }, (_, i) => 
+    const animatedPositionStyles = Array.from({ length: 24 }, (_, i) =>
         useAnimatedStyle(() => ({ transform: [{ translateY: i * hourHeightShared.value }] }))
     );
 
-    const animatedHourLineStyles = Array.from({ length: 24 }, (_, i) => 
-        useAnimatedStyle(() => ({ transform: [{ translateY: i * hourHeightShared.value + hourHeightShared.value / 2 }] }))
+    const animatedHourLineStyles = Array.from({ length: 24 }, (_, i) =>
+        useAnimatedStyle(() => ({ transform: [{ translateY: i * hourHeightShared.value }] }))
     );
 
     const createAnimatedPositionStyle = (hour: number) => animatedPositionStyles[hour];
@@ -212,9 +212,128 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         };
     });
 
+    // Auto-scroll to first event on mount or when tasks change
+    useEffect(() => {
+        if (tasksWithSpecificTime.length === 0) {
+            return;
+        }
+
+        // Find the earliest task
+        let earliestHour = 24;
+        tasksWithSpecificTime.forEach((task) => {
+            let taskTime;
+            if (task.startTime) {
+                taskTime = new Date(task.startTime);
+            } else if (task.startDate) {
+                taskTime = new Date(task.startDate);
+            } else if (task.deadline) {
+                taskTime = new Date(task.deadline);
+            }
+
+            if (taskTime) {
+                const hour = taskTime.getHours();
+                if (hour < earliestHour) {
+                    earliestHour = hour;
+                }
+            }
+        });
+
+        // Scroll to the earliest event with some padding (1 hour before)
+        if (earliestHour < 24 && !hasScrolledToFirstEvent.current) {
+            const scrollToHour = Math.max(0, earliestHour - 1);
+            const scrollPosition = scrollToHour * hourHeight;
+
+            // Use requestAnimationFrame to ensure the layout is ready
+            let rafId1: number;
+            let rafId2: number;
+
+            rafId1 = requestAnimationFrame(() => {
+                rafId2 = requestAnimationFrame(() => {
+                    if (scrollViewRef.current) {
+                        scrollViewRef.current.scrollTo({ y: scrollPosition, animated: true });
+                        hasScrolledToFirstEvent.current = true;
+                    }
+                });
+            });
+
+            // Cleanup function to cancel pending animation frames
+            return () => {
+                if (rafId1) cancelAnimationFrame(rafId1);
+                if (rafId2) cancelAnimationFrame(rafId2);
+            };
+        }
+    }, [tasksWithSpecificTime, hourHeight, scrollViewRef, selectedDate]);
+
+    // Reset scroll flag when date changes
+    useEffect(() => {
+        hasScrolledToFirstEvent.current = false;
+    }, [selectedDate]);
+
+    // Context menu handlers
+    const handleLongPress = (task: any) => {
+        setSelectedTask(task);
+        setContextMenuVisible(true);
+    };
+
+    const handleHideTask = async () => {
+        if (!selectedTask?.id || !selectedTask?.categoryID) {
+            return;
+        }
+
+        setIsHiding(true);
+
+        try {
+            // Optimistically update the UI
+            updateTask(selectedTask.categoryID, selectedTask.id, { active: false });
+
+            // Make API call to persist the change
+            await updateTaskAPI(selectedTask.categoryID, selectedTask.id, {
+                content: selectedTask.content,
+                priority: selectedTask.priority || 0,
+                value: selectedTask.value || 0,
+                public: selectedTask.public || false,
+                recurring: selectedTask.recurring || false,
+                recurDetails: selectedTask.recurDetails || { every: 1, behavior: "ROLLING" },
+                active: false, // Set task as inactive (hidden)
+            });
+
+            setContextMenuVisible(false);
+        } catch (error) {
+            console.error("Failed to hide task:", error);
+            // Revert the optimistic update on error
+            updateTask(selectedTask.categoryID, selectedTask.id, { active: true });
+        } finally {
+            setIsHiding(false);
+        }
+    };
+
+    const handleSeeMore = () => {
+        setContextMenuVisible(false);
+        if (selectedTask?.id) {
+            router.push({
+                pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
+                params: {
+                    name: selectedTask.content,
+                    id: selectedTask.id,
+                    categoryId: selectedTask.categoryID || "",
+                },
+            });
+        }
+    };
+
+    const handleGoToWorkspace = () => {
+        setContextMenuVisible(false);
+        if (selectedTask?.workspaceName) {
+            // Set the selected workspace in context
+            setSelected(selectedTask.workspaceName);
+            // Navigate to the today/workspace view
+            router.push("/(logged-in)/(tabs)/(task)/today");
+        }
+    };
+
     return (
         <View style={{ flex: 1 }}>
-            <Animated.ScrollView 
+            <Animated.ScrollView
                 ref={scrollViewRef}
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
@@ -360,47 +479,20 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                                 }
 
                                                 const taskStyle = createTaskStyle(durationHours, minuteOffset);
-                                                
+
                                                 // Handle overlaps by splitting width
                                                 const widthPercent = 100 / array.length;
                                                 const leftPercent = index * widthPercent;
 
                                                 return (
-                                                    <View 
-                                                        key={task.id || `task-${Math.random()}`} 
-                                                        style={[
-                                                            taskStyle, 
-                                                            { 
-                                                                position: "absolute", 
-                                                                width: `${widthPercent}%`,
-                                                                left: `${leftPercent}%`
-                                                            }
-                                                        ]}
-                                                    >
-                                                        <TouchableOpacity
-                                                            style={styles.scheduleTaskTouchable}
-                                                            onPress={() => {
-                                                                if (task.id) {
-                                                                    router.push({
-                                                                        pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-                                                                        params: {
-                                                                            name: task.content,
-                                                                            id: task.id,
-                                                                            categoryId: task.categoryID || "",
-                                                                        },
-                                                                    });
-                                                                }
-                                                            }}>
-                                                            <View style={[
-                                                                themedStyles.scheduleTaskContent,
-                                                                isDeadline && themedStyles.deadlineTaskContent,
-                                                            ]}>
-                                                                <ThemedText type="lightBody" style={isDeadline && themedStyles.deadlineText}>
-                                                                    {isDeadline ? `${task.content} [Deadline]` : task.content}
-                                                                </ThemedText>
-                                                            </View>
-                                                        </TouchableOpacity>
-                                                    </View>
+                                                    <CalendarEventCard
+                                                        key={task.id || `task-${Math.random()}`}
+                                                        task={task}
+                                                        taskStyle={taskStyle}
+                                                        widthPercent={widthPercent}
+                                                        leftPercent={leftPercent}
+                                                        onLongPress={handleLongPress}
+                                                    />
                                                 );
                                             })}
                                         </Animated.View>
@@ -424,6 +516,72 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                     />
                 </View>
             </Animated.ScrollView>
+
+            {/* Context Menu Modal */}
+            <DefaultModal
+                visible={contextMenuVisible}
+                setVisible={setContextMenuVisible}
+                enableDynamicSizing={true}
+                enablePanDownToClose={true}
+            >
+                <View style={{ paddingBottom: 16 }}>
+                    <ThemedText type="subtitle" style={{ marginBottom: 16, paddingHorizontal: 4 }}>
+                        {selectedTask?.content}
+                    </ThemedText>
+
+                    {/* See More Option */}
+                    <TouchableOpacity
+                        style={[styles.menuOption, { borderTopWidth: 0 }]}
+                        onPress={handleSeeMore}
+                    >
+                        <Ionicons name="information-circle-outline" size={24} color={ThemedColor.text} />
+                        <ThemedText type="default" style={{ marginLeft: 12, flex: 1 }}>
+                            See More
+                        </ThemedText>
+                        <Ionicons name="chevron-forward" size={20} color={ThemedColor.caption} />
+                    </TouchableOpacity>
+
+                    {/* Go to Workspace Option */}
+                    {selectedTask?.workspaceName && (
+                        <TouchableOpacity
+                            style={styles.menuOption}
+                            onPress={handleGoToWorkspace}
+                        >
+                            <Ionicons name="folder-outline" size={24} color={ThemedColor.text} />
+                            <View style={{ marginLeft: 12, flex: 1 }}>
+                                <ThemedText type="default">Go to Workspace</ThemedText>
+                                <ThemedText type="caption" style={{ fontSize: 12, marginTop: 2 }}>
+                                    {selectedTask.workspaceName}
+                                </ThemedText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={ThemedColor.caption} />
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Hide Option */}
+                    <TouchableOpacity
+                        style={styles.menuOption}
+                        onPress={handleHideTask}
+                        disabled={isHiding}
+                    >
+                        <Ionicons
+                            name="eye-off-outline"
+                            size={24}
+                            color={isHiding ? ThemedColor.caption : ThemedColor.error}
+                        />
+                        <ThemedText
+                            type="default"
+                            style={{
+                                marginLeft: 12,
+                                flex: 1,
+                                color: isHiding ? ThemedColor.caption : ThemedColor.error
+                            }}
+                        >
+                            {isHiding ? "Hiding..." : "Hide Task"}
+                        </ThemedText>
+                    </TouchableOpacity>
+                </View>
+            </DefaultModal>
         </View>
     );
 };
@@ -458,11 +616,13 @@ const styles = StyleSheet.create({
         top: 0,
         zIndex: 3,
     },
-    scheduleTaskTouchable: {
-        flex: 1,
-        width: "100%",
-        height: "100%",
-        overflow: "hidden",
+    menuOption: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 16,
+        paddingHorizontal: 4,
+        borderTopWidth: 1,
+        borderTopColor: "rgba(128, 128, 128, 0.2)",
     },
 });
 

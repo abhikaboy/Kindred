@@ -1,5 +1,8 @@
 import baseClient from "./client";
 import type { paths } from "./generated/types";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('UploadAPI');
 
 type GenerateImageUploadURLResponse =
     paths["/v1/uploads/{resource_type}/{resource_id}/url"]["get"]["responses"]["200"]["content"]["application/json"];
@@ -51,7 +54,7 @@ export function getMimeTypeFromUri(uri: string): string {
 export async function uploadProfilePicture(userId: string, imageUri: string, fileType: string): Promise<string> {
     try {
         // Step 1: Get presigned upload URL from backend
-        console.log("Requesting presigned upload URL...");
+        logger.debug("Requesting presigned upload URL");
         const { data: presignData, error: presignError } = await baseClient.GET(
             "/v1/uploads/{resource_type}/{resource_id}/url",
             {
@@ -72,7 +75,7 @@ export async function uploadProfilePicture(userId: string, imageUri: string, fil
         const { upload_url, public_url } = presignData;
 
         // Step 2: Convert image URI to blob/buffer
-        console.log("Converting image to blob...");
+        logger.debug("Converting image to blob");
         const response = await fetch(imageUri);
         if (!response.ok) {
             throw new Error("Failed to fetch image from URI");
@@ -80,7 +83,7 @@ export async function uploadProfilePicture(userId: string, imageUri: string, fil
         const imageBlob = await response.blob();
 
         // Step 3: Upload the image to Digital Ocean Spaces using the presigned URL
-        console.log("Uploading image to Spaces...");
+        logger.debug("Uploading image to Spaces");
         const uploadResponse = await fetch(upload_url, {
             method: "PUT",
             body: imageBlob,
@@ -93,10 +96,10 @@ export async function uploadProfilePicture(userId: string, imageUri: string, fil
         if (!uploadResponse.ok) {
             throw new Error(`Failed to upload image to Spaces: ${uploadResponse.status} ${uploadResponse.statusText}`);
         }
-        console.log("Upload successful!");
+        logger.info("Upload successful");
 
         // Step 4: Confirm the upload with your backend
-        console.log("Confirming upload with backend...");
+        logger.debug("Confirming upload with backend");
         const { error: confirmError } = await baseClient.POST("/v1/uploads/{resource_type}/{resource_id}/confirm", {
             params: {
                 path: {
@@ -110,13 +113,13 @@ export async function uploadProfilePicture(userId: string, imageUri: string, fil
         if (confirmError) {
             throw new Error(`Failed to confirm upload: ${JSON.stringify(confirmError)}`);
         }
-        console.log("Upload confirmed!");
+        logger.info("Upload confirmed");
 
         // Step 5: Return the public URL
-        console.log("Image is now available at:", public_url);
+        logger.info("Image available", { url: public_url });
         return public_url;
     } catch (error) {
-        console.error("Profile picture upload failed:", error);
+        logger.error("Profile picture upload failed", error);
         throw error;
     }
 }
@@ -148,12 +151,12 @@ export async function uploadAndProcessImage(
 ): Promise<ImageUploadResult> {
     try {
         // Step 1: Convert image URI to base64
-        console.log("Converting image to base64...");
+        logger.debug("Converting image to base64");
         const response = await fetch(imageUri);
         if (!response.ok) {
             throw new Error("Failed to fetch image from URI");
         }
-        
+
         const imageBlob = await response.blob();
         const base64Data = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
@@ -171,7 +174,7 @@ export async function uploadAndProcessImage(
         const contentType = imageBlob.type || getMimeTypeFromUri(imageUri);
 
         // Step 2: Send to processing endpoint
-        console.log("Processing and uploading image...");
+        logger.debug("Processing and uploading image");
         const { data: processData, error: processError } = await baseClient.POST(
             "/v1/uploads/{resource_type}/{resource_id}/process",
             {
@@ -193,7 +196,7 @@ export async function uploadAndProcessImage(
             throw new Error(`Failed to process image: ${JSON.stringify(processError)}`);
         }
 
-        console.log("Image processed successfully:", processData);
+        logger.info("Image processed successfully", processData);
         return {
             public_url: processData.public_url,
             width: processData.width,
@@ -203,7 +206,7 @@ export async function uploadAndProcessImage(
             processed_at: processData.processed_at
         };
     } catch (error) {
-        console.error("Image processing failed:", error);
+        logger.error("Image processing failed", error);
         throw error;
     }
 }
@@ -224,7 +227,7 @@ export async function uploadImage(
 ): Promise<string> {
     try {
         // Step 1: Get presigned upload URL from backend
-        console.log("Requesting presigned upload URL...");
+        logger.debug("Requesting presigned upload URL");
         const { data: presignData, error: presignError } = await baseClient.GET(
             "/v1/uploads/{resource_type}/{resource_id}/url",
             {
@@ -245,7 +248,7 @@ export async function uploadImage(
         const { upload_url, public_url } = presignData;
 
         // Step 2: Convert image URI to blob/buffer
-        console.log("Converting image to blob...");
+        logger.debug("Converting image to blob");
         const response = await fetch(imageUri);
         if (!response.ok) {
             throw new Error("Failed to fetch image from URI");
@@ -253,7 +256,7 @@ export async function uploadImage(
         const imageBlob = await response.blob();
 
         // Step 3: Upload the image to Digital Ocean Spaces using the presigned URL
-        console.log("Uploading image to Spaces...");
+        logger.debug("Uploading image to Spaces");
         const uploadResponse = await fetch(upload_url, {
             method: "PUT",
             body: imageBlob,
@@ -266,10 +269,10 @@ export async function uploadImage(
         if (!uploadResponse.ok) {
             throw new Error(`Failed to upload image to Spaces: ${uploadResponse.status} ${uploadResponse.statusText}`);
         }
-        console.log("Upload successful!");
+        logger.info("Upload successful");
 
         // Step 4: Confirm the upload with your backend
-        console.log("Confirming upload with backend...");
+        logger.debug("Confirming upload with backend");
         const { error: confirmError } = await baseClient.POST("/v1/uploads/{resource_type}/{resource_id}/confirm", {
             params: {
                 path: {
@@ -283,13 +286,13 @@ export async function uploadImage(
         if (confirmError) {
             throw new Error(`Failed to confirm upload: ${JSON.stringify(confirmError)}`);
         }
-        console.log("Upload confirmed!");
+        logger.info("Upload confirmed");
 
         // Step 5: Return the public URL
-        console.log("Image is now available at:", public_url);
+        logger.info("Image available", { url: public_url });
         return public_url;
     } catch (error) {
-        console.error("Image upload failed:", error);
+        logger.error("Image upload failed", error);
         throw error;
     }
 }
@@ -313,7 +316,7 @@ export async function uploadImageSmart(
     } = {}
 ): Promise<string | ImageUploadResult> {
     const { variant, fallbackToLegacy = true, returnFullResult = false } = options;
-    
+
     try {
         // Determine optimal variant based on resource type
         let selectedVariant = variant;
@@ -338,29 +341,29 @@ export async function uploadImageSmart(
             const result = await uploadAndProcessImage(resourceType, resourceId, imageUri, selectedVariant);
             return returnFullResult ? result : result.public_url;
         } catch (processingError) {
-            console.warn("Processing upload failed, falling back to legacy upload:", processingError);
-            
+            logger.warn("Processing upload failed, falling back to legacy upload", processingError);
+
             if (!fallbackToLegacy) {
                 throw processingError;
             }
-            
+
             // Fallback to legacy upload
             const fileType = getMimeTypeFromUri(imageUri);
             const legacyUrl = await uploadImage(resourceType, resourceId, imageUri, fileType);
-            
+
             // For legacy uploads, we don't have size info, so return just the URL or a basic result
             if (returnFullResult) {
                 return {
                     public_url: legacyUrl,
                     width: 0, // Unknown for legacy uploads
-                    height: 0, // Unknown for legacy uploads  
+                    height: 0, // Unknown for legacy uploads
                     size: 0 // Unknown for legacy uploads
                 };
             }
             return legacyUrl;
         }
     } catch (error) {
-        console.error("Smart upload failed:", error);
+        logger.error("Smart upload failed", error);
         throw error;
     }
 }

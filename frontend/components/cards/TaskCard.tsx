@@ -101,33 +101,21 @@ const TaskCard = ({
         };
     }, []);
 
-    useEffect(() => {
-        // const checkTimerState = async () => {
-        //     try {
-        //         const isRunning = await AsyncStorage.getItem(`task_${id}_isRunning`);
-        //         if (isMounted.current) {
-        //             setIsRunningState(isRunning === "true");
-        //         }
-        //     } catch (error) {
-        //         console.error("Error checking timer state:", error);
-        //     }
-        // };
-        // checkTimerState();
-    }, [id]);
+    // Timer state check removed for performance - was unused
 
     // Calculate date display text and color
     const dateDisplay = useMemo(() => {
         // If detailed is false, don't show any date labels
         if (!detailed) return null;
-        
+
         const now = new Date();
-        
+
         // Priority 1: Show deadline if it exists
         if (task?.deadline) {
             try {
                 const deadlineDate = parseISO(task.deadline);
                 const isOverdue = isAfter(now, deadlineDate);
-                
+
                 if (isOverdue) {
                     const duration = formatDistanceToNow(deadlineDate, { addSuffix: false });
                     return {
@@ -149,12 +137,12 @@ const TaskCard = ({
                 return null;
             }
         }
-        
+
         // Priority 2: Show start date if it exists and no deadline
         if (task?.startDate && !task?.deadline) {
             try {
                 const startDate = parseISO(task.startDate);
-                
+
                 if (isToday(startDate)) {
                     return {
                         text: '(today)',
@@ -185,7 +173,7 @@ const TaskCard = ({
                 return null;
             }
         }
-        
+
         return null;
     }, [task?.deadline, task?.startDate, detailed]);
 
@@ -257,7 +245,7 @@ const TaskCard = ({
                 disabled={!redirect && !encourage && !congratulate}
                 onPress={handlePress}
                 onLongPress={handleLongPress}>
-                <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />
+                {editing && <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />}
 
                 <View style={styles.row}>
                     <View style={styles.contentContainer}>
@@ -298,16 +286,16 @@ const TaskCard = ({
                             {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             {value}
                         </ThemedText> */}
-                            
+
                             {/* Show priority dot */}
                             <View
                                 style={[styles.circle, { backgroundColor: getPriorityColor(PRIORITY_MAP[priority]) }]}
                             />
                         </ConditionalView>
                         <ConditionalView condition={encourage}>
-                            <Sparkle 
-                                size={24} 
-                                color="#9333EA" 
+                            <Sparkle
+                                size={24}
+                                color="#9333EA"
                                 weight="regular"
                             />
                         </ConditionalView>
@@ -323,46 +311,72 @@ const TaskCard = ({
                 </View>
             </TouchableOpacity>
 
-            {/* Encourage Modal */}
-            <EncourageModal
-                visible={showEncourageModal}
-                setVisible={setShowEncourageModal}
-                task={{
-                    id,
-                    content,
-                    value,
-                    priority,
-                    categoryId,
-                }}
-                encouragementConfig={encouragementConfig}
-            />
+            {/* Lazy load modals - only render when needed */}
+            {showEncourageModal && (
+                <EncourageModal
+                    visible={showEncourageModal}
+                    setVisible={setShowEncourageModal}
+                    task={{
+                        id,
+                        content,
+                        value,
+                        priority,
+                        categoryId,
+                    }}
+                    encouragementConfig={encouragementConfig}
+                />
+            )}
 
-            {/* Congratulate Modal */}
-            <CongratulateModal
-                visible={showCongratulateModal}
-                setVisible={setShowCongratulateModal}
-                task={{
-                    id,
-                    content,
-                    value,
-                    priority,
-                    categoryId,
-                }}
-                congratulationConfig={congratulationConfig}
-            />
+            {showCongratulateModal && (
+                <CongratulateModal
+                    visible={showCongratulateModal}
+                    setVisible={setShowCongratulateModal}
+                    task={{
+                        id,
+                        content,
+                        value,
+                        priority,
+                        categoryId,
+                    }}
+                    congratulationConfig={congratulationConfig}
+                />
+            )}
 
-            <CustomAlert
-                visible={alertVisible}
-                setVisible={setAlertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                buttons={alertButtons}
-            />
+            {alertVisible && (
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title={alertTitle}
+                    message={alertMessage}
+                    buttons={alertButtons}
+                />
+            )}
         </>
     );
 };
 
-export default TaskCard;
+// Memoize TaskCard to prevent unnecessary re-renders
+export default React.memo(TaskCard, (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+        prevProps.content === nextProps.content &&
+        prevProps.id === nextProps.id &&
+        prevProps.priority === nextProps.priority &&
+        prevProps.value === nextProps.value &&
+        prevProps.redirect === nextProps.redirect &&
+        prevProps.encourage === nextProps.encourage &&
+        prevProps.congratulate === nextProps.congratulate &&
+        prevProps.showRedOutline === nextProps.showRedOutline &&
+        prevProps.detailed === nextProps.detailed &&
+        prevProps.highlightContent === nextProps.highlightContent &&
+        prevProps.task?.deadline === nextProps.task?.deadline &&
+        prevProps.task?.startDate === nextProps.task?.startDate &&
+        prevProps.task?.startTime === nextProps.task?.startTime &&
+        prevProps.task?.active === nextProps.task?.active &&
+        prevProps.task?.recurring === nextProps.task?.recurring &&
+        prevProps.task?.integration === nextProps.task?.integration
+    );
+});
 
 const styles = StyleSheet.create({
     container: {

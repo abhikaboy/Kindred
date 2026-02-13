@@ -18,6 +18,7 @@
     ],
     "ios": {
       "buildNumber": "70",
+      "jsEngine": "hermes",
       "supportsTablet": false,
       "requireFullScreen": true,
       "infoPlist": {

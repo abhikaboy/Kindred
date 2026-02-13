@@ -2,12 +2,12 @@ import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { 
-    format, 
-    startOfMonth, 
-    endOfMonth, 
-    startOfWeek, 
-    endOfWeek, 
+import {
+    format,
+    startOfMonth,
+    endOfMonth,
+    startOfWeek,
+    endOfWeek,
     isSameMonth,
     isSameDay,
 } from "date-fns";
@@ -18,13 +18,13 @@ interface MonthViewProps {
     onDateSelected: (date: Date) => void;
 }
 
-export const MonthView: React.FC<MonthViewProps> = ({ 
-    centerDate, 
-    selectedDate, 
-    onDateSelected 
+export const MonthView: React.FC<MonthViewProps> = ({
+    centerDate,
+    selectedDate,
+    onDateSelected
 }) => {
     const ThemedColor = useThemeColor();
-    
+
     const renderGrid = () => {
         const monthStart = startOfMonth(centerDate);
         const monthEnd = endOfMonth(centerDate);
@@ -41,7 +41,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
             for (let i = 0; i < 7; i++) {
                 formattedDate = format(day, dateFormat);
                 const cloneDay = day;
-                
+
                 const isSelected = isSameDay(day, selectedDate);
                 const isCurrentMonth = isSameMonth(day, monthStart);
 
@@ -54,13 +54,13 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         ]}
                         onPress={() => onDateSelected(cloneDay)}
                     >
-                        <ThemedText 
+                        <ThemedText
                             type={isSelected ? "defaultSemiBold" : "default"}
-                            style={{ 
-                                color: isSelected 
-                                    ? ThemedColor.background 
-                                    : isCurrentMonth 
-                                        ? ThemedColor.text 
+                            style={{
+                                color: isSelected
+                                    ? ThemedColor.background
+                                    : isCurrentMonth
+                                        ? ThemedColor.text
                                         : ThemedColor.caption,
                                 textAlign: "center"
                             }}
@@ -98,7 +98,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
 
 const styles = StyleSheet.create({
     monthContainer: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 4,
         paddingBottom: 16,
     },
     weekHeaderRow: {
@@ -124,4 +124,3 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 });
-

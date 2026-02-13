@@ -60,9 +60,11 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
     // Purple glow animation effect
     useEffect(() => {
+        let glowLoop: Animated.CompositeAnimation | null = null;
+
         if (visible) {
             // Start the pulsing animation
-            Animated.loop(
+            glowLoop = Animated.loop(
                 Animated.sequence([
                     Animated.timing(glowOpacity, {
                         toValue: 0.3,
@@ -75,7 +77,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         useNativeDriver: true,
                     }),
                 ])
-            ).start();
+            );
+            glowLoop.start();
         } else {
             // Fade out when closing
             Animated.timing(glowOpacity, {
@@ -84,6 +87,13 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 useNativeDriver: true,
             }).start();
         }
+
+        // Cleanup: stop animation on unmount or when visibility changes
+        return () => {
+            if (glowLoop) {
+                glowLoop.stop();
+            }
+        };
     }, [visible]);
 
     // Track mounted state and reset when modal opens
@@ -188,11 +198,11 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     } else {
                         // It's a local image, upload it
                         const tempId = `encouragement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        
+
                         const imageUrl = await uploadImageSmart("encouragement", tempId, selectedImage, {
                             variant: "large",
                         });
-                        
+
                         contentToSend = typeof imageUrl === 'string' ? imageUrl : imageUrl.public_url;
                         encouragementType = "image";
                     }
@@ -235,10 +245,10 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
             // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);
-            
+
             // Also increment kudosRewards.encouragements for rewards tracking
             const currentKudosRewards = user?.kudosRewards || { encouragements: 0, congratulations: 0 };
-            updateUser({ 
+            updateUser({
                 encouragements: newCount,
                 kudosRewards: {
                     ...currentKudosRewards,
@@ -249,7 +259,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             // Close modal first, enable confetti, then trigger it
             setVisible(false);
             setShowConfetti(true);
-            
+
             setTimeout(() => {
                 if (confettiRef.current) {
                     confettiRef.current.start();
@@ -277,7 +287,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             {/* Full Screen Purple Glow - Using Portal for root-level rendering */}
             {visible && (
                 <Portal>
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.fullScreenGlowWrapper,
                             { opacity: glowOpacity }
@@ -322,7 +332,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     ref={confettiRef}
                     count={50}
                     origin={
-                        { x: Dimensions.get("screen").width / 2, 
+                        { x: Dimensions.get("screen").width / 2,
                         y: (Dimensions.get("screen").height / 4) * 3.7 }
                     }
                     explosionSpeed={300}
@@ -332,7 +342,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     colors={['#9333EA', '#A855F7', '#C084FC', '#E9D5FF']}
                 />
             )}
-            
+
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>
                 <View style={styles.container}>
                 {/* Task Card - Only show for task-level encouragements */}
@@ -352,7 +362,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                                     </View>
                                 </View>
                             </View>
-                        )}  
+                        )}
                     </View>
                 )}
 
@@ -363,7 +373,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
                 {/* Description */}
                 <ThemedText type="lightBody" style={styles.descriptionStyled}>
-                    {isProfileLevel 
+                    {isProfileLevel
                         ? `Send a personal encouragement to ${encouragementConfig?.userHandle || "User"}!`
                         : `${encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement`
                     }
@@ -383,13 +393,13 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         />
                     </View>
                 ) : (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.imagePreviewContainer}
                         onPress={handleImagePick}
                         activeOpacity={0.9}
                     >
                         <Image source={{ uri: selectedImage }} style={styles.imagePreview} resizeMode="contain" />
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.removeImageButton}
                             onPress={(e) => {
                                 e.stopPropagation();
@@ -404,14 +414,14 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 {/* Media Icons */}
                 <View style={styles.mediaIconsContainerWrapper}>
                     <View style={styles.mediaIconsContainer}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.iconButton}
                             onPress={handleImagePick}
                             disabled={isUploading}
                         >
                             <Images size={32} color={ThemedColor.text} weight="regular" />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.iconButton}
                             onPress={() => setShowGifPicker(true)}
                             disabled={isUploading}

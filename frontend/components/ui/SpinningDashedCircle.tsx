@@ -11,7 +11,7 @@ export const SpinningDashedCircle = () => {
 
     useEffect(() => {
         // Create infinite rotation animation (very slow)
-        Animated.loop(
+        const rotationLoop = Animated.loop(
             Animated.timing(rotateAnim, {
                 toValue: 1,
                 duration: 10000, // 20 seconds for one full rotation
@@ -20,7 +20,14 @@ export const SpinningDashedCircle = () => {
             {
                 resetBeforeIteration: true, // Reset to 0 before each iteration
             }
-        ).start();
+        );
+
+        rotationLoop.start();
+
+        // Cleanup: stop animation on unmount
+        return () => {
+            rotationLoop.stop();
+        };
     }, [rotateAnim]);
 
     const rotate = rotateAnim.interpolate({
@@ -29,7 +36,7 @@ export const SpinningDashedCircle = () => {
     });
 
     return (
-        <AnimatedView 
+        <AnimatedView
             style={[
                 styles.container,
                 {
@@ -56,11 +63,10 @@ export const SpinningDashedCircle = () => {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        top: -40,   
+        top: -40,
         right: -50,
         width: 150,
         height: 150,
         zIndex: 1,
     },
 });
-

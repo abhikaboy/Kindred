@@ -26,13 +26,13 @@ type Props = {
     onRightSwipe?: () => void; // Customizable right swipe action
 };
 
-export default function SchedulableTaskCard({ 
-    redirect = false, 
-    categoryId, 
-    task, 
+const SchedulableTaskCard = ({
+    redirect = false,
+    categoryId,
+    task,
     categoryName,
-    onRightSwipe 
-}: Props) {
+    onRightSwipe
+}: Props) => {
     const { removeFromCategory, setShowConfetti } = useTasks();
     const ThemedColor = useThemeColor();
 
@@ -42,7 +42,7 @@ export default function SchedulableTaskCard({
     const [alertMessage, setAlertMessage] = React.useState("");
     const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
 
-    /* 
+    /*
   Mark as completed function
 */
 
@@ -127,14 +127,16 @@ export default function SchedulableTaskCard({
                     showRedOutline={!isCategoryConfigured}
                 />
             </ReanimatedSwipeable>
-            
-            <CustomAlert
-                visible={alertVisible}
-                setVisible={setAlertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                buttons={alertButtons}
-            />
+
+            {alertVisible && (
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title={alertTitle}
+                    message={alertMessage}
+                    buttons={alertButtons}
+                />
+            )}
         </>
     );
 }
@@ -215,6 +217,21 @@ function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, callb
         </Reanimated.View>
     );
 }
+
+// Memoize SchedulableTaskCard to prevent unnecessary re-renders
+export default React.memo(SchedulableTaskCard, (prevProps, nextProps) => {
+    return (
+        prevProps.redirect === nextProps.redirect &&
+        prevProps.categoryId === nextProps.categoryId &&
+        prevProps.task.id === nextProps.task.id &&
+        prevProps.task.content === nextProps.task.content &&
+        prevProps.task.priority === nextProps.task.priority &&
+        prevProps.task.value === nextProps.task.value &&
+        prevProps.task.deadline === nextProps.task.deadline &&
+        prevProps.task.startDate === nextProps.task.startDate &&
+        prevProps.task.active === nextProps.task.active
+    );
+});
 
 const styles = StyleSheet.create({
     swipeable: {

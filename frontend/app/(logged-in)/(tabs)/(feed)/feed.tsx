@@ -16,8 +16,8 @@ import {
     Image,
     Animated,
     RefreshControl,
-    FlatList,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { getAllPosts, getFriendsPosts, getPostsByBlueprint, getFeed, type FeedItem } from "@/api/post";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import { showToast } from "@/utils/showToast";
@@ -102,7 +102,7 @@ export default function Feed() {
     const scrollVelocity = useRef(0);
     const lastScrollTime = useRef(Date.now());
     const velocityThreshold = 0.3;
-    const flatListRef = useRef<FlatList>(null);
+    const flatListRef = useRef<any>(null);
     const isInitialMount = useRef(true);
 
     const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
@@ -497,14 +497,16 @@ export default function Feed() {
                 </View>
 
                 <View style={styles.feedTabsContainer}>
-                    <FlatList
-                        data={availableFeeds}
-                        renderItem={renderFeedTab}
-                        keyExtractor={(item) => item.id}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.feedTabsContent}
-                    />
+                    <View style={{ minHeight: 2, flex: 1 }}>
+                        <FlashList
+                            data={availableFeeds}
+                            renderItem={renderFeedTab}
+                            keyExtractor={(item) => item.id}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.feedTabsContent}
+                        />
+                    </View>
                 </View>
             </View>
         );
@@ -626,19 +628,21 @@ export default function Feed() {
                     </View>
 
                     <View style={styles.feedTabsContainer}>
-                        <FlatList
-                            data={availableFeeds}
-                            renderItem={renderFeedTab}
-                            keyExtractor={(item) => item.id}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.feedTabsContent}
-                        />
+                        <View style={{ minHeight: 2, flex: 1 }}>
+                            <FlashList
+                                data={availableFeeds}
+                                renderItem={renderFeedTab}
+                                keyExtractor={(item) => item.id}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.feedTabsContent}
+                            />
+                        </View>
                     </View>
                 </View>
             </Animated.View>
 
-            <FlatList
+            <FlashList
                 ref={flatListRef}
                 data={currentFeed.id === "feed" ? feedItems : sortedPosts}
                 keyExtractor={(item) => {
@@ -652,7 +656,6 @@ export default function Feed() {
                 }}
                 renderItem={currentFeed.id === "feed" ? renderFeedItem : renderPost}
                 onScroll={handleScroll}
-                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -671,10 +674,6 @@ export default function Feed() {
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
                 removeClippedSubviews={true}
-                maxToRenderPerBatch={5}
-                updateCellsBatchingPeriod={100}
-                initialNumToRender={5}
-                windowSize={10}
             />
         </View>
     );

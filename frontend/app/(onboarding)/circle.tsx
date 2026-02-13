@@ -59,8 +59,8 @@ const CircleOnboarding = (props: Props) => {
 
         // Create sequence of 4 quarter rotations, each with exponential easing
         const quarterRotationDuration = 4000; // 4 seconds per quarter rotation
-        
-        Animated.loop(
+
+        const rotationLoop = Animated.loop(
             Animated.sequence([
                 // First quarter (0 to 0.25)
                 Animated.timing(circleRotation, {
@@ -97,10 +97,11 @@ const CircleOnboarding = (props: Props) => {
                     useNativeDriver: false,
                 }),
             ])
-        ).start();
+        );
+        rotationLoop.start();
 
         // Label switching animation - synchronized with quarter rotations
-        Animated.loop(
+        const labelLoop = Animated.loop(
             Animated.sequence([
                 Animated.timing(labelIndex, {
                     toValue: 4,
@@ -114,7 +115,14 @@ const CircleOnboarding = (props: Props) => {
                     useNativeDriver: false,
                 }),
             ])
-        ).start();
+        );
+        labelLoop.start();
+
+        // Cleanup: stop animations on unmount
+        return () => {
+            rotationLoop.stop();
+            labelLoop.stop();
+        };
     }, []);
 
     // Labels array
@@ -136,65 +144,65 @@ const CircleOnboarding = (props: Props) => {
             <View style={[styles.contentContainer, { zIndex: 1 }]}>
                 {/* Large rotating circle graphic - positioned absolutely on right */}
                 <View style={styles.circleContainer}>
-                    <Svg 
-                        width={screenHeight * 0.5} 
-                        height={screenHeight * 0.5} 
+                    <Svg
+                        width={screenHeight * 0.5}
+                        height={screenHeight * 0.5}
                         viewBox="0 0 400 400"
                         style={styles.circleSvg}
                     >
-                        <AnimatedG 
+                        <AnimatedG
                             transform={circleRotation.interpolate({
                                 inputRange: [0, 1],
                                 outputRange: ['rotate(0 200 200)', 'rotate(360 200 200)'],
                             })}
                         >
                             {/* Main dotted circle - GREEN */}
-                            <Circle 
-                                cx="200" 
-                                cy="200" 
-                                r="180" 
-                                fill="none" 
-                                stroke="#5CFF95" 
+                            <Circle
+                                cx="200"
+                                cy="200"
+                                r="180"
+                                fill="none"
+                                stroke="#5CFF95"
                                 strokeDasharray="12 12"
                                 strokeWidth="2"
                             />
-                            
+
                             {/* 4 filled circles on the circumference at cardinal points - GREEN */}
                             {/* Top */}
-                            <Circle 
-                                cx="200" 
-                                cy="20" 
-                                r="16" 
+                            <Circle
+                                cx="200"
+                                cy="20"
+                                r="16"
                                 fill="#5CFF95"
                             />
-                            
+
                             {/* Right */}
-                            <Circle 
-                                cx="380" 
-                                cy="200" 
-                                r="16" 
+                            <Circle
+                                cx="380"
+                                cy="200"
+                                r="16"
                                 fill="#5CFF95"
                             />
-                            
+
                             {/* Bottom */}
-                            <Circle 
-                                cx="200" 
-                                cy="380" 
-                                r="16" 
+                            <Circle
+                                cx="200"
+                                cy="380"
+                                r="16"
                                 fill="#5CFF95"
                             />
-                            
+
                             {/* Left */}
-                            <Circle 
-                                cx="20" 
-                                cy="200" 
-                                r="16" 
+                            <Circle
+                                cx="20"
+                                cy="200"
+                                r="16"
                                 fill="#5CFF95"
                             />
                         </AnimatedG>
                     </Svg>
                 </View>
-                
+
                 {/* Text labels on the left side - showing one at a time */}
                 <Animated.View style={styles.leftLabelsContainer}>
                     {labels.map((label, index) => {
@@ -216,11 +224,11 @@ const CircleOnboarding = (props: Props) => {
                         });
 
                         return (
-                            <Animated.Text 
-                                key={index} 
+                            <Animated.Text
+                                key={index}
                                 style={[
-                                    styles.labelText, 
-                                    { 
+                                    styles.labelText,
+                                    {
                                         opacity,
                                         position: 'absolute',
                                         top: 0,
@@ -235,7 +243,7 @@ const CircleOnboarding = (props: Props) => {
                 </Animated.View>
 
                 {/* Text content positioned 3/4th down the screen */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.textContainer,
                         {

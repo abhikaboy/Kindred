@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useTypedMutation } from './useTypedAPI';
 import { useAuth } from './useAuth';
 import client from '@/api/client';
+import { createLogger } from '@/utils/logger';
+
+const logger = createLogger('OnboardingHook');
 
 // Onboarding data interface
 export interface OnboardingData {
@@ -259,7 +262,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }
 
         if (Object.keys(errors).length > 0) {
-            console.error('Validation errors:', errors);
+            logger.error('Validation errors', errors);
             throw new Error('Validation failed. Please check all fields.');
         }
 
@@ -268,7 +271,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             // Get user's timezone
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-            console.log('Registering with data:', {
+            logger.debug('Registering with data', {
                 email: onboardingData.email,
                 phone: onboardingData.phone,
                 display_name: onboardingData.displayName,
@@ -291,30 +294,31 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             });
 
             if (result.error) {
-                console.error('❌ Registration failed:', result.error);
+                logger.error('Registration failed', result.error);
                 throw new Error('Registration failed');
             }
 
-            console.log('✅ Registration successful!');
+            logger.info('Registration successful');
 
             // Registration now returns the full user data in the response body!
             // No need for a separate login call
             const userData = result.data as any;
             setUser(userData);
 
-            console.log('✅ User registered and logged in!');
-            console.log('👤 User ID:', userData._id);
-            console.log('👤 User display name:', userData.display_name);
+            logger.info('User registered and logged in', {
+                userId: userData._id,
+                displayName: userData.display_name
+            });
 
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
 
             // Reset after successful registration and login
-            console.log('🧹 Resetting onboarding state...');
+            logger.debug('Resetting onboarding state');
             reset();
-            console.log('✅ Registration flow complete!');
+            logger.info('Registration flow complete');
         } catch (error: any) {
-            console.error('Email registration failed:', error);
+            logger.error('Email registration failed', error);
 
             // Extract error message from backend response
             let errorMessage = 'Registration failed. Please try again.';
@@ -330,7 +334,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 errorMessage = error;
             }
 
-            console.error('❌ Registration error message:', errorMessage);
+            logger.error('Registration error message', { errorMessage });
 
             // Throw error with the backend message so the UI can display it
             throw new Error(errorMessage);
@@ -365,16 +369,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         if (emailError) errors.email = emailError;
 
         if (Object.keys(errors).length > 0) {
-            console.error('Validation errors:', errors);
+            logger.error('Validation errors', errors);
             throw new Error('Validation failed. Please check all fields.');
         }
 
         setIsLoading(true);
         try {
-            console.log('DEBUG - Full onboardingData:', onboardingData);
-            console.log('DEBUG - Email value:', onboardingData.email);
-            console.log('DEBUG - Email type:', typeof onboardingData.email);
-            console.log('Registering with Apple data:', {
+            logger.debug('Registering with Apple data', {
+                onboardingData,
+                email: onboardingData.email,
+                emailType: typeof onboardingData.email,
                 apple_id: onboardingData.appleId,
                 email: onboardingData.email,
                 display_name: onboardingData.displayName,
@@ -405,19 +409,20 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             const userData = result.data as any;
             setUser(userData);
 
-            console.log('✅ User registered and logged in!');
-            console.log('👤 User ID:', userData._id);
-            console.log('👤 User display name:', userData.display_name);
+            logger.info('User registered and logged in', {
+                userId: userData._id,
+                displayName: userData.display_name
+            });
 
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
 
             // Reset after successful registration and login
-            console.log('🧹 Resetting onboarding state...');
+            logger.debug('Resetting onboarding state');
             reset();
-            console.log('✅ Registration flow complete!');
+            logger.info('Registration flow complete');
         } catch (error: any) {
-            console.error('Apple registration failed:', error);
+            logger.error('Apple registration failed', error);
 
             // Extract error message from backend response
             let errorMessage = 'Apple registration failed. Please try again.';
@@ -468,13 +473,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         if (emailError) errors.email = emailError;
 
         if (Object.keys(errors).length > 0) {
-            console.error('Validation errors:', errors);
+            logger.error('Validation errors', errors);
             throw new Error('Validation failed. Please check all fields.');
         }
 
         setIsLoading(true);
         try {
-            console.log('Registering with Google data:', {
+            logger.debug('Registering with Google data', {
                 google_id: onboardingData.googleId,
                 email: onboardingData.email,
                 display_name: onboardingData.displayName,
@@ -505,19 +510,20 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             const userData = result.data as any;
             setUser(userData);
 
-            console.log('✅ User registered and logged in!');
-            console.log('👤 User ID:', userData._id);
-            console.log('👤 User display name:', userData.display_name);
+            logger.info('User registered and logged in', {
+                userId: userData._id,
+                displayName: userData.display_name
+            });
 
             // Note: Default workspace is created automatically by the backend during registration
             // No need to call setupDefaultWorkspace() here
 
             // Reset after successful registration and login
-            console.log('🧹 Resetting onboarding state...');
+            logger.debug('Resetting onboarding state');
             reset();
-            console.log('✅ Registration flow complete!');
+            logger.info('Registration flow complete');
         } catch (error: any) {
-            console.error('Google registration failed:', error);
+            logger.error('Google registration failed', error);
 
             // Extract error message from backend response
             let errorMessage = 'Google registration failed. Please try again.';

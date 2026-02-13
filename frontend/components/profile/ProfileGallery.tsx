@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, Animated, Image, Dimensions, useColorScheme } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Animated, Image, Dimensions, useColorScheme } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,7 +26,7 @@ const GallerySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
     const shimmerAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        Animated.loop(
+        const shimmerLoop = Animated.loop(
             Animated.sequence([
                 Animated.timing(shimmerAnim, {
                     toValue: 1,
@@ -38,7 +39,13 @@ const GallerySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
                     useNativeDriver: true,
                 }),
             ])
-        ).start();
+        );
+        shimmerLoop.start();
+
+        // Cleanup: stop animation on unmount
+        return () => {
+            shimmerLoop.stop();
+        };
     }, [shimmerAnim]);
 
     const opacity = shimmerAnim.interpolate({
@@ -70,7 +77,7 @@ const GallerySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
 // Empty State Component
 const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
     const colorScheme = useColorScheme();
-    
+
     return (
         <View style={styles.emptyContainer}>
             <Image
@@ -228,7 +235,7 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
             "ProfileGallery: Showing alert with options:",
             options.map((o) => o.text)
         );
-        
+
         setAlertTitle("Post Options");
         setAlertMessage("");
         setAlertButtons(options);
@@ -279,6 +286,30 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         showPostOptions(postId, postUserId);
     };
 
+    // Memoize render function BEFORE any conditional returns
+    const renderItem = React.useCallback(({ item }: { item: PostImage }) => {
+        const isDeleting = deletingPosts.has(item.postId);
+
+        return (
+            <TouchableOpacity
+                style={[styles.galleryItem, isDeleting && styles.deletingItem]}
+                onPress={() => handleImagePress(item.postId)}
+                onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
+                delayLongPress={500}
+                activeOpacity={isDeleting ? 1 : 0.8}>
+                <CachedImage
+                    style={[styles.galleryImage, isDeleting && styles.deletingImage]}
+                    source={{
+                        uri: item.imageUrl,
+                    }}
+                    variant="thumbnail"
+                    cachePolicy="disk"
+                    transition={100}
+                />
+            </TouchableOpacity>
+        );
+    }, [deletingPosts, handleImagePress, handleImageLongPress]);
+
     // Show skeleton while loading
     if (isLoading) {
         return <GallerySkeleton ThemedColor={ThemedColor} />;
@@ -291,44 +322,26 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
 
     return (
         <>
-            <FlatList
-                numColumns={3}
-                data={postImages}
-                renderItem={({ item }) => {
-                    const isDeleting = deletingPosts.has(item.postId);
-                    const canDelete = canDeletePost(item.postUserId);
-
-                    return (
-                        <TouchableOpacity
-                            style={[styles.galleryItem, isDeleting && styles.deletingItem]}
-                            onPress={() => handleImagePress(item.postId)}
-                            onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
-                            delayLongPress={500}
-                            activeOpacity={isDeleting ? 1 : 0.8}>
-                            <CachedImage
-                                style={[styles.galleryImage, isDeleting && styles.deletingImage]}
-                                source={{
-                                    uri: item.imageUrl,
-                                }}
-                                variant="thumbnail"
-                                cachePolicy="disk"
-                                transition={100}
-                            />
-                        </TouchableOpacity>
-                    );
-                }}
-                keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.galleryContainer}
-            />
-            <CustomAlert
-                visible={alertVisible}
-                setVisible={setAlertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                buttons={alertButtons}
-            />
+            <View style={{ minHeight: 2, flex: 1 }}>
+                <FlashList
+                    numColumns={3}
+                    data={postImages}
+                    renderItem={renderItem}
+                    keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.galleryContainer}
+                    removeClippedSubviews={true}
+                />
+            </View>
+            {alertVisible && (
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title={alertTitle}
+                    message={alertMessage}
+                    buttons={alertButtons}
+                />
+            )}
         </>
     );
 }

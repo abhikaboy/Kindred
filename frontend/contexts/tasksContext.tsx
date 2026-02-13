@@ -8,6 +8,9 @@ import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategory
 import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createLogger } from "@/utils/logger";
+
+const logger = createLogger('TasksContext');
 
 const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 
@@ -63,7 +66,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [recentWorkspaces, setRecentWorkspaces] = useState<string[]>([]);
 
     const [showConfetti, setShowConfetti] = useState(false);
-    
+
     // Constants for recent workspaces and caching
     const RECENT_WORKSPACES_KEY = `recent_workspaces_${user?._id || 'default'}`;
     const MAX_RECENT_WORKSPACES = 6;
@@ -72,13 +75,21 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const unnestedTasks = useMemo(() => {
         let res = workspaces
-            .flatMap((workspace) => workspace.categories)
-            .flatMap((category) =>
-                category.tasks.map((task) => ({
-                    ...task,
-                    categoryID: category.id,
-                    categoryName: category.name,
+            .flatMap((workspace) =>
+                workspace.categories.map((category) => ({
+                    workspace: workspace.name,
+                    category
                 }))
+            )
+            .flatMap(({ workspace, category }) =>
+                category.tasks
+                    .filter((task) => task.active !== false) // Filter out hidden/inactive tasks
+                    .map((task) => ({
+                        ...task,
+                        categoryID: category.id,
+                        categoryName: category.name,
+                        workspaceName: workspace,
+                    }))
             );
         return res;
     }, [workspaces]);
@@ -100,7 +111,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             const today = new Date();
             const startDate = new Date(task?.startDate);
             const deadline = new Date(task?.deadline);
-            
+
             // Check if today falls between start date and deadline
             return startDate <= today && today <= deadline;
         });
@@ -154,15 +165,15 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const invalidateWorkspacesCache = async () => {
         try {
             await AsyncStorage.removeItem(WORKSPACES_CACHE_KEY);
-            console.log("Workspaces cache invalidated");
+            logger.debug("Workspaces cache invalidated");
         } catch (error) {
-            console.error("Error invalidating workspaces cache:", error);
+            logger.error("Error invalidating workspaces cache", error);
         }
     };
 
     const fetchWorkspaces = async (forceRefresh: boolean = false) => {
         if (!user?._id) return;
-        
+
         // Check cache first if not forcing refresh
         if (!forceRefresh) {
             try {
@@ -170,30 +181,30 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 if (cached) {
                     const { data: cachedData, timestamp } = JSON.parse(cached);
                     const now = Date.now();
-                    
+
                     // Use cache if it's less than 5 minutes old
                     if ((now - timestamp) < CACHE_DURATION) {
-                        console.log("Using cached workspaces (age: " + Math.floor((now - timestamp) / 1000) + "s)");
+                        logger.debug("Using cached workspaces (age: " + Math.floor((now - timestamp) / 1000) + "s)");
                         setWorkSpaces(cachedData);
                         return;
                     } else {
-                        console.log("Cache expired, fetching fresh data");
+                        logger.debug("Cache expired, fetching fresh data");
                     }
                 }
             } catch (error) {
-                console.error("Error reading workspaces cache:", error);
+                logger.error("Error reading workspaces cache", error);
             }
         } else {
-            console.log("Force refresh requested, bypassing cache");
+            logger.debug("Force refresh requested, bypassing cache");
         }
 
         // Fetch fresh data
         setFetchingWorkspaces(true);
         try {
-            console.log("Fetching workspaces via API");
+            logger.info("Fetching workspaces via API");
             const data = await fetchUserWorkspaces(user._id);
             const subscribedBlueprints = await getUserSubscribedBlueprints();
-            console.log("subscribedBlueprints", subscribedBlueprints);
+            logger.debug("subscribedBlueprints", subscribedBlueprints);
             const blueprintWorkspaces: BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
                 return {
                     name: blueprint.name,
@@ -202,7 +213,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                     isBlueprint: true
                 }
             });
-            console.log("blueprintWorkspaces", blueprintWorkspaces);
+            logger.debug("blueprintWorkspaces", blueprintWorkspaces);
 
             const allWorkspaces = [...data, ...blueprintWorkspaces];
             setWorkSpaces(allWorkspaces);
@@ -213,12 +224,12 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                     data: allWorkspaces,
                     timestamp: Date.now()
                 }));
-                console.log("Workspaces cached successfully");
+                logger.debug("Workspaces cached successfully");
             } catch (error) {
-                console.error("Error caching workspaces:", error);
+                logger.error("Error caching workspaces", error);
             }
         } catch (error) {
-            console.error("Error fetching workspaces:", error);
+            logger.error("Error fetching workspaces", error);
             throw error;
         } finally {
             setFetchingWorkspaces(false);
@@ -248,7 +259,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const addToCategory = async (categoryId: string, task: Task) => {
         // Create a deep copy of workspaces to avoid mutations
         let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
-        
+
         // Update workspaces state - this will automatically update categories via useEffect
         workspacesCopy.forEach((workspace: Workspace) => {
             workspace.categories.forEach((category: Categories) => {
@@ -262,7 +273,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 }
             });
         });
-        
+
         setWorkSpaces(workspacesCopy);
         // Invalidate cache after local update
         await invalidateWorkspacesCache();
@@ -279,7 +290,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
         let categoryName: string | undefined;
         let updatedTask: Task | null = null;
-        
+
         // Update workspaces state - this will automatically update categories via useEffect
         workspacesCopy.forEach((workspace: Workspace) => {
             workspace.categories.forEach((category: Categories) => {
@@ -297,7 +308,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 }
             });
         });
-        
+
         setWorkSpaces(workspacesCopy);
 
         // Update the selected task if it's the one being edited
@@ -336,7 +347,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const removeFromCategory = async (categoryId: string, taskId: string) => {
         // Create a deep copy of workspaces to avoid mutations
         let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
-        
+
         // Update workspaces state - this will automatically update categories via useEffect
         workspacesCopy.forEach((workspace: Workspace) => {
             workspace.categories.forEach((category: Categories) => {
@@ -345,7 +356,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 }
             });
         });
-        
+
         setWorkSpaces(workspacesCopy);
         // Invalidate cache after local update
         await invalidateWorkspacesCache();
@@ -374,14 +385,14 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let workspacesCopy = workspaces.slice();
         workspacesCopy = workspacesCopy.filter((workspace) => workspace.name !== name);
         setWorkSpaces(workspacesCopy);
-        
+
         // If the deleted workspace was selected, select the first available workspace
         if (selected === name && workspacesCopy.length > 0) {
             setSelected(workspacesCopy[0].name);
         } else if (selected === name && workspacesCopy.length === 0) {
             setSelected("");
         }
-        
+
         // Invalidate cache after local update
         invalidateWorkspacesCache();
     };
@@ -394,10 +405,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let workspacesCopy = workspaces.slice();
         workspacesCopy.push(workspace);
         setWorkSpaces(workspacesCopy);
-        
+
         // Invalidate cache after local update for consistency
         await invalidateWorkspacesCache();
-        
+
         // If no workspace is currently selected, select the restored one
         if (selected === "") {
             setSelected(workspace.name);
@@ -422,7 +433,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setRecentWorkspaces(parsedRecents);
             }
         } catch (error) {
-            console.error('Error loading recent workspaces:', error);
+            logger.error('Error loading recent workspaces', error);
         }
     };
 
@@ -435,23 +446,23 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
         try {
             let updatedRecents = [...recentWorkspaces];
-            
+
             // Remove the workspace if it already exists to avoid duplicates
             updatedRecents = updatedRecents.filter(name => name !== workspaceName);
-            
+
             // Add to the beginning of the array
             updatedRecents.unshift(workspaceName);
-            
+
             // Limit to MAX_RECENT_WORKSPACES
             updatedRecents = updatedRecents.slice(0, MAX_RECENT_WORKSPACES);
-            
+
             // Save to AsyncStorage
             await AsyncStorage.setItem(RECENT_WORKSPACES_KEY, JSON.stringify(updatedRecents));
-            
+
             // Update state
             setRecentWorkspaces(updatedRecents);
         } catch (error) {
-            console.error('Error adding to recent workspaces:', error);
+            logger.error('Error adding to recent workspaces', error);
         }
     };
 
@@ -471,7 +482,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             await AsyncStorage.removeItem(RECENT_WORKSPACES_KEY);
             setRecentWorkspaces([]);
         } catch (error) {
-            console.error('Error clearing recent workspaces:', error);
+            logger.error('Error clearing recent workspaces', error);
         }
     };
 
@@ -482,7 +493,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const handleSetSelected = (workspaceName: string) => {
         // First set the selected workspace immediately (synchronous)
         setSelected(workspaceName);
-        
+
         // Defer AsyncStorage write to avoid blocking the UI
         if (workspaceName && workspaceName.trim() !== '') {
             // Use setTimeout to defer the async operation
@@ -500,32 +511,32 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const renameWorkspace = async (oldName: string, newName: string) => {
         // Store the workspace data for potential rollback
         const workspaceToRename = getWorkspace(oldName);
-        
+
         // Optimistic update - immediately update the UI
         let workspacesCopy = workspaces.slice();
         const workspaceIndex = workspacesCopy.findIndex(w => w.name === oldName);
         if (workspaceIndex !== -1) {
             workspacesCopy[workspaceIndex].name = newName;
             setWorkSpaces(workspacesCopy);
-            
+
             // If the renamed workspace was selected, update the selection
             if (selected === oldName) {
                 setSelected(newName);
             }
         }
-        
+
         // Invalidate cache after local update
         await invalidateWorkspacesCache();
-        
+
         try {
             // Call the API to rename the workspace
             await renameWorkspaceAPI(oldName, newName);
-            
+
             // Refresh workspaces to ensure consistency
             await fetchWorkspaces();
         } catch (error) {
-            console.error("Error renaming workspace:", error);
-            
+            logger.error("Error renaming workspace", error);
+
             // Rollback the optimistic update on error
             if (workspaceToRename) {
                 let workspacesCopy = workspaces.slice();
@@ -533,17 +544,17 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 if (workspaceIndex !== -1) {
                     workspacesCopy[workspaceIndex].name = oldName;
                     setWorkSpaces(workspacesCopy);
-                    
+
                     // Invalidate cache after rollback for consistency
                     await invalidateWorkspacesCache();
-                    
+
                     // Restore the original selection if it was changed
                     if (selected === newName) {
                         setSelected(oldName);
                     }
                 }
             }
-            
+
             throw error;
         }
     };
@@ -558,7 +569,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         let originalCategory: Categories | null = null;
         let workspaceIndex = -1;
         let categoryIndex = -1;
-        
+
         // Find the category and store its original state
         for (let i = 0; i < workspaces.length; i++) {
             const catIndex = workspaces[i].categories.findIndex(c => c.id === categoryId);
@@ -569,38 +580,38 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 break;
             }
         }
-        
+
         if (!originalCategory) {
             throw new Error("Category not found");
         }
-        
+
         // Optimistic update - immediately update the UI
         let workspacesCopy = workspaces.slice();
         workspacesCopy[workspaceIndex].categories[categoryIndex].name = newName;
         setWorkSpaces(workspacesCopy);
-        
+
         // Invalidate cache after local update
         await invalidateWorkspacesCache();
-        
+
         try {
             // Call the API to rename the category
             await renameCategoryAPI(categoryId, newName);
-            
+
             // Refresh workspaces to ensure consistency
             await fetchWorkspaces();
         } catch (error) {
-            console.error("Error renaming category:", error);
-            
+            logger.error("Error renaming category", error);
+
             // Rollback the optimistic update on error
             if (originalCategory && workspaceIndex !== -1 && categoryIndex !== -1) {
                 let workspacesCopy = workspaces.slice();
                 workspacesCopy[workspaceIndex].categories[categoryIndex].name = originalCategory.name;
                 setWorkSpaces(workspacesCopy);
-                
+
                 // Invalidate cache after rollback for consistency
                 await invalidateWorkspacesCache();
             }
-            
+
             throw error;
         }
     };

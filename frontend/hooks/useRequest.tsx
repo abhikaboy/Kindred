@@ -1,5 +1,7 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { createLogger } from "@/utils/logger";
+const logger = createLogger('Request');
 
 let history = [];
 let errorHistory = [];
@@ -29,12 +31,12 @@ async function request(method: string, url: string, body?: any) {
     console.log("🔍 DEBUG - Request body type:", typeof body);
     console.log("🔍 DEBUG - Request body keys:", body ? Object.keys(body) : 'no body');
     console.log("🔍 DEBUG - Request body stringified:", JSON.stringify(body, null, 2));
-    
+
     // Get auth data from SecureStore and prepare headers
     let headers: any = {
         "Content-Type": "application/json",
     };
-    
+
     try {
         const authData = await SecureStore.getItemAsync("auth_data");
         if (authData) {
@@ -49,7 +51,7 @@ async function request(method: string, url: string, body?: any) {
     } catch (error) {
         console.log("Error getting auth data for request:", error);
     }
-    
+
     try {
         const axiosConfig = {
             url: process.env.EXPO_PUBLIC_URL + "/api/v1" + url,
@@ -57,7 +59,7 @@ async function request(method: string, url: string, body?: any) {
             headers: headers,
             data: body,
         };
-        console.log("🚀 DEBUG - Axios config:", JSON.stringify(axiosConfig, null, 2));
+        logger.debug("🚀 DEBUG - Axios config:", JSON.stringify(axiosConfig, null, 2));
         let response = await axios(axiosConfig);
 
         // console.log("Response: " + JSON.stringify(response.data));
@@ -69,13 +71,13 @@ async function request(method: string, url: string, body?: any) {
         if (access_response) {
             axios.defaults.headers.common["Authorization"] = "Bearer " + access_response;
         } else {
-            console.log("Access token not found in response");
+            logger.error("Access token not found in response");
         }
 
         if (refresh_response) {
             axios.defaults.headers.common["refresh_token"] = refresh_response;
         } else {
-            console.log("Refresh token not found in response");
+            logger.error("Refresh token not found in response");
         }
         // Only save auth data if we actually received new tokens
         if (access_response || refresh_response) {
@@ -99,10 +101,10 @@ async function request(method: string, url: string, body?: any) {
             },
         ]);
 
-        console.log("Request Successful!");
+        logger.debug("Request Successful!");
         return response.data;
     } catch (error) {
-        console.log("Request Failed!");
+        logger.error("Request Failed!");
         console.log("Error: " + (error.response?.statusText || error.message));
         console.log("Error Data: " + JSON.stringify(error.response?.data || {}));
 
@@ -141,7 +143,7 @@ async function typedRequest<TPath extends keyof paths, TMethod extends keyof pat
 
         return response.data;
     } catch (error) {
-        console.log("Typed Request Failed!", error);
+        logger.error("Typed Request Failed!", error);
         throw error;
     }
 }

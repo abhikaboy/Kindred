@@ -27,6 +27,7 @@
     "@react-native-picker/picker": "2.11.1",
     "@react-spring/native": "^10.0.3",
     "@sentry/react-native": "~6.20.0",
+    "@shopify/flash-list": "^2.2.2",
     "@tanstack/react-query": "^5.90.2",
     "@testing-library/react-native": "^13.3.3",
     "ajv-keywords": "^5.1.0",
@@ -93,6 +94,7 @@
     "react-native-modal": "^14.0.0-rc.1",
     "react-native-otp-entry": "^1.8.5",
     "react-native-pager-view": "6.9.1",
+    "react-native-performance": "^6.0.0",
     "react-native-popover-view": "^6.1.0",
     "react-native-reactions": "^1.0.0",
     "react-native-reanimated": "~4.1.2",
@@ -116,6 +118,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
+    "@rozenite/performance-monitor-plugin": "^1.2.0",
     "@types/bun": "^1.2.22",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.1.13",

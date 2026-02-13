@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
 import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
+import { createLogger } from "@/utils/logger";
+const logger = createLogger('KudosContext');
 
 interface Encouragement {
     id: string;
@@ -79,9 +81,6 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
                 getCongratulationsAPI().catch(() => []),
             ]);
 
-            // DEBUG: Log encouragement data to see what's returned
-            console.log("📝 DEBUG - Fetched encouragements:", JSON.stringify(encouragementsData, null, 2));
-
             // Sort by timestamp (newest first)
             const sortedEncouragements = [...encouragementsData].sort(
                 (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -94,7 +93,7 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
             setEncouragements(sortedEncouragements);
             setCongratulations(sortedCongratulations);
         } catch (error) {
-            console.error("Error fetching kudos data:", error);
+            logger.error("Error fetching kudos data:", error);
         } finally {
             setLoading(false);
         }

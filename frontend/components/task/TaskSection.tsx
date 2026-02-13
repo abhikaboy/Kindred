@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { ThemedText } from "@/components/ThemedText";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import SchedulableTaskCard from "@/components/cards/SchedulableTaskCard";
@@ -17,7 +18,7 @@ interface TaskSectionProps {
     schedulingType?: 'deadline' | 'startDate';
 }
 
-export default function TaskSection({
+const TaskSection = ({
     tasks,
     title = "Tasks",
     description,
@@ -25,8 +26,29 @@ export default function TaskSection({
     useSchedulable = false,
     onScheduleTask,
     schedulingType = 'deadline'
-}: TaskSectionProps) {
+}: TaskSectionProps) => {
     const ThemedColor = useThemeColor();
+
+    const renderTaskItem = React.useCallback(({ item }: { item: Task }) => (
+        <View style={styles.taskContainer}>
+            {useSchedulable ? (
+                <SchedulableTaskCard
+                    redirect={true}
+                    categoryId={item.categoryID || ""}
+                    task={item}
+                    onRightSwipe={() => onScheduleTask!(item, schedulingType)}
+                />
+            ) : (
+                <SwipableTaskCard
+                    redirect={true}
+                    categoryId={item.categoryID}
+                    task={item}
+                />
+            )}
+        </View>
+    ), [useSchedulable, onScheduleTask, schedulingType]);
+
+    const getItemType = React.useCallback(() => 'task', []);
 
     if (tasks.length === 0) {
         return (
@@ -56,27 +78,20 @@ export default function TaskSection({
                     {description}
                 </ThemedText>
             )}
-            {tasks.map((task) => (
-                <View key={task.id + task.content} style={styles.taskContainer}>
-                    {useSchedulable ? (
-                        <SchedulableTaskCard
-                            redirect={true}
-                            categoryId={task.categoryID || ""}
-                            task={task}
-                            onRightSwipe={() => onScheduleTask!(task, schedulingType)}
-                        />
-                    ) : (
-                        <SwipableTaskCard
-                            redirect={true}
-                            categoryId={task.categoryID}
-                            task={task}
-                        />
-                    )}
-                </View>
-            ))}
+            <View style={{ minHeight: 2 }}>
+                <FlashList
+                    data={tasks}
+                    renderItem={renderTaskItem}
+                    keyExtractor={(item) => item.id + item.content}
+                    getItemType={getItemType}
+                    removeClippedSubviews={true}
+                />
+            </View>
         </View>
     );
-}
+};
+
+export default React.memo(TaskSection);
 
 const styles = StyleSheet.create({
     section: {

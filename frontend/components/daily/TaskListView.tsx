@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { ThemedText } from "@/components/ThemedText";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import TaskSection from "@/components/task/TaskSection";
@@ -24,24 +25,37 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
     unscheduledTasks,
     onQuickSchedule,
 }) => {
+    const renderTaskItem = React.useCallback(({ item }: { item: any }) => (
+        <View style={styles.taskItem}>
+            <SwipableTaskCard
+                redirect={true}
+                categoryId={item.categoryID}
+                task={item}
+            />
+        </View>
+    ), []);
+
+    const getItemType = React.useCallback((item: any) => {
+        return 'task';
+    }, []);
+
     return (
         <View style={styles.container}>
-            <View style={{ gap: 8 }}>
-                {tasksForSelectedDate.length > 0 ? (
-                    tasksForSelectedDate.map((task) => (
-                        <SwipableTaskCard
-                            key={task.id + task.content}
-                            redirect={true}
-                            categoryId={task.categoryID}
-                            task={task}
-                        />
-                    ))
-                ) : (
-                    <ThemedText type="lightBody" style={{ textAlign: "center", marginTop: 12, marginBottom: 12 }}>
-                        No tasks for this date
-                    </ThemedText>
-                )}
-            </View>
+            {tasksForSelectedDate.length > 0 ? (
+                <View style={{ minHeight: 2 }}>
+                    <FlashList
+                        data={tasksForSelectedDate}
+                        renderItem={renderTaskItem}
+                        keyExtractor={(item) => item.id + item.content}
+                        getItemType={getItemType}
+                        removeClippedSubviews={true}
+                    />
+                </View>
+            ) : (
+                <ThemedText type="lightBody" style={styles.emptyText}>
+                    No tasks for this date
+                </ThemedText>
+            )}
 
             <TaskSection
                 tasks={overdueTasks}
@@ -91,5 +105,12 @@ const styles = StyleSheet.create({
         gap: 24,
         paddingHorizontal: HORIZONTAL_PADDING,
     },
+    taskItem: {
+        marginBottom: 8,
+    },
+    emptyText: {
+        textAlign: "center",
+        marginTop: 12,
+        marginBottom: 12,
+    },
 });
-

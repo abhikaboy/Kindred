@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { StyleSheet, View, TouchableOpacity, FlatList, Dimensions } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Dimensions } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -132,13 +133,14 @@ export default function Friends() {
                     </ThemedText>
 
                     {/* Skeleton loading */}
-                    <FlatList
-                        data={Array(6).fill(0)}
-                        renderItem={renderSkeletonItem}
-                        keyExtractor={(_, index) => `skeleton-${index}`}
-                        showsVerticalScrollIndicator={false}
-                        scrollEnabled={false}
-                    />
+                    <View style={{ minHeight: 2, flex: 1 }}>
+                        <FlashList
+                            data={Array(6).fill(0)}
+                            renderItem={renderSkeletonItem}
+                            estimatedItemSize={60}
+                            showsVerticalScrollIndicator={false}
+                        />
+                    </View>
                 </View>
             </ThemedView>
         );
@@ -200,36 +202,39 @@ export default function Friends() {
             </View>
 
             {/* Content */}
-            <FlatList
-                ListHeaderComponent={
-                    <>
-                        {/* Follow Requests Section */}
-                        <FollowRequestsSection 
-                            styles={styles} 
-                            maxVisible={100} 
-                        />
+            <View style={{ flex: 1, minHeight: 2 }}>
+                <FlashList
+                    ListHeaderComponent={
+                        <>
+                            {/* Follow Requests Section */}
+                            <FollowRequestsSection
+                                styles={styles}
+                                maxVisible={100}
+                            />
 
-                        {/* Friends Section Header */}
-                        <View style={styles.section}>
-                            <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
-                                FRIENDS
+                            {/* Friends Section Header */}
+                            <View style={styles.section}>
+                                <ThemedText type="defaultSemiBold" style={[styles.sectionHeader]}>
+                                    FRIENDS
+                                </ThemedText>
+                            </View>
+                        </>
+                    }
+                    data={filteredFriends}
+                    renderItem={renderFriendItem}
+                    keyExtractor={(item) => item._id}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.contentContainer}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.text }]}>
+                                {searchQuery ? "No friends found matching your search" : "No friends yet"}
                             </ThemedText>
                         </View>
-                    </>
-                }
-                data={filteredFriends}
-                renderItem={renderFriendItem}
-                keyExtractor={(item) => item._id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.contentContainer}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.text }]}>
-                            {searchQuery ? "No friends found matching your search" : "No friends yet"}
-                        </ThemedText>
-                    </View>
-                }
-            />
+                    }
+                    removeClippedSubviews={true}
+                />
+            </View>
         </ThemedView>
     );
 }

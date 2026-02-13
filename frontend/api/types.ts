@@ -28,7 +28,7 @@ export interface Reminder {
     beforeStart: boolean;
     beforeDeadline: boolean;
     afterDeadline?: boolean;
-    
+
     // Enhanced reminder features
     customMessage?: string;
     sound?: string;
@@ -68,6 +68,7 @@ export interface Task {
     userID?: string;
     categoryID?: string;
     categoryName?: string; // Optional category name (populated when task is from unnestedTasks)
+    workspaceName?: string; // Optional workspace name (populated when task is from unnestedTasks)
     deadline?: string;
     startTime?: string;
     startDate?: string;
@@ -75,7 +76,7 @@ export interface Task {
     checklist?: ChecklistItem[];
     reminders?: Reminder[];
     integration?: string; // Integration app name (amazon, gmail, etc.)
-    
+
     // Completion tracking fields (only populated for completed tasks)
     timeCompleted?: string;
     timeTaken?: string;
@@ -207,4 +208,3 @@ export interface MarkNotificationsReadRequest {
     notification_ids: string[];
 }
 export { components };
-

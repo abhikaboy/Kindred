@@ -112,8 +112,13 @@ const VerifyPhoneOnboarding = (props: Props) => {
             setOtpCode("");
             try {
                 await sendOTP(onboardingData.phone);
+                // Show success feedback
+                console.log("Code resent successfully");
             } catch (error) {
                 console.error("Resend failed:", error);
+                // Reset timer on failure so user can try again
+                setCanResend(true);
+                setResendTimer(0);
             }
         }
     };
@@ -198,9 +203,7 @@ const VerifyPhoneOnboarding = (props: Props) => {
                                             width: screenWidth * 0.18,
                                             height: screenWidth * 0.20,
                                             borderWidth: 2,
-                                            borderColor: verifyOTPError
-                                                ? '#ff3b30'
-                                                    : 'transparent',
+                                            borderColor: 'transparent',
                                         },
                                         pinCodeTextStyle: {
                                             color: ThemedColor.text,
@@ -210,6 +213,10 @@ const VerifyPhoneOnboarding = (props: Props) => {
                                         },
                                         focusedPinCodeContainerStyle: {
                                             borderColor: ThemedColor.tint,
+                                            borderWidth: 2,
+                                        },
+                                        filledPinCodeContainerStyle: {
+                                            borderColor: 'transparent',
                                         },
                                     }}
                                     disabled={verifyingOTP || isVerified}
