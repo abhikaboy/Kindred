@@ -26,6 +26,7 @@ import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import CustomAlert, { AlertButton } from "../CustomAlert";
 import { updatePost } from "@/api/post";
+import * as Haptics from "expo-haptics";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -529,6 +530,7 @@ const StandardContent = ({
                     hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                     activeOpacity={0.7}
                     onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         if (edit) {
                             handleUpdateOrTemplate();
                         } else {
