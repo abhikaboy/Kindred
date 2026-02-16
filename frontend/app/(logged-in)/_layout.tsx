@@ -75,7 +75,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             try {
                 setIsLoading(true);
                 const userData = await fetchAuthData();
-                
+
                 // Check if we got a user back
                 if (!userData) {
                     console.log('No user data returned from fetchAuthData');
@@ -94,11 +94,11 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     // Update user timezone on successful auth if it has changed
                     try {
                         const deviceTimezone = Localization.getCalendars()[0].timeZone || 'UTC';
-                        
+
                         // Check if user has timezone field and if it differs from device timezone
                         // Cast user to any to access timezone field if it's not yet in the type definition
                         const userTimezone = (userData as any).timezone;
-                        
+
                         if (deviceTimezone && userTimezone !== deviceTimezone) {
                             console.log(`Updating user timezone from ${userTimezone} to ${deviceTimezone}`);
                             await updateTimezone(deviceTimezone);
@@ -128,12 +128,12 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         registerForPushNotificationsAsync().then((result) => {
             if (!result) return;
-            
+
             setExpoPushToken(result.token);
-            
+
             // Check against auth response token stored in context
             const userPushToken = (user as any)?.push_token;
-            
+
             // Only send if token is different from what backend has
             if (result.token && userPushToken !== result.token) {
                 sendPushTokenToBackend(result.token);
@@ -214,7 +214,7 @@ const LayoutContent = () => {
     const { visible, setVisible, modalConfig } = useCreateModal();
     const ThemedColor = useThemeColor();
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    
+
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
@@ -222,7 +222,7 @@ const LayoutContent = () => {
             useNativeDriver: true,
         }).start();
     }, []);
-    
+
     return (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
             <BlueprintCreationProvider>
@@ -244,11 +244,14 @@ const LayoutContent = () => {
                         }}
                     /> */}
                 </Stack>
-                <CreateModal 
-                    visible={visible} 
-                    setVisible={setVisible}
-                    {...modalConfig}
-                />
+                {visible && (
+                    <CreateModal
+                        key={`modal-${visible}-${modalConfig.categoryId || 'default'}`}
+                        visible={true}
+                        setVisible={setVisible}
+                        {...modalConfig}
+                    />
+                )}
             </BlueprintCreationProvider>
         </Animated.View>
     );

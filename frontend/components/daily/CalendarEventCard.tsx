@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
+import Animated from "react-native-reanimated";
 import { router } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -77,21 +78,11 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
     ];
 
     return (
-        <View style={[taskStyle, containerStyle]}>
-            <Pressable
+        <Animated.View style={[taskStyle, containerStyle]}>
+            <TouchableOpacity
                 style={styles.touchable}
-                onPress={() => {
-                    if (task.id) {
-                        router.push({
-                            pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-                            params: {
-                                name: task.content,
-                                id: task.id,
-                                categoryId: task.categoryID || "",
-                            },
-                        });
-                    }
-                }}
+                activeOpacity={0.7}
+                onPress={() => onLongPress(task)}
                 onLongPress={() => onLongPress(task)}>
                 <View style={contentStyle}>
                     {timeDisplay && (
@@ -121,8 +112,8 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
                         </ThemedText>
                     )}
                 </View>
-            </Pressable>
-        </View>
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
@@ -154,17 +145,15 @@ const styles = StyleSheet.create({
         maxHeight: "100%",
         overflow: "hidden",
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 2,
         borderRadius: 12,
         justifyContent: "center",
     },
     timeText: {
         fontSize: 10,
-        marginBottom: 3,
         fontWeight: '700',
     },
     titleText: {
-        marginBottom: 3,
         fontSize: 14,
     },
     metaText: {

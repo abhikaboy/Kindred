@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { useReminder, Reminder } from "@/hooks/useReminder";
 
 type TaskCreationContextType = {
@@ -81,19 +81,19 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const addRemindersUnique = (existingReminders: Reminder[], newReminders: Reminder[]): Reminder[] => {
         // Create a Map using unique keys
         const reminderMap = new Map<string, Reminder>();
-        
+
         // Add existing reminders
         existingReminders.forEach(reminder => {
             const key = getReminderKey(reminder);
             reminderMap.set(key, reminder);
         });
-        
+
         // Add new reminders (will overwrite if key exists, ensuring no duplicates)
         newReminders.forEach(reminder => {
             const key = getReminderKey(reminder);
             reminderMap.set(key, reminder);
         });
-        
+
         // Convert back to array
         return Array.from(reminderMap.values());
     };
@@ -139,7 +139,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     // Wrap setStartDate to auto-add absolute reminder and 15-min before reminder
     const setStartDateWithReminder = (startDate: Date | null) => {
         setStartDate(startDate);
-        
+
         if (startDate) {
             const atStartReminder = getStartDateReminder(startDate, startTime);
             const beforeStartReminder = getStartTimeReminder(startDate, startTime);
@@ -148,7 +148,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 const newReminders = [];
                 if (atStartReminder) newReminders.push(atStartReminder);
                 if (beforeStartReminder) newReminders.push(beforeStartReminder);
-                
+
                 return addRemindersUnique(prev, newReminders);
             });
         }
@@ -173,7 +173,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
                 const newReminders = [];
                 if (atStartReminder) newReminders.push(atStartReminder);
                 if (beforeStartReminder) newReminders.push(beforeStartReminder);
-                
+
                 return addRemindersUnique(filtered, newReminders);
             });
         }
@@ -218,7 +218,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setShowAdvanced(false);
     };
 
-    const loadTaskData = (taskData: any) => {
+    const loadTaskData = useCallback((taskData: any) => {
         setTaskName(taskData.content || "");
         setPriority(taskData.priority || 1);
         setValue(taskData.value || 3);
@@ -240,19 +240,24 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
             });
         }
 
+        // IMPORTANT: Use the raw setters, not the wrapped ones that add reminders
+        // This prevents cascading state updates that can block the modal from opening
         setDeadline(taskData.deadline ? new Date(taskData.deadline) : null);
         setStartTime(taskData.startTime ? new Date(taskData.startTime) : null);
         setStartDate(taskData.startDate ? new Date(taskData.startDate) : null);
+
+        // Set reminders directly from task data
         setReminders(
             taskData.reminders?.map((reminder) => ({
                 ...reminder,
                 triggerTime: new Date(reminder.triggerTime),
             })) || []
         );
+
         setIsPublic(taskData.public !== undefined ? taskData.public : true);
         setBlueprintStateInternal(taskData.isBlueprint || false);
         setIntegration(taskData.integration || "");
-    };
+    }, []);
 
     return (
         <TaskCreationContext.Provider

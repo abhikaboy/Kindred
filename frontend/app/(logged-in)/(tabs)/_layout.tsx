@@ -12,6 +12,7 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
+import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
 
 // Import Phosphor icons
 import {
@@ -28,6 +29,7 @@ import {
     GridFour,
     Rows,
     TextColumns,
+    Brain,
 } from "phosphor-react-native";
 
 // Custom tab button components
@@ -66,11 +68,25 @@ const SearchTabButton = (props: any) => {
     return <HapticTab {...props} isSelected={isSelected} />;
 };
 
+const ActivityTabButton = (props: any) => {
+    const { focusMode } = useFocusMode();
+    const navigationState = useNavigationState((state) => state);
+    const currentIndex = navigationState?.index || 0;
+    const isSelected = currentIndex === 3; // Activity is the fourth tab
+
+    // Disable button when focus mode is enabled
+    if (focusMode) {
+        return null;
+    }
+
+    return <HapticTab {...props} isSelected={isSelected} />;
+};
+
 const ProfileTabButton = (props: any) => {
     const { focusMode } = useFocusMode();
     const navigationState = useNavigationState((state) => state);
     const currentIndex = navigationState?.index || 0;
-    const isSelected = currentIndex === 3; // Profile is the fourth tab
+    const isSelected = currentIndex === 4; // Profile is the fifth tab
 
     // Disable button when focus mode is enabled
     if (focusMode) {
@@ -155,112 +171,127 @@ export default function TabLayout() {
     }, [shouldHideTabBar, tabBarOpacity, tabBarTranslateY]);
 
     return (
-        <Tabs
-            screenOptions={{
-                tabBarActiveTintColor: "#854DFF", // Purple color for selected state
-                tabBarInactiveTintColor: ThemedColor.text, // Default text color for inactive state
-                tabBarShowLabel: false, // Hide default labels
-                headerShown: false,
-                tabBarHideOnKeyboard: true,
-                headerTitleStyle: {
-                    fontFamily: "Outfit",
-                },
-                tabBarBackground: TabBarBackground,
-                animation: "fade",
-                tabBarVariant: "uikit",
-                tabBarPosition: "bottom",
-                tabBarItemStyle: {
-                    flex: 1,
-                    alignItems: "center",
-                    justifyContent: "flex-start", // Keep this for top alignment
-                },
-                sceneStyle: {
-                    backgroundColor: ThemedColor.background,
-                },
-                tabBarStyle: {
-                    ...Platform.select({
-                        ios: {
-                            borderTopWidth: 1,
-                            borderColor: ThemedColor.tertiary,
-                            position: "absolute",
-                            paddingTop: 12,
-                            height: 90,
-                            paddingBottom: 32,
-                            borderBottomLeftRadius: 0,
-                            borderBottomRightRadius: 0,
-                            width: "100%",
-                            overflow: "hidden",
-                        },
-                        android: {
-                            borderTopWidth: 1,
-                            borderColor: ThemedColor.tertiary,
-                            position: "absolute",
-                            paddingTop: 12,
-                            height: 90,
-                            paddingBottom: 64,
-                            borderRadius: 30,
-                            width: "100%",
-                            overflow: "hidden",
-                            borderWidth: 1,
-                        },
-                    }),
-                    opacity: tabBarOpacity,
-                    transform: [{ translateY: tabBarTranslateY }],
-                },
-            }}>
-            <Tabs.Screen
-                name="(task)"
-                options={{
-                    title: "Tasks",
-                    tabBarIcon: ({ color, focused }) =>
-                        focused ? (
-                            <PencilSimple size={24} color={color} weight="fill" />
-                        ) : (
-                            <PencilSimpleLine size={24} color={color} />
-                        ),
-                    tabBarBadge: todayTaskCount > 0 ? todayTaskCount : undefined,
-                    tabBarButton: TasksTabButton,
-                    tabBarAccessibilityLabel: "Tasks",
-                }}
-            />
-            <Tabs.Screen
-                name="(feed)"
-                options={{
-                    title: "Feed",
-                    tabBarIcon: ({ color, focused }) =>
-                        focused ? (
-                            <SquaresFour size={24} color={color} weight="fill" />
-                        ) : (
-                            <SquaresFour size={24} color={color} />
-                        ),
-                    tabBarButton: FeedTabButton,
-                    tabBarAccessibilityLabel: "Feed",
-                }}
-            />
-            <Tabs.Screen
-                name="(search)"
-                options={{
-                    title: "Search",
-                    tabBarIcon: ({ color, focused }) =>
-                        focused ? (
-                            <MagnifyingGlass size={24} color={color} weight="bold" />
-                        ) : (
-                            <MagnifyingGlass size={24} color={color} />
-                        ),
-                    tabBarButton: SearchTabButton,
-                    tabBarAccessibilityLabel: "Search",
-                }}
-            />
-            <Tabs.Screen
-                name="(profile)"
-                options={{
-                    title: "Profile",
-                    tabBarIcon: ({ color, focused }) =>
-                        focused ? <User size={24} color={color} weight="fill" /> : <User size={24} color={color} />,
-                    tabBarButton: ProfileTabButton,
-                    tabBarAccessibilityLabel: "Profile",
-                }}
-            />
-        </Tabs>
+        <>
+            <Tabs
+                screenOptions={{
+                    tabBarActiveTintColor: "#854DFF", // Purple color for selected state
+                    tabBarInactiveTintColor: ThemedColor.text, // Default text color for inactive state
+                    tabBarShowLabel: false, // Hide default labels
+                    headerShown: false,
+                    tabBarHideOnKeyboard: true,
+                    headerTitleStyle: {
+                        fontFamily: "Outfit",
+                    },
+                    tabBarBackground: TabBarBackground,
+                    animation: "fade",
+                    tabBarVariant: "uikit",
+                    tabBarPosition: "bottom",
+                    tabBarItemStyle: {
+                        flex: 1,
+                        alignItems: "center",
+                        justifyContent: "flex-start", // Keep this for top alignment
+                    },
+                    sceneStyle: {
+                        backgroundColor: ThemedColor.background,
+                    },
+                    tabBarStyle: {
+                        ...Platform.select({
+                            ios: {
+                                borderTopWidth: 1,
+                                borderColor: ThemedColor.tertiary,
+                                position: "absolute",
+                                paddingTop: 12,
+                                height: 90,
+                                paddingBottom: 32,
+                                borderBottomLeftRadius: 0,
+                                borderBottomRightRadius: 0,
+                                width: "100%",
+                                overflow: "hidden",
+                            },
+                            android: {
+                                borderTopWidth: 1,
+                                borderColor: ThemedColor.tertiary,
+                                position: "absolute",
+                                paddingTop: 12,
+                                height: 90,
+                                paddingBottom: 64,
+                                borderRadius: 30,
+                                width: "100%",
+                                overflow: "hidden",
+                                borderWidth: 1,
+                            },
+                        }),
+                        opacity: tabBarOpacity,
+                        transform: [{ translateY: tabBarTranslateY }],
+                    },
+                }}>
+                <Tabs.Screen
+                    name="(task)"
+                    options={{
+                        title: "Tasks",
+                        tabBarIcon: ({ color, focused }) =>
+                            focused ? (
+                                <PencilSimple size={24} color={color} weight="fill" />
+                            ) : (
+                                <PencilSimpleLine size={24} color={color} />
+                            ),
+                        tabBarBadge: todayTaskCount > 0 ? todayTaskCount : undefined,
+                        tabBarButton: TasksTabButton,
+                        tabBarAccessibilityLabel: "Tasks",
+                    }}
+                />
+                <Tabs.Screen
+                    name="(feed)"
+                    options={{
+                        title: "Feed",
+                        tabBarIcon: ({ color, focused }) =>
+                            focused ? (
+                                <SquaresFour size={24} color={color} weight="fill" />
+                            ) : (
+                                <SquaresFour size={24} color={color} />
+                            ),
+                        tabBarButton: FeedTabButton,
+                        tabBarAccessibilityLabel: "Feed",
+                    }}
+                />
+                <Tabs.Screen
+                    name="(search)"
+                    options={{
+                        title: "Search",
+                        tabBarIcon: ({ color, focused }) =>
+                            focused ? (
+                                <MagnifyingGlass size={24} color={color} weight="bold" />
+                            ) : (
+                                <MagnifyingGlass size={24} color={color} />
+                            ),
+                        tabBarButton: SearchTabButton,
+                        tabBarAccessibilityLabel: "Search",
+                    }}
+                />
+                <Tabs.Screen
+                    name="(activity)"
+                    options={{
+                        title: "Activity",
+                        tabBarIcon: ({ color, focused }) =>
+                            focused ? <Brain size={24} color={color} weight="fill" /> : <Brain size={24} color={color} />,
+                        tabBarButton: ActivityTabButton,
+                        tabBarAccessibilityLabel: "Activity",
+                    }}
+                />
+                <Tabs.Screen
+                    name="(profile)"
+                    options={{
+                        title: "Profile",
+                        tabBarIcon: ({ color, focused }) =>
+                            focused ? <User size={24} color={color} weight="fill" /> : <User size={24} color={color} />,
+                        tabBarButton: ProfileTabButton,
+                        tabBarAccessibilityLabel: "Profile",
+                    }}
+                />
+            </Tabs>
+
+            {/* Floating Action Button */}
+            <FloatingActionButton visible={!shouldHideTabBar} />
+        </>
     );
 }

@@ -111,7 +111,7 @@ const StandardContent = ({
 }: Props & { spotlightState: any }) => {
     const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
-    const { categories, addToCategory, updateTask, selectedCategory, setCreateCategory, task } = useTasks();
+    const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
         taskName,
@@ -193,9 +193,9 @@ const StandardContent = ({
         }
     }, [screen]);
 
-    // Set the selected category when in edit mode
+    // Set the selected category when categoryId is provided (for both edit and create modes)
     useEffect(() => {
-        if (edit && categoryId && categories && categories.length > 0) {
+        if (categoryId && categories && categories.length > 0) {
             const timer = setTimeout(() => {
                 const taskCategory = categories.find((cat) => cat.id === categoryId);
 
@@ -219,18 +219,10 @@ const StandardContent = ({
             }, 100);
 
             return () => clearTimeout(timer);
-        } else {
         }
-    }, [edit, categoryId, categories]);
+    }, [categoryId, categories]);
 
     const createPost = async () => {
-        console.log("createPost called with context values:", {
-            startDate: startDate,
-            startTime: startTime,
-            deadline: deadline,
-            taskName: taskName,
-        });
-
         if (!availableCategories || availableCategories.length === 0) return;
 
         // Trim trailing newlines and whitespace from task name
@@ -261,6 +253,7 @@ const StandardContent = ({
                 lastEdited: new Date().toISOString(),
                 userID: "", // Will be set by backend when blueprint is created
                 categoryID: selectedCategory.id,
+                posted: false,
             };
 
             addTaskToBlueprintCategory(selectedCategory.id, newTask);
@@ -268,7 +261,41 @@ const StandardContent = ({
             return;
         }
 
-        // Normal mode - create task via API
+        // Normal mode - create task via API with optimistic update
+        const tempId = new ObjectId().toString();
+
+        // Create optimistic task
+        const optimisticTask: any = {
+            id: tempId,
+            content: trimmedTaskName,
+            priority: priority,
+            value: value,
+            recurring: recurring,
+            public: isPublic,
+            active: false,
+            checklist: [],
+            notes: "",
+            startDate: startDate?.toISOString(),
+            startTime: startTime?.toISOString(),
+            deadline: deadline?.toISOString(),
+            reminders: reminders.map((reminder) => ({
+                ...reminder,
+                triggerTime: reminder.triggerTime.toISOString(),
+            })),
+            recurFrequency: recurring ? recurFrequency : undefined,
+            recurDetails: recurring ? (recurDetails as any) : undefined,
+            timestamp: new Date().toISOString(),
+            lastEdited: new Date().toISOString(),
+            userID: "", // Will be populated by backend
+            categoryID: selectedCategory.id,
+            posted: false,
+        };
+
+        // Add optimistically to UI
+        addToCategory(selectedCategory.id, optimisticTask);
+        resetTaskCreation();
+
+        // Make API call in background
         let postBody: any = {
             content: trimmedTaskName,
             priority: priority,
@@ -277,7 +304,7 @@ const StandardContent = ({
             public: isPublic,
             active: false,
             checklist: [],
-            notes: "", // TODO: Add notes
+            notes: "",
             startDate: startDate?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
@@ -292,11 +319,28 @@ const StandardContent = ({
             postBody.recurDetails = recurDetails as RecurDetails;
         }
 
-        console.log("POST body:", JSON.stringify(postBody, null, 2));
-        const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody as CreateTaskParams);
+        try {
+            const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody as CreateTaskParams);
 
-        addToCategory(selectedCategory.id, response);
-        resetTaskCreation();
+            // Remove optimistic task and add real one
+            // This ensures we don't have ID mismatches
+            removeFromCategory(selectedCategory.id, tempId);
+            addToCategory(selectedCategory.id, response);
+        } catch (error) {
+            console.error("Failed to create task:", error);
+
+            // Remove optimistic task on error
+            removeFromCategory(selectedCategory.id, tempId);
+
+            // Show error toast
+            const { showToastable } = await import("react-native-toastable");
+
+            showToastable({
+                message: "Failed to create task. Please try again.",
+                status: "danger",
+                duration: 3000,
+            });
+        }
     };
 
     const updatePost = async () => {
@@ -399,7 +443,7 @@ const StandardContent = ({
 
     const performTemplateUpdate = async () => {
             if (!task.templateID) return;
-            
+
             // 1. Update the current task first
             await updatePost();
 
@@ -427,7 +471,7 @@ const StandardContent = ({
             console.error("Failed to update template:", error);
             }
     };
-    
+
 
 
 
@@ -451,7 +495,8 @@ const StandardContent = ({
                     minHeight: 55,
                     gap: 8,
                     zIndex: 1000,
-                }}>
+                }}
+                pointerEvents="box-none">
                 <AttachStep index={0} style={{ width: "76%" }}>
                     <Dropdown
                         options={[
@@ -479,12 +524,15 @@ const StandardContent = ({
                         justifyContent: "center",
                         borderWidth: 0,
                         borderColor: ThemedColor.text,
+                        zIndex: 1001,
                     }}
-                    onPress={async () => {
+                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                    activeOpacity={0.7}
+                    onPress={() => {
                         if (edit) {
-                            await handleUpdateOrTemplate();
+                            handleUpdateOrTemplate();
                         } else {
-                            await createPost();
+                            createPost();
                             hide();
                         }
                     }}>
@@ -545,7 +593,7 @@ const StandardContent = ({
             <ConditionalView condition={showAdvanced}>
                 <AdvancedOptionList goTo={goTo} showUnconfigured={true} />
             </ConditionalView>
-            
+
             <CustomAlert
                 visible={alertVisible}
                 setVisible={setAlertVisible}

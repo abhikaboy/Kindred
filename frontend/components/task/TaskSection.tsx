@@ -30,7 +30,7 @@ const TaskSection = ({
     const ThemedColor = useThemeColor();
 
     const renderTaskItem = React.useCallback(({ item }: { item: Task }) => (
-        <View style={styles.taskContainer}>
+        <View style={styles.taskItem}>
             {useSchedulable ? (
                 <SchedulableTaskCard
                     redirect={true}
@@ -48,6 +48,7 @@ const TaskSection = ({
         </View>
     ), [useSchedulable, onScheduleTask, schedulingType]);
 
+    const keyExtractor = React.useCallback((item: Task) => `${item.id}-${item.content}`, []);
     const getItemType = React.useCallback(() => 'task', []);
 
     if (tasks.length === 0) {
@@ -82,8 +83,9 @@ const TaskSection = ({
                 <FlashList
                     data={tasks}
                     renderItem={renderTaskItem}
-                    keyExtractor={(item) => item.id + item.content}
+                    keyExtractor={keyExtractor}
                     getItemType={getItemType}
+                    estimatedItemSize={80}
                     removeClippedSubviews={true}
                 />
             </View>
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
     description: {
         marginBottom: 8,
     },
-    taskContainer: {
-        gap: 8,
+    taskItem: {
+        marginBottom: 8,
     },
 });

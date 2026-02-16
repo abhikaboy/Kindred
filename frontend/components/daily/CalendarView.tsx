@@ -23,6 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTasks } from "@/contexts/tasksContext";
 import { updateTaskAPI } from "@/api/task";
 import { CalendarEventCard } from "./CalendarEventCard";
+import { logger } from "@/utils/logger";
 
 const TIME_LABEL_WIDTH = 40;
 
@@ -159,7 +160,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
     const animatedTimeLabelStyle = useAnimatedStyle(() => ({
         height: hourHeightShared.value,
-        justifyContent: "center",
+        justifyContent: "flex-start",
         position: "absolute",
         left: 0,
         right: 0,
@@ -174,17 +175,19 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     }));
 
     const createTaskStyle = (durationHours: number, minuteOffset: number = 0) => {
-        const currentHourHeight = hourHeight;
-        const proportionalHeight = durationHours * currentHourHeight * 0.85;
-        const taskHeight = proportionalHeight;
-        const topOffset = (minuteOffset / 60) * currentHourHeight;
+        return useAnimatedStyle(() => {
+            const currentHourHeight = hourHeightShared.value;
+            const proportionalHeight = durationHours * currentHourHeight;
+            const taskHeight = proportionalHeight;
+            const topOffset = (minuteOffset / 60) * currentHourHeight;
 
-        return {
-            height: taskHeight,
-            maxHeight: taskHeight,
-            overflow: "hidden" as const,
-            top: topOffset,
-        };
+            return {
+                height: taskHeight,
+                maxHeight: taskHeight,
+                overflow: "hidden" as const,
+                top: topOffset,
+            };
+        });
     };
 
     const animatedScheduleTasksStyle = useAnimatedStyle(() => ({
@@ -212,9 +215,9 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         };
     });
 
-    // Auto-scroll to first event on mount or when tasks change
+    // Auto-scroll to first event on mount or when date changes
     useEffect(() => {
-        if (tasksWithSpecificTime.length === 0) {
+        if (tasksWithSpecificTime.length === 0 || hasScrolledToFirstEvent.current) {
             return;
         }
 
@@ -239,7 +242,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         });
 
         // Scroll to the earliest event with some padding (1 hour before)
-        if (earliestHour < 24 && !hasScrolledToFirstEvent.current) {
+        if (earliestHour < 24) {
             const scrollToHour = Math.max(0, earliestHour - 1);
             const scrollPosition = scrollToHour * hourHeight;
 
@@ -262,7 +265,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                 if (rafId2) cancelAnimationFrame(rafId2);
             };
         }
-    }, [tasksWithSpecificTime, hourHeight, scrollViewRef, selectedDate]);
+    }, [tasksWithSpecificTime.length, scrollViewRef]);
 
     // Reset scroll flag when date changes
     useEffect(() => {
@@ -299,7 +302,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
             setContextMenuVisible(false);
         } catch (error) {
-            console.error("Failed to hide task:", error);
+            logger.error("Failed to hide task", error);
             // Revert the optimistic update on error
             updateTask(selectedTask.categoryID, selectedTask.id, { active: true });
         } finally {
@@ -510,7 +513,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                         title="Unscheduled Tasks"
                         description="These are tasks that don't have a start date or deadline. Swipe right to schedule for this day."
                         useSchedulable={true}
-                        onScheduleTask={(task, type) => console.log("Scheduling task:", task.content, "as:", type)}
+                        onScheduleTask={(task, type) => logger.debug("Scheduling task", { taskContent: task.content, type })}
                         schedulingType="startDate"
                         emptyMessage="No unscheduled tasks"
                     />
@@ -629,11 +632,11 @@ const styles = StyleSheet.create({
 // Memoize CalendarView to prevent unnecessary re-renders when hidden
 export const CalendarView = React.memo(CalendarViewComponent, (prevProps, nextProps) => {
     // Only re-render if these specific props change
-    return (
-        prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime() &&
-        prevProps.tasksWithSpecificTime === nextProps.tasksWithSpecificTime &&
-        prevProps.tasksForTodayNoTime === nextProps.tasksForTodayNoTime &&
-        prevProps.tasksUnscheduled === nextProps.tasksUnscheduled
-        // Note: We don't compare animatedScrollY, scrollViewRef, or headerContent as they're refs/nodes
-    );
+    // Use length comparison for arrays since useMemo should keep reference stable
+    const sameDate = prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime();
+    const sameTasksWithTime = prevProps.tasksWithSpecificTime.length === nextProps.tasksWithSpecificTime.length;
+    const sameTodayTasks = prevProps.tasksForTodayNoTime.length === nextProps.tasksForTodayNoTime.length;
+    const sameUnscheduled = prevProps.tasksUnscheduled.length === nextProps.tasksUnscheduled.length;
+
+    return sameDate && sameTasksWithTime && sameTodayTasks && sameUnscheduled;
 });

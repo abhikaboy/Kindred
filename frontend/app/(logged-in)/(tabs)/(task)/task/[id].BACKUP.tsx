@@ -32,14 +32,13 @@ import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
 import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash } from "phosphor-react-native";
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
-// import PagerView from "react-native-pager-view"; // Removed - was causing modal issue
+import PagerView from "react-native-pager-view";
 import type { components } from "@/api/generated/types";
 import { Screen } from "@/components/modals/CreateModal";
 import { useCreateModal } from "@/contexts/createModalContext";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
-// Removed Picker import - no longer using timer tab
-// import { Picker } from "@react-native-picker/picker";
+import { Picker } from "@react-native-picker/picker";
 import { useTaskCompletion } from "@/hooks/useTaskCompletion";
 import RecurringInfoCard from "@/components/task/RecurringInfoCard";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
@@ -54,8 +53,7 @@ export const unstable_settings = {
 };
 
 export default function Task() {
-    // Removed activeTab state - no longer using PagerView
-    // const [activeTab, setActiveTab] = useState(0);
+    const [activeTab, setActiveTab] = useState(0);
     const { name, id, categoryId } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
     const { getTaskById, updateTask, removeFromCategory } = useTasks();
@@ -67,9 +65,8 @@ export default function Task() {
     const [localNotes, setLocalNotes] = useState("");
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
-    // Removed timer state - no longer using timer tab
-    // const [hours, setHours] = useState(0);
-    // const [minutes, setMinutes] = useState(0);
+    const [hours, setHours] = useState(0);
+    const [minutes, setMinutes] = useState(0);
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
     const [recurDetails, setRecurDetails] = useState<RecurDetails | null>(null);
@@ -86,8 +83,7 @@ export default function Task() {
     // Add a ref to track mounted state
     const isMounted = useRef(true);
     const scrollViewRef = useRef<ScrollView>(null);
-    // Removed pagerViewRef - no longer using PagerView
-    // const pagerViewRef = useRef<PagerView>(null);
+    const pagerViewRef = useRef<PagerView>(null);
     const isLoadingTaskData = useRef(false);
     const hasLoadedTaskDataForModal = useRef(false);
 
@@ -339,11 +335,10 @@ export default function Task() {
         setIsHeaderSticky(scrollY > stickyThreshold);
     };
 
-    // Removed handleTabChange - no longer using PagerView
-    // const handleTabChange = (index: number) => {
-    //     setActiveTab(index);
-    //     pagerViewRef.current?.setPage(index);
-    // };
+    const handleTabChange = (index: number) => {
+        setActiveTab(index);
+        pagerViewRef.current?.setPage(index);
+    };
 
     const handleMarkAsCompleted = () => {
         if (task && categoryId && id) {
@@ -415,18 +410,13 @@ export default function Task() {
     };
 
     const handleEditPress = useCallback(() => {
-        if (!task) return;
-
-        // Load task data first
-        loadTaskData(task);
-
-        // Then open modal
+        console.log("🔵 SIMPLE handleEditPress - just opening modal");
         openModal({
             edit: true,
             categoryId: categoryId as string,
             screen: Screen.STANDARD,
         });
-    }, [task?.id, categoryId, openModal, loadTaskData]);
+    }, [categoryId, openModal]);
 
     const handleDeadlineModalPress = useCallback(() => {
         if (!task || isLoadingTaskData.current || !isMounted.current) return;
@@ -498,19 +488,26 @@ export default function Task() {
                 {/* <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} /> */}
             </View>
 
-            {/* Replaced PagerView with simple ScrollView */}
-            <ScrollView
-                ref={scrollViewRef}
+            {/* PagerView Content */}
+            <PagerView
+                ref={pagerViewRef}
                 style={{ flex: 1 }}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 128 }}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
-                    <View style={{ gap: 20 }}>
+                initialPage={activeTab}
+                onPageSelected={(e) => setActiveTab(e.nativeEvent.position)}
+                scrollEnabled={true}>
+                {/* Details Tab */}
+                <View key="0" style={{ flex: 1 }}>
+                    <ScrollView
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 128 }}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}>
+                        <KeyboardAvoidingView
+                            behavior={Platform.OS === "ios" ? "padding" : "height"}
+                            style={{ flex: 1 }}
+                            keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}>
+                            <View style={{ gap: 20 }}>
                                 <DataCard
                                     title="Notes"
                                     key="notes"
@@ -534,8 +531,7 @@ export default function Task() {
                                         }}
                                     />
                                 </DataCard>
-                                {/* Checklist temporarily removed for debugging */}
-                                {/* <DataCard
+                                <DataCard
                                     title="Checklist"
                                     key="checklist"
                                     icon={<ListChecks size={20} color={ThemedColor.text} weight="regular" />}
@@ -546,13 +542,14 @@ export default function Task() {
                                                 id: item.id,
                                                 content: item.content,
                                                 completed: item.completed,
-                                                order: index,
+                                                order: index, // Add order based on array index
                                             })) || []
                                         }
                                         categoryId={categoryId as string}
                                         taskId={id as string}
                                         autoSave={true}
                                         onChecklistChange={(checklist) => {
+                                            // Update local task state for immediate UI feedback
                                             if (task && categoryId && id) {
                                                 task.checklist = checklist.map((item) => ({
                                                     id: item.id || "",
@@ -560,13 +557,15 @@ export default function Task() {
                                                     completed: item.completed,
                                                     order: item.order,
                                                 }));
+
+                                                // ✅ FIX: Update task context to invalidate cache
                                                 updateTask(categoryId as string, id as string, {
                                                     checklist: task.checklist
                                                 });
                                             }
                                         }}
                                     />
-                                </DataCard> */}
+                                </DataCard>
                                 <ConditionalView condition={task?.startDate != null} key="startDate">
                                     <DataCard
                                         title="Start Date"
@@ -692,9 +691,44 @@ export default function Task() {
                                         onPress={handleDeadlineModalPress}
                                     />
                                 </ConditionalView>
+                            </View>
+                        </KeyboardAvoidingView>
+                    </ScrollView>
+                </View>
+
+                {/* Timer Tab */}
+                {/* <View key="1">
+                    <View
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            gap: 8,
+                            alignItems: "center",
+                            borderColor: ThemedColor.border,
+                            borderRadius: 12,
+                            padding: 2,
+                        }}>
+                        <Picker selectedValue={hours} style={{ flex: 1 }} onValueChange={setHours}>
+                            {Array.from({ length: 59 }, (_, i) => (
+                                <Picker.Item key={i + 1} label={`${i + 1} hours`} value={i + 1} />
+                            ))}
+                        </Picker>
+                        <Picker selectedValue={minutes} style={{ flex: 1 }} onValueChange={setMinutes}>
+                            {Array.from({ length: 59 }, (_, i) => (
+                                <Picker.Item key={i + 1} label={`${i + 1} minutes`} value={i + 1} />
+                            ))}
+                        </Picker>
                     </View>
-                </KeyboardAvoidingView>
-            </ScrollView>
+                    <View>
+                        <PrimaryButton
+                            title="Set Timer"
+                            onPress={() => {
+                                logger.debug("Timer set", { hours, minutes });
+                            }}
+                        />
+                    </View>
+                </View> */}
+            </PagerView>
 
             {showDeadlineModal && (
                 <DeadlineBottomSheetModal

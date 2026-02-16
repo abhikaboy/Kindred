@@ -30,7 +30,7 @@ func ConvertEventToTaskParams(event ProviderEvent, userID, categoryID primitive.
 		Notes:       notes,                  // Formatted event details
 		Integration: integration,            // Unique identifier for duplicate prevention
 		Checklist:   []task.ChecklistItem{}, // Empty checklist
-		Reminders:   []*task.Reminder{},     // Empty reminders (could be populated from event reminders)
+		Reminders:   []*task.Reminder{},     // Will be populated below for timed events
 	}
 
 	// Handle all-day events
@@ -40,6 +40,7 @@ func ConvertEventToTaskParams(event ProviderEvent, userID, categoryID primitive.
 		deadline := event.EndTime
 		params.StartDate = &startDate
 		params.Deadline = &deadline
+		// No reminders for all-day events
 	} else {
 		// For timed events, set both date and time fields
 		startTime := event.StartTime
@@ -49,9 +50,66 @@ func ConvertEventToTaskParams(event ProviderEvent, userID, categoryID primitive.
 		params.StartTime = &startTime
 		params.StartDate = &startDate
 		params.Deadline = &deadline
+
+		// Create automatic reminders for timed events
+		params.Reminders = createEventReminders(startTime, deadline)
 	}
 
 	return params
+}
+
+// createEventReminders creates three automatic reminders for calendar events:
+// 1. 30 minutes before start
+// 2. At start time
+// 3. 15 minutes before end
+func createEventReminders(startTime, endTime time.Time) []*task.Reminder {
+	reminders := []*task.Reminder{}
+
+	// Only create reminders if the event is in the future
+	now := time.Now()
+
+	// Reminder 1: 30 minutes before start
+	reminder30Before := startTime.Add(-30 * time.Minute)
+	if reminder30Before.After(now) {
+		reminders = append(reminders, &task.Reminder{
+			TriggerTime:    reminder30Before,
+			Type:           "absolute",
+			Sent:           false,
+			BeforeStart:    true,
+			AfterStart:     false,
+			BeforeDeadline: false,
+			AfterDeadline:  false,
+		})
+	}
+
+	// Reminder 2: At start time
+	if startTime.After(now) {
+		reminders = append(reminders, &task.Reminder{
+			TriggerTime:    startTime,
+			Type:           "absolute",
+			Sent:           false,
+			BeforeStart:    false,
+			AfterStart:     false,
+			BeforeDeadline: false,
+			AfterDeadline:  false,
+		})
+	}
+
+	// Reminder 3: 15 minutes before end
+	reminder15BeforeEnd := endTime.Add(-15 * time.Minute)
+	if reminder15BeforeEnd.After(now) && reminder15BeforeEnd.After(startTime) {
+		reminders = append(reminders, &task.Reminder{
+			TriggerTime:    reminder15BeforeEnd,
+			Type:           "absolute",
+			Sent:           false,
+			BeforeStart:    false,
+			AfterStart:     false,
+			BeforeDeadline: true,
+			AfterDeadline:  false,
+		})
+	}
+
+	return reminders
 }
 
 // buildEventNotes formats event details into task notes

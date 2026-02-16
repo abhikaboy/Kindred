@@ -1,6 +1,7 @@
 import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import { logger } from "@/utils/logger";
 
 // Extract the type definitions from the generated types
 type TaskDocument = components["schemas"]["TaskDocument"];

@@ -41,6 +41,7 @@ type TaskContextType = {
 
     task: Task | null;
     setTask: (task: Task | null) => void;
+    getTaskById: (categoryId: string, taskId: string) => Task | null;
     doesWorkspaceExist: (name: string) => boolean;
     unnestedTasks: Task[];
     startTodayTasks: Task[];
@@ -256,7 +257,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param categoryId
      * @param task
      */
-    const addToCategory = async (categoryId: string, task: Task) => {
+    const addToCategory = (categoryId: string, task: Task) => {
         // Create a deep copy of workspaces to avoid mutations
         let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
 
@@ -275,8 +276,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         });
 
         setWorkSpaces(workspacesCopy);
-        // Invalidate cache after local update
-        await invalidateWorkspacesCache();
+        // Invalidate cache after local update (non-blocking)
+        invalidateWorkspacesCache();
     };
 
     /**
@@ -634,6 +635,32 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         }
     }, [user?._id]);
 
+    /**
+     * Get a task by categoryId and taskId from the local workspaces data
+     * @param categoryId - The category ID
+     * @param taskId - The task ID
+     * @returns The task if found, null otherwise
+     */
+    const getTaskById = (categoryId: string, taskId: string): Task | null => {
+        for (const workspace of workspaces) {
+            for (const category of workspace.categories) {
+                if (category.id === categoryId) {
+                    const task = category.tasks.find((t) => t.id === taskId);
+                    if (task) {
+                        // Return task with enriched metadata
+                        return {
+                            ...task,
+                            categoryID: category.id,
+                            categoryName: category.name,
+                            workspaceName: workspace.name,
+                        };
+                    }
+                }
+            }
+        }
+        return null;
+    };
+
     return (
         <TaskContext.Provider
             value={{
@@ -660,6 +687,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setShowConfetti,
                 task,
                 setTask,
+                getTaskById,
                 doesWorkspaceExist,
                 unnestedTasks,
                 startTodayTasks,

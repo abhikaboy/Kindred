@@ -190,7 +190,8 @@ export async function autocompleteBlueprintsFromBackend(query: string) {
             throw new Error(`Failed to autocomplete blueprints: ${JSON.stringify(error)}`);
         }
 
-        return data || [];
+        // Backend returns { body: BlueprintDocument[] }, extract the body array
+        return (data as any)?.body || [];
     } catch (error) {
         logger.error("Failed to autocomplete blueprints", error);
         throw error;
@@ -372,7 +373,8 @@ export const searchBlueprints = async (query: string): Promise<BlueprintDocument
         throw new Error(`Failed to search blueprints: ${JSON.stringify(error)}`);
     }
 
-    return data || [];
+    // Backend returns { body: BlueprintDocument[] }, extract the body array
+    return (data as any)?.body || [];
 };
 
 /**

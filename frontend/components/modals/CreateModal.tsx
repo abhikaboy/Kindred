@@ -44,7 +44,7 @@ export enum Screen {
 const CreateModal = (props: Props) => {
     const [screen, setScreen] = useState(props.screen || Screen.STANDARD);
     const ThemedColor = useThemeColor();
-    
+
     // Get task creation context values to include in memoization dependencies
     const { taskName, startDate, startTime, deadline, reminders, recurring } = useTaskCreation();
 
@@ -58,24 +58,30 @@ const CreateModal = (props: Props) => {
         setScreen(newScreen);
     }, []);
 
-    // Handle visibility changes
+    // Auto-present on mount and when visible changes
     useEffect(() => {
         if (props.visible) {
             // Light haptic feedback when modal becomes visible
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            try {
-                bottomSheetModalRef.current?.present();
-            } catch (error) {
-                console.log("Error presenting bottom sheet:", error);
-            }
-        } else {
-            try {
-                bottomSheetModalRef.current?.dismiss();
-            } catch (error) {
-                console.log("Error dismissing bottom sheet:", error);
-            }
+
+            // Small delay to ensure ref is set and no other modals are presenting
+            const timer = setTimeout(() => {
+                try {
+                    if (!bottomSheetModalRef.current) return;
+
+                    // Force dismiss first to reset state, then present
+                    bottomSheetModalRef.current.dismiss();
+                    setTimeout(() => {
+                        bottomSheetModalRef.current?.present();
+                    }, 50);
+                } catch (error) {
+                    console.error("Error presenting modal:", error);
+                }
+            }, 100);
+
+            return () => clearTimeout(timer);
         }
-    }, [props.visible]);
+    }, [props.visible, props.categoryId, props.edit, screen]); // Re-run when visible or key props change
 
     // Handle sheet changes
     const handleSheetChanges = useCallback(
@@ -102,13 +108,13 @@ const CreateModal = (props: Props) => {
     // Custom backdrop component
     const renderBackdrop = useCallback(
         (backdropProps) => (
-            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={1} opacity={0.5} />
+            <BottomSheetBackdrop {...backdropProps} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
         ),
         []
     );
 
     const goToStandard = useCallback(() => setScreen(Screen.STANDARD), []);
-    
+
     const hideModal = useCallback(() => props.setVisible(false), [props.setVisible]);
 
     // Memoize screen props to prevent unnecessary re-renders
@@ -148,13 +154,13 @@ const CreateModal = (props: Props) => {
                 return null;
         }
     }, [
-        screen, 
-        screenProps, 
-        goToScreen, 
-        props.edit, 
-        props.categoryId, 
-        props.isBlueprint, 
-        hideModal, 
+        screen,
+        screenProps,
+        goToScreen,
+        props.edit,
+        props.categoryId,
+        props.isBlueprint,
+        hideModal,
         goToStandard,
         // Include task creation context values to ensure Standard component updates when these change
         taskName,
@@ -177,9 +183,10 @@ const CreateModal = (props: Props) => {
             enablePanDownToClose={true}
             keyboardBehavior="interactive"
             android_keyboardInputMode="adjustResize">
-            <BottomSheetScrollView 
+            <BottomSheetScrollView
                 style={[styles.container, { backgroundColor: ThemedColor.background }]}
-                contentContainerStyle={{ flexGrow: 1 }}>
+                contentContainerStyle={{ flexGrow: 1 }}
+                keyboardShouldPersistTaps="handled">
                 {currentScreenComponent}
             </BottomSheetScrollView>
         </BottomSheetModal>

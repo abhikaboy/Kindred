@@ -14,6 +14,7 @@ import SlidingText from "@/components/ui/SlidingText";
 import { Gear } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
@@ -27,7 +28,7 @@ interface WorkspaceContentProps {
 
 /**
  * WorkspaceContent - Displays workspace categories and tasks
- * Extracted content component without drawer wrapper
+ * Extracted content component with/ drawer wrapper
  */
 export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceName }) => {
     const ThemedColor = useThemeColor();
@@ -140,8 +141,12 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                     />
                 </View>
             </ConditionalView>
-            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-            <EditWorkspace editing={editingWorkspace} setEditing={setEditingWorkspace} id={selected} />
+            {editing && (
+                <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
+            )}
+            {editingWorkspace && (
+                <EditWorkspace editing={editingWorkspace} setEditing={setEditingWorkspace} id={selected} />
+            )}
 
             <ThemedView style={{ flex: 1 }}>
                 {/* Scrollable Content */}
@@ -189,11 +194,10 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                             style={{ height: "100%", marginTop: 8 }}>
                             <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                                 <ThemedText type="lightBody">This workspace is empty!</ThemedText>
-                                <TouchableOpacity
+                                <PrimaryButton
+                                    title="+"
                                     onPress={() => openModal()}
-                                    style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
-                                    <ThemedText type="defaultSemiBold">+</ThemedText>
-                                </TouchableOpacity>
+                                />
                             </View>
                         </ConditionalView>
 
@@ -217,19 +221,27 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                                                     setFocusedCategory(categoryId);
                                                 }}
                                                 onPress={(categoryId) => {
-                                                    openModal();
                                                     setFocusedCategory(categoryId);
+                                                    openModal({ categoryId });
                                                 }}
                                                 highlightFirstTask={isFirstCategory}
                                                 highlightCategoryHeader={isFirstCategory}
                                             />
                                         );
                                     })}
-                                <TouchableOpacity
-                                    onPress={() => openModal()}
-                                    style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
-                                    <ThemedText type="defaultSemiBold">+</ThemedText>
-                                </TouchableOpacity>
+                                <PrimaryButton
+                                    title="+ Add Task"
+                                    ghost
+                                    onPress={() => {
+                                        // Use the first available category if no category is focused
+                                        const firstCategory = categories.filter((c) => c.name !== "!-proxy-!")[0];
+                                        if (firstCategory) {
+                                            openModal({ categoryId: firstCategory.id });
+                                        } else {
+                                            openModal();
+                                        }
+                                    }}
+                                />
                             </View>
                         </ConditionalView>
                     </View>

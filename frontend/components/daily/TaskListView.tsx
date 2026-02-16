@@ -35,6 +35,7 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
         </View>
     ), []);
 
+    const keyExtractor = React.useCallback((item: any) => `${item.id}-${item.content}`, []);
     const getItemType = React.useCallback((item: any) => {
         return 'task';
     }, []);
@@ -46,8 +47,9 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
                     <FlashList
                         data={tasksForSelectedDate}
                         renderItem={renderTaskItem}
-                        keyExtractor={(item) => item.id + item.content}
+                        keyExtractor={keyExtractor}
                         getItemType={getItemType}
+                        estimatedItemSize={80}
                         removeClippedSubviews={true}
                     />
                 </View>
@@ -90,14 +92,15 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
 
 // Memoize TaskListView to prevent unnecessary re-renders when hidden
 export const TaskListView = React.memo(TaskListViewComponent, (prevProps, nextProps) => {
-    return (
-        prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime() &&
-        prevProps.tasksForSelectedDate === nextProps.tasksForSelectedDate &&
-        prevProps.overdueTasks === nextProps.overdueTasks &&
-        prevProps.upcomingTasks === nextProps.upcomingTasks &&
-        prevProps.pastTasks === nextProps.pastTasks &&
-        prevProps.unscheduledTasks === nextProps.unscheduledTasks
-    );
+    // Use length comparison for arrays since useMemo should keep reference stable
+    const sameDate = prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime();
+    const sameSelectedTasks = prevProps.tasksForSelectedDate.length === nextProps.tasksForSelectedDate.length;
+    const sameOverdue = prevProps.overdueTasks.length === nextProps.overdueTasks.length;
+    const sameUpcoming = prevProps.upcomingTasks.length === nextProps.upcomingTasks.length;
+    const samePast = prevProps.pastTasks.length === nextProps.pastTasks.length;
+    const sameUnscheduled = prevProps.unscheduledTasks.length === nextProps.unscheduledTasks.length;
+
+    return sameDate && sameSelectedTasks && sameOverdue && sameUpcoming && samePast && sameUnscheduled;
 });
 
 const styles = StyleSheet.create({

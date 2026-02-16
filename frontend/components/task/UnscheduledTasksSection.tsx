@@ -35,7 +35,7 @@ const UnscheduledTasksSection = ({
     const ThemedColor = useThemeColor();
 
     const renderTaskItem = React.useCallback(({ item }: { item: Task }) => (
-        <View style={styles.taskContainer}>
+        <View style={styles.taskItem}>
             {useSwipable && onCompleteTask ? (
                 <SchedulableTaskCard
                     redirect={true}
@@ -60,6 +60,7 @@ const UnscheduledTasksSection = ({
         </View>
     ), [useSwipable, onCompleteTask, useSchedulable, onScheduleTask, schedulingType]);
 
+    const keyExtractor = React.useCallback((item: Task) => `${item.id}-${item.content}`, []);
     const getItemType = React.useCallback(() => 'task', []);
 
     if (tasks.length === 0) {
@@ -94,8 +95,9 @@ const UnscheduledTasksSection = ({
                 <FlashList
                     data={tasks}
                     renderItem={renderTaskItem}
-                    keyExtractor={(item) => item.id + item.content}
+                    keyExtractor={keyExtractor}
                     getItemType={getItemType}
+                    estimatedItemSize={80}
                     removeClippedSubviews={true}
                 />
             </View>
@@ -117,8 +119,8 @@ const styles = StyleSheet.create({
     description: {
         marginBottom: 8,
     },
-    taskContainer: {
-        gap: 8,
+    taskItem: {
+        marginBottom: 8,
     },
     emptyText: {
         textAlign: "center",

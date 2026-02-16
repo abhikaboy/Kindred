@@ -81,7 +81,7 @@ const Tasks = ({ data, onUpdate }: Props) => {
             <ThemedText type="default" style={styles.sectionDescription}>
                 Add tasks that users will complete as part of this blueprint
             </ThemedText>
-            
+
             {/* Display existing categories using Category component */}
             {blueprintCategories.length > 0 && (
                 <View style={styles.categoriesContainer}>
@@ -100,7 +100,6 @@ const Tasks = ({ data, onUpdate }: Props) => {
 
             <PrimaryButton
                 title="+ Add Task"
-                outline
                 onPress={() => setShowCreateModal(true)}
             />
 

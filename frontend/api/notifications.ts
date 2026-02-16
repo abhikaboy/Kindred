@@ -26,6 +26,7 @@ export const getNotifications = async (limit: number = 20, skip: number = 0): Pr
         const { request } = useRequest();
         const url = `/user/notifications?limit=${limit}&skip=${skip}`;
         const response = await request("GET", url);
+        console.log("Notifications fetched", response);
         return response;
     } catch (error) {
         logger.error("Error fetching notifications", error);
@@ -44,7 +45,7 @@ export const markNotificationsAsRead = async (notificationIds: string[]): Promis
     try {
         const { request } = useRequest();
         const response = await request("PATCH", "/user/notifications/read", {
-            notification_ids: notificationIds
+            id: notificationIds
         });
         return response;
     } catch (error) {

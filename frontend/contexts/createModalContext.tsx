@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import { Screen } from "@/components/modals/CreateModal";
 
 type CreateModalContextType = {
@@ -22,18 +22,27 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
     const [visible, setVisible] = useState(false);
     const [modalConfig, setModalConfig] = useState<CreateModalConfig>({});
 
-    const openModal = (config: CreateModalConfig = {}) => {
-        setModalConfig(config);
-        setVisible(true);
-    };
+    const openModal = useCallback((config: CreateModalConfig = {}) => {
+        // Force close first if already open to reset state
+        if (visible) {
+            setVisible(false);
+            setTimeout(() => {
+                setModalConfig(config);
+                setVisible(true);
+            }, 100);
+        } else {
+            setModalConfig(config);
+            setVisible(true);
+        }
+    }, [visible]);
 
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setVisible(false);
         // Reset config after animation completes
         setTimeout(() => {
             setModalConfig({});
         }, 300);
-    };
+    }, []);
 
     return (
         <CreateModalContext.Provider
@@ -56,4 +65,3 @@ export const useCreateModal = () => {
     }
     return context;
 };
-

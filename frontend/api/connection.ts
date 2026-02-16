@@ -74,3 +74,67 @@ export const getFriendsAPI = async (): Promise<any[]> => {
 
     return data as any;
 };
+
+/**
+ * Create a connection request (follow a user)
+ * @param connectionData - Connection data with receiver_id
+ */
+export const createConnectionAPI = async (connectionData: { receiver_id: string }): Promise<any> => {
+    const { data, error } = await client.POST("/v1/user/connections", {
+        params: withAuthHeaders(),
+        body: connectionData,
+    });
+
+    if (error) {
+        throw new Error(`Failed to create connection: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};
+
+/**
+ * Delete a connection request (unfollow/cancel request)
+ * @param connectionId - ID of the connection to delete
+ */
+export const deleteConnectionAPI = async (connectionId: string): Promise<any> => {
+    const { data, error } = await client.DELETE("/v1/user/connections/{id}", {
+        params: withAuthHeaders({ path: { id: connectionId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to delete connection: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};
+
+/**
+ * Accept a connection request
+ * @param connectionId - ID of the connection to accept
+ */
+export const acceptConnectionAPI = async (connectionId: string): Promise<any> => {
+    const { data, error } = await client.POST("/v1/user/connections/{id}/accept", {
+        params: withAuthHeaders({ path: { id: connectionId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to accept connection: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};
+
+/**
+ * Get connections received by the current user (pending follow requests)
+ */
+export const getConnectionsByReceiverAPI = async (): Promise<any[]> => {
+    const { data, error } = await client.GET("/v1/user/connections/received", {
+        params: withAuthHeaders(),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get received connections: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};

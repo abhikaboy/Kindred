@@ -26,6 +26,7 @@ import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 
 type Props = {};
 
@@ -161,15 +162,15 @@ const WorkspaceContent = ({
     // Use a separate effect with ONLY the trigger check - no cleanup
     useEffect(() => {
         if (hasTriggeredRef.current) return;
-        
-        const shouldTrigger = selected === "🌺 Kindred Guide" && 
-            !workspaceSpotlightShown && 
+
+        const shouldTrigger = selected === "🌺 Kindred Guide" &&
+            !workspaceSpotlightShown &&
             menuSpotlightShown;
-        
+
         if (shouldTrigger && !hasTriggeredRef.current) {
             hasTriggeredRef.current = true;
             console.log('⏰ Triggering workspace spotlight in 1 second...');
-            
+
             setTimeout(() => {
                 console.log('🚀 Starting workspace spotlight!');
                 start();
@@ -211,12 +212,16 @@ const WorkspaceContent = ({
                     />
                 </View>
             </ConditionalView>
-            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-            <EditWorkspace 
-                editing={editingWorkspace} 
-                setEditing={setEditingWorkspace} 
-                id={selected} 
-            />
+            {editing && (
+                <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
+            )}
+            {editingWorkspace && (
+                <EditWorkspace
+                    editing={editingWorkspace}
+                    setEditing={setEditingWorkspace}
+                    id={selected}
+                />
+            )}
 
             {/* Sticky Header - Only shows when scrolled */}
             <ConditionalView condition={isHeaderSticky && selected !== ""}>
@@ -303,11 +308,10 @@ const WorkspaceContent = ({
                             style={{ height: "100%", marginTop: 8 }}>
                             <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                                 <ThemedText type="lightBody">This workspace is empty!</ThemedText>
-                                <TouchableOpacity
+                                <PrimaryButton
+                                    title="+ Add Category"
                                     onPress={() => openModal()}
-                                    style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
-                                    <ThemedText type="defaultSemiBold">+</ThemedText>
-                                </TouchableOpacity>
+                                />
                             </View>
                         </ConditionalView>
 
@@ -345,11 +349,10 @@ const WorkspaceContent = ({
                                             />
                                         );
                                     })}
-                                <TouchableOpacity
+                                <PrimaryButton
+                                    title="+ Add Category"
                                     onPress={() => openModal()}
-                                    style={[styles.addButton, { backgroundColor: ThemedColor.lightened }]}>
-                                    <ThemedText type="defaultSemiBold">+</ThemedText>
-                                </TouchableOpacity>
+                                />
                             </View>
                         </ConditionalView>
                     </View>

@@ -12,6 +12,7 @@ import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationDocument } from "@/api/types";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -223,7 +224,31 @@ const NotificationSection = ({
 const Notifications = () => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-    const { notifications: rawNotifications, loading, error, refreshNotifications } = useNotifications();
+    const { notifications: rawNotifications, loading, error, refreshNotifications, markAllAsRead } = useNotifications();
+    const hasMarkedAsRead = useRef(false);
+
+    console.log("🔍 Raw notifications count:", rawNotifications.length);
+    console.log("🔍 Loading:", loading);
+    console.log("🔍 Error:", error);
+    if (rawNotifications.length > 0) {
+        console.log("🔍 First notification:", JSON.stringify(rawNotifications[0], null, 2));
+    }
+
+    // Mark all notifications as read when the page is focused (only once per mount)
+    useFocusEffect(
+        React.useCallback(() => {
+            if (!loading && rawNotifications.length > 0 && !hasMarkedAsRead.current) {
+                console.log("📖 Marking all notifications as read");
+                hasMarkedAsRead.current = true;
+                markAllAsRead();
+            }
+
+            // Reset the flag when the screen loses focus
+            return () => {
+                hasMarkedAsRead.current = false;
+            };
+        }, [])
+    );
 
     const now = Date.now();
     const today = new Date();
@@ -233,41 +258,49 @@ const Notifications = () => {
     const isToday = (time: number) => time >= todayTimestamp;
     const isThisWeek = (time: number) => time >= now - ONE_WEEK && time < todayTimestamp;
     const isThisMonth = (time: number) => time >= now - ONE_MONTH && time < now - ONE_WEEK;
+    const isOlder = (time: number) => time < now - ONE_MONTH;
 
     // Convert API notification to processed notification
-    const processNotification = (notification: NotificationDocument): ProcessedNotification => {
-        const notificationTime = new Date(notification.time).getTime();
+    const processNotification = (notification: NotificationDocument): ProcessedNotification | null => {
+        try {
+            const notificationTime = new Date(notification.time).getTime();
 
-        // Extract task name from content for encouragement/congratulation notifications
-        let taskName = "";
-        if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
-            const match = notification.content.match(/on (.+?):/);
-            taskName = match ? match[1] : "Task";
+            // Extract task name from content for encouragement/congratulation notifications
+            let taskName = "";
+            if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
+                const match = notification.content.match(/on (.+?):/);
+                taskName = match ? match[1] : "Task";
+            }
+
+            return {
+                id: notification.id,
+                type: notification.notificationType.toLowerCase() as
+                    | "comment"
+                    | "encouragement"
+                    | "congratulation"
+                    | "friend_request"
+                    | "friend_request_accepted",
+                name: notification.user.display_name,
+                userId: notification.user.id,
+                time: notificationTime,
+                icon: notification.user.profile_picture || Icons.coffee,
+                content: notification.content,
+                taskName: taskName || undefined,
+                image: notification.user.profile_picture || Icons.coffee,
+                read: notification.read,
+                referenceId: notification.reference_id,
+                thumbnail: notification.thumbnail,
+            };
+        } catch (error) {
+            console.error("Error processing notification:", error, notification);
+            return null;
         }
-
-        return {
-            id: notification.id,
-            type: notification.notificationType.toLowerCase() as
-                | "comment"
-                | "encouragement"
-                | "congratulation"
-                | "friend_request"
-                | "friend_request_accepted",
-            name: notification.user.display_name,
-            userId: notification.user.id,
-            time: notificationTime,
-            icon: notification.user.profile_picture || Icons.coffee,
-            content: notification.content,
-            taskName: taskName || undefined,
-            image: notification.user.profile_picture || Icons.coffee,
-            read: notification.read,
-            referenceId: notification.reference_id,
-            thumbnail: notification.thumbnail,
-        };
     };
 
     // Convert raw notifications to processed notifications
-    const notifications = rawNotifications.map(processNotification);
+    const notifications = rawNotifications.map(processNotification).filter((n): n is ProcessedNotification => n !== null);
+
+    console.log("🔍 Processed notifications count:", notifications.length);
 
     // Helper function to filter notifications by time period
     const filterByTimePeriod = (
@@ -281,6 +314,17 @@ const Notifications = () => {
     const todayNotifications = filterByTimePeriod(notifications, isToday);
     const thisWeekNotifications = filterByTimePeriod(notifications, isThisWeek);
     const thisMonthNotifications = filterByTimePeriod(notifications, isThisMonth);
+    const olderNotifications = filterByTimePeriod(notifications, isOlder);
+
+    console.log("🔍 Today notifications:", todayNotifications.length);
+    console.log("🔍 This week notifications:", thisWeekNotifications.length);
+    console.log("🔍 This month notifications:", thisMonthNotifications.length);
+    console.log("🔍 Older notifications:", olderNotifications.length);
+    console.log("🔍 Today timestamp:", todayTimestamp);
+    console.log("🔍 Now timestamp:", now);
+    if (notifications.length > 0) {
+        console.log("🔍 First notification time:", notifications[0].time, new Date(notifications[0].time).toISOString());
+    }
 
     return (
         <ThemedView style={styles.container}>
@@ -316,6 +360,7 @@ const Notifications = () => {
                             notifications={thisMonthNotifications}
                             styles={styles}
                         />
+                        <NotificationSection title="Older" notifications={olderNotifications} styles={styles} />
                     </>
                 )}
             </ScrollView>

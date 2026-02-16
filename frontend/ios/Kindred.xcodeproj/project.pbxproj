@@ -8,25 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		1B6110D007D766321AF97E2D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58087106DB9B0DD8A0A01F3 /* ExpoModulesProvider.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		6EAD4E71563BF1DF9F92C3EA /* libPods-Kindred.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 210B764C4457B49D6A5EBAF7 /* libPods-Kindred.a */; };
+		7CA49B771DB41427072B5FC7 /* libPods-Kindred.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CCEA1CB41046CB86B98FD48E /* libPods-Kindred.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		CB2A83AAAB8CC45B9ADEF3CB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A18EAC3634ACA5344BA1C45 /* ExpoModulesProvider.swift */; };
+		F0E942BC45F1101A16DA05B0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F713B3EE2FA20039D8AF0971 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 06A79656D7C6604EF9E6BD53 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		06A79656D7C6604EF9E6BD53 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Kindred/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Kindred.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kindred.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Kindred/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Kindred/Info.plist; sourceTree = "<group>"; };
-		1EB41E5A17BD76B25D3DCA29 /* Pods-Kindred.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kindred.release.xcconfig"; path = "Target Support Files/Pods-Kindred/Pods-Kindred.release.xcconfig"; sourceTree = "<group>"; };
-		210B764C4457B49D6A5EBAF7 /* libPods-Kindred.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Kindred.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		891E10B3EEAEF386107EE6DD /* Pods-Kindred.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kindred.debug.xcconfig"; path = "Target Support Files/Pods-Kindred/Pods-Kindred.debug.xcconfig"; sourceTree = "<group>"; };
+		5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Kindred/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		7A18EAC3634ACA5344BA1C45 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Kindred/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Kindred/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B58087106DB9B0DD8A0A01F3 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Kindred/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		AE741A81E3084513FA9E4CBC /* Pods-Kindred.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kindred.release.xcconfig"; path = "Target Support Files/Pods-Kindred/Pods-Kindred.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		CCEA1CB41046CB86B98FD48E /* libPods-Kindred.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Kindred.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EC63EF3DB59A23C0518BE203 /* Pods-Kindred.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kindred.debug.xcconfig"; path = "Target Support Files/Pods-Kindred/Pods-Kindred.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Kindred/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Kindred-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Kindred-Bridging-Header.h"; path = "Kindred/Kindred-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6EAD4E71563BF1DF9F92C3EA /* libPods-Kindred.a in Frameworks */,
+				7CA49B771DB41427072B5FC7 /* libPods-Kindred.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				06A79656D7C6604EF9E6BD53 /* PrivacyInfo.xcprivacy */,
+				5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Kindred;
 			sourceTree = "<group>";
@@ -62,17 +62,19 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				210B764C4457B49D6A5EBAF7 /* libPods-Kindred.a */,
+				CCEA1CB41046CB86B98FD48E /* libPods-Kindred.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		331524B1BF5260F840929253 /* Kindred */ = {
+		6B68D1195F25FE5BD31B0DDD /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				B58087106DB9B0DD8A0A01F3 /* ExpoModulesProvider.swift */,
+				EC63EF3DB59A23C0518BE203 /* Pods-Kindred.debug.xcconfig */,
+				AE741A81E3084513FA9E4CBC /* Pods-Kindred.release.xcconfig */,
 			);
-			name = Kindred;
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -89,8 +91,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				C6F8BAED6A507FAFB4EED9B7 /* Pods */,
-				F1BEE7FEE55092DA71C6F115 /* ExpoModulesProviders */,
+				6B68D1195F25FE5BD31B0DDD /* Pods */,
+				B9ADC3000E990FF8A6EDDD33 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -105,6 +107,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B9ADC3000E990FF8A6EDDD33 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				FD45AA38E8B175746C34BC1C /* Kindred */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -114,22 +124,12 @@
 			path = Kindred/Supporting;
 			sourceTree = "<group>";
 		};
-		C6F8BAED6A507FAFB4EED9B7 /* Pods */ = {
+		FD45AA38E8B175746C34BC1C /* Kindred */ = {
 			isa = PBXGroup;
 			children = (
-				891E10B3EEAEF386107EE6DD /* Pods-Kindred.debug.xcconfig */,
-				1EB41E5A17BD76B25D3DCA29 /* Pods-Kindred.release.xcconfig */,
+				7A18EAC3634ACA5344BA1C45 /* ExpoModulesProvider.swift */,
 			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
-		F1BEE7FEE55092DA71C6F115 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				331524B1BF5260F840929253 /* Kindred */,
-			);
-			name = ExpoModulesProviders;
+			name = Kindred;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,14 +140,14 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Kindred" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				7624F9C4B458F086CF67987D /* [Expo] Configure project */,
+				1725525D1E0DD3D4B144C767 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				1FA6CAB8AAC94C6B9B0BA88B /* Upload Debug Symbols to Sentry */,
-				E7D6700E3E948E88933917B3 /* [CP] Embed Pods Frameworks */,
+				B0D23DD5F1DE48B6AF681741 /* Upload Debug Symbols to Sentry */,
+				F6278119B7EE4DD749C6F38D /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -197,7 +197,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				F713B3EE2FA20039D8AF0971 /* PrivacyInfo.xcprivacy in Resources */,
+				F0E942BC45F1101A16DA05B0 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,21 +243,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1FA6CAB8AAC94C6B9B0BA88B /* Upload Debug Symbols to Sentry */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Upload Debug Symbols to Sentry";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh `${NODE_BINARY:-node} --print \"require('path').dirname(require.resolve('@sentry/react-native/package.json')) + '/scripts/sentry-xcode-debug-files.sh'\"`";
-		};
-		7624F9C4B458F086CF67987D /* [Expo] Configure project */ = {
+		1725525D1E0DD3D4B144C767 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -294,6 +280,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXNotifications/ExpoNotifications_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoLocalization/ExpoLocalization_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/MCEmojiPicker/MCEmojiPicker.bundle",
@@ -312,6 +299,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoLocalization_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoMediaLibrary_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MCEmojiPicker.bundle",
@@ -327,7 +315,21 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Kindred/Pods-Kindred-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E7D6700E3E948E88933917B3 /* [CP] Embed Pods Frameworks */ = {
+		B0D23DD5F1DE48B6AF681741 /* Upload Debug Symbols to Sentry */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Upload Debug Symbols to Sentry";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh `${NODE_BINARY:-node} --print \"require('path').dirname(require.resolve('@sentry/react-native/package.json')) + '/scripts/sentry-xcode-debug-files.sh'\"`";
+		};
+		F6278119B7EE4DD749C6F38D /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -357,7 +359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				1B6110D007D766321AF97E2D /* ExpoModulesProvider.swift in Sources */,
+				CB2A83AAAB8CC45B9ADEF3CB /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -366,7 +368,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 891E10B3EEAEF386107EE6DD /* Pods-Kindred.debug.xcconfig */;
+			baseConfigurationReference = EC63EF3DB59A23C0518BE203 /* Pods-Kindred.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -391,18 +393,18 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl;
-				PRODUCT_NAME = "Kindred";
+				PRODUCT_NAME = Kindred;
 				SWIFT_OBJC_BRIDGING_HEADER = "Kindred/Kindred-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1EB41E5A17BD76B25D3DCA29 /* Pods-Kindred.release.xcconfig */;
+			baseConfigurationReference = AE741A81E3084513FA9E4CBC /* Pods-Kindred.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -422,10 +424,10 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl;
-				PRODUCT_NAME = "Kindred";
+				PRODUCT_NAME = Kindred;
 				SWIFT_OBJC_BRIDGING_HEADER = "Kindred/Kindred-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
