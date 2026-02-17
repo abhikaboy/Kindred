@@ -136,6 +136,7 @@ export default function TabLayout() {
     const hideFABScreens = [
         "/daily",
         "/review",
+        "/settings",
     ];
 
     const shouldHideTabBar =

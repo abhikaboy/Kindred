@@ -83,7 +83,7 @@ export default function Encouragements() {
                         <ThemedText type="subtitle" style={styles.emptyText}>
                             No encouragements yet
                         </ThemedText>
-                        <ThemedText type="lightBody" style={styles.emptySubtext}>
+                        <ThemedText type="lightBody" style={styles.emptyText}>
                             When friends encourage you on tasks, they'll appear here
                         </ThemedText>
                     </View>

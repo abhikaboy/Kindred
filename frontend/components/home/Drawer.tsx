@@ -186,10 +186,14 @@ const DrawerContent = ({
         // 1. We haven't shown the menu spotlight yet
         // 2. The home spotlight has been completed (so the drawer was opened from the home tour)
         if (!spotlightState.menuSpotlight && spotlightState.homeSpotlight) {
-            // Increased delay to 800ms to allow drawer animation to complete
+            // Increased delay to 1000ms to allow drawer animation to complete
             const timer = setTimeout(() => {
-                start();
-            }, 800);
+                try {
+                    start();
+                } catch (error) {
+                    console.error('Failed to start menu spotlight tour:', error);
+                }
+            }, 1000);
 
             return () => clearTimeout(timer);
         }
@@ -337,7 +341,7 @@ const DrawerContent = ({
                             .filter((workspace) => !workspace.isBlueprint)
                             .map((workspace) => {
                                 const taskCount = workspace.categories.reduce(
-                                    (total, category) => total + category.tasks.length,
+                                    (total, category) => total + (category.tasks?.filter(task => task.active !== false).length || 0),
                                     0
                                 );
                                 return (
