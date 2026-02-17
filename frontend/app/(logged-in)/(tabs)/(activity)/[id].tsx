@@ -14,6 +14,7 @@ import RecurringTasksSelectionModal from "@/components/modals/RecurringTasksSele
 import { getUserTemplatesAPI } from "@/api/task";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useAuth } from "@/hooks/useAuth";
+import { RecurringTaskCard } from "@/components/activity/RecurringTaskCard";
 
 type Props = {};
 
@@ -198,11 +199,6 @@ const Activity = (props: Props) => {
         <ThemedView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText type="default" style={styles.backArrow}>
-                        ←
-                    </ThemedText>
-                </TouchableOpacity>
                 <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                     {params.displayName ? `${displayName}'s Activity` : "My Activity"}
                 </ThemedText>
@@ -213,7 +209,7 @@ const Activity = (props: Props) => {
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}>
-                <View style={styles.yearSelector}>
+                {/* <View style={styles.yearSelector}>
                     <TouchableOpacity onPress={() => setYearWithinBounds(year - 1)}>
                         <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
@@ -225,39 +221,54 @@ const Activity = (props: Props) => {
                         <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
-
-                {!breakdownMode && (
-                    <View style={styles.breakdownButtonContainer}>
-                        <PrimaryButton
-                            title={templates.length === 0 ? "No recurring tasks yet" : "Break Down by Recurring Tasks"}
-                            outline
-                            onPress={() => setBreakdownModalVisible(true)}
-                            style={styles.breakdownButton}
-                            disabled={templates.length === 0}
-                            colorOverride={ThemedColor.text}
-                        />
-                        {templates.length === 0 && (
-                            <ThemedText type="caption" style={{ textAlign: "center", marginTop: 8, color: ThemedColor.caption }}>
-                                Create a recurring task to use this feature
+ */}
+                {/* Recurring Tasks Section */}
+                {templates.length > 0 && (
+                    <View style={styles.recurringTasksSection}>
+                        <View style={styles.sectionHeader}>
+                            <ThemedText type="subtitle">Recurring Tasks</ThemedText>
+                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                Tap to filter activity
                             </ThemedText>
-                        )}
+                        </View>
+
+                        {templates.map((template) => (
+                            <RecurringTaskCard
+                                key={template.id}
+                                templateId={template.id}
+                                taskName={template.content}
+                                categoryName={template.categoryName}
+                                completionDates={template.completionDates || []}
+                                year={year}
+                                month={month}
+                                isSelected={selectedTemplateIds.includes(template.id)}
+                                recurType={template.recurType}
+                                recurFrequency={template.recurFrequency}
+                                streak={template.streak}
+                                onToggle={(templateId) => {
+                                    setSelectedTemplateIds(prev => {
+                                        if (prev.includes(templateId)) {
+                                            const newIds = prev.filter(id => id !== templateId);
+                                            if (newIds.length === 0) {
+                                                setBreakdownMode(false);
+                                            }
+                                            return newIds;
+                                        } else {
+                                            setBreakdownMode(true);
+                                            return [...prev, templateId];
+                                        }
+                                    });
+                                }}
+                            />
+                        ))}
                     </View>
                 )}
 
-                {breakdownMode && (
-                    <View style={[styles.breakdownActiveBar, { backgroundColor: ThemedColor.lightenedCard}]}>
-                        <ThemedText type="caption" style={{ color: ThemedColor.text }}>
-                            Showing {selectedTemplateIds.length} recurring task{selectedTemplateIds.length !== 1 ? "s" : ""}
+                {templates.length === 0 && (
+                    <View style={styles.emptyStateContainer}>
+                        <ThemedText type="caption" style={{ textAlign: "center", color: ThemedColor.caption }}>
+                            No recurring tasks yet. Create one to track your habits!
                         </ThemedText>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setBreakdownMode(false);
-                                setSelectedTemplateIds([]);
-                            }}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                                Clear
-                            </ThemedText>
-                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -460,6 +471,19 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             justifyContent: "space-between",
             borderRadius: 12,
             padding: 16,
+        },
+        recurringTasksSection: {
+            width: "100%",
+            marginBottom: 24,
+        },
+        sectionHeader: {
+            marginBottom: 16,
+            gap: 4,
+        },
+        emptyStateContainer: {
+            width: "100%",
+            padding: 24,
+            alignItems: "center",
         },
     });
 

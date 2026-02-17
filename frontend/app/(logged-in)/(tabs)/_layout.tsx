@@ -132,8 +132,17 @@ export default function TabLayout() {
         // Add other screen paths where you want to hide tabs
     ];
 
+    // Define screens where you want to hide the FAB (but keep tab bar visible)
+    const hideFABScreens = [
+        "/daily",
+        "/review",
+    ];
+
     const shouldHideTabBar =
         hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen || focusMode;
+
+    const shouldHideFAB =
+        shouldHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
 
     // Animate tab bar visibility
     useEffect(() => {
@@ -291,7 +300,7 @@ export default function TabLayout() {
             </Tabs>
 
             {/* Floating Action Button */}
-            <FloatingActionButton visible={!shouldHideTabBar} />
+            <FloatingActionButton visible={!shouldHideFAB} />
         </>
     );
 }

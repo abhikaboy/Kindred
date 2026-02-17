@@ -341,6 +341,14 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			StartDate:     startDate,
 			LastGenerated: &baseTime,
 			Reminders:     relativeReminders,
+
+			// Initialize analytics fields
+			TimesGenerated:  0,
+			TimesCompleted:  0,
+			TimesMissed:     0,
+			Streak:          0,
+			HighestStreak:   0,
+			CompletionDates: []time.Time{}, // Initialize empty array for completion tracking
 		}
 		var err error
 

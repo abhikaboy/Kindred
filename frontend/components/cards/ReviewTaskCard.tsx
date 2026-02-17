@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet, Dimensions, ScrollView } from "react-native";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
 import TinderCard from "react-tinder-card";
 import { ThemedText } from "@/components/ThemedText";
@@ -52,43 +52,43 @@ const ReviewTaskCard = ({
                 ]}>
                     <View>
                         <ReviewTaskRow label="Priority" value={task?.priority ?? 0} />
-                        <ReviewTaskRow 
-                            label="Notes" 
-                            value={task?.notes || "No notes"} 
+                        <ReviewTaskRow
+                            label="Notes"
+                            value={task?.notes || "No notes"}
                             empty={!task?.notes}
                         />
-                        <ReviewTaskRow 
-                            label="Checklist" 
+                        <ReviewTaskRow
+                            label="Checklist"
                             value={
-                                task?.checklist?.length > 0 
-                                    ? task.checklist.map((item) => item.content).join(", ") 
+                                task?.checklist?.length > 0
+                                    ? task.checklist.map((item) => item.content).join(", ")
                                     : "No checklist"
                             }
                             empty={!task?.checklist || task.checklist.length === 0}
                         />
-                        <ReviewTaskRow 
-                            label="Start Time" 
+                        <ReviewTaskRow
+                            label="Start Time"
                             value={
-                                task?.startTime 
-                                    ? new Date(task.startTime).toLocaleTimeString() 
+                                task?.startTime
+                                    ? new Date(task.startTime).toLocaleTimeString()
                                     : "No start time"
                             }
                             empty={!task?.startTime}
                         />
-                        <ReviewTaskRow 
-                            label="Start Date" 
+                        <ReviewTaskRow
+                            label="Start Date"
                             value={
-                                task?.startDate 
-                                    ? new Date(task.startDate).toLocaleDateString() 
+                                task?.startDate
+                                    ? new Date(task.startDate).toLocaleDateString()
                                     : "No start date"
                             }
                             empty={!task?.startDate}
                         />
-                        <ReviewTaskRow 
-                            label="Deadline" 
+                        <ReviewTaskRow
+                            label="Deadline"
                             value={
-                                task?.deadline 
-                                    ? new Date(task.deadline).toLocaleDateString() 
+                                task?.deadline
+                                    ? new Date(task.deadline).toLocaleDateString()
                                     : "No deadline"
                             }
                             empty={!task?.deadline}
@@ -105,13 +105,13 @@ const ReviewTaskCard = ({
 
                     {/* Swipe direction indicators */}
                     {swipeDirection && (
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.swipeIndicator,
                                 animatedIndicatorStyle as any,
                                 { borderWidth: 1 },
                                 {
-                                    backgroundColor: swipeDirection === 'left' 
+                                    backgroundColor: swipeDirection === 'left'
                                         ? ThemedColor.text + '60'
                                         : swipeDirection === 'right'
                                         ? ThemedColor.success + '50'
@@ -126,13 +126,13 @@ const ReviewTaskCard = ({
                                 },
                             ]}
                         >
-                            <Animated.Text 
+                            <Animated.Text
                                 style={[
                                     styles.swipeIndicatorText,
                                     animatedIndicatorTextStyle as any,
                                     {
-                                        color: swipeDirection === 'left' 
-                                            ? ThemedColor.text 
+                                        color: swipeDirection === 'left'
+                                            ? ThemedColor.text
                                             : swipeDirection === 'right'
                                             ? ThemedColor.success
                                             : ThemedColor.error,
@@ -195,4 +195,3 @@ const styles = StyleSheet.create({
         letterSpacing: -2,
     },
 });
-

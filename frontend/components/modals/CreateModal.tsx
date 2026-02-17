@@ -81,7 +81,7 @@ const CreateModal = (props: Props) => {
 
             return () => clearTimeout(timer);
         }
-    }, [props.visible, props.categoryId, props.edit, screen]); // Re-run when visible or key props change
+    }, [props.visible, props.categoryId, props.edit]); // Re-run when visible or key props change (removed screen from deps)
 
     // Handle sheet changes
     const handleSheetChanges = useCallback(

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
 import { useCreateModal } from "@/contexts/createModalContext";
+import { useLocalSearchParams } from "expo-router";
 import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
@@ -38,6 +39,10 @@ const Daily = (props: Props) => {
     const { loadTaskData } = useTaskCreation();
     const { openModal } = useCreateModal();
     const { setIsDrawerOpen } = useDrawer();
+    const params = useLocalSearchParams();
+
+    // Check if we should default to Calendar view based on navigation params
+    const initialTab = params.workspace === "Calendar" ? "Calendar" : "List";
 
     // State
     const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
@@ -49,8 +54,8 @@ const Daily = (props: Props) => {
         return d;
     });
     const [selectedDate, setSelectedDate] = useState(centerDate);
-    const [activeTab, setActiveTab] = useState("List");
-    const [shouldRenderCalendar, setShouldRenderCalendar] = useState(false);
+    const [activeTab, setActiveTab] = useState(initialTab);
+    const [shouldRenderCalendar, setShouldRenderCalendar] = useState(initialTab === "Calendar");
 
     // Defer Calendar view rendering until after interactions complete
     useEffect(() => {

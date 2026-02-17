@@ -535,8 +535,8 @@ const StandardContent = ({
                             handleUpdateOrTemplate();
                         } else {
                             createPost();
-                            hide();
                         }
+                        hide();
                     }}>
                     <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
