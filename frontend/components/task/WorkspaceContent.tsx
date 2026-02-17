@@ -11,7 +11,7 @@ import { Category } from "@/components/category";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
-import { Gear } from "phosphor-react-native";
+import { Gear, Plus } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -195,7 +195,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                             <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                                 <ThemedText type="lightBody">This workspace is empty!</ThemedText>
                                 <PrimaryButton
-                                    title="+ Add Category"
+                                    title="+"
                                     onPress={() => openModal()}
                                 />
                             </View>
@@ -229,6 +229,19 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                                             />
                                         );
                                     })}
+                                <TouchableOpacity
+                                    onPress={() => openModal()}
+                                    style={{
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        width: "100%",
+                                        paddingVertical: 16,
+                                        borderRadius: 12,
+                                        backgroundColor: ThemedColor.lightenedCard,
+                                    }}
+                                >
+                                    <Plus size={16} color={ThemedColor.text} />
+                                </TouchableOpacity>
                             </View>
                         </ConditionalView>
                     </View>
