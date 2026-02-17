@@ -14,7 +14,8 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Categories: collections["categories"],
+		Categories:    collections["categories"],
+		TemplateTasks: collections["template-tasks"],
 	}
 }
 
@@ -149,17 +150,82 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) DeleteCategory(userId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()
-	_, err := s.Categories.DeleteOne(ctx, bson.M{"_id": id})
+
+	// Delete all template tasks associated with this category
+	templateFilter := bson.M{"categoryID": id}
+	templateResult, err := s.TemplateTasks.DeleteMany(ctx, templateFilter)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to delete template tasks for category",
+			slog.String("categoryID", id.Hex()),
+			slog.String("error", err.Error()))
+		// Continue with category deletion even if template deletion fails
+	} else if templateResult.DeletedCount > 0 {
+		slog.LogAttrs(ctx, slog.LevelInfo, "Deleted template tasks for category",
+			slog.String("categoryID", id.Hex()),
+			slog.Int64("templatesDeleted", templateResult.DeletedCount))
+	}
+
+	// Delete the category
+	_, err = s.Categories.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
 
 func (s *Service) DeleteWorkspace(workspaceName string, user primitive.ObjectID) error {
 	ctx := context.Background()
 
+	// First, find all categories in the workspace to get their IDs
 	filter := bson.M{"workspaceName": workspaceName, "user": user}
-	_, err := s.Categories.DeleteMany(ctx, filter)
+	cursor, err := s.Categories.Find(ctx, filter)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to find categories for workspace deletion",
+			slog.String("workspace", workspaceName),
+			slog.String("error", err.Error()))
+		return err
+	}
+	defer cursor.Close(ctx)
 
-	return err
+	// Collect all category IDs
+	var categoryIDs []primitive.ObjectID
+	for cursor.Next(ctx) {
+		var category CategoryDocument
+		if err := cursor.Decode(&category); err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Failed to decode category during workspace deletion",
+				slog.String("error", err.Error()))
+			continue
+		}
+		categoryIDs = append(categoryIDs, category.ID)
+	}
+
+	// Delete all template tasks associated with these categories
+	if len(categoryIDs) > 0 {
+		templateFilter := bson.M{"categoryID": bson.M{"$in": categoryIDs}}
+		templateResult, err := s.TemplateTasks.DeleteMany(ctx, templateFilter)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to delete template tasks for workspace",
+				slog.String("workspace", workspaceName),
+				slog.String("error", err.Error()))
+			// Continue with category deletion even if template deletion fails
+		} else {
+			slog.LogAttrs(ctx, slog.LevelInfo, "Deleted template tasks for workspace",
+				slog.String("workspace", workspaceName),
+				slog.Int64("templatesDeleted", templateResult.DeletedCount))
+		}
+	}
+
+	// Delete all categories in the workspace
+	categoryResult, err := s.Categories.DeleteMany(ctx, filter)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to delete categories for workspace",
+			slog.String("workspace", workspaceName),
+			slog.String("error", err.Error()))
+		return err
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace deleted successfully",
+		slog.String("workspace", workspaceName),
+		slog.Int64("categoriesDeleted", categoryResult.DeletedCount))
+
+	return nil
 }
 
 // RenameWorkspace renames a workspace by updating all categories that belong to it

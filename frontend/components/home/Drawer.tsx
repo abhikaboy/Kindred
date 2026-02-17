@@ -335,18 +335,25 @@ const DrawerContent = ({
                         </View>
                         {workspaces
                             .filter((workspace) => !workspace.isBlueprint)
-                            .map((workspace) => (
-                                <WorkspaceDrawerItem
-                                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
-                                    onLongPress={() => {
-                                        setFocusedWorkspace(workspace.name);
-                                        setEditing(true);
-                                    }}
-                                    key={workspace.name}
-                                    title={workspace.name}
-                                    selected={currentSelected}
-                                />
-                            ))}
+                            .map((workspace) => {
+                                const taskCount = workspace.categories.reduce(
+                                    (total, category) => total + category.tasks.length,
+                                    0
+                                );
+                                return (
+                                    <WorkspaceDrawerItem
+                                        onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
+                                        onLongPress={() => {
+                                            setFocusedWorkspace(workspace.name);
+                                            setEditing(true);
+                                        }}
+                                        key={workspace.name}
+                                        title={workspace.name}
+                                        selected={currentSelected}
+                                        taskCount={taskCount}
+                                    />
+                                );
+                            })}
                     </View>
                 </AttachStep>
                 <TouchableOpacity onPress={() => {}}>
@@ -474,21 +481,41 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
     );
 });
 
-const WorkspaceDrawerItem = (props: DrawerItemProps) => {
+const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number }) => {
     const ThemedColor = useThemeColor();
+    const isSelected = props.selected === props.title;
+
     return (
         <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingVertical: 4 }}>
-            <DrawerItem
-                {...props}
-                style={{
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
-                    borderRadius: 8,
-                    paddingVertical: 20,
-                    paddingHorizontal: 16,
-                    width: "100%",
-                }}
-            />
+            <TouchableOpacity
+                style={[
+                    {
+                        borderWidth: 1,
+                        borderColor: ThemedColor.tertiary,
+                        borderRadius: 8,
+                        paddingVertical: 20,
+                        paddingHorizontal: 16,
+                        width: "100%",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    },
+                    isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
+                ]}
+                onPress={props.onPress}
+                onLongPress={props.onLongPress}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <SelectedIndicator selected={isSelected} />
+                    <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }}>
+                        {props.title}
+                    </ThemedText>
+                </View>
+                {props.taskCount !== undefined && (
+                    <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                        {props.taskCount}
+                    </ThemedText>
+                )}
+            </TouchableOpacity>
         </View>
     );
 };

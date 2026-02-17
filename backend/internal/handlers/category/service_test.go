@@ -233,6 +233,50 @@ func (s *CategoryServiceTestSuite) TestDeleteCategory_NotFound() {
 	s.NoError(err)
 }
 
+func (s *CategoryServiceTestSuite) TestDeleteCategory_WithRecurringTasks() {
+	user := s.GetUser(0)
+
+	// Create a category
+	category := &CategoryDocument{
+		ID:    primitive.NewObjectID(),
+		Name:  "Category with Recurring Tasks",
+		User:  user.ID,
+		Tasks: []types.TaskDocument{},
+	}
+
+	created, err := s.service.CreateCategory(category)
+	s.NoError(err)
+
+	// Create a template task for this category
+	templateTask := &types.TemplateTaskDocument{
+		ID:             primitive.NewObjectID(),
+		UserID:         user.ID,
+		CategoryID:     created.ID,
+		Content:        "Recurring Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "daily",
+		RecurType:      "OCCURRENCE",
+	}
+
+	_, err = s.Collections["template-tasks"].InsertOne(s.Ctx, templateTask)
+	s.NoError(err)
+
+	// Delete the category
+	err = s.service.DeleteCategory(user.ID, created.ID)
+	s.NoError(err)
+
+	// Verify category is deleted
+	result, err := s.service.GetCategoryByID(created.ID)
+	s.Error(err)
+	s.Nil(result)
+
+	// Verify template task is also deleted
+	var foundTemplate types.TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, primitive.M{"_id": templateTask.ID}).Decode(&foundTemplate)
+	s.Error(err, "Template task should be deleted")
+}
+
 // ========================================
 // GetWorkspaces Tests
 // ========================================
@@ -309,6 +353,54 @@ func (s *CategoryServiceTestSuite) TestDeleteWorkspace_Success() {
 	for _, ws := range workspaces {
 		s.NotEqual("TestWorkspace", ws.Name)
 	}
+}
+
+func (s *CategoryServiceTestSuite) TestDeleteWorkspace_WithRecurringTasks() {
+	user := s.GetUser(0)
+
+	// Create a category with a workspace
+	category := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          user.ID,
+		WorkspaceName: "TestWorkspaceWithRecurring",
+		Tasks:         []types.TaskDocument{},
+	}
+
+	created, err := s.service.CreateCategory(category)
+	s.NoError(err)
+
+	// Create a template task for this category
+	templateTask := &types.TemplateTaskDocument{
+		ID:             primitive.NewObjectID(),
+		UserID:         user.ID,
+		CategoryID:     created.ID,
+		Content:        "Recurring Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "daily",
+		RecurType:      "OCCURRENCE",
+	}
+
+	_, err = s.Collections["template-tasks"].InsertOne(s.Ctx, templateTask)
+	s.NoError(err)
+
+	// Delete the workspace
+	err = s.service.DeleteWorkspace("TestWorkspaceWithRecurring", user.ID)
+	s.NoError(err)
+
+	// Verify categories in that workspace are deleted
+	workspaces, err := s.service.GetWorkspaces(user.ID)
+	s.NoError(err)
+
+	for _, ws := range workspaces {
+		s.NotEqual("TestWorkspaceWithRecurring", ws.Name)
+	}
+
+	// Verify template task is also deleted
+	var foundTemplate types.TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, primitive.M{"_id": templateTask.ID}).Decode(&foundTemplate)
+	s.Error(err, "Template task should be deleted")
 }
 
 // ========================================

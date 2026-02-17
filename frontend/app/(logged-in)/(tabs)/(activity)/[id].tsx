@@ -119,6 +119,7 @@ const Activity = (props: Props) => {
     const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
     const [breakdownModalVisible, setBreakdownModalVisible] = useState(false);
     const [breakdownMode, setBreakdownMode] = useState(false);
+    const [recurringTasksExpanded, setRecurringTasksExpanded] = useState(true);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
 
@@ -225,14 +226,27 @@ const Activity = (props: Props) => {
                 {/* Recurring Tasks Section */}
                 {templates.length > 0 && (
                     <View style={styles.recurringTasksSection}>
-                        <View style={styles.sectionHeader}>
-                            <ThemedText type="subtitle">Recurring Tasks</ThemedText>
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                Tap to filter activity
-                            </ThemedText>
-                        </View>
+                        <TouchableOpacity
+                            style={styles.sectionHeader}
+                            onPress={() => setRecurringTasksExpanded(!recurringTasksExpanded)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.sectionHeaderContent}>
+                                <View>
+                                    <ThemedText type="subtitle">Recurring Tasks</ThemedText>
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        {recurringTasksExpanded ? "Tap to filter activity" : `${templates.length} task${templates.length !== 1 ? 's' : ''}`}
+                                    </ThemedText>
+                                </View>
+                                <Ionicons
+                                    name={recurringTasksExpanded ? "chevron-up" : "chevron-down"}
+                                    size={24}
+                                    color={ThemedColor.text}
+                                />
+                            </View>
+                        </TouchableOpacity>
 
-                        {templates.map((template) => (
+                        {recurringTasksExpanded && templates.map((template) => (
                             <RecurringTaskCard
                                 key={template.id}
                                 templateId={template.id}
@@ -478,7 +492,12 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         sectionHeader: {
             marginBottom: 16,
-            gap: 4,
+        },
+        sectionHeaderContent: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
         },
         emptyStateContainer: {
             width: "100%",

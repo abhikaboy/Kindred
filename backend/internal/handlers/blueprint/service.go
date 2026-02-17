@@ -16,8 +16,9 @@ import (
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Blueprints: collections["blueprints"],
-		Users:      collections["users"],
+		Blueprints:    collections["blueprints"],
+		Users:         collections["users"],
+		TemplateTasks: collections["template-tasks"],
 	}
 }
 
@@ -316,13 +317,49 @@ func (s *Service) deleteBlueprintCategories(blueprintID, userID primitive.Object
 	// Get the categories collection
 	categoriesCollection := s.Blueprints.Database().Collection("categories")
 
-	// Delete all categories that match the userID and blueprintID
+	// First, find all categories to get their IDs for template deletion
 	filter := bson.M{
 		"user":        userID,
 		"blueprintId": blueprintID,
 		"isBlueprint": true,
 	}
 
+	cursor, err := categoriesCollection.Find(ctx, filter)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+
+	// Collect all category IDs
+	var categoryIDs []primitive.ObjectID
+	for cursor.Next(ctx) {
+		var category struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
+		if err := cursor.Decode(&category); err != nil {
+			slog.Warn("Failed to decode category during blueprint deletion", "error", err)
+			continue
+		}
+		categoryIDs = append(categoryIDs, category.ID)
+	}
+
+	// Delete all template tasks associated with these categories
+	if len(categoryIDs) > 0 {
+		templateFilter := bson.M{"categoryID": bson.M{"$in": categoryIDs}}
+		templateResult, err := s.TemplateTasks.DeleteMany(ctx, templateFilter)
+		if err != nil {
+			slog.Error("Failed to delete template tasks for blueprint categories",
+				"blueprintID", blueprintID.Hex(),
+				"error", err)
+			// Continue with category deletion even if template deletion fails
+		} else if templateResult.DeletedCount > 0 {
+			slog.Info("Deleted template tasks for blueprint categories",
+				"blueprintID", blueprintID.Hex(),
+				"templatesDeleted", templateResult.DeletedCount)
+		}
+	}
+
+	// Delete all categories that match the userID and blueprintID
 	result, err := categoriesCollection.DeleteMany(ctx, filter)
 	if err != nil {
 		return err

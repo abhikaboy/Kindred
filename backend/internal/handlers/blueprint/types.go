@@ -278,6 +278,7 @@ func (b *BlueprintDocumentInternal) ToAPIWithoutSubscribers() *BlueprintDocument
 */
 
 type Service struct {
-	Blueprints *mongo.Collection
-	Users      *mongo.Collection
+	Blueprints    *mongo.Collection
+	Users         *mongo.Collection
+	TemplateTasks *mongo.Collection
 }

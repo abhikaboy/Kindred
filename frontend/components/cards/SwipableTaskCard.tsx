@@ -49,6 +49,11 @@ const SwipableTaskCard = ({ redirect = false, categoryId, task, categoryName, hi
 */
 
     const deleteTask = async (categoryId: string, taskId: string) => {
+        // Trigger haptic feedback immediately when delete is initiated
+        if (Platform.OS === "ios") {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        }
+
         const performDelete = async (deleteRecurring: boolean) => {
             try {
                 const res = await removeFromCategoryAPI(categoryId, taskId, deleteRecurring);

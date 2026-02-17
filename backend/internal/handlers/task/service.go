@@ -354,7 +354,7 @@ func (s *Service) CompleteTask(
 
 	// Update recurring template stats if this was a recurring task
 	if taskToComplete.TemplateID != nil {
-		_, err = s.TemplateTasks.UpdateOne(ctx,
+		result, err := s.TemplateTasks.UpdateOne(ctx,
 			bson.M{"_id": *taskToComplete.TemplateID},
 			mongo.Pipeline{
 				{{Key: "$set", Value: bson.M{
@@ -362,16 +362,28 @@ func (s *Service) CompleteTask(
 					"timesCompleted": bson.M{"$add": bson.A{bson.M{"$ifNull": bson.A{"$timesCompleted", 0}}, 1}},
 				}}},
 				{{Key: "$set", Value: bson.M{
-					"highestStreak": bson.M{"$max": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
+					"highestStreak": bson.M{"$cond": bson.A{
+						bson.M{"$gt": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
+						"$streak",
+						bson.M{"$ifNull": bson.A{"$highestStreak", 0}},
+					}},
 				}}},
-				{{Key: "$push", Value: bson.M{
-					"completionDates": xutils.NowUTC(),
+				{{Key: "$set", Value: bson.M{
+					"completionDates": bson.M{"$concatArrays": bson.A{
+						bson.M{"$ifNull": bson.A{"$completionDates", bson.A{}}},
+						bson.A{xutils.NowUTC()},
+					}},
 				}}},
 			},
 		)
 		if err != nil {
 			slog.Error("Failed to update template stats", "error", err, "templateID", *taskToComplete.TemplateID)
 			// Don't fail the completion
+		} else {
+			slog.Info("Updated template stats",
+				"templateID", taskToComplete.TemplateID.Hex(),
+				"matchedCount", result.MatchedCount,
+				"modifiedCount", result.ModifiedCount)
 		}
 	}
 
@@ -634,7 +646,7 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 		}
 
 		// Update all templates in one operation
-		_, err = s.TemplateTasks.UpdateMany(ctx,
+		result, err := s.TemplateTasks.UpdateMany(ctx,
 			bson.M{"_id": bson.M{"$in": templateIDList}},
 			mongo.Pipeline{
 				{{Key: "$set", Value: bson.M{
@@ -642,16 +654,28 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 					"timesCompleted": bson.M{"$add": bson.A{bson.M{"$ifNull": bson.A{"$timesCompleted", 0}}, 1}},
 				}}},
 				{{Key: "$set", Value: bson.M{
-					"highestStreak": bson.M{"$max": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
+					"highestStreak": bson.M{"$cond": bson.A{
+						bson.M{"$gt": bson.A{"$streak", bson.M{"$ifNull": bson.A{"$highestStreak", 0}}}},
+						"$streak",
+						bson.M{"$ifNull": bson.A{"$highestStreak", 0}},
+					}},
 				}}},
-				{{Key: "$push", Value: bson.M{
-					"completionDates": xutils.NowUTC(),
+				{{Key: "$set", Value: bson.M{
+					"completionDates": bson.M{"$concatArrays": bson.A{
+						bson.M{"$ifNull": bson.A{"$completionDates", bson.A{}}},
+						bson.A{xutils.NowUTC()},
+					}},
 				}}},
 			},
 		)
 		if err != nil {
 			slog.Error("Failed to bulk update template stats", "error", err)
 			// Don't fail the operation
+		} else {
+			slog.Info("Bulk updated template stats",
+				"templateCount", len(templateIDList),
+				"matchedCount", result.MatchedCount,
+				"modifiedCount", result.ModifiedCount)
 		}
 	}
 
