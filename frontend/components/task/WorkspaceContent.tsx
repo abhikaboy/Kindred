@@ -195,7 +195,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                             <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                                 <ThemedText type="lightBody">This workspace is empty!</ThemedText>
                                 <PrimaryButton
-                                    title="+"
+                                    title="+ Add Category"
                                     onPress={() => openModal()}
                                 />
                             </View>
@@ -229,19 +229,6 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                                             />
                                         );
                                     })}
-                                <PrimaryButton
-                                    title="+ Add Task"
-                                    ghost
-                                    onPress={() => {
-                                        // Use the first available category if no category is focused
-                                        const firstCategory = categories.filter((c) => c.name !== "!-proxy-!")[0];
-                                        if (firstCategory) {
-                                            openModal({ categoryId: firstCategory.id });
-                                        } else {
-                                            openModal();
-                                        }
-                                    }}
-                                />
                             </View>
                         </ConditionalView>
                     </View>
