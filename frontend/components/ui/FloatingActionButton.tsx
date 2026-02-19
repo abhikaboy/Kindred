@@ -269,6 +269,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                 opacity={animations.fabOpacity}
                 bottomOffset={bottomOffset}
                 isKeyboardVisible={keyboardVisible}
+                isOnFeedTab={isOnFeedTab}
             />
         </>
     );

@@ -226,6 +226,60 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	return resp, nil
 }
 
+// ListCalendars returns all calendars for a connection
+func (h *Handler) ListCalendars(ctx context.Context, input *ListCalendarsInput) (*ListCalendarsOutput, error) {
+	userID, ok := auth.GetUserIDFromContext(ctx)
+	if !ok {
+		return nil, huma.Error401Unauthorized("Please log in to list calendars")
+	}
+
+	connectionID, err := primitive.ObjectIDFromHex(input.ConnectionID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid connection ID format")
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format")
+	}
+
+	calendars, err := h.service.ListCalendarsForConnection(ctx, connectionID, userObjID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Unable to list calendars. Please try again.", err)
+	}
+
+	resp := &ListCalendarsOutput{}
+	resp.Body.Calendars = calendars
+	return resp, nil
+}
+
+// SetupWorkspaces creates workspaces/categories for the user's selected calendars
+func (h *Handler) SetupWorkspaces(ctx context.Context, input *SetupWorkspacesInput) (*SetupWorkspacesOutput, error) {
+	userID, ok := auth.GetUserIDFromContext(ctx)
+	if !ok {
+		return nil, huma.Error401Unauthorized("Please log in to set up calendar workspaces")
+	}
+
+	connectionID, err := primitive.ObjectIDFromHex(input.ConnectionID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid connection ID format")
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format")
+	}
+
+	if err := h.service.SetupWorkspacesForConnection(ctx, connectionID, userObjID, input.Body.CalendarIDs, input.Body.MergeIntoOne); err != nil {
+		return nil, huma.Error500InternalServerError("Unable to set up calendar workspaces. Please try again.", err)
+	}
+
+	resp := &SetupWorkspacesOutput{}
+	resp.Body.Success = true
+	resp.Body.Message = "Calendar workspaces created successfully"
+	return resp, nil
+}
+
 // SyncEvents syncs calendar events to tasks
 func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*SyncEventsOutput, error) {
 	slog.Info("Syncing events to tasks", "connection_id", input.ConnectionID, "start", input.StartDate, "end", input.EndDate)

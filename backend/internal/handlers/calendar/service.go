@@ -137,13 +137,8 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 			"has_refresh_token", connection.RefreshToken != "",
 			"token_expiry", connection.TokenExpiry)
 
-		// Create workspace and categories for this connection
-		err = s.CreateWorkspaceAndCategories(ctx, &connection, token)
-		if err != nil {
-			slog.Error("Failed to create workspace and categories", "connection_id", connection.ID, "error", err)
-			// Don't fail the connection creation, just log the error
-			// User can manually sync later
-		}
+		// Workspace creation is now user-driven via the /setup endpoint.
+		// The frontend will show a setup modal after OAuth completes.
 
 		// Setup watch channels for real-time notifications (Google only for now)
 		if provider == ProviderGoogle {
@@ -259,6 +254,133 @@ func (s *Service) CreateWorkspaceAndCategories(ctx context.Context, connection *
 	}
 
 	slog.Info("Workspace and categories created successfully", "connection_id", connection.ID, "workspace", workspaceName, "categories_count", len(calendars))
+	return nil
+}
+
+// ListCalendarsForConnection retrieves all calendars available for a connection
+func (s *Service) ListCalendarsForConnection(ctx context.Context, connectionID, userID primitive.ObjectID) ([]CalendarInfo, error) {
+	slog.Info("Listing calendars for connection", "connection_id", connectionID, "user_id", userID)
+
+	var connection CalendarConnection
+	err := s.connections.FindOne(ctx, bson.M{
+		"_id":     connectionID,
+		"user_id": userID,
+	}).Decode(&connection)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("connection not found or does not belong to user")
+		}
+		return nil, fmt.Errorf("failed to find connection: %w", err)
+	}
+
+	provider, ok := s.providers[connection.Provider]
+	if !ok {
+		return nil, fmt.Errorf("unsupported provider: %s", connection.Provider)
+	}
+
+	token, err := s.getValidToken(ctx, &connection)
+	if err != nil {
+		return nil, err
+	}
+
+	calendars, err := provider.ListCalendars(ctx, token)
+	if err != nil {
+		slog.Error("Failed to list calendars", "connection_id", connectionID, "error", err)
+		return nil, fmt.Errorf("failed to list calendars: %w", err)
+	}
+
+	slog.Info("Listed calendars for connection", "connection_id", connectionID, "count", len(calendars))
+	return calendars, nil
+}
+
+// SetupWorkspacesForConnection creates workspaces and categories for selected calendars
+func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID, userID primitive.ObjectID, calendarIDs []string, mergeIntoOne bool) error {
+	slog.Info("Setting up workspaces for connection", "connection_id", connectionID, "user_id", userID, "calendar_count", len(calendarIDs), "merge_into_one", mergeIntoOne)
+
+	var connection CalendarConnection
+	err := s.connections.FindOne(ctx, bson.M{
+		"_id":     connectionID,
+		"user_id": userID,
+	}).Decode(&connection)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("connection not found or does not belong to user")
+		}
+		return fmt.Errorf("failed to find connection: %w", err)
+	}
+
+	provider, ok := s.providers[connection.Provider]
+	if !ok {
+		return fmt.Errorf("unsupported provider: %s", connection.Provider)
+	}
+
+	token, err := s.getValidToken(ctx, &connection)
+	if err != nil {
+		return err
+	}
+
+	// List all calendars and filter to selected ones
+	allCalendars, err := provider.ListCalendars(ctx, token)
+	if err != nil {
+		return fmt.Errorf("failed to list calendars: %w", err)
+	}
+
+	// Build a set of selected calendar IDs for fast lookup
+	selectedSet := make(map[string]bool, len(calendarIDs))
+	for _, id := range calendarIDs {
+		selectedSet[id] = true
+	}
+
+	now := time.Now()
+
+	for _, cal := range allCalendars {
+		if !selectedSet[cal.ID] {
+			continue
+		}
+
+		// Determine workspace name
+		workspaceName := "📅 Google Calendar"
+		if !mergeIntoOne {
+			workspaceName = cal.Name
+		}
+
+		integrationKey := fmt.Sprintf("gcal:%s:%s", connectionID.Hex(), cal.ID)
+
+		// Skip if category already exists
+		var existing struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
+		err := s.categories.FindOne(ctx, bson.M{
+			"user":        userID,
+			"integration": integrationKey,
+		}).Decode(&existing)
+
+		if err == nil {
+			slog.Info("Category already exists, skipping", "calendar_id", cal.ID, "category_id", existing.ID)
+			continue
+		} else if err != mongo.ErrNoDocuments {
+			return fmt.Errorf("failed to check existing category for %s: %w", cal.Name, err)
+		}
+
+		category := bson.M{
+			"_id":           primitive.NewObjectID(),
+			"name":          cal.Name,
+			"workspaceName": workspaceName,
+			"lastEdited":    now,
+			"tasks":         []bson.M{},
+			"user":          userID,
+			"integration":   integrationKey,
+		}
+
+		_, err = s.categories.InsertOne(ctx, category)
+		if err != nil {
+			return fmt.Errorf("failed to create category for calendar %s: %w", cal.Name, err)
+		}
+
+		slog.Info("Created category for calendar", "calendar_id", cal.ID, "calendar_name", cal.Name, "workspace", workspaceName)
+	}
+
+	slog.Info("Workspace setup complete", "connection_id", connectionID, "calendars_requested", len(calendarIDs))
 	return nil
 }
 

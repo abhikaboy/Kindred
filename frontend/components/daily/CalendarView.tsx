@@ -174,22 +174,6 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         right: 0,
     }));
 
-    const createTaskStyle = (durationHours: number, minuteOffset: number = 0) => {
-        return useAnimatedStyle(() => {
-            const currentHourHeight = hourHeightShared.value;
-            const proportionalHeight = durationHours * currentHourHeight;
-            const taskHeight = proportionalHeight;
-            const topOffset = (minuteOffset / 60) * currentHourHeight;
-
-            return {
-                height: taskHeight,
-                maxHeight: taskHeight,
-                overflow: "hidden" as const,
-                top: topOffset,
-            };
-        });
-    };
-
     const animatedScheduleTasksStyle = useAnimatedStyle(() => ({
         height: 24 * hourHeightShared.value,
     }));
@@ -481,8 +465,6 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                                     minuteOffset = startTime.getMinutes();
                                                 }
 
-                                                const taskStyle = createTaskStyle(durationHours, minuteOffset);
-
                                                 // Handle overlaps by splitting width
                                                 const widthPercent = 100 / array.length;
                                                 const leftPercent = index * widthPercent;
@@ -491,7 +473,9 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                                     <CalendarEventCard
                                                         key={task.id || `task-${Math.random()}`}
                                                         task={task}
-                                                        taskStyle={taskStyle}
+                                                        hourHeightShared={hourHeightShared}
+                                                        durationHours={durationHours}
+                                                        minuteOffset={minuteOffset}
                                                         widthPercent={widthPercent}
                                                         leftPercent={leftPercent}
                                                         onLongPress={handleLongPress}

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useAnimatedStyle, SharedValue } from "react-native-reanimated";
 import { router } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -8,7 +8,9 @@ import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 
 interface CalendarEventCardProps {
     task: any;
-    taskStyle: any;
+    hourHeightShared: SharedValue<number>;
+    durationHours: number;
+    minuteOffset: number;
     widthPercent: number;
     leftPercent: number;
     onLongPress: (task: any) => void;
@@ -26,12 +28,26 @@ const formatTime = (date: Date): string => {
 
 const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
     task,
-    taskStyle,
+    hourHeightShared,
+    durationHours,
+    minuteOffset,
     widthPercent,
     leftPercent,
     onLongPress,
 }) => {
     const ThemedColor = useThemeColor();
+
+    const taskStyle = useAnimatedStyle(() => {
+        const currentHourHeight = hourHeightShared.value;
+        const taskHeight = durationHours * currentHourHeight;
+        const topOffset = (minuteOffset / 60) * currentHourHeight;
+        return {
+            height: taskHeight,
+            maxHeight: taskHeight,
+            overflow: "hidden" as const,
+            top: topOffset,
+        };
+    });
 
     // Determine if this is a deadline-only task
     const isDeadline = task.deadline && !task.startTime && !task.startDate;
@@ -128,6 +144,8 @@ export const CalendarEventCard = React.memo(CalendarEventCardComponent, (prevPro
         prevProps.task.categoryID === nextProps.task.categoryID &&
         prevProps.task.categoryName === nextProps.task.categoryName &&
         prevProps.task.workspaceName === nextProps.task.workspaceName &&
+        prevProps.durationHours === nextProps.durationHours &&
+        prevProps.minuteOffset === nextProps.minuteOffset &&
         prevProps.widthPercent === nextProps.widthPercent &&
         prevProps.leftPercent === nextProps.leftPercent
     );

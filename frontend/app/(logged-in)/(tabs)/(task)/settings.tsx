@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, ScrollView, Linking, ActivityIndicator } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -17,7 +18,7 @@ import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
 import { SettingsActionRow } from '@/components/settings/SettingsActionRow';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@/hooks/useSettings';
-import { getCalendarConnections, disconnectCalendar } from '@/api/calendar';
+import { getCalendarConnections, disconnectCalendar, connectGoogleCalendar } from '@/api/calendar';
 import { formatErrorForToast, ERROR_MESSAGES } from '@/utils/errorParser';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -49,6 +50,7 @@ export default function Settings() {
     // Calendar integration state
     const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
     const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
+    const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
     // Sync local state with fetched settings
     useEffect(() => {
@@ -278,6 +280,21 @@ export default function Settings() {
     };
 
 
+    const handleConnectCalendar = async () => {
+        setIsConnectingCalendar(true);
+        try {
+            const { auth_url } = await connectGoogleCalendar();
+            await WebBrowser.openAuthSessionAsync(auth_url, 'kindred://');
+            await loadCalendarConnections();
+        } catch (error) {
+            console.error('Error connecting calendar:', error);
+            const errorMessage = formatErrorForToast(error, 'Failed to connect Google Calendar');
+            showToast(errorMessage, 'danger');
+        } finally {
+            setIsConnectingCalendar(false);
+        }
+    };
+
     const styles = createStyles(ThemedColor, screenWidth);
 
     // Show loading state
@@ -406,74 +423,81 @@ export default function Settings() {
                 </SettingsSection>
 
                 <SettingsSection title="INTEGRATIONS">
-                    {calendarConnections.length > 0 ? (
-                        <SettingsCard>
-                            {calendarConnections.map((connection, index) => (
-                                <TouchableOpacity
-                                    key={connection.id}
-                                    style={[
-                                        styles.integrationRow,
-                                        index < calendarConnections.length - 1 && {
-                                            borderBottomWidth: StyleSheet.hairlineWidth,
-                                            borderBottomColor: ThemedColor.tertiary,
-                                        }
-                                    ]}
-                                    onPress={() => handleDisconnectCalendar(connection)}
-                                    activeOpacity={0.7}
-                                    disabled={isLoadingCalendar}
-                                >
-                                    <View style={styles.integrationIconContainer}>
-                                        <Ionicons name="calendar" size={24} color={ThemedColor.primary} />
-                                    </View>
-                                    <View style={styles.integrationContent}>
-                                        <View style={styles.integrationHeader}>
-                                            <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
-                                                Google Calendar
-                                            </ThemedText>
-                                            <View style={[
-                                                styles.connectedBadge,
-                                                { backgroundColor: ThemedColor.primary + '15' }
-                                            ]}>
-                                                <View style={[styles.connectedDot, { backgroundColor: ThemedColor.primary }]} />
-                                                <ThemedText type="caption" style={[
-                                                    styles.connectedText,
-                                                    { color: ThemedColor.primary }
-                                                ]}>
-                                                    Connected
-                                                </ThemedText>
-                                            </View>
-                                        </View>
-                                        <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
-                                            {connection.provider_account_id}
+                    <SettingsCard>
+                        {calendarConnections.map((connection, index) => (
+                            <TouchableOpacity
+                                key={connection.id}
+                                style={[
+                                    styles.integrationRow,
+                                    {
+                                        borderBottomWidth: StyleSheet.hairlineWidth,
+                                        borderBottomColor: ThemedColor.tertiary,
+                                    }
+                                ]}
+                                onPress={() => handleDisconnectCalendar(connection)}
+                                activeOpacity={0.7}
+                                disabled={isLoadingCalendar}
+                            >
+                                <View style={styles.integrationIconContainer}>
+                                    <Ionicons name="calendar" size={24} color={ThemedColor.primary} />
+                                </View>
+                                <View style={styles.integrationContent}>
+                                    <View style={styles.integrationHeader}>
+                                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                            Google Calendar
                                         </ThemedText>
+                                        <View style={[
+                                            styles.connectedBadge,
+                                            { backgroundColor: ThemedColor.primary + '15' }
+                                        ]}>
+                                            <View style={[styles.connectedDot, { backgroundColor: ThemedColor.primary }]} />
+                                            <ThemedText type="caption" style={[
+                                                styles.connectedText,
+                                                { color: ThemedColor.primary }
+                                            ]}>
+                                                Connected
+                                            </ThemedText>
+                                        </View>
                                     </View>
-                                    <View style={styles.integrationAction}>
-                                        {isLoadingCalendar ? (
-                                            <ActivityIndicator size="small" color={ThemedColor.caption} />
-                                        ) : (
-                                            <Ionicons name="link-outline" size={22} color={ThemedColor.caption} style={{ transform: [{ rotate: '-45deg' }] }} />
-                                        )}
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                        </SettingsCard>
-                    ) : (
-                        <SettingsCard>
-                            <View style={styles.emptyIntegrationRow}>
-                                <View style={[styles.emptyIconContainer, { backgroundColor: ThemedColor.tertiary }]}>
-                                    <Ionicons name="link-outline" size={20} color={ThemedColor.caption} />
-                                </View>
-                                <View style={styles.emptyContent}>
-                                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
-                                        No integrations
-                                    </ThemedText>
                                     <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
-                                        Connect Google Calendar from the home screen
+                                        {connection.provider_account_id}
                                     </ThemedText>
                                 </View>
+                                <View style={styles.integrationAction}>
+                                    {isLoadingCalendar ? (
+                                        <ActivityIndicator size="small" color={ThemedColor.caption} />
+                                    ) : (
+                                        <Ionicons name="link-outline" size={22} color={ThemedColor.caption} style={{ transform: [{ rotate: '-45deg' }] }} />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={styles.integrationRow}
+                            onPress={handleConnectCalendar}
+                            activeOpacity={0.7}
+                            disabled={isConnectingCalendar}
+                        >
+                            <View style={[styles.integrationIconContainer, { backgroundColor: ThemedColor.tertiary }]}>
+                                {isConnectingCalendar ? (
+                                    <ActivityIndicator size="small" color={ThemedColor.caption} />
+                                ) : (
+                                    <Ionicons name="calendar-outline" size={24} color={ThemedColor.caption} />
+                                )}
                             </View>
-                        </SettingsCard>
-                    )}
+                            <View style={styles.integrationContent}>
+                                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                    {calendarConnections.length > 0 ? 'Add another account' : 'Connect Google Calendar'}
+                                </ThemedText>
+                                <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                    {isConnectingCalendar ? 'Opening Google sign-in...' : 'Sync your events as tasks'}
+                                </ThemedText>
+                            </View>
+                            <View style={styles.integrationAction}>
+                                <Ionicons name="add-circle-outline" size={22} color={ThemedColor.caption} />
+                            </View>
+                        </TouchableOpacity>
+                    </SettingsCard>
                 </SettingsSection>
 
                 <SettingsSection title="PRIVACY & DATA">

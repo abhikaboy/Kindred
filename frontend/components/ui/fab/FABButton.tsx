@@ -1,6 +1,6 @@
 import React from "react";
 import { TouchableOpacity, StyleSheet, Animated } from "react-native";
-import { Plus, X } from "phosphor-react-native";
+import { Plus, X, Camera } from "phosphor-react-native";
 
 interface FABButtonProps {
     isOpen: boolean;
@@ -10,6 +10,7 @@ interface FABButtonProps {
     opacity: Animated.Value;
     bottomOffset: number;
     isKeyboardVisible: boolean;
+    isOnFeedTab?: boolean;
 }
 
 export const FABButton: React.FC<FABButtonProps> = ({
@@ -20,6 +21,7 @@ export const FABButton: React.FC<FABButtonProps> = ({
     opacity,
     bottomOffset,
     isKeyboardVisible,
+    isOnFeedTab,
 }) => {
     return (
         <Animated.View
@@ -40,6 +42,8 @@ export const FABButton: React.FC<FABButtonProps> = ({
             >
                 {isOpen ? (
                     <X size={24} color="#FFFFFF" weight="bold" />
+                ) : isOnFeedTab ? (
+                    <Camera size={24} color="#FFFFFF" weight="bold" />
                 ) : (
                     <Plus size={24} color="#FFFFFF" weight="bold" />
                 )}

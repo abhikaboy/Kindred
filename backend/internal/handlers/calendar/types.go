@@ -67,6 +67,33 @@ type CalendarEventDTO struct {
 	Status       string   `json:"status"`
 }
 
+// List calendars types
+type ListCalendarsInput struct {
+	ConnectionID string `path:"connectionId" required:"true"`
+}
+
+type ListCalendarsOutput struct {
+	Body struct {
+		Calendars []CalendarInfo `json:"calendars"`
+	}
+}
+
+// Setup workspaces types
+type SetupWorkspacesInput struct {
+	ConnectionID string `path:"connectionId" required:"true"`
+	Body         struct {
+		CalendarIDs  []string `json:"calendar_ids"`
+		MergeIntoOne bool     `json:"merge_into_one"`
+	}
+}
+
+type SetupWorkspacesOutput struct {
+	Body struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+}
+
 // Sync events types
 type SyncEventsInput struct {
 	ConnectionID string `path:"connectionId" required:"true"`

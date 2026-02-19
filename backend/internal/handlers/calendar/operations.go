@@ -70,6 +70,29 @@ func RegisterSyncEventsOperation(api huma.API, handler *Handler) {
 	}, handler.SyncEvents)
 }
 
+func RegisterListCalendarsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "list-connection-calendars",
+		Method:      "GET",
+		Path:        "/v1/user/calendar/connections/{connectionId}/calendars",
+		Summary:     "List calendars for a connection",
+		Description: "Returns all calendars available in the user's connected calendar account.",
+		Tags:        []string{"Calendar"},
+	}, handler.ListCalendars)
+}
+
+func RegisterSetupWorkspacesOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID:   "setup-calendar-workspaces",
+		Method:        "POST",
+		Path:          "/v1/user/calendar/connections/{connectionId}/setup",
+		Summary:       "Set up workspaces for selected calendars",
+		Description:   "Creates workspaces and categories for the user's chosen calendars. If merge_into_one is true, all calendars share one workspace; otherwise each gets its own.",
+		Tags:          []string{"Calendar"},
+		DefaultStatus: 200,
+	}, handler.SetupWorkspaces)
+}
+
 func RegisterWebhookOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "calendar-webhook",

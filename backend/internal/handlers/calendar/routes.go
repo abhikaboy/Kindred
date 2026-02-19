@@ -49,6 +49,10 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, cfg config.C
 	// Sync endpoints
 	RegisterSyncEventsOperation(api, handler)
 
+	// Calendar list and setup endpoints
+	RegisterListCalendarsOperation(api, handler)
+	RegisterSetupWorkspacesOperation(api, handler)
+
 	// Webhook endpoints
 	RegisterWebhookOperation(api, handler)
 
