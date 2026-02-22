@@ -40,7 +40,7 @@ export const Drawer = ({ close }) => {
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
     const [showQuickImport, setShowQuickImport] = React.useState(false);
-    const { spotlightState, setSpotlightShown } = useSpotlight();
+    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
 
     const handleCreateBlueprint = () => {
         close();
@@ -120,6 +120,7 @@ export const Drawer = ({ close }) => {
                 setShowQuickImport={setShowQuickImport}
                 handleCreateBlueprint={handleCreateBlueprint}
                 spotlightState={spotlightState}
+                spotlightLoading={spotlightLoading}
             />
         </SpotlightTourProvider>
     );
@@ -142,8 +143,43 @@ const DrawerContent = ({
     setShowQuickImport,
     handleCreateBlueprint,
     spotlightState,
+    spotlightLoading,
 }: any) => {
     const { start } = useSpotlightTour();
+    const drawerStep0Ref = useRef<View>(null);
+    const drawerLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
+    const drawerScrollRef = useRef<ScrollView>(null);
+
+    const registerDrawerLayout = (key: "drawer_step_0", layout: { y: number; height: number }) => {
+        drawerLayoutsRef.current[key] = layout;
+    };
+
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const isOnScreen = (ref: React.RefObject<View>) =>
+        new Promise<boolean>((resolve) => {
+            requestAnimationFrame(() => {
+                if (!ref.current) return resolve(false);
+                ref.current.measureInWindow((_x, y, _w, h) => {
+                    const screenHeight = Dimensions.get("window").height;
+                    resolve(y >= 0 && y + h <= screenHeight);
+                });
+            });
+        });
+
+    const ensureVisible = async (
+        ref: React.RefObject<View>,
+        scrollRef?: React.RefObject<ScrollView>,
+        layout?: { y: number; height: number }
+    ) => {
+        if (await isOnScreen(ref)) return true;
+        if (scrollRef?.current && layout) {
+            scrollRef.current.scrollTo({ y: Math.max(layout.y - 20, 0), animated: true });
+            await delay(300);
+            return isOnScreen(ref);
+        }
+        return false;
+    };
 
     // Helper function to determine which drawer item should be selected based on current route
     const getSelectedItem = () => {
@@ -185,11 +221,20 @@ const DrawerContent = ({
         // Only start the tour if:
         // 1. We haven't shown the menu spotlight yet
         // 2. The home spotlight has been completed (so the drawer was opened from the home tour)
-        if (!spotlightState.menuSpotlight && spotlightState.homeSpotlight) {
+        if (!spotlightLoading && !spotlightState.menuSpotlight && spotlightState.homeSpotlight) {
             // Increased delay to 1000ms to allow drawer animation to complete
-            const timer = setTimeout(() => {
+            const timer = setTimeout(async () => {
                 try {
-                    start();
+                    const canStart = await ensureVisible(
+                        drawerStep0Ref,
+                        drawerScrollRef,
+                        drawerLayoutsRef.current.drawer_step_0
+                    );
+                    if (canStart) {
+                        requestAnimationFrame(() => {
+                            start();
+                        });
+                    }
                 } catch (error) {
                     console.error('Failed to start menu spotlight tour:', error);
                 }
@@ -197,7 +242,7 @@ const DrawerContent = ({
 
             return () => clearTimeout(timer);
         }
-    }, [start, spotlightState.menuSpotlight, spotlightState.homeSpotlight]);
+    }, [start, spotlightLoading, spotlightState.menuSpotlight, spotlightState.homeSpotlight]);
 
     return (
         <View style={styles(ThemedColor).drawerContainer}>
@@ -211,6 +256,11 @@ const DrawerContent = ({
 
             <AttachStep index={0}>
                 <View
+                    ref={drawerStep0Ref}
+                    onLayout={(event) => {
+                        const { y, height } = event.nativeEvent.layout;
+                        registerDrawerLayout("drawer_step_0", { y, height });
+                    }}
                     style={{
                         paddingTop: 16,
                         paddingBottom: 16,
@@ -266,6 +316,7 @@ const DrawerContent = ({
             </AttachStep>
 
             <ScrollView
+                ref={drawerScrollRef}
                 style={{ width: "100%" }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.2 }}>

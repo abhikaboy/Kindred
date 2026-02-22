@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, Image, TouchableOpacity, FlatList, ScrollView } from "react-native";
+import { View, Text, Dimensions, Image, TouchableOpacity, FlatList, ScrollView, Animated, PanResponder } from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -37,8 +37,87 @@ export default function Posting() {
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
 
+    // Draggable preview state
+    type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    const [previewCorner, setPreviewCorner] = useState<Corner>('top-left');
+    const pan = useRef(new Animated.ValueXY()).current;
+    const [showPostPreview, setShowPostPreview] = useState(false);
+
     const params = useLocalSearchParams();
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
+
+    // Helper function to get corner position
+    const getCornerPosition = (corner: Corner) => {
+        const screenWidth = Dimensions.get("window").width;
+        const screenHeight = Dimensions.get("window").height;
+        const previewWidth = screenWidth * 0.3;
+        const previewHeight = previewWidth * (4 / 3);
+        const padding = 20;
+
+        switch (corner) {
+            case 'top-left':
+                return { x: padding, y: insets.top + padding };
+            case 'top-right':
+                return { x: screenWidth - previewWidth - padding, y: insets.top + padding };
+            case 'bottom-left':
+                return { x: padding, y: screenHeight - previewHeight - insets.bottom - padding - 200 };
+            case 'bottom-right':
+                return { x: screenWidth - previewWidth - padding, y: screenHeight - previewHeight - insets.bottom - padding - 200 };
+        }
+    };
+
+    // Helper function to find nearest corner
+    const findNearestCorner = (x: number, y: number): Corner => {
+        const screenWidth = Dimensions.get("window").width;
+        const screenHeight = Dimensions.get("window").height;
+        const midX = screenWidth / 2;
+        const midY = screenHeight / 2;
+
+        if (x < midX && y < midY) return 'top-left';
+        if (x >= midX && y < midY) return 'top-right';
+        if (x < midX && y >= midY) return 'bottom-left';
+        return 'bottom-right';
+    };
+
+    // Pan responder for dragging
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                pan.setOffset({
+                    x: (pan.x as any)._value,
+                    y: (pan.y as any)._value,
+                });
+                pan.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
+                useNativeDriver: false,
+            }),
+            onPanResponderRelease: (_, gesture) => {
+                pan.flattenOffset();
+                const currentX = (pan.x as any)._value;
+                const currentY = (pan.y as any)._value;
+                const nearestCorner = findNearestCorner(currentX, currentY);
+                const targetPosition = getCornerPosition(nearestCorner);
+
+                setPreviewCorner(nearestCorner);
+
+                Animated.spring(pan, {
+                    toValue: targetPosition,
+                    useNativeDriver: false,
+                    tension: 50,
+                    friction: 7,
+                }).start();
+            },
+        })
+    ).current;
+
+    // Initialize preview position
+    useEffect(() => {
+        const initialPosition = getCornerPosition(previewCorner);
+        pan.setValue(initialPosition);
+    }, []);
 
     // BeReal-style capture messages
     const backCameraMessages = [
@@ -70,28 +149,28 @@ export default function Posting() {
             const photo = await camera.current?.takePictureAsync({
                 quality: 0.5,
             });
-            
+
             if (!photo?.uri) {
                 console.error("Failed to capture photo - no URI returned");
                 return;
             }
-            
+
             setPhotos([...photos, photo.uri]);
             setCurrentPhotoIndex(photos.length);
-            
+
             // Automatically capture dual photo if dual mode is enabled
             if (dualModeEnabled) {
                 // Show the just-captured photo with a message
                 setJustCapturedPhoto(photo.uri);
-                
+
                 // Get appropriate message based on which camera will capture next
                 const messages = facing === "back" ? frontCameraMessages : backCameraMessages;
                 const randomMessage = messages[Math.floor(Math.random() * messages.length)];
                 setCapturingMessage(randomMessage);
-                
+
                 await captureDualPhotoAutomatic();
             }
-            
+
             // Only switch to preview after dual capture is complete
             setViewMode("preview");
         } catch (error) {
@@ -108,7 +187,7 @@ export default function Posting() {
             allowsMultipleSelection: true,
             quality: 0.5,
         });
-        
+
         if (result && !result.canceled && result.assets && result.assets.length > 0) {
             const newPhotos = result.assets.map((asset) => asset.uri);
             const previousLength = photos.length;
@@ -120,10 +199,10 @@ export default function Posting() {
 
     const captureDualPhotoAutomatic = async () => {
         if (isCapturingDual) return;
-        
+
         setIsCapturingDual(true);
         let isCancelled = false;
-        
+
         try {
             // Switch to opposite camera immediately
             const dualFacing: CameraType = facing === "back" ? "front" : "back";
@@ -131,60 +210,60 @@ export default function Posting() {
             cameraReadyRef.current = false;
             setIsCameraReady(false);
             setWaitingForCamera(true);
-            
+
             // Wait for camera ready callback using ref
             let attempts = 0;
             while (!cameraReadyRef.current && attempts < 50 && !isCancelled) { // Max 5 seconds wait
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
             }
-            
+
             if (isCancelled) return;
-            
+
             if (!cameraReadyRef.current) {
                 console.error("Camera did not become ready in time");
                 return;
             }
-            
+
             setWaitingForCamera(false);
-            
+
             // Additional stabilization time after camera is ready
             await new Promise(resolve => setTimeout(resolve, 800));
-            
+
             if (isCancelled) return;
-            
+
             // Start countdown from 3
             for (let i = 3; i > 0; i--) {
                 if (isCancelled) return;
                 setCountdown(i);
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
-            
+
             if (isCancelled) return;
             setCountdown(0);
-            
+
             // Extra delay after countdown before capture
             await new Promise(resolve => setTimeout(resolve, 300));
-            
+
             // Check if preview camera ref is valid (we use preview camera during dual capture)
             if (!previewCamera.current) {
                 console.error("Preview camera ref is null, cannot capture dual photo");
                 return;
             }
-            
+
             console.log("Attempting to capture dual photo...");
-            
+
             // Capture photo from the preview camera ref
             const photo = await previewCamera.current.takePictureAsync({
                 quality: 0.5,
             });
-            
+
             console.log("Dual photo captured:", photo?.uri ? "success" : "failed");
-            
+
             if (photo?.uri && !isCancelled) {
                 setDualPhoto(photo.uri);
             }
-            
+
         } catch (error) {
             console.error("Failed to capture dual photo:", error);
         } finally {
@@ -201,33 +280,33 @@ export default function Posting() {
 
     const captureDualPhoto = async () => {
         if (isCapturingDual) return;
-        
+
         setIsCapturingDual(true);
         const wasInPreview = viewMode === "preview";
-        
+
         try {
             // If in preview, temporarily switch to camera
             if (wasInPreview) {
                 setViewMode("camera");
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
-            
+
             // Switch to opposite camera
             const dualFacing: CameraType = facing === "back" ? "front" : "back";
             setFacing(dualFacing);
-            
+
             // Wait for camera to switch
             await new Promise(resolve => setTimeout(resolve, 800));
-            
+
             // Capture photo
             const photo = await camera.current?.takePictureAsync({
                 quality: 0.5,
             });
-            
+
             if (photo?.uri) {
                 setDualPhoto(photo.uri);
             }
-            
+
             // Return to preview if we were there (no need to switch camera back)
             if (wasInPreview) {
                 setViewMode("preview");
@@ -241,7 +320,7 @@ export default function Posting() {
 
     const swapPhotos = () => {
         if (!dualPhoto || photos.length === 0) return;
-        
+
         // Swap the main photo with the dual photo
         const currentMainPhoto = photos[currentPhotoIndex];
         const newPhotos = [...photos];
@@ -383,19 +462,20 @@ export default function Posting() {
                                             }}
                                             resizeMode="cover"
                                         />
-                                        {dualPhoto && (
-                                            <View
+                                        {dualPhoto && !showPostPreview && (
+                                            <Animated.View
+                                                {...panResponder.panHandlers}
                                                 style={{
                                                     position: "absolute",
-                                                    top: insets.top + 20,
-                                                    left: 20,
                                                     width: Dimensions.get("window").width * 0.3,
                                                     aspectRatio: 3 / 4,
                                                     zIndex: 10,
+                                                    transform: [{ translateX: pan.x }, { translateY: pan.y }],
                                                 }}>
                                                 <TouchableOpacity
                                                     onPress={swapPhotos}
-                                                    activeOpacity={1}
+                                                    onLongPress={() => setShowPostPreview(true)}
+                                                    activeOpacity={0.9}
                                                     style={{
                                                         width: "100%",
                                                         height: "100%",
@@ -436,7 +516,123 @@ export default function Posting() {
                                                     }}>
                                                     <Ionicons name="close" size={18} color="#fff" />
                                                 </TouchableOpacity>
-                                            </View>
+                                            </Animated.View>
+                                        )}
+                                        {dualPhoto && showPostPreview && (
+                                            <TouchableOpacity
+                                                onPress={() => setShowPostPreview(false)}
+                                                activeOpacity={1}
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    bottom: 0,
+                                                    backgroundColor: "rgba(0, 0, 0, 0.95)",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    zIndex: 100,
+                                                    paddingHorizontal: 20,
+                                                }}>
+                                                <View
+                                                    style={{
+                                                        width: "100%",
+                                                        maxWidth: 400,
+                                                        backgroundColor: ThemedColor.background,
+                                                        borderRadius: 16,
+                                                        overflow: "hidden",
+                                                        shadowColor: "#000",
+                                                        shadowOffset: { width: 0, height: 4 },
+                                                        shadowOpacity: 0.3,
+                                                        shadowRadius: 8,
+                                                        elevation: 10,
+                                                    }}>
+                                                    {/* Post Header */}
+                                                    <View
+                                                        style={{
+                                                            flexDirection: "row",
+                                                            alignItems: "center",
+                                                            padding: 12,
+                                                            borderBottomWidth: 1,
+                                                            borderBottomColor: ThemedColor.tertiary,
+                                                        }}>
+                                                        <View
+                                                            style={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                borderRadius: 20,
+                                                                backgroundColor: ThemedColor.lightened,
+                                                                marginRight: 12,
+                                                            }}
+                                                        />
+                                                        <View>
+                                                            <ThemedText style={{ fontWeight: "600", fontSize: 14 }}>
+                                                                Your Name
+                                                            </ThemedText>
+                                                            <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                                                                Just now
+                                                            </ThemedText>
+                                                        </View>
+                                                    </View>
+                                                    {/* Post Image */}
+                                                    <View style={{ position: "relative", aspectRatio: 4 / 5 }}>
+                                                        <Image
+                                                            source={{ uri: item }}
+                                                            style={{
+                                                                width: "100%",
+                                                                height: "100%",
+                                                            }}
+                                                            resizeMode="cover"
+                                                        />
+                                                        {/* Dual photo overlay */}
+                                                        <View
+                                                            style={{
+                                                                position: "absolute",
+                                                                top: 12,
+                                                                left: 12,
+                                                                width: "30%",
+                                                                aspectRatio: 3 / 4,
+                                                                borderRadius: 8,
+                                                                borderWidth: 2,
+                                                                borderColor: "#fff",
+                                                                overflow: "hidden",
+                                                                shadowColor: "#000",
+                                                                shadowOffset: { width: 0, height: 2 },
+                                                                shadowOpacity: 0.3,
+                                                                shadowRadius: 4,
+                                                            }}>
+                                                            <Image
+                                                                source={{ uri: dualPhoto }}
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                }}
+                                                                resizeMode="cover"
+                                                            />
+                                                        </View>
+                                                    </View>
+                                                    {/* Post Actions */}
+                                                    <View
+                                                        style={{
+                                                            flexDirection: "row",
+                                                            padding: 12,
+                                                            gap: 16,
+                                                        }}>
+                                                        <Ionicons name="heart-outline" size={24} color={ThemedColor.text} />
+                                                        <Ionicons name="chatbubble-outline" size={24} color={ThemedColor.text} />
+                                                        <Ionicons name="paper-plane-outline" size={24} color={ThemedColor.text} />
+                                                    </View>
+                                                </View>
+                                                <ThemedText
+                                                    style={{
+                                                        marginTop: 20,
+                                                        fontSize: 14,
+                                                        opacity: 0.6,
+                                                        textAlign: "center",
+                                                    }}>
+                                                    Tap anywhere to close
+                                                </ThemedText>
+                                            </TouchableOpacity>
                                         )}
                                     </View>
                                 )}
@@ -447,8 +643,8 @@ export default function Posting() {
                         <>
                             {/* Main camera view - only render when NOT capturing dual */}
                             {!isCapturingDual && (
-                                <View style={{ 
-                                    width: "100%", 
+                                <View style={{
+                                    width: "100%",
                                     height: Dimensions.get("window").height,
                                 }}>
                                     <CameraView
@@ -465,7 +661,7 @@ export default function Posting() {
                                     />
                                 </View>
                             )}
-                            
+
                             {/* Preview box indicator (always visible when dual mode is on and not capturing) */}
                             {dualModeEnabled && !isCapturingDual && (
                                 <View
@@ -492,7 +688,7 @@ export default function Posting() {
                                     />
                                 </View>
                             )}
-                            
+
                             {/* BeReal-style capture overlay - replaces camera view */}
                             {justCapturedPhoto && isCapturingDual && (
                                 <View
@@ -513,7 +709,7 @@ export default function Posting() {
                                         }}
                                         resizeMode="cover"
                                     />
-                                    
+
                                     {/* Dark overlay for dimming */}
                                     <View
                                         style={{
@@ -525,7 +721,7 @@ export default function Posting() {
                                             backgroundColor: "rgba(0, 0, 0, 0.6)",
                                         }}
                                     />
-                                    
+
                                     {/* Live preview camera in top-right corner */}
                                     <View
                                         style={{
@@ -558,7 +754,7 @@ export default function Posting() {
                                             }}
                                         />
                                     </View>
-                                    
+
                                     {/* Centered message and countdown */}
                                     <View
                                         style={{
@@ -707,7 +903,7 @@ export default function Posting() {
                                         <Ionicons
                                             name={dualModeEnabled ? "people" : "people-outline"}
                                             size={32}
-                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"} 
+                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"}
                                         />
                                     </TouchableOpacity>
                                     <Ionicons

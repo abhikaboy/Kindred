@@ -8,6 +8,7 @@ export interface CalendarConnection {
     provider_account_id: string;
     scopes: string[];
     is_primary: boolean;
+    setup_complete: boolean;
     last_sync: string;
     created_at: string;
     updated_at: string;

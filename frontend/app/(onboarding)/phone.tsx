@@ -212,8 +212,8 @@ const PhoneOnboarding = (props: Props) => {
                             <View style={[
                                 styles.checkbox,
                                 {
-                                    backgroundColor: agreedToTerms ? ThemedColor.tint : 'transparent',
-                                    borderColor: agreedToTerms ? ThemedColor.tint : ThemedColor.caption,
+                                    backgroundColor: agreedToTerms ? ThemedColor.primary : 'transparent',
+                                    borderColor: agreedToTerms ? ThemedColor.primary : ThemedColor.caption,
                                 }
                             ]}>
                                 {agreedToTerms && (
@@ -224,14 +224,14 @@ const PhoneOnboarding = (props: Props) => {
                                 <ThemedText style={[styles.termsText, { color: ThemedColor.text }]}>
                                     I agree to the{' '}
                                     <ThemedText
-                                        style={[styles.termsLink, { color: ThemedColor.tint }]}
+                                        style={[styles.termsLink, { color: ThemedColor.primary }]}
                                         onPress={handleTermsPress}
                                     >
                                         Terms of Service
                                     </ThemedText>
                                     {' '}and{' '}
                                     <ThemedText
-                                        style={[styles.termsLink, { color: ThemedColor.tint }]}
+                                        style={[styles.termsLink, { color: ThemedColor.primary }]}
                                         onPress={handlePrivacyPress}
                                     >
                                         Privacy Policy

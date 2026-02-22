@@ -15,18 +15,16 @@ import (
 
 // getBaseTime returns the appropriate base time for recurrence calculations
 func getBaseTime(template *TemplateTaskDocument) time.Time {
-	// baseTime := template.LastGenerated
-	baseTime := xutils.NowUTC()
-	if baseTime.IsZero() {
-		if template.StartDate != nil {
-			baseTime = xutils.ToUTC(*template.StartDate)
-		} else if template.Deadline != nil {
-			baseTime = xutils.ToUTC(*template.Deadline)
-		} else {
-			baseTime = xutils.NowUTC()
-		}
+	if template.LastGenerated != nil && !template.LastGenerated.IsZero() {
+		return xutils.ToUTC(*template.LastGenerated)
 	}
-	return baseTime
+	if template.StartDate != nil && !template.StartDate.IsZero() {
+		return xutils.ToUTC(*template.StartDate)
+	}
+	if template.Deadline != nil && !template.Deadline.IsZero() {
+		return xutils.ToUTC(*template.Deadline)
+	}
+	return xutils.NowUTC()
 }
 
 // applyTimeToDate applies the time components from a source time to a target date
@@ -53,6 +51,50 @@ func applyTimeToDate(targetDate time.Time, sourceTime *time.Time, loc *time.Loca
 		0,
 		loc,
 	).In(time.UTC)
+}
+
+// ValidateRecurDetails checks that recurrence details are consistent with the frequency
+func ValidateRecurDetails(recurFrequency string, details *RecurDetails) error {
+	if details == nil {
+		return fmt.Errorf("recurring details are required")
+	}
+	if details.Every < 1 {
+		return fmt.Errorf("recurrence interval must be at least 1")
+	}
+
+	switch recurFrequency {
+	case "weekly":
+		if len(details.DaysOfWeek) != 7 {
+			return fmt.Errorf("weekly recurrence requires daysOfWeek length of 7")
+		}
+		hasDay := false
+		for _, v := range details.DaysOfWeek {
+			if v != 0 && v != 1 {
+				return fmt.Errorf("weekly daysOfWeek values must be 0 or 1")
+			}
+			if v == 1 {
+				hasDay = true
+			}
+		}
+		if !hasDay {
+			return fmt.Errorf("weekly recurrence requires at least one selected day")
+		}
+	case "monthly":
+		if len(details.DaysOfMonth) == 0 {
+			return fmt.Errorf("monthly recurrence requires daysOfMonth")
+		}
+		for _, day := range details.DaysOfMonth {
+			if day < 1 || day > 31 {
+				return fmt.Errorf("monthly daysOfMonth values must be between 1 and 31")
+			}
+		}
+	case "daily", "yearly":
+		// No additional validation
+	default:
+		return fmt.Errorf("invalid recurrence frequency: %s", recurFrequency)
+	}
+
+	return nil
 }
 
 // calculateNextRecurrence calculates the next recurrence date based on frequency
@@ -208,6 +250,28 @@ func (s *Service) ComputeNextOccurrence(template *TemplateTaskDocument) (time.Ti
 	return applyTimeToDate(nextTime, template.StartTime, loc), nil
 }
 
+// ComputeNextWindow calculates the next start time for a WINDOW-type recurring task.
+// WINDOW tasks have both a StartDate and a Deadline. NextGenerated is set to the next
+// start of the window; when the task is spawned, the Deadline is offset by the original
+// window duration so the gap is preserved every recurrence.
+func (s *Service) ComputeNextWindow(template *TemplateTaskDocument) (time.Time, error) {
+	if template.RecurType != "WINDOW" {
+		return time.Time{}, fmt.Errorf("invalid recurrence type: %s", template.RecurType)
+	}
+
+	ctx := context.Background()
+	loc, _ := s.getUserLocation(ctx, template.UserID)
+
+	baseTime := getBaseTime(template)
+	nextTime, err := s.calculateNextRecurrence(template, baseTime, loc)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// Use StartDate as the time-of-day source (it carries the window's open time)
+	return applyTimeToDate(nextTime, template.StartDate, loc), nil
+}
+
 // ComputeNextDeadline calculates the next deadline time for a recurring task
 func (s *Service) ComputeNextDeadline(template *TemplateTaskDocument) (time.Time, error) {
 	if template.RecurType != "DEADLINE" {
@@ -243,6 +307,8 @@ func (s *Service) PrintNextRecurrences(template *TemplateTaskDocument) {
 			nextTime, err = s.ComputeNextOccurrence(template)
 		} else if template.RecurType == "DEADLINE" {
 			nextTime, err = s.ComputeNextDeadline(template)
+		} else if template.RecurType == "WINDOW" {
+			nextTime, err = s.ComputeNextWindow(template)
 		}
 
 		if err != nil {
@@ -297,6 +363,14 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 				"error": "Recurring details are required",
 			})
 		}
+		if err := ValidateRecurDetails(params.RecurFrequency, params.RecurDetails); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+		if params.RecurDetails.Behavior == "" {
+			params.RecurDetails.Behavior = "ROLLING"
+		}
 
 		recurType := "OCCURRENCE"
 
@@ -311,6 +385,8 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 		baseTime := xutils.NowUTC()
 		if params.Deadline != nil {
 			baseTime = *params.Deadline
+		} else if params.StartDate != nil {
+			baseTime = *params.StartDate
 		} else if params.StartTime != nil {
 			baseTime = *params.StartTime
 		}
@@ -366,7 +442,7 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 				return c.Status(fiber.StatusInternalServerError).JSON(err)
 			}
 		} else if recurType == "WINDOW" {
-			nextOccurrence, err = h.service.ComputeNextOccurrence(&template_doc)
+			nextOccurrence, err = h.service.ComputeNextWindow(&template_doc)
 			if err != nil {
 				slog.LogAttrs(c.Context(), slog.LevelError, "Error creating WINDOW template task", slog.String("error", err.Error()))
 				return c.Status(fiber.StatusInternalServerError).JSON(err)

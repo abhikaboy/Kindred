@@ -7,6 +7,7 @@ import BasicCard from "./BasicCard";
 
 interface GoogleCalendarCardProps {
     isLinked: boolean;
+    setupPending?: boolean;
     onAction: () => void;
     onDismiss?: () => void;
     loading?: boolean;
@@ -14,6 +15,7 @@ interface GoogleCalendarCardProps {
 
 export const GoogleCalendarCard: React.FC<GoogleCalendarCardProps> = ({
     isLinked,
+    setupPending = false,
     onAction,
     onDismiss,
     loading = false,
@@ -31,7 +33,12 @@ export const GoogleCalendarCard: React.FC<GoogleCalendarCardProps> = ({
                             <ThemedText type="default" style={styles.title}>
                                 Google Calendar
                             </ThemedText>
-                            {isLinked && (
+                            {setupPending && (
+                                <ThemedText type="caption" style={styles.subtitle}>
+                                    Setup required
+                                </ThemedText>
+                            )}
+                            {isLinked && !setupPending && (
                                 <ThemedText type="caption" style={styles.subtitle}>
                                     Linked
                                 </ThemedText>
@@ -48,9 +55,15 @@ export const GoogleCalendarCard: React.FC<GoogleCalendarCardProps> = ({
                                     styles.actionText,
                                     loading && styles.loadingText
                                 ]}>
-                                {isLinked ? "Sync" : "Connect"}
+                            {setupPending ? "Finish setup" : isLinked ? "Sync" : "Connect"}
                             </ThemedText>
-                            {isLinked ? (
+                            {setupPending ? (
+                                <ArrowRight
+                                    size={14}
+                                    color={loading ? ThemedColor.caption : ThemedColor.text}
+                                    weight="regular"
+                                />
+                            ) : isLinked ? (
                                 <ArrowsClockwise
                                     size={14}
                                     color={loading ? ThemedColor.caption : ThemedColor.text}
@@ -84,12 +97,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     textContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 2,
+        flexShrink: 1,
     },
     title: {
         fontSize: 15,
+        flexShrink: 1,
     },
     subtitle: {
         fontSize: 12,

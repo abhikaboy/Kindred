@@ -36,7 +36,7 @@ export default function CalendarSetupBottomSheet({
                 try {
                     const { calendars: cal } = await getConnectionCalendars(connectionId);
                     setCalendars(cal);
-                    setSelectedIds(cal.map((c) => c.id)); // pre-select all
+                    setSelectedIds(cal.map((c: any) => c.id || c.ID)); // pre-select all
                 } catch (err) {
                     console.error("Failed to fetch calendars:", err);
                 } finally {
@@ -72,14 +72,15 @@ export default function CalendarSetupBottomSheet({
     };
 
     const renderCalendarItem = ({ item }: { item: CalendarInfo }) => {
-        const isSelected = selectedIds.includes(item.id);
+        const itemId = item.id || (item as any).ID;
+        const isSelected = selectedIds.includes(itemId);
         return (
             <TouchableOpacity
                 style={[
                     styles.calendarItem,
                     { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary },
                 ]}
-                onPress={() => toggleCalendar(item.id)}
+                onPress={() => toggleCalendar(itemId)}
                 activeOpacity={0.7}>
                 <View style={styles.calendarContent}>
                     <View style={styles.calendarInfo}>
@@ -127,7 +128,7 @@ export default function CalendarSetupBottomSheet({
                         <FlatList
                             data={calendars}
                             renderItem={renderCalendarItem}
-                            keyExtractor={(item) => item.id}
+                            keyExtractor={(item) => item.id || (item as any).ID}
                             contentContainerStyle={styles.list}
                             showsVerticalScrollIndicator={false}
                         />

@@ -21,6 +21,7 @@ import * as WebBrowser from "expo-web-browser";
 import { getCalendarConnections, connectGoogleCalendar, syncCalendarEvents, CalendarConnection } from "@/api/calendar";
 import { useAlert } from "@/contexts/AlertContext";
 import { formatErrorForAlert, ERROR_MESSAGES } from "@/utils/errorParser";
+import CalendarSetupBottomSheet from "@/components/modals/CalendarSetupBottomSheet";
 
 interface HomeScrollContentProps {
     encouragementCount: number;
@@ -37,6 +38,10 @@ interface HomeScrollContentProps {
     toggleFocusMode: () => void;
     refreshing?: boolean;
     onRefresh?: () => void;
+    scrollRef?: React.RefObject<ScrollView>;
+    jumpBackInRef?: React.RefObject<View>;
+    kudosRef?: React.RefObject<View>;
+    onSpotlightLayout?: (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => void;
 }
 
 export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
@@ -54,6 +59,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     toggleFocusMode,
     refreshing = false,
     onRefresh,
+    scrollRef,
+    jumpBackInRef,
+    kudosRef,
+    onSpotlightLayout,
 }) => {
     const router = useRouter();
     const { showAlert } = useAlert();
@@ -61,6 +70,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     const [calendarLoading, setCalendarLoading] = React.useState(false);
     const [isCalendarLinked, setIsCalendarLinked] = React.useState(false);
     const [calendarConnection, setCalendarConnection] = React.useState<CalendarConnection | null>(null);
+    const [showCalendarSetup, setShowCalendarSetup] = React.useState(false);
+    const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
 
     // Check if user has dismissed the card or has a calendar connection
     React.useEffect(() => {
@@ -76,9 +87,20 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 // Check for existing connections
                 const { connections } = await getCalendarConnections();
                 if (connections && connections.length > 0) {
-                    setIsCalendarLinked(true);
-                    setCalendarConnection(connections[0]); // Use first connection
-                    setShowGoogleCalendarCard(true); // Always show if linked
+                    const completed = connections.find((c) => c.setup_complete);
+                    const pending = connections.find((c) => !c.setup_complete);
+
+                    if (completed) {
+                        setIsCalendarLinked(true);
+                        setCalendarConnection(completed);
+                        setShowGoogleCalendarCard(true);
+                    } else if (pending) {
+                        setIsCalendarLinked(false);
+                        setCalendarConnection(null);
+                        setPendingConnectionId(pending.id);
+                        setShowCalendarSetup(true);
+                        setShowGoogleCalendarCard(true);
+                    }
                 }
             } catch (error) {
                 console.error("Error checking calendar status:", error);
@@ -88,6 +110,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     }, []);
 
     const handleCalendarAction = async () => {
+        if (pendingConnectionId) {
+            setShowCalendarSetup(true);
+            return;
+        }
         if (isCalendarLinked && calendarConnection) {
             // Sync events
             await handleSyncCalendar();
@@ -103,15 +129,36 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             // Get OAuth URL from backend
             const { auth_url } = await connectGoogleCalendar();
 
-            // Open OAuth flow in browser - backend will redirect to kindred://calendar/linked
-            await WebBrowser.openAuthSessionAsync(auth_url);
+            // Open OAuth flow in browser - pass 'kindred://' so iOS returns the redirect URL
+            const result = await WebBrowser.openAuthSessionAsync(auth_url, 'kindred://');
 
-            // The deep link handler will take care of the rest
-            // Just refresh the connection status when user returns
+            if (result.type === "success" && result.url) {
+                // Parse connectionId from the redirect URL
+                // Format: kindred://calendar/linked?connectionId=xxx
+                const connIdMatch = result.url.match(/connectionId=([^&]+)/);
+                const connId = connIdMatch?.[1];
+                if (connId) {
+                    setPendingConnectionId(connId);
+                    setShowCalendarSetup(true);
+                    return;
+                }
+            }
+
+            // Fallback: refresh connection status (Android deep link flow)
             const { connections } = await getCalendarConnections();
             if (connections && connections.length > 0) {
-                setIsCalendarLinked(true);
-                setCalendarConnection(connections[0]);
+                const completed = connections.find((c) => c.setup_complete);
+                const pending = connections.find((c) => !c.setup_complete);
+
+                if (completed) {
+                    setIsCalendarLinked(true);
+                    setCalendarConnection(completed);
+                } else if (pending) {
+                    setIsCalendarLinked(false);
+                    setCalendarConnection(null);
+                    setPendingConnectionId(pending.id);
+                    setShowCalendarSetup(true);
+                }
             }
         } catch (error) {
             console.error("Error connecting Google Calendar:", error);
@@ -124,6 +171,38 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
         } finally {
             setCalendarLoading(false);
         }
+    };
+
+    const handleCalendarSetupComplete = async (connectionId: string) => {
+        setShowCalendarSetup(false);
+        try {
+            const result = await syncCalendarEvents(connectionId);
+            const deletedText = result.tasks_deleted ? `\nDeleted: ${result.tasks_deleted}` : "";
+            showAlert({
+                title: "Calendar Linked!",
+                message: `Successfully synced ${result.tasks_created} events.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}${deletedText}\nTotal: ${result.events_total}`,
+                buttons: [{ text: "OK", style: "default" }],
+            });
+            // Refresh connection status
+            const { connections } = await getCalendarConnections();
+            if (connections && connections.length > 0) {
+                const completed = connections.find((c) => c.setup_complete);
+                if (completed) {
+                    setIsCalendarLinked(true);
+                    setCalendarConnection(completed);
+                }
+            }
+            if (onRefresh) onRefresh();
+        } catch (error) {
+            console.error("Error syncing calendar after setup:", error);
+            const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_SYNC_FAILED);
+            showAlert({
+                title: "Calendar Linked",
+                message: `Your calendar was linked, but we couldn't sync events automatically.\n\n${errorInfo.message}\n\nYou can sync manually from the home page.`,
+                buttons: [{ text: "OK", style: "default" }],
+            });
+        }
+        setPendingConnectionId(null);
     };
 
     const handleSyncCalendar = async () => {
@@ -166,8 +245,21 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
         }
     };
 
+    const handleJumpLayout = (event: any) => {
+        if (!onSpotlightLayout) return;
+        const { y, height } = event.nativeEvent.layout;
+        onSpotlightLayout("home_step_0", { y, height });
+    };
+
+    const handleKudosLayout = (event: any) => {
+        if (!onSpotlightLayout) return;
+        const { y, height } = event.nativeEvent.layout;
+        onSpotlightLayout("home_step_1", { y, height });
+    };
+
     return (
         <ScrollView
+            ref={scrollRef}
             style={{ gap: 8 }}
             contentContainerStyle={{ gap: 8 }}
             showsVerticalScrollIndicator={false}
@@ -208,7 +300,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
                     <AttachStep index={0}>
-                        <ThemedText type="caption">JUMP BACK IN</ThemedText>
+                        <View ref={jumpBackInRef} onLayout={handleJumpLayout}>
+                            <ThemedText type="caption">JUMP BACK IN</ThemedText>
+                        </View>
                     </AttachStep>
                     <DashboardCards drawerRef={drawerRef} />
                 </View>
@@ -223,7 +317,11 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     <ThemedText type="caption">KUDOS</ThemedText>
                     <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
 
-                    <KudosCards />
+                    <AttachStep index={1} style={{ width: "100%" }}>
+                        <View ref={kudosRef} onLayout={handleKudosLayout}>
+                            <KudosCards />
+                        </View>
+                    </AttachStep>
                 </View>
 
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
@@ -253,6 +351,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
                         <GoogleCalendarCard
                             isLinked={isCalendarLinked}
+                            setupPending={!!pendingConnectionId}
                             onAction={handleCalendarAction}
                             onDismiss={!isCalendarLinked ? handleDismissGoogleCalendar : undefined}
                             loading={calendarLoading}
@@ -313,6 +412,19 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 </ScrollView>
             </MotiView>
+
+            {pendingConnectionId && (
+                <CalendarSetupBottomSheet
+                    visible={showCalendarSetup}
+                    setVisible={setShowCalendarSetup}
+                    connectionId={pendingConnectionId}
+                    onComplete={() => handleCalendarSetupComplete(pendingConnectionId)}
+                    onCancel={() => {
+                        setShowCalendarSetup(false);
+                        setPendingConnectionId(null);
+                    }}
+                />
+            )}
         </ScrollView>
     );
 };

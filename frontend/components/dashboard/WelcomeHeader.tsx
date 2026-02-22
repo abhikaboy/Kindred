@@ -8,9 +8,10 @@ interface WelcomeHeaderProps {
     userName?: string;
     onMenuPress: () => void;
     ThemedColor: any;
+    menuRef?: React.RefObject<View>;
 }
 
-export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPress, ThemedColor }) => {
+export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPress, ThemedColor, menuRef }) => {
     const currentHour = new Date().getHours();
 
     let greeting;
@@ -25,9 +26,11 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPr
     return (
         <>
             <AttachStep index={2}>
-                <TouchableOpacity onPress={onMenuPress}>
-                    <ListIcon size={24} color={ThemedColor.caption} />
-                </TouchableOpacity>
+                <View ref={menuRef}>
+                    <TouchableOpacity onPress={onMenuPress}>
+                        <ListIcon size={24} color={ThemedColor.caption} />
+                    </TouchableOpacity>
+                </View>
             </AttachStep>
 
             <View style={styles.headerContainer}>

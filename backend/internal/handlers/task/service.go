@@ -384,6 +384,27 @@ func (s *Service) CompleteTask(
 				"templateID", taskToComplete.TemplateID.Hex(),
 				"matchedCount", result.MatchedCount,
 				"modifiedCount", result.ModifiedCount)
+
+			// Debug: Fetch and log the updated template
+			var debugTemplate TemplateTaskDocument
+			if err := s.TemplateTasks.FindOne(ctx, bson.M{"_id": *taskToComplete.TemplateID}).Decode(&debugTemplate); err == nil {
+				slog.Info("Template after stats update",
+					"templateID", taskToComplete.TemplateID.Hex(),
+					"streak", debugTemplate.Streak,
+					"timesCompleted", debugTemplate.TimesCompleted,
+					"highestStreak", debugTemplate.HighestStreak)
+			}
+		}
+
+		// For rolling recurring tasks, generate the next instance immediately on completion
+		template, err := s.GetTemplateByID(*taskToComplete.TemplateID)
+		if err == nil && template != nil {
+			isRolling := template.RecurDetails == nil || template.RecurDetails.Behavior != "BUILDUP"
+			if isRolling {
+				if _, err := s.CreateTaskFromTemplate(*taskToComplete.TemplateID); err != nil {
+					slog.Error("Failed to auto-generate next recurring task on completion", "error", err, "templateID", *taskToComplete.TemplateID)
+				}
+			}
 		}
 	}
 
@@ -1074,11 +1095,16 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	// construct a task document from the template
 	task := constructTaskFromTemplate(&templateDoc)
 
-	//
+	// Ensure NextGenerated is not nil before proceeding
+	if templateDoc.NextGenerated == nil {
+		return nil, fmt.Errorf("template NextGenerated is nil for template %s", templateId.Hex())
+	}
+
 	templateDoc.LastGenerated = templateDoc.NextGenerated
 	thisGeneration := *templateDoc.LastGenerated
 	var nextGeneration time.Time
 	var deletedCount int
+	var skippedOccurrences int // Track if we skipped any occurrences (missed tasks)
 
 	// Catch-up loop: skip past occurrences
 	now := xutils.NowUTC()
@@ -1103,8 +1129,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 				return nil, err
 			}
 		} else if templateDoc.RecurType == "WINDOW" {
-			// Window logic (placeholder)
-			nextGeneration, err = s.ComputeNextOccurrence(&templateDoc)
+			nextGeneration, err = s.ComputeNextWindow(&templateDoc)
 			if err != nil {
 				return nil, err
 			}
@@ -1115,6 +1140,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		if nextGeneration.Before(now) {
 			slog.Info("Skipping past recurrence", "templateID", templateId, "skippedTime", nextGeneration)
 			templateDoc.LastGenerated = &nextGeneration
+			skippedOccurrences++ // Track that we skipped an occurrence
 			continue
 		}
 
@@ -1130,7 +1156,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		}
 		task.StartDate = &nextGeneration
 	} else if templateDoc.RecurType == "DEADLINE" {
-		if templateDoc.RecurDetails.Behavior == "" || templateDoc.RecurDetails.Behavior != "BUILDUP" {
+		if templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP" {
 			deletedCount, err = s.DeleteTaskFromTemplateID(templateDoc)
 			if err != nil {
 				return nil, err
@@ -1138,7 +1164,33 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		}
 		task.Deadline = &nextGeneration
 	} else if templateDoc.RecurType == "WINDOW" {
-		task.Deadline = &nextGeneration
+		if templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP" {
+			deletedCount, err = s.DeleteTaskFromTemplateID(templateDoc)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Preserve original window duration while anchoring times to the next occurrence date
+		startSource := templateDoc.StartTime
+		if startSource == nil && templateDoc.StartDate != nil {
+			startSource = templateDoc.StartDate
+		}
+		nextStart := applyTimeToDate(nextGeneration, startSource, nil)
+
+		var nextDeadline time.Time
+		if templateDoc.StartDate != nil && templateDoc.Deadline != nil {
+			duration := xutils.ToUTC(*templateDoc.Deadline).Sub(xutils.ToUTC(*templateDoc.StartDate))
+			if duration > 0 {
+				nextDeadline = nextStart.Add(duration)
+			}
+		}
+		if nextDeadline.IsZero() {
+			nextDeadline = applyTimeToDate(nextGeneration, templateDoc.Deadline, nil)
+		}
+
+		task.StartDate = &nextStart
+		task.Deadline = &nextDeadline
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "Updating template", slog.String("templateId", templateId.Hex()), slog.String("lastGenerated", thisGeneration.Format(time.RFC3339)), slog.String("nextGenerated", nextGeneration.Format(time.RFC3339)))
@@ -1158,6 +1210,10 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		if ok {
 			incMap["timesMissed"] = deletedCount
 		}
+	}
+
+	// Only reset streak if we actually skipped occurrences (missed tasks)
+	if skippedOccurrences > 0 {
 		setMap, ok := update["$set"].(bson.M)
 		if ok {
 			setMap["streak"] = 0
@@ -1194,7 +1250,8 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		// 2. The recurrence type implies we SHOULD have deleted it if it was there (Rolling/Occurrence)
 		//    This prevents sending "Great Job" for Buildup tasks where the old one is intentionally kept.
 		isRollingOrOccurrence := templateDoc.RecurType == "OCCURRENCE" ||
-			(templateDoc.RecurType == "DEADLINE" && (templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP"))
+			(templateDoc.RecurType == "DEADLINE" && (templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP")) ||
+			(templateDoc.RecurType == "WINDOW" && (templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP"))
 
 		if templateDoc.TimesGenerated > 0 && isRollingOrOccurrence {
 			go func() {
@@ -1293,6 +1350,13 @@ func (s *Service) CreateTemplateForTask(
 	reminders []*Reminder,
 ) error {
 
+	if err := ValidateRecurDetails(recurFrequency, recurDetails); err != nil {
+		return err
+	}
+	if recurDetails != nil && recurDetails.Behavior == "" {
+		recurDetails.Behavior = "ROLLING"
+	}
+
 	recurType := "OCCURRENCE"
 
 	// if we have a deadline with no start information
@@ -1306,6 +1370,8 @@ func (s *Service) CreateTemplateForTask(
 	baseTime := xutils.NowUTC()
 	if deadline != nil {
 		baseTime = *deadline
+	} else if startDate != nil {
+		baseTime = *startDate
 	} else if startTime != nil {
 		baseTime = *startTime
 	}
@@ -1360,7 +1426,7 @@ func (s *Service) CreateTemplateForTask(
 			return fmt.Errorf("error creating DEADLINE template task: %w", err)
 		}
 	} else if recurType == "WINDOW" {
-		nextOccurrence, err = s.ComputeNextOccurrence(&template_doc)
+		nextOccurrence, err = s.ComputeNextWindow(&template_doc)
 		if err != nil {
 			return fmt.Errorf("error creating WINDOW template task: %w", err)
 		}

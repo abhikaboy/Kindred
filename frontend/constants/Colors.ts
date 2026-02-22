@@ -18,6 +18,7 @@ export const Colors = {
         warning: "#FFD700",
         caption: "#919090ff",
         tertiary: "#E5E5E5",
+        bottomBorder: "#66666633",
 
         tint: tintColorDark,
         icon: "#9BA1A6",
@@ -51,6 +52,7 @@ export const Colors = {
         lightened: "#171626",
         lightenedCard: "#1a1929ff",
         tertiary: "#1F1D2E",
+        bottomBorder: "#854DFF",
         tint: tintColorDark,
         icon: "#9BA1A6",
         tabIconDefault: "#9BA1A6",

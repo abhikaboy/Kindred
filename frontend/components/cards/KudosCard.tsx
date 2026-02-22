@@ -24,32 +24,30 @@ export const KudosCards: React.FC = () => {
     const hasUnreadCongratulations = unreadCongratulationCount > 0;
 
     return (
-        <AttachStep index={1} style={{ width: "100%" }}>
-            <View style={styles.container}>
-                <KudosCard
-                    title="Encouragements"
-                    unreadCount={unreadEncouragementCount}
-                    totalCount={sentEncouragements}
-                    maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
-                    type="encouragements"
-                    icon={<Sparkle size={22} weight="regular" color={ThemedColor.primary} />}
-                    onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}
-                    hasUnread={hasUnreadEncouragements}
-                    ThemedColor={ThemedColor}
-                />
-                <KudosCard
-                    title="Congratulations"
-                    unreadCount={unreadCongratulationCount}
-                    totalCount={sentCongratulations}
-                    maxCount={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
-                    type="congratulations"
-                    icon={<Confetti size={22} weight="fill" color={ThemedColor.primary} />}
-                    onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}
-                    hasUnread={hasUnreadCongratulations}
-                    ThemedColor={ThemedColor}
-                />
-            </View>
-        </AttachStep>
+        <View style={styles.container}>
+            <KudosCard
+                title="Encouragements"
+                unreadCount={unreadEncouragementCount}
+                totalCount={sentEncouragements}
+                maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
+                type="encouragements"
+                icon={<Sparkle size={22} weight="regular" color={ThemedColor.primary} />}
+                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}
+                hasUnread={hasUnreadEncouragements}
+                ThemedColor={ThemedColor}
+            />
+            <KudosCard
+                title="Congratulations"
+                unreadCount={unreadCongratulationCount}
+                totalCount={sentCongratulations}
+                maxCount={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
+                type="congratulations"
+                icon={<Confetti size={22} weight="fill" color={ThemedColor.primary} />}
+                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}
+                hasUnread={hasUnreadCongratulations}
+                ThemedColor={ThemedColor}
+            />
+        </View>
     );
 };
 
@@ -94,7 +92,7 @@ const KudosCard: React.FC<KudosCardProps> = ({
                     </ThemedText>
                 </View>
             )}
-            
+
             <View style={styles.cardContent}>
                 <View style={styles.iconProgressRow}>
                     <View>{icon}</View>

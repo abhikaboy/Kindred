@@ -302,6 +302,15 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 		return nil, huma.Error400BadRequest("Invalid user ID format")
 	}
 
+	// Ensure calendar setup is complete before syncing
+	connection, err := h.service.GetConnectionForUser(ctx, connectionID, userObjID)
+	if err != nil {
+		return nil, huma.Error404NotFound("Calendar connection not found. Please reconnect your calendar.")
+	}
+	if !connection.SetupComplete {
+		return nil, huma.Error400BadRequest("Calendar setup not complete. Please choose calendars to import.", nil)
+	}
+
 	// Parse dates with defaults
 	var startTime, endTime time.Time
 

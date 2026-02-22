@@ -56,7 +56,7 @@ const Home = (props: Props) => {
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
-    const { spotlightState, setSpotlightShown } = useSpotlight();
+    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
 
     // Cache keys and duration
     const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
@@ -279,6 +279,7 @@ const Home = (props: Props) => {
                 setSelected={setSelected}
                 shouldShowTutorial={shouldShowTutorial}
                 spotlightState={spotlightState}
+                spotlightLoading={spotlightLoading}
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
             />
@@ -306,23 +307,69 @@ const HomeContent = ({
     setSelected,
     shouldShowTutorial,
     spotlightState,
+    spotlightLoading,
     refreshing,
     onRefresh,
 }: any) => {
     const { start } = useSpotlightTour();
     const { selected } = useTasks();
+    const homeScrollRef = useRef<any>(null);
+    const homeStep0Ref = useRef<View>(null);
+    const homeStep1Ref = useRef<View>(null);
+    const homeStep2Ref = useRef<View>(null);
+    const homeLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
+
+    const registerHomeLayout = (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => {
+        homeLayoutsRef.current[key] = layout;
+    };
+
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const isOnScreen = (ref: React.RefObject<View>) =>
+        new Promise<boolean>((resolve) => {
+            requestAnimationFrame(() => {
+                if (!ref.current) return resolve(false);
+                ref.current.measureInWindow((_x, y, _w, h) => {
+                    const screenHeight = Dimensions.get("window").height;
+                    resolve(y >= 0 && y + h <= screenHeight);
+                });
+            });
+        });
+
+    const ensureVisible = async (
+        ref: React.RefObject<View>,
+        scrollRef?: React.RefObject<any>,
+        layout?: { y: number; height: number }
+    ) => {
+        if (await isOnScreen(ref)) return true;
+        if (scrollRef?.current && layout) {
+            scrollRef.current.scrollTo({ y: Math.max(layout.y - 20, 0), animated: true });
+            await delay(300);
+            return isOnScreen(ref);
+        }
+        return false;
+    };
 
     // Track which workspaces have been visited for lazy mounting
     const [visitedWorkspaces, setVisitedWorkspaces] = React.useState<Set<string>>(new Set());
 
     useEffect(() => {
-        if (!spotlightState.homeSpotlight && selected === "") {
-            const timer = setTimeout(() => {
-                start();
+        if (!spotlightLoading && !spotlightState.homeSpotlight && selected === "") {
+            const timer = setTimeout(async () => {
+                const canStart = await ensureVisible(
+                    homeStep0Ref,
+                    homeScrollRef,
+                    homeLayoutsRef.current.home_step_0
+                );
+                if (canStart) {
+                    requestAnimationFrame(() => {
+                        start();
+                    });
+                }
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [start, spotlightState.homeSpotlight, selected]);
+    }, [start, spotlightLoading, spotlightState.homeSpotlight, selected]);
 
     // Add workspace to visited set when selected
     useEffect(() => {
@@ -383,6 +430,7 @@ const HomeContent = ({
                                     userName={user?.display_name}
                                     onMenuPress={() => drawerRef.current?.openDrawer()}
                                     ThemedColor={ThemedColor}
+                                    menuRef={homeStep2Ref}
                                 />
                             </View>
 
@@ -401,6 +449,10 @@ const HomeContent = ({
                                 toggleFocusMode={toggleFocusMode}
                                 refreshing={refreshing}
                                 onRefresh={onRefresh}
+                                scrollRef={homeScrollRef}
+                                jumpBackInRef={homeStep0Ref}
+                                kudosRef={homeStep1Ref}
+                                onSpotlightLayout={registerHomeLayout}
                             />
                         </ThemedView>
                     </AnimatedView>

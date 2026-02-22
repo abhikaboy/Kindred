@@ -26,6 +26,7 @@ type CalendarConnection struct {
 	TokenExpiry       time.Time          `bson:"token_expiry" json:"-"`
 	Scopes            []string           `bson:"scopes" json:"scopes"`
 	IsPrimary         bool               `bson:"is_primary" json:"is_primary"` // User's main calendar
+	SetupComplete     bool               `bson:"setup_complete" json:"setup_complete"`
 	LastSync          time.Time          `bson:"last_sync,omitempty" json:"last_sync"`
 	WatchChannels     []WatchChannel     `bson:"watch_channels,omitempty" json:"watch_channels,omitempty"`
 	CreatedAt         time.Time          `bson:"created_at" json:"created_at"`

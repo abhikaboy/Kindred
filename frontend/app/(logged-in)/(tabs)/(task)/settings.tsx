@@ -18,8 +18,9 @@ import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
 import { SettingsActionRow } from '@/components/settings/SettingsActionRow';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@/hooks/useSettings';
-import { getCalendarConnections, disconnectCalendar, connectGoogleCalendar } from '@/api/calendar';
+import { getCalendarConnections, disconnectCalendar, connectGoogleCalendar, syncCalendarEvents } from '@/api/calendar';
 import { formatErrorForToast, ERROR_MESSAGES } from '@/utils/errorParser';
+import CalendarSetupBottomSheet from '@/components/modals/CalendarSetupBottomSheet';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -49,8 +50,11 @@ export default function Settings() {
 
     // Calendar integration state
     const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
+    const [pendingCalendarConnection, setPendingCalendarConnection] = useState<any | null>(null);
     const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
+    const [showCalendarSetup, setShowCalendarSetup] = useState(false);
+    const [pendingConnectionId, setPendingConnectionId] = useState<string | null>(null);
 
     // Sync local state with fetched settings
     useEffect(() => {
@@ -81,7 +85,14 @@ export default function Settings() {
     const loadCalendarConnections = async () => {
         try {
             const { connections } = await getCalendarConnections();
-            setCalendarConnections(connections || []);
+            const completed = (connections || []).filter((c) => c.setup_complete);
+            const pending = (connections || []).find((c) => !c.setup_complete);
+            setCalendarConnections(completed);
+            setPendingCalendarConnection(pending || null);
+            if (pending) {
+                setPendingConnectionId(pending.id);
+                setShowCalendarSetup(true);
+            }
         } catch (error) {
             console.error('Error loading calendar connections:', error);
         }
@@ -284,7 +295,18 @@ export default function Settings() {
         setIsConnectingCalendar(true);
         try {
             const { auth_url } = await connectGoogleCalendar();
-            await WebBrowser.openAuthSessionAsync(auth_url, 'kindred://');
+            const result = await WebBrowser.openAuthSessionAsync(auth_url, 'kindred://');
+
+            if (result.type === 'success' && result.url) {
+                const connIdMatch = result.url.match(/connectionId=([^&]+)/);
+                const connId = connIdMatch?.[1];
+                if (connId) {
+                    setPendingConnectionId(connId);
+                    setShowCalendarSetup(true);
+                    return;
+                }
+            }
+            // Fallback (Android deep link flow)
             await loadCalendarConnections();
         } catch (error) {
             console.error('Error connecting calendar:', error);
@@ -293,6 +315,17 @@ export default function Settings() {
         } finally {
             setIsConnectingCalendar(false);
         }
+    };
+
+    const handleCalendarSetupComplete = async (connectionId: string) => {
+        setShowCalendarSetup(false);
+        try {
+            await syncCalendarEvents(connectionId);
+        } catch (error) {
+            console.error('Error syncing calendar after setup:', error);
+        }
+        setPendingConnectionId(null);
+        await loadCalendarConnections();
     };
 
     const styles = createStyles(ThemedColor, screenWidth);
@@ -424,6 +457,50 @@ export default function Settings() {
 
                 <SettingsSection title="INTEGRATIONS">
                     <SettingsCard>
+                        {pendingCalendarConnection && (
+                            <TouchableOpacity
+                                key={pendingCalendarConnection.id}
+                                style={[
+                                    styles.integrationRow,
+                                    {
+                                        borderBottomWidth: StyleSheet.hairlineWidth,
+                                        borderBottomColor: ThemedColor.tertiary,
+                                    }
+                                ]}
+                                onPress={() => setShowCalendarSetup(true)}
+                                activeOpacity={0.7}
+                                disabled={isConnectingCalendar || isLoadingCalendar}
+                            >
+                                <View style={styles.integrationIconContainer}>
+                                    <Ionicons name="calendar" size={24} color={ThemedColor.warning} />
+                                </View>
+                                <View style={styles.integrationContent}>
+                                    <View style={styles.integrationHeader}>
+                                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                            Google Calendar
+                                        </ThemedText>
+                                        <View style={[
+                                            styles.connectedBadge,
+                                            { backgroundColor: ThemedColor.warning + '15' }
+                                        ]}>
+                                            <View style={[styles.connectedDot, { backgroundColor: ThemedColor.warning }]} />
+                                            <ThemedText type="caption" style={[
+                                                styles.connectedText,
+                                                { color: ThemedColor.warning }
+                                            ]}>
+                                                Setup Required
+                                            </ThemedText>
+                                        </View>
+                                    </View>
+                                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                        {pendingCalendarConnection.provider_account_id}
+                                    </ThemedText>
+                                </View>
+                                <View style={styles.integrationAction}>
+                                    <Ionicons name="chevron-forward" size={20} color={ThemedColor.caption} />
+                                </View>
+                            </TouchableOpacity>
+                        )}
                         {calendarConnections.map((connection, index) => (
                             <TouchableOpacity
                                 key={connection.id}
@@ -594,6 +671,19 @@ export default function Settings() {
                 </SettingsSection>
             </View>
             </ScrollView>
+
+            {pendingConnectionId && (
+                <CalendarSetupBottomSheet
+                    visible={showCalendarSetup}
+                    setVisible={setShowCalendarSetup}
+                    connectionId={pendingConnectionId}
+                    onComplete={() => handleCalendarSetupComplete(pendingConnectionId)}
+                    onCancel={() => {
+                        setShowCalendarSetup(false);
+                        setPendingConnectionId(null);
+                    }}
+                />
+            )}
         </ThemedView>
     );
 }

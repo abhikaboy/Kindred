@@ -118,7 +118,6 @@ export default function TermsAcceptanceModal({ visible, onAccept }: TermsAccepta
                                 </TouchableOpacity>
                             </View>
                         </ScrollView>
-
                         <TouchableOpacity
                             style={[styles.acceptButton, { backgroundColor: ThemedColor.primary }]}
                             onPress={onAccept}

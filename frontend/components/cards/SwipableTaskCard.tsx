@@ -17,6 +17,7 @@ import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
 import { Bell, Flag, Trash } from "phosphor-react-native";
 import CustomAlert, { AlertButton } from "../modals/CustomAlert";
+import { AttachStep } from "react-native-spotlight-tour";
 
 type Props = {
     redirect?: boolean;
@@ -49,7 +50,6 @@ const SwipableTaskCard = ({ redirect = false, categoryId, task, categoryName, hi
 */
 
     const deleteTask = async (categoryId: string, taskId: string) => {
-        // Trigger haptic feedback immediately when delete is initiated
         if (Platform.OS === "ios") {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         }
@@ -167,6 +167,19 @@ const SwipableTaskCard = ({ redirect = false, categoryId, task, categoryName, hi
     const activateTask = async (categoryId: string, taskId: string) => {
         await activateTaskAPI(categoryId, taskId);
     };
+    const taskCard = (
+        <TaskCard
+            content={task.content}
+            value={task.value}
+            priority={task.priority as 1 | 2 | 3}
+            redirect={redirect}
+            id={task.id}
+            categoryId={categoryId}
+            task={{ ...task }}
+            highlightContent={false}
+        />
+    );
+
     return (
         <>
             <ReanimatedSwipeable
@@ -209,16 +222,13 @@ const SwipableTaskCard = ({ redirect = false, categoryId, task, categoryName, hi
                         )}
                     </View>
                 )}>
-                <TaskCard
-                    content={task.content}
-                    value={task.value}
-                    priority={task.priority as 1 | 2 | 3}
-                    redirect={redirect}
-                    id={task.id}
-                    categoryId={categoryId}
-                    task={{ ...task }}
-                    highlightContent={highlightContent}
-                />
+                {highlightContent ? (
+                    <AttachStep index={1} style={{ width: "100%", flex: 1 }}>
+                        {taskCard}
+                    </AttachStep>
+                ) : (
+                    taskCard
+                )}
             </ReanimatedSwipeable>
 
             {alertVisible && (

@@ -31,22 +31,7 @@ interface WorkspaceContentProps {
  * Extracted content component with/ drawer wrapper
  */
 export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceName }) => {
-    const ThemedColor = useThemeColor();
-    const { categories, selected: globalSelected, showConfetti } = useTasks();
-    // Use prop if provided, otherwise fall back to global selected
-    const selected = workspaceName || globalSelected;
-    const { applyFilters } = useWorkspaceFilters(selected);
-    const { getStateDescription } = useWorkspaceState(selected);
-    const insets = useSafeAreaInsets();
-    const { openModal } = useCreateModal();
-    const { spotlightState, setSpotlightShown } = useSpotlight();
-
-    const [editing, setEditing] = useState(false);
-    const [editingWorkspace, setEditingWorkspace] = useState(false);
-    const [focusedCategory, setFocusedCategory] = useState<string>("");
-
-    const scrollViewRef = useRef<ScrollView>(null);
-    const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
+    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
 
     // Tour steps for workspace
     const tourSteps: TourStep[] = [
@@ -91,10 +76,76 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
         },
     ];
 
+    return (
+        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
+            <WorkspaceContentBody
+                workspaceName={workspaceName}
+                spotlightState={spotlightState}
+                spotlightLoading={spotlightLoading}
+            />
+        </SpotlightTourProvider>
+    );
+};
+
+type WorkspaceContentBodyProps = WorkspaceContentProps & {
+    spotlightState: any;
+    spotlightLoading: boolean;
+};
+
+const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
+    workspaceName,
+    spotlightState,
+    spotlightLoading,
+}) => {
+    const ThemedColor = useThemeColor();
+    const { categories, selected: globalSelected, showConfetti } = useTasks();
+    // Use prop if provided, otherwise fall back to global selected
+    const selected = workspaceName || globalSelected;
+    const { applyFilters } = useWorkspaceFilters(selected);
+    const { getStateDescription } = useWorkspaceState(selected);
+    const insets = useSafeAreaInsets();
+    const { openModal } = useCreateModal();
+
+    const [editing, setEditing] = useState(false);
+    const [editingWorkspace, setEditingWorkspace] = useState(false);
+    const [focusedCategory, setFocusedCategory] = useState<string>("");
+
+    const scrollViewRef = useRef<ScrollView>(null);
+    const workspaceStep0Ref = useRef<View>(null);
+    const workspaceLayoutRef = useRef<{ y: number; height: number } | null>(null);
+    const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
+
     const { start } = useSpotlightTour();
     const hasTriggeredRef = useRef(false);
     const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
     const menuSpotlightShown = spotlightState.menuSpotlight;
+
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const isOnScreen = (ref: React.RefObject<View>) =>
+        new Promise<boolean>((resolve) => {
+            requestAnimationFrame(() => {
+                if (!ref.current) return resolve(false);
+                ref.current.measureInWindow((_x, y, _w, h) => {
+                    const screenHeight = Dimensions.get("window").height;
+                    resolve(y >= 0 && y + h <= screenHeight);
+                });
+            });
+        });
+
+    const ensureVisible = async (
+        ref: React.RefObject<View>,
+        scrollRef?: React.RefObject<ScrollView>,
+        layout?: { y: number; height: number }
+    ) => {
+        if (await isOnScreen(ref)) return true;
+        if (scrollRef?.current && layout) {
+            scrollRef.current.scrollTo({ y: Math.max(layout.y - 20, 0), animated: true });
+            await delay(300);
+            return isOnScreen(ref);
+        }
+        return false;
+    };
 
     // Reset trigger ref when workspace changes
     useEffect(() => {
@@ -107,17 +158,32 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
         const shouldTrigger =
             selected === "🌺 Kindred Guide" && !workspaceSpotlightShown && menuSpotlightShown;
 
-        if (shouldTrigger && !hasTriggeredRef.current) {
+        if (!spotlightLoading && shouldTrigger && !hasTriggeredRef.current) {
             hasTriggeredRef.current = true;
             // Increased delay to ensure drawer is fully closed and workspace is mounted
-            setTimeout(() => {
-                start();
+            setTimeout(async () => {
+                const canStart = await ensureVisible(
+                    workspaceStep0Ref,
+                    scrollViewRef,
+                    workspaceLayoutRef.current || undefined
+                );
+                if (canStart) {
+                    requestAnimationFrame(() => {
+                        start();
+                    });
+                }
             }, 1200);
         }
-    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start]);
+    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start, spotlightLoading]);
+
+    const visibleCategories = categories
+        .filter((category) => category.name !== "!-proxy-!")
+        .sort((a, b) => b.tasks.length - a.tasks.length);
+    const firstCategory = visibleCategories[0];
+    const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
 
     return (
-        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
+        <>
             <ConditionalView condition={showConfetti}>
                 <View
                     style={{
@@ -168,9 +234,17 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                                         width: "100%",
                                     }}>
                                     <AttachStep index={0} style={{ width: "100%" }}>
-                                        <SlidingText type="title" style={styles.title}>
-                                            {selected || "Good Morning! ☀"}
-                                        </SlidingText>
+                                        <View
+                                            ref={workspaceStep0Ref}
+                                            onLayout={(event) => {
+                                                const { y, height } = event.nativeEvent.layout;
+                                                workspaceLayoutRef.current = { y, height };
+                                            }}
+                                        >
+                                            <SlidingText type="title" style={styles.title}>
+                                                {selected || "Good Morning! ☀"}
+                                            </SlidingText>
+                                        </View>
                                     </AttachStep>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                                         <TouchableOpacity onPress={() => setEditingWorkspace(true)}>
@@ -203,11 +277,9 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
 
                         <ConditionalView condition={selected !== "" && !noCategories} animated={true} triggerDep={selected}>
                             <View style={styles.categoriesContainer} key="category-container">
-                                {categories
-                                    .sort((a, b) => b.tasks.length - a.tasks.length)
-                                    .filter((category) => category.name !== "!-proxy-!")
-                                    .map((category, index) => {
-                                        const isFirstCategory = index === 0 && category.tasks.length > 0;
+                                {visibleCategories.map((category) => {
+                                        const isFirstCategory = firstCategory?.id === category.id;
+                                        const isFirstCategoryWithTasks = firstCategoryWithTasks?.id === category.id;
                                         const filteredTasks = applyFilters(category.tasks);
 
                                         return (
@@ -224,7 +296,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                                                     setFocusedCategory(categoryId);
                                                     openModal({ categoryId });
                                                 }}
-                                                highlightFirstTask={isFirstCategory}
+                                                highlightFirstTask={isFirstCategoryWithTasks}
                                                 highlightCategoryHeader={isFirstCategory}
                                             />
                                         );
@@ -247,7 +319,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                     </View>
                 </ScrollView>
             </ThemedView>
-        </SpotlightTourProvider>
+        </>
     );
 };
 

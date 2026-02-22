@@ -41,7 +41,7 @@ type Props = {
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
     const ThemedColor = useThemeColor();
-    const { spotlightState, setSpotlightShown } = useSpotlight();
+    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
 
     // Tour steps for task creation
     const tourSteps: TourStep[] = [
@@ -96,6 +96,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 screen={screen}
                 isBlueprint={isBlueprint}
                 spotlightState={spotlightState}
+                spotlightLoading={spotlightLoading}
             />
         </SpotlightTourProvider>
     );
@@ -109,8 +110,10 @@ const StandardContent = ({
     screen,
     isBlueprint = false,
     spotlightState,
-}: Props & { spotlightState: any }) => {
+    spotlightLoading,
+}: Props & { spotlightState: any; spotlightLoading: boolean }) => {
     const nameRef = React.useRef<TextInput>(null);
+    const taskCategoryRef = React.useRef<View>(null);
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
@@ -148,6 +151,25 @@ const StandardContent = ({
     const ThemedColor = useThemeColor();
     const { start } = useSpotlightTour();
 
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const isOnScreen = (ref: React.RefObject<View>) =>
+        new Promise<boolean>((resolve) => {
+            requestAnimationFrame(() => {
+                if (!ref.current) return resolve(false);
+                ref.current.measureInWindow((_x, y, _w, h) => {
+                    const screenHeight = Dimensions.get("window").height;
+                    resolve(y >= 0 && y + h <= screenHeight);
+                });
+            });
+        });
+
+    const ensureVisible = async (ref: React.RefObject<View>) => {
+        if (await isOnScreen(ref)) return true;
+        await delay(100);
+        return isOnScreen(ref);
+    };
+
     // Determine which categories to use based on blueprint mode
     // Use state version from context (synced from prop via useEffect)
     // Memoize to ensure it updates when dependencies change
@@ -179,14 +201,19 @@ const StandardContent = ({
 
     // Start the spotlight tour if this is the first time creating a task
     useEffect(() => {
-        if (!spotlightState.taskSpotlight && spotlightState.workspaceSpotlight && !edit) {
-            const timer = setTimeout(() => {
-                start();
+        if (!spotlightLoading && !spotlightState.taskSpotlight && spotlightState.workspaceSpotlight && !edit) {
+            const timer = setTimeout(async () => {
+                const canStart = await ensureVisible(taskCategoryRef);
+                if (canStart) {
+                    requestAnimationFrame(() => {
+                        start();
+                    });
+                }
             }, 800);
 
             return () => clearTimeout(timer);
         }
-    }, [start, spotlightState.taskSpotlight, spotlightState.workspaceSpotlight, edit]);
+    }, [start, spotlightLoading, spotlightState.taskSpotlight, spotlightState.workspaceSpotlight, edit]);
 
     useEffect(() => {
         if (screen && edit) {
@@ -499,23 +526,25 @@ const StandardContent = ({
                 }}
                 pointerEvents="box-none">
                 <AttachStep index={0} style={{ width: "76%" }}>
-                    <Dropdown
-                        options={[
-                            ...(availableCategories || [])
-                                .filter((c) => c.name !== "!-proxy-!")
-                                .map((c) => {
-                                    return { label: c.name, id: c.id, special: false };
-                                }),
-                            { label: "+ New Category", id: "", special: true },
-                        ]}
-                        ghost
-                        selected={selectedCategory}
-                        setSelected={setCreateCategory}
-                        onSpecial={() => {
-                            goTo(Screen.NEW_CATEGORY);
-                        }}
-                        width="100%"
-                    />
+                    <View ref={taskCategoryRef}>
+                        <Dropdown
+                            options={[
+                                ...(availableCategories || [])
+                                    .filter((c) => c.name !== "!-proxy-!")
+                                    .map((c) => {
+                                        return { label: c.name, id: c.id, special: false };
+                                    }),
+                                { label: "+ New Category", id: "", special: true },
+                            ]}
+                            ghost
+                            selected={selectedCategory}
+                            setSelected={setCreateCategory}
+                            onSpecial={() => {
+                                goTo(Screen.NEW_CATEGORY);
+                            }}
+                            width="100%"
+                        />
+                    </View>
                 </AttachStep>
                 <TouchableOpacity
                     style={{

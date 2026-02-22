@@ -179,6 +179,9 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		if taskParams.RecurDetails == nil {
 			return nil, huma.Error400BadRequest("Recurring details are required", nil)
 		}
+		if err := ValidateRecurDetails(taskParams.RecurFrequency, taskParams.RecurDetails); err != nil {
+			return nil, huma.Error400BadRequest(err.Error(), err)
+		}
 
 		err := h.service.CreateTemplateForTask(
 			userObjID,
@@ -271,6 +274,15 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 
 	updateData := input.Body
 
+	if updateData.Recurring && updateData.RecurFrequency != "" && updateData.RecurDetails != nil {
+		if err := ValidateRecurDetails(updateData.RecurFrequency, updateData.RecurDetails); err != nil {
+			return nil, huma.Error400BadRequest(err.Error(), err)
+		}
+		if updateData.RecurDetails.Behavior == "" {
+			updateData.RecurDetails.Behavior = "ROLLING"
+		}
+	}
+
 	// Check if we are making the task recurring and need to generate a template
 	if updateData.Recurring && updateData.GenerateTemplate {
 		templateID := primitive.NewObjectID()
@@ -284,6 +296,9 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 		recurDetails := updateData.RecurDetails
 		if recurDetails == nil {
 			return nil, huma.Error400BadRequest("Recurring details are required when making task recurring", nil)
+		}
+		if err := ValidateRecurDetails(recurFrequency, recurDetails); err != nil {
+			return nil, huma.Error400BadRequest(err.Error(), err)
 		}
 
 		err = h.service.CreateTemplateForTask(
@@ -317,6 +332,17 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 			}
 		}
 		updateData.RecurType = recurType
+	}
+
+	// Guard against recurring tasks without a template
+	if updateData.Recurring && !updateData.GenerateTemplate && updateData.TemplateID == nil {
+		existingTask, err := h.service.GetTaskByID(id, userObjID)
+		if err != nil {
+			return nil, huma.Error404NotFound("Task not found. It may have been deleted.", err)
+		}
+		if existingTask.TemplateID == nil {
+			return nil, huma.Error400BadRequest("Recurring tasks must have a template. Please regenerate the recurring template.", nil)
+		}
 	}
 
 	// Use the UpdatePartialTask service method which matches the available service signature

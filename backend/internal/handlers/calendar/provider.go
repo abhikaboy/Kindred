@@ -40,11 +40,11 @@ type AccountInfo struct {
 
 // CalendarInfo represents a calendar from the provider
 type CalendarInfo struct {
-	ID          string
-	Name        string
-	Description string
-	IsPrimary   bool
-	AccessRole  string // owner, writer, reader
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsPrimary   bool   `json:"is_primary"`
+	AccessRole  string `json:"access_role"` // owner, writer, reader
 }
 
 // ProviderEvent represents a calendar event from any provider

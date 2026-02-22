@@ -22,6 +22,19 @@ type Service struct {
 	config          config.Config
 }
 
+// GetConnectionForUser fetches a calendar connection that belongs to the given user
+func (s *Service) GetConnectionForUser(ctx context.Context, connectionID, userID primitive.ObjectID) (*CalendarConnection, error) {
+	var connection CalendarConnection
+	err := s.connections.FindOne(ctx, bson.M{
+		"_id":     connectionID,
+		"user_id": userID,
+	}).Decode(&connection)
+	if err != nil {
+		return nil, err
+	}
+	return &connection, nil
+}
+
 func NewService(connections *mongo.Collection, categories *mongo.Collection, cfg config.Config) *Service {
 	providers := map[CalendarProvider]Provider{
 		ProviderGoogle: NewGoogleProvider(cfg.GoogleCalendar),
@@ -119,6 +132,7 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 			TokenExpiry:       token.Expiry,
 			Scopes:            []string{}, // TODO: Extract from token
 			IsPrimary:         false,      // User can set this later
+			SetupComplete:     false,
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		}
@@ -381,6 +395,13 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 	}
 
 	slog.Info("Workspace setup complete", "connection_id", connectionID, "calendars_requested", len(calendarIDs))
+
+	_, err = s.connections.UpdateOne(ctx, bson.M{"_id": connectionID, "user_id": userID}, bson.M{
+		"$set": bson.M{"setup_complete": true, "updated_at": time.Now()},
+	})
+	if err != nil {
+		slog.Error("Failed to mark calendar connection setup complete", "connection_id", connectionID, "error", err)
+	}
 	return nil
 }
 
@@ -399,6 +420,21 @@ func (s *Service) GetConnections(ctx context.Context, userID primitive.ObjectID)
 	if err := cursor.All(ctx, &connections); err != nil {
 		slog.Error("Failed to decode connections", "user_id", userID, "error", err)
 		return nil, err
+	}
+
+	// Backward compatibility: if setup_complete is missing but calendar categories exist, mark as complete
+	for i := range connections {
+		if connections[i].SetupComplete {
+			continue
+		}
+		integrationPrefix := fmt.Sprintf("^gcal:%s:", connections[i].ID.Hex())
+		count, err := s.categories.CountDocuments(ctx, bson.M{"integration": bson.M{"$regex": integrationPrefix}})
+		if err == nil && count > 0 {
+			connections[i].SetupComplete = true
+			_, _ = s.connections.UpdateOne(ctx, bson.M{"_id": connections[i].ID}, bson.M{
+				"$set": bson.M{"setup_complete": true, "updated_at": time.Now()},
+			})
+		}
 	}
 
 	slog.Info("Retrieved calendar connections", "user_id", userID, "count", len(connections))
