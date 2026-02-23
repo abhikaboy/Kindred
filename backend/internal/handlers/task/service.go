@@ -1889,6 +1889,9 @@ func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument
 // formatTimeMessage formats future time messages like "starts in 15 minutes"
 func formatTimeMessage(action string, duration time.Duration, taskName string) string {
 	timeStr := formatDuration(duration)
+	if action == "starts in" {
+		return fmt.Sprintf("%s starts in %s", taskName, timeStr)
+	}
 	return fmt.Sprintf("Task %s %s: %s", action, timeStr, taskName)
 }
 
