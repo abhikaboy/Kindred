@@ -13,6 +13,7 @@ type Props = {
     backdropOpacity?: number;
     customPadding?: boolean;
     enableDynamicSizing?: boolean;
+    enableContentPanningGesture?: boolean;
 };
 
 // Using memo to prevent unnecessary re-renders
@@ -73,11 +74,12 @@ const DefaultModal = memo((props: Props) => {
             ref={bottomSheetModalRef}
             index={0}
             snapPoints={snapPoints}
-            enableDynamicSizing={props.enableDynamicSizing}
+            enableDynamicSizing={props.enableDynamicSizing ?? false}
             onChange={handleSheetChanges}
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
+            enableContentPanningGesture={props.enableContentPanningGesture}
             enablePanDownToClose={props.enablePanDownToClose !== false}>
             <BottomSheetView style={styles.contentContainer}>{props.children}</BottomSheetView>
         </BottomSheetModal>

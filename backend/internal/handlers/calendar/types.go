@@ -84,6 +84,7 @@ type SetupWorkspacesInput struct {
 	Body         struct {
 		CalendarIDs  []string `json:"calendar_ids"`
 		MergeIntoOne bool     `json:"merge_into_one"`
+		MakePublic   bool     `json:"make_public"`
 	}
 }
 

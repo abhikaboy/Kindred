@@ -232,7 +232,7 @@ func TestConvertEventToTaskParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ConvertEventToTaskParams(tt.event, userID, categoryID)
+			result := ConvertEventToTaskParams(tt.event, userID, categoryID, false)
 
 			// Run custom validation
 			if !tt.expected(result) {
@@ -378,7 +378,7 @@ func TestConvertEventToTaskParams_IntegrationFormat(t *testing.T) {
 				IsAllDay:   false,
 			}
 
-			result := ConvertEventToTaskParams(event, userID, categoryID)
+			result := ConvertEventToTaskParams(event, userID, categoryID, false)
 
 			if result.Integration != tt.expectedFormat {
 				t.Errorf("Expected integration '%s', got '%s'", tt.expectedFormat, result.Integration)
@@ -423,7 +423,7 @@ func TestConvertEventToTaskParams_TimeZones(t *testing.T) {
 				IsAllDay:   false,
 			}
 
-			result := ConvertEventToTaskParams(event, userID, categoryID)
+			result := ConvertEventToTaskParams(event, userID, categoryID, false)
 
 			if result.StartTime == nil {
 				t.Error("Expected StartTime to be set")
@@ -520,7 +520,7 @@ func TestConvertEventToTaskParams_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Should not panic or error
-			result := ConvertEventToTaskParams(tt.event, userID, categoryID)
+			result := ConvertEventToTaskParams(tt.event, userID, categoryID, false)
 
 			// Basic validations
 			if result.Integration == "" {

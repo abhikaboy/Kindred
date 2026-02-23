@@ -159,7 +159,8 @@ export async function getConnectionCalendars(connectionId: string): Promise<Cale
 export async function setupCalendarWorkspaces(
     connectionId: string,
     calendarIds: string[],
-    mergeIntoOne: boolean
+    mergeIntoOne: boolean,
+    makePublic: boolean
 ): Promise<{ success: boolean; message: string }> {
     const response = await client.POST("/v1/user/calendar/connections/{connectionId}/setup" as any, {
         params: {
@@ -168,6 +169,7 @@ export async function setupCalendarWorkspaces(
         body: {
             calendar_ids: calendarIds,
             merge_into_one: mergeIntoOne,
+            make_public: makePublic,
         },
     });
 

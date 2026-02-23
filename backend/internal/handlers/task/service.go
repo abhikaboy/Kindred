@@ -1817,6 +1817,7 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument) string {
 	now := time.Now()
 	taskName := task.Content
+	hasWindow := task.Deadline != nil && (task.StartDate != nil || task.StartTime != nil)
 
 	// Use custom message if provided
 	if reminder.CustomMessage != nil && *reminder.CustomMessage != "" {
@@ -1848,16 +1849,32 @@ func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument
 	if reminder.BeforeDeadline && task.Deadline != nil {
 		timeDiff = task.Deadline.Sub(now)
 		if timeDiff > 0 {
-			baseMessage = formatTimeMessage("due in", timeDiff, taskName)
+			if hasWindow {
+				baseMessage = formatTimeMessage("ending in", timeDiff, taskName)
+			} else {
+				baseMessage = formatTimeMessage("due in", timeDiff, taskName)
+			}
 		} else {
-			baseMessage = "Due now: " + taskName
+			if hasWindow {
+				baseMessage = "Ending now: " + taskName
+			} else {
+				baseMessage = "Due now: " + taskName
+			}
 		}
 	} else if reminder.AfterDeadline && task.Deadline != nil {
 		timeDiff = now.Sub(*task.Deadline)
 		if timeDiff > 0 {
-			baseMessage = formatOverdueMessage("was due", timeDiff, taskName)
+			if hasWindow {
+				baseMessage = formatOverdueMessage("ended", timeDiff, taskName)
+			} else {
+				baseMessage = formatOverdueMessage("was due", timeDiff, taskName)
+			}
 		} else {
-			baseMessage = "Due: " + taskName
+			if hasWindow {
+				baseMessage = "Ended: " + taskName
+			} else {
+				baseMessage = "Due: " + taskName
+			}
 		}
 	}
 
@@ -1880,6 +1897,9 @@ func formatOverdueMessage(pastAction string, duration time.Duration, taskName st
 	timeStr := formatDuration(duration)
 	if pastAction == "was due" {
 		return fmt.Sprintf("Overdue: %s (%s %s ago)", taskName, pastAction, timeStr)
+	}
+	if pastAction == "ended" {
+		return fmt.Sprintf("Ended: %s (%s ago)", taskName, timeStr)
 	}
 	return fmt.Sprintf("Task %s %s ago: %s", pastAction, timeStr, taskName)
 }

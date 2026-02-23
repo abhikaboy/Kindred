@@ -39,7 +39,7 @@ export const GoogleCalendarCard: React.FC<GoogleCalendarCardProps> = ({
                                 </ThemedText>
                             )}
                             {isLinked && !setupPending && (
-                                <ThemedText type="caption" style={styles.subtitle}>
+                                <ThemedText type="caption" style={[styles.subtitle, { color: ThemedColor.primary }]}>
                                     Linked
                                 </ThemedText>
                             )}
@@ -108,7 +108,6 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 12,
-        opacity: 0.5,
     },
     rightSection: {
         flexDirection: "row",

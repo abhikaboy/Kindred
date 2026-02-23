@@ -308,7 +308,7 @@ func (s *Service) ListCalendarsForConnection(ctx context.Context, connectionID, 
 }
 
 // SetupWorkspacesForConnection creates workspaces and categories for selected calendars
-func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID, userID primitive.ObjectID, calendarIDs []string, mergeIntoOne bool) error {
+func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID, userID primitive.ObjectID, calendarIDs []string, mergeIntoOne bool, makePublic bool) error {
 	slog.Info("Setting up workspaces for connection", "connection_id", connectionID, "user_id", userID, "calendar_count", len(calendarIDs), "merge_into_one", mergeIntoOne)
 
 	var connection CalendarConnection
@@ -397,7 +397,7 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 	slog.Info("Workspace setup complete", "connection_id", connectionID, "calendars_requested", len(calendarIDs))
 
 	_, err = s.connections.UpdateOne(ctx, bson.M{"_id": connectionID, "user_id": userID}, bson.M{
-		"$set": bson.M{"setup_complete": true, "updated_at": time.Now()},
+		"$set": bson.M{"setup_complete": true, "make_public": makePublic, "updated_at": time.Now()},
 	})
 	if err != nil {
 		slog.Error("Failed to mark calendar connection setup complete", "connection_id", connectionID, "error", err)
@@ -661,7 +661,7 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 
 		for _, event := range calEvents {
 			// Convert event to task params
-			taskParams := ConvertEventToTaskParams(event, userID, category.ID)
+			taskParams := ConvertEventToTaskParams(event, userID, category.ID, connection.MakePublic)
 
 			// Check if this event has already been processed using the dedicated collection
 			// We need to check if the event_id exists in the event_ids array

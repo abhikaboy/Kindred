@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, FlatList, Switch, ActivityIndicator } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Switch, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { getConnectionCalendars, setupCalendarWorkspaces, CalendarInfo } from "@/api/calendar";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
 interface Props {
     visible: boolean;
@@ -23,9 +25,11 @@ export default function CalendarSetupBottomSheet({
     onCancel,
 }: Props) {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const [calendars, setCalendars] = useState<CalendarInfo[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [mergeIntoOne, setMergeIntoOne] = useState(true);
+    const [mergeIntoOne, setMergeIntoOne] = useState(false);
+    const [makePublic, setMakePublic] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [creating, setCreating] = useState(false);
 
@@ -57,7 +61,7 @@ export default function CalendarSetupBottomSheet({
         if (selectedIds.length === 0 || creating) return;
         setCreating(true);
         try {
-            await setupCalendarWorkspaces(connectionId, selectedIds, mergeIntoOne);
+            await setupCalendarWorkspaces(connectionId, selectedIds, mergeIntoOne, makePublic);
             onComplete();
         } catch (err) {
             console.error("Failed to set up workspaces:", err);
@@ -78,7 +82,7 @@ export default function CalendarSetupBottomSheet({
             <TouchableOpacity
                 style={[
                     styles.calendarItem,
-                    { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary },
+                    { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary, height: "auto"},
                 ]}
                 onPress={() => toggleCalendar(itemId)}
                 activeOpacity={0.7}>
@@ -86,7 +90,7 @@ export default function CalendarSetupBottomSheet({
                     <View style={styles.calendarInfo}>
                         <ThemedText type="default">{item.name}</ThemedText>
                         {item.is_primary && (
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
                                 Primary
                             </ThemedText>
                         )}
@@ -107,10 +111,16 @@ export default function CalendarSetupBottomSheet({
         );
     };
 
-    const buttonTitle = mergeIntoOne ? "Create Workspace" : "Create Workspaces";
+    const splitIntoWorkspaces = !mergeIntoOne;
+    const buttonTitle = splitIntoWorkspaces ? "Create Workspaces" : "Create Workspace";
 
     return (
-        <DefaultModal visible={visible} setVisible={handleCancel} snapPoints={["80%"]}>
+        <DefaultModal
+            visible={visible}
+            setVisible={handleCancel}
+            snapPoints={["100%"]}
+            enableContentPanningGesture={false}
+        >
             <View style={styles.container}>
                 <ThemedText type="subtitle" style={styles.title}>
                     Set Up Calendar
@@ -124,48 +134,80 @@ export default function CalendarSetupBottomSheet({
                         <ActivityIndicator size="large" color={ThemedColor.primary} />
                     </View>
                 ) : (
-                    <>
-                        <FlatList
-                            data={calendars}
-                            renderItem={renderCalendarItem}
-                            keyExtractor={(item) => item.id || (item as any).ID}
+                    <View style={{ flex: 1 }}>
+                        <BottomSheetScrollView
+                            style={styles.scroll}
                             contentContainerStyle={styles.list}
-                            showsVerticalScrollIndicator={false}
-                        />
+                            showsVerticalScrollIndicator={true}
+                            keyboardShouldPersistTaps="handled"
+                        >
+                            {calendars.map((item) => (
+                                <View key={item.id || (item as any).ID}>
+                                    {renderCalendarItem({ item } as any)}
+                                </View>
+                            ))}
+                        </BottomSheetScrollView>
 
-                        <View style={[styles.toggleRow, { borderTopColor: ThemedColor.tertiary }]}>
-                            <View style={styles.toggleLabel}>
-                                <ThemedText type="default">One workspace for all</ThemedText>
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                    {mergeIntoOne
-                                        ? "All calendars share one workspace"
-                                        : "Each calendar gets its own workspace"}
-                                </ThemedText>
+                        <View
+                            style={[
+                                styles.stickyFooter,
+                                {
+                                    backgroundColor: ThemedColor.background,
+                                    borderTopColor: ThemedColor.tertiary,
+                                    paddingBottom: insets.bottom || 16,
+                                },
+                            ]}>
+                            <View style={styles.toggleRow}>
+                                <View style={styles.toggleLabel}>
+                                    <ThemedText type="default">Split into workspaces</ThemedText>
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        {splitIntoWorkspaces
+                                            ? "Each calendar gets its own workspace"
+                                            : "All calendars share one workspace"}
+                                    </ThemedText>
+                                </View>
+                                <Switch
+                                    value={splitIntoWorkspaces}
+                                    onValueChange={(value) => setMergeIntoOne(!value)}
+                                    trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
+                                    thumbColor="#ffffff"
+                                    ios_backgroundColor={ThemedColor.tertiary}
+                                />
                             </View>
-                            <Switch
-                                value={mergeIntoOne}
-                                onValueChange={setMergeIntoOne}
-                                trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                                thumbColor="#ffffff"
-                                ios_backgroundColor={ThemedColor.tertiary}
-                            />
-                        </View>
+                            <View style={styles.toggleRow}>
+                                <View style={styles.toggleLabel}>
+                                    <ThemedText type="default">Public events</ThemedText>
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        {makePublic
+                                            ? "Imported events visible to friends"
+                                            : "Imported events kept private"}
+                                    </ThemedText>
+                                </View>
+                                <Switch
+                                    value={makePublic}
+                                    onValueChange={setMakePublic}
+                                    trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
+                                    thumbColor="#ffffff"
+                                    ios_backgroundColor={ThemedColor.tertiary}
+                                />
+                            </View>
 
-                        <View style={styles.buttonContainer}>
-                            <PrimaryButton
-                                title="Cancel"
-                                onPress={handleCancel}
-                                outline
-                                style={styles.button}
-                            />
-                            <PrimaryButton
-                                title={buttonTitle}
-                                onPress={handleCreate}
-                                disabled={selectedIds.length === 0 || creating}
-                                style={styles.button}
-                            />
+                            <View style={styles.buttonContainer}>
+                                <PrimaryButton
+                                    title="Cancel"
+                                    onPress={handleCancel}
+                                    outline
+                                    style={styles.button}
+                                />
+                                <PrimaryButton
+                                    title={buttonTitle}
+                                    onPress={handleCreate}
+                                    disabled={selectedIds.length === 0 || creating}
+                                    style={styles.button}
+                                />
+                            </View>
                         </View>
-                    </>
+                    </View>
                 )}
             </View>
         </DefaultModal>
@@ -176,6 +218,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingTop: 8,
+        paddingBottom: 0,
     },
     title: {
         marginBottom: 8,
@@ -184,14 +227,16 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     loadingContainer: {
-        flex: 1,
         alignItems: "center",
         justifyContent: "center",
         paddingVertical: 40,
     },
     list: {
         gap: 12,
-        paddingBottom: 16,
+        flexGrow: 1,
+    },
+    scroll: {
+        flex: 1,
     },
     calendarItem: {
         padding: 16,
@@ -204,7 +249,6 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     calendarInfo: {
-        flex: 1,
         gap: 2,
     },
     checkbox: {
@@ -219,9 +263,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingVertical: 16,
-        borderTopWidth: StyleSheet.hairlineWidth,
-        marginBottom: 4,
+        paddingVertical: 12,
     },
     toggleLabel: {
         flex: 1,
@@ -229,11 +271,17 @@ const styles = StyleSheet.create({
         marginRight: 16,
     },
     buttonContainer: {
-        flexDirection: "row",
+        flexDirection: "column",
         gap: 12,
-        paddingTop: 12,
+        paddingTop: 8,
     },
     button: {
-        flex: 1,
+        alignSelf: "stretch",
+    },
+    stickyFooter: {
+        borderTopWidth: StyleSheet.hairlineWidth,
+        paddingTop: 16,
+    },
+    stickyFooterBase: {
     },
 });
