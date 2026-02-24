@@ -108,6 +108,10 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
             color: ThemedColor.primary,
             icon: "info",
         },
+        neutral: {
+            color: ThemedColor.caption,
+            icon: "info",
+        },
     };
 
     const styles = StyleSheet.create({

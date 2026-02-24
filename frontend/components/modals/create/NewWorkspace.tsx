@@ -44,13 +44,13 @@ const NewWorkspace = ({ hide }: Props) => {
         <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={hide}>
-                    <Feather name="arrow-left" size={24} color={ThemedColor.text} />
+                    <Feather name="arrow-left" size={20} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="subtitle" style={styles.title}>
                     New Workspace
                 </ThemedText>
             </View>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 16 }}>
                 <ThemedInput
                     useBottomSheetInput={true}
                     autofocus
@@ -81,7 +81,7 @@ export default NewWorkspace;
 
 const styles = StyleSheet.create({
     container: {
-        gap: 24,
+        gap: 12,
         display: "flex",
         flexDirection: "column",
         marginTop: 16,

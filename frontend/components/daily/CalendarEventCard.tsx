@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import Animated, { useAnimatedStyle, SharedValue } from "react-native-reanimated";
-import { router } from "expo-router";
+import Animated, { useAnimatedStyle, useAnimatedReaction, runOnJS, SharedValue } from "react-native-reanimated";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getCategoryDuotoneColors } from "@/utils/categoryColors";
@@ -15,6 +14,8 @@ interface CalendarEventCardProps {
     leftPercent: number;
     onLongPress: (task: any) => void;
 }
+
+type SizeCategory = "xs" | "sm" | "normal";
 
 // Helper function to format time
 const formatTime = (date: Date): string => {
@@ -36,6 +37,27 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
     onLongPress,
 }) => {
     const ThemedColor = useThemeColor();
+
+    const [sizeCategory, setSizeCategory] = useState<SizeCategory>(() => {
+        const h = durationHours * hourHeightShared.value;
+        if (h < 24) return "xs";
+        if (h < 44) return "sm";
+        return "normal";
+    });
+
+    useAnimatedReaction(
+        () => {
+            const h = durationHours * hourHeightShared.value;
+            if (h < 24) return "xs" as SizeCategory;
+            if (h < 44) return "sm" as SizeCategory;
+            return "normal" as SizeCategory;
+        },
+        (current, previous) => {
+            if (current !== previous) {
+                runOnJS(setSizeCategory)(current);
+            }
+        }
+    );
 
     const taskStyle = useAnimatedStyle(() => {
         const currentHourHeight = hourHeightShared.value;
@@ -72,11 +94,11 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
         }
     }
 
-    const timeDisplay = startTime && endTime
+    const fullTimeDisplay = startTime && endTime
         ? `${formatTime(startTime)} - ${formatTime(endTime)}`
-        : startTime
-        ? formatTime(startTime)
-        : '';
+        : startTime ? formatTime(startTime) : '';
+
+    const shortTimeDisplay = startTime ? formatTime(startTime) : '';
 
     const containerStyle = {
         position: "absolute" as const,
@@ -86,12 +108,13 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
 
     const contentStyle = [
         styles.content,
-        isDeadline ? { borderColor: ThemedColor.error, backgroundColor: ThemedColor.error } : {
-            backgroundColor: categoryColors.light,
-            borderLeftWidth: 6,
-            borderLeftColor: categoryColors.dark,
-        }
+        isDeadline
+            ? { borderColor: ThemedColor.error, backgroundColor: ThemedColor.error }
+            : { backgroundColor: categoryColors.light, borderLeftWidth: 6, borderLeftColor: categoryColors.dark },
     ];
+
+    const textColor = isDeadline ? ThemedColor.background : categoryColors.dark;
+    const taskLabel = isDeadline ? `${task.content} [Deadline]` : task.content;
 
     return (
         <Animated.View style={[taskStyle, containerStyle]}>
@@ -101,30 +124,33 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
                 onPress={() => onLongPress(task)}
                 onLongPress={() => onLongPress(task)}>
                 <View style={contentStyle}>
-                    {timeDisplay && (
-                        <ThemedText type="caption" style={[
-                            styles.timeText,
-                            !isDeadline && { color: categoryColors.dark }
-                        ]}>
-                            {timeDisplay}
-                        </ThemedText>
+                    {sizeCategory === "normal" && (
+                        <>
+                            {fullTimeDisplay !== '' && (
+                                <ThemedText style={[styles.timeText, { color: textColor, fontSize: 10 }]} numberOfLines={1}>
+                                    {fullTimeDisplay}
+                                </ThemedText>
+                            )}
+                            <ThemedText style={[styles.titleText, { color: textColor, fontSize: 13 }]} numberOfLines={1}>
+                                {taskLabel}
+                            </ThemedText>
+                        </>
                     )}
-                    <ThemedText type="defaultSemiBold" style={[
-                        styles.titleText,
-                        isDeadline && { color: ThemedColor.background },
-                        !isDeadline && { color: categoryColors.dark }
-                    ]}>
-                        {isDeadline ? `${task.content} [Deadline]` : task.content}
-                    </ThemedText>
-                    {(task.categoryName || task.workspaceName) && (
-                        <ThemedText type="caption" style={[
-                            styles.metaText,
-                            !isDeadline && { color: categoryColors.dark }
-                        ]}>
-                            {task.workspaceName && task.categoryName
-                                ? `${task.workspaceName} • ${task.categoryName}`
-                                : task.categoryName || task.workspaceName
-                            }
+                    {sizeCategory === "sm" && (
+                        <View style={styles.rowLayout}>
+                            <ThemedText style={[styles.titleText, { color: textColor, fontSize: 11, flex: 1 }]} numberOfLines={1}>
+                                {taskLabel}
+                            </ThemedText>
+                            {fullTimeDisplay !== '' && (
+                                <ThemedText style={[styles.timeText, { color: textColor, fontSize: 10 }]} numberOfLines={1}>
+                                    {fullTimeDisplay}
+                                </ThemedText>
+                            )}
+                        </View>
+                    )}
+                    {sizeCategory === "xs" && (
+                        <ThemedText style={[styles.titleText, { color: textColor, fontSize: 11 }]} numberOfLines={1}>
+                            {taskLabel}
                         </ThemedText>
                     )}
                 </View>
@@ -162,21 +188,22 @@ const styles = StyleSheet.create({
         height: "100%",
         maxHeight: "100%",
         overflow: "hidden",
-        paddingHorizontal: 12,
-        paddingVertical: 2,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
         borderRadius: 12,
         justifyContent: "center",
     },
+    rowLayout: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
     timeText: {
-        fontSize: 10,
-        fontWeight: '700',
+        fontFamily: "Outfit",
+        fontWeight: "500",
     },
     titleText: {
-        fontSize: 14,
-    },
-    metaText: {
-        fontSize: 9,
-        opacity: 0.85,
-        fontWeight: '500',
+        fontFamily: "Outfit",
+        fontWeight: "600",
     },
 });

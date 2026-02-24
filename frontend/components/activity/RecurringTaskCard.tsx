@@ -35,17 +35,19 @@ export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
 }) => {
     const ThemedColor = useThemeColor();
 
-    // Calculate activity for the week (last 7 days of the month)
+    // Calculate activity for the last 7 days relative to today (or end of month for past months)
     const daysInMonth = new Date(year, month, 0).getDate();
     const weekDays = 7;
+    const today = new Date();
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+    const endDay = isCurrentMonth ? today.getDate() : daysInMonth;
+    const startDay = Math.max(1, endDay - weekDays + 1);
 
     // Get completion status for each day in the week
     const getWeekActivity = () => {
         const activity: boolean[] = [];
-        const startDay = Math.max(1, daysInMonth - weekDays + 1);
 
-        for (let day = startDay; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        for (let day = startDay; day <= endDay; day++) {
             const hasCompletion = completionDates.some(date => {
                 const d = new Date(date);
                 return d.getFullYear() === year &&
@@ -67,10 +69,7 @@ export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
     }).length;
 
     const getDayLabel = (index: number) => {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const startDay = Math.max(1, daysInMonth - weekDays + 1);
-        const day = startDay + index;
-        return day;
+        return startDay + index;
     };
 
     return (

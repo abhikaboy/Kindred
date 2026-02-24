@@ -455,7 +455,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                                     const startTime = new Date(task.startTime);
                                                     const endTime = new Date(task.deadline);
                                                     const durationMs = endTime.getTime() - startTime.getTime();
-                                                    durationHours = Math.max(0.5, Math.min(8, durationMs / (1000 * 60 * 60)));
+                                                    durationHours = Math.min(8, durationMs / (1000 * 60 * 60));
                                                     minuteOffset = startTime.getMinutes();
                                                 } else if (task.startTime) {
                                                     const startTime = new Date(task.startTime);

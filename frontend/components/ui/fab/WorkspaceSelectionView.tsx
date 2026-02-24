@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { Animated, View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from "react-native";
 import { ArrowLeft } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -14,6 +14,7 @@ interface Workspace {
 interface WorkspaceSelectionViewProps {
     workspaces: Workspace[];
     selectedWorkspace: string;
+    opacity: Animated.Value;
     onBackPress: () => void;
     onWorkspaceSelect: (workspaceName: string) => void;
     onLayout: (event: any) => void;
@@ -22,16 +23,18 @@ interface WorkspaceSelectionViewProps {
 export const WorkspaceSelectionView: React.FC<WorkspaceSelectionViewProps> = ({
     workspaces,
     selectedWorkspace,
+    opacity,
     onBackPress,
     onWorkspaceSelect,
     onLayout,
 }) => {
     const ThemedColor = useThemeColor();
     const filteredWorkspaces = workspaces.filter((workspace) => !workspace.isBlueprint);
+    const hasWorkspaces = filteredWorkspaces.length > 0;
 
     return (
-        <View
-            style={styles.menuSection}
+        <Animated.View
+            style={[styles.menuSection, { opacity }]}
             onLayout={onLayout}
         >
             <View style={styles.workspaceHeader}>
@@ -53,32 +56,43 @@ export const WorkspaceSelectionView: React.FC<WorkspaceSelectionViewProps> = ({
                 </View>
             </View>
 
-            <ScrollView
-                style={styles.workspaceList}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.workspaceListContent}
-            >
-                {filteredWorkspaces.map((workspace) => (
-                    <TouchableOpacity
-                        key={workspace.name}
-                        style={[
-                            styles.workspaceItem,
-                            {
-                                backgroundColor:
-                                    selectedWorkspace === workspace.name
-                                        ? ThemedColor.lightened
-                                        : "transparent",
-                                borderWidth: 1,
-                                borderColor: ThemedColor.lightened,
-                            },
-                        ]}
-                        onPress={() => onWorkspaceSelect(workspace.name)}
-                    >
-                        <ThemedText type="default">{workspace.name}</ThemedText>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
+            {hasWorkspaces ? (
+                <ScrollView
+                    style={styles.workspaceList}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.workspaceListContent}
+                >
+                    {filteredWorkspaces.map((workspace) => (
+                        <TouchableOpacity
+                            key={workspace.name}
+                            style={[
+                                styles.workspaceItem,
+                                {
+                                    backgroundColor:
+                                        selectedWorkspace === workspace.name
+                                            ? ThemedColor.lightened
+                                            : "transparent",
+                                    borderWidth: 1,
+                                    borderColor: ThemedColor.lightened,
+                                },
+                            ]}
+                            onPress={() => onWorkspaceSelect(workspace.name)}
+                        >
+                            <ThemedText type="default">{workspace.name}</ThemedText>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            ) : (
+                <View style={styles.emptyState}>
+                    <ThemedText type="default" style={styles.emptyText}>
+                        No workspaces yet
+                    </ThemedText>
+                    <ThemedText type="caption" style={styles.emptyCaption}>
+                        Create one to start organizing tasks
+                    </ThemedText>
+                </View>
+            )}
+        </Animated.View>
     );
 };
 
@@ -111,6 +125,17 @@ const styles = StyleSheet.create({
     },
     workspaceListContent: {
         paddingBottom: 8,
+    },
+    emptyState: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        gap: 6,
+    },
+    emptyText: {
+        opacity: 0.7,
+    },
+    emptyCaption: {
+        opacity: 0.6,
     },
     workspaceItem: {
         padding: 16,

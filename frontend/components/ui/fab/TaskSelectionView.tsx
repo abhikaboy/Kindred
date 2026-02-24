@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet, Animated } from "react-native";
-import { CheckCircle, Folder, Camera } from "phosphor-react-native";
+import { CheckCircle, Folder, Camera, Microphone } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
@@ -8,6 +8,7 @@ interface TaskSelectionViewProps {
     opacity: Animated.Value;
     onTaskPress: () => void;
     onSecondaryPress: () => void;
+    onVoiceInputPress: () => void;
     isOnFeedTab: boolean;
     onLayout: (event: any) => void;
 }
@@ -16,6 +17,7 @@ export const TaskSelectionView: React.FC<TaskSelectionViewProps> = ({
     opacity,
     onTaskPress,
     onSecondaryPress,
+    onVoiceInputPress,
     isOnFeedTab,
     onLayout,
 }) => {
@@ -71,6 +73,23 @@ export const TaskSelectionView: React.FC<TaskSelectionViewProps> = ({
                         </ThemedText>
                         <ThemedText type="caption">
                             {isOnFeedTab ? "Share a completed task" : "Create a new workspace"}
+                        </ThemedText>
+                    </View>
+                </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.menuItem}
+                onPress={onVoiceInputPress}
+            >
+                <View style={styles.menuItemContent}>
+                    <View style={[styles.iconContainer, { backgroundColor: ThemedColor.lightened }]}>
+                        <Microphone size={22} color={ThemedColor.primary} weight="bold" />
+                    </View>
+                    <View style={styles.menuItemText}>
+                        <ThemedText type="defaultSemiBold">Voice Input</ThemedText>
+                        <ThemedText type="caption">
+                            Capture tasks with your voice
                         </ThemedText>
                     </View>
                 </View>

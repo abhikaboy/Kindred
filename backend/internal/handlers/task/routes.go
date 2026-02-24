@@ -21,6 +21,8 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, geminiServic
 // RegisterTaskOperations registers all task operations with Huma
 func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterCreateTaskNaturalLanguageOperation(api, handler)
+	RegisterPreviewTaskNaturalLanguageOperation(api, handler)
+	RegisterConfirmTaskNaturalLanguageOperation(api, handler)
 	RegisterGetTasksByUserOperation(api, handler)
 	RegisterCreateTaskOperation(api, handler)
 	RegisterGetTasksOperation(api, handler)

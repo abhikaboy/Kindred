@@ -55,7 +55,7 @@ export const Category: React.FC<CategoryProps> = ({
                 ) : (
                     categoryNameText
                 )}
-                {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.primary} />}
+                {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.text} />}
             </TouchableOpacity>
             {tasks.map((task, index) => {
                 const isFirstTask = index === 0 && highlightFirstTask;

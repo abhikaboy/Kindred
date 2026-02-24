@@ -457,6 +457,23 @@ export interface NaturalLanguageTaskCreationResponse {
     message: string;
 }
 
+export interface NaturalLanguagePreviewCategory {
+    name: string;
+    workspaceName: string;
+    tasks: CreateTaskParams[];
+}
+
+export interface NaturalLanguagePreviewTaskPair {
+    categoryId: string;
+    categoryName?: string;
+    task: CreateTaskParams;
+}
+
+export interface NaturalLanguageTaskPreviewResponse {
+    categories: NaturalLanguagePreviewCategory[];
+    tasks: NaturalLanguagePreviewTaskPair[];
+}
+
 /**
  * Create tasks from natural language description using AI
  * API: Makes POST request to process natural language and create tasks/categories
@@ -498,4 +515,55 @@ export const createTasksFromNaturalLanguageAPI = async (
 
     // Return the response data
     return data as unknown as NaturalLanguageTaskCreationResponse;
+};
+
+/**
+ * Preview tasks from natural language description using AI (no creation).
+ */
+export const previewTasksFromNaturalLanguageAPI = async (
+    text: string
+): Promise<NaturalLanguageTaskPreviewResponse> => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const { data, error } = await (client.POST as any)("/v1/user/tasks/natural-language/preview", {
+        params: withAuthHeaders({}),
+        body: {
+            text,
+            timezone,
+        },
+    });
+
+    if (error) {
+        throw new Error(`Failed to preview tasks from natural language: ${JSON.stringify(error)}`);
+    }
+
+    if (!data) {
+        throw new Error("No response data from natural language preview");
+    }
+
+    const payload = (data as any)?.body ?? data;
+    return payload as NaturalLanguageTaskPreviewResponse;
+};
+
+/**
+ * Confirm and create tasks from a preview payload.
+ */
+export const confirmTasksFromNaturalLanguageAPI = async (
+    payload: NaturalLanguageTaskPreviewResponse
+): Promise<NaturalLanguageTaskCreationResponse> => {
+    const { data, error } = await (client.POST as any)("/v1/user/tasks/natural-language/confirm", {
+        params: withAuthHeaders({}),
+        body: payload,
+    });
+
+    if (error) {
+        throw new Error(`Failed to create tasks from preview: ${JSON.stringify(error)}`);
+    }
+
+    if (!data) {
+        throw new Error("No response data from natural language confirmation");
+    }
+
+    const payload = (data as any)?.body ?? data;
+    return payload as NaturalLanguageTaskCreationResponse;
 };

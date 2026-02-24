@@ -110,7 +110,44 @@ const TaskCard = ({
 
         const now = new Date();
 
-        // Priority 1: Show deadline if it exists
+        // Priority 1: If task has both startTime and deadline, decide based on whether
+        // we're before or after the start time
+        if (task?.startTime && task?.deadline) {
+            try {
+                const startDate = parseISO(task.startTime);
+                const deadlineDate = parseISO(task.deadline);
+
+                if (isBefore(now, startDate)) {
+                    // Still before the start — show when it starts
+                    const duration = formatDistanceToNow(startDate, { addSuffix: true });
+                    return {
+                        text: `(starts ${duration})`,
+                        color: 'caption' as const
+                    };
+                } else {
+                    // Start has passed — focus on the deadline
+                    const isOverdue = isAfter(now, deadlineDate);
+                    if (isOverdue) {
+                        const duration = formatDistanceToNow(deadlineDate, { addSuffix: false });
+                        return {
+                            text: `Due ${duration} ago`,
+                            color: 'error' as const
+                        };
+                    } else {
+                        let text = formatDistanceToNow(deadlineDate, { addSuffix: true });
+                        text = text.replace(/^in /, 'due in ');
+                        return {
+                            text: `(${text})`,
+                            color: 'caption' as const
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing start/end time:", error);
+            }
+        }
+
+        // Priority 2: Show deadline if it exists (no startTime)
         if (task?.deadline) {
             try {
                 const deadlineDate = parseISO(task.deadline);
@@ -123,9 +160,7 @@ const TaskCard = ({
                         color: 'error' as const
                     };
                 } else {
-                    // Format: "due in X days"
                     let text = formatDistanceToNow(deadlineDate, { addSuffix: true });
-                    // Replace "in" with "due in"
                     text = text.replace(/^in /, 'due in ');
                     return {
                         text: `(${text})`,
@@ -138,7 +173,7 @@ const TaskCard = ({
             }
         }
 
-        // Priority 2: Show start date if it exists and no deadline
+        // Priority 3: Show start date if it exists and no deadline
         if (task?.startDate && !task?.deadline) {
             try {
                 const startDate = parseISO(task.startDate);
@@ -154,14 +189,12 @@ const TaskCard = ({
                         color: 'caption' as const
                     };
                 } else if (isAfter(now, startDate)) {
-                    // Start date was in the past
                     const duration = formatDistanceToNow(startDate, { addSuffix: false });
                     return {
                         text: `(${duration} ago)`,
                         color: 'caption' as const
                     };
                 } else {
-                    // Start date is in the future
                     const duration = formatDistanceToNow(startDate, { addSuffix: true });
                     return {
                         text: `(${duration})`,
@@ -175,7 +208,7 @@ const TaskCard = ({
         }
 
         return null;
-    }, [task?.deadline, task?.startDate, detailed]);
+    }, [task?.deadline, task?.startDate, task?.startTime, detailed]);
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {

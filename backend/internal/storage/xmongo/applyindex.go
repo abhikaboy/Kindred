@@ -2,6 +2,7 @@ package xmongo
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,7 +34,7 @@ func (db *DB) ApplySearchIndex(ctx context.Context, name string, model mongo.Sea
 	_, err := db.DB.Collection(name).SearchIndexes().CreateOne(context.Background(), model)
 
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to apply search index to collection '%s' in '%s': %w", name, db.DB.Name(), err)
 	}
 
 	return nil

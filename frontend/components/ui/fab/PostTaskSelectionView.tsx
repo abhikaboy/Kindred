@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { Animated, View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from "react-native";
 import { ArrowLeft, Camera } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -10,6 +10,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 interface PostTaskSelectionViewProps {
     completedTasks: Task[];
     loading: boolean;
+    opacity: Animated.Value;
     onBackPress: () => void;
     onTaskSelect: (task: Task) => void;
     onLayout: (event: any) => void;
@@ -18,6 +19,7 @@ interface PostTaskSelectionViewProps {
 export const PostTaskSelectionView: React.FC<PostTaskSelectionViewProps> = ({
     completedTasks,
     loading,
+    opacity,
     onBackPress,
     onTaskSelect,
     onLayout,
@@ -25,8 +27,8 @@ export const PostTaskSelectionView: React.FC<PostTaskSelectionViewProps> = ({
     const ThemedColor = useThemeColor();
 
     return (
-        <View
-            style={styles.menuSection}
+        <Animated.View
+            style={[styles.menuSection, { opacity }]}
             onLayout={onLayout}
         >
             <View style={styles.header}>
@@ -92,7 +94,7 @@ export const PostTaskSelectionView: React.FC<PostTaskSelectionViewProps> = ({
                     ))
                 )}
             </ScrollView>
-        </View>
+        </Animated.View>
     );
 };
 

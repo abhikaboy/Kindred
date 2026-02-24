@@ -36,17 +36,22 @@ type Props = {
     editing: boolean;
     setEditing: (editing: boolean) => void;
     id: string; // This is the workspace name
+    actionRequest?: "sort" | "filter" | "group" | null;
+    onActionHandled?: () => void;
+    skipMenu?: boolean;
 };
 
 const EditWorkspace = (props: Props) => {
-    const { editing, setEditing, id } = props;
+    const { editing, setEditing, id, actionRequest = null, onActionHandled, skipMenu = false } = props;
     const { removeWorkspace, getWorkspace, restoreWorkspace, workspaces } = useTasks();
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showReorderModal, setShowReorderModal] = useState(false);
     const [showSortModal, setShowSortModal] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState<"sort" | "filter" | null>(null);
     const [isPublic, setIsPublic] = useState(true);
+    const [groupByDay, setGroupByDay] = useState(false);
     const ThemedColor = useThemeColor();
 
     // Get the categories for the current workspace
@@ -79,6 +84,38 @@ const EditWorkspace = (props: Props) => {
         };
         loadVisibility();
     }, [id]);
+
+    React.useEffect(() => {
+        const loadGroupBy = async () => {
+            try {
+                const stored = await AsyncStorage.getItem(`workspace-group-${id}`);
+                setGroupByDay(stored === "day");
+            } catch (error) {
+                console.error("Error loading workspace grouping:", error);
+            }
+        };
+        loadGroupBy();
+    }, [id]);
+
+    React.useEffect(() => {
+        if (!actionRequest) return;
+
+        if (actionRequest === "sort") {
+            setShowSortModal(true);
+            sortSheetRef.current?.present();
+        }
+
+        if (actionRequest === "filter") {
+            setShowFilterModal(true);
+            filterSheetRef.current?.present();
+        }
+
+        if (actionRequest === "group") {
+            handleGroupByDayClick();
+        }
+
+        onActionHandled?.();
+    }, [actionRequest, onActionHandled]);
 
     const handleDeleteWorkspace = async () => {
         // Store the workspace data for potential rollback
@@ -143,15 +180,13 @@ const EditWorkspace = (props: Props) => {
     };
 
     const handleSortClick = () => {
-        setShowSortModal(true);
+        setPendingAction("sort");
         setEditing(false);
-        sortSheetRef.current?.present();
     };
 
     const handleFilterClick = () => {
-        setShowFilterModal(true);
+        setPendingAction("filter");
         setEditing(false);
-        filterSheetRef.current?.present();
     };
 
     const handleVisibilityClick = async () => {
@@ -161,6 +196,16 @@ const EditWorkspace = (props: Props) => {
             await AsyncStorage.setItem(`workspace-visibility-${id}`, newValue ? "public" : "private");
         } catch (error) {
             console.error("Error saving workspace visibility:", error);
+        }
+    };
+
+    const handleGroupByDayClick = async () => {
+        const newValue = !groupByDay;
+        setGroupByDay(newValue);
+        try {
+            await AsyncStorage.setItem(`workspace-group-${id}`, newValue ? "day" : "none");
+        } catch (error) {
+            console.error("Error saving workspace grouping:", error);
         }
     };
 
@@ -270,6 +315,12 @@ const EditWorkspace = (props: Props) => {
             labelHighlight: activeFilterCount > 0 ? `${activeFilterCount} active` : undefined,
         },
         {
+            label: groupByDay ? "Group by Day • On" : "Group by Day",
+            icon: "calendar",
+            callback: handleGroupByDayClick,
+            labelHighlight: groupByDay ? "On" : undefined,
+        },
+        {
             label: `Visibility (${isPublic ? "Public" : "Private"})`,
             icon: isPublic ? "eye" : "eye-off",
             callback: handleVisibilityClick,
@@ -281,8 +332,21 @@ const EditWorkspace = (props: Props) => {
         <>
             <BottomMenuModal
                 id={{ id: "", category: id }}
-                visible={editing}
+                visible={editing && !skipMenu}
                 setVisible={setEditing}
+                onDismiss={() => {
+                    if (pendingAction === "sort") {
+                        setShowSortModal(true);
+                        setTimeout(() => sortSheetRef.current?.present(), 60);
+                    }
+                    if (pendingAction === "filter") {
+                        setShowFilterModal(true);
+                        setTimeout(() => filterSheetRef.current?.present(), 60);
+                    }
+                    if (pendingAction) {
+                        setPendingAction(null);
+                    }
+                }}
                 options={options}
             />
 
@@ -401,7 +465,7 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
                 categories: reorderedCategories,
             };
             setWorkSpaces(workspacesCopy);
-            
+
             // ✅ CRITICAL FIX: Invalidate cache after reordering
             try {
                 await AsyncStorage.removeItem(`workspaces_cache_${workspacesCopy[0]?.categories[0]?.tasks[0]?.userID || 'default'}`);
@@ -558,7 +622,7 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
 
             workspacesCopy[workspaceIndex].categories = sortedCategories;
             setWorkSpaces(workspacesCopy);
-            
+
             // ✅ CRITICAL FIX: Invalidate cache after sorting
             try {
                 await AsyncStorage.removeItem(`workspaces_cache_${workspacesCopy[0]?.categories[0]?.tasks[0]?.userID || 'default'}`);

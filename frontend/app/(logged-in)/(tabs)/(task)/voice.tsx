@@ -8,9 +8,10 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import {
+    ENABLE_SPEECH_RECOGNITION,
     ExpoSpeechRecognitionModule,
     useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
+} from "@/utils/speechRecognition";
 import { createTasksFromNaturalLanguageAPI } from "@/api/task";
 import { getUserCredits, UserCredits } from "@/api/profile";
 import { useTasks } from "@/contexts/tasksContext";
@@ -69,6 +70,10 @@ const VoiceDump = (props: Props) => {
     });
 
     const handleMicrophonePress = async () => {
+        if (!ENABLE_SPEECH_RECOGNITION || !ExpoSpeechRecognitionModule) {
+            setError("Speech recognition is disabled in this build.");
+            return;
+        }
         if (recognizing) {
             // Stop recording
             ExpoSpeechRecognitionModule.stop();
@@ -97,7 +102,7 @@ const VoiceDump = (props: Props) => {
     const handleGenerateTasks = async () => {
         // Clear any previous errors
         setError(null);
-        
+
         // Validate input
         if (transcription.trim().length < 4) {
             setError("Please provide at least 4 characters of speech");
@@ -108,10 +113,10 @@ const VoiceDump = (props: Props) => {
 
         try {
             const result = await createTasksFromNaturalLanguageAPI(transcription.trim());
-            
+
             // Invalidate cache and trigger workspace refetch to get new tasks/categories
             fetchWorkspaces(true);
-            
+
             // Refetch credits to update the count
             try {
                 const updatedCredits = await getUserCredits();
@@ -119,10 +124,10 @@ const VoiceDump = (props: Props) => {
             } catch (error) {
                 console.error("Failed to refetch credits:", error);
             }
-            
+
             // Clear the transcription
             setTranscription("");
-            
+
             // Navigate to preview screen with the task data
             router.push({
                 pathname: "/(logged-in)/(tabs)/(task)/preview" as any,
@@ -136,7 +141,7 @@ const VoiceDump = (props: Props) => {
         } catch (err) {
             // Handle different error types
             let errorMessage = "Failed to generate tasks. Please try again.";
-            
+
             if (err instanceof Error) {
                 // Extract meaningful error message
                 if (err.message.includes("Failed to create tasks from natural language")) {
@@ -147,7 +152,7 @@ const VoiceDump = (props: Props) => {
                     errorMessage = err.message;
                 }
             }
-            
+
             setError(errorMessage);
             console.error("Error generating tasks from voice:", err);
         } finally {
@@ -157,12 +162,12 @@ const VoiceDump = (props: Props) => {
 
     return (
         <ThemedView style={{ flex: 1 }}>
-            <ScrollView 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 style={styles.container}>
                 {/* Back Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={() => router.back()}
                     style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
@@ -185,8 +190,8 @@ const VoiceDump = (props: Props) => {
                             {transcription}
                         </ThemedText>
                     ) : (
-                        <ThemedText 
-                            type="default" 
+                        <ThemedText
+                            type="default"
                             style={[styles.transcriptionText, { color: ThemedColor.caption, fontStyle: "italic" }]}>
                             Your transcription will appear here...
                         </ThemedText>
@@ -198,23 +203,13 @@ const VoiceDump = (props: Props) => {
 
                 {/* Loading State */}
                 {isLoading && (
-                    <TaskGenerationLoading 
-                        message="Processing your speech with AI..." 
+                    <TaskGenerationLoading
+                        message="Processing your speech with AI..."
                         submessage="This may take a few moments"
                     />
                 )}
 
                 <View style={{ flex: 1, minHeight: 200 }} />
-
-                {transcription && !recognizing && !isLoading && (
-                    <View style={styles.generateButtonContainer}>
-                        <PrimaryButton
-                            title="Generate Tasks"
-                            onPress={handleGenerateTasks}
-                            disabled={transcription.length < 4}
-                        />
-                    </View>
-                )}
 
                 {/* Credits Display */}
                 {credits !== null && (
@@ -226,16 +221,16 @@ const VoiceDump = (props: Props) => {
                             <ThemedText type="default" style={{ fontWeight: '600' }}>
                                 {credits.naturalLanguage}
                             </ThemedText>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={() => {
                                     console.log('Info icon pressed, opening sheet');
                                     setShowCreditsSheet(true);
                                 }}
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
-                                <Ionicons 
-                                    name="information-circle-outline" 
-                                    size={16} 
+                                <Ionicons
+                                    name="information-circle-outline"
+                                    size={16}
                                     color={ThemedColor.caption}
                                     style={{ marginLeft: 4 }}
                                 />
@@ -246,8 +241,8 @@ const VoiceDump = (props: Props) => {
 
                 {/* Microphone Button Section */}
                 <View style={styles.microphoneSection}>
-                    <ThemedText 
-                        type="default" 
+                    <ThemedText
+                        type="default"
                         style={[styles.tapToSpeakText, { color: ThemedColor.caption }]}>
                         {recognizing ? "Listening..." : "Tap to Speak"}
                     </ThemedText>
@@ -256,22 +251,41 @@ const VoiceDump = (props: Props) => {
                         activeOpacity={0.8}
                         style={[
                             styles.microphoneButton,
-                            { 
-                                backgroundColor: recognizing ? ThemedColor.error : ThemedColor.primary,
-                                transform: recognizing ? [{ scale: 1.1 }] : [{ scale: 1 }],
-                            }
+                            transcription && !recognizing
+                                ? {
+                                    backgroundColor: "transparent",
+                                    borderColor: ThemedColor.primary,
+                                    borderWidth: 2,
+                                    transform: [{ scale: 1 }],
+                                }
+                                : {
+                                    backgroundColor: recognizing ? ThemedColor.error : ThemedColor.primary,
+                                    borderColor: "transparent",
+                                    borderWidth: 0,
+                                    transform: recognizing ? [{ scale: 1.1 }] : [{ scale: 1 }],
+                                }
                         ]}>
-                        <Ionicons 
-                            name={recognizing ? "stop" : "mic"} 
-                            size={32} 
-                            color="#ffffff" 
+                        <Ionicons
+                            name={recognizing ? "stop" : "mic"}
+                            size={32}
+                            color="#ffffff"
                         />
                     </TouchableOpacity>
                 </View>
+
+                {transcription && !recognizing && !isLoading && (
+                    <View style={styles.generateButtonContainer}>
+                        <PrimaryButton
+                            title="Generate Tasks"
+                            onPress={handleGenerateTasks}
+                            disabled={transcription.length < 4}
+                        />
+                    </View>
+                )}
             </ScrollView>
 
             {/* Credits Info Sheet */}
-            <CreditsInfoSheet 
+            <CreditsInfoSheet
                 visible={showCreditsSheet}
                 onClose={() => {
                     console.log('Closing sheet');
@@ -331,14 +345,15 @@ const styles = StyleSheet.create({
         lineHeight: 24,
     },
     generateButtonContainer: {
-        paddingVertical: 16,
+        paddingVertical: 12,
         width: "100%",
     },
     microphoneSection: {
         alignItems: "center",
         justifyContent: "center",
-        gap: 24,
-        paddingVertical: 24,
+        gap: 16,
+        paddingTop: 8,
+        paddingBottom: 16,
     },
     tapToSpeakText: {
         fontSize: 16,
@@ -359,4 +374,3 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
 });
-

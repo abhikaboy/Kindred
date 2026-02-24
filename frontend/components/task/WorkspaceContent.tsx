@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,6 +8,8 @@ import EditWorkspace from "@/components/modals/edit/EditWorkspace";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Category } from "@/components/category";
+import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
+import { Task } from "@/api/types";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
@@ -21,6 +23,9 @@ import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { format, isToday, isTomorrow, parseISO } from "date-fns";
+import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 
 interface WorkspaceContentProps {
     workspaceName?: string; // Optional: if not provided, uses global selected
@@ -98,17 +103,49 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     spotlightLoading,
 }) => {
     const ThemedColor = useThemeColor();
-    const { categories, selected: globalSelected, showConfetti } = useTasks();
+    const { workspaces, categories: globalCategories, selected: globalSelected, showConfetti } = useTasks();
     // Use prop if provided, otherwise fall back to global selected
     const selected = workspaceName || globalSelected;
+    // When workspaceName prop is provided, derive categories directly from workspaces
+    // to avoid depending on the global categories state (which is tied to globalSelected).
+    const categories = workspaceName
+        ? (workspaces.find((ws) => ws.name === workspaceName)?.categories ?? globalCategories)
+        : globalCategories;
     const { applyFilters } = useWorkspaceFilters(selected);
-    const { getStateDescription } = useWorkspaceState(selected);
+    const { getStateDescription, state } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
+    const [workspaceAction, setWorkspaceAction] = useState<"sort" | "filter" | "group" | null>(null);
+    const reopenWorkspaceSettings = () => {
+        if (editingWorkspace) {
+            setEditingWorkspace(false);
+            setTimeout(() => setEditingWorkspace(true), 120);
+        } else {
+            setEditingWorkspace(true);
+        }
+    };
+    const requestWorkspaceAction = (action: "sort" | "filter") => {
+        setWorkspaceAction(action);
+        if (editingWorkspace) {
+            setEditingWorkspace(false);
+            setTimeout(() => setEditingWorkspace(true), 120);
+        } else {
+            setEditingWorkspace(true);
+        }
+    };
+
+    const toggleGroupByDay = async () => {
+        const newValue = !state.groupByDay;
+        try {
+            await AsyncStorage.setItem(`workspace-group-${selected}`, newValue ? "day" : "none");
+        } catch (error) {
+            console.error("Error saving workspace grouping:", error);
+        }
+    };
 
     const scrollViewRef = useRef<ScrollView>(null);
     const workspaceStep0Ref = useRef<View>(null);
@@ -181,6 +218,68 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         .sort((a, b) => b.tasks.length - a.tasks.length);
     const firstCategory = visibleCategories[0];
     const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
+    const groupByDay = state.groupByDay;
+
+    const groupedByDay = useMemo(() => {
+        if (!groupByDay) return [];
+
+        const groups = new Map<
+            string,
+            {
+                key: string;
+                label: string;
+                date: Date | null;
+                tasks: { task: Task; categoryId: string; categoryName: string }[];
+            }
+        >();
+
+        const getLabel = (date: Date) => {
+            if (isToday(date)) return "Today";
+            if (isTomorrow(date)) return "Tomorrow";
+            return format(date, "EEE, MMM d");
+        };
+
+        visibleCategories.forEach((category) => {
+            const filteredTasks = applyFilters(category.tasks);
+            filteredTasks.forEach((task) => {
+                const dateValue = task.startDate || task.deadline;
+                let key = "no-date";
+                let date: Date | null = null;
+                let label = "No Date";
+
+                if (dateValue) {
+                    try {
+                        const parsed = parseISO(dateValue);
+                        key = format(parsed, "yyyy-MM-dd");
+                        date = parsed;
+                        label = getLabel(parsed);
+                    } catch (error) {
+                        console.error("Error parsing task date for grouping:", error);
+                    }
+                }
+
+                if (!groups.has(key)) {
+                    groups.set(key, { key, label, date, tasks: [] });
+                }
+
+                groups.get(key)!.tasks.push({
+                    task,
+                    categoryId: category.id,
+                    categoryName: category.name,
+                });
+            });
+        });
+
+        const result = Array.from(groups.values());
+        result.sort((a, b) => {
+            if (!a.date && !b.date) return 0;
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return a.date.getTime() - b.date.getTime();
+        });
+
+        return result;
+    }, [applyFilters, groupByDay, visibleCategories]);
 
     return (
         <>
@@ -211,7 +310,14 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                 <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             )}
             {editingWorkspace && (
-                <EditWorkspace editing={editingWorkspace} setEditing={setEditingWorkspace} id={selected} />
+                <EditWorkspace
+                    editing={editingWorkspace}
+                    setEditing={setEditingWorkspace}
+                    id={selected}
+                    actionRequest={workspaceAction}
+                    onActionHandled={() => setWorkspaceAction(null)}
+                    skipMenu={workspaceAction !== null}
+                />
             )}
 
             <ThemedView style={{ flex: 1 }}>
@@ -233,28 +339,41 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <AttachStep index={0} style={{ width: "100%" }}>
+                                    <AttachStep index={0} style={{ width: "100%", alignItems: "flex-start" }}>
                                         <View
                                             ref={workspaceStep0Ref}
-                                            onLayout={(event) => {
-                                                const { y, height } = event.nativeEvent.layout;
-                                                workspaceLayoutRef.current = { y, height };
-                                            }}
                                         >
-                                            <SlidingText type="title" style={styles.title}>
+                                            <ThemedText type="title" style={styles.title}>
                                                 {selected || "Good Morning! ☀"}
-                                            </SlidingText>
+                                            </ThemedText>
                                         </View>
                                     </AttachStep>
-                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                                        <TouchableOpacity onPress={() => setEditingWorkspace(true)}>
+                                </View>
+                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                    <ThemedText type="lightBody" style={{ color: ThemedColor.caption, flex: 1 }}>
+                                        {getStateDescription()}
+                                    </ThemedText>
+                                    <View style={styles.quickActionsRow}>
+                                        <TouchableOpacity
+                                            onPress={() => requestWorkspaceAction("filter")}
+                                        >
+                                            <FunnelSimple size={20} color={state.filters !== null ? ThemedColor.primary : ThemedColor.caption} weight="regular" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => requestWorkspaceAction("sort")}
+                                        >
+                                            <SortAscending size={20} color={state.sort !== null ? ThemedColor.primary : ThemedColor.caption} weight="regular" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={toggleGroupByDay}
+                                        >
+                                            <CalendarBlank size={20} color={state.groupByDay ? ThemedColor.primary : ThemedColor.caption} weight="regular" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={reopenWorkspaceSettings}>
                                             <Gear size={24} color={ThemedColor.text} weight="regular" />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
-                                <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
-                                    {getStateDescription()}
-                                </ThemedText>
                             </View>
                         </ConditionalView>
                     </View>
@@ -276,45 +395,86 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                         </ConditionalView>
 
                         <ConditionalView condition={selected !== "" && !noCategories} animated={true} triggerDep={selected}>
-                            <View style={styles.categoriesContainer} key="category-container">
-                                {visibleCategories.map((category) => {
-                                        const isFirstCategory = firstCategory?.id === category.id;
-                                        const isFirstCategoryWithTasks = firstCategoryWithTasks?.id === category.id;
-                                        const filteredTasks = applyFilters(category.tasks);
+                            {groupByDay ? (
+                                <View style={styles.categoriesContainer} key="grouped-container">
+                                    {groupedByDay.length === 0 ? (
+                                        <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
+                                            <ThemedText type="lightBody">No tasks match your filters.</ThemedText>
+                                            <PrimaryButton title="+" onPress={() => openModal()} />
+                                        </View>
+                                    ) : (
+                                        groupedByDay.map((group) => (
+                                            <View key={group.key} style={styles.groupSection}>
+                                                <ThemedText type="subtitle">{group.label}</ThemedText>
+                                                <View style={{ gap: 12 }}>
+                                                    {group.tasks.map(({ task, categoryId, categoryName }) => (
+                                                        <SwipableTaskCard
+                                                            key={`${task.id}-${categoryId}`}
+                                                            redirect={true}
+                                                            categoryId={categoryId}
+                                                            categoryName={categoryName}
+                                                            task={task}
+                                                        />
+                                                    ))}
+                                                </View>
+                                            </View>
+                                        ))
+                                    )}
+                                    <TouchableOpacity
+                                        onPress={() => openModal()}
+                                        style={{
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "100%",
+                                            paddingVertical: 16,
+                                            borderRadius: 12,
+                                            backgroundColor: ThemedColor.lightenedCard,
+                                        }}
+                                    >
+                                        <Plus size={16} color={ThemedColor.text} />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <View style={styles.categoriesContainer} key="category-container">
+                                    {visibleCategories.map((category) => {
+                                            const isFirstCategory = firstCategory?.id === category.id;
+                                            const isFirstCategoryWithTasks = firstCategoryWithTasks?.id === category.id;
+                                            const filteredTasks = applyFilters(category.tasks);
 
-                                        return (
-                                            <Category
-                                                key={category.id + category.name}
-                                                id={category.id}
-                                                name={category.name}
-                                                tasks={filteredTasks}
-                                                onLongPress={(categoryId) => {
-                                                    setEditing(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                                onPress={(categoryId) => {
-                                                    setFocusedCategory(categoryId);
-                                                    openModal({ categoryId });
-                                                }}
-                                                highlightFirstTask={isFirstCategoryWithTasks}
-                                                highlightCategoryHeader={isFirstCategory}
-                                            />
-                                        );
-                                    })}
-                                <TouchableOpacity
-                                    onPress={() => openModal()}
-                                    style={{
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        width: "100%",
-                                        paddingVertical: 16,
-                                        borderRadius: 12,
-                                        backgroundColor: ThemedColor.lightenedCard,
-                                    }}
-                                >
-                                    <Plus size={16} color={ThemedColor.text} />
-                                </TouchableOpacity>
-                            </View>
+                                            return (
+                                                <Category
+                                                    key={category.id + category.name}
+                                                    id={category.id}
+                                                    name={category.name}
+                                                    tasks={filteredTasks}
+                                                    onLongPress={(categoryId) => {
+                                                        setEditing(true);
+                                                        setFocusedCategory(categoryId);
+                                                    }}
+                                                    onPress={(categoryId) => {
+                                                        setFocusedCategory(categoryId);
+                                                        openModal({ categoryId });
+                                                    }}
+                                                    highlightFirstTask={isFirstCategoryWithTasks}
+                                                    highlightCategoryHeader={isFirstCategory}
+                                                />
+                                            );
+                                        })}
+                                    <TouchableOpacity
+                                        onPress={() => openModal()}
+                                        style={{
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "100%",
+                                            paddingVertical: 16,
+                                            borderRadius: 12,
+                                            backgroundColor: ThemedColor.lightenedCard,
+                                        }}
+                                    >
+                                        <Plus size={16} color={ThemedColor.text} />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </ConditionalView>
                     </View>
                 </ScrollView>
@@ -327,15 +487,23 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
-        paddingRight: HORIZONTAL_PADDING,
+        // paddingRight: HORIZONTAL_PADDING,
     },
     title: {
         fontWeight: "600",
-        width: "100%",
     },
     categoriesContainer: {
         gap: 16,
         marginTop: 0,
+    },
+    groupSection: {
+        gap: 12,
+    },
+    quickActionsRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginLeft: 12,
     },
     addButton: {
         alignItems: "center",

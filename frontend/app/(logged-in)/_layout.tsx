@@ -146,9 +146,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             showToastable({
                 message: notification.request.content.body || "New notification",
                 title: notification.request.content.title || "Notification",
-                status: "info",
+                status: "neutral" as any,
                 duration: 3000,
-                render: (toast) => <DefaultToast toast={toast} />,
+                renderContent: (props) => <DefaultToast {...props} />,
                 onPress: () => {
                     const data = notification.request.content.data;
                     if (data?.url) {

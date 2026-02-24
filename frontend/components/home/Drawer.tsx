@@ -154,6 +154,15 @@ const DrawerContent = ({
         drawerLayoutsRef.current[key] = layout;
     };
 
+    const reopenWorkspaceSettings = useCallback(() => {
+        if (editing) {
+            setEditing(false);
+            setTimeout(() => setEditing(true), 120);
+        } else {
+            setEditing(true);
+        }
+    }, [editing, setEditing]);
+
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     const isOnScreen = (ref: React.RefObject<View>) =>
@@ -400,7 +409,7 @@ const DrawerContent = ({
                                         onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
                                         onLongPress={() => {
                                             setFocusedWorkspace(workspace.name);
-                                            setEditing(true);
+                                            reopenWorkspaceSettings();
                                         }}
                                         key={workspace.name}
                                         title={workspace.name}
@@ -432,10 +441,10 @@ const DrawerContent = ({
                             title={workspace.name}
                             selected={currentSelected}
                             onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
-                            onLongPress={() => {
-                                setFocusedWorkspace(workspace.name);
-                                setEditing(true);
-                            }}
+                        onLongPress={() => {
+                            setFocusedWorkspace(workspace.name);
+                            reopenWorkspaceSettings();
+                        }}
                             key={workspace.name}
                         />
                     ))}

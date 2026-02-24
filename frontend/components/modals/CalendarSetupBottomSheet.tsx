@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Switch, ActivityIndicator } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Switch, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
-import { getConnectionCalendars, setupCalendarWorkspaces, CalendarInfo } from "@/api/calendar";
+import { getConnectionCalendars, setupCalendarWorkspaces, disconnectCalendar, CalendarInfo } from "@/api/calendar";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
 interface Props {
@@ -26,6 +26,7 @@ export default function CalendarSetupBottomSheet({
 }: Props) {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
+    const { height: windowHeight } = useWindowDimensions();
     const [calendars, setCalendars] = useState<CalendarInfo[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [mergeIntoOne, setMergeIntoOne] = useState(false);
@@ -70,8 +71,13 @@ export default function CalendarSetupBottomSheet({
         }
     };
 
-    const handleCancel = () => {
+    const handleCancel = async () => {
         setVisible(false);
+        try {
+            await disconnectCalendar(connectionId);
+        } catch (err) {
+            console.error("Failed to remove pending calendar connection:", err);
+        }
         onCancel();
     };
 
@@ -118,7 +124,7 @@ export default function CalendarSetupBottomSheet({
         <DefaultModal
             visible={visible}
             setVisible={handleCancel}
-            snapPoints={["100%"]}
+            snapPoints={["90%"]}
             enableContentPanningGesture={false}
         >
             <View style={styles.container}>
@@ -136,7 +142,7 @@ export default function CalendarSetupBottomSheet({
                 ) : (
                     <View style={{ flex: 1 }}>
                         <BottomSheetScrollView
-                            style={styles.scroll}
+                            style={[styles.scroll, { maxHeight: windowHeight * 0.36 }]}
                             contentContainerStyle={styles.list}
                             showsVerticalScrollIndicator={true}
                             keyboardShouldPersistTaps="handled"
@@ -235,9 +241,7 @@ const styles = StyleSheet.create({
         gap: 12,
         flexGrow: 1,
     },
-    scroll: {
-        flex: 1,
-    },
+    scroll: {},
     calendarItem: {
         padding: 16,
         borderRadius: 12,

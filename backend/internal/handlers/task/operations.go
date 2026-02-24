@@ -615,6 +615,22 @@ type CreateTaskNaturalLanguageInput struct {
 	} `json:"body"`
 }
 
+// Preview Task from Natural Language (no creation)
+type PreviewTaskNaturalLanguageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Text     string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language description of tasks to preview" example:"Buy groceries tomorrow at 3pm, finish project report by Friday"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
+	} `json:"body"`
+}
+
+type PreviewTaskNaturalLanguageOutput struct {
+	Body struct {
+		Categories []NewCategoryWithTasksLocal `json:"categories" doc:"New categories and their tasks proposed by AI"`
+		Tasks      []CategoryTaskPairLocal     `json:"tasks" doc:"Tasks proposed for existing categories"`
+	}
+}
+
 // CategoryMetadata contains basic information about a category for the response
 type CategoryMetadata struct {
 	ID            string `json:"id" doc:"Category ID"`
@@ -641,4 +657,35 @@ func RegisterCreateTaskNaturalLanguageOperation(api huma.API, handler *Handler) 
 		Description: "Process natural language text to create multiple tasks and categories using AI",
 		Tags:        []string{"tasks", "ai"},
 	}, handler.CreateTaskNaturalLanguage)
+}
+
+// Confirm Task from Natural Language (create using preview payload)
+type ConfirmTaskNaturalLanguageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Categories []NewCategoryWithTasksLocal `json:"categories" doc:"New categories to create with their tasks"`
+		Tasks      []CategoryTaskPairLocal     `json:"tasks" doc:"Tasks to create in existing categories"`
+	} `json:"body"`
+}
+
+func RegisterPreviewTaskNaturalLanguageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "preview-task-natural-language",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language/preview",
+		Summary:     "Preview tasks from natural language",
+		Description: "Process natural language text and return a preview without creating tasks",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.PreviewTaskNaturalLanguage)
+}
+
+func RegisterConfirmTaskNaturalLanguageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "confirm-task-natural-language",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language/confirm",
+		Summary:     "Create tasks from preview payload",
+		Description: "Create tasks and categories using a previously generated preview payload",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.ConfirmTaskNaturalLanguage)
 }

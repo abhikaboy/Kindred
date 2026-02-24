@@ -1096,3 +1096,132 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 
 	return output, nil
 }
+
+// PreviewTaskNaturalLanguage processes natural language text with AI and returns a preview payload
+// without creating any tasks or consuming credits.
+func (h *Handler) PreviewTaskNaturalLanguage(ctx context.Context, input *PreviewTaskNaturalLanguageInput) (*PreviewTaskNaturalLanguageOutput, error) {
+	// Validate input
+	if input.Body.Text == "" {
+		return nil, huma.Error400BadRequest("Text field is required", nil)
+	}
+
+	// Extract and validate user ID
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Check credits without consuming
+	hasCredit, err := types.CheckCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to check credits", err)
+	}
+	if !hasCredit {
+		return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", types.ErrInsufficientCredits)
+	}
+
+	// Default to EST if no timezone provided
+	timezone := input.Body.Timezone
+	if timezone == "" {
+		timezone = "America/New_York"
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Starting natural language preview",
+		slog.String("userID", userID),
+		slog.String("inputText", input.Body.Text),
+		slog.String("timezone", timezone))
+
+	// Call Genkit flow to process natural language with retry logic (no credit consumption)
+	result, err := h.callGeminiFlow(ctx, userID, input.Body.Text, timezone)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini flow failed, retrying once",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+
+		// Retry once
+		result, err = h.callGeminiFlow(ctx, userID, input.Body.Text, timezone)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Failed to process natural language with AI after retry.", err)
+		}
+	}
+
+	output := &PreviewTaskNaturalLanguageOutput{}
+	output.Body.Categories = result.Categories
+	output.Body.Tasks = result.Tasks
+	return output, nil
+}
+
+// ConfirmTaskNaturalLanguage creates tasks from a preview payload, consuming credits.
+func (h *Handler) ConfirmTaskNaturalLanguage(ctx context.Context, input *ConfirmTaskNaturalLanguageInput) (*CreateTaskNaturalLanguageOutput, error) {
+	// Validate input
+	if len(input.Body.Categories) == 0 && len(input.Body.Tasks) == 0 {
+		return nil, huma.Error400BadRequest("Preview payload is required", nil)
+	}
+
+	// Extract and validate user ID
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	// Consume credit atomically
+	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	if err != nil {
+		if err == types.ErrInsufficientCredits {
+			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
+		}
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+	}
+
+	// Process new categories with their tasks
+	newCategoryTasks, newCategoryMetadata, categoriesCreated, newCategoryTaskCount, err := h.processNewCategories(ctx, input.Body.Categories, userObjID)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to process new categories",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError(err.Error(), err)
+	}
+
+	// Process tasks for existing categories
+	existingCategoryTasks, existingCategoryTaskCount, err := h.processExistingCategoryTasks(ctx, input.Body.Tasks, userObjID)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to process existing category tasks",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError(err.Error(), err)
+	}
+
+	// Combine all created tasks
+	allTasks := append(newCategoryTasks, existingCategoryTasks...)
+	totalTasks := newCategoryTaskCount + existingCategoryTaskCount
+
+	// Build response
+	output := &CreateTaskNaturalLanguageOutput{}
+	output.Body.CategoriesCreated = categoriesCreated
+	output.Body.NewCategories = newCategoryMetadata
+	output.Body.TasksCreated = totalTasks
+	output.Body.Tasks = allTasks
+
+	if totalTasks == 0 {
+		output.Body.Message = "No valid tasks could be created from the provided preview"
+	} else if categoriesCreated > 0 {
+		output.Body.Message = fmt.Sprintf("Successfully created %d tasks in %d new categories", totalTasks, categoriesCreated)
+	} else {
+		output.Body.Message = fmt.Sprintf("Successfully created %d tasks in existing categories", totalTasks)
+	}
+
+	return output, nil
+}

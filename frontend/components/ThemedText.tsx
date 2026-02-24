@@ -52,7 +52,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "hero" ? { fontSize: 48, fontWeight: "bold", color: ThemedColor.header } : undefined,
                 type === "lightBody" ? styles.lightBody : undefined,
                 type === "caption" ? styles.caption : undefined,
-                type === "captionLight" ? styles.captionLight : undefined, 
+                type === "captionLight" ? styles.captionLight : undefined,
                 type === "disabledTitle" ? styles.disabledTitle : undefined,
                 type === "smallerDefault" ? styles.smallerDefault : undefined,
                 type === "subtitle_subtle" ? styles.subtitle_subtle : undefined,
@@ -128,7 +128,7 @@ const useStyles = (ThemedColor: any, scale: number) =>
             // lineHeight: 36 * scale,
         },
         subtitle: {
-            fontSize: 20 * scale,
+            fontSize: 18 * scale,
             fontWeight: 500,
             fontFamily: "Outfit",
         },

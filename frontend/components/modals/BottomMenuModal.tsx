@@ -24,6 +24,7 @@ type Props = {
     setVisible: (visible: boolean) => void;
     edit?: boolean;
     options: BottomMenuOption[];
+    onDismiss?: () => void;
 };
 
 // Using memo to prevent unnecessary re-renders
@@ -57,9 +58,10 @@ const BottomMenuModal = memo((props: Props) => {
         (index: number) => {
             if (index === -1) {
                 props.setVisible(false);
+                props.onDismiss?.();
             }
         },
-        [props.setVisible]
+        [props.setVisible, props.onDismiss]
     );
 
     // Custom backdrop component

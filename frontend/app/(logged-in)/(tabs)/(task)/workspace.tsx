@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
-import React, { useRef, useState, useEffect, useMemo } from "react";
+import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTasks } from "@/contexts/tasksContext";
@@ -27,6 +27,7 @@ import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 
 type Props = {};
 
@@ -34,7 +35,7 @@ const Workspace = (props: Props) => {
     let ThemedColor = useThemeColor();
     const { categories, selected, showConfetti } = useTasks();
     const { applyFilters } = useWorkspaceFilters(selected);
-    const { getStateDescription } = useWorkspaceState(selected);
+    const { getStateDescription, state: workspaceState } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
     const { spotlightState, setSpotlightShown } = useSpotlight();
@@ -42,6 +43,24 @@ const Workspace = (props: Props) => {
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
+    const [workspaceAction, setWorkspaceAction] = useState<"sort" | "filter" | "group" | null>(null);
+    const reopenWorkspaceSettings = useCallback(() => {
+        if (editingWorkspace) {
+            setEditingWorkspace(false);
+            setTimeout(() => setEditingWorkspace(true), 120);
+        } else {
+            setEditingWorkspace(true);
+        }
+    }, [editingWorkspace]);
+    const requestWorkspaceAction = useCallback((action: "sort" | "filter" | "group") => {
+        setWorkspaceAction(action);
+        if (editingWorkspace) {
+            setEditingWorkspace(false);
+            setTimeout(() => setEditingWorkspace(true), 120);
+        } else {
+            setEditingWorkspace(true);
+        }
+    }, [editingWorkspace]);
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
 
     const drawerRef = useRef<DrawerLayout>(null);
@@ -123,6 +142,7 @@ const Workspace = (props: Props) => {
                 spotlightState={spotlightState}
                 applyFilters={applyFilters}
                 workspaceStateDescription={getStateDescription()}
+                workspaceState={workspaceState}
             />
         </SpotlightTourProvider>
     );
@@ -150,6 +170,7 @@ const WorkspaceContent = ({
     spotlightState,
     applyFilters,
     workspaceStateDescription,
+    workspaceState,
 }: any) => {
     const { start } = useSpotlightTour();
     const pathname = usePathname();
@@ -220,6 +241,8 @@ const WorkspaceContent = ({
                     editing={editingWorkspace}
                     setEditing={setEditingWorkspace}
                     id={selected}
+                    actionRequest={workspaceAction}
+                    onActionHandled={() => setWorkspaceAction(null)}
                 />
             )}
 
@@ -244,10 +267,30 @@ const WorkspaceContent = ({
                             {selected}
                         </SlidingText>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                            <TouchableOpacity onPress={() => setEditingWorkspace(true)}>
+                            <TouchableOpacity onPress={reopenWorkspaceSettings}>
                                 <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
                             </TouchableOpacity>
                         </View>
+                    </View>
+                    <View style={styles.quickActionsRow}>
+                        <TouchableOpacity
+                            onPress={() => requestWorkspaceAction("filter")}
+                            style={styles.quickActionButton}
+                        >
+                            <FunnelSimple size={12} color={workspaceState?.filters !== null ? ThemedColor.primary : ThemedColor.caption} weight={workspaceState?.filters !== null ? "fill" : "regular"} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => requestWorkspaceAction("sort")}
+                            style={styles.quickActionButton}
+                        >
+                            <SortAscending size={12} color={workspaceState?.sort !== null ? ThemedColor.primary : ThemedColor.caption} weight={workspaceState?.sort !== null ? "fill" : "regular"} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => requestWorkspaceAction("group")}
+                            style={styles.quickActionButton}
+                        >
+                            <CalendarBlank size={12} color={workspaceState?.groupByDay ? ThemedColor.primary : ThemedColor.caption} weight={workspaceState?.groupByDay ? "fill" : "regular"} />
+                        </TouchableOpacity>
                     </View>
                 </View>
             </ConditionalView>
@@ -283,7 +326,7 @@ const WorkspaceContent = ({
                                         </SlidingText>
                                     </AttachStep>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                                        <TouchableOpacity onPress={() => setEditingWorkspace(true)}>
+                                        <TouchableOpacity onPress={reopenWorkspaceSettings}>
                                             <Ionicons
                                                 name="settings-outline"
                                                 size={24}
@@ -292,9 +335,31 @@ const WorkspaceContent = ({
                                         </TouchableOpacity>
                                     </View>
                                 </View>
-                                <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
-                                    {workspaceStateDescription}
-                                </ThemedText>
+                                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                    <ThemedText type="lightBody" style={{ color: ThemedColor.caption, flex: 1 }}>
+                                        {workspaceStateDescription}
+                                    </ThemedText>
+                                    <View style={styles.quickActionsRow}>
+                                        <TouchableOpacity
+                                            onPress={() => requestWorkspaceAction("filter")}
+                                            style={styles.quickActionButton}
+                                        >
+                                            <FunnelSimple size={12} color={workspaceState?.filters !== null ? ThemedColor.primary : ThemedColor.caption} weight={workspaceState?.filters !== null ? "fill" : "regular"} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => requestWorkspaceAction("sort")}
+                                            style={styles.quickActionButton}
+                                        >
+                                            <SortAscending size={12} color={workspaceState?.sort !== null ? ThemedColor.primary : ThemedColor.caption} weight={workspaceState?.sort !== null ? "fill" : "regular"} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => requestWorkspaceAction("group")}
+                                            style={styles.quickActionButton}
+                                        >
+                                            <CalendarBlank size={12} color={workspaceState?.groupByDay ? ThemedColor.primary : ThemedColor.caption} weight={workspaceState?.groupByDay ? "fill" : "regular"} />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
                             </View>
                         </ConditionalView>
                     </View>
@@ -389,5 +454,15 @@ const styles = StyleSheet.create({
         width: "100%",
         paddingVertical: 12,
         borderRadius: 12,
+    },
+    quickActionsRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginLeft: 12,
+    },
+    quickActionButton: {
+        paddingVertical: 4,
+        paddingHorizontal: 4,
     },
 });

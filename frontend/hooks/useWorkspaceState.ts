@@ -13,6 +13,7 @@ export type WorkspaceState = {
     sort: WorkspaceSortOption;
     sortDirection: "ascending" | "descending" | null;
     isPublic: boolean;
+    groupByDay: boolean;
 };
 
 export const useWorkspaceState = (workspaceName: string) => {
@@ -21,24 +22,27 @@ export const useWorkspaceState = (workspaceName: string) => {
         sort: null,
         sortDirection: null,
         isPublic: true,
+        groupByDay: false,
     });
 
     useEffect(() => {
         const loadState = async () => {
             try {
-                const [filtersData, sortData, sortDirectionData, visibilityData] = await Promise.all([
+                const [filtersData, sortData, sortDirectionData, visibilityData, groupData] = await Promise.all([
                     AsyncStorage.getItem(`workspace-filters-${workspaceName}`),
                     AsyncStorage.getItem(`workspace-sort-${workspaceName}`),
                     AsyncStorage.getItem(`workspace-sort-direction-${workspaceName}`),
                     AsyncStorage.getItem(`workspace-visibility-${workspaceName}`),
+                    AsyncStorage.getItem(`workspace-group-${workspaceName}`),
                 ]);
 
                 const filters = filtersData ? JSON.parse(filtersData) : null;
                 const sort = sortData ? (sortData as WorkspaceSortOption) : null;
                 const sortDirection = sortDirectionData ? (sortDirectionData as "ascending" | "descending") : null;
                 const isPublic = visibilityData !== null ? visibilityData === "public" : true;
+                const groupByDay = groupData === "day";
 
-                setState({ filters, sort, sortDirection, isPublic });
+                setState({ filters, sort, sortDirection, isPublic, groupByDay });
             } catch (error) {
                 console.error("Error loading workspace state:", error);
             }
@@ -110,7 +114,7 @@ export const useWorkspaceState = (workspaceName: string) => {
         const parts: string[] = [];
 
         // Always include visibility status
-        parts.push(state.isPublic ? "Public" : "Private");
+        parts.push(state.isPublic ? "Public Workspace" : "Private Workspace");
 
         // Add filter description
         const filterDesc = getFilterDescription();
@@ -124,18 +128,17 @@ export const useWorkspaceState = (workspaceName: string) => {
             parts.push(sortDesc);
         }
 
-        // If no filters or sorting, add default message
-        if (!filterDesc && !sortDesc) {
-            parts.push("Treat yourself to a cup of coffee and a good book. You deserve it.");
+        if (state.groupByDay) {
+            parts.push("Grouped by Day");
         }
+
 
         return parts.join(" • ");
     };
 
     return {
         state,
-        hasActiveState: state.filters !== null || state.sort !== null,
+        hasActiveState: state.filters !== null || state.sort !== null || state.groupByDay,
         getStateDescription,
     };
 };
-

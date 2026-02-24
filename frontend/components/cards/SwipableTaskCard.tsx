@@ -27,7 +27,13 @@ type Props = {
     highlightContent?: boolean;
 };
 
-const SwipableTaskCard = ({ redirect = false, categoryId, task, categoryName, highlightContent = false }: Props) => {
+const SwipableTaskCard = ({
+    redirect = false,
+    categoryId,
+    task,
+    categoryName,
+    highlightContent = false,
+}: Props) => {
     const { removeFromCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
 
