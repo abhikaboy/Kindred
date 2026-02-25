@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"time"
 
 	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	Task "github.com/abhikaboy/Kindred/internal/handlers/task"
@@ -18,6 +19,7 @@ type ToolSet struct {
 	GetUserCategories  ai.Tool
 	GetCompletedTasks  ai.Tool
 	FetchUnsplashImage ai.Tool
+	GetUserActiveTasks ai.Tool
 }
 
 // InitTools initializes and registers all Genkit tools
@@ -189,9 +191,123 @@ func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection, unspl
 		},
 	)
 
+	// Define tool to fetch all active tasks for a user
+	getUserActiveTasksTool := genkit.DefineTool(
+		g,
+		"getUserActiveTasks",
+		"Fetches all active (non-completed) tasks for a specific user from the database. Use this to identify which tasks to edit when the user refers to them by name or description.",
+		func(ctx *ai.ToolContext, input GetUserActiveTasksInput) (GetUserActiveTasksOutput, error) {
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return GetUserActiveTasksOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			// Fetch categories — each category document embeds its tasks, so we get the
+			// correct categoryID from the parent document (avoids NilObjectID on older tasks
+			// that lack a stored categoryID field in the subdocument).
+			workspaces, err := categoryService.GetCategoriesByUser(userID)
+			if err != nil {
+				return GetUserActiveTasksOutput{}, fmt.Errorf("failed to fetch categories: %w", err)
+			}
+
+			output := GetUserActiveTasksOutput{
+				UserID: input.UserID,
+				Tasks:  make([]ActiveTaskInfo, 0),
+			}
+
+			for _, workspace := range workspaces {
+				for _, cat := range workspace.Categories {
+					for _, t := range cat.Tasks {
+						if len(output.Tasks) >= 200 {
+							break
+						}
+
+						notes := t.Notes
+						if len(notes) > 200 {
+							notes = notes[:200]
+						}
+
+						info := ActiveTaskInfo{
+							// CategoryID comes from the parent document — always correct.
+							ID:             t.ID.Hex(),
+							CategoryID:     cat.ID.Hex(),
+							CategoryName:   cat.Name,
+							Content:        t.Content,
+							Priority:       t.Priority,
+							Value:          t.Value,
+							Recurring:      t.Recurring,
+							RecurFrequency: t.RecurFrequency,
+							Active:         t.Active,
+							Notes:          notes,
+						}
+						if t.Deadline != nil {
+							info.Deadline = t.Deadline.Format(time.RFC3339)
+						}
+						if t.StartDate != nil {
+							info.StartDate = t.StartDate.Format(time.RFC3339)
+						}
+						if t.StartTime != nil {
+							info.StartTime = t.StartTime.Format(time.RFC3339)
+						}
+						if t.TemplateID != nil {
+							info.TemplateID = t.TemplateID.Hex()
+						}
+
+						output.Tasks = append(output.Tasks, info)
+					}
+				}
+			}
+
+			// Fetch recurring template tasks
+			templates, err := taskService.GetTemplatesByUserWithCategory(userID)
+			if err != nil {
+				// Non-fatal: log and continue without templates
+				fmt.Printf("⚠️  getUserActiveTasks: failed to fetch templates: %v\n", err)
+			} else {
+				output.Templates = make([]ActiveTemplateInfo, 0, len(templates))
+				for i, tmpl := range templates {
+					if i >= 200 {
+						break
+					}
+					notes := tmpl.Notes
+					if len(notes) > 200 {
+						notes = notes[:200]
+					}
+					info := ActiveTemplateInfo{
+						ID:             tmpl.ID.Hex(),
+						CategoryID:     tmpl.CategoryID.Hex(),
+						CategoryName:   tmpl.CategoryName,
+						Content:        tmpl.Content,
+						Priority:       tmpl.Priority,
+						Value:          tmpl.Value,
+						Public:         tmpl.Public,
+						RecurFrequency: tmpl.RecurFrequency,
+						RecurType:      tmpl.RecurType,
+						Notes:          notes,
+					}
+					if tmpl.Deadline != nil {
+						info.Deadline = tmpl.Deadline.Format(time.RFC3339)
+					}
+					if tmpl.StartDate != nil {
+						info.StartDate = tmpl.StartDate.Format(time.RFC3339)
+					}
+					if tmpl.StartTime != nil {
+						info.StartTime = tmpl.StartTime.Format(time.RFC3339)
+					}
+					output.Templates = append(output.Templates, info)
+				}
+			}
+
+			output.Total = len(output.Tasks) + len(output.Templates)
+			fmt.Printf("🔍 getUserActiveTasks called for user: %s, found %d tasks + %d templates\n", input.UserID, len(output.Tasks), len(output.Templates))
+			return output, nil
+		},
+	)
+
 	return &ToolSet{
 		GetUserCategories:  getUserCategoriesTool,
 		GetCompletedTasks:  getCompletedTasksTool,
 		FetchUnsplashImage: fetchUnsplashImageTool,
+		GetUserActiveTasks: getUserActiveTasksTool,
 	}
 }

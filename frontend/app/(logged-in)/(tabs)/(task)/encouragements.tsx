@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Animated } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { View, StyleSheet, TouchableOpacity, FlatList, ViewToken } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
@@ -19,82 +19,84 @@ export default function Encouragements() {
     const { user } = useAuth();
     const { encouragements, loading, markEncouragementsAsRead } = useKudos();
 
-    // Get sent count from user's kudosRewards for progress tracking
     const sentEncouragements = user?.kudosRewards?.encouragements || 0;
-
-    // Fade-in animation
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        // Mark all as read when viewing the page
         markEncouragementsAsRead();
     }, []);
 
-    useEffect(() => {
-        if (!loading && encouragements.length > 0) {
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }).start();
-        }
-    }, [loading, encouragements.length]);
+    const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+        setVisibleIds(prev => {
+            const next = new Set(prev);
+            viewableItems.forEach(({ item }) => next.add(item.id));
+            return next;
+        });
+    }, []);
+
+    const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
 
     const formatTime = (timestamp: string) => {
         try {
             return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-        } catch (error) {
+        } catch {
             return "recently";
         }
     };
 
     const styles = createStyles(ThemedColor, insets);
 
+    const header = (
+        <>
+            <KudosProgressCard
+                current={sentEncouragements}
+                max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
+                type="encouragements"
+            />
+            <ThemedText type="subtitle_subtle" style={{ paddingVertical: 4 }}>
+                ENCOURAGEMENTS RECEIVED
+            </ThemedText>
+        </>
+    );
+
     return (
         <ThemedView style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText type="default" style={styles.backArrow}>
-                        ←
-                    </ThemedText>
+                    <ThemedText type="default" style={styles.backArrow}>←</ThemedText>
                 </TouchableOpacity>
                 <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                     Encouragements
                 </ThemedText>
             </View>
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}>
-                {/* Progress Card - Shows sent count for rewards */}
-                <KudosProgressCard
-                    current={sentEncouragements}
-                    max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
-                    type="encouragements"
+            {!loading && encouragements.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <ThemedText type="subtitle" style={styles.emptyText}>No encouragements yet</ThemedText>
+                    <ThemedText type="lightBody" style={styles.emptyText}>
+                        When friends encourage you on tasks, they'll appear here
+                    </ThemedText>
+                </View>
+            ) : (
+                <FlatList
+                    data={encouragements}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    style={styles.scrollView}
+                    ListHeaderComponent={header}
+                    onViewableItemsChanged={onViewableItemsChanged}
+                    viewabilityConfig={viewabilityConfig}
+                    renderItem={({ item, index }) => (
+                        <KudosItem
+                            kudos={item}
+                            formatTime={formatTime}
+                            visible={visibleIds.has(item.id)}
+                            index={index}
+                        />
+                    )}
                 />
-                <ThemedText type="subtitle_subtle" style={{ paddingVertical: 4 }}>
-                    ENCOURAGEMENTS RECEIVED
-                </ThemedText>
-
-                {!loading && encouragements.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <ThemedText type="subtitle" style={styles.emptyText}>
-                            No encouragements yet
-                        </ThemedText>
-                        <ThemedText type="lightBody" style={styles.emptyText}>
-                            When friends encourage you on tasks, they'll appear here
-                        </ThemedText>
-                    </View>
-                ) : !loading && encouragements.length > 0 ? (
-                    <Animated.View style={[styles.encouragementsList, { opacity: fadeAnim }]}>
-                        {encouragements.map((encouragement) => (
-                            <KudosItem key={encouragement.id} kudos={encouragement} formatTime={formatTime} />
-                        ))}
-                    </Animated.View>
-                ) : null}
-            </ScrollView>
+            )}
         </ThemedView>
     );
 }
@@ -152,8 +154,5 @@ const createStyles = (ThemedColor: any, insets: any) =>
             color: ThemedColor.caption,
             textAlign: "center",
             opacity: 0.6,
-        },
-        encouragementsList: {
-            gap: 16,
         },
     });

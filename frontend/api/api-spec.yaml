@@ -398,6 +398,39 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/login/otp:
+        post:
+            tags:
+                - auth
+            summary: Login with OTP
+            description: Login using phone number and OTP code (passwordless authentication)
+            operationId: login-otp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LoginWithOTPRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    headers:
+                        access_token:
+                            schema:
+                                type: string
+                        refresh_token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SafeUser'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/auth/login/phone:
         post:
             tags:
@@ -776,6 +809,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/OAuthCallbackOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/calendar/webhook/{connection_id}:
+        post:
+            tags:
+                - Calendar
+            summary: Google Calendar webhook receiver
+            description: Receives push notifications from Google Calendar API. This endpoint is NOT behind auth middleware since Google calls it directly.
+            operationId: calendar-webhook
+            parameters:
+                - name: connection_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: X-Goog-Channel-ID
+                  in: header
+                  schema:
+                    type: string
+                - name: X-Goog-Resource-ID
+                  in: header
+                  schema:
+                    type: string
+                - name: X-Goog-Resource-State
+                  in: header
+                  schema:
+                    type: string
+                - name: X-Goog-Resource-URI
+                  in: header
+                  schema:
+                    type: string
+                - name: X-Goog-Message-Number
+                  in: header
+                  schema:
+                    type: string
+                - name: X-Goog-Channel-Token
+                  in: header
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WebhookOutputBody'
                 default:
                     description: Error
                     content:
@@ -1878,6 +1961,32 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connections/{connectionId}/calendars:
+        get:
+            tags:
+                - Calendar
+            summary: List calendars for a connection
+            description: Returns all calendars available in the user's connected calendar account.
+            operationId: list-connection-calendars
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCalendarsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/calendar/connections/{connectionId}/events:
         get:
             tags:
@@ -1912,6 +2021,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetEventsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/calendar/connections/{connectionId}/setup:
+        post:
+            tags:
+                - Calendar
+            summary: Set up workspaces for selected calendars
+            description: Creates workspaces and categories for the user's chosen calendars. If merge_into_one is true, all calendars share one workspace; otherwise each gets its own.
+            operationId: setup-calendar-workspaces
+            parameters:
+                - name: connectionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetupWorkspacesInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SetupWorkspacesOutputBody'
                 default:
                     description: Error
                     content:
@@ -5291,6 +5432,72 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/confirm:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Create tasks from preview payload
+            description: Create tasks and categories using a previously generated preview payload
+            operationId: confirm-task-natural-language
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ConfirmTaskNaturalLanguageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateTaskNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/preview:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Preview tasks from natural language
+            description: Process natural language text and return a preview without creating tasks
+            operationId: preview-task-natural-language
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PreviewTaskNaturalLanguageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PreviewTaskNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/template/{id}:
         get:
             tags:
@@ -6385,6 +6592,8 @@ components:
                 last_sync:
                     type: string
                     format: date-time
+                make_public:
+                    type: boolean
                 provider:
                     type: string
                 provider_account_id:
@@ -6393,11 +6602,17 @@ components:
                     type: array
                     items:
                         type: string
+                setup_complete:
+                    type: boolean
                 updated_at:
                     type: string
                     format: date-time
                 user_id:
                     type: string
+                watch_channels:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/WatchChannel'
             required:
                 - id
                 - user_id
@@ -6405,6 +6620,8 @@ components:
                 - provider_account_id
                 - scopes
                 - is_primary
+                - setup_complete
+                - make_public
                 - last_sync
                 - created_at
                 - updated_at
@@ -6448,6 +6665,26 @@ components:
                 - is_all_day
                 - attendees
                 - status
+        CalendarInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                access_role:
+                    type: string
+                description:
+                    type: string
+                id:
+                    type: string
+                is_primary:
+                    type: boolean
+                name:
+                    type: string
+            required:
+                - id
+                - name
+                - description
+                - is_primary
+                - access_role
         CategoryDocument:
             type: object
             additionalProperties: false
@@ -6519,6 +6756,19 @@ components:
                 - id
                 - name
                 - workspaceName
+        CategoryTaskPairLocal:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                categoryName:
+                    type: string
+                task:
+                    $ref: '#/components/schemas/CreateTaskParams'
+            required:
+                - categoryId
+                - task
         ChecklistItem:
             type: object
             additionalProperties: false
@@ -6685,6 +6935,30 @@ components:
                         - Image upload confirmed successfully
             required:
                 - message
+        ConfirmTaskNaturalLanguageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ConfirmTaskNaturalLanguageInputBody.json
+                    readOnly: true
+                categories:
+                    type: array
+                    description: New categories to create with their tasks
+                    items:
+                        $ref: '#/components/schemas/NewCategoryWithTasksLocal'
+                tasks:
+                    type: array
+                    description: Tasks to create in existing categories
+                    items:
+                        $ref: '#/components/schemas/CategoryTaskPairLocal'
+            required:
+                - categories
+                - tasks
         CongratulationDocument:
             type: object
             additionalProperties: false
@@ -8299,6 +8573,23 @@ components:
             required:
                 - encouragements
                 - congratulations
+        ListCalendarsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ListCalendarsOutputBody.json
+                    readOnly: true
+                calendars:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CalendarInfo'
+            required:
+                - calendars
         LoginRequest:
             type: object
             additionalProperties: false
@@ -8365,6 +8656,24 @@ components:
             required:
                 - phone_number
                 - password
+        LoginWithOTPRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LoginWithOTPRequest.json
+                    readOnly: true
+                code:
+                    type: string
+                phone_number:
+                    type: string
+            required:
+                - phone_number
+                - code
         LogoutOutputBody:
             type: object
             additionalProperties: false
@@ -8547,6 +8856,22 @@ components:
             required:
                 - id
                 - handle
+        NewCategoryWithTasksLocal:
+            type: object
+            additionalProperties: false
+            properties:
+                name:
+                    type: string
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CreateTaskParams'
+                workspaceName:
+                    type: string
+            required:
+                - name
+                - workspaceName
+                - tasks
         NotificationDocument:
             type: object
             additionalProperties: false
@@ -8764,6 +9089,55 @@ components:
                 - id
                 - content
                 - category
+        PreviewTaskNaturalLanguageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewTaskNaturalLanguageInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: Natural language description of tasks to preview
+                    examples:
+                        - Buy groceries tomorrow at 3pm, finish project report by Friday
+                    minLength: 1
+                    maxLength: 10000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        PreviewTaskNaturalLanguageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewTaskNaturalLanguageOutputBody.json
+                    readOnly: true
+                categories:
+                    type: array
+                    description: New categories and their tasks proposed by AI
+                    items:
+                        $ref: '#/components/schemas/NewCategoryWithTasksLocal'
+                tasks:
+                    type: array
+                    description: Tasks proposed for existing categories
+                    items:
+                        $ref: '#/components/schemas/CategoryTaskPairLocal'
+            required:
+                - categories
+                - tasks
         ProcessAndUploadImageInputBody:
             type: object
             additionalProperties: false
@@ -9502,6 +9876,47 @@ components:
                     type: string
             required:
                 - phone_number
+        SetupWorkspacesInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SetupWorkspacesInputBody.json
+                    readOnly: true
+                calendar_ids:
+                    type: array
+                    items:
+                        type: string
+                make_public:
+                    type: boolean
+                merge_into_one:
+                    type: boolean
+            required:
+                - calendar_ids
+                - merge_into_one
+                - make_public
+        SetupWorkspacesOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SetupWorkspacesOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                success:
+                    type: boolean
+            required:
+                - success
+                - message
         SubscribeToBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -9569,6 +9984,9 @@ components:
                 tasks_created:
                     type: integer
                     format: int64
+                tasks_deleted:
+                    type: integer
+                    format: int64
                 tasks_skipped:
                     type: integer
                     format: int64
@@ -9577,6 +9995,7 @@ components:
             required:
                 - tasks_created
                 - tasks_skipped
+                - tasks_deleted
                 - events_total
                 - categories_synced
                 - workspace_name
@@ -10958,6 +11377,43 @@ components:
                 - email
                 - name
                 - timestamp
+        WatchChannel:
+            type: object
+            additionalProperties: false
+            properties:
+                calendar_id:
+                    type: string
+                channel_id:
+                    type: string
+                created_at:
+                    type: string
+                    format: date-time
+                expiration:
+                    type: string
+                    format: date-time
+                resource_id:
+                    type: string
+            required:
+                - calendar_id
+                - channel_id
+                - resource_id
+                - expiration
+                - created_at
+        WebhookOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/WebhookOutputBody.json
+                    readOnly: true
+                success:
+                    type: boolean
+            required:
+                - success
         WelcomeOutputBody:
             type: object
             additionalProperties: false

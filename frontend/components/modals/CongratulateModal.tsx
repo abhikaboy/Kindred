@@ -144,11 +144,11 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     } else {
                         // It's a local image, upload it
                         const tempId = `congratulation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        
+
                         const imageUrl = await uploadImageSmart("congratulation", tempId, selectedImage, {
                             variant: "large",
                         });
-                        
+
                         contentToSend = typeof imageUrl === 'string' ? imageUrl : imageUrl.public_url;
                         congratulationType = "image";
                     }
@@ -183,10 +183,10 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
             // Update user's congratulation count locally
             const newCount = Math.max(0, congratulationsLeft - 1);
-            
+
             // Also increment kudosRewards.congratulations for rewards tracking
             const currentKudosRewards = user?.kudosRewards || { encouragements: 0, congratulations: 0 };
-            updateUser({ 
+            updateUser({
                 congratulations: newCount,
                 kudosRewards: {
                     ...currentKudosRewards,
@@ -197,7 +197,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             // Close modal first, enable confetti, then trigger it
             setVisible(false);
             setShowConfetti(true);
-            
+
             setTimeout(() => {
                 if (confettiRef.current) {
                     confettiRef.current.start();
@@ -227,7 +227,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     ref={confettiRef}
                     count={50}
                     origin={
-                        { x: Dimensions.get("screen").width / 2, 
+                        { x: Dimensions.get("screen").width / 2,
                         y: (Dimensions.get("screen").height / 4) * 3.7 }
                     }
                     explosionSpeed={300}
@@ -294,13 +294,13 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                         />
                     </View>
                 ) : (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.imagePreviewContainer}
                         onPress={handleImagePick}
                         activeOpacity={0.9}
                     >
                         <Image source={{ uri: selectedImage }} style={styles.imagePreview} resizeMode="contain" />
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.removeImageButton}
                             onPress={(e) => {
                                 e.stopPropagation();
@@ -315,14 +315,14 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 {/* Media Icons */}
                 <View style={styles.mediaIconsContainerWrapper}>
                     <View style={styles.mediaIconsContainer}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.iconButton}
                             onPress={handleImagePick}
                             disabled={isUploading}
                         >
                             <Images size={32} color={ThemedColor.text} weight="regular" />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.iconButton}
                             onPress={() => setShowGifPicker(true)}
                             disabled={isUploading}
@@ -381,8 +381,8 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: 18,
-            paddingBottom: 32,
+            paddingTop: 16,
+            paddingBottom: 64,
         },
         taskCardContainer: {
             marginBottom: 16,

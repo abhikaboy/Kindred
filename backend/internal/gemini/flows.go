@@ -19,6 +19,8 @@ type FlowSet struct {
 	MultiTaskFromTextFlowWithContext *core.Flow[MultiTaskFromTextInputWithUser, MultiTaskFromTextOutput, struct{}]
 	AnalyticsReportFlow              *core.Flow[AnalyticsReportInput, AnalyticsReportOutput, struct{}]
 	GenerateBlueprintFlow            *core.Flow[GenerateBlueprintInput, GenerateBlueprintOutput, struct{}]
+	QueryTasksFlow                   *core.Flow[QueryTasksFlowInput, TaskQueryFiltersOutput, struct{}]
+	EditTasksFlow                    *core.Flow[EditTasksFlowInput, EditTasksFlowOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -94,7 +96,7 @@ When choosing category names, prefer existing categories from the user's databas
 
 			prompt := fmt.Sprintf(`You are a productivity analytics assistant. Analyze the user's completed tasks and generate a comprehensive, structured analytics report.
 
-IMPORTANT: 
+IMPORTANT:
 1. Call the getCompletedTasks tool with userId "%s" and limit %d to fetch the user's recently completed tasks
 2. Call getUserCategories tool with userId "%s" to understand their workspace organization
 
@@ -225,6 +227,88 @@ Generate a high-quality, comprehensive blueprint that the user can immediately s
 			return *resp, nil
 		})
 
+	// NL-to-query flow: converts natural language into structured task filter parameters
+	queryTasksFlow := genkit.DefineFlow(g, "queryTasksFlow",
+		func(ctx context.Context, input QueryTasksFlowInput) (TaskQueryFiltersOutput, error) {
+			currentTime := time.Now().UTC().Format(time.RFC3339)
+
+			prompt := fmt.Sprintf(`You are a task search assistant. Convert the user's natural language query into structured filter parameters for searching their tasks.
+
+IMPORTANT: Call the getUserCategories tool with userId "%s" to see what categories/workspaces exist. Use the returned category IDs when the user refers to a specific category or workspace by name.
+
+Current time: %s
+User's timezone: %s
+
+User query: "%s"
+
+Return a TaskQueryFiltersOutput with the appropriate filters:
+- categoryIds: IDs of relevant categories (match by name from getUserCategories results). Leave empty if no specific category is mentioned.
+- priorities: relevant priority values (1=low, 2=medium, 3=high). E.g. [3] for "high priority", [1,2] for "low and medium priority".
+- deadlineFrom/deadlineTo: ISO8601 datetime range for deadline filter. E.g. for "due this week", set deadlineFrom to start of current week and deadlineTo to end of current week in the user's timezone.
+- startTimeFrom/startTimeTo: ISO8601 datetime range for start date filter.
+- hasDeadline: set to true if user says "with deadline" or "due", false if "without deadline".
+- hasStartTime: set to true if user says "scheduled" or "with start date", false if "unscheduled".
+- sortBy: appropriate sorting field (timestamp, priority, value, deadline). Default to "timestamp".
+- sortDir: -1 for "newest/latest/most recent", 1 for "oldest". Default to -1.
+
+Be precise with date ranges based on the user's timezone. Only set filters that are clearly implied by the query.`,
+				input.UserID, currentTime, input.Timezone, input.Text)
+
+			resp, _, err := genkit.GenerateData[TaskQueryFiltersOutput](ctx, g,
+				ai.WithPrompt(prompt),
+				ai.WithTools(tools.GetUserCategories),
+			)
+			if err != nil {
+				return TaskQueryFiltersOutput{}, err
+			}
+			return *resp, nil
+		})
+
+	// Edit tasks via natural language
+	editTasksFlow := genkit.DefineFlow(g, "editTasksFlow",
+		func(ctx context.Context, input EditTasksFlowInput) (EditTasksFlowOutput, error) {
+			now := time.Now().UTC().Format(time.RFC3339)
+
+			prompt := fmt.Sprintf(`You are a task editing assistant. The user wants to edit one or more of their tasks or recurring templates.
+
+STEP 1: Call getUserActiveTasks with userId "%s" to see all their current tasks and recurring templates.
+         The result contains two arrays: "tasks" (regular one-off tasks) and "templates" (recurring task templates).
+STEP 2: Identify which item(s) the user is referring to by matching their description to content/notes.
+         If the user mentions something recurring or a "template", look in templates first.
+STEP 3: Construct edit instructions for each matched item.
+
+Current time: %s
+User's timezone: %s
+User instruction: "%s"
+
+Return an EditTasksFlowOutput with two arrays:
+- instructions: edits for regular tasks. Each entry must have:
+    - taskId: exact hex ID from the "tasks" array
+    - categoryId: exact hex categoryId from the "tasks" array
+    - updates: only include fields that should change
+- templateInstructions: edits for recurring templates. Each entry must have:
+    - taskId: exact hex ID from the "templates" array
+    - categoryId: exact hex categoryId from the "templates" array
+    - updates: only include fields that should change
+
+For time fields in updates:
+    - Omit entirely to leave unchanged
+    - ISO8601 string to set a new value (interpret relative times like "next Friday" using current time + timezone)
+    - Empty string "" to explicitly clear/remove the field
+
+If the user's instruction doesn't match anything, return empty arrays for both.`,
+				input.UserID, now, input.Timezone, input.Text)
+
+			resp, _, err := genkit.GenerateData[EditTasksFlowOutput](ctx, g,
+				ai.WithPrompt(prompt),
+				ai.WithTools(tools.GetUserActiveTasks),
+			)
+			if err != nil {
+				return EditTasksFlowOutput{}, err
+			}
+			return *resp, nil
+		})
+
 	return &FlowSet{
 		TaskFlow:                         generateTaskFlow,
 		TaskFromImageFlow:                generateTaskFromImageFlow,
@@ -232,5 +316,7 @@ Generate a high-quality, comprehensive blueprint that the user can immediately s
 		MultiTaskFromTextFlowWithContext: multiTaskFromTextFlowWithContext,
 		AnalyticsReportFlow:              analyticsReportFlow,
 		GenerateBlueprintFlow:            generateBlueprintFlow,
+		QueryTasksFlow:                   queryTasksFlow,
+		EditTasksFlow:                    editTasksFlow,
 	}
 }

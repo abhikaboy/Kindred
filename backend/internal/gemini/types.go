@@ -181,6 +181,114 @@ type BlueprintCategory struct {
 	Tasks         []task.CreateTaskParams `json:"tasks" jsonschema_description:"Tasks belonging to this category"`
 }
 
+// Input for the NL query flow
+type QueryTasksFlowInput struct {
+	UserID   string `json:"userId"`
+	Text     string `json:"text"`
+	Timezone string `json:"timezone" jsonschema_description:"User's timezone in IANA format (e.g., 'America/New_York'). Use this to interpret relative time references like 'this week' correctly."`
+}
+
+// What Gemini returns: structured query parameters extracted from natural language
+type TaskQueryFiltersOutput struct {
+	CategoryIds   []string `json:"categoryIds,omitempty" jsonschema_description:"IDs of relevant categories (matched by name from getUserCategories results)"`
+	Priorities    []int    `json:"priorities,omitempty" jsonschema_description:"Relevant priority values: 1=low, 2=medium, 3=high"`
+	DeadlineFrom  string   `json:"deadlineFrom,omitempty" jsonschema_description:"ISO8601 datetime for the start of the deadline range"`
+	DeadlineTo    string   `json:"deadlineTo,omitempty" jsonschema_description:"ISO8601 datetime for the end of the deadline range"`
+	StartTimeFrom string   `json:"startTimeFrom,omitempty" jsonschema_description:"ISO8601 datetime for the start of the start-date range"`
+	StartTimeTo   string   `json:"startTimeTo,omitempty" jsonschema_description:"ISO8601 datetime for the end of the start-date range"`
+	HasDeadline   *bool    `json:"hasDeadline,omitempty" jsonschema_description:"Set to true if user wants tasks with a deadline, false for tasks without"`
+	HasStartTime  *bool    `json:"hasStartTime,omitempty" jsonschema_description:"Set to true if user wants tasks with a start date, false for tasks without"`
+	SortBy        string   `json:"sortBy,omitempty" jsonschema_description:"Sort field: timestamp, priority, value, or deadline"`
+	SortDir       int      `json:"sortDir,omitempty" jsonschema_description:"Sort direction: 1 (ascending) or -1 (descending)"`
+}
+
+// --- getUserActiveTasks types ---
+
+type GetUserActiveTasksInput struct {
+	UserID string `json:"userId" jsonschema_description:"The user's ObjectID as a hex string"`
+}
+
+type GetUserActiveTasksOutput struct {
+	UserID    string               `json:"userId"`
+	Tasks     []ActiveTaskInfo     `json:"tasks"     jsonschema_description:"Regular (non-recurring) active tasks"`
+	Templates []ActiveTemplateInfo `json:"templates" jsonschema_description:"Recurring template tasks"`
+	Total     int                  `json:"total"`
+}
+
+// ActiveTaskInfo is a Genkit-safe representation of a task with string IDs.
+// We cannot embed task.TaskDocument directly because primitive.ObjectID is [12]byte,
+// which Genkit's JSON schema generator maps to "array" instead of "string".
+type ActiveTaskInfo struct {
+	ID             string  `json:"id"                       jsonschema_description:"Hex ObjectID of the task"`
+	CategoryID     string  `json:"categoryId"               jsonschema_description:"Hex ObjectID of the containing category"`
+	CategoryName   string  `json:"categoryName,omitempty"   jsonschema_description:"Human-readable category name"`
+	Content        string  `json:"content"                  jsonschema_description:"Task title / description"`
+	Priority       int     `json:"priority"                 jsonschema_description:"1=low, 2=medium, 3=high"`
+	Value          float64 `json:"value"                    jsonschema_description:"Importance score 0-10"`
+	Recurring      bool    `json:"recurring"                jsonschema_description:"Whether the task recurs"`
+	RecurFrequency string  `json:"recurFrequency,omitempty" jsonschema_description:"Recurrence frequency (e.g. daily, weekly)"`
+	Active         bool    `json:"active"                   jsonschema_description:"Whether the task is active"`
+	Deadline       string  `json:"deadline,omitempty"       jsonschema_description:"ISO8601 deadline, absent if none"`
+	StartDate      string  `json:"startDate,omitempty"      jsonschema_description:"ISO8601 start date, absent if none"`
+	StartTime      string  `json:"startTime,omitempty"      jsonschema_description:"ISO8601 start time, absent if none"`
+	Notes          string  `json:"notes,omitempty"          jsonschema_description:"Task notes (truncated to 200 chars)"`
+	TemplateID     string  `json:"templateId,omitempty"     jsonschema_description:"Hex ObjectID of the template, if any"`
+}
+
+// ActiveTemplateInfo is a Genkit-safe representation of a recurring template task.
+// Uses string IDs to avoid schema validation errors (primitive.ObjectID is [12]byte → array).
+type ActiveTemplateInfo struct {
+	ID             string  `json:"id"                       jsonschema_description:"Hex ObjectID of the template task"`
+	CategoryID     string  `json:"categoryId"               jsonschema_description:"Hex ObjectID of the containing category"`
+	CategoryName   string  `json:"categoryName,omitempty"   jsonschema_description:"Human-readable category name"`
+	Content        string  `json:"content"                  jsonschema_description:"Template task title / description"`
+	Priority       int     `json:"priority"                 jsonschema_description:"1=low, 2=medium, 3=high"`
+	Value          float64 `json:"value"                    jsonschema_description:"Importance score 0-10"`
+	Public         bool    `json:"public"                   jsonschema_description:"Whether the template is public"`
+	RecurFrequency string  `json:"recurFrequency,omitempty" jsonschema_description:"Recurrence frequency (e.g. daily, weekly, monthly)"`
+	RecurType      string  `json:"recurType,omitempty"      jsonschema_description:"Recurrence type (e.g. Occurrence, Deadline, Window)"`
+	Deadline       string  `json:"deadline,omitempty"       jsonschema_description:"ISO8601 deadline, absent if none"`
+	StartDate      string  `json:"startDate,omitempty"      jsonschema_description:"ISO8601 start date, absent if none"`
+	StartTime      string  `json:"startTime,omitempty"      jsonschema_description:"ISO8601 start time, absent if none"`
+	Notes          string  `json:"notes,omitempty"          jsonschema_description:"Template notes (truncated to 200 chars)"`
+}
+
+// --- Edit tasks flow types ---
+
+type EditTasksFlowInput struct {
+	UserID   string `json:"userId"`
+	Text     string `json:"text"`
+	Timezone string `json:"timezone"`
+}
+
+// EditTaskUpdatesOutput: pointer fields nil = don't change; time fields "" = clear, ISO8601 = set.
+type EditTaskUpdatesOutput struct {
+	Content        *string  `json:"content,omitempty"        jsonschema_description:"New task name/description"`
+	Priority       *int     `json:"priority,omitempty"       jsonschema_description:"New priority: 1=low, 2=medium, 3=high"`
+	Value          *float64 `json:"value,omitempty"          jsonschema_description:"New value score (0-10)"`
+	Deadline       *string  `json:"deadline,omitempty"       jsonschema_description:"ISO8601 to set, empty string to clear, omit to leave unchanged"`
+	StartDate      *string  `json:"startDate,omitempty"      jsonschema_description:"ISO8601 to set, empty string to clear, omit to leave unchanged"`
+	StartTime      *string  `json:"startTime,omitempty"      jsonschema_description:"ISO8601 to set, empty string to clear, omit to leave unchanged"`
+	Notes          *string  `json:"notes,omitempty"          jsonschema_description:"New notes content"`
+	Active         *bool    `json:"active,omitempty"         jsonschema_description:"Active status (regular tasks only)"`
+	RecurFrequency *string  `json:"recurFrequency,omitempty" jsonschema_description:"New recurrence frequency (templates only, e.g. daily, weekly, monthly)"`
+	RecurType      *string  `json:"recurType,omitempty"      jsonschema_description:"New recurrence type (templates only, e.g. Occurrence, Deadline, Window)"`
+}
+
+// EditTaskInstructionOutput is one edit instruction for one task or template.
+type EditTaskInstructionOutput struct {
+	TaskID      string                `json:"taskId"       jsonschema_description:"Hex ID of the task or template to edit"`
+	CategoryID  string                `json:"categoryId"   jsonschema_description:"Hex ID of the task's or template's category"`
+	MatchedName string                `json:"matchedName"  jsonschema_description:"Human-readable name of the item matched (for display/confirmation to the user)"`
+	Updates     EditTaskUpdatesOutput `json:"updates"`
+}
+
+// EditTasksFlowOutput is the top-level flow output.
+type EditTasksFlowOutput struct {
+	Instructions         []EditTaskInstructionOutput `json:"instructions"         jsonschema_description:"Edit instructions for regular (non-recurring) tasks"`
+	TemplateInstructions []EditTaskInstructionOutput `json:"templateInstructions" jsonschema_description:"Edit instructions for recurring template tasks"`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`

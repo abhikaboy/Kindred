@@ -224,6 +224,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/login/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login with OTP
+         * @description Login using phone number and OTP code (passwordless authentication)
+         */
+        post: operations["login-otp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login/phone": {
         parameters: {
             query?: never;
@@ -478,6 +498,26 @@ export interface paths {
         get: operations["google-calendar-oauth-callback"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar/webhook/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Calendar webhook receiver
+         * @description Receives push notifications from Google Calendar API. This endpoint is NOT behind auth middleware since Google calls it directly.
+         */
+        post: operations["calendar-webhook"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1112,6 +1152,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/calendar/connections/{connectionId}/calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List calendars for a connection
+         * @description Returns all calendars available in the user's connected calendar account.
+         */
+        get: operations["list-connection-calendars"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/calendar/connections/{connectionId}/events": {
         parameters: {
             query?: never;
@@ -1126,6 +1186,26 @@ export interface paths {
         get: operations["get-calendar-events"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/calendar/connections/{connectionId}/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set up workspaces for selected calendars
+         * @description Creates workspaces and categories for the user's chosen calendars. If merge_into_one is true, all calendars share one workspace; otherwise each gets its own.
+         */
+        post: operations["setup-calendar-workspaces"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2516,6 +2596,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/natural-language/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create tasks from preview payload
+         * @description Create tasks and categories using a previously generated preview payload
+         */
+        post: operations["confirm-task-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/natural-language/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview tasks from natural language
+         * @description Process natural language text and return a preview without creating tasks
+         */
+        post: operations["preview-task-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/template/{id}": {
         parameters: {
             query?: never;
@@ -3178,12 +3298,15 @@ export interface components {
             is_primary: boolean;
             /** Format: date-time */
             last_sync: string;
+            make_public: boolean;
             provider: string;
             provider_account_id: string;
             scopes: string[];
+            setup_complete: boolean;
             /** Format: date-time */
             updated_at: string;
             user_id: string;
+            watch_channels?: components["schemas"]["WatchChannel"][];
         };
         CalendarEventDTO: {
             attendees: string[];
@@ -3197,6 +3320,13 @@ export interface components {
             start_time: string;
             status: string;
             summary: string;
+        };
+        CalendarInfo: {
+            access_role: string;
+            description: string;
+            id: string;
+            is_primary: boolean;
+            name: string;
         };
         CategoryDocument: {
             /**
@@ -3229,6 +3359,11 @@ export interface components {
             name: string;
             /** @description Workspace name */
             workspaceName: string;
+        };
+        CategoryTaskPairLocal: {
+            categoryId: string;
+            categoryName?: string;
+            task: components["schemas"]["CreateTaskParams"];
         };
         ChecklistItem: {
             completed: boolean;
@@ -3315,6 +3450,18 @@ export interface components {
             readonly $schema?: string;
             /** @example Image upload confirmed successfully */
             message: string;
+        };
+        ConfirmTaskNaturalLanguageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ConfirmTaskNaturalLanguageInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description New categories to create with their tasks */
+            categories: components["schemas"]["NewCategoryWithTasksLocal"][];
+            /** @description Tasks to create in existing categories */
+            tasks: components["schemas"]["CategoryTaskPairLocal"][];
         };
         CongratulationDocument: {
             /**
@@ -4338,6 +4485,15 @@ export interface components {
              */
             encouragements: number;
         };
+        ListCalendarsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ListCalendarsOutputBody.json
+             */
+            readonly $schema?: string;
+            calendars: components["schemas"]["CalendarInfo"][];
+        };
         LoginRequest: {
             /**
              * Format: uri
@@ -4374,6 +4530,16 @@ export interface components {
              */
             readonly $schema?: string;
             password: string;
+            phone_number: string;
+        };
+        LoginWithOTPRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LoginWithOTPRequest.json
+             */
+            readonly $schema?: string;
+            code: string;
             phone_number: string;
         };
         LogoutOutputBody: {
@@ -4482,6 +4648,11 @@ export interface components {
             handle: string;
             id: string;
         };
+        NewCategoryWithTasksLocal: {
+            name: string;
+            tasks: components["schemas"]["CreateTaskParams"][];
+            workspaceName: string;
+        };
         NotificationDocument: {
             content: string;
             id: string;
@@ -4568,6 +4739,36 @@ export interface components {
             category: components["schemas"]["CategoryExtendedReference"];
             content: string;
             id: string;
+        };
+        PreviewTaskNaturalLanguageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewTaskNaturalLanguageInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Natural language description of tasks to preview
+             * @example Buy groceries tomorrow at 3pm, finish project report by Friday
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        PreviewTaskNaturalLanguageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewTaskNaturalLanguageOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description New categories and their tasks proposed by AI */
+            categories: components["schemas"]["NewCategoryWithTasksLocal"][];
+            /** @description Tasks proposed for existing categories */
+            tasks: components["schemas"]["CategoryTaskPairLocal"][];
         };
         ProcessAndUploadImageInputBody: {
             /**
@@ -4947,6 +5148,27 @@ export interface components {
             readonly $schema?: string;
             phone_number: string;
         };
+        SetupWorkspacesInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetupWorkspacesInputBody.json
+             */
+            readonly $schema?: string;
+            calendar_ids: string[];
+            make_public: boolean;
+            merge_into_one: boolean;
+        };
+        SetupWorkspacesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetupWorkspacesOutputBody.json
+             */
+            readonly $schema?: string;
+            message: string;
+            success: boolean;
+        };
         SubscribeToBlueprintOutputBody: {
             /**
              * Format: uri
@@ -4985,6 +5207,8 @@ export interface components {
             events_total: number;
             /** Format: int64 */
             tasks_created: number;
+            /** Format: int64 */
+            tasks_deleted: number;
             /** Format: int64 */
             tasks_skipped: number;
             workspace_name: string;
@@ -5834,6 +6058,24 @@ export interface components {
              */
             timestamp: string;
         };
+        WatchChannel: {
+            calendar_id: string;
+            channel_id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            expiration: string;
+            resource_id: string;
+        };
+        WebhookOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WebhookOutputBody.json
+             */
+            readonly $schema?: string;
+            success: boolean;
+        };
         WelcomeOutputBody: {
             /**
              * Format: uri
@@ -6217,6 +6459,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LoginRequestGoogle"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeUser"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "login-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginWithOTPRequest"];
             };
         };
         responses: {
@@ -6653,6 +6930,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OAuthCallbackOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "calendar-webhook": {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Goog-Channel-ID"?: string;
+                "X-Goog-Resource-ID"?: string;
+                "X-Goog-Resource-State"?: string;
+                "X-Goog-Resource-URI"?: string;
+                "X-Goog-Message-Number"?: string;
+                "X-Goog-Channel-Token"?: string;
+            };
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookOutputBody"];
                 };
             };
             /** @description Error */
@@ -7779,6 +8094,37 @@ export interface operations {
             };
         };
     };
+    "list-connection-calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCalendarsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-calendar-events": {
         parameters: {
             query?: {
@@ -7802,6 +8148,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetEventsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "setup-calendar-workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetupWorkspacesInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupWorkspacesOutputBody"];
                 };
             };
             /** @description Error */
@@ -10941,6 +11322,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreateTaskNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "confirm-task-natural-language": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmTaskNaturalLanguageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTaskNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-task-natural-language": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewTaskNaturalLanguageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewTaskNaturalLanguageOutputBody"];
                 };
             };
             /** @description Error */

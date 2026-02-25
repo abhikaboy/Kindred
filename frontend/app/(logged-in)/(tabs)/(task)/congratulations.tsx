@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView, Animated } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { View, StyleSheet, TouchableOpacity, FlatList, ViewToken } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
@@ -19,82 +19,85 @@ export default function Congratulations() {
     const { user } = useAuth();
     const { congratulations, loading, markCongratulationsAsRead } = useKudos();
 
-    // Get sent count from user's kudosRewards for progress tracking
     const sentCongratulations = user?.kudosRewards?.congratulations || 0;
-
-    // Fade-in animation
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        // Mark all as read when viewing the page
         markCongratulationsAsRead();
     }, []);
 
-    useEffect(() => {
-        if (!loading && congratulations.length > 0) {
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }).start();
-        }
-    }, [loading, congratulations.length]);
+    const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+        setVisibleIds(prev => {
+            const next = new Set(prev);
+            viewableItems.forEach(({ item }) => next.add(item.id));
+            return next;
+        });
+    }, []);
+
+    const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
 
     const formatTime = (timestamp: string) => {
         try {
             return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-        } catch (error) {
+        } catch {
             return "recently";
         }
     };
 
     const styles = createStyles(ThemedColor, insets);
 
+    const header = (
+        <>
+            <KudosProgressCard
+                current={sentCongratulations}
+                max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
+                type="congratulations"
+            />
+            <ThemedText type="subtitle_subtle" style={{ paddingVertical: 4 }}>
+                CONGRATULATIONS RECEIVED
+            </ThemedText>
+        </>
+    );
+
     return (
         <ThemedView style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText type="default" style={styles.backArrow}>
-                        ←
-                    </ThemedText>
+                    <ThemedText type="default" style={styles.backArrow}>←</ThemedText>
                 </TouchableOpacity>
                 <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                     Congratulations
                 </ThemedText>
             </View>
 
-            {/* Content */}
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}>
-                {/* Progress Card - Shows sent count for rewards */}
-                <KudosProgressCard
-                    current={sentCongratulations}
-                    max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
-                    type="congratulations"
+            {!loading && congratulations.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <ThemedText type="subtitle" style={styles.emptyText}>No congratulations yet</ThemedText>
+                    <ThemedText type="lightBody" style={styles.emptySubtext}>
+                        When friends congratulate you on tasks, they'll appear here
+                    </ThemedText>
+                </View>
+            ) : (
+                <FlatList
+                    data={congratulations}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    style={styles.scrollView}
+                    ListHeaderComponent={header}
+                    ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+                    onViewableItemsChanged={onViewableItemsChanged}
+                    viewabilityConfig={viewabilityConfig}
+                    renderItem={({ item, index }) => (
+                        <KudosItem
+                            kudos={item}
+                            formatTime={formatTime}
+                            visible={visibleIds.has(item.id)}
+                            index={index}
+                        />
+                    )}
                 />
-                <ThemedText type="subtitle_subtle" style={{ paddingVertical: 4 }}>
-                    CONGRATULATIONS RECEIVED
-                </ThemedText>
-                {!loading && congratulations.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <ThemedText type="subtitle" style={styles.emptyText}>
-                            No congratulations yet
-                        </ThemedText>
-                        <ThemedText type="lightBody" style={styles.emptySubtext}>
-                            When friends congratulate you on tasks, they'll appear here
-                        </ThemedText>
-                    </View>
-                ) : !loading && congratulations.length > 0 ? (
-                    <Animated.View style={[styles.congratulationsList, { opacity: fadeAnim }]}>
-                        {congratulations.map((congratulation) => (
-                            <KudosItem key={congratulation.id} kudos={congratulation} formatTime={formatTime} />
-                        ))}
-                    </Animated.View>
-                ) : null}
-            </ScrollView>
+            )}
         </ThemedView>
     );
 }
@@ -155,8 +158,5 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         emptySubtext: {
             color: ThemedColor.caption,
             textAlign: "center",
-        },
-        congratulationsList: {
-            gap: 16,
         },
     });

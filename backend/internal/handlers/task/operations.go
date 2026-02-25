@@ -2,6 +2,7 @@ package task
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -688,4 +689,96 @@ func RegisterConfirmTaskNaturalLanguageOperation(api huma.API, handler *Handler)
 		Description: "Create tasks and categories using a previously generated preview payload",
 		Tags:        []string{"tasks", "ai"},
 	}, handler.ConfirmTaskNaturalLanguage)
+}
+
+// TaskQueryFilters contains filtering options for task queries
+type TaskQueryFilters struct {
+	CategoryIDs   []string   `json:"categoryIds,omitempty" doc:"Filter by category IDs"`
+	Priorities    []int      `json:"priorities,omitempty" doc:"Filter by priority values (1=low, 2=medium, 3=high)"`
+	DeadlineFrom  *time.Time `json:"deadlineFrom,omitempty" doc:"Filter tasks with deadline on or after this time (ISO8601)"`
+	DeadlineTo    *time.Time `json:"deadlineTo,omitempty" doc:"Filter tasks with deadline on or before this time (ISO8601)"`
+	StartTimeFrom *time.Time `json:"startTimeFrom,omitempty" doc:"Filter tasks with start date on or after this time (ISO8601)"`
+	StartTimeTo   *time.Time `json:"startTimeTo,omitempty" doc:"Filter tasks with start date on or before this time (ISO8601)"`
+	HasDeadline   *bool      `json:"hasDeadline,omitempty" doc:"Filter tasks that have (true) or don't have (false) a deadline"`
+	HasStartTime  *bool      `json:"hasStartTime,omitempty" doc:"Filter tasks that have (true) or don't have (false) a start date"`
+	Active        *bool      `json:"active,omitempty" doc:"Filter by active status"`
+	SortBy        string     `json:"sortBy,omitempty" doc:"Sort field: timestamp, priority, value, or deadline" example:"timestamp"`
+	SortDir       int        `json:"sortDir,omitempty" doc:"Sort direction: 1 (ascending) or -1 (descending)" example:"-1"`
+}
+
+// Query Tasks by User (structured filter)
+type QueryTasksByUserInput struct {
+	Authorization string           `header:"Authorization" required:"true"`
+	Body          TaskQueryFilters `json:"body"`
+}
+
+type QueryTasksByUserOutput struct {
+	Body []TaskDocument `json:"body"`
+}
+
+// Query Tasks via Natural Language
+type QueryTasksNaturalLanguageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Text     string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language query to filter tasks" example:"high priority tasks due this week"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
+	} `json:"body"`
+}
+
+type QueryTasksNaturalLanguageOutput struct {
+	Body struct {
+		Tasks []TaskDocument   `json:"tasks" doc:"Matching tasks"`
+		Query TaskQueryFilters `json:"query" doc:"The structured query generated from natural language"`
+	} `json:"body"`
+}
+
+func RegisterQueryTasksByUserOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "query-tasks-by-user",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/query",
+		Summary:     "Query tasks with filters",
+		Description: "Query tasks for the authenticated user with advanced filtering options",
+		Tags:        []string{"tasks"},
+	}, handler.QueryTasksByUser)
+}
+
+func RegisterQueryTasksNaturalLanguageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "query-tasks-natural-language",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language/query",
+		Summary:     "Query tasks using natural language",
+		Description: "Convert natural language to structured filters and return matching tasks using AI",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.QueryTasksNaturalLanguage)
+}
+
+// Edit Tasks via Natural Language
+type EditTasksNaturalLanguageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Text     string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language instruction for editing tasks" example:"move my dentist appointment to next Friday"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
+	} `json:"body"`
+}
+
+type EditTasksNaturalLanguageOutput struct {
+	Body struct {
+		Tasks       []TaskDocument         `json:"tasks"      doc:"List of edited regular tasks with their updated state"`
+		Templates   []TemplateTaskDocument `json:"templates"  doc:"List of edited recurring template tasks with their updated state"`
+		EditedCount int                    `json:"editedCount" doc:"Total number of tasks/templates that were edited"`
+		Message     string                 `json:"message" example:"Successfully edited 2 tasks"`
+	} `json:"body"`
+}
+
+func RegisterEditTasksNaturalLanguageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "edit-tasks-natural-language",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language/edit",
+		Summary:     "Edit tasks using natural language",
+		Description: "Use AI to find and edit one or more tasks based on a natural language instruction",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.EditTasksNaturalLanguage)
 }

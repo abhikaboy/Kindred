@@ -457,22 +457,8 @@ export interface NaturalLanguageTaskCreationResponse {
     message: string;
 }
 
-export interface NaturalLanguagePreviewCategory {
-    name: string;
-    workspaceName: string;
-    tasks: CreateTaskParams[];
-}
-
-export interface NaturalLanguagePreviewTaskPair {
-    categoryId: string;
-    categoryName?: string;
-    task: CreateTaskParams;
-}
-
-export interface NaturalLanguageTaskPreviewResponse {
-    categories: NaturalLanguagePreviewCategory[];
-    tasks: NaturalLanguagePreviewTaskPair[];
-}
+type PreviewTaskNaturalLanguageOutputBody = components["schemas"]["PreviewTaskNaturalLanguageOutputBody"];
+type ConfirmTaskNaturalLanguageInputBody = components["schemas"]["ConfirmTaskNaturalLanguageInputBody"];
 
 /**
  * Create tasks from natural language description using AI
@@ -522,7 +508,7 @@ export const createTasksFromNaturalLanguageAPI = async (
  */
 export const previewTasksFromNaturalLanguageAPI = async (
     text: string
-): Promise<NaturalLanguageTaskPreviewResponse> => {
+): Promise<PreviewTaskNaturalLanguageOutputBody> => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const { data, error } = await (client.POST as any)("/v1/user/tasks/natural-language/preview", {
@@ -542,14 +528,68 @@ export const previewTasksFromNaturalLanguageAPI = async (
     }
 
     const payload = (data as any)?.body ?? data;
-    return payload as NaturalLanguageTaskPreviewResponse;
+    return payload as PreviewTaskNaturalLanguageOutputBody;
+};
+
+/**
+ * Query tasks using natural language description.
+ * API: Makes POST request to convert NL to filters and return matching tasks
+ * @param text - Natural language description of tasks to find
+ * @param timezone - IANA timezone string
+ */
+export const queryTasksNaturalLanguageAPI = async (
+    text: string,
+    timezone: string
+): Promise<{ tasks: components["schemas"]["TaskDocument"][]; query: unknown }> => {
+    const { data, error } = await (client.POST as any)("/v1/user/tasks/natural-language/query", {
+        params: withAuthHeaders({}),
+        body: { text, timezone },
+    });
+
+    if (error) {
+        throw new Error(`Failed to query tasks from natural language: ${JSON.stringify(error)}`);
+    }
+
+    if (!data) {
+        throw new Error("No response data from natural language query");
+    }
+
+    const payload = (data as any)?.body ?? data;
+    return payload as { tasks: components["schemas"]["TaskDocument"][]; query: unknown };
+};
+
+type BulkDeleteTaskInputBody = components["schemas"]["BulkDeleteTaskInputBody"];
+type BulkDeleteTaskOutputBody = components["schemas"]["BulkDeleteTaskOutputBody"];
+
+/**
+ * Bulk delete tasks.
+ * API: Makes POST request to delete up to 100 tasks in a single call
+ * @param tasks - Array of { taskId, categoryId, deleteRecurring } items
+ */
+export const bulkDeleteTasksAPI = async (
+    tasks: BulkDeleteTaskInputBody["tasks"]
+): Promise<BulkDeleteTaskOutputBody> => {
+    const { data, error } = await client.POST("/v1/user/tasks/bulk/delete", {
+        params: withAuthHeaders({}),
+        body: { tasks },
+    });
+
+    if (error) {
+        throw new Error(`Failed to bulk delete tasks: ${JSON.stringify(error)}`);
+    }
+
+    if (!data) {
+        throw new Error("No response data from bulk delete");
+    }
+
+    return data;
 };
 
 /**
  * Confirm and create tasks from a preview payload.
  */
 export const confirmTasksFromNaturalLanguageAPI = async (
-    payload: NaturalLanguageTaskPreviewResponse
+    payload: ConfirmTaskNaturalLanguageInputBody
 ): Promise<NaturalLanguageTaskCreationResponse> => {
     const { data, error } = await (client.POST as any)("/v1/user/tasks/natural-language/confirm", {
         params: withAuthHeaders({}),
@@ -564,6 +604,6 @@ export const confirmTasksFromNaturalLanguageAPI = async (
         throw new Error("No response data from natural language confirmation");
     }
 
-    const payload = (data as any)?.body ?? data;
-    return payload as NaturalLanguageTaskCreationResponse;
+    const responsePayload = (data as any)?.body ?? data;
+    return responsePayload as NaturalLanguageTaskCreationResponse;
 };

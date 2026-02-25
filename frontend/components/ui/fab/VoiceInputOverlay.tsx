@@ -21,20 +21,62 @@ import {
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
-import { CategoryMetadata, createTasksFromNaturalLanguageAPI } from "@/api/task";
+import {
+    previewTasksFromNaturalLanguageAPI,
+    confirmTasksFromNaturalLanguageAPI,
+    queryTasksNaturalLanguageAPI,
+} from "@/api/task";
 import type { components } from "@/api/generated/types";
 import type { Task } from "@/api/types";
+import DeletePreviewModal from "@/components/modals/DeletePreviewModal";
 import TaskCard from "@/components/cards/TaskCard";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
 const TAB_BAR_HEIGHT = 83;
 const GRADIENT_HEIGHT = SCREEN_HEIGHT * 0.65;
 const DEV_FALLBACK_TRANSCRIPTION = "shovel the snow at noon tomorrow";
-type TaskDocument = components["schemas"]["TaskDocument"];
 
 interface VoiceInputOverlayProps {
     onClose: () => void;
 }
+
+const StaggeredTaskCard: React.FC<{ index: number; children: React.ReactNode }> = ({ index, children }) => {
+    const translateY = useRef(new Animated.Value(20)).current;
+    const translateX = useRef(new Animated.Value(-8)).current;
+    const opacity = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const delay = Math.min(index * 120, 600);
+        Animated.sequence([
+            Animated.delay(delay),
+            Animated.parallel([
+                Animated.timing(opacity, {
+                    toValue: 1,
+                    duration: 280,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(translateY, {
+                    toValue: 0,
+                    tension: 100,
+                    friction: 13,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(translateX, {
+                    toValue: 0,
+                    tension: 110,
+                    friction: 14,
+                    useNativeDriver: true,
+                }),
+            ]),
+        ]).start();
+    }, []);
+
+    return (
+        <Animated.View style={{ opacity, transform: [{ translateX }, { translateY }] }}>
+            {children}
+        </Animated.View>
+    );
+};
 
 export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose }) => {
     const ThemedColor = useThemeColor();
@@ -43,11 +85,21 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     const [recognizing, setRecognizing] = useState(false);
     const [transcription, setTranscription] = useState("");
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedTasks, setGeneratedTasks] = useState<TaskDocument[] | null>(null);
-    const [generatedCategories, setGeneratedCategories] = useState<CategoryMetadata[]>([]);
+    const [isPreviewing, setIsPreviewing] = useState(false);
+    const [isConfirming, setIsConfirming] = useState(false);
+    const [previewPayload, setPreviewPayload] = useState<components["schemas"]["PreviewTaskNaturalLanguageOutputBody"] | null>(null);
+    const [errorTitle, setErrorTitle] = useState("");
+    const [errorDetails, setErrorDetails] = useState<string[]>([]);
 
-    const hasPreview = generatedTasks !== null;
+    // Delete flow state
+    const [deletePreviewTasks, setDeletePreviewTasks] = useState<components["schemas"]["TaskDocument"][]>([]);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    const hasPreview = previewPayload !== null;
+    const transcriptionWords = useMemo(
+        () => transcription.trim().split(/\s+/).filter(Boolean),
+        [transcription]
+    );
 
     // Prevents double-firing exit animation (e.g. rapid X presses)
     const isClosingRef = useRef(false);
@@ -66,8 +118,10 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const stopPillOpacity = useRef(new Animated.Value(0)).current;
     const stopPillTranslateY = useRef(new Animated.Value(8)).current;
     const micScale = useRef(new Animated.Value(1)).current;
+    const readingProgress = useRef(new Animated.Value(0)).current;
 
     const micPulse = useRef<Animated.CompositeAnimation | null>(null);
+    const readingLoop = useRef<Animated.CompositeAnimation | null>(null);
 
     // ─── Pulse ────────────────────────────────────────────────────────────────
 
@@ -242,6 +296,33 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         }
     }, [transcription, recognizing, hasPreview]);
 
+    useEffect(() => {
+        if (!isPreviewing || transcriptionWords.length === 0) {
+            readingLoop.current?.stop();
+            readingLoop.current = null;
+            readingProgress.setValue(0);
+            return;
+        }
+
+        readingLoop.current?.stop();
+        readingProgress.setValue(0);
+        const duration = Math.max(1600, transcriptionWords.length * 520);
+        readingLoop.current = Animated.loop(
+            Animated.timing(readingProgress, {
+                toValue: Math.max(1, transcriptionWords.length - 1),
+                duration,
+                easing: Easing.linear,
+                useNativeDriver: false,
+            })
+        );
+        readingLoop.current.start();
+
+        return () => {
+            readingLoop.current?.stop();
+            readingLoop.current = null;
+        };
+    }, [isPreviewing, transcriptionWords.length]);
+
     // ─── Stop-pill visibility ──────────────────────────────────────────────────
 
     useEffect(() => {
@@ -277,7 +358,41 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     // ─── Speech recognition events ────────────────────────────────────────────
 
+    const clearError = () => {
+        setErrorTitle("");
+        setErrorDetails([]);
+    };
+
+    const setErrorFromModel = (error: unknown, fallbackTitle: string, fallbackDetail: string) => {
+        const fallbackDetails = fallbackDetail ? [fallbackDetail] : [];
+        let model: components["schemas"]["ErrorModel"] | null = null;
+
+        if (error instanceof Error) {
+            try {
+                model = JSON.parse(error.message);
+            } catch {
+                // ignore parse errors; use fallback
+            }
+        } else if (error && typeof error === "object") {
+            model = error as components["schemas"]["ErrorModel"];
+        }
+
+        const title = model?.title || fallbackTitle;
+        const details: string[] = [];
+
+        if (model?.detail) details.push(model.detail);
+        if (Array.isArray(model?.errors)) {
+            model.errors.forEach((item) => {
+                if (item?.message) details.push(item.message);
+            });
+        }
+
+        setErrorTitle(title);
+        setErrorDetails(details.length > 0 ? details : fallbackDetails);
+    };
+
     useSpeechRecognitionEvent("start", () => {
+        clearError();
         recognizingRef.current = true;
         setRecognizing(true);
         startPulse();
@@ -298,6 +413,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         recognizingRef.current = false;
         setRecognizing(false);
         stopPulse();
+        setErrorTitle("Voice Input Failed");
+        setErrorDetails(["Try again or type a request."]);
     });
 
     // ─── Handlers ─────────────────────────────────────────────────────────────
@@ -311,7 +428,12 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             return;
         }
         const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-        if (!result.granted) return;
+        if (!result.granted) {
+            setErrorTitle("Microphone Permission Denied");
+            setErrorDetails(["Enable microphone access in Settings."]);
+            return;
+        }
+        clearError();
         ExpoSpeechRecognitionModule.start({
             lang: "en-US",
             interimResults: true,
@@ -332,24 +454,47 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         if (recognizingRef.current && ExpoSpeechRecognitionModule) {
             ExpoSpeechRecognitionModule.stop();
         }
-        setPreviewPayload(null);
-        setIsPreviewing(false);
-        setIsConfirming(false);
-        setTranscription("");
         // Animate out fully, THEN tell the parent to unmount us.
         // The parent's conditional render ({voiceOverlayVisible && <VoiceInputOverlay/>})
         // means the unmount happens after everything is already at opacity 0 — no snap.
-        animateOut(() => onClose());
+        animateOut(() => {
+            setPreviewPayload(null);
+            setIsPreviewing(false);
+            setIsConfirming(false);
+            setTranscription("");
+            clearError();
+            onClose();
+        });
     };
+
+    const isDeleteIntent = (text: string) => /\b(delete|remove|clear)\b/i.test(text);
 
     const handleGeneratePreview = async () => {
         if (transcription.trim().length < 4 || isPreviewing || isConfirming) return;
+        clearError();
+
+        if (isDeleteIntent(transcription.trim())) {
+            setIsPreviewing(true);
+            try {
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const result = await queryTasksNaturalLanguageAPI(transcription.trim(), timezone);
+                setDeletePreviewTasks(result.tasks);
+                setShowDeleteModal(true);
+            } catch (error) {
+                setErrorFromModel(error, "Couldn't Find Tasks", "Please try again.");
+            } finally {
+                setIsPreviewing(false);
+            }
+            return;
+        }
+
         setIsPreviewing(true);
         try {
             const result = await previewTasksFromNaturalLanguageAPI(transcription.trim());
             setPreviewPayload(result);
-        } catch {
+        } catch (error) {
             setIsPreviewing(false);
+            setErrorFromModel(error, "Couldn't Generate Tasks", "Please try again.");
             return;
         }
         setIsPreviewing(false);
@@ -357,13 +502,22 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     const handleConfirmTasks = async () => {
         if (!previewPayload || isConfirming) return;
+        clearError();
         setIsConfirming(true);
         try {
             await confirmTasksFromNaturalLanguageAPI(previewPayload);
             fetchWorkspaces(true);
-            animateOut(() => onClose());
-        } catch {
+            animateOut(() => {
+                setPreviewPayload(null);
+                setIsPreviewing(false);
+                setIsConfirming(false);
+                setTranscription("");
+                clearError();
+                onClose();
+            });
+        } catch (error) {
             setIsConfirming(false);
+            setErrorFromModel(error, "Couldn't Add Tasks", "Please try again.");
         }
     };
 
@@ -372,11 +526,10 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         setTranscription("");
         setIsPreviewing(false);
         setIsConfirming(false);
+        clearError();
     };
 
     // ─── Render ───────────────────────────────────────────────────────────────
-
-    const micColor = recognizing ? ThemedColor.error : ThemedColor.primary;
 
     const groupedCategories = useMemo(() => {
         if (!previewPayload) return [];
@@ -456,6 +609,18 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         return [...groups, ...Array.from(existingGroups.values())];
     }, [previewPayload, workspaces]);
 
+    const handleDeleteModalClose = () => {
+        setShowDeleteModal(false);
+        setDeletePreviewTasks([]);
+    };
+
+    const handleDeleteConfirmed = () => {
+        fetchWorkspaces(true);
+        setShowDeleteModal(false);
+        setDeletePreviewTasks([]);
+        handleClose();
+    };
+
     return (
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             {/* Intercept background touches and dismiss */}
@@ -518,10 +683,43 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 pointerEvents="none"
             >
                 <ThemedText style={styles.previewLabel}>Preview</ThemedText>
+                {!!errorTitle && (
+                    <View style={styles.errorBanner}>
+                        <ThemedText style={styles.errorBannerTitle}>{errorTitle}</ThemedText>
+                        {errorDetails.map((detail, index) => (
+                            <ThemedText key={`${detail}-${index}`} style={styles.errorBannerText}>
+                                {detail}
+                            </ThemedText>
+                        ))}
+                    </View>
+                )}
                 {!hasPreview && (
                     <>
                         {transcription ? (
-                            <ThemedText style={styles.transcriptionText}>{transcription}</ThemedText>
+                            <ThemedText style={styles.transcriptionText}>
+                                {isPreviewing ? (
+                                    transcriptionWords.map((word, index) => (
+                                        <Animated.Text
+                                            key={`${word}-${index}`}
+                                            style={[
+                                                styles.transcriptionWord,
+                                                {
+                                                    opacity: readingProgress.interpolate({
+                                                        inputRange: [index - 1, index, index + 1],
+                                                        outputRange: [0.25, 1, 0.25],
+                                                        extrapolate: "clamp",
+                                                    }),
+                                                },
+                                            ]}
+                                        >
+                                            {word}
+                                            {index < transcriptionWords.length - 1 ? " " : ""}
+                                        </Animated.Text>
+                                    ))
+                                ) : (
+                                    transcription
+                                )}
+                            </ThemedText>
                         ) : (
                             <ThemedText style={styles.placeholderText}>
                                 {recognizing
@@ -532,8 +730,6 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     </>
                 )}
             </Animated.View>
-            <View>
-
             {hasPreview && (
                 <Animated.View
                     style={[
@@ -550,51 +746,58 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.previewListContent}
                     >
-                        {groupedCategories.map((category) => (
-                            <View key={category.categoryId} style={styles.previewCategory}>
-                                {category.workspace && (
-                                    <ThemedText style={styles.previewWorkspaceLabel}>
-                                        Workspace: {category.workspace}
-                                    </ThemedText>
-                                )}
-                                <View style={styles.previewCategoryHeader}>
-                                    <ThemedText style={styles.previewCategoryTitle}>
-                                        {category.categoryName}
-                                    </ThemedText>
-                                    {category.isNew && (
-                                        <View
-                                            style={[
-                                                styles.previewNewBadge,
-                                                { backgroundColor: `${ThemedColor.primary}1F` },
-                                            ]}
-                                        >
-                                            <ThemedText
+                        {(() => {
+                            let taskIndex = 0;
+                            return groupedCategories.map((category) => (
+                                <View key={category.categoryId} style={styles.previewCategory}>
+                                    {category.workspace && (
+                                        <ThemedText style={styles.previewWorkspaceLabel}>
+                                            Workspace: {category.workspace}
+                                        </ThemedText>
+                                    )}
+                                    <View style={styles.previewCategoryHeader}>
+                                        <ThemedText style={styles.previewCategoryTitle}>
+                                            {category.categoryName}
+                                        </ThemedText>
+                                        {category.isNew && (
+                                            <View
                                                 style={[
-                                                    styles.previewNewBadgeText,
-                                                    { color: ThemedColor.primary },
+                                                    styles.previewNewBadge,
+                                                    { backgroundColor: `${ThemedColor.primary}1F` },
                                                 ]}
                                             >
-                                                NEW
-                                            </ThemedText>
-                                        </View>
-                                    )}
+                                                <ThemedText
+                                                    style={[
+                                                        styles.previewNewBadgeText,
+                                                        { color: ThemedColor.primary },
+                                                    ]}
+                                                >
+                                                    NEW
+                                                </ThemedText>
+                                            </View>
+                                        )}
+                                    </View>
+                                    <View style={styles.previewTasks}>
+                                        {category.tasks.map((task) => {
+                                            const idx = taskIndex++;
+                                            return (
+                                                <StaggeredTaskCard key={task.id} index={idx}>
+                                                    <TaskCard
+                                                        content={task.content}
+                                                        value={task.value}
+                                                        priority={task.priority as any}
+                                                        id={task.id}
+                                                        categoryId={category.categoryId}
+                                                        redirect={false}
+                                                        task={task}
+                                                    />
+                                                </StaggeredTaskCard>
+                                            );
+                                        })}
+                                    </View>
                                 </View>
-                                <View style={styles.previewTasks}>
-                                    {category.tasks.map((task) => (
-                                        <TaskCard
-                                            key={task.id}
-                                            content={task.content}
-                                            value={task.value}
-                                            priority={task.priority as any}
-                                            id={task.id}
-                                            categoryId={category.categoryId}
-                                            redirect={false}
-                                            task={task}
-                                        />
-                                    ))}
-                                </View>
-                            </View>
-                        ))}
+                            ));
+                        })()}
                     </ScrollView>
                 </Animated.View>
             )}
@@ -655,7 +858,6 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 </TouchableOpacity>
             </Animated.View>
 
-            </View>
             {/* Mic section */}
             <Animated.View
                 style={[
@@ -668,32 +870,57 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 ]}
                 pointerEvents={hasPreview ? "none" : "auto"}
             >
-                <ThemedText
-                    style={[
-                        styles.listeningLabel,
-                        {
-                            color: recognizing
-                                ? "rgba(255,255,255,0.85)"
-                                : "rgba(255,255,255,0.55)",
-                        },
-                    ]}
-                >
-                    {recognizing ? "Now Listening" : "Tap to Speak"}
-                </ThemedText>
+                {!transcription || recognizing ? (
+                    <ThemedText
+                        style={[
+                            styles.listeningLabel,
+                            {
+                                color: recognizing
+                                    ? "rgba(255,255,255,0.85)"
+                                    : "rgba(255,255,255,0.55)",
+                            },
+                        ]}
+                    >
+                        {recognizing ? "Now Listening" : "Tap to Speak"}
+                    </ThemedText>
+                ) : null}
                 <Animated.View style={{ transform: [{ scale: micScale }] }}>
                     <TouchableOpacity
-                        onPress={handleMicPress}
+                        onPress={
+                            transcription && !recognizing
+                                ? handleRetry
+                                : recognizing
+                                    ? handleStopRecording
+                                    : handleMicPress
+                        }
                         activeOpacity={0.85}
-                        style={[styles.micButton, { backgroundColor: micColor }]}
+                        style={[
+                            styles.micButton,
+                            { backgroundColor: ThemedColor.primary },
+                        ]}
                     >
                         <Ionicons
-                            name={recognizing ? "stop" : "mic"}
-                            size={32}
+                            name={
+                                transcription && !recognizing
+                                    ? "reload"
+                                    : recognizing
+                                        ? "stop"
+                                        : "mic"
+                            }
+                            size={28}
                             color="#ffffff"
                         />
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
+
+            {/* Delete preview modal */}
+            <DeletePreviewModal
+                visible={showDeleteModal}
+                tasks={deletePreviewTasks}
+                onClose={handleDeleteModalClose}
+                onDeleted={handleDeleteConfirmed}
+            />
 
             {/* Generate button */}
             {!hasPreview && (
@@ -716,12 +943,15 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     pointerEvents={transcription && !recognizing ? "auto" : "none"}
                 >
                     <TouchableOpacity
-                        onPress={handleGenerateTasks}
+                        onPress={handleGeneratePreview}
                         style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
                         activeOpacity={0.85}
+                        disabled={isPreviewing}
                     >
                         <ThemedText style={styles.generateButtonText}>
-                            {isGenerating ? "Generating..." : "Generate Tasks"}
+                            {isPreviewing
+                                ? isDeleteIntent(transcription) ? "Finding Tasks..." : "Generating..."
+                                : isDeleteIntent(transcription) ? "Find Tasks to Delete" : "Generate Tasks"}
                         </ThemedText>
                     </TouchableOpacity>
                 </Animated.View>
@@ -776,11 +1006,34 @@ const styles = StyleSheet.create({
         letterSpacing: 1.2,
         textTransform: "uppercase",
     },
+    errorBanner: {
+        marginTop: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        backgroundColor: "rgba(255,90,90,0.18)",
+        borderWidth: 1,
+        borderColor: "rgba(255,120,120,0.35)",
+        gap: 4,
+    },
+    errorBannerTitle: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#ffffff",
+    },
+    errorBannerText: {
+        fontSize: 12,
+        fontWeight: "500",
+        color: "rgba(255,255,255,0.85)",
+    },
     transcriptionText: {
         fontSize: 18,
         lineHeight: 28,
         color: "#ffffff",
         fontWeight: "500",
+    },
+    transcriptionWord: {
+        color: "#ffffff",
     },
     placeholderText: {
         fontSize: 16,
@@ -885,7 +1138,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         alignItems: "center",
-        gap: 14,
         zIndex: 9999,
     },
     listeningLabel: {
@@ -894,9 +1146,10 @@ const styles = StyleSheet.create({
         letterSpacing: 0.2,
     },
     micButton: {
-        width: 72,
-        height: 72,
+        width: 64,
+        height: 64,
         borderRadius: 36,
+        marginTop: 12,
         alignItems: "center",
         justifyContent: "center",
         shadowColor: "#000",
