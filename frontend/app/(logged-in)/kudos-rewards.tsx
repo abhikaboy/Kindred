@@ -59,7 +59,7 @@ export default function KudosRewards() {
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();
     const { user, updateUser } = useAuth();
-    
+
     const [selectedReward, setSelectedReward] = useState<RewardInfo | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isRedeeming, setIsRedeeming] = useState(false);
@@ -85,7 +85,7 @@ export default function KudosRewards() {
             setAlertVisible(true);
             return;
         }
-        
+
         // Check if user has enough of either kudos type
         if (encouragementsProgress < reward.kudosCost && congratulationsProgress < reward.kudosCost) {
             setAlertTitle("Insufficient Kudos");
@@ -94,31 +94,31 @@ export default function KudosRewards() {
             setAlertVisible(true);
             return;
         }
-        
+
         setSelectedReward(reward);
         setIsModalVisible(true);
     };
 
     const handleConfirmRedemption = async (kudosType: "encouragements" | "congratulations") => {
         if (!selectedReward) return;
-        
+
         setIsRedeeming(true);
-        
+
         try {
             const response = await redeemRewardAPI(selectedReward.type, kudosType);
-            
+
             // Update user's kudos in local state based on which type was used
             const updatedUser: any = {
                 kudosRewards: {
-                    encouragements: kudosType === "encouragements" 
-                        ? encouragementsProgress - selectedReward.kudosCost 
+                    encouragements: kudosType === "encouragements"
+                        ? encouragementsProgress - selectedReward.kudosCost
                         : encouragementsProgress,
-                    congratulations: kudosType === "congratulations" 
-                        ? congratulationsProgress - selectedReward.kudosCost 
+                    congratulations: kudosType === "congratulations"
+                        ? congratulationsProgress - selectedReward.kudosCost
                         : congratulationsProgress,
                 },
             };
-            
+
             // Add credit updates
             if (user?.credits) {
                 if (selectedReward.type === "voice") {
@@ -131,14 +131,14 @@ export default function KudosRewards() {
                     updatedUser.credits = { ...user.credits, analytics: user.credits.analytics + (selectedReward.creditsAmount || 0) };
                 }
             }
-            
+
             updateUser(updatedUser);
-            
+
             setAlertTitle("Success!");
             setAlertMessage(`You've claimed ${selectedReward.title}! ${response.creditsReceived ? `+${response.creditsReceived} credits added to your account.` : ""}`);
             setAlertButtons([{ text: "OK", style: "default" }]);
             setAlertVisible(true);
-            
+
             setIsModalVisible(false);
             setSelectedReward(null);
         } catch (error: any) {
@@ -176,34 +176,30 @@ export default function KudosRewards() {
                     </ThemedText>
                 </View>
 
-                <View style={{ gap: 0 }}>
+                <View style={styles.progressCardsRow}>
                     {/* Encouragements Section */}
-                    <KudosProgressCard
-                        current={encouragementsProgress}
-                        max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
-                        type="encouragements"
-                        description="Encouragements"
-                        showNavigation={false}
-                    />
+                    <View style={styles.progressCardColumn}>
+                        <KudosProgressCard
+                            current={encouragementsProgress}
+                            max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
+                            type="encouragements"
+                            description="Encouragements"
+                            showNavigation={false}
+                        />
+                    </View>
 
                     {/* Congratulations Section */}
-                    <KudosProgressCard
-                        current={congratulationsProgress}
-                        max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
-                        type="congratulations"
-                        description="Congratulations"
-                        showNavigation={false}
-                    />
+                    <View style={styles.progressCardColumn}>
+                        <KudosProgressCard
+                            current={congratulationsProgress}
+                            max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
+                            type="congratulations"
+                            description="Congratulations"
+                            showNavigation={false}
+                        />
+                    </View>
                 </View>
 
-                {/* Magic Image */}
-                <View style={styles.imageContainer}>
-                    <Image
-                        source={require("@/assets/images/210.Magic.png")}
-                        style={[styles.magicImage, colorScheme === "dark" && { tintColor: "white" }]}
-                        resizeMode="contain"
-                    />
-                </View>
 
                 {/* Benefits Section */}
                 <View style={{ flexDirection: "column", gap: 12 }}>
@@ -268,7 +264,7 @@ export default function KudosRewards() {
                         const canAffordWithCongratulations = congratulationsProgress >= reward.kudosCost;
                         const canAfford = canAffordWithEncouragements || canAffordWithCongratulations;
                         const isDisabled = reward.type === "integration";
-                        
+
                         return (
                             <View
                                 key={index}
@@ -293,7 +289,7 @@ export default function KudosRewards() {
                                         </ThemedText>
                                     </View>
                                 </View>
-                                
+
                                 {isDisabled ? (
                                     <View style={styles.comingSoonBadge}>
                                         <Feather name="clock" size={14} color={ThemedColor.text} style={{ opacity: 0.5 }} />
@@ -314,7 +310,7 @@ export default function KudosRewards() {
                     })}
                 </View>
             </ScrollView>
-            
+
             {/* Redemption Modal */}
             {selectedReward && (
                 <RewardRedemptionModal
@@ -354,6 +350,13 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
             paddingTop: insets.top + 16,
             paddingBottom: insets.bottom + 24,
             gap: 12,
+        },
+        progressCardsRow: {
+            flexDirection: "row",
+            gap: 12,
+        },
+        progressCardColumn: {
+            flex: 1,
         },
         backButton: {
             alignSelf: "flex-start",

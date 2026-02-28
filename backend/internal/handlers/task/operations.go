@@ -782,3 +782,47 @@ func RegisterEditTasksNaturalLanguageOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"tasks", "ai"},
 	}, handler.EditTasksNaturalLanguage)
 }
+
+// EditResultResponse holds the result of an applied edit operation.
+type EditResultResponse struct {
+	Tasks       []TaskDocument         `json:"tasks"       doc:"Edited regular tasks"`
+	Templates   []TemplateTaskDocument `json:"templates"   doc:"Edited recurring template tasks"`
+	EditedCount int                    `json:"editedCount" doc:"Total number of tasks/templates edited"`
+}
+
+// IntentOpResponse is the response shape for a single decomposed operation.
+// For "edit": EditResult is populated (applied server-side).
+// For "delete": DeleteTasks is populated (frontend shows confirmation modal).
+// For "create": CreatePreview is populated (frontend shows preview before confirming).
+type IntentOpResponse struct {
+	Type          string                `json:"type" doc:"Operation type: 'create', 'edit', or 'delete'"`
+	EditResult    *EditResultResponse   `json:"editResult,omitempty"    doc:"Populated for edit ops — tasks already updated server-side"`
+	DeleteTasks   []TaskDocument        `json:"deleteTasks,omitempty"   doc:"Populated for delete ops — tasks matching the delete query"`
+	CreatePreview *MultiTaskOutputLocal `json:"createPreview,omitempty" doc:"Populated for create ops — preview payload to pass to /confirm"`
+}
+
+// Intent Task from Natural Language
+type IntentTaskNaturalLanguageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Text     string `json:"text" minLength:"1" maxLength:"10000" doc:"Natural language instruction (may contain create, edit, and/or delete operations)" example:"delete my grocery tasks and add a dentist appointment tomorrow"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
+	} `json:"body"`
+}
+
+type IntentTaskNaturalLanguageOutput struct {
+	Body struct {
+		Ops []IntentOpResponse `json:"ops" doc:"Ordered list of decomposed operations. Edits are already applied; deletes and creates need frontend confirmation."`
+	} `json:"body"`
+}
+
+func RegisterIntentTaskNaturalLanguageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "intent-task-natural-language",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language/intent",
+		Summary:     "Unified natural language intent router",
+		Description: "Decompose a natural language utterance into create/edit/delete operations. Edit ops are applied immediately; create and delete payloads are returned for frontend confirmation.",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.IntentTaskNaturalLanguage)
+}

@@ -398,18 +398,6 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 {/* Recently Completed Tasks */}
                 <RecentlyCompletedTasks />
-
-                    {/* Tutorial Card */}
-                    <View
-                        style={{
-                            marginLeft: HORIZONTAL_PADDING,
-                            marginRight: HORIZONTAL_PADDING,
-                        }}>
-                        <TutorialCard
-                            onPress={() => router.push("/(logged-in)/(tutorial)")}
-                            showBadge={shouldShowTutorial}
-                        />
-                    </View>
                 </ScrollView>
             </MotiView>
 

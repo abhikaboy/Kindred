@@ -261,6 +261,72 @@ func (h *Handler) callGeminiEditFlow(ctx context.Context, userID, text, timezone
 	return &result, nil
 }
 
+// --- Intent router flow local mirror types (avoid circular import with gemini package) ---
+
+// IntentOpLocal mirrors gemini.IntentOp but uses local types.
+type IntentOpLocal struct {
+	Type          string                       `json:"type"`
+	CreatePayload *MultiTaskOutputLocal        `json:"createPayload,omitempty"`
+	EditPayload   *EditTasksFlowOutputLocal    `json:"editPayload,omitempty"`
+	DeletePayload *TaskQueryFiltersOutputLocal `json:"deletePayload,omitempty"`
+}
+
+// IntentRouterOutputLocal mirrors gemini.IntentRouterOutput.
+type IntentRouterOutputLocal struct {
+	Ops []IntentOpLocal `json:"ops"`
+}
+
+// callGeminiIntentFlow calls the Gemini IntentRouterFlow using reflection to avoid circular imports.
+func (h *Handler) callGeminiIntentFlow(ctx context.Context, userID, text, timezone string) (*IntentRouterOutputLocal, error) {
+	if h.geminiService == nil {
+		return nil, fmt.Errorf("gemini service not available")
+	}
+
+	svcValue := reflect.ValueOf(h.geminiService)
+	flowField := svcValue.Elem().FieldByName("IntentRouterFlow")
+	if !flowField.IsValid() {
+		return nil, fmt.Errorf("gemini intent router flow not configured")
+	}
+
+	runMethod := flowField.MethodByName("Run")
+	if !runMethod.IsValid() {
+		return nil, fmt.Errorf("gemini intent router flow Run method not available")
+	}
+
+	inputType := runMethod.Type().In(1)
+	inputValue := reflect.New(inputType).Elem()
+	inputValue.FieldByName("UserID").SetString(userID)
+	inputValue.FieldByName("Text").SetString(text)
+	inputValue.FieldByName("Timezone").SetString(timezone)
+
+	callResults := runMethod.Call([]reflect.Value{
+		reflect.ValueOf(ctx),
+		inputValue,
+	})
+
+	if len(callResults) != 2 {
+		return nil, fmt.Errorf("unexpected gemini flow response structure")
+	}
+
+	if !callResults[1].IsNil() {
+		if err, ok := callResults[1].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, fmt.Errorf("unexpected error type from gemini flow")
+	}
+
+	var result IntentRouterOutputLocal
+	resultBytes, err := json.Marshal(callResults[0].Interface())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse AI response: %w", err)
+	}
+	if err := json.Unmarshal(resultBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse AI response structure: %w", err)
+	}
+
+	return &result, nil
+}
+
 // mergeTaskWithEdits builds an UpdateTaskDocument by copying the current task's core fields
 // and applying pointer-based overrides from updates.
 // Time fields (Deadline, StartDate, StartTime) are intentionally excluded — the handler

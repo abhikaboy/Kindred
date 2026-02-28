@@ -361,14 +361,6 @@ const DrawerContent = ({
                     onLongPress={() => {}}
                 />
                 <DrawerItem
-                    title="Voice Dump"
-                    badge="AI"
-                    selected={currentSelected}
-                    icon={<Microphone size={20} color={ThemedColor.primary} weight="regular" />}
-                    onPress={() => handlePush("/voice")}
-                    onLongPress={() => {}}
-                />
-                <DrawerItem
                     title="Text Dump"
                     badge="AI"
                     selected={currentSelected}

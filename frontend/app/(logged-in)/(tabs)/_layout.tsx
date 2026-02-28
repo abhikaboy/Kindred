@@ -129,7 +129,7 @@ export default function TabLayout() {
         // "/blueprint",
         "/blueprint/create",
         "/voice",
-        // Add other screen paths where you want to hide tabs
+        "/review",
     ];
 
     // Define screens where you want to hide the FAB (but keep tab bar visible)

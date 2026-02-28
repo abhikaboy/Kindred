@@ -21,6 +21,7 @@ type FlowSet struct {
 	GenerateBlueprintFlow            *core.Flow[GenerateBlueprintInput, GenerateBlueprintOutput, struct{}]
 	QueryTasksFlow                   *core.Flow[QueryTasksFlowInput, TaskQueryFiltersOutput, struct{}]
 	EditTasksFlow                    *core.Flow[EditTasksFlowInput, EditTasksFlowOutput, struct{}]
+	IntentRouterFlow                 *core.Flow[IntentRouterInput, IntentRouterOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -309,6 +310,59 @@ If the user's instruction doesn't match anything, return empty arrays for both.`
 			return *resp, nil
 		})
 
+	// Unified intent router flow — decomposes a natural language utterance into an ordered
+	// list of create/edit/delete operations. Edits are returned first (non-destructive),
+	// then deletes (destructive, needs user confirmation), then creates (additive, needs preview).
+	intentRouterFlow := genkit.DefineFlow(g, "intentRouterFlow",
+		func(ctx context.Context, input IntentRouterInput) (IntentRouterOutput, error) {
+			now := time.Now().UTC().Format(time.RFC3339)
+
+			prompt := fmt.Sprintf(`You are a task management assistant. The user has given you a natural language instruction that may contain one or more operations: creating new tasks, editing existing tasks, or deleting existing tasks.
+
+STEP 1: Call getUserActiveTasks with userId "%s" to see all their current tasks and templates (needed for edit and delete operations).
+STEP 2: Call getUserCategories with userId "%s" to see their existing categories and workspaces (needed for create operations).
+STEP 3: Decompose the user's instruction into one or more typed operations.
+
+Current time: %s
+User's timezone: %s
+User instruction: "%s"
+
+Return an IntentRouterOutput with an "ops" array. Each element must have:
+- "type": one of "create", "edit", or "delete"
+- Exactly one payload field matching the type:
+  - For "create": populate "createPayload" with the same structure as multiTaskFromTextFlowWithContext output:
+      { "categories": [...new categories with tasks...], "tasks": [...tasks for existing categories...] }
+      Use the categoryIds from getUserCategories when assigning tasks to existing categories.
+  - For "edit": populate "editPayload" with the same structure as editTasksFlow output:
+      { "instructions": [...], "templateInstructions": [...] }
+      Use exact hex IDs from getUserActiveTasks results.
+  - For "delete": populate "deletePayload" with the same structure as queryTasksFlow output:
+      { "categoryIds": [...], "priorities": [...], ... }
+      Construct filters that will match the tasks the user wants to delete.
+
+ORDERING RULES (important):
+1. Edit operations first (non-destructive, applied immediately server-side)
+2. Delete operations second (destructive, user will confirm in UI)
+3. Create operations last (additive, user will preview in UI)
+
+If the instruction contains only one type of operation, return a single-element "ops" array.
+If no matching tasks are found for an edit or delete, return an empty "ops" array rather than guessing.
+Only include operations that are clearly implied by the user's instruction.`,
+				input.UserID, input.UserID, now, input.Timezone, input.Text)
+
+			resp, _, err := genkit.GenerateData[IntentRouterOutput](ctx, g,
+				ai.WithPrompt(prompt),
+				ai.WithTools(tools.GetUserActiveTasks, tools.GetUserCategories),
+			)
+			if err != nil {
+				return IntentRouterOutput{}, err
+			}
+			if resp == nil {
+				return IntentRouterOutput{Ops: []IntentOp{}}, nil
+			}
+			return *resp, nil
+		})
+
 	return &FlowSet{
 		TaskFlow:                         generateTaskFlow,
 		TaskFromImageFlow:                generateTaskFromImageFlow,
@@ -318,5 +372,6 @@ If the user's instruction doesn't match anything, return empty arrays for both.`
 		GenerateBlueprintFlow:            generateBlueprintFlow,
 		QueryTasksFlow:                   queryTasksFlow,
 		EditTasksFlow:                    editTasksFlow,
+		IntentRouterFlow:                 intentRouterFlow,
 	}
 }

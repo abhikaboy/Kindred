@@ -1473,6 +1473,290 @@ func (h *Handler) EditTasksNaturalLanguage(ctx context.Context, input *EditTasks
 	return output, nil
 }
 
+// applyEditInstructions applies a set of edit instructions to tasks and templates,
+// returning the edited tasks, edited templates, and total count.
+// It is shared between EditTasksNaturalLanguage and IntentTaskNaturalLanguage.
+func (h *Handler) applyEditInstructions(ctx context.Context, userObjID primitive.ObjectID, userID string, editOutput *EditTasksFlowOutputLocal) ([]TaskDocument, []TemplateTaskDocument, int) {
+	var editedTasks []TaskDocument
+	for _, instruction := range editOutput.Instructions {
+		taskObjID, err := primitive.ObjectIDFromHex(instruction.TaskID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Invalid task ID from AI", slog.String("taskID", instruction.TaskID))
+			continue
+		}
+
+		categoryObjID, err := primitive.ObjectIDFromHex(instruction.CategoryID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Invalid category ID from AI", slog.String("categoryID", instruction.CategoryID))
+			continue
+		}
+
+		currentTask, err := h.service.GetTaskByID(taskObjID, userObjID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Task not found for edit", slog.String("taskID", instruction.TaskID))
+			continue
+		}
+
+		merged := mergeTaskWithEdits(*currentTask, instruction.Updates)
+		if _, err = h.service.UpdatePartialTask(taskObjID, categoryObjID, merged); err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to update task core fields",
+				slog.String("taskID", instruction.TaskID),
+				slog.String("error", err.Error()))
+			continue
+		}
+
+		if instruction.Updates.Notes != nil {
+			if notesErr := h.service.UpdateTaskNotes(taskObjID, categoryObjID, userObjID, UpdateTaskNotesDocument{Notes: *instruction.Updates.Notes}); notesErr != nil {
+				slog.LogAttrs(ctx, slog.LevelWarn, "Failed to update task notes",
+					slog.String("taskID", instruction.TaskID),
+					slog.String("error", notesErr.Error()))
+			}
+		}
+
+		if instruction.Updates.Deadline != nil {
+			deadlineDoc := UpdateTaskDeadlineDocument{}
+			if *instruction.Updates.Deadline != "" {
+				t, parseErr := time.Parse(time.RFC3339, *instruction.Updates.Deadline)
+				if parseErr == nil {
+					deadlineDoc.Deadline = &t
+				}
+			}
+			if dlErr := h.service.UpdateTaskDeadline(taskObjID, categoryObjID, userObjID, deadlineDoc); dlErr != nil {
+				slog.LogAttrs(ctx, slog.LevelWarn, "Failed to update task deadline",
+					slog.String("taskID", instruction.TaskID),
+					slog.String("error", dlErr.Error()))
+			}
+		}
+
+		if instruction.Updates.StartDate != nil || instruction.Updates.StartTime != nil {
+			startDoc := UpdateTaskStartDocument{}
+			if instruction.Updates.StartDate != nil && *instruction.Updates.StartDate != "" {
+				t, parseErr := time.Parse(time.RFC3339, *instruction.Updates.StartDate)
+				if parseErr == nil {
+					startDoc.StartDate = &t
+				}
+			}
+			if instruction.Updates.StartTime != nil && *instruction.Updates.StartTime != "" {
+				t, parseErr := time.Parse(time.RFC3339, *instruction.Updates.StartTime)
+				if parseErr == nil {
+					startDoc.StartTime = &t
+				}
+			}
+			if startErr := h.service.UpdateTaskStart(taskObjID, categoryObjID, userObjID, startDoc); startErr != nil {
+				slog.LogAttrs(ctx, slog.LevelWarn, "Failed to update task start date/time",
+					slog.String("taskID", instruction.TaskID),
+					slog.String("error", startErr.Error()))
+			}
+		}
+
+		updatedTask, fetchErr := h.service.GetTaskByID(taskObjID, userObjID)
+		if fetchErr != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Failed to fetch updated task",
+				slog.String("taskID", instruction.TaskID),
+				slog.String("error", fetchErr.Error()))
+			continue
+		}
+		editedTasks = append(editedTasks, *updatedTask)
+	}
+
+	if editedTasks == nil {
+		editedTasks = []TaskDocument{}
+	}
+
+	var editedTemplates []TemplateTaskDocument
+	for _, instruction := range editOutput.TemplateInstructions {
+		templateObjID, err := primitive.ObjectIDFromHex(instruction.TaskID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Invalid template ID from AI", slog.String("templateID", instruction.TaskID))
+			continue
+		}
+
+		updateDoc := UpdateTemplateDocument{}
+		if instruction.Updates.Content != nil {
+			updateDoc.Content = instruction.Updates.Content
+		}
+		if instruction.Updates.Priority != nil {
+			updateDoc.Priority = instruction.Updates.Priority
+		}
+		if instruction.Updates.Value != nil {
+			updateDoc.Value = instruction.Updates.Value
+		}
+		if instruction.Updates.Notes != nil {
+			updateDoc.Notes = instruction.Updates.Notes
+		}
+		if instruction.Updates.RecurFrequency != nil {
+			updateDoc.RecurFrequency = instruction.Updates.RecurFrequency
+		}
+		if instruction.Updates.RecurType != nil {
+			updateDoc.RecurType = instruction.Updates.RecurType
+		}
+		if instruction.Updates.Deadline != nil && *instruction.Updates.Deadline != "" {
+			t, parseErr := time.Parse(time.RFC3339, *instruction.Updates.Deadline)
+			if parseErr == nil {
+				updateDoc.Deadline = &t
+			}
+		}
+		if instruction.Updates.StartDate != nil && *instruction.Updates.StartDate != "" {
+			t, parseErr := time.Parse(time.RFC3339, *instruction.Updates.StartDate)
+			if parseErr == nil {
+				updateDoc.StartDate = &t
+			}
+		}
+		if instruction.Updates.StartTime != nil && *instruction.Updates.StartTime != "" {
+			t, parseErr := time.Parse(time.RFC3339, *instruction.Updates.StartTime)
+			if parseErr == nil {
+				updateDoc.StartTime = &t
+			}
+		}
+
+		if err := h.service.UpdateTemplateTask(templateObjID, updateDoc); err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to update template task",
+				slog.String("templateID", instruction.TaskID),
+				slog.String("error", err.Error()))
+			continue
+		}
+
+		updated, fetchErr := h.service.GetTemplateByID(templateObjID)
+		if fetchErr != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Failed to fetch updated template",
+				slog.String("templateID", instruction.TaskID),
+				slog.String("error", fetchErr.Error()))
+			continue
+		}
+		editedTemplates = append(editedTemplates, *updated)
+	}
+
+	if editedTemplates == nil {
+		editedTemplates = []TemplateTaskDocument{}
+	}
+
+	return editedTasks, editedTemplates, len(editedTasks) + len(editedTemplates)
+}
+
+// IntentTaskNaturalLanguage handles POST /v1/user/tasks/natural-language/intent
+// It decomposes the user's utterance into an ordered list of create/edit/delete operations.
+// Edit operations are applied immediately server-side; create and delete payloads are
+// returned for the frontend to handle interactively.
+func (h *Handler) IntentTaskNaturalLanguage(ctx context.Context, input *IntentTaskNaturalLanguageInput) (*IntentTaskNaturalLanguageOutput, error) {
+	if input.Body.Text == "" {
+		return nil, huma.Error400BadRequest("Text field is required", nil)
+	}
+
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	if err != nil {
+		if err == types.ErrInsufficientCredits {
+			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
+		}
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+	}
+
+	timezone := input.Body.Timezone
+	if timezone == "" {
+		timezone = "America/New_York"
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Starting natural language intent routing",
+		slog.String("userID", userID),
+		slog.String("inputText", input.Body.Text),
+		slog.String("timezone", timezone))
+
+	intentOutput, err := h.callGeminiIntentFlow(ctx, userID, input.Body.Text, timezone)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini intent flow failed, retrying",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+
+		intentOutput, err = h.callGeminiIntentFlow(ctx, userID, input.Body.Text, timezone)
+		if err != nil {
+			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
+			if refundErr != nil {
+				slog.LogAttrs(ctx, slog.LevelError, "Failed to refund credit after AI failure",
+					slog.String("userID", userID),
+					slog.String("refundError", refundErr.Error()))
+			} else {
+				slog.LogAttrs(ctx, slog.LevelInfo, "Credit successfully refunded",
+					slog.String("userID", userID))
+			}
+			return nil, huma.Error500InternalServerError("Failed to process natural language intent with AI after retry. Your credit has been refunded.", err)
+		}
+	}
+
+	var responseOps []IntentOpResponse
+
+	for _, op := range intentOutput.Ops {
+		switch op.Type {
+		case "edit":
+			if op.EditPayload == nil {
+				continue
+			}
+			editedTasks, editedTemplates, totalEdited := h.applyEditInstructions(ctx, userObjID, userID, op.EditPayload)
+			responseOps = append(responseOps, IntentOpResponse{
+				Type: "edit",
+				EditResult: &EditResultResponse{
+					Tasks:       editedTasks,
+					Templates:   editedTemplates,
+					EditedCount: totalEdited,
+				},
+			})
+
+		case "delete":
+			if op.DeletePayload == nil {
+				continue
+			}
+			filters, err := convertQueryOutput(op.DeletePayload)
+			if err != nil {
+				slog.LogAttrs(ctx, slog.LevelWarn, "Failed to convert delete query output",
+					slog.String("error", err.Error()))
+				continue
+			}
+			tasks, err := h.service.QueryTasksByUser(userObjID, filters)
+			if err != nil {
+				slog.LogAttrs(ctx, slog.LevelWarn, "Failed to query tasks for delete op",
+					slog.String("error", err.Error()))
+				continue
+			}
+			responseOps = append(responseOps, IntentOpResponse{
+				Type:        "delete",
+				DeleteTasks: tasks,
+			})
+
+		case "create":
+			if op.CreatePayload == nil {
+				continue
+			}
+			responseOps = append(responseOps, IntentOpResponse{
+				Type:          "create",
+				CreatePreview: op.CreatePayload,
+			})
+		}
+	}
+
+	if responseOps == nil {
+		responseOps = []IntentOpResponse{}
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Natural language intent routing completed",
+		slog.String("userID", userID),
+		slog.Int("opCount", len(responseOps)))
+
+	output := &IntentTaskNaturalLanguageOutput{}
+	output.Body.Ops = responseOps
+	return output, nil
+}
+
 // PreviewTaskNaturalLanguage processes natural language text with AI and returns a preview payload
 // without creating any tasks or consuming credits.
 func (h *Handler) PreviewTaskNaturalLanguage(ctx context.Context, input *PreviewTaskNaturalLanguageInput) (*PreviewTaskNaturalLanguageOutput, error) {

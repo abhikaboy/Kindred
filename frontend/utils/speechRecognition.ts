@@ -1,10 +1,10 @@
-export const ENABLE_SPEECH_RECOGNITION = false;
+export const ENABLE_SPEECH_RECOGNITION = true;
 
 type SpeechRecognitionModule = {
     requestPermissionsAsync: () => Promise<{ granted?: boolean }>;
     start: (options: Record<string, unknown>) => void;
     stop: () => void;
-};
+} ;
 
 let ExpoSpeechRecognitionModule: SpeechRecognitionModule | null = null;
 let useSpeechRecognitionEvent: (event: string, handler: (...args: any[]) => void) => void = () => {};

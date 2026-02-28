@@ -25,6 +25,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterConfirmTaskNaturalLanguageOperation(api, handler)
 	RegisterQueryTasksNaturalLanguageOperation(api, handler)
 	RegisterEditTasksNaturalLanguageOperation(api, handler)
+	RegisterIntentTaskNaturalLanguageOperation(api, handler)
 	RegisterQueryTasksByUserOperation(api, handler)
 	RegisterGetTasksByUserOperation(api, handler)
 	RegisterCreateTaskOperation(api, handler)

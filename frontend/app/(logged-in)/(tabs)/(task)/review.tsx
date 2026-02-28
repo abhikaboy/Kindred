@@ -25,58 +25,58 @@ const Review = (props: Props) => {
     const childRefs = useRef<{ [key: number]: any }>({});
     const [removedTasks, setRemovedTasks] = useState<string[]>([]);
     const [processingTasks, setProcessingTasks] = useState<Set<string>>(new Set());
-    
+
     // Debounce fetchWorkspaces with 8 second delay
     const debouncedFetchWorkspaces = useDebounce(() => {
         fetchWorkspaces();
     }, 5000);
-    
+
     // Filter out removed tasks and update cards when unnestedTasks or removedTasks change
     const cards = useMemo(() => {
         return unnestedTasks.filter((task) => !removedTasks.includes(task.id));
     }, [unnestedTasks, removedTasks]);
-    
+
     // Always show the first card in the filtered array (index 0)
     // When a card is removed, the next card automatically moves to index 0
     const currentTask = useMemo(() => {
         return cards.length > 0 ? cards[0] : null;
     }, [cards]);
-    
+
     // Track when stack is empty
     const emptyStack = useMemo(() => {
         return cards.length === 0;
     }, [cards]);
-    
+
     // Animation values for fade out and scale in
     const fadeOpacity = useSharedValue(1);
     const scale = useSharedValue(0.9);
-    
+
     // Swipe tracking using shared values (runs on UI thread, no re-renders)
     const swipeProgress = useSharedValue(0); // 0 to 1, based on swipe distance
     const swipeDirectionValue = useSharedValue<'left' | 'right' | 'down' | null>(null);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
     const screenWidth = Dimensions.get("window").width;
-    
+
     // Only use React state for conditional rendering (updated less frequently)
     const [swipeDirection, setSwipeDirection] = useState<string | null>(null);
-    
+
     // Animated styles
     const animatedCardStyle = useAnimatedStyle(() => ({
         opacity: fadeOpacity.value,
         transform: [{ scale: scale.value }],
     }));
-    
+
     // Animated style for swipe indicator (runs on UI thread)
     const animatedIndicatorStyle = useAnimatedStyle(() => {
         const progress = swipeProgress.value;
         const direction = swipeDirectionValue.value;
         const opacity = progress * 0.8; // Max 80% opacity
-        
+
         return {
             opacity: direction ? opacity : 0,
         };
     });
-    
+
     // Animated style for indicator text
     const animatedIndicatorTextStyle = useAnimatedStyle(() => {
         const progress = swipeProgress.value;
@@ -84,7 +84,7 @@ const Review = (props: Props) => {
             opacity: progress,
         };
     });
-    
+
     // Track touches using simple touch handlers on parent container
     const handleTouchStart = (evt: any) => {
         touchStartRef.current = { x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY };
@@ -92,24 +92,24 @@ const Review = (props: Props) => {
         swipeDirectionValue.value = null;
         setSwipeDirection(null);
     };
-    
+
     const handleTouchMove = (evt: any) => {
         if (!touchStartRef.current) return;
-        
+
         const currentX = evt.nativeEvent.pageX;
         const currentY = evt.nativeEvent.pageY;
         const dx = currentX - touchStartRef.current.x;
         const dy = currentY - touchStartRef.current.y;
         const absX = Math.abs(dx);
         const absY = Math.abs(dy);
-        
+
         const threshold = 30; // Minimum distance to show indicator
         const maxDistance = screenWidth * 0.3; // Maximum distance for full opacity (30% of screen width)
-        
+
         // Calculate progress based on distance (0 to 1)
         let progress = 0;
         let direction: 'left' | 'right' | 'down' | null = null;
-        
+
         if (absX > absY) {
             // Horizontal swipe
             progress = Math.min(absX / maxDistance, 1);
@@ -125,11 +125,11 @@ const Review = (props: Props) => {
                 direction = 'down';
             }
         }
-        
+
         // Update shared values (runs on UI thread, no re-render)
         swipeProgress.value = progress;
         swipeDirectionValue.value = direction;
-        
+
         // Only update React state when crossing threshold (for conditional rendering)
         if (absX < threshold && absY < threshold) {
             if (swipeDirection !== null) {
@@ -139,7 +139,7 @@ const Review = (props: Props) => {
             setSwipeDirection(direction);
         }
     };
-    
+
     const handleTouchEnd = () => {
         touchStartRef.current = null;
         swipeProgress.value = withTiming(0, { duration: 100 });
@@ -148,7 +148,7 @@ const Review = (props: Props) => {
             setSwipeDirection(null);
         }, 100);
     };
-    
+
     // Reset animations when currentTask changes (new card mounts)
     useEffect(() => {
         if (currentTask) {
@@ -160,7 +160,7 @@ const Review = (props: Props) => {
             fadeOpacity.value = 1;
         }
     }, [currentTask?.id]);
-    
+
     const handleSkip = async (task: Task): Promise<void> => {
         // Skip - do nothing, just remove from UI
         // No API call needed
@@ -177,7 +177,7 @@ const Review = (props: Props) => {
         };
 
         await markAsCompletedAPI(task.categoryID, task.id, completeData);
-        
+
         // Debounced refresh tasks after completion
         debouncedFetchWorkspaces();
     };
@@ -188,7 +188,7 @@ const Review = (props: Props) => {
         }
 
         await removeFromCategoryAPI(task.categoryID, task.id, false);
-        
+
         // Debounced refresh tasks after deletion
         debouncedFetchWorkspaces();
     };
@@ -221,7 +221,7 @@ const Review = (props: Props) => {
     const onSwipe = async (direction: string, task: Task) => {
         console.log('You swiped: ' + direction);
         if (!task) return;
-        
+
         // Prevent duplicate processing
         if (processingTasks.has(task.id)) {
             return;
@@ -256,12 +256,12 @@ const Review = (props: Props) => {
             removeTaskFromUI(task.id);
         } catch (error) {
             console.error(`Failed to handle swipe ${direction}:`, error);
-            
+
             const actionName = direction === 'right' ? 'complete' : direction === 'down' ? 'delete' : 'skip';
             const errorMessage = error instanceof Error ? error.message : `Failed to ${actionName} task. Please try again.`;
-            
+
             Alert.alert("Error", errorMessage);
-            
+
             // Reset animation on error
             resetAnimationAndProcessing(task.id);
         }
@@ -273,38 +273,34 @@ const Review = (props: Props) => {
         // The next card is now at index 0, and currentTask will update automatically via useMemo
     };
 
-    return (    
-        <ThemedView style={{  }}>
-            <View 
-                style={[styles.container, { flex: 1 }]}>
-                {/* Back Button */}
-                <TouchableOpacity 
-                    onPress={() => router.back()}
-                    style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
-                </TouchableOpacity>
+    const windowHeight = Dimensions.get("window").height;
+    const windowWidth = Dimensions.get("window").width;
+    const cardHeight = windowHeight * 0.72;
 
-                {/* Header */}
-                <View style={styles.headerContainer}>
-                    <ThemedText type="fancyFrauncesHeading" style={styles.title}>
-                        Task Review
-                    </ThemedText>
-                    <ThemedText 
-                        type="default" 
-                        style={[styles.subtitle, { color: ThemedColor.caption }]}>
-                        Swipe right to complete • Swipe down to delete • Swipe left to skip
-                    </ThemedText>
+    return (
+        <ThemedView style={{ flex: 1 }}>
+            <View style={[styles.container, { flex: 1 }]}>
+                {/* Back button + count */}
+                <View style={styles.topRow}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    {!emptyStack && currentTask != null && (
+                        <ThemedText style={[styles.hintCount, { color: ThemedColor.primary}]}>
+                            {cards.length} left
+                        </ThemedText>
+                    )}
                 </View>
 
-                <ConditionalView condition={!emptyStack && currentTask != null} style={styles.taskContainer}>
-                    <View 
-                        style={{ position: "relative", width: "100%", height: Dimensions.get("window").width * 1 }}
+                {/* Card area */}
+                <ConditionalView condition={!emptyStack && currentTask != null} style={styles.cardArea}>
+                    <View
+                        style={{ position: "relative", width: "100%", height: cardHeight }}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                     >
                         <ReviewSkeletonCard />
-                        
                         <ReviewTaskCard
                             task={currentTask!}
                             animatedCardStyle={animatedCardStyle}
@@ -320,53 +316,43 @@ const Review = (props: Props) => {
                                 outOfFrame(0, currentTask?.id || "");
                             }}
                             cardRef={(el) => {
-                                if (el) {
-                                    childRefs.current[0] = el;
-                                }
+                                if (el) childRefs.current[0] = el;
                             }}
                         />
                     </View>
-                <View style={{paddingVertical: 8, marginTop: 12, justifyContent: "center", width:'100%'}}>
-                    <ThemedText type="default">
-                        {cards.length} remaining 
+
+                    {/* Hint row below card */}
+                    <View style={styles.hintRow}>
+                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>← skip</ThemedText>
+                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>complete →</ThemedText>
+                    </View>
+                    <ThemedText style={[styles.hintDown, { color: ThemedColor.caption }]}>↓ delete</ThemedText>
+                </ConditionalView>
+
+                {/* Empty states */}
+                <ConditionalView condition={emptyStack && unnestedTasks.length > 0} style={styles.emptyState}>
+                    <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>🎉 All Done!</ThemedText>
+                    <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
+                        You've reviewed all {unnestedTasks.length} tasks.
                     </ThemedText>
-                </View>
                 </ConditionalView>
 
-                <ConditionalView condition={emptyStack && unnestedTasks.length > 0} style={styles.taskContainer}>
-                    <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 32 }}>
-                        <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>
-                            🎉 All Done!
-                        </ThemedText>
-                        <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
-                            You've reviewed all {unnestedTasks.length} tasks. Great work!
-                        </ThemedText>
-                    </View>
+                <ConditionalView condition={unnestedTasks.length === 0} style={styles.emptyState}>
+                    <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>No Tasks</ThemedText>
+                    <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
+                        Create some tasks to get started!
+                    </ThemedText>
                 </ConditionalView>
 
-                <ConditionalView condition={unnestedTasks.length === 0} style={styles.taskContainer}>
-                    <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 32 }}>
-                        <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>
-                            No Tasks to Review
-                        </ThemedText>
-                        <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
-                            Create some tasks to get started!
-                        </ThemedText>
-                    </View>
-                </ConditionalView>
-                {/* Mark All as Completed Button */}
-                <View style={styles.generateButtonContainer}>
+                {/* Bottom button */}
+                {/* <View style={styles.generateButtonContainer}>
                     <PrimaryButton
-                        title={emptyStack ? "Return":"Mark All as Completed"}
-                        onPress={() => {
-                            console.log("Mark all as completed");
-                            router.back()
-                        }}
+                        title={emptyStack ? "Return" : "Mark All as Completed"}
+                        onPress={() => router.back()}
+                        outline
                     />
-                </View>
-
+                </View> */}
             </View>
-
         </ThemedView>
     );
 };
@@ -378,65 +364,46 @@ const styles = StyleSheet.create({
         paddingTop: Dimensions.get("screen").height * 0.07,
         paddingHorizontal: HORIZONTAL_PADDING,
     },
-    scrollContent: {
-        flexGrow: 1,
-        paddingBottom: 120, // Extra padding for tab bar
-    },
-    backButton: {
-        marginBottom: 16,
-    },
-    headerContainer: {
-        paddingBottom: 24,
-        paddingTop: 4,
-        gap: 8,
-    },
-    title: {
-        fontWeight: "600",
-    },
-    subtitle: {
-        fontSize: 14,
-    },
-    creditsContainer: {
+    topRow: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
+        justifyContent: "space-between",
+        marginBottom: 12,
+    },
+    cardArea: {
+        flex: 1,
+        alignItems: "center",
+    },
+    hintRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "100%",
+        paddingHorizontal: 4,
         marginTop: 16,
     },
-    creditsLabel: {
-        fontSize: 11,
+    hint: {
+        fontSize: 17,
+        fontWeight: "500",
+    },
+    hintCount: {
+        fontSize: 17,
         fontWeight: "600",
     },
-    creditsValue: {
-        flexDirection: "row",
+    hintDown: {
+        fontSize: 17,
+        fontWeight: "500",
+        textAlign: "center",
+        marginTop: 6,
+    },
+    emptyState: {
+        flex: 1,
         alignItems: "center",
-    },
-    textInputSection: {
-        marginBottom: 16,
-    },
-    textInput: {
-        fontSize: 16,
-        lineHeight: 24,
-        padding: 16,
-        borderWidth: 1,
-        borderRadius: 12,
-        minHeight: 200,
-        fontFamily: "Outfit",
-    },
-    taskContainer: {
-        paddingVertical: 16,
-        gap: 4,
-    },
-    characterCountSection: {
-        alignItems: "flex-end",
-        paddingHorizontal: 4,
-    },
-    characterCount: {
-        fontSize: 12,
+        justifyContent: "center",
+        paddingVertical: 32,
     },
     generateButtonContainer: {
         paddingVertical: 16,
         width: "100%",
     },
 });
-

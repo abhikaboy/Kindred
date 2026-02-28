@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Animated, Keyboard } from "react-native";
+import { StyleSheet, Animated, Keyboard, Modal } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTasks } from "@/contexts/tasksContext";
 import { useCreateModal } from "@/contexts/createModalContext";
@@ -281,9 +281,11 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
             />
 
             {voiceOverlayVisible && (
-                <VoiceInputOverlay
-                    onClose={() => setVoiceOverlayVisible(false)}
-                />
+                <Modal transparent animationType="none" statusBarTranslucent>
+                    <VoiceInputOverlay
+                        onClose={() => setVoiceOverlayVisible(false)}
+                    />
+                </Modal>
             )}
 
             <FABBackdrop

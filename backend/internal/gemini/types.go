@@ -289,6 +289,32 @@ type EditTasksFlowOutput struct {
 	TemplateInstructions []EditTaskInstructionOutput `json:"templateInstructions" jsonschema_description:"Edit instructions for recurring template tasks"`
 }
 
+// --- Intent router flow types ---
+
+// IntentRouterInput is the input for the unified intent router flow.
+type IntentRouterInput struct {
+	UserID   string `json:"userId"`
+	Text     string `json:"text"`
+	Timezone string `json:"timezone" jsonschema_description:"User's timezone in IANA format (e.g., 'America/New_York'). Use this to interpret relative time references correctly."`
+}
+
+// IntentOp represents a single decomposed operation from the user's utterance.
+// Exactly one of CreatePayload, EditPayload, or DeletePayload will be populated
+// based on the Type field.
+type IntentOp struct {
+	Type          string                   `json:"type" jsonschema_description:"The operation type: 'create', 'edit', or 'delete'"`
+	CreatePayload *MultiTaskFromTextOutput `json:"createPayload,omitempty" jsonschema_description:"Populated when type is 'create'. Contains categories and tasks to create."`
+	EditPayload   *EditTasksFlowOutput     `json:"editPayload,omitempty" jsonschema_description:"Populated when type is 'edit'. Contains instructions for editing existing tasks."`
+	DeletePayload *TaskQueryFiltersOutput  `json:"deletePayload,omitempty" jsonschema_description:"Populated when type is 'delete'. Contains query filters to find tasks for deletion."`
+}
+
+// IntentRouterOutput is the top-level output of the intent router flow.
+// It contains an ordered list of operations decomposed from the user's utterance.
+// Operations are ordered: edits first, then deletes, then creates.
+type IntentRouterOutput struct {
+	Ops []IntentOp `json:"ops" jsonschema_description:"Ordered list of operations decomposed from the user's utterance. Edits come first, then deletes, then creates."`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`

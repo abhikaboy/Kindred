@@ -585,6 +585,68 @@ export const bulkDeleteTasksAPI = async (
     return data;
 };
 
+// ─── Intent Router types ──────────────────────────────────────────────────────
+
+export interface EditResultResponse {
+    tasks: components["schemas"]["TaskDocument"][];
+    templates: components["schemas"]["TemplateTaskDocument"][];
+    editedCount: number;
+}
+
+export interface IntentCreatePreview {
+    categories: Array<{
+        name: string;
+        workspaceName: string;
+        tasks: components["schemas"]["CreateTaskParams"][];
+    }>;
+    tasks: Array<{
+        categoryId: string;
+        categoryName?: string;
+        task: components["schemas"]["CreateTaskParams"];
+    }>;
+}
+
+export type IntentOpType = "create" | "edit" | "delete";
+
+export interface IntentOp {
+    type: IntentOpType;
+    editResult?: EditResultResponse;
+    deleteTasks?: components["schemas"]["TaskDocument"][];
+    createPreview?: IntentCreatePreview;
+}
+
+export interface IntentTaskNaturalLanguageResponse {
+    ops: IntentOp[];
+}
+
+/**
+ * Unified natural language intent router.
+ * Decomposes the user's utterance into an ordered list of create/edit/delete operations.
+ * Edit ops are already applied server-side; create and delete payloads need frontend confirmation.
+ * @param text - Natural language instruction
+ * @param timezone - IANA timezone string
+ */
+export const intentTaskNaturalLanguageAPI = async (
+    text: string,
+    timezone: string
+): Promise<IntentTaskNaturalLanguageResponse> => {
+    const { data, error } = await (client.POST as any)("/v1/user/tasks/natural-language/intent", {
+        params: withAuthHeaders({}),
+        body: { text, timezone },
+    });
+
+    if (error) {
+        throw new Error(`Failed to process natural language intent: ${JSON.stringify(error)}`);
+    }
+
+    if (!data) {
+        throw new Error("No response data from natural language intent");
+    }
+
+    const payload = (data as any)?.body ?? data;
+    return payload as IntentTaskNaturalLanguageResponse;
+};
+
 /**
  * Confirm and create tasks from a preview payload.
  */

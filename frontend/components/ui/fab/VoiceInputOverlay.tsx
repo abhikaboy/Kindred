@@ -21,11 +21,7 @@ import {
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
-import {
-    previewTasksFromNaturalLanguageAPI,
-    confirmTasksFromNaturalLanguageAPI,
-    queryTasksNaturalLanguageAPI,
-} from "@/api/task";
+import { useIntentRouterFlow } from "@/hooks/useIntentRouterFlow";
 import type { components } from "@/api/generated/types";
 import type { Task } from "@/api/types";
 import DeletePreviewModal from "@/components/modals/DeletePreviewModal";
@@ -84,18 +80,37 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const { fetchWorkspaces, workspaces } = useTasks();
 
     const [recognizing, setRecognizing] = useState(false);
-    const [transcription, setTranscription] = useState("");
-    const [isPreviewing, setIsPreviewing] = useState(false);
-    const [isConfirming, setIsConfirming] = useState(false);
-    const [previewPayload, setPreviewPayload] = useState<components["schemas"]["PreviewTaskNaturalLanguageOutputBody"] | null>(null);
-    const [errorTitle, setErrorTitle] = useState("");
-    const [errorDetails, setErrorDetails] = useState<string[]>([]);
+    const [transcription, setTranscription] = useState("I'm going on a boba run with Lea at 4 and I'm going to chapter today instead at 8");
+    const [pendingClose, setPendingClose] = useState(false);
 
-    // Delete flow state
-    const [deletePreviewTasks, setDeletePreviewTasks] = useState<components["schemas"]["TaskDocument"][]>([]);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const {
+        isPreviewing,
+        isConfirming,
+        previewPayload,
+        editResult,
+        deletePreviewTasks,
+        showDeleteModal,
+        errorTitle,
+        errorDetails,
+        pendingOpsCount,
+        currentOpIndex,
+        processText,
+        confirmCreate,
+        dismissEditResult,
+        closeDeleteModal,
+        confirmDeleteModal,
+        reset: resetIntentFlow,
+        setError,
+        clearError,
+    } = useIntentRouterFlow({
+        onComplete: () => {
+            fetchWorkspaces(true);
+            setPendingClose(true);
+        },
+    });
 
     const hasPreview = previewPayload !== null;
+    const hasEditResult = editResult !== null;
     const transcriptionWords = useMemo(
         () => transcription.trim().split(/\s+/).filter(Boolean),
         [transcription]
@@ -111,6 +126,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const gradientOpacity = useRef(new Animated.Value(0)).current;
     const previewOpacity = useRef(new Animated.Value(0)).current;
     const previewTranslateY = useRef(new Animated.Value(-18)).current;
+    const detailOpacity = useRef(new Animated.Value(0)).current;
+    const detailTranslateY = useRef(new Animated.Value(12)).current;
     const micOpacity = useRef(new Animated.Value(0)).current;
     const micTranslateY = useRef(new Animated.Value(25)).current;
     const closeBtnOpacity = useRef(new Animated.Value(0)).current;
@@ -154,6 +171,9 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     // ─── Enter / exit animations ───────────────────────────────────────────────
 
     const animateIn = () => {
+        // stopTogether: false prevents the show/hide previewOpacity effect (which also
+        // runs on mount) from cancelling the entire parallel when it starts its own
+        // animation on previewOpacity.
         Animated.parallel([
             Animated.timing(backdropOpacity, {
                 toValue: 1,
@@ -201,7 +221,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     useNativeDriver: true,
                 }),
             ]),
-        ]).start();
+        ], { stopTogether: false }).start();
     };
 
     const animateOut = (callback: () => void) => {
@@ -232,6 +252,16 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 duration: 200,
                 useNativeDriver: true,
             }),
+            Animated.timing(detailOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(detailTranslateY, {
+                toValue: 12,
+                duration: 200,
+                useNativeDriver: true,
+            }),
             Animated.timing(micOpacity, {
                 toValue: 0,
                 duration: 220,
@@ -258,9 +288,6 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     // Animate in on mount. Stop recognition if the parent force-unmounts us.
     useEffect(() => {
         animateIn();
-        if (__DEV__ && !ENABLE_SPEECH_RECOGNITION) {
-            setTranscription(DEV_FALLBACK_TRANSCRIPTION);
-        }
         return () => {
             if (recognizingRef.current && ExpoSpeechRecognitionModule) {
                 ExpoSpeechRecognitionModule.stop();
@@ -295,6 +322,30 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             }).start();
         }
     }, [transcription, recognizing, hasPreview]);
+
+    useEffect(() => {
+        const showDetail = hasPreview || hasEditResult;
+        Animated.parallel([
+            Animated.timing(previewOpacity, {
+                toValue: showDetail ? 0 : 1,
+                duration: 220,
+                easing: Easing.out(Easing.ease),
+                useNativeDriver: true,
+            }),
+            Animated.timing(detailOpacity, {
+                toValue: showDetail ? 1 : 0,
+                duration: 240,
+                easing: Easing.out(Easing.ease),
+                useNativeDriver: true,
+            }),
+            Animated.timing(detailTranslateY, {
+                toValue: showDetail ? 0 : 12,
+                duration: 240,
+                easing: Easing.out(Easing.ease),
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [hasEditResult, hasPreview, detailOpacity, detailTranslateY, previewOpacity]);
 
     useEffect(() => {
         if (!isPreviewing || transcriptionWords.length === 0) {
@@ -358,39 +409,6 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     // ─── Speech recognition events ────────────────────────────────────────────
 
-    const clearError = () => {
-        setErrorTitle("");
-        setErrorDetails([]);
-    };
-
-    const setErrorFromModel = (error: unknown, fallbackTitle: string, fallbackDetail: string) => {
-        const fallbackDetails = fallbackDetail ? [fallbackDetail] : [];
-        let model: components["schemas"]["ErrorModel"] | null = null;
-
-        if (error instanceof Error) {
-            try {
-                model = JSON.parse(error.message);
-            } catch {
-                // ignore parse errors; use fallback
-            }
-        } else if (error && typeof error === "object") {
-            model = error as components["schemas"]["ErrorModel"];
-        }
-
-        const title = model?.title || fallbackTitle;
-        const details: string[] = [];
-
-        if (model?.detail) details.push(model.detail);
-        if (Array.isArray(model?.errors)) {
-            model.errors.forEach((item) => {
-                if (item?.message) details.push(item.message);
-            });
-        }
-
-        setErrorTitle(title);
-        setErrorDetails(details.length > 0 ? details : fallbackDetails);
-    };
-
     useSpeechRecognitionEvent("start", () => {
         clearError();
         recognizingRef.current = true;
@@ -413,14 +431,14 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         recognizingRef.current = false;
         setRecognizing(false);
         stopPulse();
-        setErrorTitle("Voice Input Failed");
-        setErrorDetails(["Try again or type a request."]);
+        setError("Voice Input Failed", ["Try again or type a request."]);
     });
 
     // ─── Handlers ─────────────────────────────────────────────────────────────
 
     const handleMicPress = async () => {
         if (!ENABLE_SPEECH_RECOGNITION || !ExpoSpeechRecognitionModule) {
+            setError("Speech Recognition Disabled", ["Please enable speech recognition in the app settings."]);
             return;
         }
         if (recognizing) {
@@ -429,8 +447,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         }
         const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         if (!result.granted) {
-            setErrorTitle("Microphone Permission Denied");
-            setErrorDetails(["Enable microphone access in Settings."]);
+            setError("Microphone Permission Denied", ["Enable microphone access in Settings."]);
             return;
         }
         clearError();
@@ -448,7 +465,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         ExpoSpeechRecognitionModule.stop();
     };
 
-    const handleClose = () => {
+    const handleClose = React.useCallback(() => {
         if (isClosingRef.current) return;
         isClosingRef.current = true;
         if (recognizingRef.current && ExpoSpeechRecognitionModule) {
@@ -458,76 +475,28 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         // The parent's conditional render ({voiceOverlayVisible && <VoiceInputOverlay/>})
         // means the unmount happens after everything is already at opacity 0 — no snap.
         animateOut(() => {
-            setPreviewPayload(null);
-            setIsPreviewing(false);
-            setIsConfirming(false);
             setTranscription("");
-            clearError();
+            resetIntentFlow();
+            setPendingClose(false);
             onClose();
         });
-    };
-
-    const isDeleteIntent = (text: string) => /\b(delete|remove|clear)\b/i.test(text);
-
-    const handleGeneratePreview = async () => {
-        if (transcription.trim().length < 4 || isPreviewing || isConfirming) return;
-        clearError();
-
-        if (isDeleteIntent(transcription.trim())) {
-            setIsPreviewing(true);
-            try {
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                const result = await queryTasksNaturalLanguageAPI(transcription.trim(), timezone);
-                setDeletePreviewTasks(result.tasks);
-                setShowDeleteModal(true);
-            } catch (error) {
-                setErrorFromModel(error, "Couldn't Find Tasks", "Please try again.");
-            } finally {
-                setIsPreviewing(false);
-            }
-            return;
-        }
-
-        setIsPreviewing(true);
-        try {
-            const result = await previewTasksFromNaturalLanguageAPI(transcription.trim());
-            setPreviewPayload(result);
-        } catch (error) {
-            setIsPreviewing(false);
-            setErrorFromModel(error, "Couldn't Generate Tasks", "Please try again.");
-            return;
-        }
-        setIsPreviewing(false);
-    };
-
-    const handleConfirmTasks = async () => {
-        if (!previewPayload || isConfirming) return;
-        clearError();
-        setIsConfirming(true);
-        try {
-            await confirmTasksFromNaturalLanguageAPI(previewPayload);
-            fetchWorkspaces(true);
-            animateOut(() => {
-                setPreviewPayload(null);
-                setIsPreviewing(false);
-                setIsConfirming(false);
-                setTranscription("");
-                clearError();
-                onClose();
-            });
-        } catch (error) {
-            setIsConfirming(false);
-            setErrorFromModel(error, "Couldn't Add Tasks", "Please try again.");
-        }
-    };
+    }, [onClose, resetIntentFlow]);
 
     const handleRetry = () => {
-        setPreviewPayload(null);
         setTranscription("");
-        setIsPreviewing(false);
-        setIsConfirming(false);
-        clearError();
+        resetIntentFlow();
     };
+
+    const handleProcessRequest = () => {
+        if (transcription.trim().length < 4 || isPreviewing || isConfirming) return;
+        processText(transcription.trim());
+    };
+
+    useEffect(() => {
+        if (!pendingClose) return;
+        setPendingClose(false);
+        handleClose();
+    }, [handleClose, pendingClose]);
 
     // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -609,20 +578,35 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         return [...groups, ...Array.from(existingGroups.values())];
     }, [previewPayload, workspaces]);
 
-    const handleDeleteModalClose = () => {
-        setShowDeleteModal(false);
-        setDeletePreviewTasks([]);
-    };
-
-    const handleDeleteConfirmed = () => {
-        fetchWorkspaces(true);
-        setShowDeleteModal(false);
-        setDeletePreviewTasks([]);
-        handleClose();
-    };
-
     return (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        <View style={styles.overlayRoot} pointerEvents="box-none">
+            {/* Background layer */}
+            <View style={styles.backgroundLayer} pointerEvents="none">
+                {/* Blurred full-screen backdrop */}
+                <Animated.View
+                    style={[StyleSheet.absoluteFill, styles.blurWrapper, { opacity: backdropOpacity }]}
+                >
+                    <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={[StyleSheet.absoluteFill, styles.dimOverlay]} />
+                </Animated.View>
+
+                {/* Dark gradient from top */}
+                <Animated.View
+                    style={[styles.gradientWrapper, { opacity: gradientOpacity }]}
+                >
+                    <LinearGradient
+                        colors={[
+                            "rgba(0,0,0,0.92)",
+                            "rgba(0,0,0,0.78)",
+                            "rgba(0,0,0,0.28)",
+                            "transparent",
+                        ]}
+                        locations={[0, 0.38, 0.72, 1]}
+                        style={StyleSheet.absoluteFill}
+                    />
+                </Animated.View>
+            </View>
+
             {/* Intercept background touches and dismiss */}
             <Pressable
                 onPress={handleClose}
@@ -630,114 +614,90 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 pointerEvents="auto"
             />
 
-            {/* Blurred full-screen backdrop */}
-            <Animated.View
-                style={[StyleSheet.absoluteFill, styles.blurWrapper, { opacity: backdropOpacity }]}
-                pointerEvents="none"
-            >
-                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
-                <View style={[StyleSheet.absoluteFill, styles.dimOverlay]} />
-            </Animated.View>
-
-            {/* Dark gradient from top */}
-            <Animated.View
-                style={[styles.gradientWrapper, { opacity: gradientOpacity }]}
-                pointerEvents="none"
-            >
-                <LinearGradient
-                    colors={[
-                        "rgba(0,0,0,0.92)",
-                        "rgba(0,0,0,0.78)",
-                        "rgba(0,0,0,0.28)",
-                        "transparent",
-                    ]}
-                    locations={[0, 0.38, 0.72, 1]}
-                    style={StyleSheet.absoluteFill}
-                />
-            </Animated.View>
-
-            {/* Close button */}
-            <Animated.View
-                style={[styles.closeButton, { top: insets.top + 12, opacity: closeBtnOpacity }]}
-            >
-                <TouchableOpacity
-                    onPress={handleClose}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            {/* Content layer */}
+            <View style={styles.contentLayer} pointerEvents="box-none">
+                {/* Close button */}
+                <Animated.View
+                    style={[styles.closeButton, { top: insets.top + 12, opacity: closeBtnOpacity }]}
                 >
-                    <View style={styles.closeButtonInner}>
-                        <Ionicons name="close" size={20} color="#ffffff" />
-                    </View>
-                </TouchableOpacity>
-            </Animated.View>
+                    <TouchableOpacity
+                        onPress={handleClose}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                        <View style={styles.closeButtonInner}>
+                            <Ionicons name="close" size={20} color="#ffffff" />
+                        </View>
+                    </TouchableOpacity>
+                </Animated.View>
 
-            {/* Preview section */}
-            <Animated.View
-                style={[
-                    styles.previewSection,
-                    {
-                        top: insets.top + 64,
-                        opacity: previewOpacity,
-                        transform: [{ translateY: previewTranslateY }],
-                    },
-                ]}
-                pointerEvents="none"
-            >
-                <ThemedText style={styles.previewLabel}>Preview</ThemedText>
-                {!!errorTitle && (
-                    <View style={styles.errorBanner}>
-                        <ThemedText style={styles.errorBannerTitle}>{errorTitle}</ThemedText>
-                        {errorDetails.map((detail, index) => (
-                            <ThemedText key={`${detail}-${index}`} style={styles.errorBannerText}>
-                                {detail}
-                            </ThemedText>
-                        ))}
-                    </View>
-                )}
-                {!hasPreview && (
-                    <>
-                        {transcription ? (
-                            <ThemedText style={styles.transcriptionText}>
-                                {isPreviewing ? (
-                                    transcriptionWords.map((word, index) => (
-                                        <Animated.Text
-                                            key={`${word}-${index}`}
-                                            style={[
-                                                styles.transcriptionWord,
-                                                {
-                                                    opacity: readingProgress.interpolate({
-                                                        inputRange: [index - 1, index, index + 1],
-                                                        outputRange: [0.25, 1, 0.25],
-                                                        extrapolate: "clamp",
-                                                    }),
-                                                },
-                                            ]}
-                                        >
-                                            {word}
-                                            {index < transcriptionWords.length - 1 ? " " : ""}
-                                        </Animated.Text>
-                                    ))
-                                ) : (
-                                    transcription
-                                )}
-                            </ThemedText>
-                        ) : (
-                            <ThemedText style={styles.placeholderText}>
-                                {recognizing
-                                    ? "Listening for your voice..."
-                                    : "Your transcription will appear here..."}
-                            </ThemedText>
-                        )}
-                    </>
-                )}
-            </Animated.View>
+                {/* Preview section */}
+                <Animated.View
+                    style={[
+                        styles.previewSection,
+                        {
+                            top: insets.top + 64,
+                            opacity: previewOpacity,
+                            transform: [{ translateY: previewTranslateY }],
+                        },
+                    ]}
+                    pointerEvents="none"
+                >
+                    <ThemedText style={styles.previewLabel}>Preview</ThemedText>
+                    {!!errorTitle && (
+                        <View style={styles.errorBanner}>
+                            <ThemedText style={styles.errorBannerTitle}>{errorTitle}</ThemedText>
+                            {errorDetails.map((detail, index) => (
+                                <ThemedText key={`${detail}-${index}`} style={styles.errorBannerText}>
+                                    {detail}
+                                </ThemedText>
+                            ))}
+                        </View>
+                    )}
+                    {!hasPreview && (
+                        <>
+                            {transcription ? (
+                                <ThemedText style={styles.transcriptionText}>
+                                    {isPreviewing ? (
+                                        transcriptionWords.map((word, index) => (
+                                            <Animated.Text
+                                                key={`${word}-${index}`}
+                                                style={[
+                                                    styles.transcriptionWord,
+                                                    {
+                                                        opacity: readingProgress.interpolate({
+                                                            inputRange: [index - 1, index, index + 1],
+                                                            outputRange: [0.25, 1, 0.25],
+                                                            extrapolate: "clamp",
+                                                        }),
+                                                    },
+                                                ]}
+                                            >
+                                                {word}
+                                                {index < transcriptionWords.length - 1 ? " " : ""}
+                                            </Animated.Text>
+                                        ))
+                                    ) : (
+                                        transcription
+                                    )}
+                                </ThemedText>
+                            ) : (
+                                <ThemedText style={styles.placeholderText}>
+                                    {recognizing
+                                        ? "Listening for your voice..."
+                                        : "Your transcription will appear here..."}
+                                </ThemedText>
+                            )}
+                        </>
+                    )}
+                </Animated.View>
             {hasPreview && (
                 <Animated.View
                     style={[
                         styles.previewListWrapper,
                         {
                             top: insets.top + 112,
-                            opacity: previewOpacity,
-                            transform: [{ translateY: previewTranslateY }],
+                            opacity: detailOpacity,
+                            transform: [{ translateY: detailTranslateY }],
                         },
                     ]}
                     pointerEvents="auto"
@@ -822,12 +782,59 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     pointerEvents="auto"
                 >
                     <TouchableOpacity
-                        onPress={handleClose}
+                        onPress={confirmCreate}
                         style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
                         activeOpacity={0.85}
+                        disabled={isConfirming}
                     >
-                        <ThemedText style={styles.generateButtonText}>Done</ThemedText>
+                        <ThemedText style={styles.generateButtonText}>
+                            {isConfirming ? "Creating..." : "Confirm Create"}
+                        </ThemedText>
                     </TouchableOpacity>
+                </Animated.View>
+            )}
+
+            {/* Edit result summary */}
+            {hasEditResult && !hasPreview && (
+                <Animated.View
+                    style={[
+                        styles.previewListWrapper,
+                        {
+                            top: insets.top + 112,
+                            opacity: detailOpacity,
+                            transform: [{ translateY: detailTranslateY }],
+                        },
+                    ]}
+                    pointerEvents="auto"
+                >
+                    <View style={styles.editResultCard}>
+                        <ThemedText style={styles.editResultTitle}>
+                            {editResult!.editedCount === 0
+                                ? "No tasks updated"
+                                : editResult!.editedCount === 1
+                                    ? "1 task updated"
+                                    : `${editResult!.editedCount} tasks updated`}
+                        </ThemedText>
+                        {editResult!.tasks.map((t, i) => (
+                            <ThemedText key={t.id ?? i} style={styles.editResultItem}>
+                                • {t.content}
+                            </ThemedText>
+                        ))}
+                        {editResult!.templates.map((t, i) => (
+                            <ThemedText key={(t as any).id ?? i} style={styles.editResultItem}>
+                                • {t.content} (recurring)
+                            </ThemedText>
+                        ))}
+                        <TouchableOpacity
+                            onPress={dismissEditResult}
+                            style={[styles.generateButton, { backgroundColor: ThemedColor.primary, marginTop: 16 }]}
+                            activeOpacity={0.85}
+                        >
+                            <ThemedText style={styles.generateButtonText}>
+                                {currentOpIndex + 1 < pendingOpsCount ? "Next" : "Done"}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
                 </Animated.View>
             )}
 
@@ -918,8 +925,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             <DeletePreviewModal
                 visible={showDeleteModal}
                 tasks={deletePreviewTasks}
-                onClose={handleDeleteModalClose}
-                onDeleted={handleDeleteConfirmed}
+                onClose={closeDeleteModal}
+                onDeleted={confirmDeleteModal}
             />
 
             {/* Generate button */}
@@ -943,30 +950,45 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     pointerEvents={transcription && !recognizing ? "auto" : "none"}
                 >
                     <TouchableOpacity
-                        onPress={handleGeneratePreview}
+                        onPress={handleProcessRequest}
                         style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
                         activeOpacity={0.85}
                         disabled={isPreviewing}
                     >
                         <ThemedText style={styles.generateButtonText}>
-                            {isPreviewing
-                                ? isDeleteIntent(transcription) ? "Finding Tasks..." : "Generating..."
-                                : isDeleteIntent(transcription) ? "Find Tasks to Delete" : "Generate Tasks"}
+                            {isPreviewing ? "Processing..." : "Process Request"}
                         </ThemedText>
                     </TouchableOpacity>
                 </Animated.View>
             )}
+            </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    overlayRoot: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 10000,
+        elevation: 10000,
+    },
+    backgroundLayer: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 0,
+    },
+    contentLayer: {
+        ...StyleSheet.absoluteFillObject,
+        // Higher than touchInterceptor so interactive children (mic, close btn) win.
+        zIndex: 2,
+    },
     touchInterceptor: {
         ...StyleSheet.absoluteFillObject,
-        zIndex: 9996,
+        // Must be lower than contentLayer so interactive elements (mic, close btn)
+        // receive touches first; unfocused background taps fall through to this.
+        zIndex: 1,
     },
     blurWrapper: {
-        zIndex: 9997,
+        zIndex: 0,
     },
     dimOverlay: {
         backgroundColor: "rgba(0,0,0,0.25)",
@@ -977,7 +999,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: GRADIENT_HEIGHT,
-        zIndex: 9998,
+        zIndex: 1,
     },
     closeButton: {
         position: "absolute",
@@ -1157,5 +1179,24 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 10,
+    },
+    editResultCard: {
+        backgroundColor: "rgba(255,255,255,0.08)",
+        borderRadius: 16,
+        padding: 20,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.12)",
+    },
+    editResultTitle: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#ffffff",
+        marginBottom: 4,
+    },
+    editResultItem: {
+        fontSize: 14,
+        color: "rgba(255,255,255,0.75)",
+        lineHeight: 20,
     },
 });

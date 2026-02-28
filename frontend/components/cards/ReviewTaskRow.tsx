@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
@@ -7,15 +7,31 @@ type Props = {
     label: string;
     value: string | number;
     empty?: boolean;
+    numberOfLines?: number;
+    rightContent?: React.ReactNode;
 };
 
-const ReviewTaskRow = ({ label, value, empty = false }: Props) => {
+const ReviewTaskRow = ({ label, value, empty = false, numberOfLines, rightContent }: Props) => {
     const ThemedColor = useThemeColor();
-    const disabled = 0.2
+    const disabled = 0.25;
     return (
         <View style={[styles.row, { borderBottomColor: ThemedColor.tertiary }]}>
-            <ThemedText type="default" style={{width:Dimensions.get("screen").width * 0.3, opacity: empty ? disabled : 1}}>{label}: </ThemedText>
-            <ThemedText type="default" style={{ opacity: empty ? disabled : 1 }}>{value}</ThemedText>
+            <ThemedText
+                type="default"
+                style={[styles.label, { opacity: empty ? disabled : 1, color: ThemedColor.caption }]}
+            >
+                {label}
+            </ThemedText>
+            {rightContent ?? (
+                <ThemedText
+                    type="default"
+                    numberOfLines={numberOfLines}
+                    ellipsizeMode="tail"
+                    style={[styles.value, { opacity: empty ? disabled : 1 }]}
+                >
+                    {value}
+                </ThemedText>
+            )}
         </View>
     );
 };
@@ -28,6 +44,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingVertical: 12,
         borderBottomWidth: 1,
+        gap: 12,
+    },
+    label: {
+        width: 88,
+        flexShrink: 0,
+        fontSize: 15,
+    },
+    value: {
+        flex: 1,
+        fontSize: 16,
     },
 });
-
