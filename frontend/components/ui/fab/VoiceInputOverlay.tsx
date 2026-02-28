@@ -24,7 +24,6 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useIntentRouterFlow } from "@/hooks/useIntentRouterFlow";
 import type { components } from "@/api/generated/types";
 import type { Task } from "@/api/types";
-import DeletePreviewModal from "@/components/modals/DeletePreviewModal";
 import TaskCard from "@/components/cards/TaskCard";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
@@ -80,16 +79,16 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const { fetchWorkspaces, workspaces } = useTasks();
 
     const [recognizing, setRecognizing] = useState(false);
-    const [transcription, setTranscription] = useState("I'm going on a boba run with Lea at 4 and I'm going to chapter today instead at 8");
+    const [transcription, setTranscription] = useState("Delete my boba run with Lea.");
     const [pendingClose, setPendingClose] = useState(false);
 
     const {
         isPreviewing,
         isConfirming,
+        isDeletingTasks,
         previewPayload,
         editResult,
         deletePreviewTasks,
-        showDeleteModal,
         errorTitle,
         errorDetails,
         pendingOpsCount,
@@ -97,8 +96,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         processText,
         confirmCreate,
         dismissEditResult,
-        closeDeleteModal,
-        confirmDeleteModal,
+        confirmDelete,
+        dismissDelete,
         reset: resetIntentFlow,
         setError,
         clearError,
@@ -111,6 +110,13 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     const hasPreview = previewPayload !== null;
     const hasEditResult = editResult !== null;
+    const hasDeletePreview = deletePreviewTasks.length > 0;
+
+    // Local selection state for the inline delete view — all tasks pre-selected.
+    const [deleteSelected, setDeleteSelected] = useState<Set<string>>(new Set());
+    useEffect(() => {
+        setDeleteSelected(new Set(deletePreviewTasks.map((t) => t.id)));
+    }, [deletePreviewTasks]);
     const transcriptionWords = useMemo(
         () => transcription.trim().split(/\s+/).filter(Boolean),
         [transcription]
@@ -298,6 +304,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     // ─── Generate button visibility ────────────────────────────────────────────
 
     useEffect(() => {
+        // Delete preview uses detailOpacity directly — don't show generateBtnOpacity for it.
         if (hasPreview) {
             Animated.timing(generateBtnOpacity, {
                 toValue: 1,
@@ -307,7 +314,15 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             }).start();
             return;
         }
-        if (transcription && !recognizing) {
+        if (hasDeletePreview) {
+            Animated.timing(generateBtnOpacity, {
+                toValue: 0,
+                duration: 150,
+                useNativeDriver: true,
+            }).start();
+            return;
+        }
+        if ((transcription && !recognizing) || hasEditResult) {
             Animated.timing(generateBtnOpacity, {
                 toValue: 1,
                 duration: 250,
@@ -321,10 +336,12 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 useNativeDriver: true,
             }).start();
         }
-    }, [transcription, recognizing, hasPreview]);
+    }, [transcription, recognizing, hasPreview, hasEditResult, hasDeletePreview]);
 
     useEffect(() => {
-        const showDetail = hasPreview || hasEditResult;
+        // Hide previewSection when a full-screen detail view is active (create or delete).
+        // Edit results render inline inside previewSection so they don't trigger this.
+        const showDetail = hasPreview || hasDeletePreview;
         Animated.parallel([
             Animated.timing(previewOpacity, {
                 toValue: showDetail ? 0 : 1,
@@ -345,7 +362,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 useNativeDriver: true,
             }),
         ]).start();
-    }, [hasEditResult, hasPreview, detailOpacity, detailTranslateY, previewOpacity]);
+    }, [hasEditResult, hasPreview, hasDeletePreview, detailOpacity, detailTranslateY, previewOpacity]);
 
     useEffect(() => {
         if (!isPreviewing || transcriptionWords.length === 0) {
@@ -642,7 +659,16 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     ]}
                     pointerEvents="none"
                 >
-                    <ThemedText style={styles.previewLabel}>Preview</ThemedText>
+                    <View style={styles.previewLabelRow}>
+                        <ThemedText style={styles.previewLabel}>
+                            {hasEditResult ? "Updated" : "Preview"}
+                        </ThemedText>
+                        {pendingOpsCount > 1 && (
+                            <ThemedText style={styles.stepCounter}>
+                                {currentOpIndex + 1} / {pendingOpsCount}
+                            </ThemedText>
+                        )}
+                    </View>
                     {!!errorTitle && (
                         <View style={styles.errorBanner}>
                             <ThemedText style={styles.errorBannerTitle}>{errorTitle}</ThemedText>
@@ -653,7 +679,28 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             ))}
                         </View>
                     )}
-                    {!hasPreview && (
+                    {hasEditResult && !hasPreview ? (
+                        <>
+                            <ThemedText style={styles.transcriptionText}>
+                                {editResult!.editedCount === 0
+                                    ? "No tasks updated"
+                                    : editResult!.editedCount === 1
+                                        ? "1 task updated"
+                                        : `${editResult!.editedCount} tasks updated`}
+                            </ThemedText>
+                            {editResult!.tasks.map((t, i) => (
+                                <ThemedText key={(t as any).id ?? i} style={styles.editResultTaskName}>
+                                    {t.content}
+                                </ThemedText>
+                            ))}
+                            {editResult!.templates.map((t, i) => (
+                                <ThemedText key={(t as any).id ?? i} style={styles.editResultTaskName}>
+                                    {t.content}{" "}
+                                    <ThemedText style={styles.editResultRecurringTag}>(recurring)</ThemedText>
+                                </ThemedText>
+                            ))}
+                        </>
+                    ) : !hasPreview ? (
                         <>
                             {transcription ? (
                                 <ThemedText style={styles.transcriptionText}>
@@ -688,9 +735,9 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                 </ThemedText>
                             )}
                         </>
-                    )}
+                    ) : null}
                 </Animated.View>
-            {hasPreview && (
+            {(hasPreview || hasDeletePreview) && (
                 <Animated.View
                     style={[
                         styles.previewListWrapper,
@@ -702,63 +749,186 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     ]}
                     pointerEvents="auto"
                 >
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.previewListContent}
-                    >
-                        {(() => {
-                            let taskIndex = 0;
-                            return groupedCategories.map((category) => (
-                                <View key={category.categoryId} style={styles.previewCategory}>
-                                    {category.workspace && (
-                                        <ThemedText style={styles.previewWorkspaceLabel}>
-                                            Workspace: {category.workspace}
-                                        </ThemedText>
-                                    )}
-                                    <View style={styles.previewCategoryHeader}>
-                                        <ThemedText style={styles.previewCategoryTitle}>
-                                            {category.categoryName}
-                                        </ThemedText>
-                                        {category.isNew && (
-                                            <View
-                                                style={[
-                                                    styles.previewNewBadge,
-                                                    { backgroundColor: `${ThemedColor.primary}1F` },
-                                                ]}
-                                            >
-                                                <ThemedText
+                    {hasPreview && (
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.previewListContent}
+                        >
+                            {pendingOpsCount > 1 && (
+                                <View style={styles.previewLabelRow}>
+                                    <ThemedText style={styles.previewLabel}>Preview</ThemedText>
+                                    <ThemedText style={styles.stepCounter}>
+                                        {currentOpIndex + 1} / {pendingOpsCount}
+                                    </ThemedText>
+                                </View>
+                            )}
+                            {(() => {
+                                let taskIndex = 0;
+                                return groupedCategories.map((category) => (
+                                    <View key={category.categoryId} style={styles.previewCategory}>
+                                        {category.workspace && (
+                                            <ThemedText style={styles.previewWorkspaceLabel}>
+                                                Workspace: {category.workspace}
+                                            </ThemedText>
+                                        )}
+                                        <View style={styles.previewCategoryHeader}>
+                                            <ThemedText style={styles.previewCategoryTitle}>
+                                                {category.categoryName}
+                                            </ThemedText>
+                                            {category.isNew && (
+                                                <View
                                                     style={[
-                                                        styles.previewNewBadgeText,
-                                                        { color: ThemedColor.primary },
+                                                        styles.previewNewBadge,
+                                                        { backgroundColor: `${ThemedColor.primary}1F` },
                                                     ]}
                                                 >
-                                                    NEW
-                                                </ThemedText>
+                                                    <ThemedText
+                                                        style={[
+                                                            styles.previewNewBadgeText,
+                                                            { color: ThemedColor.primary },
+                                                        ]}
+                                                    >
+                                                        NEW
+                                                    </ThemedText>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={styles.previewTasks}>
+                                            {category.tasks.map((task) => {
+                                                const idx = taskIndex++;
+                                                return (
+                                                    <StaggeredTaskCard key={task.id} index={idx}>
+                                                        <TaskCard
+                                                            content={task.content}
+                                                            value={task.value}
+                                                            priority={task.priority as any}
+                                                            id={task.id}
+                                                            categoryId={category.categoryId}
+                                                            redirect={false}
+                                                            task={task}
+                                                        />
+                                                    </StaggeredTaskCard>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                ));
+                            })()}
+                        </ScrollView>
+                    )}
+
+                {/* Delete preview — inline task rows with checkboxes */}
+                {hasDeletePreview && (
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.deleteListContent}
+                    >
+                        {pendingOpsCount > 1 && (
+                            <View style={styles.previewLabelRow}>
+                                <ThemedText style={styles.previewLabel}>Delete</ThemedText>
+                                <ThemedText style={styles.stepCounter}>
+                                    {currentOpIndex + 1} / {pendingOpsCount}
+                                </ThemedText>
+                            </View>
+                        )}
+                        <ThemedText style={styles.deleteSubtitle}>
+                            Deselect tasks you want to keep.
+                        </ThemedText>
+                        {deletePreviewTasks.map((task) => {
+                            const isChecked = deleteSelected.has(task.id);
+                            return (
+                                <TouchableOpacity
+                                    key={task.id}
+                                    style={[
+                                        styles.deleteTaskRow,
+                                        isChecked && styles.deleteTaskRowSelected,
+                                    ]}
+                                    onPress={() =>
+                                        setDeleteSelected((prev) => {
+                                            const next = new Set(prev);
+                                            if (next.has(task.id)) next.delete(task.id);
+                                            else next.add(task.id);
+                                            return next;
+                                        })
+                                    }
+                                    activeOpacity={0.7}
+                                >
+                                    <View
+                                        style={[
+                                            styles.deleteCheckbox,
+                                            isChecked && styles.deleteCheckboxChecked,
+                                        ]}
+                                    >
+                                        {isChecked && (
+                                            <Ionicons name="checkmark" size={11} color="#fff" />
+                                        )}
+                                    </View>
+                                    <View style={styles.deleteTaskInfo}>
+                                        <ThemedText style={styles.deleteTaskContent} numberOfLines={2}>
+                                            {task.content}
+                                        </ThemedText>
+                                        {(task.priority !== undefined || task.deadline) && (
+                                            <View style={styles.deleteTaskMeta}>
+                                                {task.priority !== undefined && (
+                                                    <ThemedText style={styles.deleteMetaText}>
+                                                        {["Low", "Medium", "High"][task.priority - 1] ?? "—"} priority
+                                                    </ThemedText>
+                                                )}
+                                                {task.deadline && (
+                                                    <ThemedText style={styles.deleteMetaText}>
+                                                        Due {new Date(task.deadline).toLocaleDateString()}
+                                                    </ThemedText>
+                                                )}
                                             </View>
                                         )}
                                     </View>
-                                    <View style={styles.previewTasks}>
-                                        {category.tasks.map((task) => {
-                                            const idx = taskIndex++;
-                                            return (
-                                                <StaggeredTaskCard key={task.id} index={idx}>
-                                                    <TaskCard
-                                                        content={task.content}
-                                                        value={task.value}
-                                                        priority={task.priority as any}
-                                                        id={task.id}
-                                                        categoryId={category.categoryId}
-                                                        redirect={false}
-                                                        task={task}
-                                                    />
-                                                </StaggeredTaskCard>
-                                            );
-                                        })}
-                                    </View>
-                                </View>
-                            ));
-                        })()}
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
+                )}
+                </Animated.View>
+            )}
+
+            {/* Delete action buttons */}
+            {hasDeletePreview && (
+                <Animated.View
+                    style={[
+                        styles.deleteActionsWrapper,
+                        {
+                            bottom: insets.bottom + TAB_BAR_HEIGHT + 20,
+                            opacity: detailOpacity,
+                            transform: [{ translateY: detailTranslateY }],
+                        },
+                    ]}
+                    pointerEvents="auto"
+                >
+                    <TouchableOpacity
+                        onPress={dismissDelete}
+                        style={styles.deleteSkipBtn}
+                        activeOpacity={0.75}
+                        disabled={isDeletingTasks}
+                    >
+                        <ThemedText style={styles.deleteSkipBtnText}>Skip</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => confirmDelete([...deleteSelected])}
+                        style={[
+                            styles.deleteConfirmBtn,
+                            deleteSelected.size === 0 && styles.deleteConfirmBtnDisabled,
+                        ]}
+                        activeOpacity={0.85}
+                        disabled={isDeletingTasks || deleteSelected.size === 0}
+                    >
+                        {isDeletingTasks ? (
+                            <Ionicons name="hourglass-outline" size={18} color="#fff" />
+                        ) : (
+                            <ThemedText style={styles.deleteConfirmBtnText}>
+                                Delete {deleteSelected.size > 0 ? `${deleteSelected.size} ` : ""}
+                                {deleteSelected.size === 1 ? "Task" : "Tasks"}
+                            </ThemedText>
+                        )}
+                    </TouchableOpacity>
                 </Animated.View>
             )}
 
@@ -788,55 +958,16 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         disabled={isConfirming}
                     >
                         <ThemedText style={styles.generateButtonText}>
-                            {isConfirming ? "Creating..." : "Confirm Create"}
+                            {isConfirming
+                                ? "Creating..."
+                                : currentOpIndex + 1 < pendingOpsCount
+                                    ? "Confirm & Next"
+                                    : "Confirm Create"}
                         </ThemedText>
                     </TouchableOpacity>
                 </Animated.View>
             )}
 
-            {/* Edit result summary */}
-            {hasEditResult && !hasPreview && (
-                <Animated.View
-                    style={[
-                        styles.previewListWrapper,
-                        {
-                            top: insets.top + 112,
-                            opacity: detailOpacity,
-                            transform: [{ translateY: detailTranslateY }],
-                        },
-                    ]}
-                    pointerEvents="auto"
-                >
-                    <View style={styles.editResultCard}>
-                        <ThemedText style={styles.editResultTitle}>
-                            {editResult!.editedCount === 0
-                                ? "No tasks updated"
-                                : editResult!.editedCount === 1
-                                    ? "1 task updated"
-                                    : `${editResult!.editedCount} tasks updated`}
-                        </ThemedText>
-                        {editResult!.tasks.map((t, i) => (
-                            <ThemedText key={t.id ?? i} style={styles.editResultItem}>
-                                • {t.content}
-                            </ThemedText>
-                        ))}
-                        {editResult!.templates.map((t, i) => (
-                            <ThemedText key={(t as any).id ?? i} style={styles.editResultItem}>
-                                • {t.content} (recurring)
-                            </ThemedText>
-                        ))}
-                        <TouchableOpacity
-                            onPress={dismissEditResult}
-                            style={[styles.generateButton, { backgroundColor: ThemedColor.primary, marginTop: 16 }]}
-                            activeOpacity={0.85}
-                        >
-                            <ThemedText style={styles.generateButtonText}>
-                                {currentOpIndex + 1 < pendingOpsCount ? "Next" : "Done"}
-                            </ThemedText>
-                        </TouchableOpacity>
-                    </View>
-                </Animated.View>
-            )}
 
             {/* Stop recording pill — slides up when listening */}
             <Animated.View
@@ -875,7 +1006,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         transform: [{ translateY: micTranslateY }],
                     },
                 ]}
-                pointerEvents={hasPreview ? "none" : "auto"}
+                pointerEvents={hasPreview || hasDeletePreview ? "none" : "auto"}
             >
                 {!transcription || recognizing ? (
                     <ThemedText
@@ -921,16 +1052,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 </Animated.View>
             </Animated.View>
 
-            {/* Delete preview modal */}
-            <DeletePreviewModal
-                visible={showDeleteModal}
-                tasks={deletePreviewTasks}
-                onClose={closeDeleteModal}
-                onDeleted={confirmDeleteModal}
-            />
-
-            {/* Generate button */}
-            {!hasPreview && (
+            {/* Generate / Done button */}
+            {!hasPreview && !hasDeletePreview && (
                 <Animated.View
                     style={[
                         styles.generateButtonWrapper,
@@ -947,16 +1070,18 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             ],
                         },
                     ]}
-                    pointerEvents={transcription && !recognizing ? "auto" : "none"}
+                    pointerEvents={(transcription && !recognizing) || hasEditResult ? "auto" : "none"}
                 >
                     <TouchableOpacity
-                        onPress={handleProcessRequest}
+                        onPress={hasEditResult ? dismissEditResult : handleProcessRequest}
                         style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
                         activeOpacity={0.85}
                         disabled={isPreviewing}
                     >
                         <ThemedText style={styles.generateButtonText}>
-                            {isPreviewing ? "Processing..." : "Process Request"}
+                            {hasEditResult
+                                ? currentOpIndex + 1 < pendingOpsCount ? "Next" : "Done"
+                                : isPreviewing ? "Processing..." : "Process Request"}
                         </ThemedText>
                     </TouchableOpacity>
                 </Animated.View>
@@ -1021,12 +1146,23 @@ const styles = StyleSheet.create({
         zIndex: 9999,
         gap: 12,
     },
+    previewLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
     previewLabel: {
         fontSize: 11,
         fontWeight: "600",
         color: "rgba(255,255,255,0.45)",
         letterSpacing: 1.2,
         textTransform: "uppercase",
+    },
+    stepCounter: {
+        fontSize: 11,
+        fontWeight: "600",
+        color: "rgba(255,255,255,0.25)",
+        letterSpacing: 0.6,
     },
     errorBanner: {
         marginTop: 10,
@@ -1180,23 +1316,119 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         elevation: 10,
     },
-    editResultCard: {
-        backgroundColor: "rgba(255,255,255,0.08)",
-        borderRadius: 16,
-        padding: 20,
-        gap: 8,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.12)",
+    editResultTaskName: {
+        fontSize: 16,
+        lineHeight: 24,
+        color: "rgba(255,255,255,0.6)",
+        fontWeight: "400",
     },
-    editResultTitle: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: "#ffffff",
+    editResultRecurringTag: {
+        fontSize: 14,
+        color: "rgba(255,255,255,0.35)",
+        fontWeight: "400",
+    },
+    // ─── Delete preview ──────────────────────────────────────────────────────
+    deleteListContent: {
+        gap: 8,
+        paddingBottom: 16,
+    },
+    deleteSubtitle: {
+        fontSize: 13,
+        color: "rgba(255,255,255,0.35)",
+        lineHeight: 18,
         marginBottom: 4,
     },
-    editResultItem: {
-        fontSize: 14,
-        color: "rgba(255,255,255,0.75)",
-        lineHeight: 20,
+    deleteTaskRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 12,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.1)",
+        backgroundColor: "rgba(255,255,255,0.05)",
+    },
+    deleteTaskRowSelected: {
+        backgroundColor: "rgba(239,68,68,0.1)",
+        borderColor: "rgba(239,68,68,0.28)",
+    },
+    deleteCheckbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 5,
+        borderWidth: 1.5,
+        borderColor: "rgba(255,255,255,0.3)",
+        backgroundColor: "transparent",
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: 1,
+        flexShrink: 0,
+    },
+    deleteCheckboxChecked: {
+        borderColor: "rgba(239,68,68,0.9)",
+        backgroundColor: "rgba(239,68,68,0.85)",
+    },
+    deleteTaskInfo: {
+        flex: 1,
+        gap: 4,
+    },
+    deleteTaskContent: {
+        fontSize: 15,
+        fontWeight: "500",
+        lineHeight: 21,
+        color: "#ffffff",
+    },
+    deleteTaskMeta: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+    deleteMetaText: {
+        fontSize: 12,
+        color: "rgba(255,255,255,0.4)",
+        fontWeight: "500",
+    },
+    deleteActionsWrapper: {
+        position: "absolute",
+        left: 24,
+        right: 24,
+        flexDirection: "row",
+        gap: 10,
+        zIndex: 9999,
+    },
+    deleteSkipBtn: {
+        flex: 1,
+        height: 52,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.18)",
+    },
+    deleteSkipBtnText: {
+        fontSize: 15,
+        fontWeight: "600",
+        color: "rgba(255,255,255,0.6)",
+    },
+    deleteConfirmBtn: {
+        flex: 2,
+        height: 52,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(239,68,68,0.9)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    deleteConfirmBtnDisabled: {
+        backgroundColor: "rgba(239,68,68,0.35)",
+    },
+    deleteConfirmBtnText: {
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#ffffff",
     },
 });

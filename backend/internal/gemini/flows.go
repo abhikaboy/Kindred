@@ -336,9 +336,20 @@ Return an IntentRouterOutput with an "ops" array. Each element must have:
   - For "edit": populate "editPayload" with the same structure as editTasksFlow output:
       { "instructions": [...], "templateInstructions": [...] }
       Use exact hex IDs from getUserActiveTasks results.
-  - For "delete": populate "deletePayload" with the same structure as queryTasksFlow output:
-      { "categoryIds": [...], "priorities": [...], ... }
-      Construct filters that will match the tasks the user wants to delete.
+  - For "delete": populate "deletePayload" with query filters to match the tasks the user wants to delete.
+      ONLY these fields are allowed — do NOT include any other fields:
+        - "categoryIds": string array of category IDs (from getUserCategories)
+        - "priorities": integer array of priority values (1=low, 2=medium, 3=high)
+        - "deadlineFrom": ISO8601 datetime string (start of deadline range, optional)
+        - "deadlineTo": ISO8601 datetime string (end of deadline range, optional)
+        - "startTimeFrom": ISO8601 datetime string (start of start-time range, optional)
+        - "startTimeTo": ISO8601 datetime string (end of start-time range, optional)
+        - "hasDeadline": boolean (true = only tasks with a deadline, optional)
+        - "hasStartTime": boolean (true = only scheduled tasks, optional)
+        - "sortBy": one of "timestamp", "priority", "value", "deadline" (optional)
+        - "sortDir": -1 (newest first) or 1 (oldest first) (optional)
+      IMPORTANT: Do NOT include "taskIds", "ids", "taskId", or any direct task identifiers.
+      Use only the filter fields above to describe which tasks to delete.
 
 ORDERING RULES (important):
 1. Edit operations first (non-destructive, applied immediately server-side)

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { intentTaskNaturalLanguageAPI, confirmTasksFromNaturalLanguageAPI } from "@/api/task";
+import { intentTaskNaturalLanguageAPI, confirmTasksFromNaturalLanguageAPI, bulkDeleteTasksAPI } from "@/api/task";
 import type { IntentOp } from "@/api/task";
 import type { components } from "@/api/generated/types";
 
@@ -13,10 +13,10 @@ type UseIntentRouterFlowOptions = {
 type UseIntentRouterFlowReturn = {
     isPreviewing: boolean;
     isConfirming: boolean;
+    isDeletingTasks: boolean;
     previewPayload: PreviewPayload | null;
     editResult: IntentOp["editResult"] | null;
     deletePreviewTasks: TaskDocument[];
-    showDeleteModal: boolean;
     errorTitle: string;
     errorDetails: string[];
     pendingOpsCount: number;
@@ -24,8 +24,8 @@ type UseIntentRouterFlowReturn = {
     processText: (text: string, timezone?: string) => Promise<void>;
     confirmCreate: () => Promise<void>;
     dismissEditResult: () => void;
-    closeDeleteModal: () => void;
-    confirmDeleteModal: () => void;
+    confirmDelete: (selectedIds: string[]) => Promise<void>;
+    dismissDelete: () => void;
     reset: () => void;
     setError: (title: string, details?: string[]) => void;
     clearError: () => void;
@@ -36,13 +36,15 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
 
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [isDeletingTasks, setIsDeletingTasks] = useState(false);
     const [previewPayload, setPreviewPayload] = useState<PreviewPayload | null>(null);
     const [editResult, setEditResult] = useState<IntentOp["editResult"] | null>(null);
     const [deletePreviewTasks, setDeletePreviewTasks] = useState<TaskDocument[]>([]);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [errorTitle, setErrorTitle] = useState("");
     const [errorDetails, setErrorDetails] = useState<string[]>([]);
     const [pendingOps, setPendingOps] = useState<IntentOp[]>([]);
+    // Ref for use inside callbacks (avoids stale closures); state for render-time consumption.
+    const [currentOpIndex, setCurrentOpIndex] = useState(0);
     const currentOpIndexRef = useRef(0);
 
     const clearError = useCallback(() => {
@@ -93,6 +95,7 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
     const advanceToNextOp = useCallback(
         (ops: IntentOp[], nextIndex: number) => {
             currentOpIndexRef.current = nextIndex;
+            setCurrentOpIndex(nextIndex);
             if (nextIndex >= ops.length) {
                 completeFlow();
                 return;
@@ -100,9 +103,8 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
             const op = ops[nextIndex];
             if (op.type === "create" && op.createPreview) {
                 setPreviewPayload(op.createPreview as PreviewPayload);
-            } else if (op.type === "delete" && op.deleteTasks) {
+            } else if (op.type === "delete" && op.deleteTasks && op.deleteTasks.length > 0) {
                 setDeletePreviewTasks(op.deleteTasks);
-                setShowDeleteModal(true);
             } else if (op.type === "edit" && op.editResult) {
                 setEditResult(op.editResult);
             } else {
@@ -161,14 +163,32 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
         advanceToNextOp(pendingOps, currentOpIndexRef.current + 1);
     }, [advanceToNextOp, pendingOps]);
 
-    const closeDeleteModal = useCallback(() => {
-        setShowDeleteModal(false);
-        setDeletePreviewTasks([]);
-        advanceToNextOp(pendingOps, currentOpIndexRef.current + 1);
-    }, [advanceToNextOp, pendingOps]);
+    const confirmDelete = useCallback(async (selectedIds: string[]) => {
+        const toDelete = deletePreviewTasks.filter((t) => selectedIds.includes(t.id));
+        if (toDelete.length === 0) {
+            setDeletePreviewTasks([]);
+            advanceToNextOp(pendingOps, currentOpIndexRef.current + 1);
+            return;
+        }
+        setIsDeletingTasks(true);
+        try {
+            await bulkDeleteTasksAPI(
+                toDelete.map((t) => ({
+                    taskId: t.id,
+                    categoryId: t.categoryID || "",
+                    deleteRecurring: false,
+                }))
+            );
+            setDeletePreviewTasks([]);
+            advanceToNextOp(pendingOps, currentOpIndexRef.current + 1);
+        } catch (error) {
+            setErrorFromModel(error, "Couldn't Delete Tasks", "Please try again.");
+        } finally {
+            setIsDeletingTasks(false);
+        }
+    }, [advanceToNextOp, deletePreviewTasks, pendingOps, setErrorFromModel]);
 
-    const confirmDeleteModal = useCallback(() => {
-        setShowDeleteModal(false);
+    const dismissDelete = useCallback(() => {
         setDeletePreviewTasks([]);
         advanceToNextOp(pendingOps, currentOpIndexRef.current + 1);
     }, [advanceToNextOp, pendingOps]);
@@ -176,31 +196,32 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
     const reset = useCallback(() => {
         setPendingOps([]);
         currentOpIndexRef.current = 0;
+        setCurrentOpIndex(0);
         setPreviewPayload(null);
         setEditResult(null);
         setDeletePreviewTasks([]);
-        setShowDeleteModal(false);
         setIsPreviewing(false);
         setIsConfirming(false);
+        setIsDeletingTasks(false);
         clearError();
     }, [clearError]);
 
     return {
         isPreviewing,
         isConfirming,
+        isDeletingTasks,
         previewPayload,
         editResult,
         deletePreviewTasks,
-        showDeleteModal,
         errorTitle,
         errorDetails,
         pendingOpsCount: pendingOps.length,
-        currentOpIndex: currentOpIndexRef.current,
+        currentOpIndex,
         processText,
         confirmCreate,
         dismissEditResult,
-        closeDeleteModal,
-        confirmDeleteModal,
+        confirmDelete,
+        dismissDelete,
         reset,
         setError,
         clearError,
