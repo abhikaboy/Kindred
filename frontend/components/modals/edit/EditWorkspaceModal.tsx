@@ -18,9 +18,10 @@ type Props = {
     currentName: string;
     currentIcon?: string | null;
     currentColor?: string | null;
+    onIconPickerVisibilityChange?: (open: boolean) => void;
 };
 
-const EditWorkspaceModal = ({ hide, currentName, currentIcon, currentColor }: Props) => {
+const EditWorkspaceModal = ({ hide, currentName, currentIcon, currentColor, onIconPickerVisibilityChange }: Props) => {
     const ThemedColor = useThemeColor();
     const [name, setName] = useState(currentName);
     const [iconName, setIconName] = useState<string | null>(currentIcon ?? null);
@@ -101,59 +102,56 @@ const EditWorkspaceModal = ({ hide, currentName, currentIcon, currentColor }: Pr
             <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={hide}>
-                        <Feather name="arrow-left" size={24} color={ThemedColor.text} />
+                        <Feather name="arrow-left" size={20} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <ThemedText type="subtitle" style={styles.title}>
                         Edit Workspace
                     </ThemedText>
                 </View>
-                <View style={{ gap: 12 }}>
-                    <ThemedInput
-                        autofocus
-                        useBottomSheetInput={true}
-                        placeHolder="Enter the Workspace Name"
-                        onSubmit={handleEditWorkspace}
-                        onChangeText={setName}
-                        value={name}
-                        setValue={setName}
-                    />
-
-                    {/* Icon picker button */}
-                    <TouchableOpacity
-                        style={[
-                            styles.iconPickerButton,
-                            {
-                                backgroundColor: ThemedColor.lightened,
-                                borderColor: iconColor ?? ThemedColor.lightened,
-                            },
-                        ]}
-                        onPress={() => setShowIconPicker(true)}
-                        activeOpacity={0.75}>
-                        {IconPreview && iconColor ? (
-                            <View style={styles.iconPreviewRow}>
-                                <IconPreview size={22} color={iconColor} weight="bold" />
-                                <ThemedText style={[styles.iconPickerLabel, { color: iconColor }]}>
-                                    {iconName}
-                                </ThemedText>
+                <View style={{ gap: 16 }}>
+                    <View style={styles.inputRow}>
+                        <View style={{ flex: 1 }}>
+                            <ThemedInput
+                                autofocus
+                                useBottomSheetInput={true}
+                                placeHolder="Enter the Workspace Name"
+                                onSubmit={handleEditWorkspace}
+                                onChangeText={setName}
+                                value={name}
+                                setValue={setName}
+                            />
+                        </View>
+                        <TouchableOpacity
+                            style={[
+                                styles.iconButton,
+                                {
+                                    backgroundColor: ThemedColor.lightened,
+                                    borderColor: iconColor ?? ThemedColor.lightened,
+                                },
+                            ]}
+                            onPress={() => { setShowIconPicker(true); onIconPickerVisibilityChange?.(true); }}
+                            activeOpacity={0.75}>
+                            {IconPreview && iconColor ? (
+                                <IconPreview size={24} color={iconColor} weight="bold" />
+                            ) : (
+                                <Feather name="grid" size={20} color={ThemedColor.caption} />
+                            )}
+                            {iconName && (
                                 <TouchableOpacity
+                                    style={[
+                                        styles.clearBadge,
+                                        { backgroundColor: ThemedColor.background },
+                                    ]}
                                     onPress={() => {
                                         setIconName(null);
                                         setIconColor(null);
                                     }}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                                    <Feather name="x" size={14} color={ThemedColor.caption} />
+                                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                                    <Feather name="x" size={9} color={ThemedColor.caption} />
                                 </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View style={styles.iconPreviewRow}>
-                                <Feather name="grid" size={18} color={ThemedColor.caption} />
-                                <ThemedText
-                                    style={[styles.iconPickerLabel, { color: ThemedColor.caption }]}>
-                                    Choose an icon (optional)
-                                </ThemedText>
-                            </View>
-                        )}
-                    </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    </View>
 
                     <View style={styles.buttonContainer}>
                         <PrimaryButton title="Update Workspace" onPress={handleEditWorkspace} />
@@ -163,8 +161,8 @@ const EditWorkspaceModal = ({ hide, currentName, currentIcon, currentColor }: Pr
 
             <IconPickerOverlay
                 visible={showIconPicker}
-                onClose={() => setShowIconPicker(false)}
-                onSelect={handleIconSelect}
+                onClose={() => { setShowIconPicker(false); onIconPickerVisibilityChange?.(false); }}
+                onSelect={(name, color) => { handleIconSelect(name, color); onIconPickerVisibilityChange?.(false); }}
             />
         </>
     );
@@ -174,9 +172,9 @@ export default EditWorkspaceModal;
 
 const styles = StyleSheet.create({
     container: {
-        gap: 16,
-        paddingVertical: 16,
-        paddingBottom: 16,
+        gap: 12,
+        flexDirection: "column",
+        marginTop: 16,
     },
     header: {
         flexDirection: "row",
@@ -189,22 +187,31 @@ const styles = StyleSheet.create({
         marginRight: 40,
     },
     buttonContainer: {
-        marginTop: 8,
+        width: "100%",
+        alignItems: "center",
     },
-    iconPickerButton: {
+    inputRow: {
+        flexDirection: "row",
+        alignItems: "stretch",
+        gap: 8,
+    },
+    iconButton: {
+        width: 52,
         borderRadius: 12,
         borderWidth: 1.5,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-    },
-    iconPreviewRow: {
-        flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        justifyContent: "center",
     },
-    iconPickerLabel: {
-        fontSize: 14,
-        fontWeight: "500",
-        flex: 1,
+    clearBadge: {
+        position: "absolute",
+        top: -7,
+        right: -7,
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: "rgba(128,128,128,0.2)",
     },
 });

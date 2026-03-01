@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Keyboard } from "react-native";
 import React, { useState, useRef, useCallback, useMemo } from "react";
 import BottomMenuModal from "../BottomMenuModal";
 import DeleteWorkspaceConfirmationModal from "../DeleteWorkspaceConfirmationModal";
@@ -65,7 +65,6 @@ const EditWorkspace = (props: Props) => {
     const filterSheetRef = useRef<BottomSheetModal>(null);
 
     // Define snap points for the modals
-    const editSnapPoints = useMemo(() => ["55%"], []);
     const reorderSnapPoints = useMemo(() => ["70%"], []);
     const sortSnapPoints = useMemo(() => ["40%"], []);
     const filterSnapPoints = useMemo(() => ["50%"], []);
@@ -209,10 +208,32 @@ const EditWorkspace = (props: Props) => {
         }
     };
 
+    const editIconPickerOpenRef = useRef(false);
+
+    const handleEditIconPickerVisibilityChange = useCallback((open: boolean) => {
+        editIconPickerOpenRef.current = open;
+        if (open) {
+            Keyboard.dismiss();
+            requestAnimationFrame(() => {
+                editWorkspaceSheetRef.current?.snapToIndex(0);
+            });
+        } else {
+            requestAnimationFrame(() => {
+                editWorkspaceSheetRef.current?.snapToIndex(0);
+            });
+        }
+    }, []);
+
     const handleEditSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1 && showEditModal) {
-                setShowEditModal(false);
+            if (index === -1) {
+                if (editIconPickerOpenRef.current) {
+                    requestAnimationFrame(() => {
+                        editWorkspaceSheetRef.current?.snapToIndex(0);
+                    });
+                } else if (showEditModal) {
+                    setShowEditModal(false);
+                }
             }
         },
         [showEditModal]
@@ -354,15 +375,18 @@ const EditWorkspace = (props: Props) => {
             <BottomSheetModal
                 ref={editWorkspaceSheetRef}
                 index={0}
-                snapPoints={editSnapPoints}
+                enableDynamicSizing={true}
                 onChange={handleEditSheetChanges}
                 backdropComponent={renderBackdrop}
                 handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
                 backgroundStyle={{ backgroundColor: ThemedColor.background }}
+                keyboardBehavior="interactive"
+                keyboardBlurBehavior="restore"
                 enablePanDownToClose={true}>
                 <BottomSheetView
                     style={{
                         paddingHorizontal: 20,
+                        paddingBottom: 32,
                     }}>
                     <EditWorkspaceModal
                         currentName={id}
@@ -372,6 +396,7 @@ const EditWorkspace = (props: Props) => {
                             setShowEditModal(false);
                             editWorkspaceSheetRef.current?.dismiss();
                         }}
+                        onIconPickerVisibilityChange={handleEditIconPickerVisibilityChange}
                     />
                 </BottomSheetView>
             </BottomSheetModal>

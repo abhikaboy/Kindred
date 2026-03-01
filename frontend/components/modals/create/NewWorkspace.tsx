@@ -138,10 +138,13 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: "row",
+        alignItems: "center",
         gap: 16,
     },
     title: {
+        flex: 1,
         textAlign: "center",
+        marginRight: 40,
     },
     buttonContainer: {
         width: "100%",

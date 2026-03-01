@@ -23,12 +23,12 @@ const ICON_CELL_SIZE = Math.floor(SCREEN_WIDTH / NUM_COLUMNS);
 const ICON_SIZE = 26;
 
 export const ICON_PRESET_COLORS = [
-    "#A259FF",
-    "#4A90E2",
-    "#FF6B6B",
-    "#43C59E",
-    "#F5A623",
-    "#E84393",
+    "#4263EB", // electric indigo
+    "#0CA678", // vivid emerald
+    "#F03E9E", // hot pink
+    "#AE3EC9", // bold violet
+    "#F59F00", // golden yellow
+    "#1C7ED6", // bright blue
 ];
 
 type PhosphorComponent = React.ComponentType<{
@@ -59,9 +59,28 @@ const IconCell = memo(({ name, Component, onPress }: IconCellProps) => (
     </TouchableOpacity>
 ));
 
+// Prefixes that produce navigation/directional icons not useful for workspace labelling
+const EXCLUDED_PREFIXES = [
+    "Arrow",
+    "Caret",
+    "Cursor",
+    "HandPointing",
+    "NavigationArrow",
+];
+
+const isExcluded = (name: string) =>
+    EXCLUDED_PREFIXES.some((prefix) => name.startsWith(prefix));
+
 // Built once at module level — 1500+ icons, name → component
+// Only keep plain names (not the Icon-suffixed duplicates) to avoid showing each icon twice
 const ALL_ICONS: { name: string; Component: PhosphorComponent }[] = Object.entries(PhosphorIcons)
-    .filter(([key, val]) => typeof val === "function" && key !== "IconContext")
+    .filter(
+        ([key, val]) =>
+            typeof val === "function" &&
+            key !== "IconContext" &&
+            !key.endsWith("Icon") &&
+            !isExcluded(key)
+    )
     .map(([name, Component]) => ({
         name,
         Component: Component as PhosphorComponent,
@@ -229,99 +248,103 @@ export const IconPickerOverlay: React.FC<IconPickerOverlayProps> = ({
 
     return (
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
-            {/* Blurred backdrop */}
-            <Animated.View
-                style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdropOpacity }]}
-                pointerEvents="none">
-                <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFill} />
-                <View style={[StyleSheet.absoluteFill, styles.dimOverlay]} />
-            </Animated.View>
+            {visible && (
+                <>
+                    {/* Blurred backdrop */}
+                    <Animated.View
+                        style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdropOpacity }]}
+                        pointerEvents="none">
+                        <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFill} />
+                        <View style={[StyleSheet.absoluteFill, styles.dimOverlay]} />
+                    </Animated.View>
 
-            {/* Background tap → close */}
-            <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+                    {/* Background tap → close */}
+                    <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
 
-            {/* Close button */}
-            <Animated.View
-                style={[styles.closeButton, { top: insets.top + 12, opacity: backdropOpacity }]}
-                pointerEvents="auto">
-                <TouchableOpacity
-                    onPress={handleClose}
-                    hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}>
-                    <View style={styles.closeButtonInner}>
-                        <Ionicons name="close" size={20} color="#ffffff" />
-                    </View>
-                </TouchableOpacity>
-            </Animated.View>
-
-            {/* Icon grid */}
-            <Animated.View
-                style={[
-                    styles.gridContainer,
-                    {
-                        top: insets.top + 56,
-                        bottom: insets.bottom,
-                        opacity: gridOpacity,
-                        transform: [{ translateY: gridTranslateY }],
-                    },
-                ]}
-                pointerEvents="auto">
-                {/* Search bar */}
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={16} color="rgba(255,255,255,0.5)" />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search icons..."
-                        placeholderTextColor="rgba(255,255,255,0.35)"
-                        value={searchQuery}
-                        onChangeText={(text) => {
-                            setSearchQuery(text);
-                            flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
-                        }}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        clearButtonMode="while-editing"
-                    />
-                </View>
-
-                <FlatList
-                    ref={flatListRef}
-                    data={filteredIcons}
-                    numColumns={NUM_COLUMNS}
-                    renderItem={renderIcon}
-                    keyExtractor={(item) => item.name}
-                    getItemLayout={searchQuery ? undefined : getItemLayout}
-                    showsVerticalScrollIndicator={false}
-                    initialNumToRender={60}
-                    maxToRenderPerBatch={30}
-                    windowSize={8}
-                    removeClippedSubviews={true}
-                    contentContainerStyle={styles.gridContent}
-                    keyboardShouldPersistTaps="handled"
-                />
-            </Animated.View>
-
-            {/* Color picker popover — always mounted so it shows instantly */}
-            <Popover
-                from={colorPickerAnchor ?? new Rect(0, 0, 0, 0)}
-                isVisible={showColorPicker && !!colorPickerAnchor}
-                onRequestClose={handleColorPickerClose}
-                backgroundStyle={styles.popoverBackground}
-                popoverStyle={styles.colorPopover}
-                animationConfig={{ duration: 80 }}>
-                <View style={styles.colorRow}>
-                    {ICON_PRESET_COLORS.map((color) => (
+                    {/* Close button */}
+                    <Animated.View
+                        style={[styles.closeButton, { top: insets.top + 12, opacity: backdropOpacity }]}
+                        pointerEvents="auto">
                         <TouchableOpacity
-                            key={color}
-                            onPress={() => selectedIcon && handleColorSelect(selectedIcon, color)}
-                            style={styles.colorIconBtn}
-                            activeOpacity={0.7}>
-                            {SelectedIconComponent && (
-                                <SelectedIconComponent size={28} color={color} weight="regular" />
-                            )}
+                            onPress={handleClose}
+                            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}>
+                            <View style={styles.closeButtonInner}>
+                                <Ionicons name="close" size={20} color="#ffffff" />
+                            </View>
                         </TouchableOpacity>
-                    ))}
-                </View>
-            </Popover>
+                    </Animated.View>
+
+                    {/* Icon grid */}
+                    <Animated.View
+                        style={[
+                            styles.gridContainer,
+                            {
+                                top: insets.top + 56,
+                                bottom: insets.bottom,
+                                opacity: gridOpacity,
+                                transform: [{ translateY: gridTranslateY }],
+                            },
+                        ]}
+                        pointerEvents="auto">
+                        {/* Search bar */}
+                        <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={16} color="rgba(255,255,255,0.5)" />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search icons..."
+                                placeholderTextColor="rgba(255,255,255,0.35)"
+                                value={searchQuery}
+                                onChangeText={(text) => {
+                                    setSearchQuery(text);
+                                    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+                                }}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                clearButtonMode="while-editing"
+                            />
+                        </View>
+
+                        <FlatList
+                            ref={flatListRef}
+                            data={filteredIcons}
+                            numColumns={NUM_COLUMNS}
+                            renderItem={renderIcon}
+                            keyExtractor={(item) => item.name}
+                            getItemLayout={searchQuery ? undefined : getItemLayout}
+                            showsVerticalScrollIndicator={false}
+                            initialNumToRender={60}
+                            maxToRenderPerBatch={30}
+                            windowSize={8}
+                            removeClippedSubviews={true}
+                            contentContainerStyle={styles.gridContent}
+                            keyboardShouldPersistTaps="handled"
+                        />
+                    </Animated.View>
+
+                    {/* Color picker popover — always mounted so it shows instantly */}
+                    <Popover
+                        from={colorPickerAnchor ?? new Rect(0, 0, 0, 0)}
+                        isVisible={showColorPicker && !!colorPickerAnchor}
+                        onRequestClose={handleColorPickerClose}
+                        backgroundStyle={styles.popoverBackground}
+                        popoverStyle={styles.colorPopover}
+                        animationConfig={{ duration: 80 }}>
+                        <View style={styles.colorRow}>
+                            {ICON_PRESET_COLORS.map((color) => (
+                                <TouchableOpacity
+                                    key={color}
+                                    onPress={() => selectedIcon && handleColorSelect(selectedIcon, color)}
+                                    style={styles.colorIconBtn}
+                                    activeOpacity={0.7}>
+                                    {SelectedIconComponent && (
+                                        <SelectedIconComponent size={28} color={color} weight="regular" />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </Popover>
+                </>
+            )}
         </Modal>
     );
 };
@@ -395,8 +418,8 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     colorIconBtn: {
-        width: 46,
-        height: 46,
+        width: 44,
+        height: 44,
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 10,

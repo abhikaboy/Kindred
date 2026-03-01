@@ -29,7 +29,7 @@ const DeleteWorkspaceConfirmationModal = (props: Props) => {
     };
 
     return (
-        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["40%"]}>
+        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["60%"]}>
             <View style={styles.container}>
                 <View style={styles.header}>
                     <ThemedText type="title" style={{ marginBottom: 24, fontSize: 32 }}>Delete Workspace</ThemedText>
@@ -65,8 +65,8 @@ const DeleteWorkspaceConfirmationModal = (props: Props) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 20,
         paddingVertical: 16,
+        paddingBottom: 64,
     },
     header: {
         alignItems: "center",
@@ -120,4 +120,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DeleteWorkspaceConfirmationModal; 
+export default DeleteWorkspaceConfirmationModal;

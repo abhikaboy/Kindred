@@ -150,6 +150,10 @@ const Workspace = (props: Props) => {
                 workspaceState={workspaceState}
                 workspaceIcon={workspaceIcon}
                 workspaceColor={workspaceColor}
+                reopenWorkspaceSettings={reopenWorkspaceSettings}
+                requestWorkspaceAction={requestWorkspaceAction}
+                workspaceAction={workspaceAction}
+                setWorkspaceAction={setWorkspaceAction}
             />
         </SpotlightTourProvider>
     );
@@ -180,6 +184,10 @@ const WorkspaceContent = ({
     workspaceState,
     workspaceIcon,
     workspaceColor,
+    reopenWorkspaceSettings,
+    requestWorkspaceAction,
+    workspaceAction,
+    setWorkspaceAction,
 }: any) => {
     const { start } = useSpotlightTour();
     const pathname = usePathname();
@@ -293,9 +301,11 @@ const WorkspaceContent = ({
                             ) : (
                                 <Feather name="grid" size={24} color={ThemedColor.caption} />
                             )}
-                            <SlidingText type="title" style={styles.title}>
-                                {selected}
-                            </SlidingText>
+                            <View style={{ flex: 1 }}>
+                                <SlidingText type="title" style={styles.title}>
+                                    {selected}
+                                </SlidingText>
+                            </View>
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                             <TouchableOpacity onPress={reopenWorkspaceSettings}>
@@ -358,9 +368,11 @@ const WorkspaceContent = ({
                                             ) : (
                                                 <Feather name="grid" size={28} color={ThemedColor.caption} />
                                             )}
-                                            <SlidingText type="title" style={styles.title}>
-                                                {selected || "Good Morning! ☀"}
-                                            </SlidingText>
+                                            <View style={{ flex: 1 }}>
+                                                <SlidingText type="title" style={styles.title}>
+                                                    {selected || "Good Morning! ☀"}
+                                                </SlidingText>
+                                            </View>
                                         </View>
                                     </AttachStep>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
@@ -480,7 +492,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontWeight: "600",
-        width: "100%",
+        flex: 1,
     },
     categoriesContainer: {
         gap: 16,

@@ -26,6 +26,8 @@ import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
+import * as PhosphorIcons from "phosphor-react-native";
+import Feather from "@expo/vector-icons/Feather";
 
 interface WorkspaceContentProps {
     workspaceName?: string; // Optional: if not provided, uses global selected
@@ -103,9 +105,13 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     spotlightLoading,
 }) => {
     const ThemedColor = useThemeColor();
-    const { workspaces, categories: globalCategories, selected: globalSelected, showConfetti } = useTasks();
+    const { workspaces, categories: globalCategories, selected: globalSelected, showConfetti, getWorkspace } = useTasks();
     // Use prop if provided, otherwise fall back to global selected
     const selected = workspaceName || globalSelected;
+    const currentWorkspace = selected ? getWorkspace(selected) : undefined;
+    const WorkspaceIconComponent = currentWorkspace?.icon
+        ? ((PhosphorIcons as any)[currentWorkspace.icon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
+        : undefined;
     // When workspaceName prop is provided, derive categories directly from workspaces
     // to avoid depending on the global categories state (which is tied to globalSelected).
     const categories = workspaceName
@@ -309,16 +315,14 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
             {editing && (
                 <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             )}
-            {editingWorkspace && (
-                <EditWorkspace
-                    editing={editingWorkspace}
-                    setEditing={setEditingWorkspace}
-                    id={selected}
-                    actionRequest={workspaceAction}
-                    onActionHandled={() => setWorkspaceAction(null)}
-                    skipMenu={workspaceAction !== null}
-                />
-            )}
+            <EditWorkspace
+                editing={editingWorkspace}
+                setEditing={setEditingWorkspace}
+                id={selected}
+                actionRequest={workspaceAction}
+                onActionHandled={() => setWorkspaceAction(null)}
+                skipMenu={workspaceAction !== null}
+            />
 
             <ThemedView style={{ flex: 1 }}>
                 {/* Scrollable Content */}
@@ -339,14 +343,17 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <AttachStep index={0} style={{ width: "100%", alignItems: "flex-start" }}>
-                                        <View
+                                    <AttachStep index={0} style={{ flex: 1, alignItems: "flex-start" }}>
+                                        <TouchableOpacity
                                             ref={workspaceStep0Ref}
+                                            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+                                            onLongPress={reopenWorkspaceSettings}
+                                            activeOpacity={1}
                                         >
                                             <ThemedText type="title" style={styles.title}>
                                                 {selected || "Good Morning! ☀"}
                                             </ThemedText>
-                                        </View>
+                                        </TouchableOpacity>
                                     </AttachStep>
                                 </View>
                                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>

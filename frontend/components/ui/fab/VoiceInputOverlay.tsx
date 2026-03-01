@@ -1257,6 +1257,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 24,
         color: "rgba(255,255,255,0.4)",
+        fontFamily: "OutfitLight",
     },
     previewListWrapper: {
         position: "absolute",

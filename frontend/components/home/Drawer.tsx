@@ -557,30 +557,29 @@ const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number; work
                         borderWidth: 1,
                         borderColor: ThemedColor.tertiary,
                         borderRadius: 8,
-                        paddingVertical: 14,
+                        paddingVertical: 16,
                         paddingHorizontal: 16,
-                        width: "100%",
                         flexDirection: "row",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        overflow: "hidden",
                     },
                     isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
                 ]}
                 onPress={props.onPress}
                 onLongPress={props.onLongPress}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, flexGrow: 1 }}>
                     <SelectedIndicator selected={isSelected} />
                     {IconComponent ? (
                         <IconComponent size={18} color={props.workspaceColor ?? ThemedColor.primary} weight="regular" />
                     ) : (
-                        <Feather name="grid" size={18} color={ThemedColor.caption} />
+                        <Feather name="grid" size={16} color={ThemedColor.caption} />
                     )}
-                    <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }}>
+                    <ThemedText type="default" style={{ flexShrink: 1, fontWeight: "600" }} numberOfLines={2}>
                         {props.title}
                     </ThemedText>
                 </View>
                 {props.taskCount !== undefined && (
-                    <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                    <ThemedText type="default" style={{ color: ThemedColor.caption, marginLeft: 8, flexShrink: 0 }}>
                         {props.taskCount}
                     </ThemedText>
                 )}
