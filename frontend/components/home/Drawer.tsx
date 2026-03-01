@@ -13,9 +13,11 @@ import {
     Gear,
     User,
     FileText,
-    Archive
+    Archive,
 } from "phosphor-react-native";
+import * as PhosphorIcons from "phosphor-react-native";
 import { router, usePathname } from "expo-router";
+import Feather from "@expo/vector-icons/Feather";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
@@ -407,6 +409,8 @@ const DrawerContent = ({
                                         title={workspace.name}
                                         selected={currentSelected}
                                         taskCount={taskCount}
+                                        workspaceIcon={workspace.icon ?? undefined}
+                                        workspaceColor={workspace.color ?? undefined}
                                     />
                                 );
                             })}
@@ -537,9 +541,13 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
     );
 });
 
-const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number }) => {
+const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number; workspaceIcon?: string; workspaceColor?: string }) => {
     const ThemedColor = useThemeColor();
     const isSelected = props.selected === props.title;
+
+    const IconComponent = props.workspaceIcon
+        ? ((PhosphorIcons as any)[props.workspaceIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
+        : undefined;
 
     return (
         <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingVertical: 4 }}>
@@ -549,7 +557,7 @@ const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number }) =>
                         borderWidth: 1,
                         borderColor: ThemedColor.tertiary,
                         borderRadius: 8,
-                        paddingVertical: 20,
+                        paddingVertical: 14,
                         paddingHorizontal: 16,
                         width: "100%",
                         flexDirection: "row",
@@ -560,8 +568,13 @@ const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number }) =>
                 ]}
                 onPress={props.onPress}
                 onLongPress={props.onLongPress}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                     <SelectedIndicator selected={isSelected} />
+                    {IconComponent ? (
+                        <IconComponent size={18} color={props.workspaceColor ?? ThemedColor.primary} weight="regular" />
+                    ) : (
+                        <Feather name="grid" size={18} color={ThemedColor.caption} />
+                    )}
                     <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }}>
                         {props.title}
                     </ThemedText>

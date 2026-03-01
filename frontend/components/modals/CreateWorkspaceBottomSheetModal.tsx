@@ -12,6 +12,7 @@ const CreateWorkspaceBottomSheetModal = ({ visible, setVisible }: Props) => {
     const ThemedColor = useThemeColor();
     const createWorkspaceSheetRef = useRef<BottomSheetModal>(null);
     const snapPoints = useMemo(() => ["30%"], []);
+    const [iconPickerOpen, setIconPickerOpen] = useState(false);
 
     // Handle modal visibility changes
     useEffect(() => {
@@ -55,12 +56,12 @@ const CreateWorkspaceBottomSheetModal = ({ visible, setVisible }: Props) => {
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
-            enablePanDownToClose={true}>
+            enablePanDownToClose={!iconPickerOpen}>
             <BottomSheetView
                 style={{
                     paddingHorizontal: 20,
                 }}>
-                <NewWorkspace hide={hideModal} />
+                <NewWorkspace hide={hideModal} onIconPickerVisibilityChange={setIconPickerOpen} />
             </BottomSheetView>
         </BottomSheetModal>
     );

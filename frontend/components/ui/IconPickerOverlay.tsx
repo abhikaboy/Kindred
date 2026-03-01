@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { memo, useRef, useEffect, useState, useCallback } from "react";
 import {
     Animated,
     Dimensions,
@@ -36,6 +36,28 @@ type PhosphorComponent = React.ComponentType<{
     weight?: string;
     color?: string;
 }>;
+
+const iconCellStyle = {
+    width: ICON_CELL_SIZE,
+    height: ICON_CELL_SIZE,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+};
+
+interface IconCellProps {
+    name: string;
+    Component: PhosphorComponent;
+    onPress: (name: string, pageX: number, pageY: number) => void;
+}
+
+const IconCell = memo(({ name, Component, onPress }: IconCellProps) => (
+    <TouchableOpacity
+        style={iconCellStyle}
+        onPress={(e) => onPress(name, e.nativeEvent.pageX, e.nativeEvent.pageY)}
+        activeOpacity={0.6}>
+        <Component size={ICON_SIZE} color="rgba(255,255,255,0.82)" weight="regular" />
+    </TouchableOpacity>
+));
 
 // Built once at module level — 1500+ icons, name → component
 const ALL_ICONS: { name: string; Component: PhosphorComponent }[] = Object.entries(PhosphorIcons)
@@ -183,14 +205,7 @@ export const IconPickerOverlay: React.FC<IconPickerOverlayProps> = ({
 
     const renderIcon = useCallback(
         ({ item }: { item: { name: string; Component: PhosphorComponent } }) => (
-            <TouchableOpacity
-                style={styles.iconCell}
-                onPress={(e) =>
-                    handleIconPress(item.name, e.nativeEvent.pageX, e.nativeEvent.pageY)
-                }
-                activeOpacity={0.6}>
-                <item.Component size={ICON_SIZE} color="rgba(255,255,255,0.82)" weight="regular" />
-            </TouchableOpacity>
+            <IconCell name={item.name} Component={item.Component} onPress={handleIconPress} />
         ),
         [handleIconPress]
     );
@@ -211,8 +226,6 @@ export const IconPickerOverlay: React.FC<IconPickerOverlayProps> = ({
         : null;
 
     // ── Render ─────────────────────────────────────────────────────────────────
-
-    if (!visible) return null;
 
     return (
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
@@ -287,27 +300,28 @@ export const IconPickerOverlay: React.FC<IconPickerOverlayProps> = ({
                 />
             </Animated.View>
 
-            {/* Color picker popover */}
-            {SelectedIconComponent && selectedIcon && colorPickerAnchor && (
-                <Popover
-                    from={colorPickerAnchor!}
-                    isVisible={showColorPicker}
-                    onRequestClose={handleColorPickerClose}
-                    backgroundStyle={styles.popoverBackground}
-                    popoverStyle={styles.colorPopover}>
-                    <View style={styles.colorRow}>
-                        {ICON_PRESET_COLORS.map((color) => (
-                            <TouchableOpacity
-                                key={color}
-                                onPress={() => handleColorSelect(selectedIcon, color)}
-                                style={styles.colorIconBtn}
-                                activeOpacity={0.7}>
-                                <SelectedIconComponent size={28} color={color} weight="bold" />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </Popover>
-            )}
+            {/* Color picker popover — always mounted so it shows instantly */}
+            <Popover
+                from={colorPickerAnchor ?? new Rect(0, 0, 0, 0)}
+                isVisible={showColorPicker && !!colorPickerAnchor}
+                onRequestClose={handleColorPickerClose}
+                backgroundStyle={styles.popoverBackground}
+                popoverStyle={styles.colorPopover}
+                animationConfig={{ duration: 80 }}>
+                <View style={styles.colorRow}>
+                    {ICON_PRESET_COLORS.map((color) => (
+                        <TouchableOpacity
+                            key={color}
+                            onPress={() => selectedIcon && handleColorSelect(selectedIcon, color)}
+                            style={styles.colorIconBtn}
+                            activeOpacity={0.7}>
+                            {SelectedIconComponent && (
+                                <SelectedIconComponent size={28} color={color} weight="regular" />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </Popover>
         </Modal>
     );
 };
@@ -344,7 +358,7 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(255,255,255,0.1)",
         borderRadius: 12,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 16,
         marginHorizontal: 16,
         marginBottom: 12,
         gap: 8,
@@ -352,9 +366,8 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         color: "rgba(255,255,255,0.9)",
-        fontSize: 15,
+        fontSize: 16,
         fontFamily: "OutfitLight",
-        padding: 0,
     },
     gridContent: {
         paddingBottom: 20,

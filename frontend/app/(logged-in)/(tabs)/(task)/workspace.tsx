@@ -28,12 +28,13 @@ import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
+import * as PhosphorIcons from "phosphor-react-native";
 
 type Props = {};
 
 const Workspace = (props: Props) => {
     let ThemedColor = useThemeColor();
-    const { categories, selected, showConfetti } = useTasks();
+    const { categories, selected, showConfetti, getWorkspace } = useTasks();
     const { applyFilters } = useWorkspaceFilters(selected);
     const { getStateDescription, state: workspaceState } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
@@ -118,6 +119,10 @@ const Workspace = (props: Props) => {
         },
     ];
 
+    const currentWorkspace = selected ? getWorkspace(selected) : null;
+    const workspaceIcon = currentWorkspace?.icon ?? undefined;
+    const workspaceColor = currentWorkspace?.color ?? undefined;
+
     return (
         <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
             <WorkspaceContent
@@ -143,6 +148,8 @@ const Workspace = (props: Props) => {
                 applyFilters={applyFilters}
                 workspaceStateDescription={getStateDescription()}
                 workspaceState={workspaceState}
+                workspaceIcon={workspaceIcon}
+                workspaceColor={workspaceColor}
             />
         </SpotlightTourProvider>
     );
@@ -171,10 +178,27 @@ const WorkspaceContent = ({
     applyFilters,
     workspaceStateDescription,
     workspaceState,
+    workspaceIcon,
+    workspaceColor,
 }: any) => {
     const { start } = useSpotlightTour();
     const pathname = usePathname();
     const hasTriggeredRef = useRef(false);
+
+    const { getWorkspace } = useTasks();
+    const currentWorkspace = selected ? getWorkspace(selected) : undefined;
+    const resolvedIcon = currentWorkspace?.icon ?? workspaceIcon;
+    const resolvedColor = currentWorkspace?.color ?? workspaceColor;
+
+    console.log('[WorkspaceContent] selected:', selected);
+    console.log('[WorkspaceContent] currentWorkspace:', JSON.stringify({ name: currentWorkspace?.name, icon: currentWorkspace?.icon, color: currentWorkspace?.color }));
+    console.log('[WorkspaceContent] resolvedIcon:', resolvedIcon, 'resolvedColor:', resolvedColor);
+
+    const WorkspaceIconComponent = resolvedIcon
+        ? ((PhosphorIcons as any)[resolvedIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
+        : undefined;
+
+    console.log('[WorkspaceContent] WorkspaceIconComponent:', WorkspaceIconComponent ? 'found' : 'not found');
 
     // Extract primitive values to avoid reference changes
     const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
@@ -263,9 +287,16 @@ const WorkspaceContent = ({
                         borderBottomColor: ThemedColor.lightened,
                     }}>
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                        <SlidingText type="title" style={styles.title}>
-                            {selected}
-                        </SlidingText>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                            {WorkspaceIconComponent ? (
+                                <WorkspaceIconComponent size={24} color={resolvedColor ?? ThemedColor.primary} weight="regular" />
+                            ) : (
+                                <Feather name="grid" size={24} color={ThemedColor.caption} />
+                            )}
+                            <SlidingText type="title" style={styles.title}>
+                                {selected}
+                            </SlidingText>
+                        </View>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                             <TouchableOpacity onPress={reopenWorkspaceSettings}>
                                 <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
@@ -320,10 +351,17 @@ const WorkspaceContent = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <AttachStep index={0} style={{ width: "100%" }}>
-                                        <SlidingText type="title" style={styles.title}>
-                                            {selected || "Good Morning! ☀"}
-                                        </SlidingText>
+                                    <AttachStep index={0} style={{ flex: 1 }}>
+                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                                            {WorkspaceIconComponent ? (
+                                                <WorkspaceIconComponent size={28} color={resolvedColor ?? ThemedColor.primary} weight="regular" />
+                                            ) : (
+                                                <Feather name="grid" size={28} color={ThemedColor.caption} />
+                                            )}
+                                            <SlidingText type="title" style={styles.title}>
+                                                {selected || "Good Morning! ☀"}
+                                            </SlidingText>
+                                        </View>
                                     </AttachStep>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                                         <TouchableOpacity onPress={reopenWorkspaceSettings}>

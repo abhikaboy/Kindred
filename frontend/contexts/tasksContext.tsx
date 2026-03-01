@@ -24,7 +24,7 @@ type TaskContextType = {
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
-    addWorkspace: (name: string, category: Categories) => void;
+    addWorkspace: (name: string, category: Categories, icon?: string | null, color?: string | null) => void;
     updateTask: (categoryId: string, taskId: string, updates: Partial<Task>) => void;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
@@ -243,13 +243,17 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
      * @param name
      * @param category
      */
-    const addWorkspace = async (name: string, category: Categories) => {
-        const newWorkspace = { name: name, categories: [category], isBlueprint: false };
-        await createWorkspace(name);
+    const addWorkspace = async (name: string, category: Categories, icon?: string | null, color?: string | null) => {
+        const newWorkspace: Workspace = {
+            name,
+            categories: [category],
+            isBlueprint: false,
+            icon: icon ?? null,
+            color: color ?? null,
+        };
         let workspacesCopy = workspaces.slice();
         workspacesCopy.push(newWorkspace);
         setWorkSpaces(workspacesCopy);
-        // Invalidate cache after local update
         await invalidateWorkspacesCache();
     };
 

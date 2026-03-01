@@ -14,9 +14,10 @@ type PhosphorComponent = React.ComponentType<{ size?: number; weight?: string; c
 
 type Props = {
     hide: () => void;
+    onIconPickerVisibilityChange?: (open: boolean) => void;
 };
 
-const NewWorkspace = ({ hide }: Props) => {
+const NewWorkspace = ({ hide, onIconPickerVisibilityChange }: Props) => {
     const ThemedColor = useThemeColor();
     const [name, setName] = useState("");
     const [iconName, setIconName] = useState<string | null>(null);
@@ -36,7 +37,7 @@ const NewWorkspace = ({ hide }: Props) => {
                 return;
             }
             const response = await createWorkspace(name, iconName, iconColor);
-            addWorkspace(name, response);
+            addWorkspace(name, response, iconName, iconColor);
             setSelected(name);
             hide();
         } catch (err) {
@@ -85,13 +86,13 @@ const NewWorkspace = ({ hide }: Props) => {
                                 styles.iconButton,
                                 {
                                     backgroundColor: ThemedColor.lightened,
-                                    borderColor: iconColor ?? ThemedColor.lightened,
+                                    borderColor: ThemedColor.lightened,
                                 },
                             ]}
-                            onPress={() => setShowIconPicker(true)}
+                            onPress={() => { setShowIconPicker(true); onIconPickerVisibilityChange?.(true); }}
                             activeOpacity={0.75}>
                             {IconPreview && iconColor ? (
-                                <IconPreview size={22} color={iconColor} weight="bold" />
+                                <IconPreview size={24} color={iconColor} weight="bold" />
                             ) : (
                                 <Feather name="grid" size={20} color={ThemedColor.caption} />
                             )}
@@ -120,7 +121,7 @@ const NewWorkspace = ({ hide }: Props) => {
 
             <IconPickerOverlay
                 visible={showIconPicker}
-                onClose={() => setShowIconPicker(false)}
+                onClose={() => { setShowIconPicker(false); onIconPickerVisibilityChange?.(false); }}
                 onSelect={handleIconSelect}
             />
         </>

@@ -10,6 +10,12 @@ Router maps endpoints to handlers
 */
 
 func Routes(api huma.API, collections map[string]*mongo.Collection) {
+	// Ensure workspaces collection reference exists even if the collection
+	// hasn't been created yet in MongoDB (it will be created on first write).
+	if collections["workspaces"] == nil {
+		collections["workspaces"] = collections["categories"].Database().Collection("workspaces")
+	}
+
 	service := newService(collections)
 	handler := Handler{service}
 
