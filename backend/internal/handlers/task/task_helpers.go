@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -368,17 +370,34 @@ func mergeTaskWithEdits(current TaskDocument, updates EditTaskUpdatesLocal) Upda
 	return merged
 }
 
+// toSentenceCase converts a string to sentence case: first letter capitalized, rest lowercased,
+// except for words after sentence-ending punctuation which are also capitalized.
+func toSentenceCase(s string) string {
+	if s == "" {
+		return s
+	}
+	lower := strings.ToLower(s)
+	runes := []rune(lower)
+	runes[0] = unicode.ToUpper(runes[0])
+	for i := 1; i < len(runes); i++ {
+		if (runes[i-1] == '.' || runes[i-1] == '!' || runes[i-1] == '?') && runes[i] == ' ' && i+1 < len(runes) {
+			runes[i+1] = unicode.ToUpper(runes[i+1])
+		}
+	}
+	return string(runes)
+}
+
 // validateAndSetTaskDefaults validates and sets default values for task fields
 func validateAndSetTaskDefaults(taskParams *CreateTaskParams) {
-	// Validate and set priority (1-3)
 	if taskParams.Priority < 1 || taskParams.Priority > 3 {
 		taskParams.Priority = 2
 	}
 
-	// Validate and set value (0-10)
 	if taskParams.Value < 0 || taskParams.Value > 10 {
 		taskParams.Value = 5
 	}
+
+	taskParams.Content = toSentenceCase(taskParams.Content)
 }
 
 // buildTaskDocument creates a TaskDocument from CreateTaskParams
