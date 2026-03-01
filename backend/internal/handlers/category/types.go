@@ -7,8 +7,15 @@ import (
 )
 
 type CreateCategoryParams struct {
-	Name          string `bson:"name" json:"name"`
-	WorkspaceName string `bson:"workspaceName" json:"workspaceName"`
+	Name          string  `bson:"name" json:"name"`
+	WorkspaceName string  `bson:"workspaceName" json:"workspaceName"`
+	Icon          *string `bson:"icon,omitempty" json:"icon,omitempty"`
+	Color         *string `bson:"color,omitempty" json:"color,omitempty"`
+}
+
+type UpdateWorkspaceParams struct {
+	Icon  *string `json:"icon,omitempty"`
+	Color *string `json:"color,omitempty"`
 }
 
 type CategoryDocument = types.CategoryDocument
@@ -22,6 +29,8 @@ type UpdateCategoryDocument struct {
 type WorkspaceResult struct {
 	Name       string                   `bson:"_id" json:"name"`
 	Categories []types.CategoryDocument `bson:"categories" json:"categories"`
+	Icon       *string                  `bson:"icon,omitempty" json:"icon,omitempty"`
+	Color      *string                  `bson:"color,omitempty" json:"color,omitempty"`
 }
 
 /*
@@ -32,4 +41,5 @@ Database layer of the application
 type Service struct {
 	Categories    *mongo.Collection
 	TemplateTasks *mongo.Collection
+	Workspaces    *mongo.Collection
 }

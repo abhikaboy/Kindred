@@ -6,24 +6,12 @@ import {
     StyleSheet,
     Dimensions,
     Platform,
-    KeyboardAvoidingView,
     Image as RNImage,
-    // Alert, // Removed Alert import
 } from "react-native";
-import { Image } from "expo-image";
-import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
-import UserInfoRowTimed from "../UserInfo/UserInfoRowTimed";
-import ReactPills from "../inputs/ReactPills";
-import ReactionAction from "../inputs/ReactionAction";
-import Carousel from "react-native-reanimated-carousel";
-import { Directions, GestureDetector, Gesture } from "react-native-gesture-handler";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import Svg, { Path } from "react-native-svg";
-import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import CongratulateModal from "../modals/CongratulateModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,197 +21,14 @@ import { useAlert } from "@/contexts/AlertContext";
 import { useQueryClient } from '@tanstack/react-query';
 import { useTasks } from "@/contexts/tasksContext";
 import type { components } from "@/api/generated/types";
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { showToast } from "@/utils/showToast";
 import * as Clipboard from 'expo-clipboard';
 import * as SMS from 'expo-sms';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
-import { Confetti } from "phosphor-react-native";
-import { AlertButton } from "@/components/modals/CustomAlert";
+import PostCardHeader from "./PostCardHeader";
+import PostCardMedia from "./PostCardMedia";
+import PostCardFooter from "./PostCardFooter";
 
 type ImageSize = components["schemas"]["ImageSize"];
-
-/* 
- * PINCH-TO-ZOOM FEATURE - CURRENTLY DISABLED
- * To re-enable: uncomment this component and update the usage below
- * 
-// PinchableImage component for Instagram-like pinch-to-zoom
-const PinchableImage = ({ source, style, onLongPress }: { source: any; style: any; onLongPress: () => void }) => {
-    const scale = useSharedValue(1);
-    const savedScale = useSharedValue(1);
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-    const savedTranslateX = useSharedValue(0);
-    const savedTranslateY = useSharedValue(0);
-    const focalX = useSharedValue(0);
-    const focalY = useSharedValue(0);
-    
-    // Memoize screen dimensions to prevent repeated calls
-    const screenWidth = useMemo(() => Dimensions.get('window').width, []);
-
-    const pinchGesture = Gesture.Pinch()
-        .onStart((e) => {
-            'worklet';
-            try {
-                savedScale.value = scale.value;
-                savedTranslateX.value = translateX.value;
-                savedTranslateY.value = translateY.value;
-                // Store focal point with safety checks
-                focalX.value = e.focalX ?? 0;
-                focalY.value = e.focalY ?? 0;
-            } catch (error) {
-                // Fail silently to prevent crashes
-                console.log('Pinch gesture start error:', error);
-            }
-        })
-        .onUpdate((e) => {
-            'worklet';
-            try {
-                // Clamp scale between 0.5 and 4 to prevent extreme values
-                const newScale = Math.max(0.5, Math.min(4, savedScale.value * e.scale));
-                scale.value = newScale;
-                
-                // Calculate translation to zoom into focal point
-                const deltaScale = newScale - savedScale.value;
-                const centerX = screenWidth / 2;
-                const centerY = screenWidth / 2;
-                
-                // Add bounds checking to prevent NaN values
-                const focalXValue = isFinite(focalX.value) ? focalX.value : centerX;
-                const focalYValue = isFinite(focalY.value) ? focalY.value : centerY;
-                
-                const newTranslateX = savedTranslateX.value + (centerX - focalXValue) * deltaScale;
-                const newTranslateY = savedTranslateY.value + (centerY - focalYValue) * deltaScale;
-                
-                // Only update if values are finite
-                if (isFinite(newTranslateX)) translateX.value = newTranslateX;
-                if (isFinite(newTranslateY)) translateY.value = newTranslateY;
-            } catch (error) {
-                // Fail silently to prevent crashes
-                console.log('Pinch gesture update error:', error);
-            }
-        })
-        .onEnd(() => {
-            'worklet';
-            try {
-                // Always reset to normal when pinch ends
-                scale.value = withSpring(1, { damping: 15, stiffness: 150 });
-                translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
-                translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
-                savedScale.value = 1;
-                savedTranslateX.value = 0;
-                savedTranslateY.value = 0;
-            } catch (error) {
-                // Fail silently to prevent crashes
-                console.log('Pinch gesture end error:', error);
-            }
-        });
-
-    const panGesture = Gesture.Pan()
-        .maxPointers(1)
-        .onStart(() => {
-            'worklet';
-            try {
-                savedTranslateX.value = translateX.value;
-                savedTranslateY.value = translateY.value;
-            } catch (error) {
-                console.log('Pan gesture start error:', error);
-            }
-        })
-        .onUpdate((e) => {
-            'worklet';
-            try {
-                // Only allow panning when zoomed in
-                if (scale.value > 1.1) {
-                    const newTranslateX = savedTranslateX.value + (e.translationX ?? 0);
-                    const newTranslateY = savedTranslateY.value + (e.translationY ?? 0);
-                    
-                    // Add reasonable bounds to prevent excessive panning
-                    const maxTranslate = screenWidth * scale.value;
-                    translateX.value = Math.max(-maxTranslate, Math.min(maxTranslate, newTranslateX));
-                    translateY.value = Math.max(-maxTranslate, Math.min(maxTranslate, newTranslateY));
-                }
-            } catch (error) {
-                console.log('Pan gesture update error:', error);
-            }
-        })
-        .onEnd(() => {
-            'worklet';
-            try {
-                savedTranslateX.value = translateX.value;
-                savedTranslateY.value = translateY.value;
-            } catch (error) {
-                console.log('Pan gesture end error:', error);
-            }
-        });
-
-    // Combine pinch and pan gestures
-    const composed = Gesture.Simultaneous(pinchGesture, panGesture);
-
-    const animatedStyle = useAnimatedStyle(() => {
-        'worklet';
-        try {
-            return {
-                transform: [
-                    { translateX: isFinite(translateX.value) ? translateX.value : 0 },
-                    { translateY: isFinite(translateY.value) ? translateY.value : 0 },
-                    { scale: isFinite(scale.value) ? scale.value : 1 },
-                ] as any,
-            };
-        } catch (error) {
-            // Return default transform if error occurs
-            return {
-                transform: [
-                    { translateX: 0 },
-                    { translateY: 0 },
-                    { scale: 1 },
-                ] as any,
-            };
-        }
-    });
-
-    return (
-        <GestureDetector gesture={composed}>
-            <Animated.View style={[{ width: '100%', height: '100%' }, animatedStyle]}>
-                <TouchableOpacity 
-                    onLongPress={onLongPress}
-                    activeOpacity={1}
-                    style={{ width: '100%', height: '100%' }}
-                    delayLongPress={500}
-                >
-                    <CachedImage 
-                        source={source}
-                        style={style}
-                        variant="large"
-                        useLocalPlaceholder
-                        cachePolicy="memory-disk"
-                    />
-                </TouchableOpacity>
-            </Animated.View>
-        </GestureDetector>
-    );
-};
-*/
-
-// Simple image component without pinch-to-zoom (current active version)
-const SimpleImage = ({ source, style, onLongPress }: { source: any; style: any; onLongPress: () => void }) => {
-    return (
-        <TouchableOpacity 
-            onLongPress={onLongPress}
-            activeOpacity={1}
-            style={{ width: '100%', height: '100%' }}
-            delayLongPress={500}
-        >
-            <CachedImage 
-                source={source}
-                style={style}
-                variant="large"
-                useLocalPlaceholder
-                cachePolicy="memory-disk"
-            />
-        </TouchableOpacity>
-    );
-};
 
 
 export type SlackReaction = {
@@ -279,7 +84,6 @@ const PostCard = React.memo(({
     const [modalIndex, setModalIndex] = useState(0);
     const [congratulateModalVisible, setCongratulateModalVisible] = useState(false);
     const [currentComments, setCurrentComments] = useState(comments || []);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
     const [imageHeight, setImageHeight] = useState<number>(512);
     const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
@@ -294,16 +98,16 @@ const PostCard = React.memo(({
     // Memoize stringified reactions to avoid expensive JSON operations on every render
     const reactionsStringified = useMemo(() => JSON.stringify(reactions), [reactions]);
     const localReactionsStringified = useMemo(() => JSON.stringify(localReactions), [localReactions]);
-    
+
     // Memoize size values to prevent unnecessary recalculations
     const memoizedSize = useMemo(() => size, [size?.width, size?.height, size?.bytes]);
-    
+
     // Memoize images array to prevent unnecessary recalculations
     const memoizedImages = useMemo(() => images, [images?.join(',')]);
-    
+
     // Memoize the first image URL for calculations
     const firstImageUrl = useMemo(() => memoizedImages?.[0], [memoizedImages]);
-    
+
     useEffect(() => {
         // Only update localReactions if the reactions prop has genuinely changed
         // and we don't have pending local changes that would be overwritten
@@ -318,7 +122,7 @@ const PostCard = React.memo(({
                 // Check if counts differ - this could be a local change
                 return propReaction.count !== localReaction.count;
             });
-            
+
             // Only update if there are no local changes, or if this is the initial load
             if (!hasLocalChanges || localReactions.length === 0) {
                 setLocalReactions(reactions);
@@ -338,12 +142,12 @@ const PostCard = React.memo(({
                 // Use the provided size information to calculate height
                 const aspectRatio = memoizedSize.width / memoizedSize.height;
                 const calculatedHeight = screenWidth / aspectRatio;
-                
+
                 // Constrain height between 0.5x and 1.5x screen width
                 const minHeight = screenWidth * 0.5;
                 const maxHeight = screenWidth * 1.5;
                 const constrainedHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
-                
+
                 setImageHeight(constrainedHeight);
                 onHeightChange?.(constrainedHeight);
             } else {
@@ -364,28 +168,28 @@ const PostCard = React.memo(({
         RNImage.getSize(imageUri, async (width, height) => {
             const aspectRatio = width / height;
             const calculatedHeight = screenWidth / aspectRatio;
-            
+
             // Constrain height between 0.5x and 1.5x screen width
             const minHeight = screenWidth * 0.5;
             const maxHeight = screenWidth * 1.5;
             const constrainedHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
-            
+
             setImageHeight(constrainedHeight);
             onHeightChange?.(constrainedHeight);
-            
+
             // Update the post with the computed size information for future requests
             if (id && width > 0 && height > 0) {
                 try {
                     // Estimate file size (this is approximate since we don't have the actual file)
                     // Using a rough estimate based on image dimensions
                     const estimatedBytes = Math.round(width * height * 0.5); // Rough estimate for compressed image
-                    
+
                     await updatePost(id, undefined, undefined, {
                         width,
                         height,
                         bytes: estimatedBytes
                     });
-                    
+
                     console.log(`Updated post ${id} with size information: ${width}x${height}`);
                 } catch (error) {
                     console.error('Failed to update post with size information:', error);
@@ -573,7 +377,7 @@ const PostCard = React.memo(({
 
     const handleCopyLink = async () => {
         if (!id) return;
-        
+
         try {
             const postLink = `kindred://posting/${id}`;
             await Clipboard.setStringAsync(postLink);
@@ -586,10 +390,10 @@ const PostCard = React.memo(({
 
     const handleSharePost = async () => {
         if (!id) return;
-        
+
         try {
             await SMS.sendSMSAsync(
-                [], 
+                [],
                 `Check out this post on Kindred! kindred://posting/${id}`
             );
         } catch (error) {
@@ -604,7 +408,7 @@ const PostCard = React.memo(({
         }
 
         const isOwnPost = user?._id === userId;
-        
+
         const options = [];
 
         options.push({
@@ -634,7 +438,7 @@ const PostCard = React.memo(({
                 style: "destructive" as const,
                 onPress: () => handleReportPost(),
             });
-            
+
             options.push({
                 text: "Block User",
                 style: "destructive" as const,
@@ -680,12 +484,12 @@ const PostCard = React.memo(({
         try {
             await deletePost(id);
             showToast("Post deleted successfully", "success");
-            
+
             // Invalidate queries to refresh the feed
             queryClient.invalidateQueries({ queryKey: ['posts'] });
             queryClient.invalidateQueries({ queryKey: ['friendsPosts'] });
             queryClient.invalidateQueries({ queryKey: ['userPosts', userId] });
-            
+
         } catch (error) {
             console.error("Error deleting post:", error);
             showToast("Failed to delete post", "danger");
@@ -723,7 +527,7 @@ const PostCard = React.memo(({
 
     const submitReport = async (reason: string) => {
         if (!id) return;
-        
+
         try {
             await reportPost(id, reason as 'inappropriate' | 'spam' | 'harassment' | 'other');
             showToast("Report submitted. Thank you for helping keep Kindred safe.", "success");
@@ -749,7 +553,7 @@ const PostCard = React.memo(({
                         try {
                             await blockUser(userId);
                             showToast(`${name} has been blocked`, "success");
-                            
+
                             // Invalidate queries to refresh feed and remove blocked user's content
                             queryClient.invalidateQueries({ queryKey: ['posts'] });
                             queryClient.invalidateQueries({ queryKey: ['friendsPosts'] });
@@ -769,198 +573,36 @@ const PostCard = React.memo(({
     return (
         <View style={[styles.container, { backgroundColor: ThemedColor.background }]}>
             <View style={styles.content}>
-                    <View style={styles.header}>
-                        <TouchableOpacity
-                            style={styles.userInfo}
-                            activeOpacity={0.4}
-                            onPress={async () => {
-                                try {
-                                    if (Platform.OS === "ios") {
-                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    }
-                                } catch (error) {
-                                    console.log("Haptic error:", error);
-                                }
-                                console.log("Navigating to user:", userId);
-                                router.push(`/account/${userId}`);
-                            }}>
-                            <CachedImage source={{ uri: icon }} style={styles.userIcon} variant="thumbnail" cachePolicy="memory-disk" />
-                            <View style={styles.userDetails}>
-                                <ThemedText type="default" style={styles.userName}>
-                                    {name}
-                                </ThemedText>
-                                <ThemedText type="caption" style={styles.username}>
-                                    {username}
-                                </ThemedText>
-                            </View>
-                        </TouchableOpacity>
-                        <View style={styles.timeAndMenu}>
-                            <TouchableOpacity
-                                onPress={showPostOptions}
-                                style={styles.menuButton}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <Ionicons 
-                                    name="ellipsis-horizontal" 
-                                    size={20} 
-                                    color={ThemedColor.caption} 
-                                />
-                            </TouchableOpacity>
-                            <ThemedText type="caption" style={styles.timeText}>
-                                {formatTime(time)}
-                            </ThemedText>
-                        </View>
-                    </View>
+                    <PostCardHeader
+                        icon={icon}
+                        name={name}
+                        username={username}
+                        userId={userId}
+                        timeLabel={formatTime(time)}
+                        onOptionsPress={showPostOptions}
+                    />
                     {memoizedImages && memoizedImages.length > 0 && (
-                        <View style={styles.imageContainer}>
-                            {memoizedImages.length === 1 ? (
-                                // Single image - no counter needed
-                                <View style={{ width: Dimensions.get("window").width, height: imageHeight }}>
-                                    <SimpleImage
-                                        source={{ uri: memoizedImages[0] }}
-                                        style={[styles.image, { height: imageHeight }]}
-                                        onLongPress={() => openModal(0)}
-                                    />
-                                    {dual && (
-                                        <View style={styles.dualOverlay}>
-                                            <Image 
-                                                source={{ uri: dual }}
-                                                style={styles.dualImage}
-                                                resizeMode="cover"
-                                            />
-                                        </View>
-                                    )}
-                                </View>
-                            ) : (
-                                <View style={styles.carouselContainer}>
-                                    <Carousel
-                                        loop={false}
-                                        vertical={false}
-                                        width={Dimensions.get("window").width}
-                                        height={imageHeight}
-                                        style={styles.carousel}
-                                        data={memoizedImages}
-                                        onSnapToItem={(index) => setCurrentImageIndex(index)}
-                                        scrollAnimationDuration={300}
-                                        enabled={memoizedImages.length > 1}
-                                        windowSize={2}
-                                        onConfigurePanGesture={(panGesture) => {
-                                            panGesture.activeOffsetX([-10, 10]).failOffsetY([-30, 30]).maxPointers(1);
-                                        }}
-                                        renderItem={({ item, index }) => (
-                                            <View style={{ width: Dimensions.get("window").width, height: imageHeight }}>
-                                                <SimpleImage
-                                                    source={{ uri: item }}
-                                                    style={[styles.image, { height: imageHeight }]}
-                                                    onLongPress={() => openModal(index)}
-                                                />
-                                                {dual && (
-                                                    <View style={styles.dualOverlay}>
-                                                        <Image 
-                                                            source={{ uri: dual }}
-                                                            style={styles.dualImage}
-                                                            resizeMode="cover"
-                                                        />
-                                                    </View>
-                                                )}
-                                            </View>
-                                        )}
-                                    />
-
-                                    <View style={styles.imageCounter}>
-                                        <View style={styles.imageCounterBackground}>
-                                            <ThemedText style={styles.imageCounterText}>
-                                                {currentImageIndex + 1}/{memoizedImages.length}
-                                            </ThemedText>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.dotIndicators}>
-                                        {memoizedImages.map((_, index) => (
-                                            <View
-                                                key={index}
-                                                style={[
-                                                    styles.dot,
-                                                    {
-                                                        backgroundColor:
-                                                            index === currentImageIndex
-                                                                ? ThemedColor.primary
-                                                                : ThemedColor.tertiary,
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
-                            )}
-                        </View>
+                        <PostCardMedia
+                            images={memoizedImages}
+                            dual={dual}
+                            size={memoizedSize}
+                            imageHeight={imageHeight}
+                            onImageLongPress={openModal}
+                        />
                     )}
-                    {/* Category and task section */}
-                    {(category || taskName) && (
-                        <View style={styles.categorySection}>
-                            <View style={styles.categoryRow}>
-                                {category && (
-                                    <>
-                                        <ThemedText style={[styles.categoryText, { color: ThemedColor.primary }]}>
-                                            {category}
-                                        </ThemedText>
-                                        <View style={[styles.dot, { backgroundColor: ThemedColor.primary }]} />
-                                    </>
-                                )}
-                                {taskName && (
-                                    <ThemedText style={[styles.categoryText, { color: ThemedColor.text }]}>
-                                        {taskName}
-                                    </ThemedText>
-                                )}
-                            </View>
-                            <TouchableOpacity
-                                style={[
-                                    styles.congratulateButton,
-                                    (!user?._id || user?._id === userId) && { opacity: 0.5 },
-                                ]}
-                                onPress={handleCongratulatePress}
-                                disabled={!user?._id || user?._id === userId}>
-                                <Confetti size={24} weight="regular" color={ThemedColor.primary} />
-                                <ThemedText style={[styles.congratulateText, { color: ThemedColor.primary }]}>
-                                    {!user?._id
-                                        ? "Login to Congratulate"
-                                        : user?._id === userId
-                                          ? "Your Post"
-                                          : "Congratulate"}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                    {/* Caption and reactions */}
-                    <View style={styles.captionSection}>
-                        <ThemedText type="default" style={[styles.caption, { color: ThemedColor.text }]}>
-                            {caption}
-                        </ThemedText>
-
-                        <View style={styles.reactionsRow}>
-                            {localReactions.map((react, index) => (
-                                <ReactPills
-                                    key={`${react.emoji}-${index}`}
-                                    reaction={react}
-                                    postId={0}
-                                    isHighlighted={hasUserReacted(react.emoji)}
-                                    onPress={() => handleReaction(react.emoji)}
-                                />
-                            ))}
-                            <ReactionAction onAddReaction={(emoji) => handleReaction(emoji)} postId={0} />
-                        </View>
-
-                        <TouchableOpacity onPress={handleOpenComments} style={styles.commentButton}>
-                            <ThemedText style={styles.commentText}>
-                                💬{" "}
-                                <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
-                                    {currentComments.length === 0
-                                        ? "Leave a comment"
-                                        : `View ${currentComments.length} comment${currentComments.length === 1 ? "" : "s"}`}{" "}
-                                </ThemedText>
-                            </ThemedText>
-                        </TouchableOpacity>
-                    </View>
+                    <PostCardFooter
+                        caption={caption}
+                        category={category}
+                        taskName={taskName}
+                        reactions={localReactions}
+                        userId={userId}
+                        currentUserId={user?._id}
+                        onReaction={handleReaction}
+                        hasUserReacted={hasUserReacted}
+                        onCongratulatePress={handleCongratulatePress}
+                        onOpenComments={handleOpenComments}
+                        commentCount={currentComments.length}
+                    />
                 </View>
 
                 {/* Image modal */}
@@ -1060,105 +702,6 @@ const stylesheet = (ThemedColor: any) =>
         content: {
             paddingVertical: 12,
         },
-        header: {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 18,
-        },
-        userInfo: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            flex: 1,
-        },
-        userIcon: {
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-        },
-        userDetails: {
-            flex: 1,
-            gap: 3,
-        },
-        userName: {
-            fontSize: 16,
-            fontWeight: "400",
-            color: ThemedColor.text,
-        },
-        username: {
-            fontSize: 14,
-            fontWeight: "300",
-            color: ThemedColor.caption,
-        },
-        timeAndMenu: {
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 4,
-        },
-        timeText: {
-            fontSize: 12,
-            fontWeight: "400",
-            color: ThemedColor.caption,
-        },
-        menuButton: {
-            padding: 2,
-        },
-        categorySection: {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 18,
-        },
-        categoryRow: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap",
-            maxWidth: "70%",
-            flex: 1,
-        },
-        categoryText: {
-            fontSize: 16,
-            fontWeight: "400",
-            letterSpacing: -0.16,
-        },
-        congratulateButton: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-        },
-        congratulateIcon: {
-            fontSize: 24,
-        },
-        congratulateText: {
-            fontSize: 14,
-            fontWeight: "400",
-            letterSpacing: -0.14,
-        },
-        captionSection: {
-            paddingHorizontal: HORIZONTAL_PADDING,
-            gap: 16,
-        },
-        caption: {
-            fontSize: 16,
-            fontWeight: "400",
-            lineHeight: 20,
-        },
-        reactionsRow: {
-            flexDirection: "row",
-            gap: 8,
-            flexWrap: "wrap",
-        },
-        commentButton: {
-            paddingTop: 4,
-        },
-        commentText: {
-            fontSize: 14,
-            fontWeight: "400",
-        },
         modalContainer: {
             flex: 1,
             justifyContent: "center",
@@ -1175,75 +718,5 @@ const stylesheet = (ThemedColor: any) =>
             resizeMode: "contain",
         },
 
-        imageContainer: {
-            width: "100%",
-            marginBottom: 18,
-        },
-        carouselContainer: {
-            position: "relative",
-        },
-        carousel: {
-            width: Dimensions.get("window").width,
-            minWidth: Dimensions.get("window").width,
-        },
-        image: {
-            width: Dimensions.get("window").width,
-            resizeMode: "cover",
-        },
-        imageCounter: {
-            position: "absolute",
-            top: 12,
-            right: 12,
-            zIndex: 10,
-        },
-        imageCounterBackground: {
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            borderRadius: 12,
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-        },
-        imageCounterText: {
-            color: "#ffffff",
-            fontSize: 12,
-            fontWeight: "600",
-            textAlign: "center",
-        },
-
-        dotIndicators: {
-            position: "absolute",
-            bottom: 12,
-            left: 0,
-            right: 0,
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 6,
-        },
-        dot: {
-            width: 6,
-            height: 6,
-            borderRadius: 3,
-            opacity: 0.8,
-        },
-        dualOverlay: {
-            position: "absolute",
-            top: 16,
-            left: 16,
-            width: Dimensions.get("window").width * 0.3,
-            aspectRatio: 3 / 4,
-            borderRadius: 12,
-            borderWidth: 3,
-            borderColor: "#fff",
-            overflow: "hidden",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 4,
-            elevation: 5,
-        },
-        dualImage: {
-            width: "100%",
-            height: "100%",
-        },
     });
 export default PostCard;

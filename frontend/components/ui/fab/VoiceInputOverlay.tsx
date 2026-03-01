@@ -31,6 +31,19 @@ const TAB_BAR_HEIGHT = 83;
 const GRADIENT_HEIGHT = SCREEN_HEIGHT * 0.65;
 const DEV_FALLBACK_TRANSCRIPTION = "shovel the snow at noon tomorrow";
 
+const PLACEHOLDER_SUGGESTIONS = [
+    'Try saying "Add a gym session tomorrow at 7am"',
+    'Try saying "Delete all my low priority tasks"',
+    'Try saying "Move my dentist appointment to Friday"',
+    'Try saying "Add buy groceries and call mom"',
+    'Try saying "Reschedule my 3pm meeting to next Tuesday"',
+    'Try saying "Create a task to review the report by Friday"',
+    'Try saying "Mark my work tasks as high priority"',
+    'Try saying "Add a weekly team standup every Monday at 9am"',
+    'Try saying "Delete my boba run with Bob"',
+    'Try saying "Add water plants, do laundry, and clean kitchen"',
+];
+
 interface VoiceInputOverlayProps {
     onClose: () => void;
 }
@@ -79,7 +92,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const { fetchWorkspaces, workspaces } = useTasks();
 
     const [recognizing, setRecognizing] = useState(false);
-    const [transcription, setTranscription] = useState("Delete my boba run with Lea.");
+    const [transcription, setTranscription] = useState("");
     const [pendingClose, setPendingClose] = useState(false);
 
     const {
@@ -142,6 +155,13 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const stopPillTranslateY = useRef(new Animated.Value(8)).current;
     const micScale = useRef(new Animated.Value(1)).current;
     const readingProgress = useRef(new Animated.Value(0)).current;
+
+    // Fades the entire mic section out independently of the enter/exit animation.
+    const micSectionOpacity = useRef(new Animated.Value(1)).current;
+
+    // Rotating placeholder suggestions
+    const [suggestionIndex, setSuggestionIndex] = useState(0);
+    const suggestionOpacity = useRef(new Animated.Value(1)).current;
 
     const micPulse = useRef<Animated.CompositeAnimation | null>(null);
     const readingLoop = useRef<Animated.CompositeAnimation | null>(null);
@@ -423,6 +443,40 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             ]).start();
         }
     }, [recognizing]);
+
+    // ─── Rotate placeholder suggestions every 4s ──────────────────────────────
+
+    useEffect(() => {
+        // Only rotate when the placeholder is actually visible
+        if (transcription || recognizing) return;
+
+        const interval = setInterval(() => {
+            Animated.timing(suggestionOpacity, {
+                toValue: 0,
+                duration: 350,
+                useNativeDriver: true,
+            }).start(() => {
+                setSuggestionIndex((i) => (i + 1) % PLACEHOLDER_SUGGESTIONS.length);
+                Animated.timing(suggestionOpacity, {
+                toValue: 1,
+                    duration: 350,
+                    useNativeDriver: true,
+                }).start();
+            });
+        }, 6000);
+
+        return () => clearInterval(interval);
+    }, [transcription, recognizing, suggestionOpacity]);
+
+    // ─── Hide mic button when delete preview is active ────────────────────────
+
+    useEffect(() => {
+        Animated.timing(micSectionOpacity, {
+            toValue: hasDeletePreview ? 0 : 1,
+            duration: 200,
+            useNativeDriver: true,
+        }).start();
+    }, [hasDeletePreview]);
 
     // ─── Speech recognition events ────────────────────────────────────────────
 
@@ -728,11 +782,17 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                     )}
                                 </ThemedText>
                             ) : (
-                                <ThemedText style={styles.placeholderText}>
-                                    {recognizing
-                                        ? "Listening for your voice..."
-                                        : "Your transcription will appear here..."}
-                                </ThemedText>
+                                recognizing ? (
+                                    <ThemedText style={styles.placeholderText}>
+                                        Listening for your voice...
+                                    </ThemedText>
+                                ) : (
+                                    <Animated.Text
+                                        style={[styles.placeholderText, { opacity: suggestionOpacity }]}
+                                    >
+                                        {PLACEHOLDER_SUGGESTIONS[suggestionIndex]}
+                                    </Animated.Text>
+                                )
                             )}
                         </>
                     ) : null}
@@ -742,7 +802,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     style={[
                         styles.previewListWrapper,
                         {
-                            top: insets.top + 112,
+                            top: insets.top + 60,
                             opacity: detailOpacity,
                             transform: [{ translateY: detailTranslateY }],
                         },
@@ -1002,7 +1062,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     styles.micSection,
                     {
                         bottom: insets.bottom + TAB_BAR_HEIGHT + 24,
-                        opacity: micOpacity,
+                        opacity: Animated.multiply(micOpacity, micSectionOpacity),
                         transform: [{ translateY: micTranslateY }],
                     },
                 ]}
@@ -1196,8 +1256,7 @@ const styles = StyleSheet.create({
     placeholderText: {
         fontSize: 16,
         lineHeight: 24,
-        color: "rgba(255,255,255,0.35)",
-        fontStyle: "italic",
+        color: "rgba(255,255,255,0.4)",
     },
     previewListWrapper: {
         position: "absolute",
@@ -1333,10 +1392,11 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
     deleteSubtitle: {
-        fontSize: 13,
-        color: "rgba(255,255,255,0.35)",
-        lineHeight: 18,
-        marginBottom: 4,
+        fontSize: 20,
+        fontWeight: "500",
+        color: "rgba(255,255,255,0.65)",
+        lineHeight: 28,
+        marginBottom: 8,
     },
     deleteTaskRow: {
         flexDirection: "row",

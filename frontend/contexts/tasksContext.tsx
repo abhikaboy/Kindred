@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
-import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI } from "@/api/category";
+import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI, updateWorkspaceMeta } from "@/api/category";
 import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -32,6 +32,7 @@ type TaskContextType = {
     restoreWorkspace: (workspace: Workspace) => void;
     renameWorkspace: (oldName: string, newName: string) => Promise<void>;
     renameCategory: (categoryId: string, newName: string) => Promise<void>;
+    updateWorkspaceIconColor: (name: string, icon?: string | null, color?: string | null) => Promise<void>;
     fetchingWorkspaces: boolean;
 
     setCreateCategory: (Option: Option) => void;
@@ -505,6 +506,28 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     };
 
     /**
+     * Updates icon and/or color of a workspace on the server and in local state
+     * @param name - The workspace name
+     * @param icon - New emoji icon (optional)
+     * @param color - New hex color (optional)
+     */
+    const updateWorkspaceIconColor = async (name: string, icon?: string | null, color?: string | null) => {
+        await updateWorkspaceMeta(name, icon, color);
+
+        let workspacesCopy = workspaces.slice();
+        const idx = workspacesCopy.findIndex((w) => w.name === name);
+        if (idx !== -1) {
+            workspacesCopy[idx] = {
+                ...workspacesCopy[idx],
+                icon: icon !== undefined ? icon : workspacesCopy[idx].icon,
+                color: color !== undefined ? color : workspacesCopy[idx].color,
+            };
+            setWorkSpaces(workspacesCopy);
+            await invalidateWorkspacesCache();
+        }
+    };
+
+    /**
      * Renames a workspace by updating all its categories on the server and locally
      * @param oldName - The current name of the workspace
      * @param newName - The new name for the workspace
@@ -681,6 +704,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 restoreWorkspace,
                 renameWorkspace,
                 renameCategory,
+                updateWorkspaceIconColor,
                 setCreateCategory,
                 selectedCategory,
                 showConfetti,

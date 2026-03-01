@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import * as PhosphorIcons from "phosphor-react-native";
+
+type PhosphorComponent = React.ComponentType<{ size?: number; weight?: string; color?: string }>;
 import { Skeleton } from "moti/skeleton";
 import ConditionalView from "@/components/ui/ConditionalView";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -11,6 +14,8 @@ import { useRouter } from "expo-router";
 
 interface Workspace {
     name: string;
+    icon?: string | null;
+    color?: string | null;
 }
 
 interface WorkspaceGridProps {
@@ -281,8 +286,17 @@ interface WorkspaceCardProps {
 }
 
 const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, onToggle, onPress, ThemedColor }) => {
+    const colorAccent = workspace.color ?? null;
+    const IconComponent: PhosphorComponent | null = workspace.icon
+        ? ((PhosphorIcons as any)[workspace.icon] as PhosphorComponent) ?? null
+        : null;
+
     return (
-        <View style={styles.workspaceCard}>
+        <View
+            style={[
+                styles.workspaceCard,
+                colorAccent ? { borderLeftColor: colorAccent, borderLeftWidth: 3, paddingLeft: 8 } : {},
+            ]}>
             <TouchableOpacity onPress={onToggle} style={styles.caretButton}>
                 {isExpanded ? (
                     <CaretDown size={16} color={ThemedColor.caption} />
@@ -292,7 +306,12 @@ const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, on
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onPress} style={styles.workspaceCardContent}>
-                <ThemedText type="larger_default">{workspace.name}</ThemedText>
+                <View style={styles.workspaceNameRow}>
+                    {IconComponent && colorAccent && (
+                        <IconComponent size={16} color={colorAccent} weight="bold" />
+                    )}
+                    <ThemedText type="larger_default">{workspace.name}</ThemedText>
+                </View>
             </TouchableOpacity>
         </View>
     );
@@ -318,6 +337,11 @@ const styles = StyleSheet.create({
     },
     workspaceCardContent: {
         flex: 1,
+    },
+    workspaceNameRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
     },
     categoriesContainer: {
         marginLeft: 15,

@@ -48,6 +48,15 @@ func (h *Handler) CreateCategory(ctx context.Context, input *CreateCategoryInput
 		return nil, huma.Error500InternalServerError("Failed to create Category", err)
 	}
 
+	// When creating a proxy category, upsert workspace metadata if icon/color provided
+	if input.Body.Name == "!-proxy-!" && (input.Body.Icon != nil || input.Body.Color != nil) {
+		if upsertErr := h.service.UpsertWorkspaceMeta(input.Body.WorkspaceName, user_id_obj, input.Body.Icon, input.Body.Color); upsertErr != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to upsert workspace metadata",
+				slog.String("workspace", input.Body.WorkspaceName),
+				slog.String("error", upsertErr.Error()))
+		}
+	}
+
 	return &CreateCategoryOutput{Body: doc}, nil
 }
 
@@ -221,6 +230,31 @@ func (h *Handler) GetWorkspaces(ctx context.Context, input *GetWorkspacesInput) 
 	}
 
 	return &GetWorkspacesOutput{Body: workspaces}, nil
+}
+
+func (h *Handler) UpdateWorkspace(ctx context.Context, input *UpdateWorkspaceInput) (*UpdateWorkspaceOutput, error) {
+	workspaceName, err := url.QueryUnescape(input.Name)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid workspace name encoding", err)
+	}
+
+	user_id_str, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	if err := h.service.UpdateWorkspaceMeta(workspaceName, user_id, input.Body.Icon, input.Body.Color); err != nil {
+		return nil, huma.Error500InternalServerError("Failed to update workspace metadata", err)
+	}
+
+	resp := &UpdateWorkspaceOutput{}
+	resp.Body.Message = "Workspace updated successfully"
+	return resp, nil
 }
 
 func (h *Handler) SetupDefaultWorkspace(ctx context.Context, input *SetupDefaultWorkspaceInput) (*SetupDefaultWorkspaceOutput, error) {

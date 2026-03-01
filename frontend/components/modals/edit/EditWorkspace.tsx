@@ -65,7 +65,7 @@ const EditWorkspace = (props: Props) => {
     const filterSheetRef = useRef<BottomSheetModal>(null);
 
     // Define snap points for the modals
-    const editSnapPoints = useMemo(() => ["30%"], []);
+    const editSnapPoints = useMemo(() => ["55%"], []);
     const reorderSnapPoints = useMemo(() => ["70%"], []);
     const sortSnapPoints = useMemo(() => ["40%"], []);
     const filterSnapPoints = useMemo(() => ["50%"], []);
@@ -366,6 +366,8 @@ const EditWorkspace = (props: Props) => {
                     }}>
                     <EditWorkspaceModal
                         currentName={id}
+                        currentIcon={currentWorkspace?.icon}
+                        currentColor={currentWorkspace?.color}
                         hide={() => {
                             setShowEditModal(false);
                             editWorkspaceSheetRef.current?.dismiss();

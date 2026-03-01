@@ -13,15 +13,20 @@ const logger = createLogger('WorkspaceAPI');
  * Frontend: The response is used to update the workspaces state in TaskContext
  * Note: Uses a special "!-proxy-!" category name as a placeholder
  * @param name - The name of the workspace to create
+ * @param icon - Optional emoji icon for the workspace
+ * @param color - Optional hex color for the workspace
  * @throws {Error} When the request fails or workspace creation is invalid
  */
-export const createWorkspace = async (name: string): Promise<Categories> => {
+export const createWorkspace = async (name: string, icon?: string | null, color?: string | null): Promise<Categories> => {
     try {
         const { request } = useRequest();
-        return await request("POST", `/user/categories`, {
+        const body: Record<string, string | null | undefined> = {
             name: "!-proxy-!",
             workspaceName: name,
-        });
+        };
+        if (icon != null) body.icon = icon;
+        if (color != null) body.color = color;
+        return await request("POST", `/user/categories`, body);
     } catch (error) {
         // Log the error for debugging
         logger.error("Workspace creation failed", error);

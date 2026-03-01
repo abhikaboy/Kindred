@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, Image, TouchableOpacity, FlatList, ScrollView, Animated, PanResponder } from "react-native";
+import { View, Text, Dimensions, Image, TouchableOpacity, FlatList, ScrollView } from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -12,6 +12,10 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { router, useLocalSearchParams } from "expo-router";
 import { BlurView } from "expo-blur";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import PostCardHeader from "@/components/cards/PostCardHeader";
+import PostCardMedia from "@/components/cards/PostCardMedia";
+import PostCardFooter from "@/components/cards/PostCardFooter";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Posting() {
     const insets = useSafeAreaInsets();
@@ -36,88 +40,10 @@ export default function Posting() {
     let ThemedColor = useThemeColor();
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
-
-    // Draggable preview state
-    type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-    const [previewCorner, setPreviewCorner] = useState<Corner>('top-left');
-    const pan = useRef(new Animated.ValueXY()).current;
-    const [showPostPreview, setShowPostPreview] = useState(false);
+    const { user } = useAuth();
 
     const params = useLocalSearchParams();
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
-
-    // Helper function to get corner position
-    const getCornerPosition = (corner: Corner) => {
-        const screenWidth = Dimensions.get("window").width;
-        const screenHeight = Dimensions.get("window").height;
-        const previewWidth = screenWidth * 0.3;
-        const previewHeight = previewWidth * (4 / 3);
-        const padding = 20;
-
-        switch (corner) {
-            case 'top-left':
-                return { x: padding, y: insets.top + padding };
-            case 'top-right':
-                return { x: screenWidth - previewWidth - padding, y: insets.top + padding };
-            case 'bottom-left':
-                return { x: padding, y: screenHeight - previewHeight - insets.bottom - padding - 200 };
-            case 'bottom-right':
-                return { x: screenWidth - previewWidth - padding, y: screenHeight - previewHeight - insets.bottom - padding - 200 };
-        }
-    };
-
-    // Helper function to find nearest corner
-    const findNearestCorner = (x: number, y: number): Corner => {
-        const screenWidth = Dimensions.get("window").width;
-        const screenHeight = Dimensions.get("window").height;
-        const midX = screenWidth / 2;
-        const midY = screenHeight / 2;
-
-        if (x < midX && y < midY) return 'top-left';
-        if (x >= midX && y < midY) return 'top-right';
-        if (x < midX && y >= midY) return 'bottom-left';
-        return 'bottom-right';
-    };
-
-    // Pan responder for dragging
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                pan.setOffset({
-                    x: (pan.x as any)._value,
-                    y: (pan.y as any)._value,
-                });
-                pan.setValue({ x: 0, y: 0 });
-            },
-            onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-                useNativeDriver: false,
-            }),
-            onPanResponderRelease: (_, gesture) => {
-                pan.flattenOffset();
-                const currentX = (pan.x as any)._value;
-                const currentY = (pan.y as any)._value;
-                const nearestCorner = findNearestCorner(currentX, currentY);
-                const targetPosition = getCornerPosition(nearestCorner);
-
-                setPreviewCorner(nearestCorner);
-
-                Animated.spring(pan, {
-                    toValue: targetPosition,
-                    useNativeDriver: false,
-                    tension: 50,
-                    friction: 7,
-                }).start();
-            },
-        })
-    ).current;
-
-    // Initialize preview position
-    useEffect(() => {
-        const initialPosition = getCornerPosition(previewCorner);
-        pan.setValue(initialPosition);
-    }, []);
 
     // BeReal-style capture messages
     const backCameraMessages = [
@@ -407,7 +333,7 @@ export default function Posting() {
     );
 
     return (
-        <ThemedView style={{ flex: 1 }}>
+        <ThemedView style={{ flex: 1, backgroundColor: ThemedColor.lightened }}>
             {permission?.status !== PermissionStatus.GRANTED && (
                 <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: HORIZONTAL_PADDING }}>
                     <ThemedText type="default" style={{ marginBottom: 20, textAlign: "center" }}>
@@ -436,204 +362,46 @@ export default function Posting() {
                                     <View
                                         style={{
                                             width: Dimensions.get("window").width,
-                                            height: Dimensions.get("window").height,
+                                            height: Dimensions.get("window").height / 1,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            paddingHorizontal: HORIZONTAL_PADDING,
+                                            paddingBottom: 220,
+                                            transform: [{ scale: 0.8 }],
                                         }}>
-                                        <Image
-                                            source={{ uri: item }}
+                                        {/* Shadow container */}
+                                        <View
                                             style={{
                                                 width: "100%",
-                                                height: "100%",
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                                zIndex: 2,
-                                            }}
-                                            resizeMode="contain"
-                                        />
-                                        <Image
-                                            source={{ uri: item }}
-                                            blurRadius={20}
-                                            style={{
-                                                width: "100%",
-                                                height: "100%",
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                            }}
-                                            resizeMode="cover"
-                                        />
-                                        {dualPhoto && !showPostPreview && (
-                                            <Animated.View
-                                                {...panResponder.panHandlers}
-                                                style={{
-                                                    position: "absolute",
-                                                    width: Dimensions.get("window").width * 0.3,
-                                                    aspectRatio: 3 / 4,
-                                                    zIndex: 10,
-                                                    transform: [{ translateX: pan.x }, { translateY: pan.y }],
-                                                }}>
-                                                <TouchableOpacity
-                                                    onPress={swapPhotos}
-                                                    onLongPress={() => setShowPostPreview(true)}
-                                                    activeOpacity={0.9}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        borderRadius: 12,
-                                                        borderWidth: 3,
-                                                        borderColor: "#fff",
-                                                        overflow: "hidden",
-                                                        shadowColor: "#000",
-                                                        shadowOffset: { width: 0, height: 2 },
-                                                        shadowOpacity: 0.3,
-                                                        shadowRadius: 4,
-                                                        elevation: 5,
-                                                    }}>
-                                                    <Image
-                                                        source={{ uri: dualPhoto }}
-                                                        style={{
-                                                            width: "100%",
-                                                            height: "100%",
-                                                        }}
-                                                        resizeMode="cover"
-                                                    />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={removeDualPhoto}
-                                                    style={{
-                                                        position: "absolute",
-                                                        top: -8,
-                                                        right: -8,
-                                                        width: 28,
-                                                        height: 28,
-                                                        borderRadius: 14,
-                                                        backgroundColor: "#000",
-                                                        borderWidth: 2,
-                                                        borderColor: "#fff",
-                                                        justifyContent: "center",
-                                                        alignItems: "center",
-                                                        zIndex: 11,
-                                                    }}>
-                                                    <Ionicons name="close" size={18} color="#fff" />
-                                                </TouchableOpacity>
-                                            </Animated.View>
-                                        )}
-                                        {dualPhoto && showPostPreview && (
-                                            <TouchableOpacity
-                                                onPress={() => setShowPostPreview(false)}
-                                                activeOpacity={1}
-                                                style={{
-                                                    position: "absolute",
-                                                    top: 0,
-                                                    left: 0,
-                                                    right: 0,
-                                                    bottom: 0,
-                                                    backgroundColor: "rgba(0, 0, 0, 0.95)",
-                                                    justifyContent: "center",
-                                                    alignItems: "center",
-                                                    zIndex: 100,
-                                                    paddingHorizontal: 20,
-                                                }}>
-                                                <View
-                                                    style={{
-                                                        width: "100%",
-                                                        maxWidth: 400,
-                                                        backgroundColor: ThemedColor.background,
-                                                        borderRadius: 16,
-                                                        overflow: "hidden",
-                                                        shadowColor: "#000",
-                                                        shadowOffset: { width: 0, height: 4 },
-                                                        shadowOpacity: 0.3,
-                                                        shadowRadius: 8,
-                                                        elevation: 10,
-                                                    }}>
-                                                    {/* Post Header */}
-                                                    <View
-                                                        style={{
-                                                            flexDirection: "row",
-                                                            alignItems: "center",
-                                                            padding: 12,
-                                                            borderBottomWidth: 1,
-                                                            borderBottomColor: ThemedColor.tertiary,
-                                                        }}>
-                                                        <View
-                                                            style={{
-                                                                width: 40,
-                                                                height: 40,
-                                                                borderRadius: 20,
-                                                                backgroundColor: ThemedColor.lightened,
-                                                                marginRight: 12,
-                                                            }}
-                                                        />
-                                                        <View>
-                                                            <ThemedText style={{ fontWeight: "600", fontSize: 14 }}>
-                                                                Your Name
-                                                            </ThemedText>
-                                                            <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
-                                                                Just now
-                                                            </ThemedText>
-                                                        </View>
-                                                    </View>
-                                                    {/* Post Image */}
-                                                    <View style={{ position: "relative", aspectRatio: 4 / 5 }}>
-                                                        <Image
-                                                            source={{ uri: item }}
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                            }}
-                                                            resizeMode="cover"
-                                                        />
-                                                        {/* Dual photo overlay */}
-                                                        <View
-                                                            style={{
-                                                                position: "absolute",
-                                                                top: 12,
-                                                                left: 12,
-                                                                width: "30%",
-                                                                aspectRatio: 3 / 4,
-                                                                borderRadius: 8,
-                                                                borderWidth: 2,
-                                                                borderColor: "#fff",
-                                                                overflow: "hidden",
-                                                                shadowColor: "#000",
-                                                                shadowOffset: { width: 0, height: 2 },
-                                                                shadowOpacity: 0.3,
-                                                                shadowRadius: 4,
-                                                            }}>
-                                                            <Image
-                                                                source={{ uri: dualPhoto }}
-                                                                style={{
-                                                                    width: "100%",
-                                                                    height: "100%",
-                                                                }}
-                                                                resizeMode="cover"
-                                                            />
-                                                        </View>
-                                                    </View>
-                                                    {/* Post Actions */}
-                                                    <View
-                                                        style={{
-                                                            flexDirection: "row",
-                                                            padding: 12,
-                                                            gap: 16,
-                                                        }}>
-                                                        <Ionicons name="heart-outline" size={24} color={ThemedColor.text} />
-                                                        <Ionicons name="chatbubble-outline" size={24} color={ThemedColor.text} />
-                                                        <Ionicons name="paper-plane-outline" size={24} color={ThemedColor.text} />
-                                                    </View>
-                                                </View>
-                                                <ThemedText
-                                                    style={{
-                                                        marginTop: 20,
-                                                        fontSize: 14,
-                                                        opacity: 0.6,
-                                                        textAlign: "center",
-                                                    }}>
-                                                    Tap anywhere to close
-                                                </ThemedText>
-                                            </TouchableOpacity>
-                                        )}
+                                                borderRadius: 16,
+                                                shadowColor: "#000",
+                                                shadowOffset: { width: 0, height: 8 },
+                                                shadowOpacity: 0.25,
+                                                shadowRadius: 16,
+                                                elevation: 10,
+                                                backgroundColor: ThemedColor.background,
+                                            }}>
+                                            {/* Clip content to rounded corners */}
+                                            <View style={{ borderRadius: 16 }}>
+                                                <PostCardHeader
+                                                    icon={user?.profile_picture}
+                                                    name={user?.display_name ?? "You"}
+                                                    username={user?.handle ? `${user.handle}` : undefined}
+                                                    timeLabel="Just now"
+                                                    disableNavigation
+                                                />
+                                                <PostCardMedia
+                                                    images={[item]}
+                                                    dual={dualPhoto}
+                                                    onDualPress={swapPhotos}
+                                                    onDualRemove={removeDualPhoto}
+                                                />
+                                                <PostCardFooter
+                                                    category={taskInfo?.categoryName}
+                                                    taskName={taskInfo?.name}
+                                                />
+                                            </View>
+                                        </View>
                                     </View>
                                 )}
                                 keyExtractor={(item, index) => index.toString()}
@@ -993,23 +761,19 @@ export default function Posting() {
                         ) : (
                             <>
 
-                                <View style={{ flexDirection: "column", alignItems: "center", gap: 12, width: "100%" }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "100%" }}>
                                     <PrimaryButton
                                         onPress={() => setViewMode("camera")}
-                                        title="Take More Photos"
+                                        title="Take More"
                                         ghost
                                         colorOverride={ThemedColor.primary}
-                                        style={{
-                                            width: "100%",
-                                        }}
+                                        style={{ flex: 1 }}
                                     />
-                                        <PrimaryButton
-                                            onPress={continueWithPhotos}
-                                            title={`Done with ${photos.length} photo${photos.length !== 1 ? "s" : ""}`}
-                                            style={{
-                                                width: "100%",
-                                            }}
-                                        />
+                                    <PrimaryButton
+                                        onPress={continueWithPhotos}
+                                        title={`Done (${photos.length})`}
+                                        style={{ flex: 1 }}
+                                    />
                                 </View>
                             </>
                         )}

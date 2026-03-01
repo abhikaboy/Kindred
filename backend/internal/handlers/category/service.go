@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // newService receives the map of collections and picks out Jobs
@@ -16,6 +17,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
 		Categories:    collections["categories"],
 		TemplateTasks: collections["template-tasks"],
+		Workspaces:    collections["workspaces"],
 	}
 }
 
@@ -57,6 +59,30 @@ func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]WorkspaceResult,
 					"$push": "$$ROOT",
 				},
 			}},
+		},
+		{
+			{Key: "$lookup", Value: bson.M{
+				"from": "workspaces",
+				"let":  bson.M{"wname": "$_id", "uid": id},
+				"pipeline": mongo.Pipeline{
+					{{Key: "$match", Value: bson.M{"$expr": bson.M{
+						"$and": []bson.M{
+							{"$eq": []interface{}{"$name", "$$wname"}},
+							{"$eq": []interface{}{"$user", "$$uid"}},
+						},
+					}}}},
+				},
+				"as": "meta",
+			}},
+		},
+		{
+			{Key: "$addFields", Value: bson.M{
+				"icon":  bson.M{"$ifNull": []interface{}{bson.M{"$arrayElemAt": []interface{}{"$meta.icon", 0}}, nil}},
+				"color": bson.M{"$ifNull": []interface{}{bson.M{"$arrayElemAt": []interface{}{"$meta.color", 0}}, nil}},
+			}},
+		},
+		{
+			{Key: "$project", Value: bson.M{"meta": 0}},
 		},
 	})
 
@@ -221,6 +247,17 @@ func (s *Service) DeleteWorkspace(workspaceName string, user primitive.ObjectID)
 		return err
 	}
 
+	// Delete workspace metadata document
+	if s.Workspaces != nil {
+		_, err = s.Workspaces.DeleteOne(ctx, bson.M{"name": workspaceName, "user": user})
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to delete workspace metadata",
+				slog.String("workspace", workspaceName),
+				slog.String("error", err.Error()))
+			// Non-fatal: categories are already deleted
+		}
+	}
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace deleted successfully",
 		slog.String("workspace", workspaceName),
 		slog.Int64("categoriesDeleted", categoryResult.DeletedCount))
@@ -249,6 +286,21 @@ func (s *Service) RenameWorkspace(oldWorkspaceName string, newWorkspaceName stri
 		return err
 	}
 
+	// Update workspace metadata name
+	if s.Workspaces != nil {
+		_, err = s.Workspaces.UpdateOne(ctx,
+			bson.M{"name": oldWorkspaceName, "user": user},
+			bson.D{{Key: "$set", Value: bson.D{{Key: "name", Value: newWorkspaceName}}}},
+		)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelError, "Failed to rename workspace metadata",
+				slog.String("oldName", oldWorkspaceName),
+				slog.String("newName", newWorkspaceName),
+				slog.String("error", err.Error()))
+			// Non-fatal: categories are already renamed
+		}
+	}
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace renamed successfully",
 		slog.String("oldName", oldWorkspaceName),
 		slog.String("newName", newWorkspaceName),
@@ -273,6 +325,30 @@ func (s *Service) GetWorkspaces(userId primitive.ObjectID) ([]WorkspaceResult, e
 				},
 			}},
 		},
+		{
+			{Key: "$lookup", Value: bson.M{
+				"from": "workspaces",
+				"let":  bson.M{"wname": "$_id", "uid": userId},
+				"pipeline": mongo.Pipeline{
+					{{Key: "$match", Value: bson.M{"$expr": bson.M{
+						"$and": []bson.M{
+							{"$eq": []interface{}{"$name", "$$wname"}},
+							{"$eq": []interface{}{"$user", "$$uid"}},
+						},
+					}}}},
+				},
+				"as": "meta",
+			}},
+		},
+		{
+			{Key: "$addFields", Value: bson.M{
+				"icon":  bson.M{"$ifNull": []interface{}{bson.M{"$arrayElemAt": []interface{}{"$meta.icon", 0}}, nil}},
+				"color": bson.M{"$ifNull": []interface{}{bson.M{"$arrayElemAt": []interface{}{"$meta.color", 0}}, nil}},
+			}},
+		},
+		{
+			{Key: "$project", Value: bson.M{"meta": 0}},
+		},
 	})
 
 	if err != nil {
@@ -285,4 +361,68 @@ func (s *Service) GetWorkspaces(userId primitive.ObjectID) ([]WorkspaceResult, e
 		return nil, err
 	}
 	return results, nil
+}
+
+// UpsertWorkspaceMeta creates or updates workspace metadata (icon/color)
+func (s *Service) UpsertWorkspaceMeta(name string, user primitive.ObjectID, icon *string, color *string) error {
+	if s.Workspaces == nil {
+		return nil
+	}
+	ctx := context.Background()
+
+	setFields := bson.D{{Key: "name", Value: name}, {Key: "user", Value: user}}
+	if icon != nil {
+		setFields = append(setFields, bson.E{Key: "icon", Value: icon})
+	}
+	if color != nil {
+		setFields = append(setFields, bson.E{Key: "color", Value: color})
+	}
+
+	opts := options.Update().SetUpsert(true)
+	_, err := s.Workspaces.UpdateOne(ctx,
+		bson.M{"name": name, "user": user},
+		bson.D{{Key: "$set", Value: setFields}},
+		opts,
+	)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to upsert workspace metadata",
+			slog.String("workspace", name),
+			slog.String("error", err.Error()))
+	}
+	return err
+}
+
+// UpdateWorkspaceMeta updates only the provided icon/color fields on a workspace document
+func (s *Service) UpdateWorkspaceMeta(name string, user primitive.ObjectID, icon *string, color *string) error {
+	if s.Workspaces == nil {
+		return nil
+	}
+	ctx := context.Background()
+
+	setFields := bson.D{}
+	if icon != nil {
+		setFields = append(setFields, bson.E{Key: "icon", Value: icon})
+	}
+	if color != nil {
+		setFields = append(setFields, bson.E{Key: "color", Value: color})
+	}
+	if len(setFields) == 0 {
+		return nil
+	}
+
+	opts := options.Update().SetUpsert(true)
+	_, err := s.Workspaces.UpdateOne(ctx,
+		bson.M{"name": name, "user": user},
+		bson.D{
+			{Key: "$set", Value: setFields},
+			{Key: "$setOnInsert", Value: bson.D{{Key: "name", Value: name}, {Key: "user", Value: user}}},
+		},
+		opts,
+	)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to update workspace metadata",
+			slog.String("workspace", name),
+			slog.String("error", err.Error()))
+	}
+	return err
 }

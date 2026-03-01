@@ -113,6 +113,19 @@ type SetupDefaultWorkspaceOutput struct {
 	Body CategoryDocument `json:"body"`
 }
 
+// Update Workspace Metadata (icon/color)
+type UpdateWorkspaceInput struct {
+	Authorization string                `header:"Authorization" required:"true"`
+	Name          string                `path:"name"`
+	Body          UpdateWorkspaceParams `json:"body"`
+}
+
+type UpdateWorkspaceOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Workspace updated successfully"`
+	}
+}
+
 // Operation registrations
 
 func RegisterCreateCategoryOperation(api huma.API, handler *Handler) {
@@ -223,4 +236,15 @@ func RegisterSetupDefaultWorkspaceOperation(api huma.API, handler *Handler) {
 		Description: "Create the Kindred Guide workspace with starter tasks for new users",
 		Tags:        []string{"categories", "workspaces", "onboarding"},
 	}, handler.SetupDefaultWorkspace)
+}
+
+func RegisterUpdateWorkspaceOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-workspace",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/workspaces/{name}",
+		Summary:     "Update workspace metadata",
+		Description: "Update icon and color for a workspace",
+		Tags:        []string{"categories", "workspaces"},
+	}, handler.UpdateWorkspace)
 }

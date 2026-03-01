@@ -26,9 +26,19 @@ type CategoryDocument struct {
 	Integration   string              `bson:"integration,omitempty" json:"integration,omitempty"` // Format: "gcal:{connection_id}:{calendar_id}"
 }
 
+type WorkspaceDocument struct {
+	ID    primitive.ObjectID `bson:"_id" json:"id"`
+	User  primitive.ObjectID `bson:"user" json:"user"`
+	Name  string             `bson:"name" json:"name"`
+	Icon  *string            `bson:"icon,omitempty" json:"icon,omitempty"`
+	Color *string            `bson:"color,omitempty" json:"color,omitempty"`
+}
+
 type WorkspaceResult struct {
 	Name       string             `bson:"_id" json:"name"`
 	Categories []CategoryDocument `bson:"categories" json:"categories"`
+	Icon       *string            `bson:"icon,omitempty" json:"icon,omitempty"`
+	Color      *string            `bson:"color,omitempty" json:"color,omitempty"`
 }
 
 type TaskDocument struct {

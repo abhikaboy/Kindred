@@ -228,11 +228,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                 params: {
                     taskInfo: JSON.stringify({
                         id: task.id,
-                        content: task.content,
-                        category: {
-                            id: task.categoryID,
-                            name: task.categoryName,
-                        },
+                        name: task.content,
+                        category: task.categoryID,
+                        categoryName: task.categoryName,
                     }),
                 },
             });

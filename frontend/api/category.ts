@@ -159,6 +159,28 @@ export const renameCategory = async (categoryId: string, newCategoryName: string
 };
 
 /**
+ * Update workspace metadata (icon and/or color)
+ */
+export const updateWorkspaceMeta = async (
+    workspaceName: string,
+    icon?: string | null,
+    color?: string | null
+): Promise<void> => {
+    const body: Record<string, string | null | undefined> = {};
+    if (icon !== undefined) body.icon = icon;
+    if (color !== undefined) body.color = color;
+
+    const { error } = await (client.PATCH as any)(`/v1/user/workspaces/${encodeURIComponent(workspaceName)}`, {
+        params: withAuthHeaders({}),
+        body,
+    });
+
+    if (error) {
+        throw new Error(`Failed to update workspace metadata: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
  * Setup default workspace with starter tasks
  * Creates the "🌺 Kindred Guide" workspace with onboarding tasks for new users
  */

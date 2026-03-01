@@ -94,6 +94,8 @@ export interface Workspace {
     name: string;
     categories: Categories[];
     isBlueprint: boolean;
+    icon?: string | null;
+    color?: string | null;
 }
 
 export interface BlueprintWorkspace extends Workspace {
