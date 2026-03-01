@@ -1249,6 +1249,7 @@ const styles = StyleSheet.create({
         lineHeight: 28,
         color: "#ffffff",
         fontWeight: "500",
+        fontFamily: "Outfit",
     },
     transcriptionWord: {
         color: "#ffffff",

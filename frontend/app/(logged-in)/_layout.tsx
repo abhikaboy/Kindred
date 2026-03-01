@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator, Animated } from "react-native";
+import { ScrollView, View, ActivityIndicator, Animated, AppState } from "react-native";
+import { updateStreakWidget } from "@/widgets/updateStreakWidget";
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
@@ -122,6 +123,22 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         initializeAuth();
     }, []);
+
+    // Update streak widget on app foreground
+    useEffect(() => {
+        if (!user?._id) return;
+
+        const subscription = AppState.addEventListener('change', (nextState) => {
+            if (nextState === 'active') {
+                updateStreakWidget(user._id, user.streak || 0, 0).catch(() => {});
+            }
+        });
+
+        // Also update on mount
+        updateStreakWidget(user._id, user.streak || 0, 0).catch(() => {});
+
+        return () => subscription.remove();
+    }, [user?._id]);
 
     useEffect(() => {
         if (!user) return;

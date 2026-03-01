@@ -105,7 +105,52 @@
           "setCommits": false
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.kindred.kindredtsl.widgets",
+          "groupIdentifier": "group.com.kindred.kindredtsl",
+          "widgets": [
+            {
+              "name": "TodayTasksWidget",
+              "displayName": "Today's Tasks",
+              "description": "See your tasks due today and track your progress.",
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"]
+            },
+            {
+              "name": "WorkspaceSnapshotWidget",
+              "displayName": "Workspace",
+              "description": "A quick look at your workspace tasks.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            },
+            {
+              "name": "ActivityStreakWidget",
+              "displayName": "Activity Streak",
+              "description": "Track your task completion streak.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            },
+            {
+              "name": "LockScreenCircularWidget",
+              "displayName": "Today Progress",
+              "description": "Circular progress ring for today's tasks.",
+              "supportedFamilies": ["accessoryCircular"]
+            },
+            {
+              "name": "LockScreenRectangularWidget",
+              "displayName": "Next Task",
+              "description": "Shows your next due task.",
+              "supportedFamilies": ["accessoryRectangular"]
+            },
+            {
+              "name": "LockScreenInlineWidget",
+              "displayName": "Streak",
+              "description": "Shows your current streak.",
+              "supportedFamilies": ["accessoryInline"]
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

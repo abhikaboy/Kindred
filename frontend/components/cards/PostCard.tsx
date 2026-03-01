@@ -694,7 +694,6 @@ const PostCard = React.memo(({
 const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
-            flex: 1,
             borderBottomWidth: 1,
             borderBottomColor: ThemedColor.tertiary,
             paddingVertical: 8,

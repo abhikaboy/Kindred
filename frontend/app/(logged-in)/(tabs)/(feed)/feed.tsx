@@ -91,7 +91,6 @@ export default function Feed() {
     const [availableFeeds, setAvailableFeeds] = useState([
         { name: "Feed", id: "feed" },
         { name: "Friends", id: "friends" },
-        { name: "All Posts", id: "all" },
     ]);
     const [subscribedBlueprints, setSubscribedBlueprints] = useState<any[]>([]);
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -139,7 +138,6 @@ export default function Feed() {
             const baseFeeds = [
                 { name: "Feed", id: "feed" },
                 { name: "Friends", id: "friends" },
-                { name: "All Posts", id: "all" },
             ];
 
             const blueprintFeeds = blueprints.map((blueprint) => ({
@@ -154,7 +152,6 @@ export default function Feed() {
             setAvailableFeeds([
                 { name: "Feed", id: "feed" },
                 { name: "Friends", id: "friends" },
-                { name: "All Posts", id: "all" },
             ]);
         }
     }, []);

@@ -9,6 +9,9 @@ import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createLogger } from "@/utils/logger";
+import TodayTasksWidget from "@/widgets/TodayTasksWidget";
+import WorkspaceSnapshotWidget from "@/widgets/WorkspaceSnapshotWidget";
+import { LockScreenCircularWidget, LockScreenRectangularWidget } from "@/widgets/LockScreenWidgets";
 
 const logger = createLogger('TasksContext');
 
@@ -687,6 +690,62 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         }
         return null;
     };
+
+    // Sync Today's Tasks widget and lock screen circular widget whenever today tasks change
+    useEffect(() => {
+        const allTodayTasks = [
+            ...startTodayTasks,
+            ...dueTodayTasks.filter(t => !startTodayTasks.some(s => s.id === t.id)),
+        ];
+        const completedCount = allTodayTasks.filter(t => !t.active).length;
+        const totalCount = allTodayTasks.length;
+
+        const taskTitles = allTodayTasks.slice(0, 3).map(t => t.content);
+
+        const groupMap = new Map<string, string[]>();
+        allTodayTasks.forEach(t => {
+            const ws = t.workspaceName || 'Tasks';
+            if (!groupMap.has(ws)) groupMap.set(ws, []);
+            groupMap.get(ws)!.push(t.content);
+        });
+        const workspaceGroups = Array.from(groupMap.entries()).map(([workspaceName, tasks]) => ({
+            workspaceName,
+            tasks,
+        }));
+
+        TodayTasksWidget.updateSnapshot({ completedCount, totalCount, taskTitles, workspaceGroups });
+        LockScreenCircularWidget.updateSnapshot({ completedCount, totalCount });
+
+        // Next due task for rectangular lock screen widget
+        const nextDue = dueTodayTasks
+            .filter(t => t.active !== false && t.deadline)
+            .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())[0];
+
+        if (nextDue) {
+            const dueDate = new Date(nextDue.deadline!);
+            const dueTime = dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            LockScreenRectangularWidget.updateSnapshot({ taskTitle: nextDue.content, dueTime });
+        } else {
+            LockScreenRectangularWidget.updateSnapshot({ taskTitle: '', dueTime: '' });
+        }
+    }, [startTodayTasks, dueTodayTasks]);
+
+    // Sync Workspace Snapshot widget whenever workspaces change
+    useEffect(() => {
+        if (workspaces.length === 0) return;
+        const firstWorkspace = workspaces.find(w => !w.isBlueprint) || workspaces[0];
+        const allTasks = firstWorkspace.categories.flatMap(c => c.tasks.filter(t => t.active !== false));
+        const pendingCount = allTasks.length;
+        const topTasks = allTasks.slice(0, 3).map(t => t.content);
+
+        WorkspaceSnapshotWidget.updateSnapshot({
+            workspaceName: firstWorkspace.name,
+            workspaceIcon: firstWorkspace.icon || null,
+            workspaceColor: firstWorkspace.color || null,
+            pendingCount,
+            topTasks,
+        });
+    }, [workspaces]);
 
     return (
         <TaskContext.Provider

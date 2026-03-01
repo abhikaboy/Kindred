@@ -6,6 +6,8 @@ import { useTasks } from '@/contexts/tasksContext';
 import { showToastable } from 'react-native-toastable';
 import TaskToast from '@/components/ui/TaskToast';
 import DefaultToast from '@/components/ui/DefaultToast';
+import { useAuth } from '@/hooks/useAuth';
+import { updateStreakWidget } from '@/widgets/updateStreakWidget';
 
 interface TaskCompletionData {
     id: string;
@@ -22,6 +24,7 @@ interface UseTaskCompletionOptions {
 export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
     const [isCompleting, setIsCompleting] = useState(false);
     const { removeFromCategory, setShowConfetti, categories } = useTasks();
+    const { user } = useAuth();
 
     const markTaskAsCompleted = useCallback(async (
         categoryId: string,
@@ -30,7 +33,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         categoryName?: string
     ) => {
         if (isCompleting) return;
-        
+
         setIsCompleting(true);
         try {
             const res = await markAsCompletedAPI(categoryId, taskId, {
@@ -41,7 +44,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
 
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
-            
+
             // Show confetti and automatically hide it after 2 seconds
             setShowConfetti(true);
             setTimeout(() => {
@@ -52,9 +55,9 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
 
-            const finalCategoryName = 
-                categoryName || 
-                categories?.find((cat) => cat.id === categoryId)?.name || 
+            const finalCategoryName =
+                categoryName ||
+                categories?.find((cat) => cat.id === categoryId)?.name ||
                 "Unknown Category";
 
             const taskData = {
@@ -68,11 +71,17 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
 
             // Show streak notification if streak changed
             const newStreakInfo = (res as any)?.newStreakInfo;
-            
+
+            // Update streak widget with new streak value
+            if (user?._id) {
+                const newStreak = newStreakInfo?.newStreak ?? (user?.streak || 0);
+                updateStreakWidget(user._id, newStreak, 1).catch(() => {});
+            }
+
             // Build title and message based on streak status
             let title = "Task completed!";
             let message = `Congrats! Click here to post and document your task!`;
-            
+
             if (newStreakInfo) {
                 const { oldStreak, newStreak } = newStreakInfo;
                 const streakIncreased = newStreak > oldStreak;
@@ -88,7 +97,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                     }
                 }
             }
-            
+
             showToastable({
                 title,
                 status: "success",
@@ -121,4 +130,3 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         isCompleting,
     };
 };
-

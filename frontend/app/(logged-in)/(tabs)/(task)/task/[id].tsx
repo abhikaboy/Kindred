@@ -46,6 +46,8 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { logger } from "@/utils/logger";
+import DeadlineCountdownActivity, { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
+import type { LiveActivity } from "expo-widgets";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 
@@ -67,6 +69,8 @@ export default function Task() {
     const [localNotes, setLocalNotes] = useState("");
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
+    const [deadlineLiveActivity, setDeadlineLiveActivity] = useState<LiveActivity<DeadlineCountdownProps> | null>(null);
+    const deadlineIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     // Removed timer state - no longer using timer tab
     // const [hours, setHours] = useState(0);
     // const [minutes, setMinutes] = useState(0);
@@ -118,6 +122,56 @@ export default function Task() {
             });
         }
     };
+
+    const formatTimeRemaining = (deadline: string): string => {
+        const diff = new Date(deadline).getTime() - Date.now();
+        if (diff <= 0) return 'Overdue';
+        const totalMinutes = Math.floor(diff / 60000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    };
+
+    const handleTrackDeadline = () => {
+        if (!task?.deadline) return;
+        if (deadlineLiveActivity) {
+            deadlineLiveActivity.end('immediate');
+            if (deadlineIntervalRef.current) clearInterval(deadlineIntervalRef.current);
+            setDeadlineLiveActivity(null);
+            return;
+        }
+
+        const props: DeadlineCountdownProps = {
+            taskName: task.content,
+            workspaceName: task.workspaceName || 'Tasks',
+            deadline: task.deadline,
+            priority: task.priority || 0,
+            timeRemainingLabel: formatTimeRemaining(task.deadline),
+        };
+
+        const instance = DeadlineCountdownActivity.start(props);
+        setDeadlineLiveActivity(instance);
+
+        deadlineIntervalRef.current = setInterval(() => {
+            instance.update({
+                ...props,
+                timeRemainingLabel: formatTimeRemaining(task.deadline!),
+            });
+        }, 5 * 60 * 1000);
+    };
+
+    // End the deadline Live Activity when the component unmounts
+    useEffect(() => {
+        return () => {
+            if (deadlineLiveActivity) {
+                deadlineLiveActivity.end('immediate');
+            }
+            if (deadlineIntervalRef.current) {
+                clearInterval(deadlineIntervalRef.current);
+            }
+        };
+    }, [deadlineLiveActivity]);
 
     const handleIntegrationPress = async () => {
         const result = await openIntegrationApp(task?.integration);
@@ -347,6 +401,12 @@ export default function Task() {
 
     const handleMarkAsCompleted = () => {
         if (task && categoryId && id) {
+            // End deadline Live Activity if active
+            if (deadlineLiveActivity) {
+                deadlineLiveActivity.end('immediate');
+                if (deadlineIntervalRef.current) clearInterval(deadlineIntervalRef.current);
+                setDeadlineLiveActivity(null);
+            }
             markTaskAsCompleted(categoryId as string, id as string, {
                 id: task.id,
                 content: task.content,
@@ -690,6 +750,16 @@ export default function Task() {
                                             boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
                                         }}
                                         onPress={handleDeadlineModalPress}
+                                    />
+                                </ConditionalView>
+                                <ConditionalView condition={task?.deadline != null} key="track-deadline">
+                                    <PrimaryButton
+                                        title={deadlineLiveActivity ? "Stop Tracking Deadline" : "Track Deadline"}
+                                        outline={!deadlineLiveActivity}
+                                        style={{
+                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                        }}
+                                        onPress={handleTrackDeadline}
                                     />
                                 </ConditionalView>
                     </View>
