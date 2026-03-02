@@ -66,7 +66,7 @@ EOF
 fi
 
 # Patch EXDefines.h to restore EXFatal, EXErrorWithMessage, EXLog* externs
-# removed in expo-modules-core@55 but still used by expo-av@16.x
+# and UM* type aliases removed in expo-modules-core@55 but still used by expo-av@16.x
 EXDEFINES="$ROOT_DIR/EXDefines.h"
 if ! grep -q "EXFatal" "$EXDEFINES"; then
   cat >> "$EXDEFINES" << 'EOF'
@@ -85,6 +85,10 @@ EX_EXTERN NSApplication *EXSharedApplication(void);
 #else
 EX_EXTERN UIApplication *EXSharedApplication(void);
 #endif
+
+// UMCore type aliases removed in expo-modules-core@55, required by expo-av@16.x
+typedef void (^UMPromiseResolveBlock)(id result);
+typedef void (^UMPromiseRejectBlock)(NSString *code, NSString *message, NSError *error);
 EOF
-  echo "postinstall: patched EXDefines.h with missing externs"
+  echo "postinstall: patched EXDefines.h with missing externs and UM type aliases"
 fi
