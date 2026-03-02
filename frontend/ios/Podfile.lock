@@ -149,12 +149,11 @@ PODS:
     - ExpoModulesCore
   - ExpoSystemUI (6.0.9):
     - ExpoModulesCore
-  - ExpoUI (55.0.1):
+  - ExpoUI (0.2.0-canary-20260121-a63c0dd):
     - ExpoModulesCore
-    - React-RCTFabric
   - ExpoWebBrowser (15.0.10):
     - ExpoModulesCore
-  - ExpoWidgets (55.0.2):
+  - ExpoWidgets (0.0.1-canary-20260121-a63c0dd):
     - ExpoModulesCore
     - ExpoUI
   - FBLazyVector (0.81.4)
@@ -2783,9 +2782,9 @@ SPEC CHECKSUMS:
   ExpoStoreReview: 32bb43b6fae9c8db3e33cad69996dff3785eef5f
   ExpoSymbols: 349ee2b4d7d5ff3ea8436467914f8a67635aa354
   ExpoSystemUI: 2ad325f361a2fcd96a464e8574e19935c461c9cc
-  ExpoUI: db65f9a5eed67fc6b4789c4ca384cd22220fb359
+  ExpoUI: 8782d05ed02018e6716d6233c50116d7951774ab
   ExpoWebBrowser: 17b064c621789e41d4816c95c93f429b84971f52
-  ExpoWidgets: be6f6a55e8a7c1f1d9888dd2ab2c6e88b811d323
+  ExpoWidgets: 35dcbe468b45f856b3dc2e63672e7045397f1092
   FBLazyVector: 9e0cd874afd81d9a4d36679daca991b58b260d42
   hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d

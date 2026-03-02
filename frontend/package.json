@@ -18,7 +18,7 @@
   "dependencies": {
     "@expo/ngrok": "^4.1.0",
     "@expo/server": "^0.7.5",
-    "@expo/ui": "~55.0.1",
+    "@expo/ui": "0.2.0-canary-20260121-a63c0dd",
     "@expo/vector-icons": "^15.0.2",
     "@gorhom/bottom-sheet": "^5.2.6",
     "@gorhom/portal": "^1.0.14",
@@ -73,7 +73,7 @@
     "expo-system-ui": "~6.0.7",
     "expo-tenor-search": "^1.0.37",
     "expo-web-browser": "^15.0.7",
-    "expo-widgets": "^55.0.2",
+    "expo-widgets": "0.0.1-canary-20260121-a63c0dd",
     "i": "^0.3.7",
     "moti": "^0.30.0",
     "openapi-fetch": "^0.14.0",
