@@ -7,9 +7,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Video, ResizeMode } from 'expo-av';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 type Props = {};
 
@@ -50,7 +49,7 @@ const PublicTasksTutorialScreen = (props: Props) => {
             {/* Background Graphics */}
             <OnboardingBackground />
 
-            <Animated.View 
+            <Animated.View
                 style={[
                     styles.content,
                     {
@@ -61,17 +60,8 @@ const PublicTasksTutorialScreen = (props: Props) => {
                     }
                 ]}
             >
-                {/* Video */}
-                <View style={styles.videoContainer}>
-                    <Video
-                        source={require('@/assets/video/post.mp4')}
-                        style={styles.video}
-                        resizeMode={ResizeMode.COVER}
-                        shouldPlay
-                        isLooping
-                        isMuted
-                    />
-                </View>
+                {/* Illustration placeholder */}
+                <View style={styles.videoContainer} />
 
                 {/* Title */}
                 <View style={styles.titleContainer}>
@@ -122,10 +112,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         alignSelf: 'flex-start',
         marginTop: 0,
-    },
-    video: {
-        width: '100%',
-        height: '100%',
+        backgroundColor: '#E8E4DC',
     },
     titleContainer: {
         marginTop: 16,
@@ -159,4 +146,3 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
-

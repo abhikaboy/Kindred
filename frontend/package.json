@@ -43,7 +43,6 @@
     "expo": "~55.0.4",
     "expo-apple-authentication": "~55.0.8",
     "expo-auth-session": "~55.0.6",
-    "expo-av": "^16.0.8",
     "expo-blur": "~55.0.8",
     "expo-camera": "~55.0.9",
     "expo-clipboard": "~55.0.8",

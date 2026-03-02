@@ -7,11 +7,10 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import AntDesign from "@expo/vector-icons/AntDesign";
 import CreateModal from "@/components/modals/CreateModal";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 type Props = {};
 
@@ -19,11 +18,9 @@ const CategoriesTutorialScreen = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [videoLoopCount, setVideoLoopCount] = useState(0);
     const [showCategory, setShowCategory] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [currentHint, setCurrentHint] = useState<'swipe' | 'tap'>('swipe');
-    const videoRef = useRef<Video>(null);
     const scrollViewRef = useRef<ScrollView>(null);
 
     // Animation values
@@ -49,7 +46,7 @@ const CategoriesTutorialScreen = (props: Props) => {
             }),
         ]).start();
 
-        // Show category after 3 seconds
+        // Show category after 3 seconds, then auto-scroll after 4 more seconds
         setTimeout(() => {
             setShowCategory(true);
             Animated.timing(categoryOpacity, {
@@ -57,22 +54,12 @@ const CategoriesTutorialScreen = (props: Props) => {
                 duration: 500,
                 useNativeDriver: true,
             }).start();
-        }, 3000);
-    }, []);
 
-    const handleVideoStatusUpdate = (status: AVPlaybackStatus) => {
-        if (status.isLoaded && status.didJustFinish) {
-            const newCount = videoLoopCount + 1;
-            setVideoLoopCount(newCount);
-            
-            // After 2 loops (and category is visible), auto-scroll to category and change hint
-            if (newCount >= 2 && showCategory) {
-                scrollViewRef.current?.scrollTo({ 
-                    x: screenWidth - HORIZONTAL_PADDING * 2 + 16, 
-                    animated: true 
+            setTimeout(() => {
+                scrollViewRef.current?.scrollTo({
+                    x: screenWidth - HORIZONTAL_PADDING * 2 + 16,
+                    animated: true
                 });
-                
-                // Change hint to tap after scrolling
                 setTimeout(() => {
                     Animated.timing(hintOpacity, {
                         toValue: 0,
@@ -86,15 +73,15 @@ const CategoriesTutorialScreen = (props: Props) => {
                             useNativeDriver: true,
                         }).start();
                     });
-                }, 500); // Wait for scroll animation
-            }
-        }
-    };
+                }, 500);
+            }, 4000);
+        }, 3000);
+    }, []);
 
     const handleScroll = (event: any) => {
         const offsetX = event.nativeEvent.contentOffset.x;
         const pageWidth = screenWidth - HORIZONTAL_PADDING * 2 + 16; // width + gap
-        
+
         // If scrolled past halfway to second page, show tap hint
         if (offsetX > pageWidth / 2 && currentHint === 'swipe') {
             Animated.timing(hintOpacity, {
@@ -138,7 +125,7 @@ const CategoriesTutorialScreen = (props: Props) => {
             {/* Background Graphics */}
             <OnboardingBackground />
 
-            <Animated.View 
+            <Animated.View
                 style={[
                     styles.content,
                     {
@@ -152,16 +139,16 @@ const CategoriesTutorialScreen = (props: Props) => {
                 {/* Hint Text */}
                 <Animated.View style={[styles.hintContainer, { opacity: hintOpacity }]}>
                     <ThemedText type="default" style={[styles.hintText, { color: ThemedColor.caption }]}>
-                        {currentHint === 'swipe' 
-                            ? 'Swipe to create →' 
+                        {currentHint === 'swipe'
+                            ? 'Swipe to create →'
                             : 'Tap on a category to create a task'}
                     </ThemedText>
                 </Animated.View>
 
                 {/* Carousel Container */}
-                <ScrollView 
+                <ScrollView
                     ref={scrollViewRef}
-                    horizontal 
+                    horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
                     scrollEnabled={showCategory}
@@ -170,19 +157,8 @@ const CategoriesTutorialScreen = (props: Props) => {
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
                 >
-                    {/* Video */}
-                    <View style={styles.videoContainer}>
-                        <Video
-                            ref={videoRef}
-                            source={require('@/assets/video/create-task.mp4')}
-                            style={styles.video}
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay
-                            isLooping
-                            isMuted
-                            onPlaybackStatusUpdate={handleVideoStatusUpdate}
-                        />
-                    </View>
+                    {/* Illustration placeholder */}
+                    <View style={styles.videoContainer} />
 
                     {/* Interactive Categories */}
                     {showCategory && (
@@ -283,10 +259,7 @@ const styles = StyleSheet.create({
         height: 542,
         borderRadius: 12,
         overflow: 'hidden',
-    },
-    video: {
-        width: '100%',
-        height: '100%',
+        backgroundColor: '#E8E4DC',
     },
     categoryContainer: {
         width: screenWidth - HORIZONTAL_PADDING * 2,
@@ -325,4 +298,3 @@ const styles = StyleSheet.create({
         flex: 1,
     },
 });
-
