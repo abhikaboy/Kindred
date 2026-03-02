@@ -120,7 +120,6 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.4",
     "@rozenite/performance-monitor-plugin": "^1.2.0",
     "@types/bun": "^1.2.22",
     "@types/jest": "29.5.14",
