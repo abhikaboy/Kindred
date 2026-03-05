@@ -1,5 +1,4 @@
-import ActivityStreakWidget from './ActivityStreakWidget';
-import { LockScreenInlineWidget } from './LockScreenWidgets';
+import { ActivityStreakWidgetUpdater, LockScreenInlineWidgetUpdater } from './widgetUpdaters';
 import { activityAPI, convertToWeeklyActivityLevels } from '@/api/activity';
 import { createLogger } from '@/utils/logger';
 
@@ -16,15 +15,15 @@ export async function updateStreakWidget(
         // convertToWeeklyActivityLevels returns 8 values; take the last 7
         const weeklyLevels = allLevels.slice(-7);
 
-        ActivityStreakWidget.updateSnapshot({ streak, tasksCompletedToday, weeklyLevels });
-        LockScreenInlineWidget.updateSnapshot({ streak });
+        ActivityStreakWidgetUpdater.updateSnapshot({ streak, tasksCompletedToday, weeklyLevels });
+        LockScreenInlineWidgetUpdater.updateSnapshot({ streak });
     } catch (error) {
         logger.error('Failed to update streak widget', error);
-        ActivityStreakWidget.updateSnapshot({
+        ActivityStreakWidgetUpdater.updateSnapshot({
             streak,
             tasksCompletedToday,
             weeklyLevels: new Array(7).fill(0),
         });
-        LockScreenInlineWidget.updateSnapshot({ streak });
+        LockScreenInlineWidgetUpdater.updateSnapshot({ streak });
     }
 }

@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, startTransition } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
@@ -9,9 +9,12 @@ import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createLogger } from "@/utils/logger";
-import TodayTasksWidget from "@/widgets/TodayTasksWidget";
-import WorkspaceSnapshotWidget from "@/widgets/WorkspaceSnapshotWidget";
-import { LockScreenCircularWidget, LockScreenRectangularWidget } from "@/widgets/LockScreenWidgets";
+import {
+    TodayTasksWidgetUpdater as TodayTasksWidget,
+    WorkspaceSnapshotWidgetUpdater as WorkspaceSnapshotWidget,
+    LockScreenCircularWidgetUpdater as LockScreenCircularWidget,
+    LockScreenRectangularWidgetUpdater as LockScreenRectangularWidget,
+} from "@/widgets/widgetUpdaters";
 
 const logger = createLogger('TasksContext');
 
@@ -79,23 +82,43 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
     const unnestedTasks = useMemo(() => {
-        let res = workspaces
-            .flatMap((workspace) =>
-                workspace.categories.map((category) => ({
-                    workspace: workspace.name,
-                    category
-                }))
-            )
-            .flatMap(({ workspace, category }) =>
-                category.tasks
-                    .filter((task) => task.active !== false) // Filter out hidden/inactive tasks
-                    .map((task) => ({
-                        ...task,
+        const res: Task[] = [];
+        for (const workspace of workspaces) {
+            for (const category of workspace.categories) {
+                for (const task of category.tasks) {
+                    if (task.active === false) continue;
+                    res.push({
+                        id: task.id,
+                        priority: task.priority,
+                        content: task.content,
+                        value: task.value,
+                        recurring: task.recurring,
+                        recurFrequency: task.recurFrequency,
+                        recurType: task.recurType,
+                        recurDetails: task.recurDetails,
+                        public: task.public,
+                        active: task.active,
+                        timestamp: task.timestamp,
+                        lastEdited: task.lastEdited,
+                        templateID: task.templateID,
+                        userID: task.userID,
+                        deadline: task.deadline,
+                        startTime: task.startTime,
+                        startDate: task.startDate,
+                        notes: task.notes,
+                        checklist: task.checklist,
+                        reminders: task.reminders,
+                        integration: task.integration,
+                        timeCompleted: task.timeCompleted,
+                        timeTaken: task.timeTaken,
+                        posted: task.posted,
                         categoryID: category.id,
                         categoryName: category.name,
-                        workspaceName: workspace,
-                    }))
-            );
+                        workspaceName: workspace.name,
+                    });
+                }
+            }
+        }
         return res;
     }, [workspaces]);
 
@@ -190,7 +213,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                     // Use cache if it's less than 5 minutes old
                     if ((now - timestamp) < CACHE_DURATION) {
                         logger.debug("Using cached workspaces (age: " + Math.floor((now - timestamp) / 1000) + "s)");
-                        setWorkSpaces(cachedData);
+                        startTransition(() => setWorkSpaces(cachedData));
                         return;
                     } else {
                         logger.debug("Cache expired, fetching fresh data");
@@ -221,7 +244,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             logger.debug("blueprintWorkspaces", blueprintWorkspaces);
 
             const allWorkspaces = [...data, ...blueprintWorkspaces];
-            setWorkSpaces(allWorkspaces);
+            startTransition(() => setWorkSpaces(allWorkspaces));
 
             // Save to cache
             try {

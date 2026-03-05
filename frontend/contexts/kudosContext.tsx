@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
 import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
 import { createLogger } from "@/utils/logger";
-import EncouragementActivity from "@/widgets/EncouragementActivity";
+import { EncouragementActivityFactory as EncouragementActivity } from "@/widgets/widgetUpdaters";
 
 const logger = createLogger('KudosContext');
 

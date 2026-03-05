@@ -2,7 +2,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptionalAuth } from '@/hooks/useAuth';
 import EnhancedSplashScreen from '@/components/ui/EnhancedSplashScreen';
 
 /**
@@ -13,7 +13,8 @@ import EnhancedSplashScreen from '@/components/ui/EnhancedSplashScreen';
  */
 export default function Index() {
     const router = useRouter();
-    const { user } = useAuth();
+    const auth = useOptionalAuth();
+    const user = auth?.user ?? null;
     const [isChecking, setIsChecking] = useState(true);
     const [nextRoute, setNextRoute] = useState<string | null>(null);
     const [canTransition, setCanTransition] = useState(false);
@@ -70,4 +71,3 @@ export default function Index() {
 
     return null;
 }
-

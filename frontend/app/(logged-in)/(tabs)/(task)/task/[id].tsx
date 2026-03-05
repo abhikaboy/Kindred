@@ -46,7 +46,8 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { logger } from "@/utils/logger";
-import DeadlineCountdownActivity, { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
+import { DeadlineCountdownActivityFactory as DeadlineCountdownActivity } from "@/widgets/widgetUpdaters";
+import type { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
 import type { LiveActivity } from "expo-widgets";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
