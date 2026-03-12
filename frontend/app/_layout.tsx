@@ -36,41 +36,40 @@ import { AlertProvider } from "@/contexts/AlertContext";
 import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
 
-const previousHandler = ErrorUtils.getGlobalHandler();
-ErrorUtils.setGlobalHandler((error, isFatal) => {
-    logger.error(`[GlobalError] isFatal=${isFatal}`, error);
-    previousHandler?.(error, isFatal);
-});
+try {
+    const previousHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error: any, isFatal: any) => {
+        logger.error(`[GlobalError] isFatal=${isFatal}`, error);
+        previousHandler?.(error, isFatal);
+    });
+} catch (e) {
+    // ErrorUtils may not be available during early bundle eval
+}
 
-Sentry.init({
-    dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
-
-    // Adds more context data to events (IP address, cookies, user, etc.)
-    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-    sendDefaultPii: true,
-
-    // Configure Session Replay
-    // replaysSessionSampleRate: 0.1,
-    // replaysOnErrorSampleRate: 1,
-    integrations: [
-        // Sentry.mobileReplayIntegration(),
-        Sentry.feedbackIntegration({
-            // Additional SDK configuration goes in here, for example:
-            styles: {
-                submitButton: {
-                    backgroundColor: "#6a1b9a",
+try {
+    Sentry.init({
+        dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
+        sendDefaultPii: true,
+        integrations: [
+            Sentry.feedbackIntegration({
+                styles: {
+                    submitButton: {
+                        backgroundColor: "#6a1b9a",
+                    },
                 },
-            },
-            namePlaceholder: "Fullname",
-        }),
-    ],
+                namePlaceholder: "Fullname",
+            }),
+        ],
+    });
+} catch (e) {
+    console.error("[Kindred] Sentry.init failed:", e);
+}
 
-    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-    // spotlight: __DEV__,
-});
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+try {
+    SplashScreen.preventAutoHideAsync();
+} catch (e) {
+    console.error("[Kindred] SplashScreen.preventAutoHideAsync failed:", e);
+}
 
 // Create QueryClient outside component to prevent recreation on every render
 const queryClient = new QueryClient({

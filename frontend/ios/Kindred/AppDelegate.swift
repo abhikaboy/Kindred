@@ -4,6 +4,23 @@ import ReactAppDependencyProvider
 
 @main
 class AppDelegate: ExpoAppDelegate {
+
+  // Intercept ObjC exceptions before RN's TurboModule handler calls backtrace_symbols,
+  // which triggers a Hermes GC write barrier crash on RN 0.83 + iOS 18 (PAC pointer bug).
+  // This logs the throwing module so we can identify and fix the root cause.
+  override func application(
+    _ application: UIApplication,
+    willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    NSSetUncaughtExceptionHandler { exception in
+      NSLog("[KindredCrashDiag] Uncaught NSException: %@ | reason: %@ | callstack: %@",
+            exception.name.rawValue,
+            exception.reason ?? "nil",
+            exception.callStackSymbols.prefix(10).joined(separator: "\n"))
+    }
+    return super.application?(application, willFinishLaunchingWithOptions: launchOptions) ?? true
+  }
+
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?

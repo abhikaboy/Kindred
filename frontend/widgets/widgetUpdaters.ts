@@ -40,17 +40,26 @@ const resolveExpoWidgets = () => {
     }
 };
 
-const expoWidgets = resolveExpoWidgets();
+// TODO: Re-enable once crash is diagnosed. Set to null to skip all native widget calls.
+const expoWidgets = __DEV__ ? resolveExpoWidgets() : null;
 const noop = () => null as unknown;
 
 const createWidgetUpdater = <TProps>(name: string): WidgetLike<TProps> => {
-    if (!expoWidgets) return createNoopWidget<TProps>();
-    return new expoWidgets.Widget<TProps>(name, noop);
+    try {
+        if (!expoWidgets) return createNoopWidget<TProps>();
+        return new expoWidgets.Widget<TProps>(name, noop);
+    } catch {
+        return createNoopWidget<TProps>();
+    }
 };
 
 const createLiveActivityFactory = <TProps>(name: string): LiveActivityLike<TProps> => {
-    if (!expoWidgets) return createNoopLiveActivityFactory<TProps>();
-    return new expoWidgets.LiveActivityFactory<TProps>(name, noop);
+    try {
+        if (!expoWidgets) return createNoopLiveActivityFactory<TProps>();
+        return new expoWidgets.LiveActivityFactory<TProps>(name, noop);
+    } catch {
+        return createNoopLiveActivityFactory<TProps>();
+    }
 };
 
 export const TodayTasksWidgetUpdater = createWidgetUpdater<TodayTasksWidgetProps>('TodayTasksWidget');
