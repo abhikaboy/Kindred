@@ -163,7 +163,24 @@
         "origin": false
       },
       "eas": {
-        "projectId": "f64f0563-7cb2-45c4-b928-800e53bc5e10"
+        "projectId": "f64f0563-7cb2-45c4-b928-800e53bc5e10",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.kindred.kindredtsl.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.kindred.kindredtsl"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }
