@@ -36,6 +36,12 @@ import { AlertProvider } from "@/contexts/AlertContext";
 import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
 
+const previousHandler = ErrorUtils.getGlobalHandler();
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+    logger.error(`[GlobalError] isFatal=${isFatal}`, error);
+    previousHandler?.(error, isFatal);
+});
+
 Sentry.init({
     dsn: "https://79c57b37386aecbee3cd34cd54469b8f@o4509699450470400.ingest.us.sentry.io/4509699452502016",
 
@@ -101,7 +107,6 @@ export default Sentry.wrap(function RootLayout() {
         enableLogging: __DEV__, // Only log in development
     });
 
-    Accelerometer.setUpdateInterval(500); // Adjust update interval as needed
 
     // useEffect(() => {
     //     const subscription = Accelerometer.addListener((data) => {
