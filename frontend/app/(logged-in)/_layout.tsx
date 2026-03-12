@@ -13,6 +13,7 @@ import { ThemedText } from "@/components/ThemedText";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+    initNotificationHandler,
     registerForPushNotificationsAsync,
     addNotificationListener,
     addNotificationResponseListener,
@@ -159,6 +160,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     }, [user]);
 
     useEffect(() => {
+        initNotificationHandler();
         notificationListener.current = addNotificationListener((notification) => {
             showToastable({
                 message: notification.request.content.body || "New notification",

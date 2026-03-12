@@ -44,10 +44,10 @@ Sentry.init({
     sendDefaultPii: true,
 
     // Configure Session Replay
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1,
+    // replaysSessionSampleRate: 0.1,
+    // replaysOnErrorSampleRate: 1,
     integrations: [
-        Sentry.mobileReplayIntegration(),
+        // Sentry.mobileReplayIntegration(),
         Sentry.feedbackIntegration({
             // Additional SDK configuration goes in here, for example:
             styles: {

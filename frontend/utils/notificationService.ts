@@ -5,16 +5,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { updatePushToken } from "../api/auth";
 
-// Configure notifications appearance in foreground
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
+// Configure notifications appearance in foreground.
+// Must be called explicitly at runtime (not at module load time) to avoid a
+// Hermes segfault on RN 0.83 + iOS 18 caused by synchronous TurboModule calls
+// during JS bundle evaluation.
+export function initNotificationHandler() {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
+        }),
+    });
+}
 
 // Register for push notifications
 export async function registerForPushNotificationsAsync() {

@@ -43,6 +43,9 @@
         "aps-environment": "production",
         "com.apple.developer.applesignin": [
           "Default"
+        ],
+        "com.apple.security.application-groups": [
+          "group.com.kindred.kindredtsl"
         ]
       },
       "usesAppleSignIn": true,
