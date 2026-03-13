@@ -32,7 +32,7 @@ export const KudosCards: React.FC = () => {
                 maxCount={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
                 type="encouragements"
                 icon={<Sparkle size={22} weight="regular" color={ThemedColor.primary} />}
-                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/encouragements")}
+                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=encouragements")}
                 hasUnread={hasUnreadEncouragements}
                 ThemedColor={ThemedColor}
             />
@@ -43,7 +43,7 @@ export const KudosCards: React.FC = () => {
                 maxCount={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
                 type="congratulations"
                 icon={<Confetti size={22} weight="fill" color={ThemedColor.primary} />}
-                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/congratulations")}
+                onPress={() => router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations")}
                 hasUnread={hasUnreadCongratulations}
                 ThemedColor={ThemedColor}
             />

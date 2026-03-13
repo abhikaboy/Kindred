@@ -1,8 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { CheckCircle } from "phosphor-react-native";
 
 interface RecurringTaskCardProps {
     templateId: string;
@@ -16,8 +15,12 @@ interface RecurringTaskCardProps {
     recurType: string;
     recurFrequency?: string;
     streak?: number;
+    timesMissed?: number;
     icon?: string;
 }
+
+const MISSED_COLOR = "#E5484D";
+const MISSED_COLOR_SOFT = "rgba(229, 72, 77, 0.25)";
 
 export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
     templateId,
@@ -28,210 +31,157 @@ export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
     month,
     isSelected,
     onToggle,
-    recurType,
-    recurFrequency,
     streak = 0,
-    icon = "📚",
+    timesMissed = 0,
 }) => {
     const ThemedColor = useThemeColor();
 
-    // Calculate activity for the last 7 days relative to today (or end of month for past months)
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const weekDays = 7;
-    const today = new Date();
-    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
-    const endDay = isCurrentMonth ? today.getDate() : daysInMonth;
-    const startDay = Math.max(1, endDay - weekDays + 1);
+    const { weekActivity, completionsThisMonth } = useMemo(() => {
+        const today = new Date();
+        const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const endDay = isCurrentMonth ? today.getDate() : daysInMonth;
+        const startDay = Math.max(1, endDay - 6);
 
-    // Get completion status for each day in the week
-    const getWeekActivity = () => {
-        const activity: boolean[] = [];
-
+        const activity: ("completed" | "missed" | "none")[] = [];
         for (let day = startDay; day <= endDay; day++) {
-            const hasCompletion = completionDates.some(date => {
-                const d = new Date(date);
+            const hasCompletion = completionDates.some(dateStr => {
+                const d = new Date(dateStr);
                 return d.getFullYear() === year &&
                        d.getMonth() + 1 === month &&
                        d.getDate() === day;
             });
-            activity.push(hasCompletion);
+            if (hasCompletion) {
+                activity.push("completed");
+            } else if (day < (isCurrentMonth ? today.getDate() : daysInMonth + 1)) {
+                activity.push("missed");
+            } else {
+                activity.push("none");
+            }
         }
 
-        return activity;
-    };
+        const monthCount = completionDates.filter(dateStr => {
+            const d = new Date(dateStr);
+            return d.getFullYear() === year && d.getMonth() + 1 === month;
+        }).length;
 
-    const weekActivity = getWeekActivity();
+        return { weekActivity: activity, completionsThisMonth: monthCount };
+    }, [completionDates, year, month]);
 
-    // Calculate stats
-    const completionsThisMonth = completionDates.filter(dateStr => {
-        const date = new Date(dateStr);
-        return date.getFullYear() === year && date.getMonth() + 1 === month;
-    }).length;
-
-    const getDayLabel = (index: number) => {
-        return startDay + index;
-    };
+    const hasMisses = timesMissed > 0;
+    const streakBroken = hasMisses && streak === 0;
 
     return (
         <TouchableOpacity
             style={[
-                styles.card,
+                styles.row,
                 {
-                    backgroundColor: isSelected ? ThemedColor.lightenedCard : ThemedColor.card,
-                    borderColor: isSelected ? ThemedColor.primary : ThemedColor.tertiary,
-                    borderWidth: isSelected ? 2 : 1,
+                    backgroundColor: isSelected
+                        ? ThemedColor.lightened
+                        : streakBroken
+                        ? MISSED_COLOR_SOFT
+                        : "transparent",
                 },
             ]}
             onPress={() => onToggle(templateId)}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
         >
-            <View style={styles.header}>
-                <View style={styles.iconContainer}>
-                    <View style={[styles.iconCircle, { backgroundColor: ThemedColor.lightened }]}>
-                        <CheckCircle size={20} color={ThemedColor.primary} weight="bold" />
-                    </View>
-                </View>
-                <View style={styles.titleContainer}>
-                    <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.taskName}>
+            <View style={styles.content}>
+                <View style={styles.topLine}>
+                    <ThemedText
+                        type="default"
+                        numberOfLines={1}
+                        style={[styles.taskName, { color: ThemedColor.text }]}
+                    >
                         {taskName}
                     </ThemedText>
-                    <View style={styles.metaRow}>
-                        <View style={styles.categoryBadge}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption, fontSize: 11 }}>
-                                {categoryName}
+                    <View style={styles.trailing}>
+                        {streak > 0 ? (
+                            <ThemedText type="caption" style={{ fontSize: 12, color: ThemedColor.caption }}>
+                                {streak}d streak
                             </ThemedText>
-                        </View>
-                        {streak > 0 && (
-                            <>
-                                <View style={styles.separator} />
-                                <View style={styles.streakBadge}>
-                                    <ThemedText type="caption" style={{ color: ThemedColor.primary, fontSize: 11, fontWeight: "600" }}>
-                                        🔥 {streak} day streak
-                                    </ThemedText>
-                                </View>
-                            </>
-                        )}
-                    </View>
-                </View>
-                <View style={styles.statsContainer}>
-                    <ThemedText type="subtitle" style={{ color: ThemedColor.primary }}>
-                        {completionsThisMonth}
-                    </ThemedText>
-                    <ThemedText type="caption" style={{ color: ThemedColor.caption, fontSize: 11 }}>
-                        this month
-                    </ThemedText>
-                </View>
-            </View>
-
-            {/* Activity Week View */}
-            <View style={styles.activityContainer}>
-                {weekActivity.map((isActive, index) => (
-                    <View key={index} style={styles.dayColumn}>
-                        <View
-                            style={[
-                                styles.activityDot,
-                                {
-                                    backgroundColor: isActive
-                                        ? ThemedColor.primary
-                                        : ThemedColor.tertiary,
-                                    opacity: isActive ? 1 : 0.3,
-                                },
-                            ]}
-                        />
+                        ) : hasMisses ? (
+                            <ThemedText type="caption" style={{ fontSize: 12, color: MISSED_COLOR }}>
+                                {timesMissed} missed
+                            </ThemedText>
+                        ) : null}
                         <ThemedText
-                            type="caption"
-                            style={[
-                                styles.dayLabel,
-                                { color: isActive ? ThemedColor.text : ThemedColor.caption }
-                            ]}
+                            type="defaultSemiBold"
+                            style={{ color: ThemedColor.primary, fontSize: 13 }}
                         >
-                            {getDayLabel(index)}
+                            {completionsThisMonth}/mo
                         </ThemedText>
                     </View>
-                ))}
+                </View>
+                <View style={styles.bottomLine}>
+                    <ThemedText
+                        type="caption"
+                        numberOfLines={1}
+                        style={{ color: ThemedColor.caption, fontSize: 12 }}
+                    >
+                        {categoryName}
+                    </ThemedText>
+                    <View style={styles.dotsRow}>
+                        {weekActivity.map((status, i) => (
+                            <View
+                                key={i}
+                                style={[
+                                    styles.dot,
+                                    {
+                                        backgroundColor:
+                                            status === "completed"
+                                                ? ThemedColor.primary
+                                                : status === "missed"
+                                                ? MISSED_COLOR
+                                                : ThemedColor.tertiary,
+                                    },
+                                ]}
+                            />
+                        ))}
+                    </View>
+                </View>
             </View>
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
-    card: {
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+    row: {
+        paddingVertical: 10,
+        paddingHorizontal: 4,
+        borderRadius: 8,
     },
-    header: {
+    content: {
+        gap: 4,
+    },
+    topLine: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 16,
-        gap: 12,
-    },
-    iconContainer: {
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    iconCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    titleContainer: {
-        flex: 1,
-        gap: 4,
+        justifyContent: "space-between",
+        gap: 8,
     },
     taskName: {
         fontSize: 15,
+        flex: 1,
     },
-    metaRow: {
+    trailing: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
-        flexWrap: "wrap",
+        gap: 10,
     },
-    categoryBadge: {
+    bottomLine: {
         flexDirection: "row",
         alignItems: "center",
-    },
-    streakBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    separator: {
-        width: 3,
-        height: 3,
-        borderRadius: 1.5,
-        backgroundColor: "#999",
-        opacity: 0.3,
-    },
-    statsContainer: {
-        alignItems: "flex-end",
-        gap: 2,
-    },
-    activityContainer: {
-        flexDirection: "row",
         justifyContent: "space-between",
-        paddingHorizontal: 4,
     },
-    dayColumn: {
+    dotsRow: {
+        flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: 4,
     },
-    activityDot: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-    },
-    dayLabel: {
-        fontSize: 11,
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
 });

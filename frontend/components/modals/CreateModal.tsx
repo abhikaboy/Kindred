@@ -51,8 +51,10 @@ const CreateModal = (props: Props) => {
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
-    // Define snap points - we'll use percentages for flexibility
-    const snapPoints = useMemo(() => ["90%"], []);
+    const snapPoints = useMemo(
+        () => (screen === Screen.NEW_CATEGORY ? ["20%"] : ["90%"]),
+        [screen]
+    );
 
     const goToScreen = useCallback((newScreen: Screen) => {
         setScreen(newScreen);
@@ -104,6 +106,13 @@ const CreateModal = (props: Props) => {
     }, [props.visible]);
 
 
+
+    // Re-snap when screen changes (snap points differ between NEW_CATEGORY and others)
+    useEffect(() => {
+        if (props.visible && bottomSheetModalRef.current) {
+            bottomSheetModalRef.current.snapToIndex(0);
+        }
+    }, [screen, props.visible]);
 
     // Custom backdrop component
     const renderBackdrop = useCallback(
@@ -181,10 +190,18 @@ const CreateModal = (props: Props) => {
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
             enablePanDownToClose={true}
+            enableDynamicSizing={false}
             keyboardBehavior="interactive"
             android_keyboardInputMode="adjustResize">
             <BottomSheetScrollView
-                style={[styles.container, { backgroundColor: ThemedColor.background }]}
+                style={[
+                    styles.container,
+                    {
+                        backgroundColor: ThemedColor.background,
+                        minHeight: screen === Screen.NEW_CATEGORY ? undefined : Dimensions.get('window').height * 0.8,
+                        padding: screen === Screen.NEW_CATEGORY ? 16 : 24,
+                    },
+                ]}
                 contentContainerStyle={{ flexGrow: 1 }}
                 keyboardShouldPersistTaps="handled">
                 {currentScreenComponent}
@@ -196,10 +213,8 @@ const CreateModal = (props: Props) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 24,
         gap: 8,
         width: "100%",
-        minHeight: Dimensions.get('window').height * 0.8, // Ensure minimum height to force 90% expansion
     },
 });
 

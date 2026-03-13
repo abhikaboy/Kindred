@@ -1,158 +1,218 @@
-import { StyleSheet, View, Image, Pressable, useColorScheme, TouchableOpacity } from "react-native";
-import React, { useState } from "react";
+import { StyleSheet, View, TouchableOpacity, Share } from "react-native";
+import React from "react";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { AddressBook, ShareNetwork, Gift, ListChecks } from "phosphor-react-native";
+import { useRouter } from "expo-router";
+import { useReferral } from "@/hooks/useReferral";
 
 type Props = {
-    onDismiss?: () => void;
     onSyncContacts?: () => void;
     isLoadingContacts?: boolean;
     isFindingFriends?: boolean;
-    onCardPress?: () => void;
 };
 
-const BetterTogetherCard = ({ onDismiss, onSyncContacts, isLoadingContacts, isFindingFriends, onCardPress }: Props) => {
-    const ThemedColor = useThemeColor();
-    const colorScheme = useColorScheme();
-    const [dismissed, setDismissed] = useState(false);
+type StepButtonConfig = {
+    label: string;
+    icon: React.ReactNode;
+    onPress: () => void;
+    disabled?: boolean;
+    variant?: "filled" | "outline";
+};
 
-    const handleDismiss = () => {
-        setDismissed(true);
-        onDismiss?.();
+type StepProps = {
+    stepNumber: number;
+    title: string;
+    description: string;
+    buttons: StepButtonConfig[];
+    primaryColor: string;
+    ThemedColor: any;
+};
+
+const OnboardingStep = ({ stepNumber, title, description, buttons, primaryColor, ThemedColor }: StepProps) => (
+    <View style={stepStyles.container}>
+        <View style={[stepStyles.badge, { backgroundColor: primaryColor }]}>
+            <ThemedText type="smallerDefault" style={{ color: "#fff" }}>
+                {stepNumber}
+            </ThemedText>
+        </View>
+        <ThemedText type="subtitle">{title}</ThemedText>
+        <ThemedText type="caption" style={stepStyles.description}>
+            {description}
+        </ThemedText>
+        <View style={stepStyles.buttons}>
+            {buttons.map((btn, i) => (
+                <TouchableOpacity
+                    key={i}
+                    style={[
+                        stepStyles.actionBtn,
+                        btn.variant === "outline"
+                            ? { borderColor: ThemedColor.tertiary, borderWidth: 1 }
+                            : { backgroundColor: primaryColor },
+                    ]}
+                    onPress={btn.onPress}
+                    disabled={btn.disabled}
+                    activeOpacity={0.7}>
+                    {btn.icon}
+                    <ThemedText
+                        type="smallerDefault"
+                        style={{ color: btn.variant === "outline" ? ThemedColor.text : "#fff" }}>
+                        {btn.label}
+                    </ThemedText>
+                </TouchableOpacity>
+            ))}
+        </View>
+    </View>
+);
+
+const BetterTogetherCard = ({ onSyncContacts, isLoadingContacts, isFindingFriends }: Props) => {
+    const ThemedColor = useThemeColor();
+    const router = useRouter();
+    const { referralCode } = useReferral();
+
+    const handleShareInvite = async () => {
+        const message = referralCode
+            ? `Join me on Kindred! Use my referral code "${referralCode}" when you sign up: https://kindred.so`
+            : "Join me on Kindred! Download the app and let's grow together: https://kindred.so";
+        try {
+            await Share.share({ message });
+        } catch (_) {}
     };
 
-    if (dismissed) {
-        return null;
-    }
+    const handleViewRewards = () => {
+        router.push("/(logged-in)/rewards");
+    };
+
+    const handleGoToDaily = () => {
+        router.push("/(logged-in)/(tabs)/(task)/daily");
+    };
+
+    const syncLabel = isLoadingContacts
+        ? "Loading Contacts..."
+        : isFindingFriends
+          ? "Finding Friends..."
+          : "Sync Contacts";
 
     return (
-        <View
-            style={[
-                styles.container,
-                {
-                    backgroundColor: ThemedColor.lightenedCard,
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
-                },
-            ]}>
-            <Pressable style={styles.content} onPress={onCardPress}>
-                <Image
-                    source={require("@/assets/images/together.png")}
-                    style={[styles.image, colorScheme === "dark" && styles.imageInverted]}
-                    resizeMode="contain"
-                />
+        <View style={rootStyles.container}>
+            <ThemedText type="subtitle" style={[rootStyles.heading, { fontSize: 24, fontWeight: 500 }]}>
+                Find Your People
+            </ThemedText>
+            <ThemedText type="lightBody" style={rootStyles.subtitle}>
+                Kindred is built on friendships.{"\n"}Here's how to get started:
+            </ThemedText>
 
-                <View style={styles.textRow}>
-                    <ThemedText style={[styles.title, { color: ThemedColor.primary }]}>
-                        Kindred is Better Together
-                    </ThemedText>
-                    <ThemedText style={[styles.arrow, { color: ThemedColor.primary }]}>→</ThemedText>
-                </View>
+            <View style={[rootStyles.divider, { backgroundColor: ThemedColor.tertiary }]} />
 
-                <ThemedText style={styles.description}>Invite your friends to Kindred to earn Rewards!</ThemedText>
-            </Pressable>
-
-            <TouchableOpacity
-                style={[
-                    styles.syncButton,
+            <OnboardingStep
+                stepNumber={1}
+                title="Sync Your Contacts"
+                description="Find friends who are already on Kindred from your phone contacts."
+                buttons={[
                     {
-                        backgroundColor: ThemedColor.lightened + "40",
-                        borderColor: ThemedColor.primary + "40",
+                        label: syncLabel,
+                        icon: <AddressBook size={16} color="#fff" weight="regular" />,
+                        onPress: onSyncContacts ?? (() => {}),
+                        disabled: isLoadingContacts || isFindingFriends,
                     },
                 ]}
-                onPress={onSyncContacts}
-                disabled={isLoadingContacts || isFindingFriends}
-                activeOpacity={0.7}>
-                <Ionicons
-                    name="person-add-outline"
-                    size={20}
-                    color={ThemedColor.primary}
-                    style={styles.syncButtonIcon}
-                />
-                <ThemedText style={[styles.syncButtonText, { color: ThemedColor.primary }]}>
-                    {isLoadingContacts
-                        ? "Loading Contacts..."
-                        : isFindingFriends
-                          ? "Finding Friends..."
-                          : "Sync Contacts"}
-                </ThemedText>
-            </TouchableOpacity>
+                primaryColor={ThemedColor.primary}
+                ThemedColor={ThemedColor}
+            />
 
-            <Pressable onPress={handleDismiss}>
-                <ThemedText type="caption" style={styles.dismissText}>
-                    Don't show this again
-                </ThemedText>
-            </Pressable>
+            <OnboardingStep
+                stepNumber={2}
+                title="Invite & Earn Rewards"
+                description="Share your referral code with friends. When they join, you unlock groups, analytics, voice notes, and more."
+                buttons={[
+                    {
+                        label: "Share Referral",
+                        icon: <ShareNetwork size={16} color="#fff" weight="regular" />,
+                        onPress: handleShareInvite,
+                    },
+                    {
+                        label: "View Rewards",
+                        icon: <Gift size={16} color={ThemedColor.text} weight="regular" />,
+                        onPress: handleViewRewards,
+                        variant: "outline",
+                    },
+                ]}
+                primaryColor={ThemedColor.primary}
+                ThemedColor={ThemedColor}
+            />
+
+            <OnboardingStep
+                stepNumber={3}
+                title="Build Your Daily"
+                description="Set up tasks, complete them, and send kudos to friends along the way."
+                buttons={[
+                    {
+                        label: "Go to Daily",
+                        icon: <ListChecks size={16} color={ThemedColor.text} weight="regular" />,
+                        onPress: handleGoToDaily,
+                        variant: "outline",
+                    },
+                ]}
+                primaryColor={ThemedColor.primary}
+                ThemedColor={ThemedColor}
+            />
         </View>
     );
 };
 
 export default BetterTogetherCard;
 
-const styles = StyleSheet.create({
+const rootStyles = StyleSheet.create({
     container: {
-        borderRadius: 12,
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        gap: 8,
-    },
-    content: {
-        gap: 4,
-    },
-    image: {
-        width: 180,
-        height: 152,
-        alignSelf: "flex-start",
-    },
-    imageInverted: {
-        tintColor: "#ffffff",
-    },
-    textRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
+        paddingHorizontal: 8,
+        paddingTop: 24,
+        paddingBottom: 8,
+    },
+    heading: {
+        textAlign: "center",
+    },
+    subtitle: {
+        textAlign: "center",
+        marginTop: 6,
+    },
+    divider: {
+        height: StyleSheet.hairlineWidth,
+        width: "80%",
+        marginVertical: 24,
+    },
+});
+
+const stepStyles = StyleSheet.create({
+    container: {
+        alignItems: "center",
+        marginBottom: 28,
         width: "100%",
     },
-    title: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "400",
-        flex: 1,
-    },
-    arrow: {
-        fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "400",
-        marginLeft: 8,
+    badge: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 10,
     },
     description: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "400",
-        lineHeight: 22,
+        textAlign: "center",
+        maxWidth: 280,
+        marginTop: 2,
+        marginBottom: 14,
     },
-    dismissText: {
-        fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "400",
-        marginTop: 4,
+    buttons: {
+        flexDirection: "row",
+        gap: 10,
     },
-    syncButton: {
+    actionBtn: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-    },
-    syncButtonIcon: {
-        marginRight: 8,
-    },
-    syncButtonText: {
-        fontSize: 15,
-        fontWeight: "600",
-        fontFamily: "Outfit",
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        borderRadius: 24,
     },
 });

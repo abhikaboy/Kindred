@@ -12,7 +12,7 @@ import {
 import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import TaskTabs from "@/components/inputs/TaskTabs";
+
 import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";

@@ -20,23 +20,27 @@ const RecentlyCompletedTasks = () => {
         queryFn: () => getCompletedTasksAPI(1, 10),
     });
 
-    // Filter out tasks that have already been posted
-    const recentTasks = data?.tasks?.filter((task: any) => !task.posted).slice(0, 3) || [];
-
-    const getCategoryName = (categoryId: string) => {
-        if (!categoryId) return "Unknown Category";
+    const getCategoryInfo = (categoryId: string) => {
+        if (!categoryId) return { name: "Unknown Category" };
         for (const workspace of workspaces) {
             const category = workspace.categories.find((cat) => cat.id === categoryId);
             if (category) {
-                return category.name;
+                return { name: category.name };
             }
         }
-        return "Unknown Category";
+        return { name: "Unknown Category" };
     };
 
+    // Filter out tasks that have already been posted and enrich with category names
+    const recentTasks = React.useMemo(() => {
+        const filtered = data?.tasks?.filter((task: any) => !task.posted).slice(0, 3) || [];
+        return filtered.map((task: any) => ({
+            ...task,
+            categoryName: task.categoryName || getCategoryInfo(task.categoryID).name,
+        }));
+    }, [data?.tasks, workspaces]);
+
     const handleTaskPress = (task: any) => {
-        const categoryName = task.categoryName || getCategoryName(task.categoryID);
-        
         router.push({
             pathname: "/(logged-in)/posting/cameraview",
             params: {
@@ -44,7 +48,7 @@ const RecentlyCompletedTasks = () => {
                     id: task.id,
                     name: task.content,
                     category: task.categoryID,
-                    categoryName: categoryName,
+                    categoryName: task.categoryName,
                     public: task.public,
                 }),
             },
@@ -71,7 +75,7 @@ const RecentlyCompletedTasks = () => {
                     >
                         <View style={styles.taskContent}>
                             <View style={styles.textContainer}>
-                                <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                                <ThemedText type="defaultSemiBold" numberOfLines={2}>
                                     {task.content}
                                 </ThemedText>
                                 {task.timeCompleted && (
@@ -139,8 +143,6 @@ const useStyles = (ThemedColor: any) =>
         },
         textContainer: {
             flex: 1,
-            flexDirection: "row",
-            justifyContent: "space-between",
             gap: 2,
         },
         metaContainer: {

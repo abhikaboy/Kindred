@@ -16,8 +16,7 @@ import * as Sharing from "expo-sharing";
 import * as SMS from "expo-sms";
 import { getBlueprintById } from "@/api/blueprint";
 import { useTasks } from "@/contexts/tasksContext";
-import TaskTabs from "@/components/inputs/TaskTabs";
-import ConditionalView from "@/components/ui/ConditionalView";
+import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import BlueprintGallery from "@/components/profile/BlueprintGallery";
 
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
@@ -386,9 +385,9 @@ export default function BlueprintDetailScreen() {
                     ))}
                 </View>
 
-                <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+                <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                <ConditionalView condition={activeTab === 0}>
+                <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab}>
                     <View style={{ gap: 12, paddingBottom: 24 }}>
                         {selectedBlueprint?.categories?.length > 0 ? (
                             selectedBlueprint?.categories?.map((category, index) => (
@@ -406,11 +405,8 @@ export default function BlueprintDetailScreen() {
                             <ThemedText type="default">No categories</ThemedText>
                         )}
                     </View>
-                </ConditionalView>
-
-                <ConditionalView condition={activeTab === 1}>
                     <BlueprintGallery blueprintId={selectedBlueprint.id} />
-                </ConditionalView>
+                </AnimatedTabContent>
             </View>
         </ParallaxScrollView>
     );

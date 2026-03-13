@@ -19,8 +19,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import TaskTabs from "@/components/inputs/TaskTabs";
-import ConditionalView from "@/components/ui/ConditionalView";
+import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ProfileStats from "@/components/profile/ProfileStats";
 import TodayStats from "@/components/profile/TodayStats";
 import ProfileGallery from "@/components/profile/ProfileGallery";
@@ -203,15 +202,12 @@ export default function Profile() {
                             />
                         )}
 
-                        <TaskTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                        <ConditionalView condition={activeTab == 0}>
+                        <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab}>
                             <TaskList {...tasks} />
-                        </ConditionalView>
-
-                        <ConditionalView condition={activeTab == 1}>
                             <ProfileGallery userId={galleryUserId} />
-                        </ConditionalView>
+                        </AnimatedTabContent>
                     </>
                 ) : (
                     <View style={styles.privateProfileContainer}>

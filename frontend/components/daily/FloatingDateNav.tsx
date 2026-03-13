@@ -127,7 +127,7 @@ export const FloatingDateNav: React.FC<FloatingDateNavProps> = ({
                 animatedContainerStyle,
                 {
                     backgroundColor: getBackgroundColor(),
-                    borderColor: ThemedColor.border,
+                    borderColor: ThemedColor.tertiary,
                 },
             ]}
         >

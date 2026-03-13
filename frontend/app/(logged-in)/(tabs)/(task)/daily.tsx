@@ -21,6 +21,7 @@ import { DatePager } from "@/components/daily/DatePager";
 import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView } from "@/components/daily/CalendarView";
 import { FloatingDateNav } from "@/components/daily/FloatingDateNav";
+import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
 // Hooks
 import { useDailyTasks } from "@/hooks/useDailyTasks";
@@ -170,44 +171,28 @@ const Daily = (props: Props) => {
             onDrawerClose={() => setIsDrawerOpen(false)}>
 
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
-                <View style={{ flex: 1 }}>
-                    {/* List View - Keep mounted but hide when not active */}
-                    <View
-                        style={{
-                            flex: 1,
-                            display: activeTab === "List" ? "flex" : "none"
-                        }}
-                        removeClippedSubviews={activeTab !== "List"}
-                    >
-                        <Animated.ScrollView
-                            ref={scrollViewRef}
-                            style={{ flex: 1 }}
-                            showsVerticalScrollIndicator={false}
-                            onScroll={listScrollHandler}
-                            scrollEventThrottle={16}
-                            removeClippedSubviews={true}
-                            contentContainerStyle={{ paddingBottom: 128 }}>
-                            {renderHeader()}
-                            <TaskListView
-                                selectedDate={selectedDate}
-                                tasksForSelectedDate={tasksForSelectedDate}
-                                overdueTasks={overdueTasks}
-                                upcomingTasks={upcomingTasks}
-                                pastTasks={pastTasks}
-                                unscheduledTasks={listUnscheduledTasks}
-                                onQuickSchedule={handleQuickSchedule}
-                            />
-                        </Animated.ScrollView>
-                    </View>
+                {renderHeader()}
 
-                    {/* Calendar View - Lazy render after interaction completes */}
-                    <View
-                        style={{
-                            flex: 1,
-                            display: activeTab === "Calendar" ? "flex" : "none"
-                        }}
-                        removeClippedSubviews={activeTab !== "Calendar"}
-                    >
+                <AnimatedTabContent activeTab={activeTab === "List" ? 0 : 1} setActiveTab={(i) => setActiveTab(i === 0 ? "List" : "Calendar")} flex>
+                    <Animated.ScrollView
+                        ref={scrollViewRef}
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        onScroll={listScrollHandler}
+                        scrollEventThrottle={16}
+                        removeClippedSubviews={true}
+                        contentContainerStyle={{ paddingBottom: 128 }}>
+                        <TaskListView
+                            selectedDate={selectedDate}
+                            tasksForSelectedDate={tasksForSelectedDate}
+                            overdueTasks={overdueTasks}
+                            upcomingTasks={upcomingTasks}
+                            pastTasks={pastTasks}
+                            unscheduledTasks={listUnscheduledTasks}
+                            onQuickSchedule={handleQuickSchedule}
+                        />
+                    </Animated.ScrollView>
+                    <View style={{ flex: 1 }}>
                         {shouldRenderCalendar && (
                             <CalendarView
                                 selectedDate={selectedDate}
@@ -216,13 +201,11 @@ const Daily = (props: Props) => {
                                 tasksUnscheduled={tasksUnscheduled}
                                 animatedScrollY={calendarAnimatedScrollY}
                                 scrollViewRef={calendarScrollViewRef}
-                                headerContent={renderHeader()}
                             />
                         )}
                     </View>
-                </View>
+                </AnimatedTabContent>
 
-                {/* Floating Date Navigation - Available on both List and Calendar views */}
                 <FloatingDateNav
                     selectedDate={selectedDate}
                     onDateChange={handleDateChange}

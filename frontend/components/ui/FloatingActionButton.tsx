@@ -191,7 +191,11 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
         setLoadingTasks(true);
         try {
             const response = await getCompletedTasksAPI(1, 20);
-            setCompletedTasks(response.tasks as any);
+            const enriched = (response.tasks as any[]).map((task: any) => ({
+                ...task,
+                categoryName: task.categoryName || getCategoryName(task.categoryID),
+            }));
+            setCompletedTasks(enriched as any);
         } catch (error) {
             console.error("Failed to fetch completed tasks:", error);
             setCompletedTasks([]);
@@ -218,9 +222,20 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
         }
     };
 
+    const getCategoryName = (categoryId?: string) => {
+        if (!categoryId) return "Unknown Category";
+        for (const ws of workspaces) {
+            const cat = ws.categories.find((c) => c.id === categoryId);
+            if (cat) return cat.name;
+        }
+        return "Unknown Category";
+    };
+
     const handleCompletedTaskSelect = (task: Task) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         handleClose();
+
+        const categoryName = task.categoryName || getCategoryName(task.categoryID);
 
         setTimeout(() => {
             router.push({
@@ -230,7 +245,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                         id: task.id,
                         name: task.content,
                         category: task.categoryID,
-                        categoryName: task.categoryName,
+                        categoryName: categoryName,
                     }),
                 },
             });

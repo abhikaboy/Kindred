@@ -30,9 +30,8 @@ export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
                     style={[
                         styles.friendsButton,
                         {
-                            backgroundColor: ThemedColor.lightened,
+                            backgroundColor: "transparent",
                             borderColor: ThemedColor.tertiary,
-                            boxShadow: ThemedColor.shadowSmall,
                         },
                     ]}>
                     <ThemedText type="lightBody" style={styles.friendsText}>

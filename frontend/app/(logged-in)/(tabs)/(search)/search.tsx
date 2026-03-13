@@ -1,5 +1,4 @@
 import {
-    Dimensions,
     StyleSheet,
     ScrollView,
     View,
@@ -39,6 +38,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import ContactConsentModal from "@/components/modals/ContactConsentModal";
 import { useContactConsent } from "@/hooks/useContactConsent";
@@ -115,6 +115,7 @@ const Search = (props: Props) => {
     const [error, setError] = React.useState<string | null>(null);
     const [activeTab, setActiveTab] = React.useState(1); // Default to Friends (index 1)
     const [shouldRenderBlueprints, setShouldRenderBlueprints] = useState(false);
+    const [headerHeight, setHeaderHeight] = useState(0);
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
@@ -431,11 +432,6 @@ const Search = (props: Props) => {
         };
     }, []);
 
-    // Handle rewards card press
-    const handleRewardsCardPress = useCallback(() => {
-        router.push("/rewards");
-    }, [router]);
-
     const colorScheme = useColorScheme();
     const gradientColors = getGradient(colorScheme ?? "light") as [string, string, ...string[]];
 
@@ -567,10 +563,52 @@ const Search = (props: Props) => {
     }, [activeTab]);
 
     return (
-        <View style={[styles.container, { paddingTop: 0, paddingBottom: insets.bottom }]}>
+        <View style={[styles.container, { paddingBottom: insets.bottom }]}>
             <ThemedView style={{ flex: 1 }}>
+                {/* Gradient fade overlay behind header, extending into scroll area */}
+                {headerHeight > 0 && (
+                    <LinearGradient
+                        colors={gradientColors}
+                        locations={[0, 0.25, 0.45, 0.6, 0.75, 1]}
+                        pointerEvents="none"
+                        style={{
+                            position: "absolute",
+                            left: 0,
+                            right: 0,
+                            top: 0,
+                            height: headerHeight + 20,
+                            zIndex: 1,
+                        }}
+                    />
+                )}
+
+                {/* Header - in normal flex flow */}
+                <View
+                    style={[styles.searchContainer, { zIndex: focused ? 10 : 2, paddingTop: insets.top }]}
+                    onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+                    <SearchBox
+                        value={searchTerm}
+                        placeholder={"Search for a user or blueprint!"}
+                        onChangeText={handleSearchTermChange}
+                        onSubmit={handleSubmit}
+                        recent={!showAutocomplete && mode === "categories"}
+                        name={"search-page"}
+                        setFocused={handleSetFocused}
+                        autocompleteSuggestions={autocompleteSuggestions}
+                        onSelectSuggestion={handleSelectSuggestion}
+                        showAutocomplete={showAutocomplete && mode === "categories"}
+                    />
+                    <SegmentedControl
+                        options={["Blueprints", "Friends"]}
+                        selectedOption={activeTab === 0 ? "Blueprints" : "Friends"}
+                        onOptionPress={handleTogglePress}
+                    />
+                </View>
+
+                {/* Scrollable content - fills remaining space */}
                 <ScrollView
-                    style={[styles.scrollView, { paddingTop: insets.top + 140 }]}
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
                     scrollEventThrottle={16}
                     removeClippedSubviews={true}
                     refreshControl={
@@ -582,20 +620,15 @@ const Search = (props: Props) => {
                         />
                     }>
                     {mode === "categories" && (
-                        <>
-                            {/* Friends Tab - Keep mounted but hide when not active */}
-                            <View 
-                                style={{ display: activeTab === 1 ? "flex" : "none", paddingBottom: 120 }}
-                                removeClippedSubviews={activeTab !== 1}
-                            >
-                                <View style={styles.betterTogetherContainer}>
-                                    <BetterTogetherCard
-                                        onSyncContacts={handleAddContacts}
-                                        isLoadingContacts={isLoadingContacts}
-                                        isFindingFriends={findUsersMutation.isPending}
-                                        onCardPress={handleRewardsCardPress}
-                                    />
-                                </View>
+                        <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab}>
+                            <View>
+                                {shouldRenderBlueprints && (
+                                    <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
+                                        <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
+                                    </Pressable>
+                                )}
+                            </View>
+                            <View style={{ paddingBottom: 120 }}>
                                 <FollowRequestsSection styles={styles} />
                                 {!isLoadingMatchedContacts && matchedContacts.length > 0 && (
                                     <ContactsFromPhone contacts={matchedContacts} />
@@ -603,20 +636,13 @@ const Search = (props: Props) => {
                                 {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && (
                                     <SuggestedUsers users={suggestedUsers} />
                                 )}
+                                <BetterTogetherCard
+                                    onSyncContacts={handleAddContacts}
+                                    isLoadingContacts={isLoadingContacts}
+                                    isFindingFriends={findUsersMutation.isPending}
+                                />
                             </View>
-
-                            {/* Blueprints Tab - Lazy render after interaction completes */}
-                            <View 
-                                style={{ display: activeTab === 0 ? "flex" : "none" }}
-                                removeClippedSubviews={activeTab !== 0}
-                            >
-                                {shouldRenderBlueprints && (
-                                    <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
-                                        <ExplorePage categoryGroups={categoryGroups} focusStyle={focusStyle} loading={loading} />
-                                    </Pressable>
-                                )}
-                            </View>
-                        </>
+                        </AnimatedTabContent>
                     )}
                     {mode !== "categories" && (
                         <Pressable style={styles.contentContainer} onPress={() => Keyboard.dismiss()}>
@@ -636,7 +662,7 @@ const Search = (props: Props) => {
 
                 {focused && (
                     <Pressable
-                        style={StyleSheet.absoluteFillObject}
+                        style={[StyleSheet.absoluteFillObject, { zIndex: 5 }]}
                         onPress={() => {
                             Keyboard.dismiss();
                             setFocused(false);
@@ -645,51 +671,6 @@ const Search = (props: Props) => {
                     </Pressable>
                 )}
             </ThemedView>
-            <View
-                style={[
-                    styles.searchContainer,
-                    {
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: focused ? 10 : 1,
-                    },
-                ]}>
-                <LinearGradient
-                    colors={gradientColors}
-                    locations={[0, 0.25, 0.45, 0.6, 0.75, 1]}
-                    style={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        top: 0,
-                        height: insets.top + 160,
-                    }}
-                />
-
-                <View style={{ paddingTop: insets.top }}>
-                    <SearchBox
-                        value={searchTerm}
-                        placeholder={"Search for a user or blueprint!"}
-                        onChangeText={handleSearchTermChange}
-                        onSubmit={handleSubmit}
-                        recent={!showAutocomplete && mode === "categories"} // Only show recents in categories mode
-                        name={"search-page"}
-                        setFocused={handleSetFocused}
-                        autocompleteSuggestions={autocompleteSuggestions}
-                        onSelectSuggestion={handleSelectSuggestion}
-                        showAutocomplete={showAutocomplete && mode === "categories"} // Only show autocomplete in categories mode
-                    />
-                    <View style={{ paddingBottom: 8 }}>
-                        <SegmentedControl
-                            options={["Blueprints", "Friends"]}
-                            selectedOption={activeTab === 0 ? "Blueprints" : "Friends"}
-                            onOptionPress={handleTogglePress}
-                        />
-                    </View>
-                </View>
-            </View>
             <CustomAlert
                 visible={alertVisible}
                 setVisible={setAlertVisible}
@@ -721,14 +702,16 @@ const stylesheet = (ThemedColor: any) => {
         searchContainer: {
             paddingHorizontal: 16,
             paddingVertical: 8,
+            paddingBottom: 16,
         },
         betterTogetherContainer: {
             paddingHorizontal: 16,
-            paddingBottom: 16,
         },
         scrollView: {
-            paddingVertical: Dimensions.get("screen").height * 0.03,
-            paddingTop: 80,
+            flex: 1,
+        },
+        scrollContent: {
+            paddingTop: 8,
         },
         contentContainer: {
             gap: 16,

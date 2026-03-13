@@ -38,8 +38,7 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
     const isImage = kudos.type === "image";
     const isProfileLevel = kudos.scope === "profile";
 
-    const bubbleTranslateY = useRef(new Animated.Value(22)).current;
-    const bubbleTranslateX = useRef(new Animated.Value(-10)).current;
+    const bubbleTranslateX = useRef(new Animated.Value(-28)).current;
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
     const avatarOpacity = useRef(new Animated.Value(0)).current;
 
@@ -49,34 +48,26 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
         if (!visible || hasAnimated.current) return;
         hasAnimated.current = true;
 
-        const baseStagger = index * 180;
-        const jitter = Math.floor(Math.random() * 100);
-        // Cap so item 6+ doesn't wait more than ~700ms
-        const delay = Math.min(baseStagger + jitter, 700);
+        const delay = Math.min(index * 120, 600);
 
         Animated.sequence([
             Animated.delay(delay),
             Animated.parallel([
                 Animated.timing(avatarOpacity, {
                     toValue: 1,
-                    duration: 300,
+                    duration: 200,
                     useNativeDriver: true,
                 }),
                 Animated.timing(bubbleOpacity, {
                     toValue: 1,
-                    duration: 260,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(bubbleTranslateY, {
-                    toValue: 0,
-                    tension: 90,
-                    friction: 12,
+                    duration: 220,
                     useNativeDriver: true,
                 }),
                 Animated.spring(bubbleTranslateX, {
                     toValue: 0,
-                    tension: 100,
-                    friction: 14,
+                    stiffness: 280,
+                    damping: 26,
+                    mass: 0.8,
                     useNativeDriver: true,
                 }),
             ]),
@@ -115,7 +106,6 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
                         opacity: bubbleOpacity,
                         transform: [
                             { translateX: bubbleTranslateX },
-                            { translateY: bubbleTranslateY },
                         ],
                     },
                 ]}

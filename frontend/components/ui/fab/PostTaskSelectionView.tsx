@@ -79,12 +79,14 @@ export const PostTaskSelectionView: React.FC<PostTaskSelectionViewProps> = ({
                         >
                             <View style={styles.taskContent}>
                                 <View style={styles.taskText}>
-                                    <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                                    <ThemedText type="defaultSemiBold" numberOfLines={2}>
                                         {task.content}
                                     </ThemedText>
-                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                        {task.categoryName}
-                                    </ThemedText>
+                                    {task.categoryName && (
+                                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                            {task.categoryName}
+                                        </ThemedText>
+                                    )}
                                 </View>
                             </View>
                             <View style={[styles.taskAction, { backgroundColor: ThemedColor.primary + "10" }]}>
@@ -157,8 +159,6 @@ const styles = StyleSheet.create({
     },
     taskText: {
         flex: 1,
-        flexDirection: "row",
-        justifyContent: "space-between",
         gap: 2,
     },
     taskAction: {

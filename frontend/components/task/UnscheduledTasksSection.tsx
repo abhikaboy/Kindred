@@ -6,12 +6,14 @@ import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import SchedulableTaskCard from "@/components/cards/SchedulableTaskCard";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Task } from "@/api/types";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 
 interface UnscheduledTasksSectionProps {
     tasks: Task[];
     title?: string;
     description?: string;
     emptyMessage?: string;
+    collapsible?: boolean;
     // SwipableTaskCard props
     useSwipable?: boolean;
     onCompleteTask?: (task: Task) => void;
@@ -26,6 +28,7 @@ const UnscheduledTasksSection = ({
     title = "Tasks",
     description,
     emptyMessage = "No tasks",
+    collapsible = false,
     useSwipable = false,
     onCompleteTask,
     useSchedulable = false,
@@ -63,34 +66,24 @@ const UnscheduledTasksSection = ({
     const keyExtractor = React.useCallback((item: Task) => `${item.id}-${item.content}`, []);
     const getItemType = React.useCallback(() => 'task', []);
 
-    if (tasks.length === 0) {
-        return (
-            <View style={styles.section}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                    {title}
-                </ThemedText>
-                {description && (
-                    <ThemedText type="lightBody" style={styles.description}>
-                        {description}
-                    </ThemedText>
-                )}
-                <ThemedText type="lightBody" style={styles.emptyText}>
-                    {emptyMessage}
-                </ThemedText>
-            </View>
-        );
-    }
-
-    return (
-        <View style={styles.section}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
-                {title}
-            </ThemedText>
-            {description && (
+    const content = tasks.length === 0 ? (
+        <>
+            {description ? (
                 <ThemedText type="lightBody" style={styles.description}>
                     {description}
                 </ThemedText>
-            )}
+            ) : null}
+            <ThemedText type="lightBody" style={styles.emptyText}>
+                {emptyMessage}
+            </ThemedText>
+        </>
+    ) : (
+        <>
+            {description ? (
+                <ThemedText type="lightBody" style={styles.description}>
+                    {description}
+                </ThemedText>
+            ) : null}
             <View style={{ minHeight: 2 }}>
                 <FlashList
                     data={tasks}
@@ -101,6 +94,27 @@ const UnscheduledTasksSection = ({
                     removeClippedSubviews={true}
                 />
             </View>
+        </>
+    );
+
+    if (collapsible) {
+        return (
+            <View style={styles.section}>
+                <CollapsibleSection title={title} titleStyle={styles.sectionTitle}>
+                    <View style={styles.collapsibleContent}>
+                        {content}
+                    </View>
+                </CollapsibleSection>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.section}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+                {title}
+            </ThemedText>
+            {content}
         </View>
     );
 };
@@ -113,8 +127,12 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: "600",
-        letterSpacing: -1,
+        fontWeight: "500",
+        letterSpacing: 0.2,
+    },
+    collapsibleContent: {
+        gap: 12,
+        paddingTop: 12,
     },
     description: {
         marginBottom: 8,

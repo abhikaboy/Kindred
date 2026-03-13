@@ -345,6 +345,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                             tasks={tasksForTodayNoTime}
                             title="Today's Tasks"
                             description=""
+                            collapsible
                             useSchedulable={false}
                             emptyMessage="No tasks without specific times"
                         />

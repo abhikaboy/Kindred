@@ -234,7 +234,7 @@ func RegisterFindUsersByPhoneNumbersOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "find-users-by-phone-numbers",
 		Method:      http.MethodPost,
-		Path:        "/v1/profiles/find-by-phone",
+		Path:        "/v1/user/profiles/find-by-phone",
 		Summary:     "Find users by phone numbers",
 		Description: "Efficiently find users matching any of the provided phone numbers using a single database query",
 		Tags:        []string{"profiles"},

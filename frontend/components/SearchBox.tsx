@@ -470,8 +470,7 @@ const useStyles = (ThemedColor: any) =>
             paddingLeft: HORIZONTAL_PADDING,
             paddingRight: HORIZONTAL_PADDING / 3,
             paddingVertical: 8,
-            backgroundColor: ThemedColor.lightened,
-            boxShadow: ThemedColor.shadowSmall,
+            backgroundColor: ThemedColor.background,
         },
         input: {
             flex: 1,

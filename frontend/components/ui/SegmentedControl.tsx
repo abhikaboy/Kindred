@@ -69,8 +69,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
                     style={[
                         styles.activeBox,
                         {
-                            width: segmentWidth - 4, // Account for margin
-                            backgroundColor: ThemedColor.lightened, // Use secondaryBackground for the active tab
+                            width: segmentWidth - 8,
+                            backgroundColor: ThemedColor.lightened,
                         },
                         animatedStyle,
                     ]}
@@ -97,24 +97,23 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
 const stylesheet = (ThemedColor: any) => StyleSheet.create({
     container: {
         flexDirection: "row",
-        borderRadius: 18,
+        borderRadius: 24,
         position: "relative",
         overflow: "hidden",
         marginTop: 12,
         paddingVertical: 16,
-        width: "100%", // Ensure it takes full available width
+        width: "100%",
     },
     containerSmall: {
-        paddingVertical: 24,
         borderRadius: 24,
     },
     activeBox: {
         position: "absolute",
-        top: 2,
-        bottom: 2,
+        top: 4,
+        bottom: 4,
         left: 0,
-        borderRadius: 24,
-        marginHorizontal: 2, // Creates a small gap for the 'pill' look
+        borderRadius: 20,
+        marginHorizontal: 0,
         borderWidth: 2,
         borderColor: ThemedColor.background, 
     },

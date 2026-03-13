@@ -11,7 +11,6 @@ import ConditionalView from "@/components/ui/ConditionalView";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { TodayContent } from "@/components/task/TodayContent";
-import { WorkspaceContent } from "@/components/task/WorkspaceContent";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { getEncouragementsAPI } from "@/api/encouragement";
@@ -27,6 +26,7 @@ import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
+import { WorkspacePager } from "@/components/task/WorkspacePager";
 import { List } from "phosphor-react-native";
 
 type Props = {};
@@ -350,9 +350,6 @@ const HomeContent = ({
         return false;
     };
 
-    // Track which workspaces have been visited for lazy mounting
-    const [visitedWorkspaces, setVisitedWorkspaces] = React.useState<Set<string>>(new Set());
-
     useEffect(() => {
         if (!spotlightLoading && !spotlightState.homeSpotlight && selected === "") {
             const timer = setTimeout(async () => {
@@ -371,21 +368,18 @@ const HomeContent = ({
         }
     }, [start, spotlightLoading, spotlightState.homeSpotlight, selected]);
 
-    // Add workspace to visited set when selected
-    useEffect(() => {
-        if (selected && selected !== "" && selected !== "Today") {
-            setVisitedWorkspaces(prev => {
-                const newSet = new Set(prev);
-                newSet.add(selected);
-                return newSet;
-            });
-        }
-    }, [selected]);
-
     // Determine which view to show
     const isHome = selected === "";
     const isToday = selected === "Today";
     const isWorkspace = selected !== "" && selected !== "Today";
+
+    // Only mount the pager after a workspace has been visited at least once
+    const [pagerMounted, setPagerMounted] = React.useState(false);
+    React.useEffect(() => {
+        if (isWorkspace && !pagerMounted) {
+            setPagerMounted(true);
+        }
+    }, [isWorkspace, pagerMounted]);
 
     return (
         <DrawerLayout
@@ -462,20 +456,16 @@ const HomeContent = ({
                         <TodayContent />
                     </AnimatedView>
 
-                    {/* Workspace Views - Lazy mount on first visit, then keep mounted for smooth transitions */}
-                    {workspaces.map((workspace) => {
-                        // Only render if this workspace has been visited
-                        if (!visitedWorkspaces.has(workspace.name)) {
-                            return null;
-                        }
-
-                        const isThisWorkspace = selected === workspace.name && isWorkspace;
-                        return (
-                            <AnimatedView key={workspace.name} visible={isThisWorkspace}>
-                                <WorkspaceContent workspaceName={workspace.name} />
-                            </AnimatedView>
-                        );
-                    })}
+                    {/* Workspace Views - Swipeable pager with dot indicators */}
+                    {pagerMounted && (
+                        <AnimatedView visible={isWorkspace}>
+                            <WorkspacePager
+                                workspaces={workspaces}
+                                selected={selected}
+                                onWorkspaceChange={setSelected}
+                            />
+                        </AnimatedView>
+                    )}
                 </View>
             </ThemedView>
         </DrawerLayout>

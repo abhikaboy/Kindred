@@ -22,7 +22,7 @@ export default function ReferralCard() {
             style={[
                 styles.container,
                 {
-                    backgroundColor: ThemedColor.lightened,
+                    backgroundColor: "transparent",
                     borderWidth: 0.5,
                     borderColor: ThemedColor.tertiary,
                 },
@@ -52,7 +52,6 @@ const styles = StyleSheet.create({
         width: "100%",
         borderRadius: 12,
         padding: 16,
-        boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.1)",
     },
     content: {
         flexDirection: "row",

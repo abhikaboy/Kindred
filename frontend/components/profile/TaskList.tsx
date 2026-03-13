@@ -77,7 +77,7 @@ const TaskListComponent = ({
                 ))}
             </View>
             <View style={styles.taskSection}>
-                <ThemedText type="subtitle">Accomplished Recently</ThemedText>
+                <ThemedText type="subtitle" style={{ marginTop: 16 }}>Accomplished Recently</ThemedText>
                 {completedTasks.map((task) => (
                     <TaskCard
                         key={task.id}

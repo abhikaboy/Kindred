@@ -22,8 +22,7 @@ function StatItem({ icon, label, value, loading = false }: StatItemProps) {
             style={[
                 styles.statItem,
                 {
-                    backgroundColor: ThemedColor.lightened,
-                    boxShadow: ThemedColor.shadowSmall,
+                    backgroundColor: "transparent",
                     borderWidth: 0.5,
                     borderColor: ThemedColor.tertiary,
                 },

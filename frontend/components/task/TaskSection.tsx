@@ -53,7 +53,7 @@ const TaskSection = ({
 
     if (tasks.length === 0) {
         return (
-            <View style={{...styles.section, opacity: 0.3}}>
+            <View style={{...styles.section, opacity: 0.15}}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
                     {title}
                 </ThemedText>

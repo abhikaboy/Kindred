@@ -13,10 +13,10 @@ import { Task } from "@/api/types";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
-import { Gear, Plus } from "phosphor-react-native";
+import { Gear, FolderPlus, CheckSquare } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { Screen } from "@/components/modals/CreateModal";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
@@ -392,12 +392,52 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                             animated={true}
                             triggerDep={selected}
                             style={{ height: "100%", marginTop: 8 }}>
-                            <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
-                                <ThemedText type="lightBody">This workspace is empty!</ThemedText>
-                                <PrimaryButton
-                                    title="+"
-                                    onPress={() => openModal()}
-                                />
+                            <View style={styles.emptyOnboarding}>
+                                <ThemedText type="subheading" style={styles.emptyHeading}>
+                                    Get Started
+                                </ThemedText>
+                                <ThemedText type="caption" style={styles.emptySubtitle}>
+                                    This workspace is empty.{"\n"}Here's how to set it up:
+                                </ThemedText>
+                                <View style={[styles.emptyDivider, { backgroundColor: ThemedColor.tertiary }]} />
+
+                                <View style={styles.emptyStep}>
+                                    <View style={[styles.emptyStepBadge, { backgroundColor: ThemedColor.primary }]}>
+                                        <ThemedText type="smallerDefault" style={{ color: "#fff" }}>1</ThemedText>
+                                    </View>
+                                    <ThemedText type="defaultSemiBold">Create a Category</ThemedText>
+                                    <ThemedText type="captionLight" style={styles.emptyStepDesc}>
+                                        Organize your tasks into categories like "Work", "Health", or "Personal".
+                                    </ThemedText>
+                                    <TouchableOpacity
+                                        style={[styles.emptyStepBtn, { backgroundColor: ThemedColor.primary }]}
+                                        onPress={() => openModal({ screen: Screen.NEW_CATEGORY })}
+                                        activeOpacity={0.7}>
+                                        <FolderPlus size={16} color="#fff" weight="regular" />
+                                        <ThemedText type="smallerDefault" style={{ color: "#fff" }}>
+                                            New Category
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={styles.emptyStep}>
+                                    <View style={[styles.emptyStepBadge, { backgroundColor: ThemedColor.primary }]}>
+                                        <ThemedText type="smallerDefault" style={{ color: "#fff" }}>2</ThemedText>
+                                    </View>
+                                    <ThemedText type="defaultSemiBold">Add Your First Task</ThemedText>
+                                    <ThemedText type="captionLight" style={styles.emptyStepDesc}>
+                                        Tap on a category to start adding tasks and building your routine.
+                                    </ThemedText>
+                                    <TouchableOpacity
+                                        style={[styles.emptyStepBtn, { borderColor: ThemedColor.tertiary, borderWidth: 1 }]}
+                                        onPress={() => openModal()}
+                                        activeOpacity={0.7}>
+                                        <CheckSquare size={16} color={ThemedColor.text} weight="regular" />
+                                        <ThemedText type="smallerDefault">
+                                            New Task
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </ConditionalView>
 
@@ -407,7 +447,6 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                     {groupedByDay.length === 0 ? (
                                         <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
                                             <ThemedText type="lightBody">No tasks match your filters.</ThemedText>
-                                            <PrimaryButton title="+" onPress={() => openModal()} />
                                         </View>
                                     ) : (
                                         groupedByDay.map((group) => (
@@ -427,19 +466,6 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             </View>
                                         ))
                                     )}
-                                    <TouchableOpacity
-                                        onPress={() => openModal()}
-                                        style={{
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "100%",
-                                            paddingVertical: 16,
-                                            borderRadius: 12,
-                                            backgroundColor: ThemedColor.lightenedCard,
-                                        }}
-                                    >
-                                        <Plus size={16} color={ThemedColor.text} />
-                                    </TouchableOpacity>
                                 </View>
                             ) : (
                                 <View style={styles.categoriesContainer} key="category-container">
@@ -467,19 +493,6 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                 />
                                             );
                                         })}
-                                    <TouchableOpacity
-                                        onPress={() => openModal()}
-                                        style={{
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "100%",
-                                            paddingVertical: 16,
-                                            borderRadius: 12,
-                                            backgroundColor: ThemedColor.lightenedCard,
-                                        }}
-                                    >
-                                        <Plus size={16} color={ThemedColor.text} />
-                                    </TouchableOpacity>
                                 </View>
                             )}
                         </ConditionalView>
@@ -518,5 +531,49 @@ const styles = StyleSheet.create({
         width: "100%",
         paddingVertical: 12,
         borderRadius: 12,
+    },
+    emptyOnboarding: {
+        alignItems: "center",
+        paddingTop: 16,
+        paddingBottom: 8,
+    },
+    emptyHeading: {
+        textAlign: "center",
+    },
+    emptySubtitle: {
+        textAlign: "center",
+        marginTop: 6,
+    },
+    emptyDivider: {
+        height: StyleSheet.hairlineWidth,
+        width: "80%",
+        marginVertical: 24,
+    },
+    emptyStep: {
+        alignItems: "center",
+        marginBottom: 28,
+        width: "100%",
+    },
+    emptyStepBadge: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    emptyStepDesc: {
+        textAlign: "center",
+        maxWidth: 280,
+        marginTop: 2,
+        marginBottom: 14,
+    },
+    emptyStepBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        borderRadius: 24,
     },
 });

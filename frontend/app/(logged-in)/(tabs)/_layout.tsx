@@ -32,68 +32,41 @@ import {
     Brain,
 } from "phosphor-react-native";
 
+// Narrow selector: only subscribe to the index, return -1 if state isn't ready yet
+const useTabIndex = () => useNavigationState((state) => state?.index ?? -1);
+
 // Custom tab button components
 const TasksTabButton = (props: any) => {
-    const navigationState = useNavigationState((state) => state);
-    const currentIndex = navigationState?.index || 0;
-    const isSelected = currentIndex === 0; // Tasks is the first tab
-    return <HapticTab {...props} isSelected={isSelected} />;
+    const currentIndex = useTabIndex();
+    return <HapticTab {...props} isSelected={currentIndex === 0} />;
 };
 
 const FeedTabButton = (props: any) => {
     const { focusMode } = useFocusMode();
-    const navigationState = useNavigationState((state) => state);
-    const currentIndex = navigationState?.index || 0;
-    const isSelected = currentIndex === 1; // Feed is the second tab
-
-    // Disable button when focus mode is enabled
-    if (focusMode) {
-        return null;
-    }
-
-    return <HapticTab {...props} isSelected={isSelected} />;
+    const currentIndex = useTabIndex();
+    if (focusMode) return null;
+    return <HapticTab {...props} isSelected={currentIndex === 1} />;
 };
 
 const SearchTabButton = (props: any) => {
     const { focusMode } = useFocusMode();
-    const navigationState = useNavigationState((state) => state);
-    const currentIndex = navigationState?.index || 0;
-    const isSelected = currentIndex === 2; // Search is the third tab
-
-    // Disable button when focus mode is enabled
-    if (focusMode) {
-        return null;
-    }
-
-    return <HapticTab {...props} isSelected={isSelected} />;
+    const currentIndex = useTabIndex();
+    if (focusMode) return null;
+    return <HapticTab {...props} isSelected={currentIndex === 2} />;
 };
 
 const ActivityTabButton = (props: any) => {
     const { focusMode } = useFocusMode();
-    const navigationState = useNavigationState((state) => state);
-    const currentIndex = navigationState?.index || 0;
-    const isSelected = currentIndex === 3; // Activity is the fourth tab
-
-    // Disable button when focus mode is enabled
-    if (focusMode) {
-        return null;
-    }
-
-    return <HapticTab {...props} isSelected={isSelected} />;
+    const currentIndex = useTabIndex();
+    if (focusMode) return null;
+    return <HapticTab {...props} isSelected={currentIndex === 3} />;
 };
 
 const ProfileTabButton = (props: any) => {
     const { focusMode } = useFocusMode();
-    const navigationState = useNavigationState((state) => state);
-    const currentIndex = navigationState?.index || 0;
-    const isSelected = currentIndex === 4; // Profile is the fifth tab
-
-    // Disable button when focus mode is enabled
-    if (focusMode) {
-        return null;
-    }
-
-    return <HapticTab {...props} isSelected={isSelected} />;
+    const currentIndex = useTabIndex();
+    if (focusMode) return null;
+    return <HapticTab {...props} isSelected={currentIndex === 4} />;
 };
 
 export const unstable_settings = {
@@ -107,8 +80,7 @@ export default function TabLayout() {
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
-    const navigationState = useNavigationState((state) => state);
-    const currentIndex = navigationState?.index || 0;
+    const currentIndex = useTabIndex();
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {

@@ -396,13 +396,15 @@ func (s *Service) CompleteTask(
 			}
 		}
 
-		// For rolling recurring tasks, generate the next instance immediately on completion
+		// For rolling recurring tasks, schedule the next instance via the cron
+		// instead of creating it immediately. The cron checks nextGenerated <= now
+		// every minute and will create the task at the appropriate time.
 		template, err := s.GetTemplateByID(*taskToComplete.TemplateID)
 		if err == nil && template != nil {
 			isRolling := template.RecurDetails == nil || template.RecurDetails.Behavior != "BUILDUP"
 			if isRolling {
-				if _, err := s.CreateTaskFromTemplate(*taskToComplete.TemplateID); err != nil {
-					slog.Error("Failed to auto-generate next recurring task on completion", "error", err, "templateID", *taskToComplete.TemplateID)
+				if err := s.ScheduleNextRecurrence(*taskToComplete.TemplateID); err != nil {
+					slog.Error("Failed to schedule next recurring task", "error", err, "templateID", *taskToComplete.TemplateID)
 				}
 			}
 		}
@@ -697,6 +699,22 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 				"templateCount", len(templateIDList),
 				"matchedCount", result.MatchedCount,
 				"modifiedCount", result.ModifiedCount)
+		}
+
+		// Schedule next recurrence for each rolling template so the cron
+		// creates the next instance at the appropriate time.
+		for _, templateID := range templateIDList {
+			tmpl, tmplErr := s.GetTemplateByID(templateID)
+			if tmplErr != nil || tmpl == nil {
+				continue
+			}
+			isRolling := tmpl.RecurDetails == nil || tmpl.RecurDetails.Behavior != "BUILDUP"
+			if isRolling {
+				if err := s.ScheduleNextRecurrence(templateID); err != nil {
+					slog.Error("Failed to schedule next recurring task in bulk complete",
+						"error", err, "templateID", templateID)
+				}
+			}
 		}
 	}
 
@@ -1205,21 +1223,25 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		},
 	}
 
-	if deletedCount > 0 {
+	missedTotal := deletedCount + skippedOccurrences
+	if missedTotal > 0 {
 		incMap, ok := update["$inc"].(bson.M)
 		if ok {
-			incMap["timesMissed"] = deletedCount
+			incMap["timesMissed"] = missedTotal
 		}
 	}
 
-	// Only reset streak if we actually skipped occurrences (missed tasks)
-	if skippedOccurrences > 0 {
+	// A task is missed if we skipped past occurrences OR if we had to delete
+	// an uncompleted active task to make way for the new one.
+	taskWasMissed := skippedOccurrences > 0 || deletedCount > 0
+
+	if taskWasMissed {
 		setMap, ok := update["$set"].(bson.M)
 		if ok {
 			setMap["streak"] = 0
 		}
 
-		// Send push notification to user about missed task
+		totalMissed := skippedOccurrences + deletedCount
 		go func() {
 			var user types.User
 			err := s.Users.FindOne(ctx, bson.M{"_id": templateDoc.UserID}).Decode(&user)
@@ -1229,10 +1251,14 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 			}
 
 			if user.PushToken != "" {
+				message := fmt.Sprintf("You missed your recurring task: %s", templateDoc.Content)
+				if totalMissed > 1 {
+					message = fmt.Sprintf("You missed %d occurrences of: %s", totalMissed, templateDoc.Content)
+				}
 				if err := xutils.SendNotification(xutils.Notification{
 					Token:   user.PushToken,
 					Title:   "Task Missed",
-					Message: fmt.Sprintf("You missed your recurring task: %s", templateDoc.Content),
+					Message: message,
 					Data: map[string]string{
 						"taskId": templateDoc.ID.Hex(),
 						"type":   "TASK_MISSED",
@@ -1242,18 +1268,14 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 				}
 			}
 		}()
-	} else {
-		// If we didn't delete any task (deletedCount == 0), it means the previous task was likely completed
-		// (since it's not in the active list).
-		// We only send this notification if:
-		// 1. It's not the first generation (TimesGenerated > 0)
-		// 2. The recurrence type implies we SHOULD have deleted it if it was there (Rolling/Occurrence)
-		//    This prevents sending "Great Job" for Buildup tasks where the old one is intentionally kept.
+	} else if templateDoc.TimesGenerated > 0 {
+		// No missed tasks: the previous task was completed (not in the active list).
+		// Only send "Great Job!" for rolling/occurrence types (not buildup, where old tasks are kept).
 		isRollingOrOccurrence := templateDoc.RecurType == "OCCURRENCE" ||
 			(templateDoc.RecurType == "DEADLINE" && (templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP")) ||
 			(templateDoc.RecurType == "WINDOW" && (templateDoc.RecurDetails == nil || templateDoc.RecurDetails.Behavior != "BUILDUP"))
 
-		if templateDoc.TimesGenerated > 0 && isRollingOrOccurrence {
+		if isRollingOrOccurrence {
 			go func() {
 				var user types.User
 				err := s.Users.FindOne(ctx, bson.M{"_id": templateDoc.UserID}).Decode(&user)
@@ -1440,6 +1462,72 @@ func (s *Service) CreateTemplateForTask(
 	}
 
 	return nil
+}
+
+// ScheduleNextRecurrence updates a template's nextGenerated so the cron job
+// will create the next task instance at the appropriate time, rather than
+// creating it immediately on completion.
+func (s *Service) ScheduleNextRecurrence(templateId primitive.ObjectID) error {
+	ctx := context.Background()
+
+	var templateDoc TemplateTaskDocument
+	if err := s.TemplateTasks.FindOne(ctx, bson.M{"_id": templateId}).Decode(&templateDoc); err != nil {
+		return err
+	}
+
+	if templateDoc.NextGenerated == nil {
+		return fmt.Errorf("template NextGenerated is nil for template %s", templateId.Hex())
+	}
+
+	templateDoc.LastGenerated = templateDoc.NextGenerated
+	thisGeneration := *templateDoc.LastGenerated
+	var nextGeneration time.Time
+	var err error
+
+	now := xutils.NowUTC()
+	catchUpLimit := 100
+	iterations := 0
+
+	for {
+		iterations++
+		if iterations > catchUpLimit {
+			slog.Warn("Catch-up limit reached in ScheduleNextRecurrence", "templateID", templateId)
+			break
+		}
+
+		switch templateDoc.RecurType {
+		case "OCCURRENCE":
+			nextGeneration, err = s.ComputeNextOccurrence(&templateDoc)
+		case "DEADLINE":
+			nextGeneration, err = s.ComputeNextDeadline(&templateDoc)
+		case "WINDOW":
+			nextGeneration, err = s.ComputeNextWindow(&templateDoc)
+		default:
+			return fmt.Errorf("unknown recur type: %s", templateDoc.RecurType)
+		}
+		if err != nil {
+			return err
+		}
+
+		if nextGeneration.Before(now) {
+			templateDoc.LastGenerated = &nextGeneration
+			continue
+		}
+		break
+	}
+
+	slog.Info("Scheduling next recurrence",
+		"templateID", templateId.Hex(),
+		"lastGenerated", thisGeneration.Format(time.RFC3339),
+		"nextGenerated", nextGeneration.Format(time.RFC3339))
+
+	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateId}, bson.M{
+		"$set": bson.M{
+			"lastGenerated": &thisGeneration,
+			"nextGenerated": &nextGeneration,
+		},
+	})
+	return err
 }
 
 // GetDueRecurringTasks returns all recurring tasks that are due for generation.

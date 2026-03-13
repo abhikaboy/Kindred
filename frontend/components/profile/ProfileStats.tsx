@@ -25,12 +25,11 @@ export default function ProfileStats({
             <View
                 style={{
                     width: "48%",
-                    backgroundColor: ThemedColor.lightened,
+                    backgroundColor: "transparent",
                     borderWidth: 0.5,
                     borderColor: ThemedColor.tertiary,
                     borderRadius: 12,
                     alignItems: "center",
-                    boxShadow: ThemedColor.shadowSmall,
                     justifyContent: "center",
                 }}>
                 {profile && <FollowButton profile={profile} onRelationshipChange={onRelationshipChange} />}
@@ -38,13 +37,12 @@ export default function ProfileStats({
             <View
                 style={{
                     width: "48%",
-                    backgroundColor: ThemedColor.lightened,
+                    backgroundColor: "transparent",
                     borderWidth: 0.5,
                     borderColor: ThemedColor.tertiary,
                     paddingVertical: 8,
                     borderRadius: 12,
                     alignItems: "center",
-                    boxShadow: ThemedColor.shadowSmall,
                     justifyContent: "center",
                 }}>
                 <ThemedText type="lightBody" style={{ width: "100%", textAlign: "center" }}>
