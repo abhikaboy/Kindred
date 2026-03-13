@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -100,6 +101,11 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 		// Add user ID and timezone to Fiber context locals
 		c.Locals(UserIDContextKey, userID)
 		c.Locals(TimezoneContextKey, timezone)
+
+		// Also set in the Go context so Huma handlers can access via ctx.Value()
+		ctx := context.WithValue(c.UserContext(), UserIDContextKey, userID)
+		ctx = context.WithValue(ctx, TimezoneContextKey, timezone)
+		c.SetUserContext(ctx)
 
 		// Continue to next handler
 		return c.Next()
