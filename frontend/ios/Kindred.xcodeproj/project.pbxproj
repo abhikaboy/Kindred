@@ -14,6 +14,17 @@
 		CB2A83AAAB8CC45B9ADEF3CB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A18EAC3634ACA5344BA1C45 /* ExpoModulesProvider.swift */; };
 		F0E942BC45F1101A16DA05B0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		18AB85974FFC48EB92E076F3 /* index.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4221DD81D94841FFB5B744BD /* index.swift */; };
+		D74373A9CDAA45A6BC9E6FEA /* TodayTasksWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEEB6D2826740899FE8FC0F /* TodayTasksWidget.swift */; };
+		69CE9BB1464E4C268844C2AC /* WorkspaceSnapshotWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0CD5907F494FC9A7F30ACE /* WorkspaceSnapshotWidget.swift */; };
+		BA302843886A403BBF93CBCB /* ActivityStreakWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C57403AAC094F158CAD6795 /* ActivityStreakWidget.swift */; };
+		A095DCD999A3407CB9D4750E /* LockScreenCircularWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F598528B68F844CDA0132559 /* LockScreenCircularWidget.swift */; };
+		D071D52BEA44426781DD6547 /* LockScreenRectangularWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */; };
+		77C415824DBE47FDABE094D9 /* LockScreenInlineWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 945E96DA121A4FCDACC81C69 /* LockScreenInlineWidget.swift */; };
+		4997F28996684644B1610C65 /* ExpoWidgetsTarget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2C4CB7690EEC4A9AA1F57DF2 /* ExpoWidgetsTarget.appex */; };
+		65E5C6E664214E478BEEA858 /* ExpoWidgetsTarget.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = 214DC1F648BF4C5BB9CBECB4 /* ExpoWidgetsTarget.entitlements */; };
+		8C7C3C0EB04B4A23BD7F3552 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 22EDCB3528DE4183A7FD54C9 /* Info.plist */; };
+		CB264CC5DF324419972B5E68 /* ExpoWidgetsTarget.entitlements in Resources */ = {isa = PBXBuildFile; fileRef = 2CB053368BA54E089B590CE9 /* ExpoWidgetsTarget.entitlements */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +41,17 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Kindred/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Kindred-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Kindred-Bridging-Header.h"; path = "Kindred/Kindred-Bridging-Header.h"; sourceTree = "<group>"; };
+		2C4CB7690EEC4A9AA1F57DF2 /* ExpoWidgetsTarget.appex */ = {isa = PBXFileReference; name = "ExpoWidgetsTarget.appex"; path = "ExpoWidgetsTarget.appex"; sourceTree = BUILT_PRODUCTS_DIR; fileEncoding = undefined; lastKnownFileType = undefined; explicitFileType = wrapper.app-extension; includeInIndex = 0; };
+		4221DD81D94841FFB5B744BD /* index.swift */ = {isa = PBXFileReference; name = "index.swift"; path = "index.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		FAEEB6D2826740899FE8FC0F /* TodayTasksWidget.swift */ = {isa = PBXFileReference; name = "TodayTasksWidget.swift"; path = "TodayTasksWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		1D0CD5907F494FC9A7F30ACE /* WorkspaceSnapshotWidget.swift */ = {isa = PBXFileReference; name = "WorkspaceSnapshotWidget.swift"; path = "WorkspaceSnapshotWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		7C57403AAC094F158CAD6795 /* ActivityStreakWidget.swift */ = {isa = PBXFileReference; name = "ActivityStreakWidget.swift"; path = "ActivityStreakWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		F598528B68F844CDA0132559 /* LockScreenCircularWidget.swift */ = {isa = PBXFileReference; name = "LockScreenCircularWidget.swift"; path = "LockScreenCircularWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */ = {isa = PBXFileReference; name = "LockScreenRectangularWidget.swift"; path = "LockScreenRectangularWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		945E96DA121A4FCDACC81C69 /* LockScreenInlineWidget.swift */ = {isa = PBXFileReference; name = "LockScreenInlineWidget.swift"; path = "LockScreenInlineWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		214DC1F648BF4C5BB9CBECB4 /* ExpoWidgetsTarget.entitlements */ = {isa = PBXFileReference; name = "ExpoWidgetsTarget.entitlements"; path = "ExpoWidgetsTarget.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		22EDCB3528DE4183A7FD54C9 /* Info.plist */ = {isa = PBXFileReference; name = "Info.plist"; path = "Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
+		2CB053368BA54E089B590CE9 /* ExpoWidgetsTarget.entitlements */ = {isa = PBXFileReference; name = "ExpoWidgetsTarget.entitlements"; path = "ExpoWidgetsTarget.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +60,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				7CA49B771DB41427072B5FC7 /* libPods-Kindred.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A95FBF4E219A42A9993184B5 /* Embed Foundation Extensions */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +122,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				6B68D1195F25FE5BD31B0DDD /* Pods */,
 				B9ADC3000E990FF8A6EDDD33 /* ExpoModulesProviders */,
+				8E6E143DF9D646B6BCC2A630 /* ExpoWidgetsTarget */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -103,6 +133,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* Kindred.app */,
+				2C4CB7690EEC4A9AA1F57DF2 /* ExpoWidgetsTarget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -132,6 +163,24 @@
 			name = Kindred;
 			sourceTree = "<group>";
 		};
+		8E6E143DF9D646B6BCC2A630 /* ExpoWidgetsTarget */ = {
+			isa = PBXGroup;
+			children = (
+				214DC1F648BF4C5BB9CBECB4 /* ExpoWidgetsTarget.entitlements */,
+				22EDCB3528DE4183A7FD54C9 /* Info.plist */,
+				4221DD81D94841FFB5B744BD /* index.swift */,
+				FAEEB6D2826740899FE8FC0F /* TodayTasksWidget.swift */,
+				1D0CD5907F494FC9A7F30ACE /* WorkspaceSnapshotWidget.swift */,
+				7C57403AAC094F158CAD6795 /* ActivityStreakWidget.swift */,
+				F598528B68F844CDA0132559 /* LockScreenCircularWidget.swift */,
+				0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */,
+				945E96DA121A4FCDACC81C69 /* LockScreenInlineWidget.swift */,
+				2CB053368BA54E089B590CE9 /* ExpoWidgetsTarget.entitlements */,
+			);
+			name = ExpoWidgetsTarget;
+			path = ExpoWidgetsTarget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -148,15 +197,33 @@
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				B0D23DD5F1DE48B6AF681741 /* Upload Debug Symbols to Sentry */,
 				F6278119B7EE4DD749C6F38D /* [CP] Embed Pods Frameworks */,
+				A189573CBFFE433E81876788 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1EBED24B94444D959BA69879 /* PBXTargetDependency */,
 			);
 			name = Kindred;
 			productName = Kindred;
 			productReference = 13B07F961A680F5B00A75B9A /* Kindred.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B1246A99F1364D26B7893B99 /* ExpoWidgetsTarget */ = {
+			isa = PBXNativeTarget;
+			name = ExpoWidgetsTarget;
+			productName = ExpoWidgetsTarget;
+			productReference = 2C4CB7690EEC4A9AA1F57DF2;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 9E87DA2939FE4619A9D697A5;
+			buildPhases = (
+				22BF9A253EF14DB3A6A5A523 /* Embed Foundation Extensions */,
+				A95FBF4E219A42A9993184B5 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
 		};
 /* End PBXNativeTarget section */
 
@@ -167,6 +234,9 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1250;
+					};
+					B1246A99F1364D26B7893B99 = {
 						LastSwiftMigration = 1250;
 					};
 				};
@@ -185,6 +255,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* Kindred */,
+				B1246A99F1364D26B7893B99 /* ExpoWidgetsTarget */,
 			);
 		};
 /* End PBXProject section */
@@ -365,6 +436,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		22BF9A253EF14DB3A6A5A523 /* Embed Foundation Extensions */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18AB85974FFC48EB92E076F3 /* index.swift in Sources */,
+				D74373A9CDAA45A6BC9E6FEA /* TodayTasksWidget.swift in Sources */,
+				69CE9BB1464E4C268844C2AC /* WorkspaceSnapshotWidget.swift in Sources */,
+				BA302843886A403BBF93CBCB /* ActivityStreakWidget.swift in Sources */,
+				A095DCD999A3407CB9D4750E /* LockScreenCircularWidget.swift in Sources */,
+				D071D52BEA44426781DD6547 /* LockScreenRectangularWidget.swift in Sources */,
+				77C415824DBE47FDABE094D9 /* LockScreenInlineWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -395,11 +480,11 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl;
-				PRODUCT_NAME = Kindred;
+				PRODUCT_NAME = "Kindred";
 				SWIFT_OBJC_BRIDGING_HEADER = "Kindred/Kindred-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -426,10 +511,10 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl;
-				PRODUCT_NAME = Kindred;
+				PRODUCT_NAME = "Kindred";
 				SWIFT_OBJC_BRIDGING_HEADER = "Kindred/Kindred-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
@@ -556,6 +641,46 @@
 			};
 			name = Release;
 		};
+		CF6EF781DF7A4E01A9A35E77 /* Debug */ = {
+			name = Debug;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				INFOPLIST_FILE = ExpoWidgetsTarget/Info.plist;
+				CURRENT_PROJECT_VERSION = "70";
+				IPHONEOS_DEPLOYMENT_TARGET = "16.2";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kindred.kindredtsl.widgets";
+				GENERATE_INFOPLIST_FILE = "YES";
+				INFOPLIST_KEY_CFBundleDisplayName = ExpoWidgetsTarget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MARKETING_VERSION = "0.0.1";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = "ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements";
+				APPLICATION_EXTENSION_API_ONLY = "YES";
+			};
+		};
+		515C0F03504C48809B8D8AA3 /* Release */ = {
+			name = Release;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				INFOPLIST_FILE = ExpoWidgetsTarget/Info.plist;
+				CURRENT_PROJECT_VERSION = "70";
+				IPHONEOS_DEPLOYMENT_TARGET = "16.2";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.kindred.kindredtsl.widgets";
+				GENERATE_INFOPLIST_FILE = "YES";
+				INFOPLIST_KEY_CFBundleDisplayName = ExpoWidgetsTarget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MARKETING_VERSION = "0.0.1";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = "ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements";
+				APPLICATION_EXTENSION_API_ONLY = "YES";
+			};
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -577,7 +702,48 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		9E87DA2939FE4619A9D697A5 /* Build configuration list for PBXNativeTarget "ExpoWidgetsTarget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CF6EF781DF7A4E01A9A35E77 /* Debug */,
+				515C0F03504C48809B8D8AA3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin PBXTargetDependency section */
+		1EBED24B94444D959BA69879 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B1246A99F1364D26B7893B99 /* ExpoWidgetsTarget */;
+			targetProxy = A2D133312AE7443296634D79 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		A2D133312AE7443296634D79 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B1246A99F1364D26B7893B99;
+			remoteInfo = ExpoWidgetsTarget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A189573CBFFE433E81876788 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4997F28996684644B1610C65 /* ExpoWidgetsTarget.appex in Embed Foundation Extensions */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			name = "Embed Foundation Extensions";
+			dstPath = "";
+			dstSubfolderSpec = 13;
+		};
+/* End PBXCopyFilesBuildPhase section */
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }

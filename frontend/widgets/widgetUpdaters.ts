@@ -27,39 +27,78 @@ const createNoopLiveActivityFactory = <TProps>(): LiveActivityLike<TProps> => ({
     start: () => ({ end: () => { } }),
 });
 
+let _cachedModule: {
+    Widget: new <TProps>(name: string, render: () => unknown) => WidgetLike<TProps>;
+    LiveActivityFactory: new <TProps>(name: string, render: () => unknown) => LiveActivityLike<TProps>;
+} | null | undefined;
+
 const resolveExpoWidgets = () => {
+    if (_cachedModule !== undefined) return _cachedModule;
     try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const widgets = require('expo-widgets');
-        return widgets as {
-            Widget: new <TProps>(name: string, render: () => unknown) => WidgetLike<TProps>;
-            LiveActivityFactory: new <TProps>(name: string, render: () => unknown) => LiveActivityLike<TProps>;
-        };
-    } catch {
+        console.log('[Widgets] expo-widgets module resolved successfully', Object.keys(widgets));
+        _cachedModule = widgets;
+        return widgets;
+    } catch (e) {
+        console.warn('[Widgets] expo-widgets not available:', e);
+        _cachedModule = null;
         return null;
     }
 };
 
-// TODO: Re-enable once crash is diagnosed. Set to null to skip all native widget calls.
-const expoWidgets = __DEV__ ? resolveExpoWidgets() : null;
 const noop = () => null as unknown;
 
+// Lazy initialization: native Widget/LiveActivity handles are created on first
+// use rather than at module load time, avoiding TurboModule calls during JS
+// bundle evaluation that can trigger Hermes GC crashes on RN 0.83 + iOS 18.
 const createWidgetUpdater = <TProps>(name: string): WidgetLike<TProps> => {
-    try {
-        if (!expoWidgets) return createNoopWidget<TProps>();
-        return new expoWidgets.Widget<TProps>(name, noop);
-    } catch {
-        return createNoopWidget<TProps>();
-    }
+    let instance: WidgetLike<TProps> | null = null;
+
+    const resolve = (): WidgetLike<TProps> => {
+        if (instance) return instance;
+        try {
+            const mod = resolveExpoWidgets();
+            if (mod) {
+                instance = new mod.Widget<TProps>(name, noop);
+                console.log(`[Widgets] Created native widget handle: ${name}`);
+            } else {
+                console.warn(`[Widgets] No module, using noop for: ${name}`);
+                instance = createNoopWidget<TProps>();
+            }
+        } catch (e) {
+            console.warn(`[Widgets] Failed to create widget ${name}:`, e);
+            instance = createNoopWidget<TProps>();
+        }
+        return instance;
+    };
+
+    return {
+        updateSnapshot: (props) => {
+            console.log(`[Widgets] updateSnapshot called for ${name}`, JSON.stringify(props).slice(0, 200));
+            resolve().updateSnapshot(props);
+        },
+        updateTimeline: (props) => resolve().updateTimeline(props),
+    };
 };
 
 const createLiveActivityFactory = <TProps>(name: string): LiveActivityLike<TProps> => {
-    try {
-        if (!expoWidgets) return createNoopLiveActivityFactory<TProps>();
-        return new expoWidgets.LiveActivityFactory<TProps>(name, noop);
-    } catch {
-        return createNoopLiveActivityFactory<TProps>();
-    }
+    let instance: LiveActivityLike<TProps> | null = null;
+
+    const resolve = (): LiveActivityLike<TProps> => {
+        if (instance) return instance;
+        try {
+            const mod = resolveExpoWidgets();
+            instance = mod ? new mod.LiveActivityFactory<TProps>(name, noop) : createNoopLiveActivityFactory<TProps>();
+        } catch {
+            instance = createNoopLiveActivityFactory<TProps>();
+        }
+        return instance;
+    };
+
+    return {
+        start: (props) => resolve().start(props),
+    };
 };
 
 export const TodayTasksWidgetUpdater = createWidgetUpdater<TodayTasksWidgetProps>('TodayTasksWidget');

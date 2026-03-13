@@ -37,6 +37,10 @@
     </array>
     <key>CFBundleVersion</key>
     <string>70</string>
+    <key>ExpoWidgetsAppGroupIdentifier</key>
+    <string>group.com.kindred.kindredtsl</string>
+    <key>ExpoWidgets_EnablePushNotifications</key>
+    <false/>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
@@ -80,6 +84,10 @@
     <string>https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.</string>
+    <key>NSSupportsLiveActivities</key>
+    <true/>
+    <key>NSSupportsLiveActivitiesFrequentUpdates</key>
+    <false/>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
