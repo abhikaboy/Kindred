@@ -23,6 +23,8 @@ interface WorkspacePagerProps {
     onWorkspaceChange: (name: string) => void;
 }
 
+const OFFSCREEN_LIMIT = 1;
+
 export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
     workspaces,
     selected,
@@ -35,6 +37,26 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
     const [activeIndex, setActiveIndex] = useState(
         selectedIndex >= 0 ? selectedIndex : 0
     );
+
+    // Track which pages have been visited so they stay mounted once loaded
+    const [mountedIndices, setMountedIndices] = useState<Set<number>>(() => {
+        const initial = new Set<number>();
+        const idx = selectedIndex >= 0 ? selectedIndex : 0;
+        for (let i = Math.max(0, idx - OFFSCREEN_LIMIT); i <= idx + OFFSCREEN_LIMIT; i++) {
+            initial.add(i);
+        }
+        return initial;
+    });
+
+    useEffect(() => {
+        setMountedIndices((prev) => {
+            const next = new Set(prev);
+            for (let i = Math.max(0, activeIndex - OFFSCREEN_LIMIT); i <= Math.min(workspaces.length - 1, activeIndex + OFFSCREEN_LIMIT); i++) {
+                next.add(i);
+            }
+            return next.size !== prev.size ? next : prev;
+        });
+    }, [activeIndex, workspaces.length]);
 
     useEffect(() => {
         const newIndex = workspaces.findIndex((ws) => ws.name === selected);
@@ -72,11 +94,15 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
                 style={styles.pager}
                 initialPage={selectedIndex >= 0 ? selectedIndex : 0}
                 onPageSelected={onPageSelected}
-                offscreenPageLimit={1}
+                offscreenPageLimit={OFFSCREEN_LIMIT}
             >
-                {workspaces.map((workspace) => (
+                {workspaces.map((workspace, index) => (
                     <View key={workspace.name} style={styles.page}>
-                        <WorkspaceContent workspaceName={workspace.name} />
+                        {mountedIndices.has(index) ? (
+                            <WorkspaceContent workspaceName={workspace.name} />
+                        ) : (
+                            <View />
+                        )}
                     </View>
                 ))}
             </PagerView>

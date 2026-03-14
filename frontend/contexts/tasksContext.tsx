@@ -67,7 +67,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [workspaces, setWorkSpaces] = useState<Workspace[]>([]);
     const [selected, setSelected] = useState<string>(""); // Workspace
-    const [categories, setCategories] = useState<Categories[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
     const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
@@ -670,11 +669,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    useEffect(() => {
-        if (workspaces.length === 0) return;
-        const selectedWorkspace = getWorkspace(selected);
-        if (selectedWorkspace == null) return;
-        setCategories(selectedWorkspace.categories);
+    const categories = useMemo(() => {
+        if (workspaces.length === 0) return [];
+        const selectedWorkspace = workspaces.find((ws) => ws.name === selected);
+        return selectedWorkspace?.categories ?? [];
     }, [selected, workspaces]);
 
     useEffect(() => {

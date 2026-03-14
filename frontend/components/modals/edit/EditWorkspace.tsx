@@ -10,6 +10,7 @@ import DefaultToast from "@/components/ui/DefaultToast";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { ThemedText } from "@/components/ThemedText";
@@ -193,6 +194,7 @@ const EditWorkspace = (props: Props) => {
         setIsPublic(newValue);
         try {
             await AsyncStorage.setItem(`workspace-visibility-${id}`, newValue ? "public" : "private");
+            workspaceStateEvents.emit(id);
         } catch (error) {
             console.error("Error saving workspace visibility:", error);
         }
@@ -203,6 +205,7 @@ const EditWorkspace = (props: Props) => {
         setGroupByDay(newValue);
         try {
             await AsyncStorage.setItem(`workspace-group-${id}`, newValue ? "day" : "none");
+            workspaceStateEvents.emit(id);
         } catch (error) {
             console.error("Error saving workspace grouping:", error);
         }
@@ -665,6 +668,7 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
                 AsyncStorage.setItem(`workspace-sort-${selected}`, selectedSort),
                 AsyncStorage.setItem(`workspace-sort-direction-${selected}`, sortDirection),
             ]);
+            workspaceStateEvents.emit(selected);
         } catch (error) {
             console.error("Error saving sort option:", error);
         }
@@ -674,30 +678,28 @@ const SortContent = ({ onApply }: { onApply: () => void }) => {
 
     const handleSortOptionPress = async (option: SortOption) => {
         if (selectedSort === option) {
-            // Cycle through: descending → ascending → none (deselect)
             if (sortDirection === "descending") {
                 setSortDirection("ascending");
-                // Save immediately
                 await AsyncStorage.setItem(`workspace-sort-direction-${selected}`, "ascending");
+                workspaceStateEvents.emit(selected);
             } else if (sortDirection === "ascending") {
-                // Deselect - clear sort
-                setSelectedSort("task-count" as SortOption); // Reset to default
+                setSelectedSort("task-count" as SortOption);
                 setSortDirection("descending");
                 try {
                     await AsyncStorage.removeItem(`workspace-sort-${selected}`);
                     await AsyncStorage.removeItem(`workspace-sort-direction-${selected}`);
+                    workspaceStateEvents.emit(selected);
                 } catch (error) {
                     console.error("Error clearing sort:", error);
                 }
             }
         } else {
-            // New selection, start with descending
             setSelectedSort(option);
             setSortDirection("descending");
-            // Save immediately
             try {
                 await AsyncStorage.setItem(`workspace-sort-${selected}`, option);
                 await AsyncStorage.setItem(`workspace-sort-direction-${selected}`, "descending");
+                workspaceStateEvents.emit(selected);
             } catch (error) {
                 console.error("Error saving sort:", error);
             }
@@ -805,8 +807,8 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
 
     const handleApply = async () => {
         try {
-            // Save filters to AsyncStorage
             await AsyncStorage.setItem(`workspace-filters-${workspaceName}`, JSON.stringify(filters));
+            workspaceStateEvents.emit(workspaceName);
 
             showToastable({
                 title: "Filters Applied",
@@ -839,6 +841,7 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
 
         try {
             await AsyncStorage.removeItem(`workspace-filters-${workspaceName}`);
+            workspaceStateEvents.emit(workspaceName);
             showToastable({
                 title: "Filters Cleared",
                 status: "info",
@@ -863,9 +866,9 @@ const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onAp
 
         setFilters(newFilters);
 
-        // Save immediately to AsyncStorage
         try {
             await AsyncStorage.setItem(`workspace-filters-${workspaceName}`, JSON.stringify(newFilters));
+            workspaceStateEvents.emit(workspaceName);
         } catch (error) {
             console.error("Error saving filters:", error);
         }

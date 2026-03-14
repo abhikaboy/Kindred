@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { isToday, isThisWeek, isFuture, isPast } from "date-fns";
 import { Task } from "@/api/types";
+import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
 
 export type FilterState = {
     priorities: { low: boolean; medium: boolean; high: boolean };
@@ -11,26 +12,28 @@ export type FilterState = {
 export const useWorkspaceFilters = (workspaceName: string) => {
     const [filters, setFilters] = useState<FilterState | null>(null);
 
-    useEffect(() => {
-        const loadFilters = async () => {
-            try {
-                const saved = await AsyncStorage.getItem(`workspace-filters-${workspaceName}`);
-                if (saved) {
-                    setFilters(JSON.parse(saved));
-                } else {
-                    setFilters(null);
-                }
-            } catch (error) {
-                console.error("Error loading filters:", error);
+    const loadFilters = useCallback(async () => {
+        try {
+            const saved = await AsyncStorage.getItem(`workspace-filters-${workspaceName}`);
+            if (saved) {
+                setFilters(JSON.parse(saved));
+            } else {
                 setFilters(null);
             }
-        };
+        } catch (error) {
+            console.error("Error loading filters:", error);
+            setFilters(null);
+        }
+    }, [workspaceName]);
+
+    useEffect(() => {
         loadFilters();
 
-        // Listen for storage changes (when filters are updated)
-        const interval = setInterval(loadFilters, 1000);
-        return () => clearInterval(interval);
-    }, [workspaceName]);
+        const unsubscribe = workspaceStateEvents.subscribe((changed) => {
+            if (changed === workspaceName) loadFilters();
+        });
+        return unsubscribe;
+    }, [workspaceName, loadFilters]);
 
     const applyFilters = (tasks: Task[]): Task[] => {
         if (!filters) return tasks;
@@ -89,4 +92,3 @@ export const useWorkspaceFilters = (workspaceName: string) => {
 
     return { filters, applyFilters };
 };
-

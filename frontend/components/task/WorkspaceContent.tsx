@@ -24,6 +24,7 @@ import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
@@ -148,6 +149,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         const newValue = !state.groupByDay;
         try {
             await AsyncStorage.setItem(`workspace-group-${selected}`, newValue ? "day" : "none");
+            workspaceStateEvents.emit(selected);
         } catch (error) {
             console.error("Error saving workspace grouping:", error);
         }
@@ -333,7 +335,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>
                     {/* Header Section - Scrolls with content initially */}
                     <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingTop: insets.top + 40 }}>
-                        <ConditionalView condition={selected !== ""} animated={true} triggerDep={selected}>
+                        <ConditionalView condition={selected !== ""} animated={true}>
                             <View style={styles.headerContainer}>
                                 <View
                                     style={{
@@ -390,7 +392,6 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                         <ConditionalView
                             condition={selected !== "" && noCategories}
                             animated={true}
-                            triggerDep={selected}
                             style={{ height: "100%", marginTop: 8 }}>
                             <View style={styles.emptyOnboarding}>
                                 <ThemedText type="subheading" style={styles.emptyHeading}>
@@ -441,7 +442,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                             </View>
                         </ConditionalView>
 
-                        <ConditionalView condition={selected !== "" && !noCategories} animated={true} triggerDep={selected}>
+                        <ConditionalView condition={selected !== "" && !noCategories} animated={true}>
                             {groupByDay ? (
                                 <View style={styles.categoriesContainer} key="grouped-container">
                                     {groupedByDay.length === 0 ? (

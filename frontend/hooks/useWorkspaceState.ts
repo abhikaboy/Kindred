@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
 
 export type WorkspaceFilters = {
     priorities: { low: boolean; medium: boolean; high: boolean };
@@ -25,35 +26,36 @@ export const useWorkspaceState = (workspaceName: string) => {
         groupByDay: false,
     });
 
+    const loadState = useCallback(async () => {
+        try {
+            const [filtersData, sortData, sortDirectionData, visibilityData, groupData] = await Promise.all([
+                AsyncStorage.getItem(`workspace-filters-${workspaceName}`),
+                AsyncStorage.getItem(`workspace-sort-${workspaceName}`),
+                AsyncStorage.getItem(`workspace-sort-direction-${workspaceName}`),
+                AsyncStorage.getItem(`workspace-visibility-${workspaceName}`),
+                AsyncStorage.getItem(`workspace-group-${workspaceName}`),
+            ]);
+
+            const filters = filtersData ? JSON.parse(filtersData) : null;
+            const sort = sortData ? (sortData as WorkspaceSortOption) : null;
+            const sortDirection = sortDirectionData ? (sortDirectionData as "ascending" | "descending") : null;
+            const isPublic = visibilityData !== null ? visibilityData === "public" : true;
+            const groupByDay = groupData === "day";
+
+            setState({ filters, sort, sortDirection, isPublic, groupByDay });
+        } catch (error) {
+            console.error("Error loading workspace state:", error);
+        }
+    }, [workspaceName]);
+
     useEffect(() => {
-        const loadState = async () => {
-            try {
-                const [filtersData, sortData, sortDirectionData, visibilityData, groupData] = await Promise.all([
-                    AsyncStorage.getItem(`workspace-filters-${workspaceName}`),
-                    AsyncStorage.getItem(`workspace-sort-${workspaceName}`),
-                    AsyncStorage.getItem(`workspace-sort-direction-${workspaceName}`),
-                    AsyncStorage.getItem(`workspace-visibility-${workspaceName}`),
-                    AsyncStorage.getItem(`workspace-group-${workspaceName}`),
-                ]);
-
-                const filters = filtersData ? JSON.parse(filtersData) : null;
-                const sort = sortData ? (sortData as WorkspaceSortOption) : null;
-                const sortDirection = sortDirectionData ? (sortDirectionData as "ascending" | "descending") : null;
-                const isPublic = visibilityData !== null ? visibilityData === "public" : true;
-                const groupByDay = groupData === "day";
-
-                setState({ filters, sort, sortDirection, isPublic, groupByDay });
-            } catch (error) {
-                console.error("Error loading workspace state:", error);
-            }
-        };
-
         loadState();
 
-        // Poll for changes every second
-        const interval = setInterval(loadState, 1000);
-        return () => clearInterval(interval);
-    }, [workspaceName]);
+        const unsubscribe = workspaceStateEvents.subscribe((changed) => {
+            if (changed === workspaceName) loadState();
+        });
+        return unsubscribe;
+    }, [workspaceName, loadState]);
 
     const getFilterDescription = (): string | null => {
         if (!state.filters) return null;
