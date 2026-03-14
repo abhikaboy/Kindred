@@ -126,6 +126,8 @@ type FriendReference struct {
 	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
 	Streak         int    `bson:"streak" json:"streak" example:"5" doc:"Current streak"`
 	TasksComplete  int    `bson:"tasks_complete" json:"tasks_complete" example:"12" doc:"Total tasks completed"`
+	Encouragements int    `bson:"encouragements" json:"encouragements" example:"3" doc:"Available encouragements to send"`
+	PostsThisWeek  int    `bson:"posts_this_week" json:"posts_this_week" example:"2" doc:"Number of posts made this week"`
 }
 
 type GetFriendsInput struct {

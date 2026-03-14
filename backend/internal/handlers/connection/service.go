@@ -325,6 +325,13 @@ func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, r
 func (s *Service) GetFriends(userID primitive.ObjectID) ([]FriendReference, error) {
 	ctx := context.Background()
 
+	now := time.Now()
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+	weekStart := time.Date(now.Year(), now.Month(), now.Day()-weekday+1, 0, 0, 0, 0, now.Location())
+
 	var friends []FriendReference
 	pipeline := bson.A{
 		bson.D{{Key: "$match", Value: bson.M{"_id": userID}}},
@@ -338,6 +345,29 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]FriendReference, erro
 		bson.D{{Key: "$replaceRoot", Value: bson.M{
 			"newRoot": "$friends",
 		}}},
+		bson.D{{Key: "$lookup", Value: bson.M{
+			"from": "posts",
+			"let":  bson.M{"friendId": "$_id"},
+			"pipeline": bson.A{
+				bson.D{{Key: "$match", Value: bson.M{
+					"$expr": bson.M{"$and": bson.A{
+						bson.M{"$eq": bson.A{"$user._id", "$$friendId"}},
+						bson.M{"$gte": bson.A{"$metadata.createdAt", weekStart}},
+						bson.M{"$eq": bson.A{"$metadata.isDeleted", false}},
+					}},
+				}}},
+				bson.D{{Key: "$count", Value: "count"}},
+			},
+			"as": "weekly_posts",
+		}}},
+		bson.D{{Key: "$addFields", Value: bson.M{
+			"posts_this_week": bson.M{
+				"$ifNull": bson.A{
+					bson.M{"$arrayElemAt": bson.A{"$weekly_posts.count", 0}},
+					0,
+				},
+			},
+		}}},
 		bson.D{{Key: "$project", Value: bson.M{
 			"_id":             1,
 			"display_name":    1,
@@ -345,6 +375,8 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]FriendReference, erro
 			"profile_picture": 1,
 			"streak":          1,
 			"tasks_complete":  1,
+			"encouragements":  1,
+			"posts_this_week": 1,
 		}}},
 	}
 	cursor, err := s.Users.Aggregate(ctx, pipeline)

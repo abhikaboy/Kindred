@@ -6,8 +6,9 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { getFriendsAPI } from "@/api/connection";
-import { Sparkle, Fire } from "phosphor-react-native";
+import { Sparkle, Fire, Camera } from "phosphor-react-native";
 import EncourageModal from "@/components/modals/EncourageModal";
+import { useAuth } from "@/hooks/useAuth";
 import * as Haptics from "expo-haptics";
 
 interface FriendData {
@@ -17,6 +18,7 @@ interface FriendData {
     profile_picture: string;
     streak: number;
     tasks_complete: number;
+    posts_this_week: number;
 }
 
 interface FriendRowProps {
@@ -71,6 +73,14 @@ const FriendRow = React.memo(({ friend, onEncourage }: FriendRowProps) => {
                         </ThemedText>
                     </View>
                 )}
+                {friend.posts_this_week > 0 && (
+                    <View style={[styles.statBadge, styles.postsBadge]}>
+                        <Camera size={12} color={ThemedColor.primary} weight="fill" />
+                        <ThemedText type="captionLight" style={[styles.statText, { color: ThemedColor.primary }]}>
+                            {friend.posts_this_week} {friend.posts_this_week === 1 ? "post" : "posts"}
+                        </ThemedText>
+                    </View>
+                )}
                 <View style={styles.statBadge}>
                     <ThemedText type="captionLight" style={styles.statText}>
                         {friend.tasks_complete} done
@@ -93,6 +103,7 @@ const FriendRow = React.memo(({ friend, onEncourage }: FriendRowProps) => {
 export default function FriendsList() {
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => createStyles(ThemedColor), [ThemedColor]);
+    const { user } = useAuth();
     const [encourageTarget, setEncourageTarget] = useState<FriendData | null>(null);
     const [showEncourageModal, setShowEncourageModal] = useState(false);
 
@@ -101,6 +112,8 @@ export default function FriendsList() {
         queryFn: getFriendsAPI,
         staleTime: 1000 * 60 * 2,
     });
+
+    const encouragementsLeft = user?.encouragements || 0;
 
     const handleEncourage = useCallback((friend: FriendData) => {
         setEncourageTarget(friend);
@@ -121,9 +134,15 @@ export default function FriendsList() {
 
     return (
         <View style={styles.container}>
-            <ThemedText type="subtitle" style={styles.header}>
-                Your Friends
-            </ThemedText>
+            <View style={styles.headerRow}>
+                <ThemedText type="subtitle">Your Friends</ThemedText>
+                <View style={styles.encouragementSummary}>
+                    <Sparkle size={14} color={ThemedColor.primary} weight="fill" />
+                    <ThemedText type="captionLight" style={{ color: ThemedColor.primary }}>
+                        {encouragementsLeft} to send
+                    </ThemedText>
+                </View>
+            </View>
             {friends.map((friend) => (
                 <FriendRow key={friend._id} friend={friend} onEncourage={handleEncourage} />
             ))}
@@ -152,9 +171,18 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         container: {
             paddingHorizontal: 16,
             gap: 6,
+            marginBottom: 16,
         },
-        header: {
+        headerRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: 8,
+        },
+        encouragementSummary: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
         },
         loadingContainer: {
             paddingVertical: 32,
@@ -197,6 +225,9 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 10,
+        },
+        postsBadge: {
+            backgroundColor: ThemedColor.primary + "15",
         },
         statText: {
             fontSize: 12,
