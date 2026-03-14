@@ -84,9 +84,8 @@ export const searchProfiles = async (query?: string): Promise<ProfileDocument[]>
         throw new Error(`Failed to search profiles: ${JSON.stringify(error)}`);
     }
 
-    // Backend returns { body: ProfileDocument[] }, extract the body array
-    logger.debug("searchProfiles raw API response", { resultCount: (data as any)?.body?.length });
-    return (data as any)?.body || [];
+    logger.debug("searchProfiles raw API response", { resultCount: data?.length });
+    return data || [];
 };
 
 /**
@@ -103,8 +102,7 @@ export const autocompleteProfiles = async (query: string): Promise<ProfileDocume
         throw new Error(`Failed to autocomplete profiles: ${JSON.stringify(error)}`);
     }
 
-    // Backend returns { body: ProfileDocument[] }, extract the body array
-    return (data as any)?.body || [];
+    return data || [];
 };
 
 /**

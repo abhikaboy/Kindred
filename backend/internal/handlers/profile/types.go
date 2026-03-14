@@ -28,8 +28,9 @@ type ProfileDocument struct {
 	PostsMade      int                  `bson:"posts_made" json:"posts_made"` // Stored field in users collection
 	Friends        []primitive.ObjectID `bson:"friends" json:"friends"`
 	// Relationship information - only included when viewing another user's profile
-	Relationship *RelationshipInfo    `bson:"-" json:"relationship,omitempty"`
-	Tasks        []types.TaskDocument `bson:"tasks" json:"tasks,omitempty"`
+	Relationship   *RelationshipInfo    `bson:"-" json:"relationship,omitempty"`
+	Tasks          []types.TaskDocument `bson:"tasks" json:"tasks,omitempty"`
+	CompletedTasks []types.TaskDocument `bson:"-" json:"completed_tasks,omitempty"`
 }
 
 // RelationshipInfo contains details about the relationship between users
@@ -50,7 +51,8 @@ Database layer of the application
 */
 
 type Service struct {
-	Profiles    *mongo.Collection
-	Connections *mongo.Collection // Add connections collection for relationship checks
-	Tasks       *mongo.Collection
+	Profiles       *mongo.Collection
+	Connections    *mongo.Collection
+	Tasks          *mongo.Collection
+	CompletedTasks *mongo.Collection
 }

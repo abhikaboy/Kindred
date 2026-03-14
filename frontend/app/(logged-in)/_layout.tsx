@@ -5,8 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator, Animated, AppState } from "react-native";
+import { ScrollView, View, ActivityIndicator, Animated, AppState, InteractionManager, LogBox } from "react-native";
 import { updateStreakWidget } from "@/widgets/updateStreakWidget";
+import { registerWidgetLayouts } from "@/widgets/widgetUpdaters";
+
+LogBox.ignoreLogs(['addListener', 'native JS logger']);
 import { type ErrorBoundaryProps } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
@@ -140,6 +143,17 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         return () => subscription.remove();
     }, [user?._id]);
+
+    // Register babel-compiled widget layout strings once the app has settled.
+    // This must run AFTER the noop Widget handles have been created (by the
+    // updateSnapshot calls above) so the correct layouts overwrite the noop
+    // placeholders in shared UserDefaults.
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => {
+            registerWidgetLayouts();
+        });
+        return () => handle.cancel();
+    }, []);
 
     useEffect(() => {
         if (!user) return;

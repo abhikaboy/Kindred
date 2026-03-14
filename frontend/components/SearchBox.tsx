@@ -37,6 +37,7 @@ interface SearchBoxProps extends TextInputProps {
     autocompleteSuggestions?: AutocompleteSuggestion[];
     onSelectSuggestion?: (suggestion: AutocompleteSuggestion) => void;
     showAutocomplete?: boolean;
+    suggestionsHeader?: string;
 }
 
 const base = 393;
@@ -54,6 +55,7 @@ export function SearchBox({
     autocompleteSuggestions = [],
     onSelectSuggestion,
     showAutocomplete = false,
+    suggestionsHeader,
     ...rest
 }: SearchBoxProps) {
     const { getRecents, appendSearch, deleteRecent, isLoading } = useRecentSearch(name);
@@ -115,10 +117,9 @@ export function SearchBox({
             const recents = await getRecents();
             if (isMountedRef.current) {
                 setRecentItems(recents);
-                if (setFocused) setFocused(true);
             }
         }
-    }, [recent, showAutocomplete, getRecents, setFocused]);
+    }, [recent, showAutocomplete, getRecents]);
 
     const clearRecents = useCallback(() => {
         if (blurTimeoutRef.current) {
@@ -190,11 +191,12 @@ export function SearchBox({
         }
 
         setIsFocused(true);
+        if (setFocused) setFocused(true);
 
         if (recent && !showAutocomplete) {
             fetchRecents();
         }
-    }, [recent, showAutocomplete, fetchRecents]);
+    }, [recent, showAutocomplete, fetchRecents, setFocused]);
 
     const handleBlur = useCallback(() => {
         if (blurTimeoutRef.current) {
@@ -322,15 +324,24 @@ export function SearchBox({
                     ]}
                     pointerEvents={showResults ? "auto" : "none"}>
                     {shouldShowAutocomplete ? (
-                        autocompleteSuggestions.map((suggestion) => (
-                            <SuggestionItem
-                                key={suggestion.id}
-                                item={suggestion}
-                                onPress={() => handleItemPress(suggestion)}
-                                ThemedColor={ThemedColor}
-                                styles={styles}
-                            />
-                        ))
+                        <>
+                            {suggestionsHeader && (
+                                <View style={styles.suggestionsHeaderContainer}>
+                                    <ThemedText type="default" style={styles.suggestionsHeaderText}>
+                                        {suggestionsHeader}
+                                    </ThemedText>
+                                </View>
+                            )}
+                            {autocompleteSuggestions.map((suggestion) => (
+                                <SuggestionItem
+                                    key={suggestion.id}
+                                    item={suggestion}
+                                    onPress={() => handleItemPress(suggestion)}
+                                    ThemedColor={ThemedColor}
+                                    styles={styles}
+                                />
+                            ))}
+                        </>
                     ) : shouldShowRecents ? (
                         recentItems.map((item) => (
                             <RecentItem
@@ -442,7 +453,7 @@ const useStyles = (ThemedColor: any) =>
             position: "absolute",
             width: "100%",
             paddingVertical: 8,
-            marginTop: -50, 
+            marginTop: -50,
             paddingLeft: 16,
             backgroundColor: ThemedColor.lightened,
             zIndex: 10,
@@ -459,6 +470,19 @@ const useStyles = (ThemedColor: any) =>
             flex: 1,
             gap: 12,
             justifyContent: "space-between",
+        },
+        suggestionsHeaderContainer: {
+            width: "100%",
+            paddingHorizontal: 8,
+            paddingTop: 4,
+            paddingBottom: 2,
+        },
+        suggestionsHeaderText: {
+            fontSize: 12,
+            fontWeight: "600" as const,
+            opacity: 0.5,
+            textTransform: "uppercase" as const,
+            letterSpacing: 0.5,
         },
         container: {
             flexDirection: "row",

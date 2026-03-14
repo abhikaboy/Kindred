@@ -83,29 +83,31 @@ export default function Profile() {
         enabled: !!id,
     }) as any; // Type assertion until profile types are aligned
 
-    // Only show encourage tasks when profile data is loaded
     const tasks = useMemo(() => {
-        if (profile?.tasks?.length > 0)
-            return {
-                todayTasks: profile?.tasks.map((task: TaskDocument) => ({
-                    ...task,
-                    encourage: true,
-                    categoryName: task.categoryID,
-                })),
-                completedTasks: [],
-                activeTasks: [],
-                encouragementConfig: {
-                    userHandle: profile?.handle,
-                    receiverId: profile?.id,
-                    categoryName: "Encouragement",
-                },
-            };
+        const todayTasks = (profile?.tasks || []).map((task: TaskDocument) => ({
+            ...task,
+            encourage: true,
+            categoryName: task.categoryID,
+        }));
 
-        const tasks = {
-            todayTasks: [],
-            completedTasks: [],
+        const completedTasks = ((profile as any)?.completed_tasks || []).map((task: any) => ({
+            id: task.id,
+            content: task.content,
+            value: task.value || 0,
+            priority: (task.priority || 1) as 1 | 2 | 3,
+            categoryName: task.categoryName || task.categoryID || "",
+        }));
+
+        return {
+            todayTasks,
+            completedTasks,
+            activeTasks: [],
+            encouragementConfig: {
+                userHandle: profile?.handle,
+                receiverId: profile?.id,
+                categoryName: "Encouragement",
+            },
         };
-        return tasks;
     }, [profile]);
 
     // Handle relationship changes

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
-	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -120,13 +119,22 @@ func SortUserIDStrings(userA, userB string) []string {
 	return []string{userB, userA}
 }
 
+type FriendReference struct {
+	ID             string `bson:"_id" json:"_id" example:"507f1f77bcf86cd799439011" doc:"User ID"`
+	DisplayName    string `bson:"display_name" json:"display_name" example:"John Doe" doc:"User display name"`
+	Handle         string `bson:"handle" json:"handle" example:"johndoe" doc:"User handle"`
+	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
+	Streak         int    `bson:"streak" json:"streak" example:"5" doc:"Current streak"`
+	TasksComplete  int    `bson:"tasks_complete" json:"tasks_complete" example:"12" doc:"Total tasks completed"`
+}
+
 type GetFriendsInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
 	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 }
 
 type GetFriendsOutput struct {
-	Body []types.UserExtendedReference `json:"body"`
+	Body []FriendReference `json:"body"`
 }
 
 /*

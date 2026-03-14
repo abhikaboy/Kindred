@@ -15,9 +15,10 @@ import (
 // NewService receives the map of collections and picks out Jobs
 func NewService(collections map[string]*mongo.Collection) *Service {
 	return &Service{
-		Profiles:    collections["users"],
-		Connections: collections["friend-requests"],
-		Tasks:       collections["categories"],
+		Profiles:       collections["users"],
+		Connections:    collections["friend-requests"],
+		Tasks:          collections["categories"],
+		CompletedTasks: collections["completed-tasks"],
 	}
 }
 
@@ -332,6 +333,32 @@ func (s *Service) GetProfileTasks(userID primitive.ObjectID) ([]types.TaskDocume
 		},
 	}
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var tasks []types.TaskDocument
+	if err := cursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (s *Service) GetProfileCompletedTasks(userID primitive.ObjectID, limit int) ([]types.TaskDocument, error) {
+	ctx := context.Background()
+
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "timeCompleted", Value: -1}}).
+		SetLimit(int64(limit))
+
+	filter := bson.M{
+		"user":   userID,
+		"public": true,
+	}
+
+	cursor, err := s.CompletedTasks.Find(ctx, filter, findOptions)
 	if err != nil {
 		return nil, err
 	}

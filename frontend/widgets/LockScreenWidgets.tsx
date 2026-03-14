@@ -1,9 +1,12 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack } from '@expo/ui/swift-ui';
+import { Text, VStack } from '@expo/ui/swift-ui';
 import { font, foregroundStyle, padding } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, WidgetBase } from 'expo-widgets';
+
+const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 
 // --- Circular: today completion ring ---
 
@@ -15,13 +18,13 @@ export type LockScreenCircularProps = {
 const LockScreenCircularComponent = (props: WidgetBase<LockScreenCircularProps>) => {
     'widget';
     const { completedCount, totalCount } = props;
-    const label = totalCount > 0 ? `${completedCount}/${totalCount}` : '0';
+    const label = totalCount > 0 ? `${completedCount}/${totalCount}` : '—';
     return (
         <VStack>
-            <Text modifiers={[font({ weight: 'bold', size: 14 }), foregroundStyle('#8B5CF6')]}>
+            <Text modifiers={[font({ weight: 'bold', size: 14, design: 'rounded' }), primary]}>
                 {label}
             </Text>
-            <Text modifiers={[font({ size: 9 }), foregroundStyle('#A0A0B0')]}>
+            <Text modifiers={[font({ size: 9 }), secondary]}>
                 tasks
             </Text>
         </VStack>
@@ -34,7 +37,7 @@ export const LockScreenCircularWidget = createWidget('LockScreenCircularWidget',
 
 export type LockScreenRectangularProps = {
     taskTitle: string;
-    dueTime: string; // formatted string e.g. "3:00 PM" or "Today"
+    dueTime: string;
 };
 
 const LockScreenRectangularComponent = (props: WidgetBase<LockScreenRectangularProps>) => {
@@ -42,11 +45,11 @@ const LockScreenRectangularComponent = (props: WidgetBase<LockScreenRectangularP
     const { taskTitle, dueTime } = props;
     return (
         <VStack modifiers={[padding({ horizontal: 4 })]}>
-            <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
+            <Text modifiers={[font({ weight: 'semibold', size: 13 }), primary]}>
                 {taskTitle || 'No upcoming tasks'}
             </Text>
             {taskTitle ? (
-                <Text modifiers={[font({ size: 11 }), foregroundStyle('#A0A0B0')]}>
+                <Text modifiers={[font({ size: 11 }), secondary]}>
                     {`Due ${dueTime}`}
                 </Text>
             ) : null}
@@ -66,7 +69,7 @@ const LockScreenInlineComponent = (props: WidgetBase<LockScreenInlineProps>) => 
     'widget';
     const { streak } = props;
     return (
-        <Text modifiers={[font({ size: 12 }), foregroundStyle('#8B5CF6')]}>
+        <Text modifiers={[font({ weight: 'medium', size: 12 }), primary]}>
             {`🔥 ${streak} day streak`}
         </Text>
     );

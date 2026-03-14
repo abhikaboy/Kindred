@@ -151,8 +151,17 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 			return nil, huma.Error500InternalServerError("Failed to get profile tasks", err)
 		}
 		profile.Tasks = tasks
+
+		completedTasks, err := h.service.GetProfileCompletedTasks(id, 10)
+		if err != nil {
+			slog.Error("Failed to get profile completed tasks", "error", err.Error())
+			profile.CompletedTasks = []types.TaskDocument{}
+		} else {
+			profile.CompletedTasks = completedTasks
+		}
 	} else {
 		profile.Tasks = []types.TaskDocument{}
+		profile.CompletedTasks = []types.TaskDocument{}
 	}
 
 	resp := &GetProfileOutput{Body: *profile}

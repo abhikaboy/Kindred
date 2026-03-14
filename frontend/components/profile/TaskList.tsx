@@ -33,7 +33,7 @@ const TaskListComponent = ({
     if (isEmpty) {
         return (
             <View style={styles.emptyStateContainer}>
-                <Image 
+                <Image
                     source={require('@/assets/images/211-Coffee.png')}
                     style={[
                         styles.emptyStateImage,
@@ -53,42 +53,46 @@ const TaskListComponent = ({
 
     return (
         <>
-            <View style={styles.taskSection}>
-                <ThemedText type="subtitle">Today's Tasks</ThemedText>
-                {todayTasks.map((task) => (
-                    <TaskCard
-                        key={task.id}
-                        content={task.content}
-                        value={task.value}
-                        priority={task.priority}
-                        id={task.id}
-                        categoryId="profile"
-                        encourage={task.encourage}
-                        encouragementConfig={
-                            task.encourage
-                                ? {
-                                      userHandle: encouragementConfig.userHandle,
-                                      receiverId: encouragementConfig.receiverId,
-                                      categoryName: encouragementConfig.categoryName,
-                                  }
-                                : undefined
-                        }
-                    />
-                ))}
-            </View>
-            <View style={styles.taskSection}>
-                <ThemedText type="subtitle" style={{ marginTop: 16 }}>Accomplished Recently</ThemedText>
-                {completedTasks.map((task) => (
-                    <TaskCard
-                        key={task.id}
-                        content={task.content}
-                        value={task.value}
-                        priority={task.priority}
-                        id={task.id}
-                        categoryId="profile"
-                    />
-                ))}
-            </View>
+            {todayTasks.length > 0 && (
+                <View style={styles.taskSection}>
+                    <ThemedText type="subtitle">Today's Tasks</ThemedText>
+                    {todayTasks.map((task) => (
+                        <TaskCard
+                            key={task.id}
+                            content={task.content}
+                            value={task.value}
+                            priority={task.priority}
+                            id={task.id}
+                            categoryId="profile"
+                            encourage={task.encourage}
+                            encouragementConfig={
+                                task.encourage
+                                    ? {
+                                          userHandle: encouragementConfig.userHandle,
+                                          receiverId: encouragementConfig.receiverId,
+                                          categoryName: encouragementConfig.categoryName,
+                                      }
+                                    : undefined
+                            }
+                        />
+                    ))}
+                </View>
+            )}
+            {completedTasks.length > 0 && (
+                <View style={styles.taskSection}>
+                    <ThemedText type="subtitle" style={{ marginTop: 16 }}>Accomplished Recently</ThemedText>
+                    {completedTasks.map((task) => (
+                        <TaskCard
+                            key={task.id}
+                            content={task.content}
+                            value={task.value}
+                            priority={task.priority}
+                            id={task.id}
+                            categoryId="profile"
+                        />
+                    ))}
+                </View>
+            )}
         </>
     );
 }

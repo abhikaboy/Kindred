@@ -42,6 +42,7 @@ import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import ContactConsentModal from "@/components/modals/ContactConsentModal";
 import { useContactConsent } from "@/hooks/useContactConsent";
+import FriendsList from "@/components/search/FriendsList";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -127,7 +128,7 @@ const Search = (props: Props) => {
     const [alertTitle, setAlertTitle] = React.useState("");
     const [alertMessage, setAlertMessage] = React.useState("");
     const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
-    
+
     // Consent modal state
     const [consentModalVisible, setConsentModalVisible] = React.useState(false);
 
@@ -185,9 +186,25 @@ const Search = (props: Props) => {
 
     const { searchTerm, searchResults, userResults, mode, error: searchError } = state;
 
+    const contactSuggestions = useMemo<AutocompleteSuggestion[]>(() =>
+        matchedContacts.slice(0, 6).map(c => ({
+            id: c.user._id,
+            display_name: c.user.display_name,
+            handle: c.user.handle,
+            profile_picture: c.user.profile_picture,
+            type: "user" as const,
+        })),
+        [matchedContacts],
+    );
+
     const [focused, setFocused] = React.useState(false);
     const [autocompleteSuggestions, setAutocompleteSuggestions] = React.useState<AutocompleteSuggestion[]>([]);
     const [showAutocomplete, setShowAutocomplete] = React.useState(false);
+    const hasContactDefaults = contactSuggestions.length > 0;
+    const isTyping = searchTerm.trim().length > 0;
+    const effectiveSuggestions = isTyping ? autocompleteSuggestions : contactSuggestions;
+    const effectiveShowAutocomplete = isTyping ? showAutocomplete : hasContactDefaults;
+
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSelectingFromRecent = useRef(false);
     const router = useRouter();
@@ -542,7 +559,7 @@ const Search = (props: Props) => {
     const handleTogglePress = useCallback((option: string) => {
         const newTab = option === "Blueprints" ? 0 : 1;
         setActiveTab(newTab);
-        
+
         // Defer Blueprints tab rendering until after interaction completes
         if (newTab === 0) {
             const handle = InteractionManager.runAfterInteractions(() => {
@@ -591,12 +608,13 @@ const Search = (props: Props) => {
                         placeholder={"Search for a user or blueprint!"}
                         onChangeText={handleSearchTermChange}
                         onSubmit={handleSubmit}
-                        recent={!showAutocomplete && mode === "categories"}
+                        recent={!showAutocomplete && !hasContactDefaults && mode === "categories"}
                         name={"search-page"}
                         setFocused={handleSetFocused}
-                        autocompleteSuggestions={autocompleteSuggestions}
+                        autocompleteSuggestions={effectiveSuggestions}
                         onSelectSuggestion={handleSelectSuggestion}
-                        showAutocomplete={showAutocomplete && mode === "categories"}
+                        showAutocomplete={effectiveShowAutocomplete && mode === "categories"}
+                        suggestionsHeader={hasContactDefaults && !searchTerm.trim() ? "Friends on Kindred" : undefined}
                     />
                     <SegmentedControl
                         options={["Blueprints", "Friends"]}
@@ -630,6 +648,7 @@ const Search = (props: Props) => {
                             </View>
                             <View style={{ paddingBottom: 120 }}>
                                 <FollowRequestsSection styles={styles} />
+                                <FriendsList />
                                 {!isLoadingMatchedContacts && matchedContacts.length > 0 && (
                                     <ContactsFromPhone contacts={matchedContacts} />
                                 )}

@@ -22,6 +22,8 @@ import BlueprintSection from "@/components/profile/BlueprintSection";
 import ReferralCard from "@/components/profile/ReferralCard";
 import { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
+import { useQuery } from "@tanstack/react-query";
+import { getCompletedTasksAPI } from "@/api/task";
 
 
 
@@ -38,28 +40,40 @@ export default function Profile() {
 
     type TaskDocument = components["schemas"]["TaskDocument"];
 
+    const { data: completedTasksData } = useQuery({
+        queryKey: ["completedTasks", "profile"],
+        queryFn: () => getCompletedTasksAPI(1, 10),
+    });
+
     const tasks = useMemo(() => {
-        // Combine and deduplicate by task ID to prevent duplicates
         const uniqueTasks = Array.from(
             new Map(
                 [...startTodayTasks, ...dueTodayTasks, ...windowTasks]
                     .filter(task => task.public)
-                    .map(task => [task.id, task])  // Create [id, task] pairs for Map
-            ).values()  // Get unique tasks only
+                    .map(task => [task.id, task])
+            ).values()
         );
-        
-        const todayTasks = uniqueTasks.map(task => ({ 
+
+        const todayTasks = uniqueTasks.map(task => ({
             id: task.id,
             content: task.content,
             value: task.value,
             priority: task.priority as 1 | 2 | 3,
-            encourage: false, 
-            categoryName: (task as any).categoryName || task.categoryID 
+            encourage: false,
+            categoryName: (task as any).categoryName || task.categoryID
+        }));
+
+        const completedTasks = (completedTasksData?.tasks || []).slice(0, 10).map((task: any) => ({
+            id: task.id,
+            content: task.content,
+            value: task.value || 0,
+            priority: (task.priority || 1) as 1 | 2 | 3,
+            categoryName: task.categoryName || task.categoryID || "",
         }));
 
         return {
             todayTasks,
-            completedTasks: [],
+            completedTasks,
             activeTasks: [],
             encouragementConfig: {
                 userHandle: user?.handle,
@@ -67,7 +81,7 @@ export default function Profile() {
                 categoryName: "Encouragement",
             },
         };
-    }, [startTodayTasks, dueTodayTasks, windowTasks, user]);
+    }, [startTodayTasks, dueTodayTasks, windowTasks, user, completedTasksData]);
 
 
     return (
@@ -96,8 +110,8 @@ export default function Profile() {
                 <WeeklyActivity userid={user?._id} displayName={user?.display_name} />
 
                 {user?._id && (
-                    <BlueprintSection 
-                        userId={user._id} 
+                    <BlueprintSection
+                        userId={user._id}
                         title="My Blueprints"
                         showViewAll={true}
                     />

@@ -238,16 +238,14 @@ const Notifications = () => {
     useFocusEffect(
         React.useCallback(() => {
             if (!loading && rawNotifications.length > 0 && !hasMarkedAsRead.current) {
-                console.log("📖 Marking all notifications as read");
                 hasMarkedAsRead.current = true;
                 markAllAsRead();
             }
 
-            // Reset the flag when the screen loses focus
             return () => {
                 hasMarkedAsRead.current = false;
             };
-        }, [])
+        }, [loading, rawNotifications.length, markAllAsRead])
     );
 
     const now = Date.now();

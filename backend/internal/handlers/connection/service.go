@@ -322,10 +322,10 @@ func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, r
 	return xutils.SendNotification(notification)
 }
 
-func (s *Service) GetFriends(userID primitive.ObjectID) ([]types.UserExtendedReference, error) {
+func (s *Service) GetFriends(userID primitive.ObjectID) ([]FriendReference, error) {
 	ctx := context.Background()
 
-	var friends []types.UserExtendedReference
+	var friends []FriendReference
 	pipeline := bson.A{
 		bson.D{{Key: "$match", Value: bson.M{"_id": userID}}},
 		bson.D{{Key: "$lookup", Value: bson.M{
@@ -343,6 +343,8 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]types.UserExtendedRef
 			"display_name":    1,
 			"handle":          1,
 			"profile_picture": 1,
+			"streak":          1,
+			"tasks_complete":  1,
 		}}},
 	}
 	cursor, err := s.Users.Aggregate(ctx, pipeline)

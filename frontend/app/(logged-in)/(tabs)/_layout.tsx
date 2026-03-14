@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from "expo-router";
 import React, { useEffect, useState, useMemo } from "react";
-import { Dimensions, Platform, TouchableOpacity, View, Animated } from "react-native";
+import { Dimensions, Platform, StyleSheet, TouchableOpacity, View, Animated } from "react-native";
 import { usePathname } from "expo-router";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -13,6 +13,8 @@ import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 // Import Phosphor icons
 import {
@@ -30,6 +32,7 @@ import {
     Rows,
     TextColumns,
     Brain,
+    House,
 } from "phosphor-react-native";
 
 // Narrow selector: only subscribe to the index, return -1 if state isn't ready yet
@@ -79,8 +82,9 @@ export default function TabLayout() {
     const router = useRouter();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
-    const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
+    const { startTodayTasks, dueTodayTasks, windowTasks, selected, setSelected } = useTasks();
     const currentIndex = useTabIndex();
+    const insets = useSafeAreaInsets();
 
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
@@ -116,6 +120,9 @@ export default function TabLayout() {
 
     const shouldHideFAB =
         shouldHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
+
+    const isOnTaskTab = currentIndex === 0;
+    const showHomeButton = isOnTaskTab && selected !== "" && !shouldHideFAB;
 
     // Animate tab bar visibility
     useEffect(() => {
@@ -272,8 +279,50 @@ export default function TabLayout() {
                 />
             </Tabs>
 
+            {/* Floating Home Button */}
+            {showHomeButton && (
+                <View style={[fabStyles.homeButton, { bottom: insets.bottom + TAB_BAR_HEIGHT, backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary }]}>
+                    <TouchableOpacity
+                        style={fabStyles.homeButtonTouchable}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setSelected("");
+                        }}
+                        activeOpacity={0.6}
+                    >
+                        <House size={20} color={ThemedColor.text} weight="light" />
+                    </TouchableOpacity>
+                </View>
+            )}
+
             {/* Floating Action Button */}
             <FloatingActionButton visible={!shouldHideFAB} />
         </>
     );
 }
+
+const TAB_BAR_HEIGHT = 83;
+
+const fabStyles = StyleSheet.create({
+    homeButton: {
+        position: "absolute",
+        left: 16,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        borderWidth: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 3,
+        zIndex: 1000,
+    },
+    homeButtonTouchable: {
+        width: "100%",
+        height: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 28,
+    },
+});
