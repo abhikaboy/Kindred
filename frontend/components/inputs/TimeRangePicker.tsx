@@ -576,18 +576,36 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                         style={[
                             pickerStyles.handle,
                             startHandleStyle,
-                            {
-                                backgroundColor: ThemedColor.primary,
-                                left: TRACK_HORIZONTAL_PADDING - 4,
-                            },
+                            { left: TRACK_HORIZONTAL_PADDING - 6 },
                         ]}
                     >
-                        <ThemedText
-                            type="defaultSemiBold"
-                            style={pickerStyles.handleText}
+                        <View
+                            style={[
+                                pickerStyles.handleDot,
+                                { backgroundColor: ThemedColor.primary },
+                            ]}
+                        />
+                        <View
+                            style={[
+                                pickerStyles.handleLine,
+                                { backgroundColor: ThemedColor.primary },
+                            ]}
+                        />
+                        <View
+                            style={[
+                                pickerStyles.handleBadge,
+                                {
+                                    backgroundColor: ThemedColor.primary,
+                                },
+                            ]}
                         >
-                            {startLabelShort}
-                        </ThemedText>
+                            <ThemedText
+                                type="defaultSemiBold"
+                                style={pickerStyles.handleText}
+                            >
+                                {startLabelShort}
+                            </ThemedText>
+                        </View>
                     </Animated.View>
                 </GestureDetector>
 
@@ -597,18 +615,43 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                             style={[
                                 pickerStyles.handle,
                                 endHandleStyle,
-                                {
-                                    backgroundColor: ThemedColor.primary,
-                                    left: TRACK_HORIZONTAL_PADDING - 4,
-                                },
+                                { left: TRACK_HORIZONTAL_PADDING - 6 },
                             ]}
                         >
-                            <ThemedText
-                                type="defaultSemiBold"
-                                style={pickerStyles.handleText}
+                            <View
+                                style={[
+                                    pickerStyles.handleDot,
+                                    {
+                                        backgroundColor:
+                                            ThemedColor.primary,
+                                    },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    pickerStyles.handleLine,
+                                    {
+                                        backgroundColor:
+                                            ThemedColor.primary,
+                                    },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    pickerStyles.handleBadge,
+                                    {
+                                        backgroundColor:
+                                            ThemedColor.primary,
+                                    },
+                                ]}
                             >
-                                {endLabelShort}
-                            </ThemedText>
+                                <ThemedText
+                                    type="defaultSemiBold"
+                                    style={pickerStyles.handleText}
+                                >
+                                    {endLabelShort}
+                                </ThemedText>
+                            </View>
                         </Animated.View>
                     </GestureDetector>
                 )}
@@ -697,24 +740,43 @@ const pickerStyles = StyleSheet.create({
     },
     handle: {
         position: "absolute",
-        right: 8,
+        right: 0,
         height: HANDLE_HEIGHT,
-        borderRadius: HANDLE_HEIGHT / 2,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 14,
         zIndex: 20,
+    },
+    handleDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: "#FFFFFF",
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    handleLine: {
+        flex: 1,
+        height: 2,
+    },
+    handleBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        marginRight: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 2,
     },
     handleText: {
         color: "#FFFFFF",
-        fontSize: 12,
-        letterSpacing: 0.3,
+        fontSize: 11,
+        letterSpacing: 0.2,
     },
     preciseLink: {
         alignSelf: "center",
