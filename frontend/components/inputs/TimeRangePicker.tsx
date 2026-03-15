@@ -113,7 +113,17 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, []);
 
-    const emitStartChange = useCallback(
+    const updateStartLabel = useCallback((mins: number) => {
+        setStartLabel(formatMinutesToTime(mins));
+        setStartLabelShort(formatMinutesShort(mins));
+    }, []);
+
+    const updateEndLabel = useCallback((mins: number) => {
+        setEndLabel(formatMinutesToTime(mins));
+        setEndLabelShort(formatMinutesShort(mins));
+    }, []);
+
+    const commitStartChange = useCallback(
         (mins: number) => {
             setStartLabel(formatMinutesToTime(mins));
             setStartLabelShort(formatMinutesShort(mins));
@@ -122,7 +132,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         [onStartTimeChange]
     );
 
-    const emitEndChange = useCallback(
+    const commitEndChange = useCallback(
         (mins: number) => {
             setEndLabel(formatMinutesToTime(mins));
             setEndLabelShort(formatMinutesShort(mins));
@@ -131,6 +141,64 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         [onEndTimeChange]
     );
 
+    // --- Tap to move handle ---
+    const handleTrackTap = useCallback(
+        (y: number) => {
+            const yInTrack = y - TRACK_VERTICAL_PADDING;
+            const rawMins =
+                (yInTrack / totalH) * (maxMin - minMin) + minMin;
+            const snapped =
+                Math.round(
+                    Math.max(minMin, Math.min(maxMin, rawMins)) / 15
+                ) * 15;
+
+            if (!isRange) {
+                startMinutes.value = snapped;
+                lastSnappedStart.value = snapped;
+                commitStartChange(snapped);
+            } else {
+                const distToStart = Math.abs(
+                    snapped - startMinutes.value
+                );
+                const distToEnd = Math.abs(snapped - endMinutes.value);
+                if (distToStart <= distToEnd) {
+                    const clamped = Math.min(
+                        snapped,
+                        endMinutes.value - 15
+                    );
+                    startMinutes.value = clamped;
+                    lastSnappedStart.value = clamped;
+                    commitStartChange(clamped);
+                } else {
+                    const clamped = Math.max(
+                        snapped,
+                        startMinutes.value + 15
+                    );
+                    endMinutes.value = clamped;
+                    lastSnappedEnd.value = clamped;
+                    commitEndChange(clamped);
+                }
+            }
+            triggerHaptic();
+        },
+        [
+            isRange,
+            minMin,
+            maxMin,
+            totalH,
+            commitStartChange,
+            commitEndChange,
+            triggerHaptic,
+        ]
+    );
+
+    const trackTapGesture = Gesture.Tap().onEnd((event) => {
+        "worklet";
+        runOnJS(handleTrackTap)(event.y);
+    });
+
+    // --- Pan gestures for handles ---
+    // Labels update live during drag; parent callback only fires on end.
     const startPanGesture = Gesture.Pan()
         .onUpdate((event) => {
             "worklet";
@@ -151,12 +219,13 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
             if (clamped !== startMinutes.value) {
                 startMinutes.value = clamped;
                 runOnJS(triggerHaptic)();
-                runOnJS(emitStartChange)(clamped);
+                runOnJS(updateStartLabel)(clamped);
             }
         })
         .onEnd(() => {
             "worklet";
             lastSnappedStart.value = startMinutes.value;
+            runOnJS(commitStartChange)(startMinutes.value);
         });
 
     const endPanGesture = Gesture.Pan()
@@ -178,14 +247,16 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
             if (clamped !== endMinutes.value) {
                 endMinutes.value = clamped;
                 runOnJS(triggerHaptic)();
-                runOnJS(emitEndChange)(clamped);
+                runOnJS(updateEndLabel)(clamped);
             }
         })
         .onEnd(() => {
             "worklet";
             lastSnappedEnd.value = endMinutes.value;
+            runOnJS(commitEndChange)(endMinutes.value);
         });
 
+    // --- Animated styles ---
     const startHandleStyle = useAnimatedStyle(() => {
         const mn = minMinSV.value;
         const mx = maxMinSV.value;
@@ -193,7 +264,12 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         const px = ((startMinutes.value - mn) / (mx - mn)) * th;
         return {
             transform: [
-                { translateY: TRACK_VERTICAL_PADDING + px - HANDLE_HEIGHT / 2 },
+                {
+                    translateY:
+                        TRACK_VERTICAL_PADDING +
+                        px -
+                        HANDLE_HEIGHT / 2,
+                },
             ],
         };
     });
@@ -205,7 +281,12 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         const px = ((endMinutes.value - mn) / (mx - mn)) * th;
         return {
             transform: [
-                { translateY: TRACK_VERTICAL_PADDING + px - HANDLE_HEIGHT / 2 },
+                {
+                    translateY:
+                        TRACK_VERTICAL_PADDING +
+                        px -
+                        HANDLE_HEIGHT / 2,
+                },
             ],
         };
     });
@@ -240,7 +321,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         );
         startMinutes.value = newStart;
         lastSnappedStart.value = newStart;
-        emitStartChange(newStart);
+        commitStartChange(newStart);
 
         if (isRange) {
             const newEnd = Math.max(
@@ -249,7 +330,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
             );
             endMinutes.value = newEnd;
             lastSnappedEnd.value = newEnd;
-            emitEndChange(newEnd);
+            commitEndChange(newEnd);
         }
     };
 
@@ -267,11 +348,11 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
         if (nativePickerTarget === "start") {
             startMinutes.value = mins;
             lastSnappedStart.value = mins;
-            emitStartChange(mins);
+            commitStartChange(mins);
         } else {
             endMinutes.value = mins;
             lastSnappedEnd.value = mins;
-            emitEndChange(mins);
+            commitEndChange(mins);
         }
     };
 
@@ -424,10 +505,13 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                     },
                 ]}
             >
+                {/* Hour grid lines — offset by -HOUR_HEIGHT/2 so the
+                    centered line aligns with the pixel position */}
                 {hours.map((hour) => {
                     const top =
                         TRACK_VERTICAL_PADDING +
-                        (hour - displayMinHour) * HOUR_HEIGHT;
+                        (hour - displayMinHour) * HOUR_HEIGHT -
+                        HOUR_HEIGHT / 2;
                     return (
                         <View
                             key={hour}
@@ -476,6 +560,17 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                     />
                 )}
 
+                {/* Tap target covering full track area */}
+                <GestureDetector gesture={trackTapGesture}>
+                    <Animated.View
+                        style={[
+                            StyleSheet.absoluteFill,
+                            { zIndex: 10 },
+                        ]}
+                    />
+                </GestureDetector>
+
+                {/* Draggable handles */}
                 <GestureDetector gesture={startPanGesture}>
                     <Animated.View
                         style={[
@@ -608,7 +703,6 @@ const pickerStyles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 3,
         paddingHorizontal: 14,
         zIndex: 20,
         shadowColor: "#000",
@@ -621,12 +715,6 @@ const pickerStyles = StyleSheet.create({
         color: "#FFFFFF",
         fontSize: 12,
         letterSpacing: 0.3,
-    },
-    handleGrip: {
-        width: 2,
-        height: 12,
-        borderRadius: 1,
-        backgroundColor: "rgba(255,255,255,0.6)",
     },
     preciseLink: {
         alignSelf: "center",

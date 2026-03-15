@@ -24,6 +24,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { updateTaskAPI } from "@/api/task";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
+import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { logger } from "@/utils/logger";
 
 const TIME_LABEL_WIDTH = 40;
@@ -36,9 +37,6 @@ export interface ScheduleTimeRange {
 
 interface CalendarViewProps {
     selectedDate: Date;
-    tasksWithSpecificTime: any[];
-    tasksForTodayNoTime: any[];
-    tasksUnscheduled: any[];
     animatedScrollY: SharedValue<number>;
     scrollViewRef: AnimatedRef<Animated.ScrollView>;
     headerContent?: React.ReactNode;
@@ -55,9 +53,6 @@ const formatMinutesToTime = (totalMinutes: number): string => {
 
 const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     selectedDate,
-    tasksWithSpecificTime,
-    tasksForTodayNoTime,
-    tasksUnscheduled,
     animatedScrollY,
     scrollViewRef,
     headerContent,
@@ -65,6 +60,8 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 }) => {
     const ThemedColor = useThemeColor();
     const { setSelected, updateTask } = useTasks();
+    const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
+        useDailyTasks(selectedDate);
     const currentTimeLineRef = useRef<View>(null);
     const hasScrolledToFirstEvent = useRef(false);
 
@@ -835,19 +832,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export const CalendarView = React.memo(
-    CalendarViewComponent,
-    (prevProps, nextProps) => {
-        return (
-            prevProps.selectedDate.getTime() ===
-                nextProps.selectedDate.getTime() &&
-            prevProps.tasksWithSpecificTime.length ===
-                nextProps.tasksWithSpecificTime.length &&
-            prevProps.tasksForTodayNoTime.length ===
-                nextProps.tasksForTodayNoTime.length &&
-            prevProps.tasksUnscheduled.length ===
-                nextProps.tasksUnscheduled.length &&
-            prevProps.onDragCreateComplete === nextProps.onDragCreateComplete
-        );
-    }
-);
+export const CalendarView = CalendarViewComponent;

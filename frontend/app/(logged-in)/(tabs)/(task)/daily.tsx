@@ -86,8 +86,6 @@ const Daily = (props: Props) => {
     // Custom Hook for Data Logic
     const {
         tasksForSelectedDate,
-        tasksWithSpecificTime,
-        tasksForTodayNoTime,
         tasksUnscheduled,
         listUnscheduledTasks,
         upcomingTasks,
@@ -217,9 +215,6 @@ const Daily = (props: Props) => {
                         {shouldRenderCalendar && (
                             <CalendarView
                                 selectedDate={selectedDate}
-                                tasksWithSpecificTime={tasksWithSpecificTime}
-                                tasksForTodayNoTime={tasksForTodayNoTime}
-                                tasksUnscheduled={tasksUnscheduled}
                                 animatedScrollY={calendarAnimatedScrollY}
                                 scrollViewRef={calendarScrollViewRef}
                                 onDragCreateComplete={handleDragCreateComplete}
