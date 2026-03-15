@@ -383,6 +383,8 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_WindowType_WeeklyTuesda
 		nil,        // startTime
 		&startDate, // startDate set — combined with deadline → WINDOW type
 		nil,        // reminders
+		"",         // notes
+		nil,        // checklist
 	)
 
 	s.NoError(err, "Creating a WINDOW-type recurring task should succeed")
@@ -525,4 +527,216 @@ func (s *TaskServiceTestSuite) TestBulkMarkAsCompleted_UpdatesMultipleTemplates(
 	s.Equal(1, updatedTemplate2.TimesCompleted, "Template 2 TimesCompleted should be 1")
 	s.Equal(1, updatedTemplate2.Streak, "Template 2 Streak should be 1")
 	s.Len(updatedTemplate2.CompletionDates, 1, "Template 2 should have 1 completion date")
+}
+
+// ========================================
+// Undo Missed Task Tests
+// ========================================
+
+func (s *TaskServiceTestSuite) TestUndoMissedTask_RestoresStreakAndCounters() {
+	user := s.GetUser(0)
+
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	missedAt := now.Add(-1 * time.Hour)
+	nextGen := now.Add(24 * time.Hour)
+	template := &types.TemplateTaskDocument{
+		ID:              templateID,
+		UserID:          user.ID,
+		CategoryID:      primitive.NewObjectID(),
+		Content:         "Daily Task",
+		Priority:        1,
+		Value:           10.0,
+		RecurFrequency:  "daily",
+		RecurType:       "OCCURRENCE",
+		NextGenerated:   &nextGen,
+		TimesGenerated:  5,
+		TimesCompleted:  3,
+		TimesMissed:     2,
+		Streak:          0,
+		HighestStreak:   4,
+		PreviousStreak:  3,
+		LastMissedAt:    &missedAt,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	result, err := s.service.UndoMissedTask(templateID)
+	s.NoError(err)
+	s.Equal(4, result.Streak, "Streak should be previousStreak + 1 = 4")
+	s.Equal(4, result.HighestStreak, "HighestStreak should remain 4")
+
+	var updated types.TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&updated)
+	s.NoError(err)
+	s.Equal(4, updated.Streak)
+	s.Equal(4, updated.HighestStreak)
+	s.Equal(4, updated.TimesCompleted, "TimesCompleted should be incremented to 4")
+	s.Equal(1, updated.TimesMissed, "TimesMissed should be decremented to 1")
+	s.Nil(updated.LastMissedAt, "LastMissedAt should be cleared")
+	s.Equal(0, updated.PreviousStreak, "PreviousStreak should be cleared")
+	s.Len(updated.CompletionDates, 1, "CompletionDates should have 1 new entry")
+}
+
+func (s *TaskServiceTestSuite) TestUndoMissedTask_UpdatesHighestStreak() {
+	user := s.GetUser(0)
+
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	missedAt := now.Add(-30 * time.Minute)
+	nextGen := now.Add(24 * time.Hour)
+	template := &types.TemplateTaskDocument{
+		ID:              templateID,
+		UserID:          user.ID,
+		CategoryID:      primitive.NewObjectID(),
+		Content:         "Daily Task",
+		Priority:        1,
+		Value:           10.0,
+		RecurFrequency:  "daily",
+		RecurType:       "OCCURRENCE",
+		NextGenerated:   &nextGen,
+		TimesGenerated:  10,
+		TimesCompleted:  9,
+		TimesMissed:     1,
+		Streak:          0,
+		HighestStreak:   5,
+		PreviousStreak:  9,
+		LastMissedAt:    &missedAt,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	result, err := s.service.UndoMissedTask(templateID)
+	s.NoError(err)
+	s.Equal(10, result.Streak, "Streak should be previousStreak + 1 = 10")
+	s.Equal(10, result.HighestStreak, "HighestStreak should be updated to 10")
+}
+
+func (s *TaskServiceTestSuite) TestUndoMissedTask_FailsWhenNoRecentMiss() {
+	user := s.GetUser(0)
+
+	templateID := primitive.NewObjectID()
+	nextGen := xutils.NowUTC().Add(24 * time.Hour)
+	template := &types.TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         user.ID,
+		CategoryID:     primitive.NewObjectID(),
+		Content:        "Daily Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "daily",
+		RecurType:      "OCCURRENCE",
+		NextGenerated:  &nextGen,
+		Streak:         3,
+		HighestStreak:  3,
+		LastMissedAt:   nil,
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	_, err = s.service.UndoMissedTask(templateID)
+	s.Error(err)
+	s.Contains(err.Error(), "no recent miss to undo")
+}
+
+func (s *TaskServiceTestSuite) TestUndoMissedTask_FailsWhenWindowExpired() {
+	user := s.GetUser(0)
+
+	templateID := primitive.NewObjectID()
+	missedAt := xutils.NowUTC().Add(-25 * time.Hour)
+	nextGen := xutils.NowUTC().Add(24 * time.Hour)
+	template := &types.TemplateTaskDocument{
+		ID:              templateID,
+		UserID:          user.ID,
+		CategoryID:      primitive.NewObjectID(),
+		Content:         "Daily Task",
+		Priority:        1,
+		Value:           10.0,
+		RecurFrequency:  "daily",
+		RecurType:       "OCCURRENCE",
+		NextGenerated:   &nextGen,
+		Streak:          0,
+		PreviousStreak:  5,
+		LastMissedAt:    &missedAt,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	_, err = s.service.UndoMissedTask(templateID)
+	s.Error(err)
+	s.Contains(err.Error(), "undo window has expired")
+}
+
+// ========================================
+// Grace Period Tests
+// ========================================
+
+func (s *TaskServiceTestSuite) TestGetDueRecurringTasks_GracePeriod_ExcludesRecentTasks() {
+	user := s.GetUser(0)
+
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	nextGen := now.Add(-10 * time.Minute) // 10 minutes ago, within the 30-min grace window
+	template := &types.TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         user.ID,
+		CategoryID:     primitive.NewObjectID(),
+		Content:        "Recent Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "daily",
+		RecurType:      "OCCURRENCE",
+		RecurDetails:   &types.RecurDetails{Every: 1},
+		NextGenerated:  &nextGen,
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	tasks, err := s.service.GetDueRecurringTasks()
+	s.NoError(err)
+	for _, t := range tasks {
+		s.NotEqual(templateID, t.ID, "Task within grace period should not be returned")
+	}
+}
+
+func (s *TaskServiceTestSuite) TestGetDueRecurringTasks_GracePeriod_IncludesOldTasks() {
+	user := s.GetUser(0)
+
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	nextGen := now.Add(-45 * time.Minute) // 45 minutes ago, outside the 30-min grace window
+	template := &types.TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         user.ID,
+		CategoryID:     primitive.NewObjectID(),
+		Content:        "Old Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "daily",
+		RecurType:      "OCCURRENCE",
+		RecurDetails:   &types.RecurDetails{Every: 1},
+		NextGenerated:  &nextGen,
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	tasks, err := s.service.GetDueRecurringTasks()
+	s.NoError(err)
+	found := false
+	for _, t := range tasks {
+		if t.ID == templateID {
+			found = true
+			break
+		}
+	}
+	s.True(found, "Task past the grace period should be returned")
 }

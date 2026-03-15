@@ -115,6 +115,8 @@ type TemplateTaskDocument struct {
 	Streak          int         `bson:"streak" json:"streak"`
 	HighestStreak   int         `bson:"highestStreak" json:"highestStreak"`
 	CompletionDates []time.Time `bson:"completionDates,omitempty" json:"completionDates,omitempty"`
+	PreviousStreak  int         `bson:"previousStreak,omitempty" json:"previousStreak,omitempty"`
+	LastMissedAt    *time.Time  `bson:"lastMissedAt,omitempty" json:"lastMissedAt,omitempty"`
 
 	RecurFrequency string     `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"` // daily, weekly, monthly, yearly
 	RecurType      string     `bson:"recurType" json:"recurType"`                               // Occurrence, Deadline, Window

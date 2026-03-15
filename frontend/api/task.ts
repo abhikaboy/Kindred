@@ -277,6 +277,24 @@ export const resetTemplateMetricsAPI = async (templateId: string): Promise<void>
     }
 };
 
+export interface UndoMissedTaskResponse {
+    message: string;
+    streak: number;
+    highestStreak: number;
+}
+
+export const undoMissedTaskAPI = async (templateId: string): Promise<UndoMissedTaskResponse> => {
+    const { data, error } = await client.POST("/v1/user/tasks/template/{id}/undo-missed", {
+        params: withAuthHeaders({ path: { id: templateId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to undo missed task: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as UndoMissedTaskResponse;
+};
+
 /**
  * Response type for paginated completed tasks
  */

@@ -330,6 +330,15 @@ func (s *Service) PrintNextRecurrences(template *TemplateTaskDocument) {
 }
 
 func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
+	checklist := make([]ChecklistItem, len(templateDoc.Checklist))
+	for i, item := range templateDoc.Checklist {
+		checklist[i] = ChecklistItem{
+			Content:   item.Content,
+			Completed: false,
+			Order:     item.Order,
+		}
+	}
+
 	return TaskDocument{
 		ID:             primitive.NewObjectID(),
 		UserID:         templateDoc.UserID,
@@ -347,7 +356,81 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		Timestamp:      xutils.NowUTC(),
 		LastEdited:     xutils.NowUTC(),
 		TemplateID:     &templateDoc.ID,
+		Notes:          templateDoc.Notes,
+		Checklist:      checklist,
 	}
+}
+
+// recomputeReminderTriggerTimes adjusts template reminder trigger times to match
+// the new instance's dates. For each relative reminder, the offset from the
+// template's anchor date (start or deadline) is preserved and applied to the
+// instance's corresponding date.
+func recomputeReminderTriggerTimes(templateReminders []*Reminder, templateDoc *TemplateTaskDocument, task *TaskDocument) []*Reminder {
+	if len(templateReminders) == 0 {
+		return nil
+	}
+
+	reminders := make([]*Reminder, 0, len(templateReminders))
+	for _, r := range templateReminders {
+		if r == nil {
+			continue
+		}
+
+		var newTriggerTime time.Time
+		computed := false
+
+		if (r.BeforeStart || r.AfterStart) && templateDoc.StartDate != nil && task.StartDate != nil {
+			shift := task.StartDate.Sub(*templateDoc.StartDate)
+			newTriggerTime = r.TriggerTime.Add(shift)
+			computed = true
+		} else if (r.BeforeStart || r.AfterStart) && templateDoc.StartTime != nil && task.StartDate != nil {
+			shift := task.StartDate.Sub(*templateDoc.StartTime)
+			newTriggerTime = r.TriggerTime.Add(shift)
+			computed = true
+		} else if (r.BeforeDeadline || r.AfterDeadline) && templateDoc.Deadline != nil && task.Deadline != nil {
+			shift := task.Deadline.Sub(*templateDoc.Deadline)
+			newTriggerTime = r.TriggerTime.Add(shift)
+			computed = true
+		}
+
+		if !computed {
+			var oldAnchor, newAnchor *time.Time
+			if task.StartDate != nil && templateDoc.StartDate != nil {
+				oldAnchor = templateDoc.StartDate
+				newAnchor = task.StartDate
+			} else if task.Deadline != nil && templateDoc.Deadline != nil {
+				oldAnchor = templateDoc.Deadline
+				newAnchor = task.Deadline
+			}
+			if oldAnchor != nil && newAnchor != nil {
+				shift := newAnchor.Sub(*oldAnchor)
+				newTriggerTime = r.TriggerTime.Add(shift)
+				computed = true
+			}
+		}
+
+		if !computed {
+			continue
+		}
+
+		reminders = append(reminders, &Reminder{
+			TriggerTime:    newTriggerTime,
+			Type:           r.Type,
+			Sent:           false,
+			AfterStart:     r.AfterStart,
+			BeforeStart:    r.BeforeStart,
+			BeforeDeadline: r.BeforeDeadline,
+			AfterDeadline:  r.AfterDeadline,
+			CustomMessage:  r.CustomMessage,
+			Sound:          r.Sound,
+			Vibration:      r.Vibration,
+		})
+	}
+
+	if len(reminders) == 0 {
+		return nil
+	}
+	return reminders
 }
 
 func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, deadline *time.Time, startTime *time.Time, startDate *time.Time, reminders []*Reminder) error {
@@ -417,6 +500,8 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			StartDate:     startDate,
 			LastGenerated: &baseTime,
 			Reminders:     relativeReminders,
+			Notes:         params.Notes,
+			Checklist:     params.Checklist,
 
 			// Initialize analytics fields
 			TimesGenerated:  0,

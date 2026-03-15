@@ -181,6 +181,8 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 			taskParams.StartTime,
 			taskParams.StartDate,
 			taskParams.Reminders,
+			taskParams.Notes,
+			taskParams.Checklist,
 		)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("Unable to create recurring task. Please try again.", err)
@@ -299,6 +301,8 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 			updateData.StartTime,
 			updateData.StartDate,
 			updateData.Reminders,
+			updateData.Notes,
+			updateData.Checklist,
 		)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("Unable to create recurring template. Please try again.", err)
@@ -750,6 +754,35 @@ func (h *Handler) ResetTemplateMetrics(ctx context.Context, input *ResetTemplate
 
 	resp := &ResetTemplateMetricsOutput{}
 	resp.Body.Message = "Template metrics reset successfully"
+	return resp, nil
+}
+
+func (h *Handler) UndoMissedTask(ctx context.Context, input *UndoMissedTaskInput) (*UndoMissedTaskOutput, error) {
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid template ID format", err)
+	}
+
+	result, err := h.service.UndoMissedTask(id)
+	if err != nil {
+		if err.Error() == "undo window has expired (must be within 24 hours of the miss)" {
+			return nil, huma.Error409Conflict("Undo window has expired", err)
+		}
+		if err.Error() == "no recent miss to undo" {
+			return nil, huma.Error409Conflict("No recent miss to undo for this template", err)
+		}
+		return nil, huma.Error500InternalServerError("Failed to undo missed task", err)
+	}
+
+	resp := &UndoMissedTaskOutput{}
+	resp.Body.Message = "Missed task successfully marked as completed"
+	resp.Body.Streak = result.Streak
+	resp.Body.HighestStreak = result.HighestStreak
 	return resp, nil
 }
 

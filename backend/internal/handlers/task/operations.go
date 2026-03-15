@@ -213,6 +213,20 @@ type ResetTemplateMetricsOutput struct {
 	}
 }
 
+// Undo Missed Task
+type UndoMissedTaskInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type UndoMissedTaskOutput struct {
+	Body struct {
+		Message       string `json:"message" example:"Missed task successfully marked as completed"`
+		Streak        int    `json:"streak" example:"6" doc:"Restored streak value"`
+		HighestStreak int    `json:"highestStreak" example:"6" doc:"Current highest streak"`
+	}
+}
+
 type TemplateWithCategory struct {
 	TemplateTaskDocument `bson:",inline"`
 	CategoryName         string `bson:"categoryName" json:"categoryName"`
@@ -560,6 +574,17 @@ func RegisterResetTemplateMetricsOperation(api huma.API, handler *Handler) {
 		Description: "Reset streak, completion, and missed counts for a recurring task template",
 		Tags:        []string{"tasks"},
 	}, handler.ResetTemplateMetrics)
+}
+
+func RegisterUndoMissedTaskOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "undo-missed-task",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/template/{id}/undo-missed",
+		Summary:     "Undo a missed recurring task",
+		Description: "Retroactively mark a recently missed recurring task as completed, restoring the streak. Must be used within 24 hours of the miss.",
+		Tags:        []string{"tasks"},
+	}, handler.UndoMissedTask)
 }
 
 func RegisterGetUserTemplatesOperation(api huma.API, handler *Handler) {

@@ -648,26 +648,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/profiles/find-by-phone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Find users by phone numbers
-         * @description Efficiently find users matching any of the provided phone numbers using a single database query
-         */
-        post: operations["find-users-by-phone-numbers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/profiles/phone/{phone}": {
         parameters: {
             query?: never;
@@ -2128,6 +2108,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/profiles/find-by-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find users by phone numbers
+         * @description Efficiently find users matching any of the provided phone numbers using a single database query
+         */
+        post: operations["find-users-by-phone-numbers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/profiles/search": {
         parameters: {
             query?: never;
@@ -2616,6 +2616,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/natural-language/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Edit tasks using natural language
+         * @description Use AI to find and edit one or more tasks based on a natural language instruction
+         */
+        post: operations["edit-tasks-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/natural-language/intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unified natural language intent router
+         * @description Decompose a natural language utterance into create/edit/delete operations. Edit ops are applied immediately; create and delete payloads are returned for frontend confirmation.
+         */
+        post: operations["intent-task-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/natural-language/preview": {
         parameters: {
             query?: never;
@@ -2630,6 +2670,46 @@ export interface paths {
          * @description Process natural language text and return a preview without creating tasks
          */
         post: operations["preview-task-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/natural-language/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query tasks using natural language
+         * @description Convert natural language to structured filters and return matching tasks using AI
+         */
+        post: operations["query-tasks-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query tasks with filters
+         * @description Query tasks for the authenticated user with advanced filtering options
+         */
+        post: operations["query-tasks-by-user"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2662,6 +2742,46 @@ export interface paths {
          * @description Update a template task for recurring tasks
          */
         patch: operations["update-template"];
+        trace?: never;
+    };
+    "/v1/user/tasks/template/{id}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset template metrics
+         * @description Reset streak, completion, and missed counts for a recurring task template
+         */
+        post: operations["reset-template-metrics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/template/{id}/undo-missed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo a missed recurring task
+         * @description Retroactively mark a recently missed recurring task as completed, restoring the streak. Must be used within 24 hours of the miss.
+         */
+        post: operations["undo-missed-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/tasks/template/old": {
@@ -2806,6 +2926,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/user/workspaces/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update workspace metadata
+         * @description Update icon and color for a workspace
+         */
+        patch: operations["update-workspace"];
         trace?: never;
     };
     "/v1/waitlist": {
@@ -3655,6 +3795,8 @@ export interface components {
              * @example https://example.com/schemas/CreateCategoryParams.json
              */
             readonly $schema?: string;
+            color?: string;
+            icon?: string;
             name: string;
             workspaceName: string;
         };
@@ -4030,6 +4172,54 @@ export interface components {
             recent_workspaces: boolean;
             show_task_details: boolean;
         };
+        EditResultResponse: {
+            /**
+             * Format: int64
+             * @description Total number of tasks/templates edited
+             */
+            editedCount: number;
+            /** @description Edited regular tasks */
+            tasks: components["schemas"]["TaskDocument"][];
+            /** @description Edited recurring template tasks */
+            templates: components["schemas"]["TemplateTaskDocument"][];
+        };
+        EditTasksNaturalLanguageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/EditTasksNaturalLanguageInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Natural language instruction for editing tasks
+             * @example move my dentist appointment to next Friday
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        EditTasksNaturalLanguageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/EditTasksNaturalLanguageOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Total number of tasks/templates that were edited
+             */
+            editedCount: number;
+            /** @example Successfully edited 2 tasks */
+            message: string;
+            /** @description List of edited regular tasks with their updated state */
+            tasks: components["schemas"]["TaskDocument"][];
+            /** @description List of edited recurring template tasks with their updated state */
+            templates: components["schemas"]["TemplateTaskDocument"][];
+        };
         EncouragementDocument: {
             /**
              * Format: uri
@@ -4199,6 +4389,52 @@ export interface components {
             readonly $schema?: string;
             /** @description List of phone numbers to search for */
             numbers: string[];
+        };
+        FriendReference: {
+            /**
+             * @description User ID
+             * @example 507f1f77bcf86cd799439011
+             */
+            _id: string;
+            /**
+             * @description User display name
+             * @example John Doe
+             */
+            display_name: string;
+            /**
+             * Format: int64
+             * @description Available encouragements to send
+             * @example 3
+             */
+            encouragements: number;
+            /**
+             * @description User handle
+             * @example johndoe
+             */
+            handle: string;
+            /**
+             * Format: int64
+             * @description Number of posts made this week
+             * @example 2
+             */
+            posts_this_week: number;
+            /**
+             * @description Profile picture URL
+             * @example https://example.com/avatar.jpg
+             */
+            profile_picture: string;
+            /**
+             * Format: int64
+             * @description Current streak
+             * @example 5
+             */
+            streak: number;
+            /**
+             * Format: int64
+             * @description Total tasks completed
+             * @example 12
+             */
+            tasks_complete: number;
         };
         GenerateAndCreateBlueprintParams: {
             /**
@@ -4473,6 +4709,44 @@ export interface components {
             /** Format: int64 */
             width: number;
         };
+        IntentOpResponse: {
+            /** @description Populated for create ops — preview payload to pass to /confirm */
+            createPreview?: components["schemas"]["MultiTaskOutputLocal"];
+            /** @description Populated for delete ops — tasks matching the delete query */
+            deleteTasks?: components["schemas"]["TaskDocument"][];
+            /** @description Populated for edit ops — tasks already updated server-side */
+            editResult?: components["schemas"]["EditResultResponse"];
+            /** @description Operation type: 'create', 'edit', or 'delete' */
+            type: string;
+        };
+        IntentTaskNaturalLanguageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/IntentTaskNaturalLanguageInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Natural language instruction (may contain create, edit, and/or delete operations)
+             * @example delete my grocery tasks and add a dentist appointment tomorrow
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        IntentTaskNaturalLanguageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/IntentTaskNaturalLanguageOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Ordered list of decomposed operations. Edits are already applied; deletes and creates need frontend confirmation. */
+            ops: components["schemas"]["IntentOpResponse"][];
+        };
         KudosRewards: {
             /**
              * Format: int64
@@ -4648,6 +4922,10 @@ export interface components {
             handle: string;
             id: string;
         };
+        MultiTaskOutputLocal: {
+            categories: components["schemas"]["NewCategoryWithTasksLocal"][];
+            tasks: components["schemas"]["CategoryTaskPairLocal"][];
+        };
         NewCategoryWithTasksLocal: {
             name: string;
             tasks: components["schemas"]["CreateTaskParams"][];
@@ -4819,6 +5097,7 @@ export interface components {
              * @example https://example.com/schemas/ProfileDocument.json
              */
             readonly $schema?: string;
+            completed_tasks?: components["schemas"]["TaskDocument"][];
             display_name: string;
             friends: string[];
             handle: string;
@@ -4834,6 +5113,36 @@ export interface components {
             tasks?: components["schemas"]["TaskDocument"][];
             /** Format: int64 */
             tasks_complete: number;
+        };
+        QueryTasksNaturalLanguageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/QueryTasksNaturalLanguageInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Natural language query to filter tasks
+             * @example high priority tasks due this week
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        QueryTasksNaturalLanguageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/QueryTasksNaturalLanguageOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The structured query generated from natural language */
+            query: components["schemas"]["TaskQueryFilters"];
+            /** @description Matching tasks */
+            tasks: components["schemas"]["TaskDocument"][];
         };
         RecurDetails: {
             behavior?: string;
@@ -5092,6 +5401,16 @@ export interface components {
              */
             reason: string;
         };
+        ResetTemplateMetricsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ResetTemplateMetricsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Template metrics reset successfully */
+            message: string;
+        };
         SafeUser: {
             /**
              * Format: uri
@@ -5255,6 +5574,55 @@ export interface components {
             /** Format: double */
             value: number;
         };
+        TaskQueryFilters: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TaskQueryFilters.json
+             */
+            readonly $schema?: string;
+            /** @description Filter by active status */
+            active?: boolean;
+            /** @description Filter by category IDs */
+            categoryIds?: string[];
+            /**
+             * Format: date-time
+             * @description Filter tasks with deadline on or after this time (ISO8601)
+             */
+            deadlineFrom?: string;
+            /**
+             * Format: date-time
+             * @description Filter tasks with deadline on or before this time (ISO8601)
+             */
+            deadlineTo?: string;
+            /** @description Filter tasks that have (true) or don't have (false) a deadline */
+            hasDeadline?: boolean;
+            /** @description Filter tasks that have (true) or don't have (false) a start date */
+            hasStartTime?: boolean;
+            /** @description Filter by priority values (1=low, 2=medium, 3=high) */
+            priorities?: number[];
+            /**
+             * @description Sort field: timestamp, priority, value, or deadline
+             * @example timestamp
+             */
+            sortBy?: string;
+            /**
+             * Format: int64
+             * @description Sort direction: 1 (ascending) or -1 (descending)
+             * @example -1
+             */
+            sortDir?: number;
+            /**
+             * Format: date-time
+             * @description Filter tasks with start date on or after this time (ISO8601)
+             */
+            startTimeFrom?: string;
+            /**
+             * Format: date-time
+             * @description Filter tasks with start date on or before this time (ISO8601)
+             */
+            startTimeTo?: string;
+        };
         TemplateTaskDocument: {
             /**
              * Format: uri
@@ -5277,8 +5645,12 @@ export interface components {
             /** Format: date-time */
             lastGenerated: string;
             /** Format: date-time */
+            lastMissedAt?: string;
+            /** Format: date-time */
             nextGenerated: string;
             notes?: string;
+            /** Format: int64 */
+            previousStreak?: number;
             /** Format: int64 */
             priority: number;
             public: boolean;
@@ -5319,8 +5691,12 @@ export interface components {
             /** Format: date-time */
             lastGenerated: string;
             /** Format: date-time */
+            lastMissedAt?: string;
+            /** Format: date-time */
             nextGenerated: string;
             notes?: string;
+            /** Format: int64 */
+            previousStreak?: number;
             /** Format: int64 */
             priority: number;
             public: boolean;
@@ -5363,6 +5739,28 @@ export interface components {
             readonly $schema?: string;
             /** @example User unblocked successfully */
             message: string;
+        };
+        UndoMissedTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UndoMissedTaskOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Current highest streak
+             * @example 6
+             */
+            highestStreak: number;
+            /** @example Missed task successfully marked as completed */
+            message: string;
+            /**
+             * Format: int64
+             * @description Restored streak value
+             * @example 6
+             */
+            streak: number;
         };
         UnlockFeatureInputBody: {
             /**
@@ -5903,6 +6301,26 @@ export interface components {
             /** @example Settings updated successfully */
             message: string;
         };
+        UpdateWorkspaceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateWorkspaceOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Workspace updated successfully */
+            message: string;
+        };
+        UpdateWorkspaceParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateWorkspaceParams.json
+             */
+            readonly $schema?: string;
+            color?: string;
+            icon?: string;
+        };
         UserCredits: {
             /**
              * Format: uri
@@ -6088,6 +6506,8 @@ export interface components {
         };
         WorkspaceResult: {
             categories: components["schemas"]["CategoryDocument"][];
+            color?: string;
+            icon?: string;
             name: string;
         };
     };
@@ -7187,44 +7607,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileDocument"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "find-users-by-phone-numbers": {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Bearer token for authentication */
-                Authorization: string;
-                /** @description Refresh token for authentication */
-                refresh_token: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FindUsersByPhoneNumbersInputBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserExtendedReferenceWithPhone"][];
                 };
             };
             /** @description Error */
@@ -9146,7 +9528,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserExtendedReference"][];
+                    "application/json": components["schemas"]["FriendReference"][];
                 };
             };
             /** @description Error */
@@ -10419,6 +10801,44 @@ export interface operations {
             };
         };
     };
+    "find-users-by-phone-numbers": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FindUsersByPhoneNumbersInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserExtendedReferenceWithPhone"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "search-profiles": {
         parameters: {
             query?: {
@@ -11370,6 +11790,76 @@ export interface operations {
             };
         };
     };
+    "edit-tasks-natural-language": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditTasksNaturalLanguageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditTasksNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "intent-task-natural-language": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntentTaskNaturalLanguageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntentTaskNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "preview-task-natural-language": {
         parameters: {
             query?: never;
@@ -11392,6 +11882,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PreviewTaskNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "query-tasks-natural-language": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueryTasksNaturalLanguageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryTasksNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "query-tasks-by-user": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskQueryFilters"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"][];
                 };
             };
             /** @description Error */
@@ -11497,6 +12057,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateTemplateOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "reset-template-metrics": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetTemplateMetricsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "undo-missed-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UndoMissedTaskOutputBody"];
                 };
             };
             /** @description Error */
@@ -11763,6 +12392,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspaceResult"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-workspace": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWorkspaceParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateWorkspaceOutputBody"];
                 };
             };
             /** @description Error */

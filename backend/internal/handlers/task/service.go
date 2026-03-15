@@ -1211,6 +1211,9 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		task.Deadline = &nextDeadline
 	}
 
+	// Recompute reminder trigger times for the new instance based on shifted dates
+	task.Reminders = recomputeReminderTriggerTimes(templateDoc.Reminders, &templateDoc, &task)
+
 	slog.LogAttrs(ctx, slog.LevelInfo, "Updating template", slog.String("templateId", templateId.Hex()), slog.String("lastGenerated", thisGeneration.Format(time.RFC3339)), slog.String("nextGenerated", nextGeneration.Format(time.RFC3339)))
 
 	update := bson.M{
@@ -1239,6 +1242,9 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		setMap, ok := update["$set"].(bson.M)
 		if ok {
 			setMap["streak"] = 0
+			setMap["previousStreak"] = templateDoc.Streak
+			now := xutils.NowUTC()
+			setMap["lastMissedAt"] = &now
 		}
 
 		totalMissed := skippedOccurrences + deletedCount
@@ -1262,6 +1268,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 					Data: map[string]string{
 						"taskId": templateDoc.ID.Hex(),
 						"type":   "TASK_MISSED",
+						"url":    "/(logged-in)/(tabs)/(task)/undo-missed/" + templateDoc.ID.Hex(),
 					},
 				}); err != nil {
 					slog.Error("Failed to send missed task notification", "error", err)
@@ -1370,6 +1377,8 @@ func (s *Service) CreateTemplateForTask(
 	startTime *time.Time,
 	startDate *time.Time,
 	reminders []*Reminder,
+	notes string,
+	checklist []ChecklistItem,
 ) error {
 
 	if err := ValidateRecurDetails(recurFrequency, recurDetails); err != nil {
@@ -1424,6 +1433,8 @@ func (s *Service) CreateTemplateForTask(
 		StartDate:     startDate,
 		LastGenerated: &baseTime,
 		Reminders:     relativeReminders,
+		Notes:         notes,
+		Checklist:     checklist,
 
 		// Initialize analytics fields
 		TimesGenerated:  0,
@@ -1531,12 +1542,14 @@ func (s *Service) ScheduleNextRecurrence(templateId primitive.ObjectID) error {
 }
 
 // GetDueRecurringTasks returns all recurring tasks that are due for generation.
-// It checks for templates where nextGenerated <= Now.
+// It checks for templates where nextGenerated <= now - 30 minutes, giving users
+// a 30-minute grace period to mark the task as complete before it's treated as missed.
 func (s *Service) GetDueRecurringTasks() ([]TemplateTaskDocument, error) {
 	ctx := context.Background()
 	now := xutils.NowUTC()
+	gracePeriod := now.Add(-30 * time.Minute)
 
-	matchConditions := bson.M{"nextGenerated": bson.M{"$lte": now}}
+	matchConditions := bson.M{"nextGenerated": bson.M{"$lte": gracePeriod}}
 
 	templatePipeline := bson.A{
 		bson.D{{Key: "$match", Value: matchConditions}},
@@ -2095,6 +2108,66 @@ func (s *Service) ResetTemplateMetrics(id primitive.ObjectID) error {
 		return fmt.Errorf("template task not found")
 	}
 	return nil
+}
+
+type UndoMissedResult struct {
+	Streak        int
+	HighestStreak int
+}
+
+func (s *Service) UndoMissedTask(templateID primitive.ObjectID) (*UndoMissedResult, error) {
+	ctx := context.Background()
+
+	var template TemplateTaskDocument
+	err := s.TemplateTasks.FindOne(ctx, bson.M{"_id": templateID}).Decode(&template)
+	if err != nil {
+		return nil, fmt.Errorf("template task not found")
+	}
+
+	if template.LastMissedAt == nil {
+		return nil, fmt.Errorf("no recent miss to undo")
+	}
+
+	if time.Since(*template.LastMissedAt) > 24*time.Hour {
+		return nil, fmt.Errorf("undo window has expired (must be within 24 hours of the miss)")
+	}
+
+	restoredStreak := template.PreviousStreak + 1
+	highestStreak := template.HighestStreak
+	if restoredStreak > highestStreak {
+		highestStreak = restoredStreak
+	}
+
+	now := xutils.NowUTC()
+	update := bson.M{
+		"$set": bson.M{
+			"streak":         restoredStreak,
+			"highestStreak":  highestStreak,
+			"previousStreak": 0,
+			"lastMissedAt":   nil,
+			"lastEdited":     now,
+		},
+		"$inc": bson.M{
+			"timesMissed":    -1,
+			"timesCompleted": 1,
+		},
+		"$push": bson.M{
+			"completionDates": now,
+		},
+	}
+
+	result, err := s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateID}, update)
+	if err != nil {
+		return nil, handleMongoError(ctx, "undo missed task", err)
+	}
+	if result.MatchedCount == 0 {
+		return nil, fmt.Errorf("template task not found")
+	}
+
+	return &UndoMissedResult{
+		Streak:        restoredStreak,
+		HighestStreak: highestStreak,
+	}, nil
 }
 
 // UpdateTemplateTask updates a template task document by ID

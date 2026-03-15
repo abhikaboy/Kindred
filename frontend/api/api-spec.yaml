@@ -1050,49 +1050,6 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
-    /v1/profiles/find-by-phone:
-        post:
-            tags:
-                - profiles
-            summary: Find users by phone numbers
-            description: Efficiently find users matching any of the provided phone numbers using a single database query
-            operationId: find-users-by-phone-numbers
-            parameters:
-                - name: Authorization
-                  in: header
-                  description: Bearer token for authentication
-                  required: true
-                  schema:
-                    type: string
-                    description: Bearer token for authentication
-                - name: refresh_token
-                  in: header
-                  description: Refresh token for authentication
-                  required: true
-                  schema:
-                    type: string
-                    description: Refresh token for authentication
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/FindUsersByPhoneNumbersInputBody'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/UserExtendedReferenceWithPhone'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
     /v1/profiles/phone/{phone}:
         get:
             tags:
@@ -3112,7 +3069,7 @@ paths:
                             schema:
                                 type: array
                                 items:
-                                    $ref: '#/components/schemas/UserExtendedReference'
+                                    $ref: '#/components/schemas/FriendReference'
                 default:
                     description: Error
                     content:
@@ -4469,6 +4426,49 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/profiles/find-by-phone:
+        post:
+            tags:
+                - profiles
+            summary: Find users by phone numbers
+            description: Efficiently find users matching any of the provided phone numbers using a single database query
+            operationId: find-users-by-phone-numbers
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/FindUsersByPhoneNumbersInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/UserExtendedReferenceWithPhone'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/profiles/search:
         get:
             tags:
@@ -5465,6 +5465,72 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/edit:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Edit tasks using natural language
+            description: Use AI to find and edit one or more tasks based on a natural language instruction
+            operationId: edit-tasks-natural-language
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EditTasksNaturalLanguageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EditTasksNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/intent:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Unified natural language intent router
+            description: Decompose a natural language utterance into create/edit/delete operations. Edit ops are applied immediately; create and delete payloads are returned for frontend confirmation.
+            operationId: intent-task-natural-language
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/IntentTaskNaturalLanguageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/IntentTaskNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/natural-language/preview:
         post:
             tags:
@@ -5492,6 +5558,73 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/PreviewTaskNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/query:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Query tasks using natural language
+            description: Convert natural language to structured filters and return matching tasks using AI
+            operationId: query-tasks-natural-language
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/QueryTasksNaturalLanguageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/QueryTasksNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/query:
+        post:
+            tags:
+                - tasks
+            summary: Query tasks with filters
+            description: Query tasks for the authenticated user with advanced filtering options
+            operationId: query-tasks-by-user
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/TaskQueryFilters'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/TaskDocument'
                 default:
                     description: Error
                     content:
@@ -5598,6 +5731,79 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdateTemplateOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/template/{id}/reset:
+        post:
+            tags:
+                - tasks
+            summary: Reset template metrics
+            description: Reset streak, completion, and missed counts for a recurring task template
+            operationId: reset-template-metrics
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: refresh_token
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ResetTemplateMetricsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/template/{id}/undo-missed:
+        post:
+            tags:
+                - tasks
+            summary: Undo a missed recurring task
+            description: Retroactively mark a recently missed recurring task as completed, restoring the streak. Must be used within 24 hours of the miss.
+            operationId: undo-missed-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UndoMissedTaskOutputBody'
                 default:
                     description: Error
                     content:
@@ -5860,6 +6066,44 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/WorkspaceResult'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/workspaces/{name}:
+        patch:
+            tags:
+                - categories
+                - workspaces
+            summary: Update workspace metadata
+            description: Update icon and color for a workspace
+            operationId: update-workspace
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateWorkspaceParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateWorkspaceOutputBody'
                 default:
                     description: Error
                     content:
@@ -7211,6 +7455,10 @@ components:
                     examples:
                         - https://example.com/schemas/CreateCategoryParams.json
                     readOnly: true
+                color:
+                    type: string
+                icon:
+                    type: string
                 name:
                     type: string
                 workspaceName:
@@ -7823,6 +8071,87 @@ components:
                 - recent_workspaces
                 - friend_activity_feed
                 - near_deadlines_widget
+        EditResultResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                editedCount:
+                    type: integer
+                    description: Total number of tasks/templates edited
+                    format: int64
+                tasks:
+                    type: array
+                    description: Edited regular tasks
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                templates:
+                    type: array
+                    description: Edited recurring template tasks
+                    items:
+                        $ref: '#/components/schemas/TemplateTaskDocument'
+            required:
+                - tasks
+                - templates
+                - editedCount
+        EditTasksNaturalLanguageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/EditTasksNaturalLanguageInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: Natural language instruction for editing tasks
+                    examples:
+                        - move my dentist appointment to next Friday
+                    minLength: 1
+                    maxLength: 10000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        EditTasksNaturalLanguageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/EditTasksNaturalLanguageOutputBody.json
+                    readOnly: true
+                editedCount:
+                    type: integer
+                    description: Total number of tasks/templates that were edited
+                    format: int64
+                message:
+                    type: string
+                    examples:
+                        - Successfully edited 2 tasks
+                tasks:
+                    type: array
+                    description: List of edited regular tasks with their updated state
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                templates:
+                    type: array
+                    description: List of edited recurring template tasks with their updated state
+                    items:
+                        $ref: '#/components/schemas/TemplateTaskDocument'
+            required:
+                - tasks
+                - templates
+                - editedCount
+                - message
         EncouragementDocument:
             type: object
             additionalProperties: false
@@ -8081,6 +8410,63 @@ components:
                     maxItems: 1000
             required:
                 - numbers
+        FriendReference:
+            type: object
+            additionalProperties: false
+            properties:
+                _id:
+                    type: string
+                    description: User ID
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                display_name:
+                    type: string
+                    description: User display name
+                    examples:
+                        - John Doe
+                encouragements:
+                    type: integer
+                    description: Available encouragements to send
+                    format: int64
+                    examples:
+                        - 3
+                handle:
+                    type: string
+                    description: User handle
+                    examples:
+                        - johndoe
+                posts_this_week:
+                    type: integer
+                    description: Number of posts made this week
+                    format: int64
+                    examples:
+                        - 2
+                profile_picture:
+                    type: string
+                    description: Profile picture URL
+                    examples:
+                        - https://example.com/avatar.jpg
+                streak:
+                    type: integer
+                    description: Current streak
+                    format: int64
+                    examples:
+                        - 5
+                tasks_complete:
+                    type: integer
+                    description: Total tasks completed
+                    format: int64
+                    examples:
+                        - 12
+            required:
+                - _id
+                - display_name
+                - handle
+                - profile_picture
+                - streak
+                - tasks_complete
+                - encouragements
+                - posts_this_week
         GenerateAndCreateBlueprintParams:
             type: object
             additionalProperties: false
@@ -8558,6 +8944,69 @@ components:
                 - width
                 - height
                 - bytes
+        IntentOpResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                createPreview:
+                    description: Populated for create ops — preview payload to pass to /confirm
+                    $ref: '#/components/schemas/MultiTaskOutputLocal'
+                deleteTasks:
+                    type: array
+                    description: Populated for delete ops — tasks matching the delete query
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                editResult:
+                    description: Populated for edit ops — tasks already updated server-side
+                    $ref: '#/components/schemas/EditResultResponse'
+                type:
+                    type: string
+                    description: 'Operation type: ''create'', ''edit'', or ''delete'''
+            required:
+                - type
+        IntentTaskNaturalLanguageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/IntentTaskNaturalLanguageInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: Natural language instruction (may contain create, edit, and/or delete operations)
+                    examples:
+                        - delete my grocery tasks and add a dentist appointment tomorrow
+                    minLength: 1
+                    maxLength: 10000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        IntentTaskNaturalLanguageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/IntentTaskNaturalLanguageOutputBody.json
+                    readOnly: true
+                ops:
+                    type: array
+                    description: Ordered list of decomposed operations. Edits are already applied; deletes and creates need frontend confirmation.
+                    items:
+                        $ref: '#/components/schemas/IntentOpResponse'
+            required:
+                - ops
         KudosRewards:
             type: object
             additionalProperties: false
@@ -8856,6 +9305,21 @@ components:
             required:
                 - id
                 - handle
+        MultiTaskOutputLocal:
+            type: object
+            additionalProperties: false
+            properties:
+                categories:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/NewCategoryWithTasksLocal'
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CategoryTaskPairLocal'
+            required:
+                - categories
+                - tasks
         NewCategoryWithTasksLocal:
             type: object
             additionalProperties: false
@@ -9219,6 +9683,10 @@ components:
                     examples:
                         - https://example.com/schemas/ProfileDocument.json
                     readOnly: true
+                completed_tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
                 display_name:
                     type: string
                 friends:
@@ -9259,6 +9727,53 @@ components:
                 - points
                 - posts_made
                 - friends
+        QueryTasksNaturalLanguageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/QueryTasksNaturalLanguageInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: Natural language query to filter tasks
+                    examples:
+                        - high priority tasks due this week
+                    minLength: 1
+                    maxLength: 10000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        QueryTasksNaturalLanguageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/QueryTasksNaturalLanguageOutputBody.json
+                    readOnly: true
+                query:
+                    description: The structured query generated from natural language
+                    $ref: '#/components/schemas/TaskQueryFilters'
+                tasks:
+                    type: array
+                    description: Matching tasks
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+            required:
+                - tasks
+                - query
         RecurDetails:
             type: object
             additionalProperties: false
@@ -9757,6 +10272,23 @@ components:
                         - inappropriate
             required:
                 - reason
+        ResetTemplateMetricsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ResetTemplateMetricsOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Template metrics reset successfully
+            required:
+                - message
         SafeUser:
             type: object
             additionalProperties: false
@@ -10086,6 +10618,64 @@ components:
                 - lastEdited
                 - startDate
                 - posted
+        TaskQueryFilters:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/TaskQueryFilters.json
+                    readOnly: true
+                active:
+                    type: boolean
+                    description: Filter by active status
+                categoryIds:
+                    type: array
+                    description: Filter by category IDs
+                    items:
+                        type: string
+                deadlineFrom:
+                    type: string
+                    description: Filter tasks with deadline on or after this time (ISO8601)
+                    format: date-time
+                deadlineTo:
+                    type: string
+                    description: Filter tasks with deadline on or before this time (ISO8601)
+                    format: date-time
+                hasDeadline:
+                    type: boolean
+                    description: Filter tasks that have (true) or don't have (false) a deadline
+                hasStartTime:
+                    type: boolean
+                    description: Filter tasks that have (true) or don't have (false) a start date
+                priorities:
+                    type: array
+                    description: Filter by priority values (1=low, 2=medium, 3=high)
+                    items:
+                        type: integer
+                        format: int64
+                sortBy:
+                    type: string
+                    description: 'Sort field: timestamp, priority, value, or deadline'
+                    examples:
+                        - timestamp
+                sortDir:
+                    type: integer
+                    description: 'Sort direction: 1 (ascending) or -1 (descending)'
+                    format: int64
+                    examples:
+                        - -1
+                startTimeFrom:
+                    type: string
+                    description: Filter tasks with start date on or after this time (ISO8601)
+                    format: date-time
+                startTimeTo:
+                    type: string
+                    description: Filter tasks with start date on or before this time (ISO8601)
+                    format: date-time
         TemplateTaskDocument:
             type: object
             additionalProperties: false
@@ -10126,11 +10716,17 @@ components:
                 lastGenerated:
                     type: string
                     format: date-time
+                lastMissedAt:
+                    type: string
+                    format: date-time
                 nextGenerated:
                     type: string
                     format: date-time
                 notes:
                     type: string
+                previousStreak:
+                    type: integer
+                    format: int64
                 priority:
                     type: integer
                     format: int64
@@ -10222,11 +10818,17 @@ components:
                 lastGenerated:
                     type: string
                     format: date-time
+                lastMissedAt:
+                    type: string
+                    format: date-time
                 nextGenerated:
                     type: string
                     format: date-time
                 notes:
                     type: string
+                previousStreak:
+                    type: integer
+                    format: int64
                 priority:
                     type: integer
                     format: int64
@@ -10318,6 +10920,37 @@ components:
                         - User unblocked successfully
             required:
                 - message
+        UndoMissedTaskOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UndoMissedTaskOutputBody.json
+                    readOnly: true
+                highestStreak:
+                    type: integer
+                    description: Current highest streak
+                    format: int64
+                    examples:
+                        - 6
+                message:
+                    type: string
+                    examples:
+                        - Missed task successfully marked as completed
+                streak:
+                    type: integer
+                    description: Restored streak value
+                    format: int64
+                    examples:
+                        - 6
+            required:
+                - message
+                - streak
+                - highestStreak
         UnlockFeatureInputBody:
             type: object
             additionalProperties: false
@@ -11147,6 +11780,38 @@ components:
                         - Settings updated successfully
             required:
                 - message
+        UpdateWorkspaceOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateWorkspaceOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Workspace updated successfully
+            required:
+                - message
+        UpdateWorkspaceParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateWorkspaceParams.json
+                    readOnly: true
+                color:
+                    type: string
+                icon:
+                    type: string
         UserCredits:
             type: object
             additionalProperties: false
@@ -11439,6 +12104,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CategoryDocument'
+                color:
+                    type: string
+                icon:
+                    type: string
                 name:
                     type: string
             required:
