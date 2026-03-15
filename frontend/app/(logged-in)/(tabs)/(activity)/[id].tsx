@@ -1,8 +1,7 @@
-import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, Animated } from "react-native";
+import { StyleSheet, View, ScrollView, TouchableOpacity, Animated } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import ActivityPoint from "@/components/profile/ActivityPoint";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -14,130 +13,12 @@ import RecurringTasksSelectionModal from "@/components/modals/RecurringTasksSele
 import { getUserTemplatesAPI } from "@/api/task";
 import { useAuth } from "@/hooks/useAuth";
 import { RecurringTaskCard } from "@/components/activity/RecurringTaskCard";
+import CalendarMonth, { CELL_SIZE, GRID_GAP } from "@/components/activity/CalendarMonth";
 
 const month_names = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ];
-
-const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
-
-// Calculate the cell size so 7 columns + 6 gaps fit within the available width
-const GRID_GAP = 4;
-const GRID_PADDING = HORIZONTAL_PADDING;
-const CELL_SIZE = Math.floor(
-    (Dimensions.get("window").width - GRID_PADDING * 2 - GRID_GAP * 6) / 7
-);
-
-// --- Calendar Month Grid ---
-
-interface CalendarMonthProps {
-    monthName: string;
-    year: number;
-    monthNumber: number;
-    levels: number[];
-    onDayPress: (dayNumber: number) => void;
-    ThemedColor: any;
-}
-
-const CalendarMonth: React.FC<CalendarMonthProps> = React.memo(({
-    monthName,
-    year,
-    monthNumber,
-    levels,
-    onDayPress,
-    ThemedColor,
-}) => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    const currentDay = now.getDate();
-
-    // Day-of-week the 1st falls on (0 = Sunday)
-    const firstDayOffset = new Date(year, monthNumber - 1, 1).getDay();
-    const daysInMonth = levels.length;
-    const totalCells = firstDayOffset + daysInMonth;
-    const rows = Math.ceil(totalCells / 7);
-
-    return (
-        <View style={calStyles.monthBlock}>
-            <ThemedText type="defaultSemiBold" style={{ fontSize: 15 }}>
-                {monthName}
-            </ThemedText>
-
-            {/* Weekday headers */}
-            <View style={calStyles.weekRow}>
-                {WEEKDAY_LABELS.map((label, i) => (
-                    <View key={i} style={calStyles.cell}>
-                        <ThemedText type="caption" style={{ fontSize: 10, color: ThemedColor.caption, textAlign: "center" }}>
-                            {label}
-                        </ThemedText>
-                    </View>
-                ))}
-            </View>
-
-            {/* Calendar rows */}
-            {Array.from({ length: rows }).map((_, rowIdx) => (
-                <View key={rowIdx} style={calStyles.weekRow}>
-                    {Array.from({ length: 7 }).map((_, colIdx) => {
-                        const cellIndex = rowIdx * 7 + colIdx;
-                        const dayNumber = cellIndex - firstDayOffset + 1;
-
-                        if (cellIndex < firstDayOffset || dayNumber > daysInMonth) {
-                            return <View key={colIdx} style={calStyles.cell} />;
-                        }
-
-                        const level = levels[dayNumber - 1];
-
-                        const isFuture =
-                            year > currentYear ||
-                            (year === currentYear && monthNumber > currentMonth) ||
-                            (year === currentYear && monthNumber === currentMonth && dayNumber > currentDay);
-
-                        const isToday =
-                            year === currentYear &&
-                            monthNumber === currentMonth &&
-                            dayNumber === currentDay;
-
-                        return (
-                            <View key={colIdx} style={calStyles.cell}>
-                                <ActivityPoint
-                                    level={level}
-                                    isFuture={isFuture}
-                                    isToday={isToday}
-                                    size={CELL_SIZE - 6}
-                                    onPress={() => {
-                                        if (!isFuture && level > 0) {
-                                            onDayPress(dayNumber);
-                                        }
-                                    }}
-                                />
-                            </View>
-                        );
-                    })}
-                </View>
-            ))}
-        </View>
-    );
-});
-
-const calStyles = StyleSheet.create({
-    monthBlock: {
-        marginTop: 20,
-        gap: 4,
-        width: "100%",
-    },
-    weekRow: {
-        flexDirection: "row",
-        gap: GRID_GAP,
-    },
-    cell: {
-        width: CELL_SIZE,
-        height: CELL_SIZE,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-});
 
 // --- Skeleton Loader ---
 
@@ -338,8 +219,16 @@ const Activity = () => {
                                         recurType={template.recurType}
                                         recurFrequency={template.recurFrequency}
                                         streak={template.streak}
+                                        timesCompleted={template.timesCompleted}
                                         timesMissed={template.timesMissed}
                                         onToggle={handleToggleTemplate}
+                                        onMetricsReset={(id) => {
+                                            setTemplates(prev => prev.map(t =>
+                                                t.id === id
+                                                    ? { ...t, streak: 0, timesCompleted: 0, timesMissed: 0, completionDates: [] }
+                                                    : t
+                                            ));
+                                        }}
                                     />
                                 ))}
                             </View>

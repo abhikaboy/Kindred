@@ -73,7 +73,7 @@ export function SearchBox({
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isMountedRef = useRef(true);
 
-    const shouldShowAutocomplete = showAutocomplete && autocompleteSuggestions.length > 0;
+    const shouldShowAutocomplete = showAutocomplete && autocompleteSuggestions.length > 0 && isFocused;
     const shouldShowRecents = recent && recentItems.length > 0 && !shouldShowAutocomplete && isFocused;
     const shouldShowLoading = recent && isLoading && isFocused && !shouldShowAutocomplete;
 

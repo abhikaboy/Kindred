@@ -1,9 +1,10 @@
 import { Dimensions, StyleSheet, TouchableOpacity, View, InteractionManager } from "react-native";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTasks } from "@/contexts/tasksContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
@@ -19,7 +20,8 @@ import Animated, {
 import { DailyHeader } from "@/components/daily/DailyHeader";
 import { DatePager } from "@/components/daily/DatePager";
 import { TaskListView } from "@/components/daily/TaskListView";
-import { CalendarView } from "@/components/daily/CalendarView";
+import { CalendarView, ScheduleTimeRange } from "@/components/daily/CalendarView";
+import { ScheduleTaskSheet } from "@/components/daily/ScheduleTaskSheet";
 import { FloatingDateNav } from "@/components/daily/FloatingDateNav";
 import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
@@ -37,7 +39,8 @@ const Daily = (props: Props) => {
 
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const { loadTaskData } = useTaskCreation();
+    const { loadTaskData, resetTaskCreation, setStartDate, setStartTime, setDeadline } = useTaskCreation();
+    const { setSelected } = useTasks();
     const { openModal } = useCreateModal();
     const { setIsDrawerOpen } = useDrawer();
     const params = useLocalSearchParams();
@@ -48,6 +51,10 @@ const Daily = (props: Props) => {
     // State
     const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
     const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
+
+    // Drag-to-create state
+    const [showScheduleSheet, setShowScheduleSheet] = useState(false);
+    const [scheduleTimeRange, setScheduleTimeRange] = useState<ScheduleTimeRange | null>(null);
 
     const [centerDate, setCenterDate] = useState(() => {
         const d = new Date();
@@ -134,6 +141,20 @@ const Daily = (props: Props) => {
         });
     };
 
+    const handleDragCreateComplete = useCallback((range: ScheduleTimeRange) => {
+        setScheduleTimeRange(range);
+        setShowScheduleSheet(true);
+    }, []);
+
+    const handleCreateNewFromRange = useCallback((startTime: Date, endTime: Date, workspaceName: string) => {
+        resetTaskCreation();
+        setSelected(workspaceName);
+        setStartDate(selectedDate);
+        setStartTime(startTime);
+        setDeadline(endTime);
+        setTimeout(() => openModal({ screen: Screen.STANDARD }), 300);
+    }, [selectedDate, resetTaskCreation, setSelected, setStartDate, setStartTime, setDeadline, openModal]);
+
     const listScrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             animatedScrollY.value = event.contentOffset.y;
@@ -201,6 +222,7 @@ const Daily = (props: Props) => {
                                 tasksUnscheduled={tasksUnscheduled}
                                 animatedScrollY={calendarAnimatedScrollY}
                                 scrollViewRef={calendarScrollViewRef}
+                                onDragCreateComplete={handleDragCreateComplete}
                             />
                         )}
                     </View>
@@ -209,6 +231,15 @@ const Daily = (props: Props) => {
                 <FloatingDateNav
                     selectedDate={selectedDate}
                     onDateChange={handleDateChange}
+                />
+
+                <ScheduleTaskSheet
+                    visible={showScheduleSheet}
+                    setVisible={setShowScheduleSheet}
+                    timeRange={scheduleTimeRange}
+                    selectedDate={selectedDate}
+                    tasksUnscheduled={tasksUnscheduled}
+                    onCreateNew={handleCreateNewFromRange}
                 />
             </View>
         </DrawerLayout>

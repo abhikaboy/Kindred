@@ -11,6 +11,7 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { getCompletedTasksAPI, PaginatedCompletedTasksResponse } from "@/api/task";
 import TaskCard from "@/components/cards/TaskCard";
 import { useTasks } from "@/contexts/tasksContext";
+import { stringToLocalAwareDate } from "@/utils/timeUtils";
 
 const TASKS_PER_PAGE = 20;
 
@@ -29,24 +30,24 @@ const formatSectionDate = (date: Date): string => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     // Reset hours for comparison
     today.setHours(0, 0, 0, 0);
     yesterday.setHours(0, 0, 0, 0);
     const compareDate = new Date(date);
     compareDate.setHours(0, 0, 0, 0);
-    
+
     if (compareDate.getTime() === today.getTime()) {
         return "Today";
     } else if (compareDate.getTime() === yesterday.getTime()) {
         return "Yesterday";
     } else {
         // Format as "Monday, January 15, 2024"
-        return date.toLocaleDateString("en-US", { 
-            weekday: "long", 
-            year: "numeric", 
-            month: "long", 
-            day: "numeric" 
+        return date.toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
         });
     }
 };
@@ -58,15 +59,15 @@ const groupTasksByDate = (tasks: CompletedTask[] | undefined) => {
         console.warn("groupTasksByDate received invalid tasks:", tasks);
         return [];
     }
-    
+
     const grouped: { [key: string]: CompletedTask[] } = {};
-    
+
     tasks.forEach(task => {
         if (task?.timeCompleted) {
             try {
                 const date = new Date(task.timeCompleted);
-                const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-                
+                const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
                 if (!grouped[dateKey]) {
                     grouped[dateKey] = [];
                 }
@@ -76,12 +77,12 @@ const groupTasksByDate = (tasks: CompletedTask[] | undefined) => {
             }
         }
     });
-    
+
     // Sort dates in descending order (most recent first)
     const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-    
+
     return sortedDates.map(dateKey => ({
-        date: new Date(dateKey),
+        date: stringToLocalAwareDate(dateKey),
         dateKey,
         tasks: grouped[dateKey]
     }));
@@ -92,7 +93,7 @@ const CompletedTasks = () => {
     const drawerRef = useRef(null);
     const { setIsDrawerOpen } = useDrawer();
     const { categories } = useTasks();
-    
+
     const [paginationData, setPaginationData] = useState<PaginatedCompletedTasksResponse>({
         tasks: [],
         page: 1,
@@ -102,7 +103,7 @@ const CompletedTasks = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     // Fetch completed tasks with pagination
     const fetchCompletedTasks = async (page: number) => {
         try {
@@ -111,12 +112,12 @@ const CompletedTasks = () => {
             console.log(`Fetching completed tasks for page ${page}`);
             const response = await getCompletedTasksAPI(page, TASKS_PER_PAGE);
             console.log("API Response:", response);
-            
+
             // Validate response structure
             if (!response) {
                 throw new Error("No response received from API");
             }
-            
+
             // Ensure tasks is an array
             const validatedResponse: PaginatedCompletedTasksResponse = {
                 tasks: Array.isArray(response.tasks) ? response.tasks : [],
@@ -125,7 +126,7 @@ const CompletedTasks = () => {
                 total: response.total || 0,
                 totalPages: response.totalPages || 0,
             };
-            
+
             console.log("Validated response:", validatedResponse);
             setPaginationData(validatedResponse);
         } catch (err) {
@@ -143,27 +144,27 @@ const CompletedTasks = () => {
             setLoading(false);
         }
     };
-    
+
     // Fetch tasks when page changes
     useEffect(() => {
         fetchCompletedTasks(paginationData.page);
     }, [paginationData.page]);
-    
+
     // Group tasks by date
     const groupedTasks = useMemo(() => groupTasksByDate(paginationData.tasks as CompletedTask[]), [paginationData.tasks]);
-    
+
     const handleNextPage = () => {
         if (paginationData.page < paginationData.totalPages) {
             setPaginationData(prev => ({ ...prev, page: prev.page + 1 }));
         }
     };
-    
+
     const handlePreviousPage = () => {
         if (paginationData.page > 1) {
             setPaginationData(prev => ({ ...prev, page: prev.page - 1 }));
         }
     };
-    
+
     const getCategoryName = (categoryId: string) => {
         const category = categories?.find(cat => cat.id === categoryId);
         return category?.name || "Unknown";
@@ -184,7 +185,7 @@ const CompletedTasks = () => {
                 <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
-                
+
                 <View style={styles.headerContainer}>
                     <ThemedText type="title" style={styles.title}>
                         Completed Tasks
@@ -193,7 +194,7 @@ const CompletedTasks = () => {
                         View all your completed tasks organized by date
                     </ThemedText>
                 </View>
-                
+
                 {loading ? (
                     <View style={styles.centerContainer}>
                         <ActivityIndicator size="large" color={ThemedColor.primary} />
@@ -217,8 +218,8 @@ const CompletedTasks = () => {
                     </View>
                 ) : (
                     <>
-                        <ScrollView 
-                            style={styles.scrollView} 
+                        <ScrollView
+                            style={styles.scrollView}
                             contentContainerStyle={styles.scrollContent}
                             showsVerticalScrollIndicator={false}>
                             {groupedTasks.map(({ date, dateKey, tasks }) => (
@@ -231,7 +232,7 @@ const CompletedTasks = () => {
                                             {tasks.length} task{tasks.length !== 1 ? 's' : ''}
                                         </ThemedText>
                                     </View>
-                                    
+
                                     <View style={styles.tasksContainer}>
                                         {tasks.map((task) => (
                                             <TaskCard
@@ -247,10 +248,10 @@ const CompletedTasks = () => {
                                                 inlineComponent={
                                                     task.timeCompleted ? (
                                                         <View style={styles.completionTimeContainer}>
-                                                            <Feather 
-                                                                name="check-circle" 
-                                                                size={12} 
-                                                                color={ThemedColor.success} 
+                                                            <Feather
+                                                                name="check-circle"
+                                                                size={12}
+                                                                color={ThemedColor.success}
                                                             />
                                                             <ThemedText type="caption" style={styles.completionTime}>
                                                                 {new Date(task.timeCompleted).toLocaleTimeString("en-US", {
@@ -268,24 +269,24 @@ const CompletedTasks = () => {
                                 </View>
                             ))}
                         </ScrollView>
-                        
+
                         {/* Pagination Controls */}
                         {paginationData.totalPages > 1 && (
                             <View style={styles.paginationContainer}>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={handlePreviousPage}
                                     disabled={paginationData.page === 1}
                                     style={[
                                         styles.paginationButton,
                                         paginationData.page === 1 && styles.paginationButtonDisabled
                                     ]}>
-                                    <Feather 
-                                        name="chevron-left" 
-                                        size={20} 
-                                        color={paginationData.page === 1 ? ThemedColor.caption : ThemedColor.text} 
+                                    <Feather
+                                        name="chevron-left"
+                                        size={20}
+                                        color={paginationData.page === 1 ? ThemedColor.caption : ThemedColor.text}
                                     />
-                                    <ThemedText 
-                                        type="default" 
+                                    <ThemedText
+                                        type="default"
                                         style={[
                                             styles.paginationButtonText,
                                             paginationData.page === 1 && { color: ThemedColor.caption }
@@ -293,7 +294,7 @@ const CompletedTasks = () => {
                                         Previous
                                     </ThemedText>
                                 </TouchableOpacity>
-                                
+
                                 <View style={styles.paginationInfo}>
                                     <ThemedText type="default" style={styles.paginationText}>
                                         Page {paginationData.page} of {paginationData.totalPages}
@@ -302,26 +303,26 @@ const CompletedTasks = () => {
                                         Showing {paginationData.tasks.length} of {paginationData.total} tasks
                                     </ThemedText>
                                 </View>
-                                
-                                <TouchableOpacity 
+
+                                <TouchableOpacity
                                     onPress={handleNextPage}
                                     disabled={paginationData.page === paginationData.totalPages}
                                     style={[
                                         styles.paginationButton,
                                         paginationData.page === paginationData.totalPages && styles.paginationButtonDisabled
                                     ]}>
-                                    <ThemedText 
-                                        type="default" 
+                                    <ThemedText
+                                        type="default"
                                         style={[
                                             styles.paginationButtonText,
                                             paginationData.page === paginationData.totalPages && { color: ThemedColor.caption }
                                         ]}>
                                         Next
                                     </ThemedText>
-                                    <Feather 
-                                        name="chevron-right" 
-                                        size={20} 
-                                        color={paginationData.page === paginationData.totalPages ? ThemedColor.caption : ThemedColor.text} 
+                                    <Feather
+                                        name="chevron-right"
+                                        size={20}
+                                        color={paginationData.page === paginationData.totalPages ? ThemedColor.caption : ThemedColor.text}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -426,4 +427,3 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
 });
-

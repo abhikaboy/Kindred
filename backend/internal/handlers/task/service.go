@@ -2073,6 +2073,30 @@ func (s *Service) GetTemplateByID(id primitive.ObjectID) (*TemplateTaskDocument,
 	return &template, err
 }
 
+// ResetTemplateMetrics zeroes out streak, timesCompleted, timesMissed, and completionDates.
+func (s *Service) ResetTemplateMetrics(id primitive.ObjectID) error {
+	ctx := context.Background()
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{
+		"streak":          0,
+		"highestStreak":   0,
+		"timesCompleted":  0,
+		"timesMissed":     0,
+		"timesGenerated":  0,
+		"completionDates": []time.Time{},
+		"lastEdited":      xutils.NowUTC(),
+	}}
+
+	result, err := s.TemplateTasks.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return handleMongoError(ctx, "reset template metrics", err)
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("template task not found")
+	}
+	return nil
+}
+
 // UpdateTemplateTask updates a template task document by ID
 func (s *Service) UpdateTemplateTask(id primitive.ObjectID, updated UpdateTemplateDocument) error {
 	ctx := context.Background()
@@ -2461,33 +2485,13 @@ func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.Ob
 		"tasks.$[t].lastEdited": xutils.NowUTC(),
 	}
 
-	// Combine StartDate and StartTime if both are provided
-	// StartTime from the time picker includes the current date, but we want to use the date from StartDate
-	if update.StartTime != nil && update.StartDate != nil {
-		// Extract time components (hour, minute, second) from StartTime
-		hour, min, sec := update.StartTime.Clock()
-
-		// Combine the date from StartDate with the time from StartTime
-		combinedDateTime := time.Date(
-			update.StartDate.Year(),
-			update.StartDate.Month(),
-			update.StartDate.Day(),
-			hour, min, sec, 0,
-			update.StartDate.Location(),
-		)
-
-		// Update StartDate to include the time
-		updateFields["tasks.$[t].startDate"] = combinedDateTime
-		// Keep StartTime as well for potential future use/display
+	// Frontend now sends a pre-combined startDate (date + time in local timezone),
+	// so we store the values as received.
+	if update.StartDate != nil {
+		updateFields["tasks.$[t].startDate"] = update.StartDate
+	}
+	if update.StartTime != nil {
 		updateFields["tasks.$[t].startTime"] = update.StartTime
-	} else {
-		// Only update fields that are provided individually
-		if update.StartDate != nil {
-			updateFields["tasks.$[t].startDate"] = update.StartDate
-		}
-		if update.StartTime != nil {
-			updateFields["tasks.$[t].startTime"] = update.StartTime
-		}
 	}
 
 	_, err := s.Tasks.UpdateOne(

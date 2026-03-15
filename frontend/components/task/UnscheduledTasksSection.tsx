@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     emptyText: {
-        textAlign: "center",
-        marginTop: 20,
+        marginTop: 4,
     },
 });

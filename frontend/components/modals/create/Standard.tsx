@@ -20,6 +20,7 @@ import type { components } from "@/api/generated/types";
 import { updateTaskAPI, updateTemplateAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
+import { combineDateAndTime } from "@/utils/timeUtils";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep, hide } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
@@ -268,7 +269,7 @@ const StandardContent = ({
                 active: false,
                 checklist: [],
                 notes: "",
-                startDate: startDate?.toISOString(),
+                startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
                 startTime: startTime?.toISOString(),
                 deadline: deadline?.toISOString(),
                 reminders: reminders.map((reminder) => ({
@@ -303,7 +304,7 @@ const StandardContent = ({
             active: false,
             checklist: [],
             notes: "",
-            startDate: startDate?.toISOString(),
+            startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
             reminders: reminders.map((reminder) => ({
@@ -333,7 +334,7 @@ const StandardContent = ({
             active: false,
             checklist: [],
             notes: "",
-            startDate: startDate?.toISOString(),
+            startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
             reminders: reminders.map((reminder) => ({
@@ -391,7 +392,7 @@ const StandardContent = ({
                   daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
                   behavior: "ROLLING",
               },
-        startDate: startDate?.toISOString(),
+        startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
         startTime: startTime?.toISOString(),
         deadline: deadline?.toISOString(),
         reminders: reminders.map((reminder) => ({
@@ -484,7 +485,7 @@ const StandardContent = ({
                 public: isPublic,
                 recurDetails: recurring ? (recurDetails as RecurDetails) : undefined,
                 recurFrequency: recurring ? recurFrequency : undefined,
-                startDate: startDate?.toISOString(),
+                startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
                 startTime: startTime?.toISOString(),
                 deadline: deadline?.toISOString(),
                 reminders: reminders.map((reminder) => ({

@@ -2,6 +2,7 @@ import { client } from "@/hooks/useTypedAPI";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import { logger } from "@/utils/logger";
+import { combineDateAndTime } from "@/utils/timeUtils";
 
 // Extract the type definitions from the generated types
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -263,6 +264,20 @@ export const updateTemplateAPI = async (
 };
 
 /**
+ * Reset all metrics (streak, timesCompleted, timesMissed, completionDates) on a template
+ * @param templateId - The ID of the template to reset
+ */
+export const resetTemplateMetricsAPI = async (templateId: string): Promise<void> => {
+    const { error } = await client.POST("/v1/user/tasks/template/{id}/reset" as any, {
+        params: withAuthHeaders({ path: { id: templateId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to reset template metrics: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
  * Response type for paginated completed tasks
  */
 export interface PaginatedCompletedTasksResponse {
@@ -404,7 +419,7 @@ export const updateTaskStartAPI = async (
             path: { category: categoryId, id: taskId }
         }),
         body: {
-            startDate: startDate?.toISOString() || null,
+            startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString() || null,
             startTime: startTime?.toISOString() || null
         },
     });

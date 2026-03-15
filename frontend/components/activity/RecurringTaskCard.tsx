@@ -1,7 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { resetTemplateMetricsAPI } from "@/api/task";
 
 interface RecurringTaskCardProps {
     templateId: string;
@@ -12,15 +14,14 @@ interface RecurringTaskCardProps {
     month: number;
     isSelected: boolean;
     onToggle: (templateId: string) => void;
+    onMetricsReset?: (templateId: string) => void;
     recurType: string;
     recurFrequency?: string;
     streak?: number;
+    timesCompleted?: number;
     timesMissed?: number;
     icon?: string;
 }
-
-const MISSED_COLOR = "#E5484D";
-const MISSED_COLOR_SOFT = "rgba(229, 72, 77, 0.25)";
 
 export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
     templateId,
@@ -31,10 +32,13 @@ export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
     month,
     isSelected,
     onToggle,
+    onMetricsReset,
     streak = 0,
+    timesCompleted = 0,
     timesMissed = 0,
 }) => {
     const ThemedColor = useThemeColor();
+    const [alertVisible, setAlertVisible] = useState(false);
 
     const { weekActivity, completionsThisMonth } = useMemo(() => {
         const today = new Date();
@@ -68,80 +72,117 @@ export const RecurringTaskCard: React.FC<RecurringTaskCardProps> = ({
         return { weekActivity: activity, completionsThisMonth: monthCount };
     }, [completionDates, year, month]);
 
-    const hasMisses = timesMissed > 0;
-    const streakBroken = hasMisses && streak === 0;
+    const totalAttempts = timesCompleted + timesMissed;
+    const completionPct = totalAttempts > 0 ? Math.round((timesCompleted / totalAttempts) * 100) : null;
+
+    const pctColor =
+        completionPct === null
+            ? ThemedColor.caption
+            : completionPct >= 80
+            ? ThemedColor.success
+            : completionPct >= 50
+            ? ThemedColor.warning
+            : ThemedColor.error;
+
+    const handleReset = async () => {
+        try {
+            await resetTemplateMetricsAPI(templateId);
+            onMetricsReset?.(templateId);
+        } catch (e) {
+            console.error("Failed to reset metrics:", e);
+        }
+    };
+
+    const alertButtons: AlertButton[] = [
+        { text: "Cancel", style: "cancel" },
+        {
+            text: "Reset",
+            style: "destructive",
+            onPress: handleReset,
+        },
+    ];
 
     return (
-        <TouchableOpacity
-            style={[
-                styles.row,
-                {
-                    backgroundColor: isSelected
-                        ? ThemedColor.lightened
-                        : streakBroken
-                        ? MISSED_COLOR_SOFT
-                        : "transparent",
-                },
-            ]}
-            onPress={() => onToggle(templateId)}
-            activeOpacity={0.6}
-        >
-            <View style={styles.content}>
-                <View style={styles.topLine}>
-                    <ThemedText
-                        type="default"
-                        numberOfLines={1}
-                        style={[styles.taskName, { color: ThemedColor.text }]}
-                    >
-                        {taskName}
-                    </ThemedText>
-                    <View style={styles.trailing}>
-                        {streak > 0 ? (
-                            <ThemedText type="caption" style={{ fontSize: 12, color: ThemedColor.caption }}>
-                                {streak}d streak
-                            </ThemedText>
-                        ) : hasMisses ? (
-                            <ThemedText type="caption" style={{ fontSize: 12, color: MISSED_COLOR }}>
-                                {timesMissed} missed
-                            </ThemedText>
-                        ) : null}
+        <>
+            <TouchableOpacity
+                style={[
+                    styles.row,
+                    {
+                        backgroundColor: isSelected
+                            ? ThemedColor.lightened
+                            : "transparent",
+                    },
+                ]}
+                onPress={() => onToggle(templateId)}
+                onLongPress={() => setAlertVisible(true)}
+                activeOpacity={0.6}
+            >
+                <View style={styles.content}>
+                    <View style={styles.topLine}>
                         <ThemedText
-                            type="defaultSemiBold"
-                            style={{ color: ThemedColor.primary, fontSize: 13 }}
+                            type="default"
+                            numberOfLines={1}
+                            style={[styles.taskName, { color: ThemedColor.text }]}
                         >
-                            {completionsThisMonth}/mo
+                            {taskName}
                         </ThemedText>
+                        <View style={styles.trailing}>
+                            {streak > 0 ? (
+                                <ThemedText type="caption" style={{ fontSize: 12, color: ThemedColor.caption }}>
+                                    {streak}d streak
+                                </ThemedText>
+                            ) : completionPct !== null ? (
+                                <ThemedText type="caption" style={{ fontSize: 12, color: pctColor }}>
+                                    {completionPct}%
+                                </ThemedText>
+                            ) : null}
+                            <ThemedText
+                                type="defaultSemiBold"
+                                style={{ color: ThemedColor.primary, fontSize: 13 }}
+                            >
+                                {completionsThisMonth}/mo
+                            </ThemedText>
+                        </View>
+                    </View>
+                    <View style={styles.bottomLine}>
+                        <ThemedText
+                            type="caption"
+                            numberOfLines={1}
+                            style={{ color: ThemedColor.caption, fontSize: 12 }}
+                        >
+                            {categoryName}
+                        </ThemedText>
+                        <View style={styles.dotsRow}>
+                            {weekActivity.map((status, i) => (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.dot,
+                                        {
+                                            backgroundColor:
+                                                status === "completed"
+                                                    ? ThemedColor.primary
+                                                    : status === "missed"
+                                                    ? ThemedColor.caption
+                                                    : ThemedColor.tertiary,
+                                        },
+                                    ]}
+                                />
+                            ))}
+                        </View>
                     </View>
                 </View>
-                <View style={styles.bottomLine}>
-                    <ThemedText
-                        type="caption"
-                        numberOfLines={1}
-                        style={{ color: ThemedColor.caption, fontSize: 12 }}
-                    >
-                        {categoryName}
-                    </ThemedText>
-                    <View style={styles.dotsRow}>
-                        {weekActivity.map((status, i) => (
-                            <View
-                                key={i}
-                                style={[
-                                    styles.dot,
-                                    {
-                                        backgroundColor:
-                                            status === "completed"
-                                                ? ThemedColor.primary
-                                                : status === "missed"
-                                                ? MISSED_COLOR
-                                                : ThemedColor.tertiary,
-                                    },
-                                ]}
-                            />
-                        ))}
-                    </View>
-                </View>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+            {alertVisible && (
+                <CustomAlert
+                    visible={alertVisible}
+                    setVisible={setAlertVisible}
+                    title="Reset Metrics"
+                    message={`Reset streak, completion, and missed counts for "${taskName}"? This cannot be undone.`}
+                    buttons={alertButtons}
+                />
+            )}
+        </>
     );
 };
 

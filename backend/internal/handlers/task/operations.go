@@ -201,6 +201,18 @@ type UpdateTemplateOutput struct {
 	}
 }
 
+type ResetTemplateMetricsInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	RefreshToken  string `header:"refresh_token" required:"true"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type ResetTemplateMetricsOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Template metrics reset successfully"`
+	}
+}
+
 type TemplateWithCategory struct {
 	TemplateTaskDocument `bson:",inline"`
 	CategoryName         string `bson:"categoryName" json:"categoryName"`
@@ -537,6 +549,17 @@ func RegisterUpdateTemplateOperation(api huma.API, handler *Handler) {
 		Description: "Update a template task for recurring tasks",
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTemplate)
+}
+
+func RegisterResetTemplateMetricsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "reset-template-metrics",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/template/{id}/reset",
+		Summary:     "Reset template metrics",
+		Description: "Reset streak, completion, and missed counts for a recurring task template",
+		Tags:        []string{"tasks"},
+	}, handler.ResetTemplateMetrics)
 }
 
 func RegisterGetUserTemplatesOperation(api huma.API, handler *Handler) {

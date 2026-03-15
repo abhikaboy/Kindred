@@ -1,8 +1,7 @@
-import { Dimensions, StyleSheet, Text, View, ScrollView, TouchableOpacity, Animated } from "react-native";
+import { StyleSheet, View, ScrollView, TouchableOpacity, Animated } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import ActivityPoint from "@/components/profile/ActivityPoint";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -13,10 +12,8 @@ import CompletedTasksBottomSheetModal from "@/components/modals/CompletedTasksBo
 import RecurringTasksSelectionModal from "@/components/modals/RecurringTasksSelectionModal";
 import { getUserTemplatesAPI } from "@/api/task";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import CalendarMonth, { CELL_SIZE, GRID_GAP } from "@/components/activity/CalendarMonth";
 
-type Props = {};
-
-const month_to_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const month_names = [
     "January",
     "February",
@@ -59,43 +56,31 @@ const ActivitySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
     });
 
     const renderMonthSkeleton = (key: number) => {
-        const numPoints = 30;
-        const pointRows = Math.ceil(numPoints / 7);
-
+        const rows = 5;
         return (
             <View key={key} style={skeletonStyles.monthContainer}>
                 <Animated.View
                     style={[
                         skeletonStyles.monthNameSkeleton,
-                        {
-                            backgroundColor: ThemedColor.tertiary,
-                            opacity,
-                        },
+                        { backgroundColor: ThemedColor.tertiary, opacity },
                     ]}
                 />
-
-                <View style={skeletonStyles.activityGridContainer}>
-                    {Array.from({ length: pointRows }).map((_, rowIndex) => (
-                        <View key={rowIndex} style={skeletonStyles.activityRow}>
-                            {Array.from({ length: 7 }).map((_, pointIndex) => {
-                                if (rowIndex * 7 + pointIndex >= numPoints) return null;
-
-                                return (
-                                    <Animated.View
-                                        key={pointIndex}
-                                        style={[
-                                            skeletonStyles.activityPointSkeleton,
-                                            {
-                                                backgroundColor: ThemedColor.tertiary,
-                                                opacity: Animated.add(opacity, new Animated.Value(Math.random() * 0.2)),
-                                            },
-                                        ]}
-                                    />
-                                );
-                            })}
-                        </View>
-                    ))}
-                </View>
+                {Array.from({ length: rows }).map((_, rowIndex) => (
+                    <View key={rowIndex} style={skeletonStyles.activityRow}>
+                        {Array.from({ length: 7 }).map((_, colIndex) => (
+                            <Animated.View
+                                key={colIndex}
+                                style={[
+                                    skeletonStyles.activityPointSkeleton,
+                                    {
+                                        backgroundColor: ThemedColor.tertiary,
+                                        opacity: Animated.add(opacity, new Animated.Value(Math.random() * 0.2)),
+                                    },
+                                ]}
+                            />
+                        ))}
+                    </View>
+                ))}
             </View>
         );
     };
@@ -103,7 +88,7 @@ const ActivitySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
     return <View style={skeletonStyles.container}>{[0, 1, 2].map((index) => renderMonthSkeleton(index))}</View>;
 };
 
-const Activity = (props: Props) => {
+const Activity = () => {
     const ThemedColor = useThemeColor();
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -266,14 +251,13 @@ const Activity = (props: Props) => {
                         </ThemedText>
                     </View>
                 ) : (
-                    <View style={styles.dataContainer}>
+                    <View style={styles.heatmapContainer}>
                         {month_names.map((monthName, index) => {
                             const monthNumber = index + 1;
                             const currentDate = new Date();
                             const currentYear = currentDate.getFullYear();
-                            const currentMonth = currentDate.getMonth() + 1; // 1-indexed
+                            const currentMonth = currentDate.getMonth() + 1;
 
-                            // Skip future months
                             if (year > currentYear || (year === currentYear && monthNumber > currentMonth)) {
                                 return null;
                             }
@@ -283,58 +267,27 @@ const Activity = (props: Props) => {
                                 : getMonthlyActivityLevels(activities, year, monthNumber);
 
                             return (
-                                <View key={monthName} style={styles.monthContainer}>
-                                    <ThemedText type="subtitle">{monthName}</ThemedText>
-                                    <View>
-                                        <View style={styles.activityPointsContainer}>
-                                            {monthlyLevels.map((level, dayIndex) => {
-                                                // Check if this day is in the future or is today
-                                                const dayNumber = dayIndex + 1;
-                                                const currentDate = new Date();
-                                                const currentYear = currentDate.getFullYear();
-                                                const currentMonth = currentDate.getMonth() + 1;
-                                                const currentDay = currentDate.getDate();
-
-                                                const isFuture =
-                                                    year > currentYear ||
-                                                    (year === currentYear && monthNumber > currentMonth) ||
-                                                    (year === currentYear &&
-                                                        monthNumber === currentMonth &&
-                                                        dayNumber > currentDay);
-
-                                                const isToday =
-                                                    year === currentYear &&
-                                                    monthNumber === currentMonth &&
-                                                    dayNumber === currentDay;
-
-                                                return (
-                                                    <ActivityPoint
-                                                        key={dayIndex}
-                                                        level={level}
-                                                        isFuture={isFuture}
-                                                        isToday={isToday}
-                                                        onPress={() => {
-                                                            if (!isFuture && level > 0) {
-                                                                const date = new Date(year, monthNumber - 1, dayNumber);
-                                                                setSelectedDate(date);
-                                                                setModalVisible(true);
-                                                            }
-                                                        }}
-                                                    />
-                                                );
-                                            })}
-                                        </View>
-                                    </View>
-                                </View>
+                                <CalendarMonth
+                                    key={monthName}
+                                    monthName={monthName}
+                                    year={year}
+                                    monthNumber={monthNumber}
+                                    levels={monthlyLevels}
+                                    ThemedColor={ThemedColor}
+                                    onDayPress={(dayNumber) => {
+                                        setSelectedDate(new Date(year, monthNumber - 1, dayNumber));
+                                        setModalVisible(true);
+                                    }}
+                                />
                             );
                         })}
                     </View>
                 )}
             </ScrollView>
-            <CompletedTasksBottomSheetModal 
-                visible={modalVisible} 
-                setVisible={setModalVisible} 
-                date={selectedDate} 
+            <CompletedTasksBottomSheetModal
+                visible={modalVisible}
+                setVisible={setModalVisible}
+                date={selectedDate}
             />
             <RecurringTasksSelectionModal
                 visible={breakdownModalVisible}
@@ -406,22 +359,10 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             alignItems: "center",
             gap: 8,
         },
-        monthContainer: {
-            marginTop: 24,
-            gap: 16,
-            alignSelf: "center",
-        },
-        activityPointsContainer: {
-            flexWrap: "wrap",
-            gap: 8,
-            flexDirection: "row",
-            width: "100%",
-        },
-        dataContainer: {
+        heatmapContainer: {
             flexDirection: "column-reverse",
-            gap: 16,
+            gap: 0,
             width: "100%",
-            alignItems: "center",
         },
         loadingContainer: {
             alignItems: "center",
@@ -457,33 +398,26 @@ const stylesheet = (ThemedColor: any, insets: any) =>
 const skeletonStyles = StyleSheet.create({
     container: {
         width: "100%",
-        alignItems: "center",
         gap: 24,
         paddingVertical: 8,
     },
     monthContainer: {
-        gap: 16,
-        alignItems: "center",
+        gap: 4,
         width: "100%",
-        maxWidth: 350,
     },
     monthNameSkeleton: {
-        width: 120,
-        height: 24,
-        borderRadius: 6,
-    },
-    activityGridContainer: {
-        gap: 8,
-        width: "100%",
+        width: 100,
+        height: 20,
+        borderRadius: 4,
+        marginBottom: 4,
     },
     activityRow: {
         flexDirection: "row",
-        gap: 8,
-        justifyContent: "center",
+        gap: GRID_GAP,
     },
     activityPointSkeleton: {
-        width: 40,
-        height: 40,
-        borderRadius: 8,
+        width: CELL_SIZE,
+        height: CELL_SIZE,
+        borderRadius: 6,
     },
 });

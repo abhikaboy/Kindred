@@ -398,46 +398,58 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                     Get Started
                                 </ThemedText>
                                 <ThemedText type="caption" style={styles.emptySubtitle}>
-                                    This workspace is empty.{"\n"}Here's how to set it up:
+                                    This workspace is empty. Here's how to set it up:
                                 </ThemedText>
-                                <View style={[styles.emptyDivider, { backgroundColor: ThemedColor.tertiary }]} />
 
-                                <View style={styles.emptyStep}>
-                                    <View style={[styles.emptyStepBadge, { backgroundColor: ThemedColor.primary }]}>
-                                        <ThemedText type="smallerDefault" style={{ color: "#fff" }}>1</ThemedText>
+                                <View style={styles.timeline}>
+                                    {/* Step 1 */}
+                                    <View style={styles.timelineStep}>
+                                        <View style={styles.timelineTrack}>
+                                            <View style={[styles.emptyStepBadge, { backgroundColor: ThemedColor.primary }]}>
+                                                <ThemedText type="smallerDefault" style={{ color: "#fff" }}>1</ThemedText>
+                                            </View>
+                                            <View style={[styles.timelineConnector, { backgroundColor: ThemedColor.tertiary }]} />
+                                        </View>
+                                        <View style={styles.timelineContent}>
+                                            <ThemedText type="defaultSemiBold">Create a Category</ThemedText>
+                                            <ThemedText type="captionLight" style={styles.emptyStepDesc}>
+                                                Organize your tasks into categories like "Work", "Health", or "Personal".
+                                            </ThemedText>
+                                            <TouchableOpacity
+                                                style={[styles.emptyStepBtn, { backgroundColor: ThemedColor.primary, alignSelf: "flex-start" }]}
+                                                onPress={() => openModal({ screen: Screen.NEW_CATEGORY })}
+                                                activeOpacity={0.7}>
+                                                <FolderPlus size={16} color="#fff" weight="regular" />
+                                                <ThemedText type="smallerDefault" style={{ color: "#fff" }}>
+                                                    New Category
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                    <ThemedText type="defaultSemiBold">Create a Category</ThemedText>
-                                    <ThemedText type="captionLight" style={styles.emptyStepDesc}>
-                                        Organize your tasks into categories like "Work", "Health", or "Personal".
-                                    </ThemedText>
-                                    <TouchableOpacity
-                                        style={[styles.emptyStepBtn, { backgroundColor: ThemedColor.primary }]}
-                                        onPress={() => openModal({ screen: Screen.NEW_CATEGORY })}
-                                        activeOpacity={0.7}>
-                                        <FolderPlus size={16} color="#fff" weight="regular" />
-                                        <ThemedText type="smallerDefault" style={{ color: "#fff" }}>
-                                            New Category
-                                        </ThemedText>
-                                    </TouchableOpacity>
-                                </View>
 
-                                <View style={styles.emptyStep}>
-                                    <View style={[styles.emptyStepBadge, { backgroundColor: ThemedColor.primary }]}>
-                                        <ThemedText type="smallerDefault" style={{ color: "#fff" }}>2</ThemedText>
+                                    {/* Step 2 */}
+                                    <View style={styles.timelineStep}>
+                                        <View style={styles.timelineTrack}>
+                                            <View style={[styles.emptyStepBadge, { backgroundColor: ThemedColor.primary }]}>
+                                                <ThemedText type="smallerDefault" style={{ color: "#fff" }}>2</ThemedText>
+                                            </View>
+                                        </View>
+                                        <View style={styles.timelineContent}>
+                                            <ThemedText type="defaultSemiBold">Add Your First Task</ThemedText>
+                                            <ThemedText type="captionLight" style={styles.emptyStepDesc}>
+                                                Tap on a category to start adding tasks and building your routine.
+                                            </ThemedText>
+                                            <TouchableOpacity
+                                                style={[styles.emptyStepBtn, { borderColor: ThemedColor.tertiary, borderWidth: 1, alignSelf: "flex-start" }]}
+                                                onPress={() => openModal()}
+                                                activeOpacity={0.7}>
+                                                <CheckSquare size={16} color={ThemedColor.text} weight="regular" />
+                                                <ThemedText type="smallerDefault">
+                                                    New Task
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                        </View>
                                     </View>
-                                    <ThemedText type="defaultSemiBold">Add Your First Task</ThemedText>
-                                    <ThemedText type="captionLight" style={styles.emptyStepDesc}>
-                                        Tap on a category to start adding tasks and building your routine.
-                                    </ThemedText>
-                                    <TouchableOpacity
-                                        style={[styles.emptyStepBtn, { borderColor: ThemedColor.tertiary, borderWidth: 1 }]}
-                                        onPress={() => openModal()}
-                                        activeOpacity={0.7}>
-                                        <CheckSquare size={16} color={ThemedColor.text} weight="regular" />
-                                        <ThemedText type="smallerDefault">
-                                            New Task
-                                        </ThemedText>
-                                    </TouchableOpacity>
                                 </View>
                             </View>
                         </ConditionalView>
@@ -534,26 +546,41 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     emptyOnboarding: {
-        alignItems: "center",
         paddingTop: 16,
         paddingBottom: 8,
     },
     emptyHeading: {
-        textAlign: "center",
+        textAlign: "left",
     },
     emptySubtitle: {
-        textAlign: "center",
+        textAlign: "left",
         marginTop: 6,
-    },
-    emptyDivider: {
-        height: StyleSheet.hairlineWidth,
-        width: "80%",
-        marginVertical: 24,
-    },
-    emptyStep: {
-        alignItems: "center",
         marginBottom: 28,
-        width: "100%",
+    },
+    timeline: {
+        gap: 12,
+    },
+    timelineStep: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+    },
+    timelineTrack: {
+        alignItems: "center",
+        width: 30,
+        marginRight: 16,
+    },
+    timelineConnector: {
+        width: 2,
+        flex: 1,
+        marginTop: 8,
+        marginBottom: 0,
+        borderRadius: 1,
+    },
+    timelineContent: {
+        flex: 1,
+        paddingBottom: 32,
+        paddingTop: 4,
+        alignItems: "flex-start",
     },
     emptyStepBadge: {
         width: 30,
@@ -561,17 +588,15 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 10,
     },
     emptyStepDesc: {
-        textAlign: "center",
-        maxWidth: 280,
-        marginTop: 2,
-        marginBottom: 14,
+        marginTop: 4,
+        marginBottom: 16,
     },
     emptyStepBtn: {
         flexDirection: "row",
         alignItems: "center",
+        alignSelf: "flex-start",
         gap: 8,
         paddingVertical: 10,
         paddingHorizontal: 18,

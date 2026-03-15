@@ -129,25 +129,9 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		LastEdited:     time.Now(),
 	}
 
-	// Combine StartDate and StartTime if both are provided
-	// StartTime from the time picker includes the current date, but we want to use the date from StartDate
-	if task.StartTime != nil && task.StartDate != nil {
-		// Extract time components (hour, minute, second) from StartTime
-		hour, min, sec := task.StartTime.Clock()
-
-		// Combine the date from StartDate with the time from StartTime
-		combinedDateTime := time.Date(
-			task.StartDate.Year(),
-			task.StartDate.Month(),
-			task.StartDate.Day(),
-			hour, min, sec, 0,
-			task.StartDate.Location(),
-		)
-
-		// Update StartDate to include the time
-		task.StartDate = &combinedDateTime
-		// Keep StartTime as well for potential future use/display
-	} else if task.StartDate == nil {
+	// Frontend now sends a pre-combined startDate (date + time in local timezone),
+	// so we only need to handle the fallback when startDate is nil.
+	if task.StartDate == nil {
 		// Set default StartDate to today if not provided at all
 		now := time.Now()
 
@@ -745,6 +729,27 @@ func (h *Handler) UpdateTemplate(ctx context.Context, input *UpdateTemplateInput
 
 	resp := &UpdateTemplateOutput{}
 	resp.Body.Message = "Template task updated successfully"
+	return resp, nil
+}
+
+func (h *Handler) ResetTemplateMetrics(ctx context.Context, input *ResetTemplateMetricsInput) (*ResetTemplateMetricsOutput, error) {
+	_, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid template ID format", err)
+	}
+
+	err = h.service.ResetTemplateMetrics(id)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Failed to reset template metrics", err)
+	}
+
+	resp := &ResetTemplateMetricsOutput{}
+	resp.Body.Message = "Template metrics reset successfully"
 	return resp, nil
 }
 
