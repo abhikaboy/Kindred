@@ -23,12 +23,12 @@ const ICON_CELL_SIZE = Math.floor(SCREEN_WIDTH / NUM_COLUMNS);
 const ICON_SIZE = 26;
 
 export const ICON_PRESET_COLORS = [
-    "#4263EB", // electric indigo
-    "#0CA678", // vivid emerald
-    "#F03E9E", // hot pink
-    "#AE3EC9", // bold violet
-    "#F59F00", // golden yellow
-    "#1C7ED6", // bright blue
+    "#FF3B3B",
+    "#FF6E2C",
+    "#3CCF6E",
+    "#56BFEE",
+    "#A259FF",
+    "#2962FF",
 ];
 
 type PhosphorComponent = React.ComponentType<{
