@@ -10,8 +10,16 @@ type WidgetLike<TProps> = {
     updateTimeline: (props: TProps[]) => void;
 };
 
+type LiveActivityInstance<TProps> = {
+    update: (props: TProps) => Promise<void>;
+    end: (dismissalPolicy?: string) => Promise<void>;
+    addPushTokenListener: (listener: (event: { activityId: string; pushToken: string }) => void) => { remove: () => void };
+    getPushToken: () => Promise<string>;
+};
+
 type LiveActivityLike<TProps> = {
-    start: (props: TProps) => { end: (reason?: string) => void };
+    start: (props: TProps, url?: string) => LiveActivityInstance<TProps>;
+    getInstances: () => LiveActivityInstance<TProps>[];
 };
 
 const createNoopWidget = <TProps>(): WidgetLike<TProps> => ({
@@ -19,57 +27,40 @@ const createNoopWidget = <TProps>(): WidgetLike<TProps> => ({
     updateTimeline: () => { },
 });
 
-const createNoopLiveActivityFactory = <TProps>(): LiveActivityLike<TProps> => ({
-    start: () => ({ end: () => { } }),
+const noopLiveActivityInstance = <TProps>(): LiveActivityInstance<TProps> => ({
+    update: () => Promise.resolve(),
+    end: () => Promise.resolve(),
+    addPushTokenListener: () => ({ remove: () => { } }),
+    getPushToken: () => Promise.resolve(''),
 });
 
-let _cachedModule: {
-    Widget: new <TProps>(name: string, render: () => unknown) => WidgetLike<TProps>;
-    LiveActivityFactory: new <TProps>(name: string, render: () => unknown) => LiveActivityLike<TProps>;
-} | null | undefined;
+const createNoopLiveActivityFactory = <TProps>(): LiveActivityLike<TProps> => ({
+    start: () => noopLiveActivityInstance<TProps>(),
+    getInstances: () => [],
+});
 
-const resolveExpoWidgets = () => {
-    if (_cachedModule !== undefined) return _cachedModule;
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const widgets = require('expo-widgets');
-        _cachedModule = widgets;
-        return widgets;
-    } catch (e) {
-        console.warn('[Widgets] expo-widgets not available:', e);
-        _cachedModule = null;
-        return null;
-    }
-};
-
-const noop = () => null as unknown;
-
-// Lightweight noop Widget handles for timeline-data updates.
-//
-// The Widget constructor always writes its `layout` argument to shared
-// UserDefaults.  We pass a noop here so the constructor is cheap and safe
-// (no @expo/ui module loading, minimal TurboModule traffic).
-//
-// The *correct* babel-compiled layouts are written later by
-// registerWidgetLayouts(), which must be called once from a deferred
-// context (InteractionManager.runAfterInteractions) after the app has
-// settled.  Because the noop handles only call updateTimeline (which
-// writes entries + reloads but never re-writes the layout), the correct
-// layout persists in UserDefaults for the widget extension to evaluate.
-const createWidgetUpdater = <TProps>(name: string): WidgetLike<TProps> => {
+/**
+ * Lazily loads a Widget instance from the actual widget module.
+ *
+ * expo-widgets' `createWidget(name, component)` returns a Widget handle
+ * whose constructor writes the babel-compiled layout to shared UserDefaults.
+ * Using that handle for `updateSnapshot` ensures the correct layout persists.
+ *
+ * The require() is deferred to first use so @expo/ui native modules are not
+ * loaded during JS bundle evaluation (avoids Hermes GC issues on RN 0.83).
+ */
+const createWidgetUpdater = <TProps>(
+    name: string,
+    loadWidget: () => WidgetLike<TProps>,
+): WidgetLike<TProps> => {
     let instance: WidgetLike<TProps> | null = null;
 
     const resolve = (): WidgetLike<TProps> => {
         if (instance) return instance;
         try {
-            const mod = resolveExpoWidgets();
-            if (mod) {
-                instance = new (mod.Widget as new (n: string, r: () => unknown) => WidgetLike<TProps>)(name, noop);
-            } else {
-                instance = createNoopWidget<TProps>();
-            }
+            instance = loadWidget();
         } catch (e) {
-            console.warn(`[Widgets] Failed to create widget ${name}:`, e);
+            console.warn(`[Widgets] Failed to load widget ${name}:`, e);
             instance = createNoopWidget<TProps>();
         }
         return instance;
@@ -81,95 +72,67 @@ const createWidgetUpdater = <TProps>(name: string): WidgetLike<TProps> => {
     };
 };
 
-const createLiveActivityFactory = <TProps>(name: string): LiveActivityLike<TProps> => {
+const createLiveActivityFactory = <TProps>(
+    name: string,
+    loadFactory: () => LiveActivityLike<TProps>,
+): LiveActivityLike<TProps> => {
     let instance: LiveActivityLike<TProps> | null = null;
 
     const resolve = (): LiveActivityLike<TProps> => {
         if (instance) return instance;
         try {
-            const mod = resolveExpoWidgets();
-            instance = mod
-                ? new (mod.LiveActivityFactory as new (n: string, r: () => unknown) => LiveActivityLike<TProps>)(name, noop)
-                : createNoopLiveActivityFactory<TProps>();
-        } catch {
+            instance = loadFactory();
+        } catch (e) {
+            console.warn(`[Widgets] Failed to load live activity ${name}:`, e);
             instance = createNoopLiveActivityFactory<TProps>();
         }
         return instance;
     };
 
     return {
-        start: (props) => resolve().start(props),
+        start: (props, url?) => resolve().start(props, url),
+        getInstances: () => resolve().getInstances(),
     };
 };
 
-const WIDGET_MODULES = [
-    './TodayTasksWidget',
-    './WorkspaceSnapshotWidget',
-    './ActivityStreakWidget',
-    './LockScreenWidgets',
-] as const;
+/* eslint-disable @typescript-eslint/no-require-imports */
 
-/**
- * Load the actual widget modules so their `createWidget()` calls store the
- * babel-compiled layout strings in shared UserDefaults, overwriting any noop
- * placeholder that was written by the lightweight handles above.
- *
- * Call this once from a deferred context (e.g. InteractionManager.runAfterInteractions)
- * AFTER the initial render has settled — loading these modules pulls in @expo/ui
- * native components, and doing so during a busy period can trigger a Hermes GC
- * race via ObjCTurboModule error handling (RN 0.83 / iOS 18).
- *
- * Each module is required individually so a failure in one (e.g. ExpoUI native
- * module emitter setup) doesn't prevent the others from registering.
- */
-export function registerWidgetLayouts(): void {
-    // Temporarily suppress the ExpoUI "addListener" warning that fires when
-    // @expo/ui/swift-ui/modifiers is first loaded in the main app — the
-    // native event emitter isn't needed for widget layout registration.
-    const origWarn = console.warn;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    console.warn = (...args: any[]) => {
-        const msg = typeof args[0] === 'string' ? args[0] : '';
-        if (msg.includes('addListener') || msg.includes('native') && msg.includes('logger')) return;
-        origWarn.apply(console, args);
-    };
+export const TodayTasksWidgetUpdater = createWidgetUpdater<TodayTasksWidgetProps>(
+    'TodayTasksWidget',
+    () => require('./TodayTasksWidget').default,
+);
 
-    const modules = [
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        () => require('./TodayTasksWidget'),
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        () => require('./WorkspaceSnapshotWidget'),
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        () => require('./ActivityStreakWidget'),
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        () => require('./LockScreenWidgets'),
-    ];
+export const WorkspaceSnapshotWidgetUpdater = createWidgetUpdater<WorkspaceSnapshotWidgetProps>(
+    'WorkspaceSnapshotWidget',
+    () => require('./WorkspaceSnapshotWidget').default,
+);
 
-    let registered = 0;
-    for (const load of modules) {
-        try {
-            load();
-            registered++;
-        } catch (e) {
-            console.log('[Widgets] Module failed to register layout:', e);
-        }
-    }
+export const ActivityStreakWidgetUpdater = createWidgetUpdater<ActivityStreakWidgetProps>(
+    'ActivityStreakWidget',
+    () => require('./ActivityStreakWidget').default,
+);
 
-    console.warn = origWarn;
+export const LockScreenCircularWidgetUpdater = createWidgetUpdater<LockScreenCircularProps>(
+    'LockScreenCircularWidget',
+    () => require('./LockScreenWidgets').LockScreenCircularWidget,
+);
 
-    if (registered > 0) {
-        console.log(`[Widgets] ${registered}/${modules.length} layout strings registered`);
-    } else {
-        console.log('[Widgets] No layouts registered — widgets will use placeholder content');
-    }
-}
+export const LockScreenRectangularWidgetUpdater = createWidgetUpdater<LockScreenRectangularProps>(
+    'LockScreenRectangularWidget',
+    () => require('./LockScreenWidgets').LockScreenRectangularWidget,
+);
 
-export const TodayTasksWidgetUpdater = createWidgetUpdater<TodayTasksWidgetProps>('TodayTasksWidget');
-export const WorkspaceSnapshotWidgetUpdater = createWidgetUpdater<WorkspaceSnapshotWidgetProps>('WorkspaceSnapshotWidget');
-export const LockScreenCircularWidgetUpdater = createWidgetUpdater<LockScreenCircularProps>('LockScreenCircularWidget');
-export const LockScreenRectangularWidgetUpdater = createWidgetUpdater<LockScreenRectangularProps>('LockScreenRectangularWidget');
-export const ActivityStreakWidgetUpdater = createWidgetUpdater<ActivityStreakWidgetProps>('ActivityStreakWidget');
-export const LockScreenInlineWidgetUpdater = createWidgetUpdater<{ streak: number }>('LockScreenInlineWidget');
+export const LockScreenInlineWidgetUpdater = createWidgetUpdater<{ streak: number }>(
+    'LockScreenInlineWidget',
+    () => require('./LockScreenWidgets').LockScreenInlineWidget,
+);
 
-export const EncouragementActivityFactory = createLiveActivityFactory<EncouragementActivityProps>('EncouragementActivity');
-export const DeadlineCountdownActivityFactory = createLiveActivityFactory<DeadlineCountdownProps>('DeadlineCountdownActivity');
+export const EncouragementActivityFactory = createLiveActivityFactory<EncouragementActivityProps>(
+    'EncouragementActivity',
+    () => require('./EncouragementActivity').default,
+);
+
+export const DeadlineCountdownActivityFactory = createLiveActivityFactory<DeadlineCountdownProps>(
+    'DeadlineCountdownActivity',
+    () => require('./DeadlineCountdownActivity').default,
+);

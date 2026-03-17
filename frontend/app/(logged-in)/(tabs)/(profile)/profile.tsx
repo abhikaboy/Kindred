@@ -63,7 +63,7 @@ export default function Profile() {
             categoryName: (task as any).categoryName || task.categoryID
         }));
 
-        const completedTasks = (completedTasksData?.tasks || []).slice(0, 10).map((task: any) => ({
+        const completedTasks = (completedTasksData?.tasks || []).filter((task: any) => task.public).slice(0, 10).map((task: any) => ({
             id: task.id,
             content: task.content,
             value: task.value || 0,
