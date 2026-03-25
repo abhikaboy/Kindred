@@ -1,56 +1,25 @@
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { Dimensions, StyleSheet, View } from "react-native";
 import React from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { useRequest } from "@/hooks/useRequest";
 import { ScrollView } from "react-native";
-import { getThemedColor } from "@/constants/Colors";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
-type Props = {};
-
-const AuditLog = (props: Props) => {
-    const { history, errorHistory } = useRequest();
-    let ThemedColor = useThemeColor();
-
-    console.log(history());
-    console.log(errorHistory());
+const AuditLog = () => {
+    const ThemedColor = useThemeColor();
 
     return (
         <ThemedView
             style={{ paddingTop: Dimensions.get("screen").height * 0.12, paddingHorizontal: HORIZONTAL_PADDING }}>
-            <ScrollView
-                style={{
-                    height: "100%",
-                }}>
+            <ScrollView style={{ height: "100%" }}>
                 <ThemedText type="title">Audit Log</ThemedText>
-                {history().map((item, index) => {
-                    return (
-                        <View
-                            style={{
-                                backgroundColor: ThemedColor.lightened,
-                                padding: 16,
-                                boxShadow: "0px 0px 10px rgba(0,0,0,0.1)",
-                                borderRadius: 12,
-                                marginBottom: 16,
-                            }}>
-                            {Object.keys(item).map((key) => {
-                                return (
-                                    <ScrollView>
-                                        <ThemedText type="defaultSemiBold">{key}</ThemedText>;
-                                        <ThemedText type="default">{JSON.stringify(item[key])}</ThemedText>;
-                                    </ScrollView>
-                                );
-                            })}
-                        </View>
-                    );
-                })}
+                <ThemedText type="default" style={{ color: ThemedColor.caption, marginTop: 16 }}>
+                    No audit entries. Request history tracking has been removed in favor of network inspector tools.
+                </ThemedText>
             </ScrollView>
         </ThemedView>
     );
 };
 
 export default AuditLog;
-
-const styles = StyleSheet.create({});

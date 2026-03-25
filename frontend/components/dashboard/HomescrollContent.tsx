@@ -5,7 +5,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceGrid } from "./WorkspaceGrid";
 import DashboardCards from "@/components/dashboard/DashboardCards";
 import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
-import TutorialCard from "@/components/cards/TutorialCard";
 import BasicCard from "@/components/cards/BasicCard";
 import { useRouter } from "expo-router";
 import { KudosCards } from "../cards/KudosCard";
@@ -31,7 +30,6 @@ interface HomeScrollContentProps {
     fetchingWorkspaces: boolean;
     onWorkspaceSelect: (workspaceName: string) => void;
     onCreateWorkspace: () => void;
-    shouldShowTutorial: boolean;
     drawerRef: any;
     ThemedColor: any;
     focusMode: boolean;
@@ -52,7 +50,6 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     fetchingWorkspaces,
     onWorkspaceSelect,
     onCreateWorkspace,
-    shouldShowTutorial,
     drawerRef,
     ThemedColor,
     focusMode,

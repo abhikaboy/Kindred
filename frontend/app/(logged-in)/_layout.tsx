@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, useRouter } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator, Animated, AppState, LogBox } from "react-native";
+import { ScrollView, View, ActivityIndicator, Animated, AppState, InteractionManager, LogBox } from "react-native";
 import { updateStreakWidget } from "@/widgets/updateStreakWidget";
 
 LogBox.ignoreLogs(['addListener', 'native JS logger']);
@@ -127,7 +127,8 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         initializeAuth();
     }, []);
 
-    // Update streak widget on app foreground
+    // Update streak widget on app foreground.
+    // Initial update deferred via InteractionManager to avoid Hermes GC pressure during startup.
     useEffect(() => {
         if (!user?._id) return;
 
@@ -137,10 +138,14 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             }
         });
 
-        // Also update on mount
-        updateStreakWidget(user._id, user.streak || 0, 0).catch(() => {});
+        const handle = InteractionManager.runAfterInteractions(() => {
+            updateStreakWidget(user._id, user.streak || 0, 0).catch(() => {});
+        });
 
-        return () => subscription.remove();
+        return () => {
+            subscription.remove();
+            handle.cancel();
+        };
     }, [user?._id]);
 
     useEffect(() => {

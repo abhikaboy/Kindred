@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { BigInput } from "@/components/inputs/BigInput";
 
@@ -53,7 +54,7 @@ const NameOnboarding = (props: Props) => {
         if (!validationErrors.displayName && !validationErrors.handle && isValid) {
             // If Apple ID is present, skip password screen and go directly to photo
             // Apple users don't need a password
-            if (onboardingData.appleId) {
+            if (onboardingData.appleId || onboardingData.googleId) {
                 router.push("/(onboarding)/photo");
             } else {
                 router.push("/(onboarding)/password");
@@ -73,6 +74,10 @@ const NameOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={themedStyles.mainContainer}>
+            <OnboardingProgressBar
+                currentStep={onboardingData.appleId || onboardingData.googleId ? 1 : 3}
+                totalSteps={onboardingData.appleId || onboardingData.googleId ? 5 : 8}
+            />
             {/* Background graphics */}
             <View style={themedStyles.backgroundContainer}>
                 <OnboardingBackground />

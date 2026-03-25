@@ -1,14 +1,9 @@
-import {client } from "@/hooks/useTypedAPI";
-import type { paths, components} from "./generated/types";
+import client from "@/api/client";
+import type { paths, components } from "./generated/types";
+import { withAuthHeaders } from "./utils";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger('BlueprintAPI');
-
-// Helper to inject auth headers that will be overridden by middleware
-const withAuthHeaders = (params: any = {}) => ({
-    ...params,
-    header: { Authorization: "", ...(params.header || {}) },
-});
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintDocumentWithoutSubscribers = components["schemas"]["BlueprintDocumentWithoutSubscribers"];

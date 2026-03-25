@@ -56,8 +56,6 @@ export const useVerification = (): UseVerificationReturn => {
             if (result && typeof result === "object" && "verification_id" in result) {
                 setVerificationId(result.verification_id as string);
             }
-
-            console.log("OTP sent successfully:", result);
         } catch (error: any) {
             console.error("Failed to send OTP:", error);
             const errorMessage = error?.message || "Failed to send OTP. Please try again.";
@@ -85,15 +83,13 @@ export const useVerification = (): UseVerificationReturn => {
             });
 
             // Check if verification was successful
-            const valid = result && typeof result === "object" && "valid" in result 
-                ? (result.valid as boolean) 
+            const valid = result && typeof result === "object" && "valid" in result
+                ? (result.valid as boolean)
                 : false;
 
             setIsVerified(valid);
 
-            if (valid) {
-                console.log("OTP verified successfully:", result);
-            } else {
+            if (!valid) {
                 const errorMsg = "Invalid OTP code. Please try again.";
                 setVerifyOTPError(errorMsg);
                 console.error("OTP verification failed:", result);

@@ -1,44 +1,38 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { cleanupOldCaches, getStorageStats } from '@/utils/cacheCleanup';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('CacheCleanup');
 
-/**
- * Hook to automatically clean up old cache entries
- * Runs cleanup when app becomes active and periodically
- */
+const DEFAULT_PATTERNS = ['cache_', 'workspaces_cache_', 'temp_'];
+const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export function useCacheCleanup(options?: {
     maxAgeMs?: number;
     patterns?: string[];
     enableLogging?: boolean;
 }) {
-    const {
-        maxAgeMs = 7 * 24 * 60 * 60 * 1000, // 7 days
-        patterns = ['cache_', 'workspaces_cache_', 'temp_'],
-        enableLogging = false,
-    } = options || {};
+    const maxAgeMs = options?.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
+    const patterns = options?.patterns ?? DEFAULT_PATTERNS;
+    const enableLogging = options?.enableLogging ?? false;
 
     const lastCleanupRef = useRef<number>(0);
-    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // Run cleanup once per day
+    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
+
+    const stablePatterns = useMemo(() => patterns, [patterns.join(',')]);
 
     useEffect(() => {
         const runCleanup = async () => {
             const now = Date.now();
-            const timeSinceLastCleanup = now - lastCleanupRef.current;
-
-            // Only run if enough time has passed
-            if (timeSinceLastCleanup < CLEANUP_INTERVAL) {
-                return;
-            }
+            if (now - lastCleanupRef.current < CLEANUP_INTERVAL) return;
 
             if (enableLogging) {
                 const statsBefore = await getStorageStats();
                 logger.info('Cache cleanup - Before:', statsBefore);
             }
 
-            await cleanupOldCaches(maxAgeMs, patterns);
+            await cleanupOldCaches(maxAgeMs, stablePatterns);
             lastCleanupRef.current = now;
 
             if (enableLogging) {
@@ -47,10 +41,8 @@ export function useCacheCleanup(options?: {
             }
         };
 
-        // Run cleanup on mount (but only if interval has passed)
         runCleanup();
 
-        // Listen for app state changes
         const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
             if (nextAppState === 'active') {
                 runCleanup();
@@ -60,5 +52,5 @@ export function useCacheCleanup(options?: {
         return () => {
             subscription.remove();
         };
-    }, [maxAgeMs, patterns, enableLogging]);
+    }, [maxAgeMs, stablePatterns, enableLogging]);
 }

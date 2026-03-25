@@ -4,3 +4,4 @@
  */
 export const SPOTLIGHT_MOTION = "slide" as const;
 
+export const ONBOARDING_WORKSPACE = "🌺 Kindred Guide";

@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { Ionicons } from '@expo/vector-icons';
 import { BigInput } from "@/components/inputs/BigInput";
@@ -70,6 +71,7 @@ const PasswordOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={themedStyles.mainContainer}>
+            <OnboardingProgressBar currentStep={4} totalSteps={8} />
             <View style={themedStyles.backgroundContainer}>
                 <OnboardingBackground />
             </View>

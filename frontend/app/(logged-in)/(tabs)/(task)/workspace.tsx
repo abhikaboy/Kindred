@@ -9,7 +9,7 @@ import { DrawerLayout } from "react-native-gesture-handler";
 import EditCategory from "@/components/modals/edit/EditCategory";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Category } from "../../../../components/category";
+import { Category } from "@/components/category";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
@@ -22,7 +22,7 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
-import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { SPOTLIGHT_MOTION, ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
@@ -39,7 +39,7 @@ const Workspace = (props: Props) => {
     const { getStateDescription, state: workspaceState } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
-    const { spotlightState, setSpotlightShown } = useSpotlight();
+    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
@@ -85,7 +85,7 @@ const Workspace = (props: Props) => {
                     description="Tap the icon next to the workspace title to edit workspace settings, reorder categories, or delete the workspace."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("workspaceSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -98,7 +98,7 @@ const Workspace = (props: Props) => {
                     description="This is a task! The colored bar on the left shows its priority. Tap on any task to view or edit its details."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("workspaceSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -111,7 +111,7 @@ const Workspace = (props: Props) => {
                     description="To make new tasks, click on a category name. Categories help you organize tasks by type or project!"
                     onNext={() => {
                         setSpotlightShown("workspaceSpotlight");
-                        next();
+                        stop();
                     }}
                     isLastStep
                 />
@@ -145,6 +145,7 @@ const Workspace = (props: Props) => {
                 setIsDrawerOpen={setIsDrawerOpen}
                 handleScroll={handleScroll}
                 spotlightState={spotlightState}
+                spotlightLoading={spotlightLoading}
                 applyFilters={applyFilters}
                 workspaceStateDescription={getStateDescription()}
                 workspaceState={workspaceState}
@@ -179,6 +180,7 @@ const WorkspaceContent = ({
     setIsDrawerOpen,
     handleScroll,
     spotlightState,
+    spotlightLoading,
     applyFilters,
     workspaceStateDescription,
     workspaceState,
@@ -198,38 +200,35 @@ const WorkspaceContent = ({
     const resolvedIcon = currentWorkspace?.icon ?? workspaceIcon;
     const resolvedColor = currentWorkspace?.color ?? workspaceColor;
 
-    console.log('[WorkspaceContent] selected:', selected);
-    console.log('[WorkspaceContent] currentWorkspace:', JSON.stringify({ name: currentWorkspace?.name, icon: currentWorkspace?.icon, color: currentWorkspace?.color }));
-    console.log('[WorkspaceContent] resolvedIcon:', resolvedIcon, 'resolvedColor:', resolvedColor);
-
     const WorkspaceIconComponent = resolvedIcon
         ? ((PhosphorIcons as any)[resolvedIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
         : undefined;
-
-    console.log('[WorkspaceContent] WorkspaceIconComponent:', WorkspaceIconComponent ? 'found' : 'not found');
 
     // Extract primitive values to avoid reference changes
     const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
     const menuSpotlightShown = spotlightState.menuSpotlight;
 
-    // Use a separate effect with ONLY the trigger check - no cleanup
+    useEffect(() => {
+        hasTriggeredRef.current = false;
+    }, [selected]);
+
     useEffect(() => {
         if (hasTriggeredRef.current) return;
 
-        const shouldTrigger = selected === "🌺 Kindred Guide" &&
+        const shouldTrigger = selected === ONBOARDING_WORKSPACE &&
             !workspaceSpotlightShown &&
             menuSpotlightShown;
 
-        if (shouldTrigger && !hasTriggeredRef.current) {
+        if (!spotlightLoading && shouldTrigger) {
             hasTriggeredRef.current = true;
-            console.log('⏰ Triggering workspace spotlight in 1 second...');
 
             setTimeout(() => {
-                console.log('🚀 Starting workspace spotlight!');
-                start();
-            }, 1000);
+                requestAnimationFrame(() => {
+                    start();
+                });
+            }, 1200);
         }
-    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start]);
+    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start, spotlightLoading]);
 
     return (
         <DrawerLayout
@@ -434,8 +433,8 @@ const WorkspaceContent = ({
                             condition={selected !== "" && !noCategories}
                             animated={true}
                             triggerDep={selected}>
-                            <View style={styles.categoriesContainer} key="cateogry-container">
-                                {categories
+                            <View style={styles.categoriesContainer} key="category-container">
+                                {[...categories]
                                     .sort((a, b) => b.tasks.length - a.tasks.length)
                                     .filter((category) => category.name !== "!-proxy-!")
                                     .map((category, index) => {

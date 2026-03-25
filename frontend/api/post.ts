@@ -1,14 +1,9 @@
-import { client } from "@/hooks/useTypedAPI";
+import client from "@/api/client";
+import { withAuthHeaders } from "./utils";
 import type { paths, components } from "./generated/types";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger('PostAPI');
-
-// Helper to inject auth headers that will be overridden by middleware
-const withAuthHeaders = (params: any = {}) => ({
-    ...params,
-    header: { Authorization: "", ...(params.header || {}) },
-});
 
 // Extract the type definitions from the generated types
 type PostDocument = components["schemas"]["PostDocument"];

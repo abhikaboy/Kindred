@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { applyReferralCode } from "@/api/referral";
 import { showToast } from "@/utils/showToast";
 
@@ -71,7 +72,7 @@ const ReferralOnboarding = (props: Props) => {
             await applyReferralCode(referralCode);
             setIsSuccess(true);
             showToast("Referral code applied successfully! 🎉", "success");
-            
+
             // Small delay to show success state
             setTimeout(() => {
                 router.push("/(onboarding)/notifications");
@@ -88,10 +89,6 @@ const ReferralOnboarding = (props: Props) => {
         router.push("/(onboarding)/notifications");
     };
 
-    const handleBack = () => {
-        router.back();
-    };
-
     // Format input to uppercase and limit to exactly 8 characters
     const handleCodeChange = (text: string) => {
         const formatted = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
@@ -103,18 +100,19 @@ const ReferralOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <OnboardingProgressBar currentStep={6} totalSteps={8} />
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
                 <OnboardingBackground />
             </View>
 
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
                 <View style={styles.contentContainer}>
                     {/* Header Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.headerContainer,
                             {
@@ -123,14 +121,6 @@ const ReferralOnboarding = (props: Props) => {
                             }
                         ]}
                     >
-                        <TouchableOpacity 
-                            onPress={handleBack}
-                            style={styles.backButton}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                            <ThemedText style={styles.backButtonText}>← Back</ThemedText>
-                        </TouchableOpacity>
-
                         <ThemedText style={styles.titleText}>
                             Have a referral code?
                         </ThemedText>
@@ -140,7 +130,7 @@ const ReferralOnboarding = (props: Props) => {
                     </Animated.View>
 
                     {/* Input Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.inputContainer,
                             {
@@ -156,8 +146,8 @@ const ReferralOnboarding = (props: Props) => {
                                     {
                                         backgroundColor: ThemedColor.lightened,
                                         color: ThemedColor.text,
-                                        borderColor: errorMessage 
-                                            ? '#ff3b30' 
+                                        borderColor: errorMessage
+                                            ? '#ff3b30'
                                             : isSuccess
                                             ? '#34c759'
                                             : 'transparent',
@@ -203,7 +193,7 @@ const ReferralOnboarding = (props: Props) => {
                     </Animated.View>
 
                     {/* Button Section */}
-                    <Animated.View 
+                    <Animated.View
                         style={[
                             styles.buttonContainer,
                             {
@@ -216,16 +206,16 @@ const ReferralOnboarding = (props: Props) => {
                             onPress={handleApply}
                             disabled={!isCodeValid || isApplying || isSuccess}
                         />
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.skipButton}
                             onPress={handleSkip}
                             disabled={isApplying}
                         >
                             <ThemedText style={[
-                                styles.skipText, 
-                                { 
+                                styles.skipText,
+                                {
                                     color: ThemedColor.primary,
-                                    opacity: isApplying ? 0.5 : 1 
+                                    opacity: isApplying ? 0.5 : 1
                                 }
                             ]}>
                                 Skip for now
@@ -256,16 +246,6 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         gap: 12,
-    },
-    backButton: {
-        marginBottom: 12,
-        alignSelf: 'flex-start',
-    },
-    backButtonText: {
-        fontSize: 16,
-        fontFamily: 'Outfit',
-        fontWeight: '500',
-        opacity: 0.7,
     },
     titleText: {
         fontSize: Math.min(screenWidth * 0.085, 32),
@@ -345,4 +325,3 @@ const styles = StyleSheet.create({
 });
 
 export default ReferralOnboarding;
-

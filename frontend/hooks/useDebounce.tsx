@@ -1,32 +1,31 @@
-// Debounce hook that prevents multiple calls to a function within a certain time period
-// Used to prevent multiple API calls to the same function
-// @param func - The function to debounce
-// @param delay - The delay in milliseconds
+import { useLayoutEffect, useRef, useMemo, useEffect } from "react";
 
-import React, { useLayoutEffect, useRef } from "react";
-import { useMemo } from "react";
-
-// @returns The debounced function
 export const useDebounce = (callback: (...args: any[]) => void, delay: number) => {
     const callbackRef = useRef(callback);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useLayoutEffect(() => {
         callbackRef.current = callback;
     });
 
-    let timer: number;
-
-    const naiveDebounce = (func: (...args: any[]) => void, delayMs: number, ...args: any[]) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-            func(...args);
-        }, delayMs);
-    };
+    useEffect(() => {
+        return () => {
+            if (timerRef.current !== null) {
+                clearTimeout(timerRef.current);
+            }
+        };
+    }, []);
 
     return useMemo(
         () =>
-            (...args: any) =>
-                naiveDebounce(callbackRef.current, delay, ...args),
+            (...args: any[]) => {
+                if (timerRef.current !== null) {
+                    clearTimeout(timerRef.current);
+                }
+                timerRef.current = setTimeout(() => {
+                    callbackRef.current(...args);
+                }, delay);
+            },
         [delay]
     );
 };

@@ -19,7 +19,7 @@ interface UseApiCacheOptions {
  */
 export function useApiCache<T>(options: UseApiCacheOptions) {
     const { cacheKey, cacheDuration = 5 * 60 * 1000, enableCache = true } = options;
-    
+
     const [data, setData] = useState<T | null>(null);
     const [loading, setLoading] = useState(false);
     const [lastFetchTime, setLastFetchTime] = useState<number | null>(null);
@@ -39,14 +39,14 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
      */
     const loadFromCache = useCallback(async (): Promise<T | null> => {
         if (!enableCache) return null;
-        
+
         try {
             const cached = await AsyncStorage.getItem(cacheKey);
             if (!cached) return null;
 
             const cacheEntry: CacheEntry<T> = JSON.parse(cached);
             const now = Date.now();
-            
+
             // Check if cache is expired
             if ((now - cacheEntry.timestamp) > cacheDuration) {
                 // Cache expired, remove it
@@ -67,7 +67,7 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
      */
     const saveToCache = useCallback(async (data: T): Promise<void> => {
         if (!enableCache) return;
-        
+
         try {
             const cacheEntry: CacheEntry<T> = {
                 data,
@@ -91,7 +91,6 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
     ): Promise<T> => {
         // If cache is valid and not forcing refresh, return cached data
         if (!forceRefresh && isCacheValid() && data) {
-            console.log(`Using cached data for ${cacheKey}`);
             return data;
         }
 
@@ -99,7 +98,6 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
         if (isInitialMount.current && !forceRefresh) {
             const cachedData = await loadFromCache();
             if (cachedData) {
-                console.log(`Loaded from storage cache for ${cacheKey}`);
                 setData(cachedData);
                 isInitialMount.current = false;
                 return cachedData;
@@ -109,7 +107,6 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
         // Fetch fresh data
         setLoading(true);
         try {
-            console.log(`Fetching fresh data for ${cacheKey}`);
             const freshData = await fetchFn();
             setData(freshData);
             await saveToCache(freshData);
@@ -131,7 +128,6 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
             await AsyncStorage.removeItem(cacheKey);
             setData(null);
             setLastFetchTime(null);
-            console.log(`Cleared cache for ${cacheKey}`);
         } catch (error) {
             console.error(`Error clearing cache for ${cacheKey}:`, error);
         }
@@ -157,4 +153,3 @@ export function useApiCache<T>(options: UseApiCacheOptions) {
         timeUntilExpiry: getTimeUntilExpiry(),
     };
 }
-

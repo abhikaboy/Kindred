@@ -1,20 +1,19 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import BlueprintCard from "@/components/cards/BlueprintCard";
 import ContactCard from "@/components/cards/ContactCard";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { useRouter } from "expo-router"; // or your navigation library
+import { useRouter } from "expo-router";
 import type { components } from "@/api/generated/types";
-import { Icons } from "@/constants/Icons";
 import { CategorySectionSkeleton } from "../ui/SkeletonLoader";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Href } from "expo-router";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
 
-const ThemedColor = useThemeColor();
+const ItemSeparator = () => <View style={{ width: 4 }} />;
+
 type ExplorePageProps = {
     categoryGroups: BlueprintCategoryGroup[];
     focusStyle: any;
@@ -22,18 +21,16 @@ type ExplorePageProps = {
 };
 
 const ExplorePageComponent: React.FC<ExplorePageProps> = ({ categoryGroups, focusStyle, loading = false }) => {
-    const router = useRouter(); // Initialize router for navigation
+    const router = useRouter();
+    const ThemedColor = useThemeColor();
 
-    // Handle navigation to category page
     const handleSeeAllPress = useCallback(
         (category: string) => {
-            // Since the route is at the same level as search
             router.push(`/category/${category || "uncategorized"}`);
         },
         [router]
     );
 
-    // Memoized render functions for performance
     const renderBlueprint = useCallback(({ item }: { item: BlueprintDocument }) => <BlueprintCard {...item} />, []);
 
     const renderContacts = useCallback(
@@ -41,7 +38,10 @@ const ExplorePageComponent: React.FC<ExplorePageProps> = ({ categoryGroups, focu
         []
     );
 
-    // Memoized category section renderer
+    const dynamicStyles = useMemo(() => ({
+        seeAllText: { color: ThemedColor.primary, fontSize: 14 },
+    }), [ThemedColor.primary]);
+
     const renderCategorySection = useCallback(
         ({ item }: { item: BlueprintCategoryGroup }) => (
             <View style={styles.categorySection}>
@@ -53,7 +53,7 @@ const ExplorePageComponent: React.FC<ExplorePageProps> = ({ categoryGroups, focu
                         onPress={() => handleSeeAllPress(item.category)}
                         style={styles.seeAllButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <ThemedText type="caption" style={styles.seeAllText}>
+                        <ThemedText type="caption" style={dynamicStyles.seeAllText}>
                             See All
                         </ThemedText>
                     </TouchableOpacity>
@@ -65,24 +65,21 @@ const ExplorePageComponent: React.FC<ExplorePageProps> = ({ categoryGroups, focu
                     horizontal={true}
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.blueprintList}
-                    ItemSeparatorComponent={() => <View style={{ width: 4 }} />}
+                    ItemSeparatorComponent={ItemSeparator}
                 />
             </View>
         ),
-        [renderBlueprint, handleSeeAllPress]
+        [renderBlueprint, handleSeeAllPress, dynamicStyles.seeAllText]
     );
 
     if (loading) {
         return (
             <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
-                {/* Category skeletons */}
                 <View style={styles.categoriesContainer}>
                     {[...Array(3)].map((_, index) => (
                         <CategorySectionSkeleton key={index} />
                     ))}
                 </View>
-
-                {/* Suggested contacts skeleton */}
                 <View style={styles.suggestedSection}>
                     <View style={styles.suggestedSkeletonHeader}>
                         <CategorySectionSkeleton />
@@ -94,7 +91,6 @@ const ExplorePageComponent: React.FC<ExplorePageProps> = ({ categoryGroups, focu
 
     return (
         <Animated.View style={focusStyle} entering={FadeIn} exiting={FadeOut}>
-            {/* Categories with blueprints */}
             <FlatList
                 data={categoryGroups}
                 renderItem={renderCategorySection}
@@ -128,10 +124,6 @@ const styles = StyleSheet.create({
     seeAllButton: {
         padding: 4,
     },
-    seeAllText: {
-        color: ThemedColor.primary,
-        fontSize: 14,
-    },
     blueprintList: {
         paddingHorizontal: 16,
         paddingVertical: 2,
@@ -154,11 +146,9 @@ const styles = StyleSheet.create({
     },
 });
 
-// Memoize ExplorePage to prevent unnecessary re-renders
 export const ExplorePage = React.memo(ExplorePageComponent, (prevProps, nextProps) => {
     return (
         prevProps.categoryGroups === nextProps.categoryGroups &&
         prevProps.loading === nextProps.loading
-        // Don't compare focusStyle as it's an animated style
     );
 });

@@ -3,7 +3,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-import { updatePushToken } from "../api/auth";
+import { updatePushToken } from "@/api/auth";
 
 // Configure notifications appearance in foreground.
 // Must be called explicitly at runtime (not at module load time) to avoid a

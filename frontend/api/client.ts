@@ -8,7 +8,7 @@ const logger = createLogger('API');
 
 // Create the base client
 const baseClient = createClient<paths>({
-    baseUrl: process.env.EXPO_PUBLIC_URL + "/api" || "",
+    baseUrl: (process.env.EXPO_PUBLIC_URL ?? "") + "/api",
 });
 
 // Add request interceptor for authentication

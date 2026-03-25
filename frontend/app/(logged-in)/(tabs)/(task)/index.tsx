@@ -18,11 +18,11 @@ import { getCongratulationsAPI } from "@/api/congratulation";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
-import { useTutorial } from "@/hooks/useTutorial";
 import { SpotlightTourProvider, TourStep, useSpotlightTour } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { ensureVisible } from "@/utils/spotlightUtils";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
@@ -50,13 +50,12 @@ const Home = (props: Props) => {
     const [congratulationCount, setCongratulationCount] = useState(0);
     const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(false);
     const { focusMode, toggleFocusMode } = useFocusMode();
-    const { shouldShowTutorial, markTutorialAsSeen } = useTutorial(user?._id);
     const [refreshing, setRefreshing] = useState(false);
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
-    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
+    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     // Cache keys and duration
     const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
@@ -217,7 +216,7 @@ const Home = (props: Props) => {
                     description="Quick access to your most important features! Start your day here with daily views, voice dumps, and more."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("homeSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -230,7 +229,7 @@ const Home = (props: Props) => {
                     description="This is where encouragements and congratulations from your close friends live!"
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("homeSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -277,7 +276,6 @@ const Home = (props: Props) => {
                 fetchingWorkspaces={fetchingWorkspaces}
                 workspaces={workspaces}
                 setSelected={setSelected}
-                shouldShowTutorial={shouldShowTutorial}
                 spotlightState={spotlightState}
                 spotlightLoading={spotlightLoading}
                 refreshing={refreshing}
@@ -305,7 +303,6 @@ const HomeContent = ({
     fetchingWorkspaces,
     workspaces,
     setSelected,
-    shouldShowTutorial,
     spotlightState,
     spotlightLoading,
     refreshing,
@@ -321,33 +318,6 @@ const HomeContent = ({
 
     const registerHomeLayout = (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => {
         homeLayoutsRef.current[key] = layout;
-    };
-
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    const isOnScreen = (ref: React.RefObject<View>) =>
-        new Promise<boolean>((resolve) => {
-            requestAnimationFrame(() => {
-                if (!ref.current) return resolve(false);
-                ref.current.measureInWindow((_x, y, _w, h) => {
-                    const screenHeight = Dimensions.get("window").height;
-                    resolve(y >= 0 && y + h <= screenHeight);
-                });
-            });
-        });
-
-    const ensureVisible = async (
-        ref: React.RefObject<View>,
-        scrollRef?: React.RefObject<any>,
-        layout?: { y: number; height: number }
-    ) => {
-        if (await isOnScreen(ref)) return true;
-        if (scrollRef?.current && layout) {
-            scrollRef.current.scrollTo({ y: Math.max(layout.y - 20, 0), animated: true });
-            await delay(300);
-            return isOnScreen(ref);
-        }
-        return false;
     };
 
     useEffect(() => {
@@ -436,7 +406,6 @@ const HomeContent = ({
                                 fetchingWorkspaces={fetchingWorkspaces}
                                 onWorkspaceSelect={setSelected}
                                 onCreateWorkspace={() => setCreatingWorkspace(true)}
-                                shouldShowTutorial={shouldShowTutorial}
                                 drawerRef={drawerRef}
                                 ThemedColor={ThemedColor}
                                 focusMode={focusMode}

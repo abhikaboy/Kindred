@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -12,6 +12,7 @@ interface SpotlightState {
 interface SpotlightContextType {
     spotlightState: SpotlightState;
     setSpotlightShown: (key: keyof SpotlightState) => void;
+    skipAllSpotlights: () => void;
     resetSpotlights: () => void;
     isLoading: boolean;
 }
@@ -25,77 +26,84 @@ const initialState: SpotlightState = {
     taskSpotlight: false,
 };
 
-export const SpotlightProvider: React.FC<{ children: React.ReactNode}> = ({ children }) => {
+const allDoneState: SpotlightState = {
+    homeSpotlight: true,
+    menuSpotlight: true,
+    workspaceSpotlight: true,
+    taskSpotlight: true,
+};
+
+export const SpotlightProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [spotlightState, setSpotlightState] = useState<SpotlightState>(initialState);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
+    const userId = user?._id;
+    const isInitialLoadRef = useRef(true);
 
-    // Load spotlight state from AsyncStorage when user changes
     useEffect(() => {
+        let cancelled = false;
+
         const loadSpotlightState = async () => {
-            if (!user?._id) {
+            if (!userId) {
                 setIsLoading(false);
                 return;
             }
 
             try {
-                const key = `${user._id}-spotlight`;
+                const key = `${userId}-spotlight`;
                 const storedValue = await AsyncStorage.getItem(key);
 
-                if (storedValue !== null) {
-                    const parsedState = JSON.parse(storedValue);
-                    setSpotlightState(parsedState);
+                if (!cancelled && storedValue !== null) {
+                    setSpotlightState(JSON.parse(storedValue));
                 }
             } catch (error) {
                 console.error('Error loading spotlight state:', error);
             } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    isInitialLoadRef.current = false;
+                    setIsLoading(false);
+                }
             }
         };
 
         loadSpotlightState();
-    }, [user?._id]);
+        return () => { cancelled = true; };
+    }, [userId]);
 
-    const setSpotlightShown = (key: keyof SpotlightState) => {
-        if (!user?._id) return;
+    // Persist spotlight state whenever it changes (after initial load)
+    useEffect(() => {
+        if (!userId || isInitialLoadRef.current) return;
 
-        // Immediately update state (synchronous)
-        const newState = {
-            ...spotlightState,
-            [key]: true,
-        };
-        
-        setSpotlightState(newState);
+        AsyncStorage.setItem(`${userId}-spotlight`, JSON.stringify(spotlightState)).catch(
+            error => console.error('Error saving spotlight state:', error)
+        );
+    }, [userId, spotlightState]);
 
-        // Persist to AsyncStorage in background (don't await)
-        const storageKey = `${user._id}-spotlight`;
-        AsyncStorage.setItem(storageKey, JSON.stringify(newState)).catch((error) => {
-            console.error('Error saving spotlight state:', error);
-        });
-    };
+    const setSpotlightShown = useCallback((key: keyof SpotlightState) => {
+        if (!userId) return;
+        setSpotlightState(prev => ({ ...prev, [key]: true }));
+    }, [userId]);
 
-    const resetSpotlights = () => {
-        if (!user?._id) return;
+    const skipAllSpotlights = useCallback(() => {
+        if (!userId) return;
+        setSpotlightState(allDoneState);
+    }, [userId]);
 
-        // Immediately update state (synchronous)
+    const resetSpotlights = useCallback(() => {
+        if (!userId) return;
         setSpotlightState(initialState);
+    }, [userId]);
 
-        // Persist to AsyncStorage in background (don't await)
-        const key = `${user._id}-spotlight`;
-        AsyncStorage.setItem(key, JSON.stringify(initialState)).catch((error) => {
-            console.error('Error resetting spotlight state:', error);
-        });
-    };
+    const value = useMemo(() => ({
+        spotlightState,
+        setSpotlightShown,
+        skipAllSpotlights,
+        resetSpotlights,
+        isLoading,
+    }), [spotlightState, setSpotlightShown, skipAllSpotlights, resetSpotlights, isLoading]);
 
     return (
-        <SpotlightContext.Provider
-            value={{
-                spotlightState,
-                setSpotlightShown,
-                resetSpotlights,
-                isLoading,
-            }}
-        >
+        <SpotlightContext.Provider value={value}>
             {children}
         </SpotlightContext.Provider>
     );
@@ -108,4 +116,3 @@ export const useSpotlight = () => {
     }
     return context;
 };
-

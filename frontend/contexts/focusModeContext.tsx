@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/hooks/useAuth';
 
 interface FocusModeContextType {
     focusMode: boolean;
     setFocusMode: (value: boolean) => void;
-    toggleFocusMode: () => Promise<void>;
+    toggleFocusMode: () => void;
 }
 
 const FocusModeContext = createContext<FocusModeContextType | undefined>(undefined);
@@ -13,17 +13,17 @@ const FocusModeContext = createContext<FocusModeContextType | undefined>(undefin
 export const FocusModeProvider = ({ children }: { children: ReactNode }) => {
     const [focusMode, setFocusModeState] = useState(false);
     const { user } = useAuth();
+    const userId = user?._id;
 
-    // Load focus mode state from AsyncStorage
     useEffect(() => {
+        let cancelled = false;
+
         const loadFocusMode = async () => {
-            if (!user?._id) return;
-            
+            if (!userId) return;
             try {
-                const key = `${user._id}-focusmode`;
+                const key = `${userId}-focusmode`;
                 const storedValue = await AsyncStorage.getItem(key);
-                
-                if (storedValue !== null) {
+                if (!cancelled && storedValue !== null) {
                     setFocusModeState(storedValue === 'true');
                 }
             } catch (error) {
@@ -32,37 +32,36 @@ export const FocusModeProvider = ({ children }: { children: ReactNode }) => {
         };
 
         loadFocusMode();
-    }, [user?._id]);
+        return () => { cancelled = true; };
+    }, [userId]);
 
-    // Toggle focus mode and save to AsyncStorage
-    const toggleFocusMode = async () => {
-        if (!user?._id) return;
-        
-        try {
-            const newValue = !focusMode;
-            setFocusModeState(newValue);
-            
-            const key = `${user._id}-focusmode`;
-            await AsyncStorage.setItem(key, newValue.toString());
-        } catch (error) {
-            console.error("Error saving focus mode:", error);
-        }
-    };
+    const toggleFocusMode = useCallback(() => {
+        if (!userId) return;
+        setFocusModeState(prev => {
+            const newValue = !prev;
+            AsyncStorage.setItem(`${userId}-focusmode`, newValue.toString()).catch(
+                error => console.error("Error saving focus mode:", error)
+            );
+            return newValue;
+        });
+    }, [userId]);
 
-    const setFocusMode = async (value: boolean) => {
-        if (!user?._id) return;
-        
-        try {
-            setFocusModeState(value);
-            const key = `${user._id}-focusmode`;
-            await AsyncStorage.setItem(key, value.toString());
-        } catch (error) {
-            console.error("Error saving focus mode:", error);
-        }
-    };
+    const setFocusMode = useCallback((value: boolean) => {
+        if (!userId) return;
+        setFocusModeState(value);
+        AsyncStorage.setItem(`${userId}-focusmode`, value.toString()).catch(
+            error => console.error("Error saving focus mode:", error)
+        );
+    }, [userId]);
+
+    const value = useMemo(() => ({
+        focusMode,
+        setFocusMode,
+        toggleFocusMode,
+    }), [focusMode, setFocusMode, toggleFocusMode]);
 
     return (
-        <FocusModeContext.Provider value={{ focusMode, setFocusMode, toggleFocusMode }}>
+        <FocusModeContext.Provider value={value}>
             {children}
         </FocusModeContext.Provider>
     );
@@ -75,4 +74,3 @@ export const useFocusMode = () => {
     }
     return context;
 };
-

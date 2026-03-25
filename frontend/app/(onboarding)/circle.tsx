@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, Animated, Easing } from "react-native";
+import { Dimensions, StyleSheet, View, Animated, Easing, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,6 +9,7 @@ import OnboardButton from "@/components/inputs/OnboardButton";
 import Svg, { Circle, Path, G } from 'react-native-svg';
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -20,6 +21,12 @@ type Props = {};
 const CircleOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+
+    const handleSkip = async () => {
+        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        router.push("/login");
+    };
 
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -135,6 +142,29 @@ const CircleOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <TouchableOpacity
+                onPress={handleSkip}
+                style={{
+                    position: 'absolute',
+                    top: insets.top + 16,
+                    right: 24,
+                    zIndex: 10,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <ThemedText style={{
+                    fontSize: 16,
+                    fontFamily: 'Outfit',
+                    fontWeight: '500',
+                    color: '#13121f',
+                    opacity: 0.5,
+                }}>
+                    Skip
+                </ThemedText>
+            </TouchableOpacity>
+
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
                 <OnboardingBackground variant="green" />

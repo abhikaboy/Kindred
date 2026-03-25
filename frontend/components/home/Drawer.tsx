@@ -21,7 +21,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
-import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { SPOTLIGHT_MOTION, ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
+import { ensureVisible } from "@/utils/spotlightUtils";
 import {
     House,
     Calendar,
@@ -42,7 +43,7 @@ export const Drawer = ({ close }) => {
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
     const [showQuickImport, setShowQuickImport] = React.useState(false);
-    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
+    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     const handleCreateBlueprint = () => {
         close();
@@ -58,7 +59,7 @@ export const Drawer = ({ close }) => {
                     description="Kindred organizes lists into workspaces. Each workspace can have multiple categories and tasks."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("menuSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -71,7 +72,7 @@ export const Drawer = ({ close }) => {
                     description="The new workspace button is at the top. Tap here to create a new workspace anytime!"
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("menuSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -87,9 +88,9 @@ export const Drawer = ({ close }) => {
                         setSpotlightShown("menuSpotlight");
 
                         // Find and navigate to Kindred Guide workspace
-                        const kindredGuide = workspaces.find((w) => w.name === "🌺 Kindred Guide");
+                        const kindredGuide = workspaces.find((w) => w.name === ONBOARDING_WORKSPACE);
                         if (kindredGuide) {
-                            setSelected("🌺 Kindred Guide");
+                            setSelected(ONBOARDING_WORKSPACE);
                             close();
                         }
 
@@ -164,33 +165,6 @@ const DrawerContent = ({
             setEditing(true);
         }
     }, [editing, setEditing]);
-
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    const isOnScreen = (ref: React.RefObject<View>) =>
-        new Promise<boolean>((resolve) => {
-            requestAnimationFrame(() => {
-                if (!ref.current) return resolve(false);
-                ref.current.measureInWindow((_x, y, _w, h) => {
-                    const screenHeight = Dimensions.get("window").height;
-                    resolve(y >= 0 && y + h <= screenHeight);
-                });
-            });
-        });
-
-    const ensureVisible = async (
-        ref: React.RefObject<View>,
-        scrollRef?: React.RefObject<ScrollView>,
-        layout?: { y: number; height: number }
-    ) => {
-        if (await isOnScreen(ref)) return true;
-        if (scrollRef?.current && layout) {
-            scrollRef.current.scrollTo({ y: Math.max(layout.y - 20, 0), animated: true });
-            await delay(300);
-            return isOnScreen(ref);
-        }
-        return false;
-    };
 
     // Helper function to determine which drawer item should be selected based on current route
     const getSelectedItem = () => {

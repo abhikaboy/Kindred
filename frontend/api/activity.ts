@@ -1,4 +1,4 @@
-import { client } from "@/hooks/useTypedAPI";
+import client from "@/api/client";
 import { components } from './generated/types';
 import { withAuthHeaders } from "./utils";
 import { createLogger } from "@/utils/logger";

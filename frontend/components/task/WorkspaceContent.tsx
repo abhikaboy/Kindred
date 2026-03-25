@@ -20,7 +20,8 @@ import { Screen } from "@/components/modals/CreateModal";
 import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
-import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { SPOTLIGHT_MOTION, ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
+import { ensureVisible } from "@/utils/spotlightUtils";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -39,7 +40,7 @@ interface WorkspaceContentProps {
  * Extracted content component with/ drawer wrapper
  */
 export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceName }) => {
-    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
+    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     // Tour steps for workspace
     const tourSteps: TourStep[] = [
@@ -50,7 +51,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                     description="Tap the icon next to the workspace title to edit workspace settings, reorder categories, or delete the workspace."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("workspaceSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -63,7 +64,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                     description="This is a task! The colored bar on the left shows its priority. Tap on any task to view or edit its details."
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("workspaceSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -76,7 +77,7 @@ export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceNam
                     description="To make new tasks, click on a category name. Categories help you organize tasks by type or project!"
                     onNext={() => {
                         setSpotlightShown("workspaceSpotlight");
-                        next();
+                        stop();
                     }}
                     isLastStep
                 />
@@ -165,33 +166,6 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
     const menuSpotlightShown = spotlightState.menuSpotlight;
 
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    const isOnScreen = (ref: React.RefObject<View>) =>
-        new Promise<boolean>((resolve) => {
-            requestAnimationFrame(() => {
-                if (!ref.current) return resolve(false);
-                ref.current.measureInWindow((_x, y, _w, h) => {
-                    const screenHeight = Dimensions.get("window").height;
-                    resolve(y >= 0 && y + h <= screenHeight);
-                });
-            });
-        });
-
-    const ensureVisible = async (
-        ref: React.RefObject<View>,
-        scrollRef?: React.RefObject<ScrollView>,
-        layout?: { y: number; height: number }
-    ) => {
-        if (await isOnScreen(ref)) return true;
-        if (scrollRef?.current && layout) {
-            scrollRef.current.scrollTo({ y: Math.max(layout.y - 20, 0), animated: true });
-            await delay(300);
-            return isOnScreen(ref);
-        }
-        return false;
-    };
-
     // Reset trigger ref when workspace changes
     useEffect(() => {
         hasTriggeredRef.current = false;
@@ -201,7 +175,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         if (hasTriggeredRef.current) return;
 
         const shouldTrigger =
-            selected === "🌺 Kindred Guide" && !workspaceSpotlightShown && menuSpotlightShown;
+            selected === ONBOARDING_WORKSPACE && !workspaceSpotlightShown && menuSpotlightShown;
 
         if (!spotlightLoading && shouldTrigger && !hasTriggeredRef.current) {
             hasTriggeredRef.current = true;

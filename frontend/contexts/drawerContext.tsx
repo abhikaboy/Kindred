@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useMemo } from "react";
 
 type DrawerContextType = {
     isDrawerOpen: boolean;
@@ -10,10 +10,10 @@ const DrawerContext = createContext<DrawerContextType | undefined>(undefined);
 export const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-    const value = {
+    const value = useMemo(() => ({
         isDrawerOpen,
         setIsDrawerOpen,
-    };
+    }), [isDrawerOpen]);
 
     return <DrawerContext.Provider value={value}>{children}</DrawerContext.Provider>;
 };

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { markAsCompletedAPI } from '@/api/task';
@@ -23,8 +23,13 @@ interface UseTaskCompletionOptions {
 
 export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
     const [isCompleting, setIsCompleting] = useState(false);
+    const isCompletingRef = useRef(false);
+    const optionsRef = useRef(options);
+    optionsRef.current = options;
+
     const { removeFromCategory, setShowConfetti, categories } = useTasks();
     const { user } = useAuth();
+    const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const markTaskAsCompleted = useCallback(async (
         categoryId: string,
@@ -32,22 +37,21 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         task: TaskCompletionData,
         categoryName?: string
     ) => {
-        if (isCompleting) return;
+        if (isCompletingRef.current) return;
 
+        isCompletingRef.current = true;
         setIsCompleting(true);
         try {
             const res = await markAsCompletedAPI(categoryId, taskId, {
                 timeCompleted: new Date().toISOString(),
-                timeTaken: "PT0S", // ISO 8601 duration: 0 seconds (not tracked)
+                timeTaken: "PT0S",
             });
-            console.log("Task completion result:", res);
 
-            // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
 
-            // Show confetti and automatically hide it after 2 seconds
             setShowConfetti(true);
-            setTimeout(() => {
+            if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
+            confettiTimeoutRef.current = setTimeout(() => {
                 setShowConfetti(false);
             }, 2000);
 
@@ -69,16 +73,13 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 public: task.public || false,
             };
 
-            // Show streak notification if streak changed
             const newStreakInfo = (res as any)?.newStreakInfo;
 
-            // Update streak widget with new streak value
             if (user?._id) {
                 const newStreak = newStreakInfo?.newStreak ?? (user?.streak || 0);
                 updateStreakWidget(user._id, newStreak, 1).catch(() => {});
             }
 
-            // Build title and message based on streak status
             let title = "Task completed!";
             let message = `Congrats! Click here to post and document your task!`;
 
@@ -108,7 +109,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
             });
 
-            options?.onSuccess?.();
+            optionsRef.current?.onSuccess?.();
         } catch (error) {
             console.error("Error marking task as completed:", error);
             showToastable({
@@ -119,11 +120,12 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 swipeDirection: "up",
                 renderContent: (props) => <DefaultToast {...props} />,
             });
-            options?.onError?.(error);
+            optionsRef.current?.onError?.(error);
         } finally {
+            isCompletingRef.current = false;
             setIsCompleting(false);
         }
-    }, [isCompleting, removeFromCategory, setShowConfetti, categories, options]);
+    }, [removeFromCategory, setShowConfetti, categories, user]);
 
     return {
         markTaskAsCompleted,

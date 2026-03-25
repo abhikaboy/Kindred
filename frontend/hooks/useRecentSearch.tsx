@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import asyncStorage from "@react-native-async-storage/async-storage";
-import { useSafeAsync } from "../hooks/useSafeAsync";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAsync } from "@/hooks/useSafeAsync";
 
 export interface RecentSearchItem {
     id: string;
@@ -29,10 +29,10 @@ export function useRecentSearch(searchSet: string = "") {
 
             setIsLoading(true);
             const { result, error } = await safeAsync(async () => {
-                const recents = await asyncStorage.getItem(searchSet);
+                const recents = await AsyncStorage.getItem(searchSet);
                 if (recents) {
                     const parsed = JSON.parse(recents);
-                    
+
                     // Migrate old string-based recents to new format
                     if (parsed.length > 0 && typeof parsed[0] === 'string') {
                         return parsed.map((text: string) => ({
@@ -42,7 +42,7 @@ export function useRecentSearch(searchSet: string = "") {
                             timestamp: Date.now()
                         }));
                     }
-                    
+
                     return parsed;
                 } else {
                     return [];
@@ -66,14 +66,14 @@ export function useRecentSearch(searchSet: string = "") {
         if (!searchSet || searchSet.trim() === "") {
             return;
         }
-        
+
         // Convert string to RecentSearchItem for backwards compatibility
         let searchItem: RecentSearchItem;
-        
+
         if (typeof search === 'string') {
-            searchItem = { 
-                id: search, 
-                type: 'text', 
+            searchItem = {
+                id: search,
+                type: 'text',
                 text: search,
                 timestamp: Date.now()
             };
@@ -84,24 +84,24 @@ export function useRecentSearch(searchSet: string = "") {
                 timestamp: Date.now()
             };
         }
-        
+
         // Validate the search item
         if (!searchItem.id) {
             return;
         }
-        
+
         if (searchItem.type === 'text' && !searchItem.text?.trim()) {
             return;
         }
-        
+
         // Remove any existing item with the same ID
         let filtered = recents.filter((item) => item.id !== searchItem.id);
-        
+
         // Add to front and limit
         let newRecents = [searchItem, ...filtered].slice(0, MAX_RECENTS);
-        
+
         // Save to storage
-        await asyncStorage.setItem(searchSet, JSON.stringify(newRecents));
+        await AsyncStorage.setItem(searchSet, JSON.stringify(newRecents));
         setRecents(newRecents);
     };
 
@@ -109,9 +109,9 @@ export function useRecentSearch(searchSet: string = "") {
         if (!searchSet || searchSet.trim() === "" || !id || id.trim() === "") {
             return;
         }
-        
+
         const filtered = recents.filter((item) => item.id !== id);
-        await asyncStorage.setItem(searchSet, JSON.stringify(filtered));
+        await AsyncStorage.setItem(searchSet, JSON.stringify(filtered));
         setRecents(filtered);
     };
 

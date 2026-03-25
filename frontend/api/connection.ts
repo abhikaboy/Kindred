@@ -1,10 +1,5 @@
-import { client } from "@/hooks/useTypedAPI";
-
-// Helper to inject auth headers
-const withAuthHeaders = (params: any = {}) => ({
-    ...params,
-    header: { Authorization: "", ...(params.header || {}) },
-});
+import client from "@/api/client";
+import { withAuthHeaders } from "./utils";
 
 export interface BlockedUser {
     _id: string;

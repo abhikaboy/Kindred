@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-    getUserGroups, 
-    getGroupById, 
-    createGroup, 
-    updateGroup, 
+import {
+    getUserGroups,
+    getGroupById,
+    createGroup,
+    updateGroup,
     deleteGroup,
     type GroupDocument,
     type CreateGroupParams
@@ -15,17 +15,17 @@ export interface UseGroupsReturn {
     groups: GroupDocument[];
     isLoading: boolean;
     error: string | null;
-    
+
     // Mutations
     createNewGroup: (params: CreateGroupParams) => Promise<GroupDocument>;
     updateExistingGroup: (groupId: string, name: string) => Promise<void>;
     deleteExistingGroup: (groupId: string) => Promise<void>;
-    
+
     // Mutation loading states
     isCreating: boolean;
     isUpdating: boolean;
     isDeleting: boolean;
-    
+
     // Refresh
     refresh: () => void;
 }
@@ -49,26 +49,20 @@ export const useGroups = (): UseGroupsReturn => {
     // Mutation for creating a group
     const createGroupMutation = useMutation({
         mutationFn: async (params: CreateGroupParams) => {
-            console.log('🟢 useGroups: Starting createGroup mutation with:', params);
             const result = await createGroup(params);
-            console.log('🟢 useGroups: createGroup mutation result:', result);
             return result;
         },
         onSuccess: (newGroup) => {
-            console.log('🟢 useGroups: onSuccess called with:', newGroup);
-            
             // Optimistically update the cache with the new group
             queryClient.setQueryData(['groups'], (oldData: GroupDocument[] | undefined) => {
-                console.log('🟢 useGroups: Updating cache. Old data:', oldData);
                 if (!oldData) return [newGroup];
                 const newData = [...oldData, newGroup];
-                console.log('🟢 useGroups: New cache data:', newData);
                 return newData;
             });
-            
+
             // Also invalidate to ensure sync with backend
             queryClient.invalidateQueries({ queryKey: ['groups'] });
-            
+
             if (newGroup?.name) {
                 showToast(`Group "${newGroup.name}" created successfully!`, 'success');
             } else {
@@ -84,19 +78,19 @@ export const useGroups = (): UseGroupsReturn => {
 
     // Mutation for updating a group
     const updateGroupMutation = useMutation({
-        mutationFn: ({ groupId, name }: { groupId: string; name: string }) => 
+        mutationFn: ({ groupId, name }: { groupId: string; name: string }) =>
             updateGroup(groupId, name),
         onSuccess: (_, variables) => {
             // Update the group in the cache
             queryClient.setQueryData(['groups'], (oldData: GroupDocument[] | undefined) => {
                 if (!oldData) return oldData;
-                return oldData.map(group => 
-                    group._id === variables.groupId 
+                return oldData.map(group =>
+                    group._id === variables.groupId
                         ? { ...group, name: variables.name }
                         : group
                 );
             });
-            
+
             showToast('Group updated successfully!', 'success');
         },
         onError: (error: Error) => {
@@ -114,7 +108,7 @@ export const useGroups = (): UseGroupsReturn => {
                 if (!oldData) return oldData;
                 return oldData.filter(group => group._id !== groupId);
             });
-            
+
             showToast('Group deleted successfully!', 'success');
         },
         onError: (error: Error) => {
@@ -141,17 +135,17 @@ export const useGroups = (): UseGroupsReturn => {
         groups: groupsData || [],
         isLoading,
         error: queryError ? 'Failed to load groups' : null,
-        
+
         // Mutations
         createNewGroup,
         updateExistingGroup,
         deleteExistingGroup,
-        
+
         // Loading states
         isCreating: createGroupMutation.isPending,
         isUpdating: updateGroupMutation.isPending,
         isDeleting: deleteGroupMutation.isPending,
-        
+
         // Refresh
         refresh,
     };
@@ -179,4 +173,3 @@ export const useGroup = (groupId: string | null) => {
         refresh,
     };
 };
-

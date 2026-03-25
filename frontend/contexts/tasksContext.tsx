@@ -1,14 +1,14 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useRequest } from "@/hooks/useRequest";
-import React, { useEffect, useMemo, startTransition } from "react";
+import React, { useEffect, useMemo, useCallback, startTransition } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI, updateWorkspaceMeta } from "@/api/category";
-import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
+import { isFuture, isPast, isToday } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createLogger } from "@/utils/logger";
+import { InteractionManager } from "react-native";
 import {
     TodayTasksWidgetUpdater as TodayTasksWidget,
     WorkspaceSnapshotWidgetUpdater as WorkspaceSnapshotWidget,
@@ -23,10 +23,10 @@ const TaskContext = createContext<TaskContextType>({} as TaskContextType);
 type TaskContextType = {
     workspaces: Workspace[];
     setWorkSpaces: (workspaces: Workspace[]) => void;
-    getWorkspace: (name: string) => Workspace;
+    getWorkspace: (name: string) => Workspace | undefined;
     fetchWorkspaces: (forceRefresh?: boolean) => Promise<void>;
-    selected: string; // workspace name
-    setSelected: (selected: string) => void; // workspace name
+    selected: string;
+    setSelected: (selected: string) => void;
     categories: Categories[];
     addToCategory: (categoryId: string, task: Task) => void;
     addToWorkspace: (name: string, category: Categories) => void;
@@ -42,7 +42,7 @@ type TaskContextType = {
     fetchingWorkspaces: boolean;
 
     setCreateCategory: (Option: Option) => void;
-    selectedCategory: Option; // category name
+    selectedCategory: Option;
     showConfetti: boolean;
     setShowConfetti: (showConfetti: boolean) => void;
 
@@ -66,19 +66,17 @@ type TaskContextType = {
 export function TasksProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [workspaces, setWorkSpaces] = useState<Workspace[]>([]);
-    const [selected, setSelected] = useState<string>(""); // Workspace
+    const [selected, setSelected] = useState<string>("");
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
     const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
     const [recentWorkspaces, setRecentWorkspaces] = useState<string[]>([]);
-
     const [showConfetti, setShowConfetti] = useState(false);
 
-    // Constants for recent workspaces and caching
     const RECENT_WORKSPACES_KEY = `recent_workspaces_${user?._id || 'default'}`;
     const MAX_RECENT_WORKSPACES = 6;
     const WORKSPACES_CACHE_KEY = `workspaces_cache_${user?._id || 'default'}`;
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const CACHE_DURATION = 5 * 60 * 1000;
 
     const unnestedTasks = useMemo(() => {
         const res: Task[] = [];
@@ -87,30 +85,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 for (const task of category.tasks) {
                     if (task.active === false) continue;
                     res.push({
-                        id: task.id,
-                        priority: task.priority,
-                        content: task.content,
-                        value: task.value,
-                        recurring: task.recurring,
-                        recurFrequency: task.recurFrequency,
-                        recurType: task.recurType,
-                        recurDetails: task.recurDetails,
-                        public: task.public,
-                        active: task.active,
-                        timestamp: task.timestamp,
-                        lastEdited: task.lastEdited,
-                        templateID: task.templateID,
-                        userID: task.userID,
-                        deadline: task.deadline,
-                        startTime: task.startTime,
-                        startDate: task.startDate,
-                        notes: task.notes,
-                        checklist: task.checklist,
-                        reminders: task.reminders,
-                        integration: task.integration,
-                        timeCompleted: task.timeCompleted,
-                        timeTaken: task.timeTaken,
-                        posted: task.posted,
+                        ...task,
                         categoryID: category.id,
                         categoryName: category.name,
                         workspaceName: workspace.name,
@@ -122,136 +97,95 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [workspaces]);
 
     const startTodayTasks = useMemo(() => {
-        return unnestedTasks.filter((task) => {
-            return isToday(new Date(task?.startDate));
-        });
+        return unnestedTasks.filter((task) => isToday(new Date(task?.startDate)));
     }, [unnestedTasks]);
 
     const dueTodayTasks = useMemo(() => {
-        return unnestedTasks.filter((task) => {
-            return isToday(new Date(task?.deadline));
-        });
+        return unnestedTasks.filter((task) => isToday(new Date(task?.deadline)));
     }, [unnestedTasks]);
 
     const windowTasks = useMemo(() => {
+        const today = new Date();
         return unnestedTasks.filter((task) => {
-            const today = new Date();
             const startDate = new Date(task?.startDate);
             const deadline = new Date(task?.deadline);
-
-            // Check if today falls between start date and deadline
             return startDate <= today && today <= deadline;
         });
     }, [unnestedTasks]);
 
     const pastStartTasks = useMemo(() => {
-        return unnestedTasks.filter((task) => {
-            return isPast(new Date(task?.startDate));
-        });
+        return unnestedTasks.filter((task) => isPast(new Date(task?.startDate)));
     }, [unnestedTasks]);
 
     const pastDueTasks = useMemo(() => {
-        return unnestedTasks.filter((task) => {
-            return isPast(new Date(task?.deadline));
-        });
+        return unnestedTasks.filter((task) => isPast(new Date(task?.deadline)));
     }, [unnestedTasks]);
 
     const futureTasks = useMemo(() => {
-        return unnestedTasks.filter((task) => {
-            return isFuture(new Date(task?.deadline));
-        });
+        return unnestedTasks.filter((task) => isFuture(new Date(task?.deadline)));
     }, [unnestedTasks]);
 
-    const allTasks = useMemo(() => {
-        return unnestedTasks;
-    }, [unnestedTasks]);
+    const categories = useMemo(() => {
+        if (workspaces.length === 0) return [];
+        const selectedWorkspace = workspaces.find((ws) => ws.name === selected);
+        return selectedWorkspace?.categories ?? [];
+    }, [selected, workspaces]);
 
-    /**
-     * Sets the selected category within the creation menu
-     * @param option
-     */
-    const setCreateCategory = (option: Option) => {
-        if (option.id == "") return;
-        if (option.label == "") return;
-        setSelectedCategory(option);
-    };
-
-    /**
-     * Gets a workspace by name from the list of workspaces
-     * @param name
-     * @returns Workspace
-     */
-    const getWorkspace = (name: string) => {
-        return workspaces.find((workspace) => workspace.name === name);
-    };
-
-    /**
-     * Invalidates the workspaces cache by removing it from AsyncStorage
-     * This should be called after any local update to prevent stale cache from overwriting local changes
-     */
-    const invalidateWorkspacesCache = async () => {
+    const invalidateWorkspacesCache = useCallback(async () => {
         try {
             await AsyncStorage.removeItem(WORKSPACES_CACHE_KEY);
-            logger.debug("Workspaces cache invalidated");
         } catch (error) {
             logger.error("Error invalidating workspaces cache", error);
         }
-    };
+    }, [WORKSPACES_CACHE_KEY]);
 
-    const fetchWorkspaces = async (forceRefresh: boolean = false) => {
+    const setCreateCategory = useCallback((option: Option) => {
+        if (option.id === "" || option.label === "") return;
+        setSelectedCategory(option);
+    }, []);
+
+    const getWorkspace = useCallback((name: string): Workspace | undefined => {
+        return workspaces.find((workspace) => workspace.name === name);
+    }, [workspaces]);
+
+    const fetchWorkspaces = useCallback(async (forceRefresh: boolean = false) => {
         if (!user?._id) return;
 
-        // Check cache first if not forcing refresh
         if (!forceRefresh) {
             try {
                 const cached = await AsyncStorage.getItem(WORKSPACES_CACHE_KEY);
                 if (cached) {
                     const { data: cachedData, timestamp } = JSON.parse(cached);
                     const now = Date.now();
-
-                    // Use cache if it's less than 5 minutes old
                     if ((now - timestamp) < CACHE_DURATION) {
-                        logger.debug("Using cached workspaces (age: " + Math.floor((now - timestamp) / 1000) + "s)");
                         startTransition(() => setWorkSpaces(cachedData));
                         return;
-                    } else {
-                        logger.debug("Cache expired, fetching fresh data");
                     }
                 }
             } catch (error) {
                 logger.error("Error reading workspaces cache", error);
             }
-        } else {
-            logger.debug("Force refresh requested, bypassing cache");
         }
 
-        // Fetch fresh data
         setFetchingWorkspaces(true);
         try {
-            logger.info("Fetching workspaces via API");
             const data = await fetchUserWorkspaces(user._id);
             const subscribedBlueprints = await getUserSubscribedBlueprints();
-            logger.debug("subscribedBlueprints", subscribedBlueprints);
-            const blueprintWorkspaces: BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => {
-                return {
-                    name: blueprint.name,
-                    categories: [],
-                    blueprintDetails: blueprint,
-                    isBlueprint: true
-                }
-            });
-            logger.debug("blueprintWorkspaces", blueprintWorkspaces);
+            const blueprintWorkspaces: BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => ({
+                name: blueprint.name,
+                categories: [],
+                blueprintDetails: blueprint,
+                isBlueprint: true,
+            }));
 
             const allWorkspaces = [...data, ...blueprintWorkspaces];
             startTransition(() => setWorkSpaces(allWorkspaces));
 
-            // Save to cache
             try {
                 await AsyncStorage.setItem(WORKSPACES_CACHE_KEY, JSON.stringify({
                     data: allWorkspaces,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
                 }));
-                logger.debug("Workspaces cached successfully");
             } catch (error) {
                 logger.error("Error caching workspaces", error);
             }
@@ -261,14 +195,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setFetchingWorkspaces(false);
         }
-    };
+    }, [user?._id, WORKSPACES_CACHE_KEY, CACHE_DURATION]);
 
-    /**
-     * Adds a workspace to the list of workspaces on the server and locally
-     * @param name
-     * @param category
-     */
-    const addWorkspace = async (name: string, category: Categories, icon?: string | null, color?: string | null) => {
+    const addWorkspace = useCallback(async (name: string, category: Categories, icon?: string | null, color?: string | null) => {
         const newWorkspace: Workspace = {
             name,
             categories: [category],
@@ -276,429 +205,215 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             icon: icon ?? null,
             color: color ?? null,
         };
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy.push(newWorkspace);
-        setWorkSpaces(workspacesCopy);
+        setWorkSpaces(prev => [...prev, newWorkspace]);
         await invalidateWorkspacesCache();
-    };
+    }, [invalidateWorkspacesCache]);
 
-    /**
-     * Adds a task to the list of categories
-     * @param categoryId
-     * @param task
-     */
-    const addToCategory = (categoryId: string, task: Task) => {
-        // Create a deep copy of workspaces to avoid mutations
-        let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
-
-        // Update workspaces state - this will automatically update categories via useEffect
-        workspacesCopy.forEach((workspace: Workspace) => {
-            workspace.categories.forEach((category: Categories) => {
+    const addToCategory = useCallback((categoryId: string, task: Task) => {
+        setWorkSpaces(prev => prev.map(workspace => ({
+            ...workspace,
+            categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
-                    // Ensure the task has the categoryName field populated
-                    const taskWithCategoryName = {
-                        ...task,
-                        categoryName: category.name,
+                    return {
+                        ...category,
+                        tasks: [...category.tasks, { ...task, categoryName: category.name }],
                     };
-                    category.tasks.push(taskWithCategoryName);
                 }
-            });
-        });
-
-        setWorkSpaces(workspacesCopy);
-        // Invalidate cache after local update (non-blocking)
+                return category;
+            }),
+        })));
         invalidateWorkspacesCache();
-    };
+    }, [invalidateWorkspacesCache]);
 
-    /**
-     * Updates a task in the workspaces and categories (optimistic update)
-     * @param categoryId - The ID of the category containing the task
-     * @param taskId - The ID of the task to update
-     * @param updates - Partial task object with fields to update
-     */
-    const updateTask = (categoryId: string, taskId: string, updates: Partial<Task>) => {
-        // Create a deep copy of workspaces to avoid mutations
-        let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
-        let categoryName: string | undefined;
-        let updatedTask: Task | null = null;
-
-        // Update workspaces state - this will automatically update categories via useEffect
-        workspacesCopy.forEach((workspace: Workspace) => {
-            workspace.categories.forEach((category: Categories) => {
+    const updateTask = useCallback((categoryId: string, taskId: string, updates: Partial<Task>) => {
+        setWorkSpaces(prev => prev.map(workspace => ({
+            ...workspace,
+            categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
-                    const taskIndex = category.tasks.findIndex((t) => t.id === taskId);
-                    if (taskIndex !== -1) {
-                        category.tasks[taskIndex] = {
-                            ...category.tasks[taskIndex],
-                            ...updates,
-                            categoryName: category.name, // Ensure categoryName is preserved
-                        };
-                        categoryName = category.name;
-                        updatedTask = category.tasks[taskIndex];
-                    }
+                    return {
+                        ...category,
+                        tasks: category.tasks.map(t =>
+                            t.id === taskId ? { ...t, ...updates, categoryName: category.name } : t
+                        ),
+                    };
                 }
-            });
+                return category;
+            }),
+        })));
+
+        setTask(prev => {
+            if (prev && prev.id === taskId) {
+                return { ...prev, ...updates };
+            }
+            return prev;
         });
 
-        setWorkSpaces(workspacesCopy);
-
-        // Update the selected task if it's the one being edited
-        if (task && task.id === taskId && updatedTask) {
-            setTask({
-                ...task,
-                ...updates,
-                categoryName: categoryName, // Ensure categoryName is preserved
-            });
-        }
-
-        // Invalidate cache after local update
         invalidateWorkspacesCache();
-    };
+    }, [invalidateWorkspacesCache]);
 
-    /**
-     * Adds a category to the workspace list
-     * @param name
-     * @param category
-     */
-
-    const addToWorkspace = (name: string, category: Categories) => {
-        const workspace = getWorkspace(name);
-        if (!workspace) return;
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy.find((workspace) => workspace.name === name).categories.push(category);
-        setWorkSpaces(workspacesCopy);
-        // Invalidate cache after local update
+    const addToWorkspace = useCallback((name: string, category: Categories) => {
+        setWorkSpaces(prev => prev.map(workspace => {
+            if (workspace.name === name) {
+                return { ...workspace, categories: [...workspace.categories, category] };
+            }
+            return workspace;
+        }));
         invalidateWorkspacesCache();
-    };
-    /**
-     * Visually will remove a task from a category locally
-     * @param categoryId
-     * @param taskId
-     */
-    const removeFromCategory = async (categoryId: string, taskId: string) => {
-        // Create a deep copy of workspaces to avoid mutations
-        let workspacesCopy = JSON.parse(JSON.stringify(workspaces));
+    }, [invalidateWorkspacesCache]);
 
-        // Update workspaces state - this will automatically update categories via useEffect
-        workspacesCopy.forEach((workspace: Workspace) => {
-            workspace.categories.forEach((category: Categories) => {
+    const removeFromCategory = useCallback(async (categoryId: string, taskId: string) => {
+        setWorkSpaces(prev => prev.map(workspace => ({
+            ...workspace,
+            categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
-                    category.tasks = category.tasks.filter((task: Task) => task.id !== taskId);
+                    return { ...category, tasks: category.tasks.filter(t => t.id !== taskId) };
                 }
-            });
+                return category;
+            }),
+        })));
+        await invalidateWorkspacesCache();
+    }, [invalidateWorkspacesCache]);
+
+    const removeFromWorkspace = useCallback(async (name: string, categoryId: string) => {
+        setWorkSpaces(prev => prev.map(workspace => {
+            if (workspace.name === name) {
+                return { ...workspace, categories: workspace.categories.filter(c => c.id !== categoryId) };
+            }
+            return workspace;
+        }));
+        await invalidateWorkspacesCache();
+    }, [invalidateWorkspacesCache]);
+
+    const removeWorkspace = useCallback((name: string) => {
+        setWorkSpaces(prev => {
+            const filtered = prev.filter(workspace => workspace.name !== name);
+            if (selected === name) {
+                setSelected(filtered.length > 0 ? filtered[0].name : "");
+            }
+            return filtered;
         });
-
-        setWorkSpaces(workspacesCopy);
-        // Invalidate cache after local update
-        await invalidateWorkspacesCache();
-    };
-
-    /**
-     * Removes a category from a workspace locally
-     * @param name
-     * @param categoryId
-     */
-    const removeFromWorkspace = async (name: string, categoryId: string) => {
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy.find((workspace) => workspace.name === name).categories = workspacesCopy
-            .find((workspace) => workspace.name === name)
-            .categories.filter((category) => category.id !== categoryId);
-        setWorkSpaces(workspacesCopy);
-        // Invalidate cache after local update
-        await invalidateWorkspacesCache();
-    };
-
-    /**
-     * Removes a workspace from the workspaces list locally
-     * @param name - The name of the workspace to remove
-     */
-    const removeWorkspace = (name: string) => {
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy = workspacesCopy.filter((workspace) => workspace.name !== name);
-        setWorkSpaces(workspacesCopy);
-
-        // If the deleted workspace was selected, select the first available workspace
-        if (selected === name && workspacesCopy.length > 0) {
-            setSelected(workspacesCopy[0].name);
-        } else if (selected === name && workspacesCopy.length === 0) {
-            setSelected("");
-        }
-
-        // Invalidate cache after local update
         invalidateWorkspacesCache();
-    };
+    }, [selected, invalidateWorkspacesCache]);
 
-    /**
-     * Restores a workspace to the workspaces list (for rollback after failed API calls)
-     * @param workspace - The workspace to restore
-     */
-    const restoreWorkspace = async (workspace: Workspace) => {
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy.push(workspace);
-        setWorkSpaces(workspacesCopy);
-
-        // Invalidate cache after local update for consistency
+    const restoreWorkspace = useCallback(async (workspace: Workspace) => {
+        setWorkSpaces(prev => [...prev, workspace]);
         await invalidateWorkspacesCache();
-
-        // If no workspace is currently selected, select the restored one
         if (selected === "") {
             setSelected(workspace.name);
         }
-    };
+    }, [selected, invalidateWorkspacesCache]);
 
-    const doesWorkspaceExist = (name: string) => {
-        for (const workspace of workspaces) {
-            if (workspace.name === name) return true;
-        }
-        return false;
-    };
+    const doesWorkspaceExist = useCallback((name: string) => {
+        return workspaces.some(workspace => workspace.name === name);
+    }, [workspaces]);
 
-    /**
-     * Load recent workspaces from AsyncStorage
-     */
-    const loadRecentWorkspaces = async () => {
-        try {
-            const storedRecents = await AsyncStorage.getItem(RECENT_WORKSPACES_KEY);
-            if (storedRecents) {
-                const parsedRecents = JSON.parse(storedRecents);
-                setRecentWorkspaces(parsedRecents);
+    const updateWorkspaceIconColor = useCallback(async (name: string, icon?: string | null, color?: string | null) => {
+        await updateWorkspaceMeta(name, icon, color);
+        setWorkSpaces(prev => prev.map(w => {
+            if (w.name === name) {
+                return {
+                    ...w,
+                    icon: icon !== undefined ? icon : w.icon,
+                    color: color !== undefined ? color : w.color,
+                };
             }
-        } catch (error) {
-            logger.error('Error loading recent workspaces', error);
-        }
-    };
+            return w;
+        }));
+        await invalidateWorkspacesCache();
+    }, [invalidateWorkspacesCache]);
 
-    /**
-     * Add a workspace to recent workspaces
-     * @param workspaceName - The name of the workspace to add
-     */
-    const addToRecentWorkspaces = async (workspaceName: string) => {
-        if (!workspaceName || workspaceName.trim() === '') return;
+    const renameWorkspace = useCallback(async (oldName: string, newName: string) => {
+        setWorkSpaces(prev => prev.map(w =>
+            w.name === oldName ? { ...w, name: newName } : w
+        ));
+        if (selected === oldName) {
+            setSelected(newName);
+        }
+        await invalidateWorkspacesCache();
 
         try {
-            let updatedRecents = [...recentWorkspaces];
-
-            // Remove the workspace if it already exists to avoid duplicates
-            updatedRecents = updatedRecents.filter(name => name !== workspaceName);
-
-            // Add to the beginning of the array
-            updatedRecents.unshift(workspaceName);
-
-            // Limit to MAX_RECENT_WORKSPACES
-            updatedRecents = updatedRecents.slice(0, MAX_RECENT_WORKSPACES);
-
-            // Save to AsyncStorage
-            await AsyncStorage.setItem(RECENT_WORKSPACES_KEY, JSON.stringify(updatedRecents));
-
-            // Update state
-            setRecentWorkspaces(updatedRecents);
+            await renameWorkspaceAPI(oldName, newName);
+            await fetchWorkspaces();
         } catch (error) {
-            logger.error('Error adding to recent workspaces', error);
+            logger.error("Error renaming workspace", error);
+            setWorkSpaces(prev => prev.map(w =>
+                w.name === newName ? { ...w, name: oldName } : w
+            ));
+            if (selected === newName) {
+                setSelected(oldName);
+            }
+            await invalidateWorkspacesCache();
+            throw error;
         }
-    };
+    }, [selected, invalidateWorkspacesCache, fetchWorkspaces]);
 
-    /**
-     * Get recent workspaces
-     * @returns Array of recent workspace names
-     */
-    const getRecentWorkspaces = () => {
-        return recentWorkspaces;
-    };
+    const renameCategory = useCallback(async (categoryId: string, newName: string) => {
+        let originalName: string | null = null;
 
-    /**
-     * Clear all recent workspaces
-     */
-    const clearRecentWorkspaces = async () => {
+        setWorkSpaces(prev => prev.map(workspace => ({
+            ...workspace,
+            categories: workspace.categories.map(category => {
+                if (category.id === categoryId) {
+                    originalName = category.name;
+                    return { ...category, name: newName };
+                }
+                return category;
+            }),
+        })));
+        await invalidateWorkspacesCache();
+
+        try {
+            await renameCategoryAPI(categoryId, newName);
+            await fetchWorkspaces();
+        } catch (error) {
+            logger.error("Error renaming category", error);
+            if (originalName !== null) {
+                const rollbackName = originalName;
+                setWorkSpaces(prev => prev.map(workspace => ({
+                    ...workspace,
+                    categories: workspace.categories.map(category => {
+                        if (category.id === categoryId) {
+                            return { ...category, name: rollbackName };
+                        }
+                        return category;
+                    }),
+                })));
+                await invalidateWorkspacesCache();
+            }
+            throw error;
+        }
+    }, [invalidateWorkspacesCache, fetchWorkspaces]);
+
+    const handleSetSelected = useCallback((workspaceName: string) => {
+        setSelected(workspaceName);
+        if (workspaceName && workspaceName.trim() !== '') {
+            setRecentWorkspaces(prev => {
+                const updated = [workspaceName, ...prev.filter(n => n !== workspaceName)].slice(0, MAX_RECENT_WORKSPACES);
+                AsyncStorage.setItem(RECENT_WORKSPACES_KEY, JSON.stringify(updated)).catch(
+                    error => logger.error('Error saving recent workspaces', error)
+                );
+                return updated;
+            });
+        }
+    }, [RECENT_WORKSPACES_KEY, MAX_RECENT_WORKSPACES]);
+
+    const getRecentWorkspaces = useCallback(() => recentWorkspaces, [recentWorkspaces]);
+
+    const clearRecentWorkspaces = useCallback(async () => {
         try {
             await AsyncStorage.removeItem(RECENT_WORKSPACES_KEY);
             setRecentWorkspaces([]);
         } catch (error) {
             logger.error('Error clearing recent workspaces', error);
         }
-    };
+    }, [RECENT_WORKSPACES_KEY]);
 
-    /**
-     * Custom setSelected function that also adds to recent workspaces
-     * @param workspaceName - The name of the workspace to select
-     */
-    const handleSetSelected = (workspaceName: string) => {
-        // First set the selected workspace immediately (synchronous)
-        setSelected(workspaceName);
-
-        // Defer AsyncStorage write to avoid blocking the UI
-        if (workspaceName && workspaceName.trim() !== '') {
-            // Use setTimeout to defer the async operation
-            setTimeout(() => {
-                addToRecentWorkspaces(workspaceName);
-            }, 0);
-        }
-    };
-
-    /**
-     * Updates icon and/or color of a workspace on the server and in local state
-     * @param name - The workspace name
-     * @param icon - New emoji icon (optional)
-     * @param color - New hex color (optional)
-     */
-    const updateWorkspaceIconColor = async (name: string, icon?: string | null, color?: string | null) => {
-        await updateWorkspaceMeta(name, icon, color);
-
-        let workspacesCopy = workspaces.slice();
-        const idx = workspacesCopy.findIndex((w) => w.name === name);
-        if (idx !== -1) {
-            workspacesCopy[idx] = {
-                ...workspacesCopy[idx],
-                icon: icon !== undefined ? icon : workspacesCopy[idx].icon,
-                color: color !== undefined ? color : workspacesCopy[idx].color,
-            };
-            setWorkSpaces(workspacesCopy);
-            await invalidateWorkspacesCache();
-        }
-    };
-
-    /**
-     * Renames a workspace by updating all its categories on the server and locally
-     * @param oldName - The current name of the workspace
-     * @param newName - The new name for the workspace
-     */
-    const renameWorkspace = async (oldName: string, newName: string) => {
-        // Store the workspace data for potential rollback
-        const workspaceToRename = getWorkspace(oldName);
-
-        // Optimistic update - immediately update the UI
-        let workspacesCopy = workspaces.slice();
-        const workspaceIndex = workspacesCopy.findIndex(w => w.name === oldName);
-        if (workspaceIndex !== -1) {
-            workspacesCopy[workspaceIndex].name = newName;
-            setWorkSpaces(workspacesCopy);
-
-            // If the renamed workspace was selected, update the selection
-            if (selected === oldName) {
-                setSelected(newName);
-            }
-        }
-
-        // Invalidate cache after local update
-        await invalidateWorkspacesCache();
-
-        try {
-            // Call the API to rename the workspace
-            await renameWorkspaceAPI(oldName, newName);
-
-            // Refresh workspaces to ensure consistency
-            await fetchWorkspaces();
-        } catch (error) {
-            logger.error("Error renaming workspace", error);
-
-            // Rollback the optimistic update on error
-            if (workspaceToRename) {
-                let workspacesCopy = workspaces.slice();
-                const workspaceIndex = workspacesCopy.findIndex(w => w.name === newName);
-                if (workspaceIndex !== -1) {
-                    workspacesCopy[workspaceIndex].name = oldName;
-                    setWorkSpaces(workspacesCopy);
-
-                    // Invalidate cache after rollback for consistency
-                    await invalidateWorkspacesCache();
-
-                    // Restore the original selection if it was changed
-                    if (selected === newName) {
-                        setSelected(oldName);
-                    }
-                }
-            }
-
-            throw error;
-        }
-    };
-
-    /**
-     * Renames a category by updating it on the server and locally
-     * @param categoryId - The ID of the category to rename
-     * @param newName - The new name for the category
-     */
-    const renameCategory = async (categoryId: string, newName: string) => {
-        // Store the original category data for potential rollback
-        let originalCategory: Categories | null = null;
-        let workspaceIndex = -1;
-        let categoryIndex = -1;
-
-        // Find the category and store its original state
-        for (let i = 0; i < workspaces.length; i++) {
-            const catIndex = workspaces[i].categories.findIndex(c => c.id === categoryId);
-            if (catIndex !== -1) {
-                workspaceIndex = i;
-                categoryIndex = catIndex;
-                originalCategory = { ...workspaces[i].categories[catIndex] };
-                break;
-            }
-        }
-
-        if (!originalCategory) {
-            throw new Error("Category not found");
-        }
-
-        // Optimistic update - immediately update the UI
-        let workspacesCopy = workspaces.slice();
-        workspacesCopy[workspaceIndex].categories[categoryIndex].name = newName;
-        setWorkSpaces(workspacesCopy);
-
-        // Invalidate cache after local update
-        await invalidateWorkspacesCache();
-
-        try {
-            // Call the API to rename the category
-            await renameCategoryAPI(categoryId, newName);
-
-            // Refresh workspaces to ensure consistency
-            await fetchWorkspaces();
-        } catch (error) {
-            logger.error("Error renaming category", error);
-
-            // Rollback the optimistic update on error
-            if (originalCategory && workspaceIndex !== -1 && categoryIndex !== -1) {
-                let workspacesCopy = workspaces.slice();
-                workspacesCopy[workspaceIndex].categories[categoryIndex].name = originalCategory.name;
-                setWorkSpaces(workspacesCopy);
-
-                // Invalidate cache after rollback for consistency
-                await invalidateWorkspacesCache();
-            }
-
-            throw error;
-        }
-    };
-
-    const categories = useMemo(() => {
-        if (workspaces.length === 0) return [];
-        const selectedWorkspace = workspaces.find((ws) => ws.name === selected);
-        return selectedWorkspace?.categories ?? [];
-    }, [selected, workspaces]);
-
-    useEffect(() => {
-        setSelectedCategory({ label: "", id: "", special: false });
-    }, [selected]);
-
-    // Load recent workspaces on mount
-    useEffect(() => {
-        if (user?._id) {
-            loadRecentWorkspaces();
-        }
-    }, [user?._id]);
-
-    /**
-     * Get a task by categoryId and taskId from the local workspaces data
-     * @param categoryId - The category ID
-     * @param taskId - The task ID
-     * @returns The task if found, null otherwise
-     */
-    const getTaskById = (categoryId: string, taskId: string): Task | null => {
+    const getTaskById = useCallback((categoryId: string, taskId: string): Task | null => {
         for (const workspace of workspaces) {
             for (const category of workspace.categories) {
                 if (category.id === categoryId) {
                     const task = category.tasks.find((t) => t.id === taskId);
                     if (task) {
-                        // Return task with enriched metadata
                         return {
                             ...task,
                             categoryID: category.id,
@@ -710,106 +425,138 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             }
         }
         return null;
-    };
-
-    // Sync Today's Tasks widget and lock screen circular widget whenever today tasks change
-    useEffect(() => {
-        const allTodayTasks = [
-            ...startTodayTasks,
-            ...dueTodayTasks.filter(t => !startTodayTasks.some(s => s.id === t.id)),
-        ];
-        const completedCount = allTodayTasks.filter(t => !t.active).length;
-        const totalCount = allTodayTasks.length;
-
-        const taskTitles = allTodayTasks.slice(0, 3).map(t => t.content);
-
-        const groupMap = new Map<string, string[]>();
-        allTodayTasks.forEach(t => {
-            const ws = t.workspaceName || 'Tasks';
-            if (!groupMap.has(ws)) groupMap.set(ws, []);
-            groupMap.get(ws)!.push(t.content);
-        });
-        const workspaceGroups = Array.from(groupMap.entries()).map(([workspaceName, tasks]) => ({
-            workspaceName,
-            tasks,
-        }));
-
-        TodayTasksWidget.updateSnapshot({ completedCount, totalCount, taskTitles, workspaceGroups });
-        LockScreenCircularWidget.updateSnapshot({ completedCount, totalCount });
-
-        // Next due task for rectangular lock screen widget
-        const nextDue = dueTodayTasks
-            .filter(t => t.active !== false && t.deadline)
-            .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())[0];
-
-        if (nextDue) {
-            const dueDate = new Date(nextDue.deadline!);
-            const dueTime = dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            LockScreenRectangularWidget.updateSnapshot({ taskTitle: nextDue.content, dueTime });
-        } else {
-            LockScreenRectangularWidget.updateSnapshot({ taskTitle: '', dueTime: '' });
-        }
-    }, [startTodayTasks, dueTodayTasks]);
-
-    // Sync Workspace Snapshot widget whenever workspaces change
-    useEffect(() => {
-        if (workspaces.length === 0) return;
-        const firstWorkspace = workspaces.find(w => !w.isBlueprint) || workspaces[0];
-        const allTasks = firstWorkspace.categories.flatMap(c => c.tasks.filter(t => t.active !== false));
-        const pendingCount = allTasks.length;
-        const topTasks = allTasks.slice(0, 3).map(t => t.content);
-
-        WorkspaceSnapshotWidget.updateSnapshot({
-            workspaceName: firstWorkspace.name,
-            workspaceIcon: firstWorkspace.icon || null,
-            workspaceColor: firstWorkspace.color || null,
-            pendingCount,
-            topTasks,
-        });
     }, [workspaces]);
 
+    useEffect(() => {
+        setSelectedCategory({ label: "", id: "", special: false });
+    }, [selected]);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (user?._id) {
+            AsyncStorage.getItem(RECENT_WORKSPACES_KEY).then(stored => {
+                if (!cancelled && stored) {
+                    setRecentWorkspaces(JSON.parse(stored));
+                }
+            }).catch(error => logger.error('Error loading recent workspaces', error));
+        }
+        return () => { cancelled = true; };
+    }, [user?._id, RECENT_WORKSPACES_KEY]);
+
+    // Sync Today's Tasks widget and lock screen circular widget
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => {
+            const allTodayTasks = [
+                ...startTodayTasks,
+                ...dueTodayTasks.filter(t => !startTodayTasks.some(s => s.id === t.id)),
+            ];
+            const completedCount = allTodayTasks.filter(t => !t.active).length;
+            const totalCount = allTodayTasks.length;
+
+            const taskTitles = allTodayTasks.slice(0, 3).map(t => t.content);
+
+            const groupMap = new Map<string, string[]>();
+            allTodayTasks.forEach(t => {
+                const ws = t.workspaceName || 'Tasks';
+                if (!groupMap.has(ws)) groupMap.set(ws, []);
+                groupMap.get(ws)!.push(t.content);
+            });
+            const workspaceGroups = Array.from(groupMap.entries()).map(([workspaceName, tasks]) => ({
+                workspaceName,
+                tasks,
+            }));
+
+            TodayTasksWidget.updateSnapshot({ completedCount, totalCount, taskTitles, workspaceGroups });
+            LockScreenCircularWidget.updateSnapshot({ completedCount, totalCount });
+
+            const nextDue = dueTodayTasks
+                .filter(t => t.active !== false && t.deadline)
+                .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())[0];
+
+            if (nextDue) {
+                const dueDate = new Date(nextDue.deadline!);
+                const dueTime = dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                LockScreenRectangularWidget.updateSnapshot({ taskTitle: nextDue.content, dueTime });
+            } else {
+                LockScreenRectangularWidget.updateSnapshot({ taskTitle: '', dueTime: '' });
+            }
+        });
+        return () => handle.cancel();
+    }, [startTodayTasks, dueTodayTasks]);
+
+    // Sync Workspace Snapshot widget
+    useEffect(() => {
+        if (workspaces.length === 0) return;
+        const handle = InteractionManager.runAfterInteractions(() => {
+            const firstWorkspace = workspaces.find(w => !w.isBlueprint) || workspaces[0];
+            if (!firstWorkspace) return;
+            const allTasks = firstWorkspace.categories.flatMap(c => c.tasks.filter(t => t.active !== false));
+            const pendingCount = allTasks.length;
+            const topTasks = allTasks.slice(0, 3).map(t => t.content);
+
+            WorkspaceSnapshotWidget.updateSnapshot({
+                workspaceName: firstWorkspace.name,
+                workspaceIcon: firstWorkspace.icon || null,
+                workspaceColor: firstWorkspace.color || null,
+                pendingCount,
+                topTasks,
+            });
+        });
+        return () => handle.cancel();
+    }, [workspaces]);
+
+    const value = useMemo<TaskContextType>(() => ({
+        workspaces,
+        setWorkSpaces,
+        getWorkspace,
+        fetchWorkspaces,
+        selected,
+        setSelected: handleSetSelected,
+        categories,
+        addToCategory,
+        updateTask,
+        addToWorkspace,
+        addWorkspace,
+        removeFromCategory,
+        removeFromWorkspace,
+        removeWorkspace,
+        restoreWorkspace,
+        renameWorkspace,
+        renameCategory,
+        updateWorkspaceIconColor,
+        setCreateCategory,
+        selectedCategory,
+        showConfetti,
+        setShowConfetti,
+        task,
+        setTask,
+        getTaskById,
+        doesWorkspaceExist,
+        unnestedTasks,
+        startTodayTasks,
+        dueTodayTasks,
+        pastStartTasks,
+        pastDueTasks,
+        futureTasks,
+        allTasks: unnestedTasks,
+        fetchingWorkspaces,
+        windowTasks,
+        recentWorkspaces,
+        getRecentWorkspaces,
+        clearRecentWorkspaces,
+    }), [
+        workspaces, getWorkspace, fetchWorkspaces, selected, handleSetSelected,
+        categories, addToCategory, updateTask, addToWorkspace, addWorkspace,
+        removeFromCategory, removeFromWorkspace, removeWorkspace, restoreWorkspace,
+        renameWorkspace, renameCategory, updateWorkspaceIconColor, setCreateCategory,
+        selectedCategory, showConfetti, task, getTaskById, doesWorkspaceExist,
+        unnestedTasks, startTodayTasks, dueTodayTasks, pastStartTasks, pastDueTasks,
+        futureTasks, fetchingWorkspaces, windowTasks, recentWorkspaces,
+        getRecentWorkspaces, clearRecentWorkspaces,
+    ]);
+
     return (
-        <TaskContext.Provider
-            value={{
-                workspaces,
-                setWorkSpaces,
-                getWorkspace,
-                fetchWorkspaces,
-                selected,
-                setSelected: handleSetSelected,
-                categories,
-                addToCategory,
-                updateTask,
-                addToWorkspace,
-                addWorkspace,
-                removeFromCategory,
-                removeFromWorkspace,
-                removeWorkspace,
-                restoreWorkspace,
-                renameWorkspace,
-                renameCategory,
-                updateWorkspaceIconColor,
-                setCreateCategory,
-                selectedCategory,
-                showConfetti,
-                setShowConfetti,
-                task,
-                setTask,
-                getTaskById,
-                doesWorkspaceExist,
-                unnestedTasks,
-                startTodayTasks,
-                dueTodayTasks,
-                pastStartTasks,
-                pastDueTasks,
-                futureTasks,
-                allTasks,
-                fetchingWorkspaces,
-                windowTasks,
-                recentWorkspaces,
-                getRecentWorkspaces,
-                clearRecentWorkspaces,
-            }}>
+        <TaskContext.Provider value={value}>
             {children}
         </TaskContext.Provider>
     );

@@ -25,6 +25,7 @@ import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep, hide } f
 import { useSpotlight } from "@/contexts/SpotlightContext";
 import { TourStepCard } from "@/components/spotlight/TourStepCard";
 import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
+import { ensureVisible } from "@/utils/spotlightUtils";
 import CustomAlert, { AlertButton } from "../CustomAlert";
 import { updatePost } from "@/api/post";
 import * as Haptics from "expo-haptics";
@@ -42,7 +43,7 @@ type Props = {
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
     const ThemedColor = useThemeColor();
-    const { spotlightState, setSpotlightShown, isLoading: spotlightLoading } = useSpotlight();
+    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     // Tour steps for task creation
     const tourSteps: TourStep[] = [
@@ -53,7 +54,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     description="This dropdown lets you choose which category the task belongs to. Categories help organize your tasks!"
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("taskSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -66,7 +67,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     description="Toggle whether this task is visible on your profile. Public tasks can be seen by friends, private tasks are just for you!"
                     onNext={next}
                     onSkip={() => {
-                        setSpotlightShown("taskSpotlight");
+                        skipAllSpotlights();
                         stop();
                     }}
                 />
@@ -79,7 +80,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     description="Tap here to set start times, reminders, deadlines, and more advanced task settings!"
                     onNext={() => {
                         setSpotlightShown("taskSpotlight");
-                        next();
+                        stop();
                     }}
                     isLastStep
                 />
@@ -151,25 +152,6 @@ const StandardContent = ({
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const { start } = useSpotlightTour();
-
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    const isOnScreen = (ref: React.RefObject<View>) =>
-        new Promise<boolean>((resolve) => {
-            requestAnimationFrame(() => {
-                if (!ref.current) return resolve(false);
-                ref.current.measureInWindow((_x, y, _w, h) => {
-                    const screenHeight = Dimensions.get("window").height;
-                    resolve(y >= 0 && y + h <= screenHeight);
-                });
-            });
-        });
-
-    const ensureVisible = async (ref: React.RefObject<View>) => {
-        if (await isOnScreen(ref)) return true;
-        await delay(100);
-        return isOnScreen(ref);
-    };
 
     // Determine which categories to use based on blueprint mode
     // Use state version from context (synced from prop via useEffect)

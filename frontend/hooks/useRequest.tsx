@@ -3,36 +3,9 @@ import * as SecureStore from "expo-secure-store";
 import { createLogger } from "@/utils/logger";
 const logger = createLogger('Request');
 
-let history = [];
-let errorHistory = [];
-
-function setRequestHistory(newHistory: any[]) {
-    console.log("Adding To History!");
-    history = newHistory;
-}
-
-function setErrorHistory(history: any[]) {
-    console.log("Adding To Error History!");
-    errorHistory = history;
-}
-
-function getHistory() {
-    return history;
-}
-
-function getErrorHistory() {
-    return errorHistory;
-}
-
 async function request(method: string, url: string, body?: any) {
-    console.log(
-        "Method: " + method + " URL: " + process.env.EXPO_PUBLIC_URL + url + " Body: " + JSON.stringify(body)
-    );
-    console.log("🔍 DEBUG - Request body type:", typeof body);
-    console.log("🔍 DEBUG - Request body keys:", body ? Object.keys(body) : 'no body');
-    console.log("🔍 DEBUG - Request body stringified:", JSON.stringify(body, null, 2));
+    logger.debug("Request", { method, url });
 
-    // Get auth data from SecureStore and prepare headers
     let headers: any = {
         "Content-Type": "application/json",
     };
@@ -49,7 +22,7 @@ async function request(method: string, url: string, body?: any) {
             }
         }
     } catch (error) {
-        console.log("Error getting auth data for request:", error);
+        logger.error("Error getting auth data for request:", error);
     }
 
     try {
@@ -59,27 +32,19 @@ async function request(method: string, url: string, body?: any) {
             headers: headers,
             data: body,
         };
-        logger.debug("🚀 DEBUG - Axios config:", JSON.stringify(axiosConfig, null, 2));
         let response = await axios(axiosConfig);
 
-        // console.log("Response: " + JSON.stringify(response.data));
-
-        // Handle successful response
         const access_response = response.headers["access_token"];
         const refresh_response = response.headers["refresh_token"];
 
         if (access_response) {
             axios.defaults.headers.common["Authorization"] = "Bearer " + access_response;
-        } else {
-            logger.error("Access token not found in response");
         }
 
         if (refresh_response) {
             axios.defaults.headers.common["refresh_token"] = refresh_response;
-        } else {
-            logger.error("Refresh token not found in response");
         }
-        // Only save auth data if we actually received new tokens
+
         if (access_response || refresh_response) {
             const authData = {
                 access_token: access_response,
@@ -88,30 +53,13 @@ async function request(method: string, url: string, body?: any) {
             await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
         }
 
-        // Update request history only for successful requests
-        setRequestHistory([
-            ...history,
-            {
-                url: url,
-                method: method,
-                data: response.data,
-                status: response.status,
-                statusText: response.statusText,
-                headers: response.headers,
-            },
-        ]);
-
-        logger.debug("Request Successful!");
         return response.data;
     } catch (error) {
-        logger.error("Request Failed!");
-        console.log("Error: " + (error.response?.statusText || error.message));
-        console.log("Error Data: " + JSON.stringify(error.response?.data || {}));
+        logger.error("Request Failed", {
+            status: error.response?.status,
+            message: error.response?.statusText || error.message,
+        });
 
-        // Update error history
-        setErrorHistory([...errorHistory, error.response || error]);
-
-        // Throw a more descriptive error
         throw new Error(
             `Request failed: ${error.response?.statusText || error.message}. ` +
                 `Status: ${error.response?.status || "Unknown"}. ` +
@@ -120,11 +68,9 @@ async function request(method: string, url: string, body?: any) {
     }
 }
 
-// Import the new typed client
 import { client } from "./useTypedAPI";
 import type { paths } from "@/api/generated/types";
 
-// Type-safe request method using openapi-fetch
 async function typedRequest<TPath extends keyof paths, TMethod extends keyof paths[TPath]>(
     path: TPath,
     method: TMethod,
@@ -148,11 +94,11 @@ async function typedRequest<TPath extends keyof paths, TMethod extends keyof pat
     }
 }
 
+export { request, typedRequest };
+
 export const useRequest = () => {
     return {
         request: request,
         typedRequest: typedRequest,
-        history: getHistory,
-        errorHistory: getErrorHistory,
     };
 };

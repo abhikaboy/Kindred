@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import Svg, { Path, Rect } from "react-native-svg";
 import { showToast } from "@/utils/showToast";
@@ -104,7 +105,7 @@ const PhotoOnboarding = (props: Props) => {
             showToast('Account created successfully! 🎉', 'success');
 
             // Step 5: Navigate to referral screen
-            router.push('/(onboarding)/referral');
+            router.replace('/(onboarding)/referral');
 
         } catch (error: any) {
             console.error('Registration or upload error:', error);
@@ -154,7 +155,7 @@ const PhotoOnboarding = (props: Props) => {
             showToast('Account created successfully! 🎉', 'success');
 
             // Navigate to referral screen
-            router.push('/(onboarding)/referral');
+            router.replace('/(onboarding)/referral');
 
         } catch (error: any) {
             console.error('Registration error:', error);
@@ -177,6 +178,10 @@ const PhotoOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <OnboardingProgressBar
+                currentStep={onboardingData.appleId || onboardingData.googleId ? 2 : 5}
+                totalSteps={onboardingData.appleId || onboardingData.googleId ? 5 : 8}
+            />
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
                 <OnboardingBackground />

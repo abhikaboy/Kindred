@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, Animated } from "react-native";
+import { Dimensions, StyleSheet, View, Animated, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,6 +7,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import OnboardButton from "@/components/inputs/OnboardButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -15,6 +17,12 @@ type Props = {};
 const HumanCentricOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+
+    const handleSkip = async () => {
+        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        router.push("/login");
+    };
 
     // Animation values for text fade in/out
     const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -49,14 +57,37 @@ const HumanCentricOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <TouchableOpacity
+                onPress={handleSkip}
+                style={{
+                    position: 'absolute',
+                    top: insets.top + 16,
+                    right: 24,
+                    zIndex: 10,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <ThemedText style={{
+                    fontSize: 16,
+                    fontFamily: 'Outfit',
+                    fontWeight: '500',
+                    color: '#13121f',
+                    opacity: 0.5,
+                }}>
+                    Skip
+                </ThemedText>
+            </TouchableOpacity>
+
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
                 <OnboardingBackground />
             </View>
-            
+
             {/* Main content */}
             <View style={[styles.contentContainer, { zIndex: 1 }]}>
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.textContainer,
                         {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { subscribeToBlueprintToBackend, unsubscribeToBlueprintToBackend } from "@/api/blueprint";
 import { useAuth } from "@/hooks/useAuth";
 import type { components } from "@/api/generated/types";
@@ -16,7 +16,6 @@ type BlueprintContextType = {
     handleSubscribe: (id: string, subscribers: string[]) => Promise<boolean>;
     categories: CategoryDocument[];
     setCategories: (categories: CategoryDocument[]) => void;
-    // New blueprint creation context
     blueprintCategories: CategoryDocument[];
     addBlueprintCategory: (category: CategoryDocument) => void;
     removeBlueprintCategory: (categoryId: string) => void;
@@ -33,8 +32,6 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
     const { user } = useAuth();
     const [subscriberCounts, setSubscriberCounts] = useState<Record<string, number>>({});
     const [categories, setCategories] = useState<CategoryDocument[]>([]);
-    
-    // New state for blueprint creation
     const [blueprintCategories, setBlueprintCategories] = useState<CategoryDocument[]>([]);
 
     const setSelectedBlueprint = useCallback((blueprint: BlueprintDocument) => {
@@ -78,12 +75,12 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
                     [id]: Math.max(0, (prev[id] || 0) - 1),
                 }));
 
-                if (selectedBlueprint && selectedBlueprint.id === id) {
-                    setSelectedBlueprintState({
-                        ...selectedBlueprint,
-                        subscribersCount: Math.max(0, selectedBlueprint.subscribersCount - 1),
-                    });
-                }
+                setSelectedBlueprintState(prev => {
+                    if (prev && prev.id === id) {
+                        return { ...prev, subscribersCount: Math.max(0, prev.subscribersCount - 1) };
+                    }
+                    return prev;
+                });
 
                 return true;
             } else {
@@ -93,12 +90,13 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
                     [id]: (prev[id] || 0) + 1,
                 }));
 
-                if (selectedBlueprint && selectedBlueprint.id === id) {
-                    setSelectedBlueprintState({
-                        ...selectedBlueprint,
-                        subscribersCount: selectedBlueprint.subscribersCount + 1,
-                    });
-                }
+                setSelectedBlueprintState(prev => {
+                    if (prev && prev.id === id) {
+                        return { ...prev, subscribersCount: prev.subscribersCount + 1 };
+                    }
+                    return prev;
+                });
+
                 return true;
             }
         } catch (error) {
@@ -106,16 +104,11 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
         } finally {
             setLoadingStates((prev) => ({ ...prev, [id]: false }));
         }
-    }, [user, selectedBlueprint, getIsSubscribed]);
+    }, [user, getIsSubscribed]);
 
-    // New functions for blueprint creation
     const addBlueprintCategory = useCallback((category: CategoryDocument) => {
         setBlueprintCategories((prev) => {
-            // Check if category already exists
-            const exists = prev.some(cat => cat.id === category.id);
-            if (exists) {
-                return prev;
-            }
+            if (prev.some(cat => cat.id === category.id)) return prev;
             return [...prev, category];
         });
     }, []);
@@ -125,13 +118,10 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
     }, []);
 
     const addTaskToBlueprintCategory = useCallback((categoryId: string, task: TaskDocument) => {
-        setBlueprintCategories((prev) => 
+        setBlueprintCategories((prev) =>
             prev.map(category => {
                 if (category.id === categoryId) {
-                    return {
-                        ...category,
-                        tasks: [...category.tasks, task]
-                    };
+                    return { ...category, tasks: [...category.tasks, task] };
                 }
                 return category;
             })
@@ -139,13 +129,10 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
     }, []);
 
     const removeTaskFromBlueprintCategory = useCallback((categoryId: string, taskId: string) => {
-        setBlueprintCategories((prev) => 
+        setBlueprintCategories((prev) =>
             prev.map(category => {
                 if (category.id === categoryId) {
-                    return {
-                        ...category,
-                        tasks: category.tasks.filter(task => task.id !== taskId)
-                    };
+                    return { ...category, tasks: category.tasks.filter(task => task.id !== taskId) };
                 }
                 return category;
             })
@@ -156,7 +143,7 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
         setBlueprintCategories([]);
     }, []);
 
-    const value = {
+    const value = useMemo<BlueprintContextType>(() => ({
         selectedBlueprint,
         setSelectedBlueprint,
         getIsSubscribed,
@@ -165,14 +152,27 @@ export const BlueprintCreationProvider = ({ children }: { children: React.ReactN
         getSubscriberCount,
         categories,
         setCategories,
-        // New blueprint creation context
         blueprintCategories,
         addBlueprintCategory,
         removeBlueprintCategory,
         addTaskToBlueprintCategory,
         removeTaskFromBlueprintCategory,
         clearBlueprintData,
-    };
+    }), [
+        selectedBlueprint,
+        setSelectedBlueprint,
+        getIsSubscribed,
+        getIsLoading,
+        handleSubscribe,
+        getSubscriberCount,
+        categories,
+        blueprintCategories,
+        addBlueprintCategory,
+        removeBlueprintCategory,
+        addTaskToBlueprintCategory,
+        removeTaskFromBlueprintCategory,
+        clearBlueprintData,
+    ]);
 
     return <BlueprintCreationContext.Provider value={value}>{children}</BlueprintCreationContext.Provider>;
 };

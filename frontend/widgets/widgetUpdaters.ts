@@ -67,8 +67,14 @@ const createWidgetUpdater = <TProps>(
     };
 
     return {
-        updateSnapshot: (props) => resolve().updateSnapshot(props),
-        updateTimeline: (props) => resolve().updateTimeline(props),
+        updateSnapshot: (props) => {
+            try { resolve().updateSnapshot(props); }
+            catch (e) { console.warn(`[Widgets] ${name} updateSnapshot failed:`, e); }
+        },
+        updateTimeline: (props) => {
+            try { resolve().updateTimeline(props); }
+            catch (e) { console.warn(`[Widgets] ${name} updateTimeline failed:`, e); }
+        },
     };
 };
 
@@ -90,8 +96,20 @@ const createLiveActivityFactory = <TProps>(
     };
 
     return {
-        start: (props, url?) => resolve().start(props, url),
-        getInstances: () => resolve().getInstances(),
+        start: (props, url?) => {
+            try { return resolve().start(props, url); }
+            catch (e) {
+                console.warn(`[Widgets] ${name} start failed:`, e);
+                return noopLiveActivityInstance<TProps>();
+            }
+        },
+        getInstances: () => {
+            try { return resolve().getInstances(); }
+            catch (e) {
+                console.warn(`[Widgets] ${name} getInstances failed:`, e);
+                return [];
+            }
+        },
     };
 };
 

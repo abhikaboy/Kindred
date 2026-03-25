@@ -1,5 +1,5 @@
 import { LoginRequest, LoginResponse, RegisterRequest, User } from "./types";
-import { client } from "@/hooks/useTypedAPI";
+import client from "@/api/client";
 import { withAuthHeaders } from "./utils";
 import { createLogger } from "@/utils/logger";
 

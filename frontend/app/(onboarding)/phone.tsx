@@ -8,6 +8,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -57,9 +58,22 @@ const PhoneOnboarding = (props: Props) => {
     };
 
     const formatPhoneNumber = (text: string) => {
-        // Remove all non-numeric characters
         const cleaned = text.replace(/\D/g, '');
         setPhoneNumber(cleaned);
+    };
+
+    const getDisplayPhoneNumber = () => {
+        if (countryCode !== '+1' || phoneNumber.length === 0) {
+            return phoneNumber;
+        }
+        const digits = phoneNumber;
+        if (digits.length <= 3) {
+            return `(${digits}`;
+        }
+        if (digits.length <= 6) {
+            return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        }
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
     };
 
     const isValidPhone = phoneNumber.length >= 10;
@@ -75,6 +89,7 @@ const PhoneOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <OnboardingProgressBar currentStep={1} totalSteps={8} />
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
                 <OnboardingBackground />
@@ -182,11 +197,11 @@ const PhoneOnboarding = (props: Props) => {
                                 ]}
                                 placeholder="(555) 123-4567"
                                 placeholderTextColor={ThemedColor.caption}
-                                value={phoneNumber}
+                                value={getDisplayPhoneNumber()}
                                 onChangeText={formatPhoneNumber}
                                 keyboardType="phone-pad"
                                 autoFocus
-                                maxLength={15}
+                                maxLength={14}
                             />
                         </View>
 

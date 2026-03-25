@@ -1,4 +1,4 @@
-import { getThemedColor } from "../constants/Colors";
+import { getThemedColor } from "@/constants/Colors";
 import { Appearance } from "react-native";
 
 export function useThemeColor(forceTheme?: "light" | "dark") {

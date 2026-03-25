@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from "react";
 import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
 import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
 import { createLogger } from "@/utils/logger";
@@ -14,12 +14,12 @@ interface Encouragement {
         id: string;
     };
     message: string;
-    scope: string; // "task" or "profile"
-    categoryName?: string; // Optional - only present for task-scoped encouragements
-    taskName?: string; // Optional - only present for task-scoped encouragements
+    scope: string;
+    categoryName?: string;
+    taskName?: string;
     timestamp: string;
     read: boolean;
-    type?: string; // "message" or "image" (optional for backwards compatibility)
+    type?: string;
 }
 
 interface Congratulation {
@@ -68,23 +68,36 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     const [congratulations, setCongratulations] = useState<Congratulation[]>([]);
     const [loading, setLoading] = useState(true);
     const seenKudosIds = useRef<Set<string>>(new Set());
+    const liveActivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const unreadEncouragementCount = encouragements.filter((e) => !e.read).length;
-    const unreadCongratulationCount = congratulations.filter((c) => !c.read).length;
+    const unreadEncouragementCount = useMemo(
+        () => encouragements.filter((e) => !e.read).length,
+        [encouragements]
+    );
+    const unreadCongratulationCount = useMemo(
+        () => congratulations.filter((c) => !c.read).length,
+        [congratulations]
+    );
     const totalEncouragementCount = encouragements.length;
     const totalCongratulationCount = congratulations.length;
 
-    const fetchKudosData = async () => {
+    useEffect(() => {
+        return () => {
+            if (liveActivityTimeoutRef.current) {
+                clearTimeout(liveActivityTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const fetchKudosData = useCallback(async () => {
         try {
             setLoading(true);
 
-            // Fetch both in parallel
             const [encouragementsData, congratulationsData] = await Promise.all([
                 getEncouragementsAPI().catch(() => []),
                 getCongratulationsAPI().catch(() => []),
             ]);
 
-            // Sort by timestamp (newest first)
             const sortedEncouragements = [...encouragementsData].sort(
                 (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
             );
@@ -96,7 +109,6 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
             setEncouragements(sortedEncouragements);
             setCongratulations(sortedCongratulations);
 
-            // Fire Live Activity for any new unread encouragements not yet seen
             const newUnreadEncouragements = sortedEncouragements.filter(
                 e => !e.read && !seenKudosIds.current.has(e.id)
             );
@@ -104,10 +116,8 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
                 c => !c.read && !seenKudosIds.current.has(c.id)
             );
 
-            // Mark all as seen so we don't re-fire on next fetch
             [...sortedEncouragements, ...sortedCongratulations].forEach(k => seenKudosIds.current.add(k.id));
 
-            // Show Live Activity for the most recent new unread item
             const latestEncouragement = newUnreadEncouragements[0];
             const latestCongratulation = newUnreadCongratulations[0];
 
@@ -126,7 +136,10 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
                     type: isEncouragement ? 'encouragement' : 'congratulation',
                 });
 
-                setTimeout(() => {
+                if (liveActivityTimeoutRef.current) {
+                    clearTimeout(liveActivityTimeoutRef.current);
+                }
+                liveActivityTimeoutRef.current = setTimeout(() => {
                     activity.end('default');
                 }, 30000);
             }
@@ -135,11 +148,10 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const markEncouragementsAsRead = async () => {
+    const markEncouragementsAsRead = useCallback(async () => {
         const unreadIds = encouragements.filter((e) => !e.read).map((e) => e.id);
-
         if (unreadIds.length > 0) {
             try {
                 await markEncouragementsReadAPI(unreadIds);
@@ -148,11 +160,10 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
                 console.error("Error marking encouragements as read:", error);
             }
         }
-    };
+    }, [encouragements]);
 
-    const markCongratulationsAsRead = async () => {
+    const markCongratulationsAsRead = useCallback(async () => {
         const unreadIds = congratulations.filter((c) => !c.read).map((c) => c.id);
-
         if (unreadIds.length > 0) {
             try {
                 await markCongratulationsReadAPI(unreadIds);
@@ -161,13 +172,13 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
                 console.error("Error marking congratulations as read:", error);
             }
         }
-    };
+    }, [congratulations]);
 
     useEffect(() => {
         fetchKudosData();
-    }, []);
+    }, [fetchKudosData]);
 
-    const value: KudosContextType = {
+    const value = useMemo<KudosContextType>(() => ({
         encouragements,
         congratulations,
         unreadEncouragementCount,
@@ -178,7 +189,18 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         fetchKudosData,
         markEncouragementsAsRead,
         markCongratulationsAsRead,
-    };
+    }), [
+        encouragements,
+        congratulations,
+        unreadEncouragementCount,
+        unreadCongratulationCount,
+        totalEncouragementCount,
+        totalCongratulationCount,
+        loading,
+        fetchKudosData,
+        markEncouragementsAsRead,
+        markCongratulationsAsRead,
+    ]);
 
     return <KudosContext.Provider value={value}>{children}</KudosContext.Provider>;
 };

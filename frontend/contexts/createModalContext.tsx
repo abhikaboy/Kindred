@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Screen } from "@/components/modals/CreateModal";
 
 type CreateModalContextType = {
@@ -21,12 +21,21 @@ const CreateModalContext = createContext<CreateModalContextType | undefined>(und
 export const CreateModalProvider = ({ children }: { children: React.ReactNode }) => {
     const [visible, setVisible] = useState(false);
     const [modalConfig, setModalConfig] = useState<CreateModalConfig>({});
+    const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+            if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        };
+    }, []);
 
     const openModal = useCallback((config: CreateModalConfig = {}) => {
-        // Force close first if already open to reset state
         if (visible) {
             setVisible(false);
-            setTimeout(() => {
+            if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+            openTimeoutRef.current = setTimeout(() => {
                 setModalConfig(config);
                 setVisible(true);
             }, 100);
@@ -38,21 +47,22 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
 
     const closeModal = useCallback(() => {
         setVisible(false);
-        // Reset config after animation completes
-        setTimeout(() => {
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => {
             setModalConfig({});
         }, 300);
     }, []);
 
+    const value = useMemo(() => ({
+        visible,
+        setVisible,
+        openModal,
+        closeModal,
+        modalConfig,
+    }), [visible, openModal, closeModal, modalConfig]);
+
     return (
-        <CreateModalContext.Provider
-            value={{
-                visible,
-                setVisible,
-                openModal,
-                closeModal,
-                modalConfig,
-            }}>
+        <CreateModalContext.Provider value={value}>
             {children}
         </CreateModalContext.Provider>
     );

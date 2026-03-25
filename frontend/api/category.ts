@@ -1,11 +1,6 @@
-import { client } from "@/hooks/useTypedAPI";
+import client from "@/api/client";
 import type { paths, components } from "./generated/types";
-
-// Helper to inject auth headers that will be overridden by middleware
-const withAuthHeaders = (params: any = {}) => ({
-    ...params,
-    header: { Authorization: "", ...(params.header || {}) },
-});
+import { withAuthHeaders } from "./utils";
 
 // Extract the type definitions from the generated types
 type CategoryDocument = components["schemas"]["CategoryDocument"];

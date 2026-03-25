@@ -1,5 +1,5 @@
 import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTasks } from "@/contexts/tasksContext";
@@ -16,6 +16,14 @@ const Today = () => {
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
     const drawerRef = useRef(null);
     const { setIsDrawerOpen } = useDrawer();
+
+    const dateHeader = useMemo(() => {
+        const now = new Date();
+        const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+        const month = now.toLocaleDateString("en-US", { month: "long" });
+        const day = now.toLocaleDateString("en-US", { day: "numeric" });
+        return `${weekday}, ${month} ${day}`;
+    }, []);
 
     return (
         <DrawerLayout
@@ -34,9 +42,7 @@ const Today = () => {
                 </TouchableOpacity>
                 <View style={styles.headerContainer}>
                     <ThemedText type="title" style={styles.title}>
-                        {new Date().toLocaleDateString("en-US", { weekday: "long" })},{" "}
-                        {new Date().toLocaleDateString("en-US", { month: "long" })}{" "}
-                        {new Date().toLocaleDateString("en-US", { day: "numeric" })}
+                        {dateHeader}
                     </ThemedText>
                     <ThemedText type="lightBody" style={{ lineHeight: 24, marginTop: 4 }}>
                         This is a glance of your tasks today, feel free to navigate to your workspaces to add new tasks!
@@ -45,54 +51,48 @@ const Today = () => {
                 <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 24 }}>
                     <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">Due Today</ThemedText>
-                        <ScrollView contentContainerStyle={{ gap: 16 }}>
-                            {dueTodayTasks.length === 0 ? (
-                                <ThemedText type="lightBody">No tasks due today.</ThemedText>
-                            ) : (
-                                dueTodayTasks.map((task) => (
-                                    <SwipableTaskCard
-                                        key={task.id}
-                                        redirect={true}
-                                        categoryId={task.categoryID}
-                                        task={task}
-                                    />
-                                ))
-                            )}
-                        </ScrollView>
+                        {dueTodayTasks.length === 0 ? (
+                            <ThemedText type="lightBody">No tasks due today.</ThemedText>
+                        ) : (
+                            dueTodayTasks.map((task) => (
+                                <SwipableTaskCard
+                                    key={task.id}
+                                    redirect={true}
+                                    categoryId={task.categoryID}
+                                    task={task}
+                                />
+                            ))
+                        )}
                     </View>
                     <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">Scheduled for Today</ThemedText>
-                        <ScrollView contentContainerStyle={{ gap: 16 }}>
-                            {startTodayTasks.length === 0 ? (
-                                <ThemedText type="lightBody">No tasks scheduled for today.</ThemedText>
-                            ) : (
-                                startTodayTasks.map((task) => (
-                                    <SwipableTaskCard
-                                        key={task.id}
-                                        redirect={true}
-                                        categoryId={task.categoryID}
-                                        task={task}
-                                    />
-                                ))
-                            )}
-                        </ScrollView>
+                        {startTodayTasks.length === 0 ? (
+                            <ThemedText type="lightBody">No tasks scheduled for today.</ThemedText>
+                        ) : (
+                            startTodayTasks.map((task) => (
+                                <SwipableTaskCard
+                                    key={task.id}
+                                    redirect={true}
+                                    categoryId={task.categoryID}
+                                    task={task}
+                                />
+                            ))
+                        )}
                     </View>
                     <View style={{ gap: 8 }}>
                         <ThemedText type="subtitle">Window Tasks</ThemedText>
-                        <ScrollView contentContainerStyle={{ gap: 16 }}>
-                            {windowTasks.length === 0 ? (
-                                <ThemedText type="lightBody">No tasks in the window.</ThemedText>
-                            ) : (
-                                windowTasks.map((task) => (
-                                    <SwipableTaskCard
-                                        key={task.id}
-                                        redirect={true}
-                                        categoryId={task.categoryID}
-                                        task={task}
-                                    />
-                                ))
-                            )}
-                        </ScrollView>
+                        {windowTasks.length === 0 ? (
+                            <ThemedText type="lightBody">No tasks in the window.</ThemedText>
+                        ) : (
+                            windowTasks.map((task) => (
+                                <SwipableTaskCard
+                                    key={task.id}
+                                    redirect={true}
+                                    categoryId={task.categoryID}
+                                    task={task}
+                                />
+                            ))
+                        )}
                     </View>
                 </ScrollView>
             </ThemedView>

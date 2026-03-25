@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -29,30 +29,27 @@ export interface UseGoogleAuthProps {
 export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
   const [userInfo, setUserInfo] = useState<GoogleAuthResult['user'] | null>(null);
   const [loading, setLoading] = useState(false);
+  const propsRef = useRef(props);
+  propsRef.current = props;
 
-  // Configure Google Auth Request
-  // Note: Even for iOS standalone apps, we need both client IDs:
-  // - iosClientId: Used for the native iOS OAuth flow
-  // - webClientId: Used for server-side token validation (required by expo-auth-session)
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6.apps.googleusercontent.com',
     webClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com',
     scopes: ['openid', 'profile', 'email'],
   });
 
-  // Handle the authentication response
   useEffect(() => {
     if (response?.type === 'success') {
       setLoading(true);
       fetchUserInfo(response.params.id_token)
         .then((result) => {
           setUserInfo(result.user);
-          props?.onSuccess?.(result);
+          propsRef.current?.onSuccess?.(result);
         })
         .catch((error) => {
           console.error('Google auth error:', error);
           const errorMessage = error.message || 'Failed to authenticate with Google';
-          props?.onError?.(errorMessage);
+          propsRef.current?.onError?.(errorMessage);
         })
         .finally(() => {
           setLoading(false);
@@ -60,7 +57,7 @@ export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
     } else if (response?.type === 'error') {
       const errorMessage = response.error?.message || 'Authentication failed';
       console.error('Google auth error:', response.error);
-      props?.onError?.(errorMessage);
+      propsRef.current?.onError?.(errorMessage);
     }
   }, [response]);
 

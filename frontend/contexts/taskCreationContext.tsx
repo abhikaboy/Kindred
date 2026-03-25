@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { useReminder, Reminder } from "@/hooks/useReminder";
 
 type TaskCreationContextType = {
@@ -259,41 +259,47 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setIntegration(taskData.integration || "");
     }, []);
 
+    const contextValue = useMemo(() => ({
+        taskName,
+        setTaskName,
+        resetTaskCreation,
+        loadTaskData,
+        showAdvanced,
+        setShowAdvanced,
+        suggestion,
+        priority,
+        value,
+        recurring,
+        recurFrequency,
+        recurDetails,
+        deadline,
+        startTime,
+        startDate,
+        reminders,
+        setReminders,
+        isPublic,
+        setIsPublic,
+        isBlueprint,
+        setIsBlueprint: setIsBlueprintWithStartDate,
+        integration,
+        setIntegration,
+        setPriority,
+        setValue,
+        setRecurring,
+        setRecurFrequency,
+        setRecurDetails,
+        setDeadline: setDeadlineWithReminder,
+        setStartDate: setStartDateWithReminder,
+        setStartTime: setStartTimeWithReminder,
+    }), [
+        taskName, showAdvanced, suggestion, priority, value,
+        recurring, recurFrequency, recurDetails, deadline,
+        startTime, startDate, reminders, isPublic, isBlueprint,
+        integration, loadTaskData,
+    ]);
+
     return (
-        <TaskCreationContext.Provider
-            value={{
-                taskName,
-                setTaskName,
-                resetTaskCreation,
-                loadTaskData,
-                showAdvanced,
-                setShowAdvanced,
-                suggestion,
-                priority,
-                value,
-                recurring,
-                recurFrequency,
-                recurDetails,
-                deadline,
-                startTime,
-                startDate,
-                reminders,
-                setReminders,
-                isPublic,
-                setIsPublic,
-                isBlueprint,
-                setIsBlueprint: setIsBlueprintWithStartDate,
-                integration,
-                setIntegration,
-                setPriority,
-                setValue,
-                setRecurring,
-                setRecurFrequency,
-                setRecurDetails,
-                setDeadline: setDeadlineWithReminder,
-                setStartDate: setStartDateWithReminder,
-                setStartTime: setStartTimeWithReminder,
-            }}>
+        <TaskCreationContext.Provider value={contextValue}>
             {children}
         </TaskCreationContext.Provider>
     );

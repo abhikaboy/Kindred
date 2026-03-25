@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -49,6 +50,7 @@ const NotificationsOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <OnboardingProgressBar currentStep={7} totalSteps={8} />
             {/* Background graphics */}
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
                 <OnboardingBackground />
@@ -56,7 +58,7 @@ const NotificationsOnboarding = (props: Props) => {
 
             <View style={styles.contentContainer}>
                 {/* Welcome Text - Top Left */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.welcomeContainer,
                         {
@@ -69,7 +71,7 @@ const NotificationsOnboarding = (props: Props) => {
                 </Animated.View>
 
                 {/* Main Text Section - Centered */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.mainTextContainer,
                         {
@@ -94,7 +96,7 @@ const NotificationsOnboarding = (props: Props) => {
                 <View style={{ flex: 1 }} />
 
                 {/* Button Section */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.buttonContainer,
                         {

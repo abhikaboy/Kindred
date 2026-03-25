@@ -23,9 +23,7 @@ import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
-import { Heart, HeartIcon, HeartStraightIcon } from "phosphor-react-native";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-
+import { HeartStraightIcon } from "phosphor-react-native";
 const HORIZONTAL_PADDING = 16;
 
 type PostData = {
@@ -121,12 +119,6 @@ export default function Feed() {
         [updatePostInFeed]
     );
 
-    // Start loading animation when loading state changes
-    useEffect(() => {
-        if (loading) {
-            <LoadingScreen message="Getting Posts..."/>;
-        }
-    }, [loading, loadingRotation]);
 
     // Fetch subscribed blueprints and update available feeds
     const fetchSubscribedBlueprints = useCallback(async () => {
@@ -370,7 +362,7 @@ export default function Feed() {
         [scrollY, showAnimatedHeader, animateHeader]
     );
 
-    const renderFeedTab = ({ item }: { item: { name: string; id: string } }) => {
+    const renderFeedTab = useCallback(({ item }: { item: { name: string; id: string } }) => {
         const isActive = currentFeed.id === item.id;
 
         return (
@@ -381,7 +373,7 @@ export default function Feed() {
                 <ThemedText style={[styles.feedTabText, isActive && styles.feedTabTextActive]}>{item.name}</ThemedText>
             </TouchableOpacity>
         );
-    };
+    }, [currentFeed.id, handleFeedChange, styles]);
 
     // Memoize time calculation outside of render
     const calculatePostTime = useCallback((createdAt: string) => {
@@ -441,7 +433,7 @@ export default function Feed() {
             }
             return null;
         },
-        [calculatePostTime, transformReactions, ThemedColor]
+        [calculatePostTime, transformReactions]
     );
 
     const renderPost = useCallback(
@@ -669,6 +661,7 @@ export default function Feed() {
                 ListEmptyComponent={renderEmptyComponent}
                 ListFooterComponent={renderFooter}
                 onEndReached={handleEndReached}
+                estimatedItemSize={350}
                 onEndReachedThreshold={0.5}
                 removeClippedSubviews={true}
             />

@@ -10,6 +10,7 @@ import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { Svg, Circle, Path, Polygon } from "react-native-svg";
+import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ const AccomplishmentOnboarding = (props: Props) => {
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
     const slideAnimation = useRef(new Animated.Value(30)).current;
+    const swipeHintAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         // Fade in animation on mount
@@ -41,11 +43,29 @@ const AccomplishmentOnboarding = (props: Props) => {
                 useNativeDriver: true,
             }),
         ]).start();
+
+        const hintTimeout = setTimeout(() => {
+            Animated.sequence([
+                Animated.timing(swipeHintAnim, {
+                    toValue: 60,
+                    duration: 500,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(swipeHintAnim, {
+                    toValue: 0,
+                    friction: 6,
+                    tension: 40,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }, 1800);
+
+        return () => clearTimeout(hintTimeout);
     }, []);
 
     const handleComplete = async () => {
         setShowConfetti(true);
-        
+
         if (Platform.OS === "ios") {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -58,6 +78,7 @@ const AccomplishmentOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
+            <OnboardingProgressBar currentStep={8} totalSteps={8} />
             {/* Confetti */}
             {showConfetti && (
                 <View
@@ -190,7 +211,7 @@ const AccomplishmentOnboarding = (props: Props) => {
 
             <View style={styles.contentContainer}>
                 {/* Main Text Section */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.mainTextContainer,
                         {
@@ -205,27 +226,30 @@ const AccomplishmentOnboarding = (props: Props) => {
                 </Animated.View>
 
                 {/* Swipeable Task Card */}
-                <Animated.View 
+                <Animated.View
                     style={[
                         styles.taskContainer,
                         {
                             opacity: fadeAnimation,
-                            transform: [{ translateY: slideAnimation }],
+                            transform: [
+                                { translateY: slideAnimation },
+                                { translateX: swipeHintAnim },
+                            ],
                         }
                     ]}
                 >
                     <ReanimatedSwipeable
                         friction={1.3}
                         rightThreshold={100}
-                        renderLeftActions={(prog, drag) => 
+                        renderLeftActions={(prog, drag) =>
                             LeftAction(prog, drag, handleComplete, ThemedColor)
                         }
                     >
                         <View style={[
-                            styles.taskCard, 
-                            { 
+                            styles.taskCard,
+                            {
                                 backgroundColor: ThemedColor.lightened,
-                                borderColor: ThemedColor.tertiary 
+                                borderColor: ThemedColor.tertiary
                             }
                         ]}>
                             <ThemedText style={[styles.taskText, { color: ThemedColor.text }]}>
@@ -381,4 +405,3 @@ const styles = StyleSheet.create({
 });
 
 export default AccomplishmentOnboarding;
-

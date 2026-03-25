@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, FlatList, ViewToken } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
 import KudosProgressCard from "@/components/cards/KudosProgressCard";
@@ -15,6 +15,7 @@ import { useKudos } from "@/contexts/kudosContext";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
 const TABS = ["Encouragements", "Congratulations"];
+const KudosItemSeparator = () => <View style={{ height: 10 }} />;
 
 export default function Kudos() {
     const { tab } = useLocalSearchParams<{ tab?: string }>();
@@ -76,13 +77,13 @@ export default function Kudos() {
     const encouragementViewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
     const congratulationViewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
 
-    const formatTime = (timestamp: string) => {
+    const formatTime = useCallback((timestamp: string) => {
         try {
             return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
         } catch {
             return "recently";
         }
-    };
+    }, []);
 
     const styles = createStyles(ThemedColor, insets);
 
@@ -128,7 +129,7 @@ export default function Kudos() {
                 showsVerticalScrollIndicator={false}
                 style={styles.scrollView}
                 ListHeaderComponent={encouragementHeader}
-                ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+                ItemSeparatorComponent={KudosItemSeparator}
                 onViewableItemsChanged={onEncouragementViewableItemsChanged}
                 viewabilityConfig={encouragementViewabilityConfig}
                 renderItem={({ item, index }) => (
@@ -165,7 +166,7 @@ export default function Kudos() {
                 showsVerticalScrollIndicator={false}
                 style={styles.scrollView}
                 ListHeaderComponent={congratulationHeader}
-                ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+                ItemSeparatorComponent={KudosItemSeparator}
                 onViewableItemsChanged={onCongratulationViewableItemsChanged}
                 viewabilityConfig={congratulationViewabilityConfig}
                 renderItem={({ item, index }) => (

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect, useMemo } from 'react';
 import QueuedAlert from '@/components/modals/QueuedAlert';
 import { AlertButton } from '@/components/modals/CustomAlert';
 import { logger } from '@/utils/logger';
@@ -15,7 +15,7 @@ interface AlertContextType {
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
-const MAX_ALERT_QUEUE_SIZE = 10; // Prevent unbounded queue growth
+const MAX_ALERT_QUEUE_SIZE = 10;
 
 export function AlertProvider({ children }: { children: ReactNode }) {
     const [alertQueue, setAlertQueue] = useState<AlertConfig[]>([]);
@@ -25,37 +25,24 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const buttonTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Cleanup all timeouts on unmount
     useEffect(() => {
         return () => {
-            if (processingTimeoutRef.current) {
-                clearTimeout(processingTimeoutRef.current);
-            }
-            if (dismissTimeoutRef.current) {
-                clearTimeout(dismissTimeoutRef.current);
-            }
-            if (buttonTimeoutRef.current) {
-                clearTimeout(buttonTimeoutRef.current);
-            }
+            if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
+            if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+            if (buttonTimeoutRef.current) clearTimeout(buttonTimeoutRef.current);
         };
     }, []);
 
     const processNextAlert = useCallback(() => {
-        // Clear any pending processing
-        if (processingTimeoutRef.current) {
-            clearTimeout(processingTimeoutRef.current);
-        }
+        if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
 
         setAlertQueue(prev => {
             if (prev.length > 0) {
                 const [next, ...rest] = prev;
-
-                // Delay to ensure previous alert is fully dismissed
                 processingTimeoutRef.current = setTimeout(() => {
                     setCurrentAlert(next);
                     setIsVisible(true);
                 }, 400);
-
                 return rest;
             }
             return prev;
@@ -63,16 +50,12 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const showAlert = useCallback((config: AlertConfig) => {
-        // Use functional updates to avoid stale closure issues
         setCurrentAlert(prev => {
             if (prev === null) {
-                // No alert showing, show this one immediately
                 setIsVisible(true);
                 return config;
             } else {
-                // Alert already showing, add to queue (with size limit)
                 setAlertQueue(q => {
-                    // Prevent unbounded queue growth - keep only most recent alerts
                     const newQueue = [...q, config];
                     if (newQueue.length > MAX_ALERT_QUEUE_SIZE) {
                         logger.warn(`Alert queue exceeded ${MAX_ALERT_QUEUE_SIZE} items, dropping oldest alerts`);
@@ -87,48 +70,35 @@ export function AlertProvider({ children }: { children: ReactNode }) {
 
     const handleDismiss = useCallback(() => {
         setIsVisible(false);
-
-        // Clear any existing dismiss timeout
-        if (dismissTimeoutRef.current) {
-            clearTimeout(dismissTimeoutRef.current);
-        }
-
-        // Wait for dismiss animation, then clear and process queue
+        if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
         dismissTimeoutRef.current = setTimeout(() => {
             setCurrentAlert(null);
             processNextAlert();
         }, 400);
     }, [processNextAlert]);
 
-    // Wrap buttons to handle dismissal intelligently
-    const wrappedButtons = currentAlert?.buttons?.map(btn => ({
-        ...btn,
-        onPress: () => {
-            // Call the original handler first
-            if (btn.onPress) {
-                btn.onPress();
+    const wrappedButtons = useMemo(() => {
+        return currentAlert?.buttons?.map(btn => ({
+            ...btn,
+            onPress: () => {
+                if (btn.onPress) btn.onPress();
+                if (buttonTimeoutRef.current) clearTimeout(buttonTimeoutRef.current);
+                buttonTimeoutRef.current = setTimeout(() => {
+                    handleDismiss();
+                }, 50);
             }
+        }));
+    }, [currentAlert?.buttons, handleDismiss]);
 
-            // Clear any existing button timeout
-            if (buttonTimeoutRef.current) {
-                clearTimeout(buttonTimeoutRef.current);
-            }
-
-            // Always dismiss - the queue will handle showing the next alert
-            // Use a small delay to ensure any showAlert() calls in the handler complete first
-            buttonTimeoutRef.current = setTimeout(() => {
-                handleDismiss();
-            }, 50);
-        }
-    }));
+    const value = useMemo(() => ({ showAlert }), [showAlert]);
 
     return (
-        <AlertContext.Provider value={{ showAlert }}>
+        <AlertContext.Provider value={value}>
             {children}
             {currentAlert && (
                 <QueuedAlert
                     visible={isVisible}
-                    onDismiss={handleDismiss} // Allow manual dismissal (swipe/backdrop tap)
+                    onDismiss={handleDismiss}
                     title={currentAlert.title}
                     message={currentAlert.message}
                     buttons={wrappedButtons}
