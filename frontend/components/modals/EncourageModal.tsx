@@ -8,6 +8,7 @@ import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import Octicons from "@expo/vector-icons/Octicons";
 import { createEncouragementAPI } from "@/api/encouragement";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserKudos } from "@/hooks/useUserKudos";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import { uploadImageSmart } from "@/api/upload";
 import { Images, Gif, Sparkle } from "phosphor-react-native";
@@ -37,7 +38,7 @@ interface EncourageModalProps {
 
 export default function EncourageModal({ visible, setVisible, task, encouragementConfig, isProfileLevel = false }: EncourageModalProps) {
     const ThemedColor = useThemeColor();
-    const { user, updateUser } = useAuth();
+    const { updateUser } = useAuth();
     const [encouragementMessage, setEncouragementMessage] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -113,8 +114,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
         };
     }, [visible]);
 
-    // Get encouragements left from user data
-    const encouragementsLeft = user?.encouragements || 0;
+    const { encouragementsLeft, currentKudosRewards } = useUserKudos();
 
     const handleImagePick = async () => {
         try {
@@ -246,8 +246,6 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);
 
-            // Also increment kudosRewards.encouragements for rewards tracking
-            const currentKudosRewards = user?.kudosRewards || { encouragements: 0, congratulations: 0 };
             updateUser({
                 encouragements: newCount,
                 kudosRewards: {

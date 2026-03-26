@@ -262,8 +262,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }
 
         if (Object.keys(errors).length > 0) {
+            const details = Object.entries(errors)
+                .map(([field, msg]) => `${field}: ${msg}`)
+                .join('; ');
             logger.error('Validation errors', errors);
-            throw new Error('Validation failed. Please check all fields.');
+            throw new Error(`Validation failed — ${details}`);
         }
 
         setIsLoading(true);
@@ -294,14 +297,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             });
 
             if (result.error) {
-                logger.error('Registration failed', result.error);
-                throw new Error('Registration failed');
+                const errorBody = result.error as any;
+                logger.error('Registration failed with backend error', JSON.stringify(errorBody));
+                const backendMessage = errorBody?.detail || errorBody?.message || errorBody?.title || JSON.stringify(errorBody);
+                throw new Error(backendMessage);
             }
 
             logger.info('Registration successful');
 
-            // Registration now returns the full user data in the response body!
-            // No need for a separate login call
             const userData = result.data as any;
             setUser(userData);
 
@@ -310,33 +313,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                 displayName: userData.display_name
             });
 
-            // Note: Default workspace is created automatically by the backend during registration
-            // No need to call setupDefaultWorkspace() here
-
-            // Reset after successful registration and login
             logger.debug('Resetting onboarding state');
             reset();
             logger.info('Registration flow complete');
         } catch (error: any) {
-            logger.error('Email registration failed', error);
+            logger.error('Email registration failed', error?.message || error);
 
-            // Extract error message from backend response
-            let errorMessage = 'Registration failed. Please try again.';
-
-            // openapi-fetch returns errors in a specific format
-            if (error?.message) {
-                errorMessage = error.message;
-            } else if (error?.error?.message) {
-                errorMessage = error.error.message;
-            } else if (error?.detail) {
-                errorMessage = error.detail;
-            } else if (typeof error === 'string') {
-                errorMessage = error;
-            }
-
+            const errorMessage = error?.message || 'Registration failed. Please try again.';
             logger.error('Registration error message', { errorMessage });
 
-            // Throw error with the backend message so the UI can display it
             throw new Error(errorMessage);
         } finally {
             setIsLoading(false);
@@ -369,8 +354,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         if (emailError) errors.email = emailError;
 
         if (Object.keys(errors).length > 0) {
+            const details = Object.entries(errors)
+                .map(([field, msg]) => `${field}: ${msg}`)
+                .join('; ');
             logger.error('Validation errors', errors);
-            throw new Error('Validation failed. Please check all fields.');
+            throw new Error(`Validation failed — ${details}`);
         }
 
         setIsLoading(true);
@@ -473,8 +461,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         if (emailError) errors.email = emailError;
 
         if (Object.keys(errors).length > 0) {
+            const details = Object.entries(errors)
+                .map(([field, msg]) => `${field}: ${msg}`)
+                .join('; ');
             logger.error('Validation errors', errors);
-            throw new Error('Validation failed. Please check all fields.');
+            throw new Error(`Validation failed — ${details}`);
         }
 
         setIsLoading(true);

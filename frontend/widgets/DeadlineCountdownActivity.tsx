@@ -2,19 +2,24 @@
 
 import React from 'react';
 import { Text, VStack, HStack, Image } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, padding, lineLimit } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
     taskName: string;
     workspaceName: string;
-    deadline: string; // ISO string
-    priority: number; // 0-3
-    timeRemainingLabel: string; // pre-formatted e.g. "2h 15m"
+    deadline: string;
+    priority: number;
+    timeRemainingLabel: string;
 };
 
 const PRIORITY_COLORS = ['#6B7280', '#3B82F6', '#F59E0B', '#EF4444'];
 const PRIORITY_LABELS = ['None', 'Low', 'Medium', 'High'];
+
+const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+
+const ACCENT = '#8B5CF6';
 
 const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     'widget';
@@ -25,60 +30,61 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
 
     return {
         banner: (
-            <VStack modifiers={[padding({ all: 12 })]}>
+            <VStack modifiers={[padding({ horizontal: 16, vertical: 14 })]}>
                 <HStack>
-                    <Text modifiers={[font({ weight: 'bold', size: 15 }), foregroundStyle('#FFFFFF')]}>
+                    <Image systemName="clock.fill" color={ACCENT} size={14} />
+                    <Text modifiers={[font({ weight: 'semibold', size: 15 }), primary, lineLimit(1)]}>
                         {taskName}
                     </Text>
-                    <Text modifiers={[font({ size: 12 }), foregroundStyle(priorityColor)]}>
+                    <Text modifiers={[font({ weight: 'medium', size: 12 }), foregroundStyle(priorityColor)]}>
                         {priorityLabel}
                     </Text>
                 </HStack>
                 <HStack>
-                    <Text modifiers={[font({ size: 13 }), foregroundStyle('#A0A0B0')]}>
+                    <Text modifiers={[font({ size: 13 }), secondary]}>
                         {workspaceName}
                     </Text>
-                    <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#8B5CF6')]}>
+                    <Text modifiers={[font({ weight: 'bold', size: 13, design: 'rounded' }), foregroundStyle(ACCENT)]}>
                         {`Due in ${timeRemainingLabel}`}
                     </Text>
                 </HStack>
             </VStack>
         ),
         compactLeading: (
-            <Image systemName="clock.fill" color="#8B5CF6" />
+            <Image systemName="clock.fill" color={ACCENT} />
         ),
         compactTrailing: (
-            <Text modifiers={[font({ weight: 'semibold', size: 12 }), foregroundStyle('#8B5CF6')]}>
+            <Text modifiers={[font({ weight: 'bold', size: 12, design: 'rounded' }), foregroundStyle(ACCENT)]}>
                 {timeRemainingLabel}
             </Text>
         ),
         minimal: (
-            <Image systemName="clock.fill" color="#8B5CF6" />
+            <Image systemName="clock.fill" color={ACCENT} />
         ),
         expandedLeading: (
             <VStack modifiers={[padding({ all: 8 })]}>
-                <Image systemName="clock.fill" color="#8B5CF6" />
-                <Text modifiers={[font({ size: 10 }), foregroundStyle('#A0A0B0')]}>
+                <Image systemName="clock.fill" color={ACCENT} size={22} />
+                <Text modifiers={[font({ size: 11 }), secondary]}>
                     Deadline
                 </Text>
             </VStack>
         ),
         expandedTrailing: (
             <VStack modifiers={[padding({ all: 8 })]}>
-                <Text modifiers={[font({ weight: 'bold', size: 20 }), foregroundStyle('#8B5CF6')]}>
+                <Text modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(ACCENT)]}>
                     {timeRemainingLabel}
                 </Text>
-                <Text modifiers={[font({ size: 10 }), foregroundStyle('#A0A0B0')]}>
+                <Text modifiers={[font({ size: 11 }), secondary]}>
                     remaining
                 </Text>
             </VStack>
         ),
         expandedBottom: (
-            <VStack modifiers={[padding({ all: 8 })]}>
-                <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
+            <VStack modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
+                <Text modifiers={[font({ weight: 'semibold', size: 14 }), primary, lineLimit(1)]}>
                     {taskName}
                 </Text>
-                <Text modifiers={[font({ size: 12 }), foregroundStyle('#A0A0B0')]}>
+                <Text modifiers={[font({ size: 13 }), secondary]}>
                     {workspaceName}
                 </Text>
             </VStack>

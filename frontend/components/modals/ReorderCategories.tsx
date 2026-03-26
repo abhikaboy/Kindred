@@ -35,7 +35,7 @@ const ReorderCategories = (props: Props) => {
             </View>
             <PrimaryButton
                 title="Sort"
-                outline={reordering}
+                secondary={reordering}
                 onPress={() => {
                     props.hide();
                 }}
@@ -65,7 +65,7 @@ const ReorderCategories = (props: Props) => {
             </View>
             <PrimaryButton
                 title="Save Reordering"
-                outline={!reordering}
+                secondary={!reordering}
                 onPress={() => {
                     props.hide();
                 }}

@@ -34,7 +34,7 @@ const NewCategory = ({ goToStandard, isBlueprint = false }: Props) => {
                     tasks: [],
                     user: "",
                 };
-                
+
                 addBlueprintCategory(newCategory);
                 setCreateCategory({ label: name, id: newCategory.id, special: false });
                 return true;
@@ -82,7 +82,7 @@ const NewCategory = ({ goToStandard, isBlueprint = false }: Props) => {
                 <PrimaryButton
                     title="Back"
                     onPress={goToStandard}
-                    outline
+                    secondary
                     style={styles.halfButton}
                     textStyle={{ fontSize: 14 }}
                 />

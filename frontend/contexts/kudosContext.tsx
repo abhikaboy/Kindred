@@ -34,6 +34,7 @@ interface Congratulation {
     taskName: string;
     timestamp: string;
     read: boolean;
+    type?: string;
 }
 
 interface KudosContextType {
@@ -128,12 +129,14 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
             if (latestItem) {
                 const isEncouragement = 'scope' in latestItem;
                 const taskName = latestItem.taskName || '';
+                const messageType = (latestItem as any).type === 'image' ? 'image' : 'message';
                 const activity = EncouragementActivity.start({
                     senderName: latestItem.sender.name,
                     taskName,
                     message: latestItem.message || '',
                     kudosEarned: 5,
                     type: isEncouragement ? 'encouragement' : 'congratulation',
+                    messageType: messageType as 'message' | 'image',
                 });
 
                 if (liveActivityTimeoutRef.current) {

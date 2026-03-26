@@ -50,17 +50,17 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 2,
-        paddingHorizontal: 0,
+        paddingHorizontal: 16,
     },
     track: {
-        height: 3,
+        height: 4,
         width: '100%',
-        borderRadius: 1.5,
+        borderRadius: 2,
         overflow: 'hidden',
     },
     fill: {
         height: '100%',
-        borderRadius: 1.5,
+        borderRadius: 2,
     },
 });
 

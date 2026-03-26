@@ -343,7 +343,7 @@ export default function BlueprintDetailScreen() {
                     <PrimaryButton
                         style={{ height: 38, width: 100, paddingVertical: 10, paddingHorizontal: 10 }}
                         title={isLoading ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
-                        outline={isSubscribed}
+                        secondary={isSubscribed}
                         onPress={onSubscribePress}
                         disabled={isLoading}
                     />

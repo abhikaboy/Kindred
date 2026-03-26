@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
     useSharedValue,
@@ -21,7 +21,7 @@ import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useTasks } from "@/contexts/tasksContext";
-import { updateTaskAPI } from "@/api/task";
+import { updateTaskAPI, removeFromCategoryAPI, markAsCompletedAPI } from "@/api/task";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
@@ -59,7 +59,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     onDragCreateComplete,
 }) => {
     const ThemedColor = useThemeColor();
-    const { setSelected, updateTask } = useTasks();
+    const { setSelected, updateTask, removeFromCategory } = useTasks();
     const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
         useDailyTasks(selectedDate);
     const currentTimeLineRef = useRef<View>(null);
@@ -69,6 +69,8 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     const [contextMenuVisible, setContextMenuVisible] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isHiding, setIsHiding] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(false);
 
     // Ghost block state
     const [ghostBlockVisible, setGhostBlockVisible] = useState(false);
@@ -424,6 +426,59 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         }
     };
 
+    const handleDeleteTask = async () => {
+        if (!selectedTask?.id || !selectedTask?.categoryID) return;
+
+        const performDelete = async (deleteRecurring: boolean) => {
+            setIsDeleting(true);
+            try {
+                await removeFromCategoryAPI(selectedTask.categoryID, selectedTask.id, deleteRecurring);
+                removeFromCategory(selectedTask.categoryID, selectedTask.id);
+                setContextMenuVisible(false);
+            } catch (error) {
+                logger.error("Failed to delete task", error);
+            } finally {
+                setIsDeleting(false);
+            }
+        };
+
+        if (selectedTask.templateID) {
+            setContextMenuVisible(false);
+            Alert.alert(
+                "Delete Recurring Task",
+                "Do you want to delete only this task or all future tasks?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Only This Task", onPress: () => performDelete(false) },
+                    { text: "All Future Tasks", onPress: () => performDelete(true), style: "destructive" },
+                ]
+            );
+        } else {
+            await performDelete(false);
+        }
+    };
+
+    const handleCompleteTask = async () => {
+        if (!selectedTask?.id || !selectedTask?.categoryID) return;
+
+        setIsCompleting(true);
+        try {
+            await markAsCompletedAPI(selectedTask.categoryID, selectedTask.id, {
+                timeCompleted: new Date().toISOString(),
+                timeTaken: "PT0S",
+            });
+            removeFromCategory(selectedTask.categoryID, selectedTask.id);
+            if (Platform.OS === "ios") {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+            setContextMenuVisible(false);
+        } catch (error) {
+            logger.error("Failed to complete task", error);
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
     return (
         <View style={{ flex: 1 }}>
             <Animated.ScrollView
@@ -761,6 +816,36 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
                     <TouchableOpacity
                         style={styles.menuOption}
+                        onPress={handleCompleteTask}
+                        disabled={isCompleting}
+                    >
+                        <Ionicons
+                            name="checkmark-circle-outline"
+                            size={24}
+                            color={
+                                isCompleting
+                                    ? ThemedColor.caption
+                                    : ThemedColor.tint
+                            }
+                        />
+                        <ThemedText
+                            type="default"
+                            style={{
+                                marginLeft: 12,
+                                flex: 1,
+                                color: isCompleting
+                                    ? ThemedColor.caption
+                                    : ThemedColor.tint,
+                            }}
+                        >
+                            {isCompleting
+                                ? "Completing..."
+                                : "Mark as Complete"}
+                        </ThemedText>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuOption}
                         onPress={handleHideTask}
                         disabled={isHiding}
                     >
@@ -784,6 +869,34 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                             }}
                         >
                             {isHiding ? "Hiding..." : "Hide Task"}
+                        </ThemedText>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuOption}
+                        onPress={handleDeleteTask}
+                        disabled={isDeleting}
+                    >
+                        <Ionicons
+                            name="trash-outline"
+                            size={24}
+                            color={
+                                isDeleting
+                                    ? ThemedColor.caption
+                                    : ThemedColor.error
+                            }
+                        />
+                        <ThemedText
+                            type="default"
+                            style={{
+                                marginLeft: 12,
+                                flex: 1,
+                                color: isDeleting
+                                    ? ThemedColor.caption
+                                    : ThemedColor.error,
+                            }}
+                        >
+                            {isDeleting ? "Deleting..." : "Delete Task"}
                         </ThemedText>
                     </TouchableOpacity>
                 </View>

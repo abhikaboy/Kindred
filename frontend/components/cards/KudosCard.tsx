@@ -7,18 +7,14 @@ import { Sparkle, Confetti } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
 import { useKudos } from "@/contexts/kudosContext";
-import { useAuth } from "@/hooks/useAuth";
+import { useUserKudos } from "@/hooks/useUserKudos";
 import SimpleProgressBar from "../ui/SimpleProgressBar";
 
 export const KudosCards: React.FC = () => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
-    const { user } = useAuth();
+    const { sentEncouragements, sentCongratulations } = useUserKudos();
     const { unreadEncouragementCount, unreadCongratulationCount } = useKudos();
-
-    // Get sent counts from user's kudosRewards for progress tracking
-    const sentEncouragements = user?.kudosRewards?.encouragements || 0;
-    const sentCongratulations = user?.kudosRewards?.congratulations || 0;
 
     const hasUnreadEncouragements = unreadEncouragementCount > 0;
     const hasUnreadCongratulations = unreadCongratulationCount > 0;

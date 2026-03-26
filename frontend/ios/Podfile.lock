@@ -24,9 +24,6 @@ PODS:
     - Yoga
   - EXApplication (55.0.8):
     - ExpoModulesCore
-  - EXAV (16.0.8):
-    - ExpoModulesCore
-    - ReactCommon/turbomodule/core
   - EXConstants (55.0.7):
     - ExpoModulesCore
   - Expo (55.0.4):
@@ -2358,7 +2355,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - RNSentry (7.11.0):
+  - RNSentry (8.4.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2380,7 +2377,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
-    - Sentry/HybridSDK (= 8.58.0)
+    - Sentry (= 9.7.0)
     - Yoga
   - RNSVG (15.15.3):
     - hermes-engine
@@ -2509,7 +2506,9 @@ PODS:
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
-  - Sentry/HybridSDK (8.58.0)
+  - Sentry (9.7.0):
+    - Sentry/Core (= 9.7.0)
+  - Sentry/Core (9.7.0)
   - SwiftUIIntrospect (1.3.0)
   - Yoga (0.0.0)
   - ZXingObjC/Core (3.6.9)
@@ -2521,7 +2520,6 @@ PODS:
 DEPENDENCIES:
   - EmojiPopup (from `../node_modules/react-native-emoji-popup`)
   - EXApplication (from `../node_modules/expo-application/ios`)
-  - EXAV (from `../node_modules/expo-av/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
   - ExpoAppleAuthentication (from `../node_modules/expo-apple-authentication/ios`)
@@ -2671,8 +2669,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-emoji-popup"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
-  EXAV:
-    :path: "../node_modules/expo-av/ios"
   EXConstants:
     :path: "../node_modules/expo-constants/ios"
   Expo:
@@ -2934,7 +2930,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   EmojiPopup: 3a7bf8b290868f59ea9480e5ba6294d89b8f706c
   EXApplication: b86f81225a9cd817cfe86a79655b9829f12629db
-  EXAV: b60fcf142fae6684d295bc28cd7cfcb3335570ea
   EXConstants: b3c63be5f8648e4ab8e6ff5099b62f629247f969
   Expo: d592aa311ef87e4176c61f851b127c4f2e38308e
   ExpoAppleAuthentication: 86e97b24bd6687c156c55bb448f570bc29081ace
@@ -3062,19 +3057,19 @@ SPEC CHECKSUMS:
   RNDateTimePicker: 9c0a849bbe1c256f0854fea255734b715f5ea876
   RNGestureHandler: 5494787ce29288a8941fa825663f2b1fa0a5aaf1
   RNReanimated: 86e5991396f1aa514db90d6c79d4c3e37a37bb10
-  RNScreens: 14243fa0d9842ffa7f8bb2d00b6c3cfd3ca817e8
-  RNSentry: fbdf0705a341b40f9c78cce0cb3adf7fdcc895cf
+  RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
+  RNSentry: 4e9fc32104771fbb20c5f567eb9299fd92ea48b8
   RNSVG: 0bd149b873018bc6e0e3321e2f6435bdba294460
   RNWorklets: 0e736f568c3c61cb3326cdcda767c4daee56a8a9
   SDWebImage: 1bb6a1b84b6fe87b972a102bdc77dd589df33477
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
-  Sentry: d587a8fe91ca13503ecd69a1905f3e8a0fcf61be
+  Sentry: 0fe17abdc98f83a3799c02564382d8b2afabadef
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 83507d19b358b15145ec01ad43685136627aac16
+PODFILE CHECKSUM: c7cfdc2faa4ffff2a2d519d8ce2606e76f016ebf
 
 COCOAPODS: 1.16.2

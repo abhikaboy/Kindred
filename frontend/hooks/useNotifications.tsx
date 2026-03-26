@@ -38,7 +38,7 @@ export const useNotifications = (): UseNotificationsReturn => {
             // Optimistically update the cache
             queryClient.setQueryData(['notifications'], (oldData: any) => {
                 if (!oldData) return oldData;
-                
+
                 return {
                     ...oldData,
                     notifications: oldData.notifications.map((notification: NotificationDocument) =>
@@ -63,7 +63,7 @@ export const useNotifications = (): UseNotificationsReturn => {
             // Optimistically update the cache
             queryClient.setQueryData(['notifications'], (oldData: any) => {
                 if (!oldData) return oldData;
-                
+
                 return {
                     ...oldData,
                     notifications: oldData.notifications.map((notification: NotificationDocument) => ({
@@ -73,7 +73,6 @@ export const useNotifications = (): UseNotificationsReturn => {
                     unread_count: 0,
                 };
             });
-            showToast('All notifications marked as read', 'success');
         },
         onError: (err) => {
             console.error('Failed to mark all notifications as read:', err);

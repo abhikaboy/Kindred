@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
+import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity, LayoutAnimation, UIManager, Platform } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useTasks } from "@/contexts/tasksContext";
@@ -30,6 +30,8 @@ import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
 import Feather from "@expo/vector-icons/Feather";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 
 interface WorkspaceContentProps {
     workspaceName?: string; // Optional: if not provided, uses global selected
@@ -128,6 +130,16 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     const [editingWorkspace, setEditingWorkspace] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
     const [workspaceAction, setWorkspaceAction] = useState<"sort" | "filter" | "group" | null>(null);
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const startCreatingCategory = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsCreatingCategory(true);
+        setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 50);
+    };
+    const stopCreatingCategory = () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setIsCreatingCategory(false);
+    };
     const reopenWorkspaceSettings = () => {
         if (editingWorkspace) {
             setEditingWorkspace(false);
@@ -166,9 +178,9 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
     const menuSpotlightShown = spotlightState.menuSpotlight;
 
-    // Reset trigger ref when workspace changes
     useEffect(() => {
         hasTriggeredRef.current = false;
+        setIsCreatingCategory(false);
     }, [selected]);
 
     useEffect(() => {
@@ -456,6 +468,12 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                 </View>
                             ) : (
                                 <View style={styles.categoriesContainer} key="category-container">
+                                    {isCreatingCategory && (
+                                        <InlineCategoryCreator
+                                            onCreated={() => stopCreatingCategory()}
+                                            onCancel={() => stopCreatingCategory()}
+                                        />
+                                    )}
                                     {visibleCategories.map((category) => {
                                             const isFirstCategory = firstCategory?.id === category.id;
                                             const isFirstCategoryWithTasks = firstCategoryWithTasks?.id === category.id;
@@ -480,6 +498,17 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                 />
                                             );
                                         })}
+                                    {!isCreatingCategory && (
+                                        <TouchableOpacity
+                                            onPress={startCreatingCategory}
+                                            style={{ alignSelf: "center", paddingVertical: 8}}
+                                            activeOpacity={0.6}
+                                        >
+                                            <ThemedText type="default" style={{ color: ThemedColor.caption}}>
+                                                + Add Category
+                                            </ThemedText>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             )}
                         </ConditionalView>

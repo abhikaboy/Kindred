@@ -765,8 +765,7 @@ export default function Posting() {
                                     <PrimaryButton
                                         onPress={() => setViewMode("camera")}
                                         title="Take More"
-                                        ghost
-                                        colorOverride={ThemedColor.primary}
+                                        secondary
                                         style={{ flex: 1 }}
                                     />
                                     <PrimaryButton

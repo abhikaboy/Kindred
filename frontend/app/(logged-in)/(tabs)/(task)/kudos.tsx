@@ -10,7 +10,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
-import { useAuth } from "@/hooks/useAuth";
+import { useUserKudos } from "@/hooks/useUserKudos";
 import { useKudos } from "@/contexts/kudosContext";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
@@ -21,7 +21,7 @@ export default function Kudos() {
     const { tab } = useLocalSearchParams<{ tab?: string }>();
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const { user } = useAuth();
+    const { sentEncouragements, sentCongratulations } = useUserKudos();
     const {
         encouragements,
         congratulations,
@@ -32,9 +32,6 @@ export default function Kudos() {
 
     const initialTab = tab === "congratulations" ? 1 : 0;
     const [activeTab, setActiveTab] = useState(initialTab);
-
-    const sentEncouragements = user?.kudosRewards?.encouragements || 0;
-    const sentCongratulations = user?.kudosRewards?.congratulations || 0;
 
     const [encouragementVisibleIds, setEncouragementVisibleIds] = useState<Set<string>>(new Set());
     const [congratulationVisibleIds, setCongratulationVisibleIds] = useState<Set<string>>(new Set());

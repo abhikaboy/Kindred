@@ -86,7 +86,7 @@ const RewardRedemptionModal = (props: Props) => {
                         <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
                             Choose Kudos Type:
                         </ThemedText>
-                        
+
                         {/* Encouragements Option */}
                         <TouchableOpacity
                             style={[
@@ -158,7 +158,7 @@ const RewardRedemptionModal = (props: Props) => {
                 <View style={styles.actions}>
                     <PrimaryButton
                         title="Cancel"
-                        outline
+                        secondary
                         onPress={handleCancel}
                         disabled={isRedeeming}
                     />
@@ -293,4 +293,3 @@ const styles = StyleSheet.create({
 });
 
 export default RewardRedemptionModal;
-

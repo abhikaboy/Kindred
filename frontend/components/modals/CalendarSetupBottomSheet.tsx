@@ -202,7 +202,7 @@ export default function CalendarSetupBottomSheet({
                                 <PrimaryButton
                                     title="Cancel"
                                     onPress={handleCancel}
-                                    outline
+                                    secondary
                                     style={styles.button}
                                 />
                                 <PrimaryButton

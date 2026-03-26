@@ -33,16 +33,16 @@ export default function Caption() {
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
-    
+
     // Compute display text based on state
     const groupDisplayText = selectedGroupId === null ? "All Friends" : (selectedGroupName || "Selected Group");
-    
+
     // Use theme-appropriate placeholder
     const isDark = ThemedColor.background === '#000000' || ThemedColor.background === '#1a1a1a';
-    const placeholderImage = isDark 
+    const placeholderImage = isDark
         ? require('@/assets/images/placeholder dark.jpg')
         : require('@/assets/images/placeholder light.jpg');
-    
+
     const displayItems = photos.length > 0 ? photos : [placeholderImage];
     const hasActualPhotos = photos.length > 0;
     const handleCaptionChange = (text: string) => {
@@ -58,7 +58,7 @@ export default function Caption() {
         }
         const uploadedUrls = [];
         let sizeInfo: { width: number; height: number; bytes: number } | undefined;
-        
+
         for (let i = 0; i < photoUris.length; i++) {
             try {
                 const result = await uploadImageSmart(
@@ -67,9 +67,9 @@ export default function Caption() {
                     photoUris[i],
                     { variant: "large", returnFullResult: true }
                 ) as ImageUploadResult;
-                
+
                 uploadedUrls.push(result.public_url);
-                
+
                 // Use the size info from the first image (primary image)
                 if (i === 0) {
                     sizeInfo = {
@@ -128,12 +128,12 @@ export default function Caption() {
                 : undefined;
 
             const selectedGroups = getGroupIds();
-            
+
             const result = await createPostToBackend(
-                uploadResult.urls, 
-                data.caption, 
-                taskReference, 
-                undefined, 
+                uploadResult.urls,
+                data.caption,
+                taskReference,
+                undefined,
                 taskInfo?.public ?? false,
                 uploadResult.sizeInfo,
                 selectedGroups,
@@ -148,24 +148,8 @@ export default function Caption() {
                 });
             }
 
-            setAlertTitle("Success!");
-            setAlertMessage("Your post has been shared!");
-            setAlertButtons([
-                {
-                    text: "View Post",
-                    onPress: () => {
-                        router.dismissAll();
-                        router.push(`/(logged-in)/posting/${result.post._id}`);
-                    },
-                },
-                {
-                    text: "OK",
-                    onPress: () => {
-                        router.dismissAll();
-                    },
-                },
-            ]);
-            setAlertVisible(true);
+            router.dismissAll();
+            router.push(`/(logged-in)/posting/${result.post._id}`);
         } catch (error) {
             console.error("Error creating post:", error);
 

@@ -47,7 +47,7 @@ const DeleteWorkspaceConfirmationModal = (props: Props) => {
                 <View style={styles.actions}>
                     <PrimaryButton
                         title="Cancel"
-                        outline
+                        secondary
                         onPress={handleCancel} />
 
                     <PrimaryButton

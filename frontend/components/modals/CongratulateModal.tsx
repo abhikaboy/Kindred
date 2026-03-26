@@ -8,6 +8,7 @@ import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import Octicons from "@expo/vector-icons/Octicons";
 import { createCongratulationAPI } from "@/api/congratulation";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserKudos } from "@/hooks/useUserKudos";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import { uploadImageSmart } from "@/api/upload";
 import { Images, Gif } from "phosphor-react-native";
@@ -35,7 +36,7 @@ interface CongratulateModalProps {
 
 export default function CongratulateModal({ visible, setVisible, task, congratulationConfig }: CongratulateModalProps) {
     const ThemedColor = useThemeColor();
-    const { user, updateUser } = useAuth();
+    const { updateUser } = useAuth();
     const [congratulationMessage, setCongratulationMessage] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -70,8 +71,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
         };
     }, [visible]);
 
-    // Get congratulations left from user data
-    const congratulationsLeft = user?.congratulations || 0;
+    const { congratulationsLeft, currentKudosRewards } = useUserKudos();
 
     const handleImagePick = async () => {
         try {
@@ -184,8 +184,6 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             // Update user's congratulation count locally
             const newCount = Math.max(0, congratulationsLeft - 1);
 
-            // Also increment kudosRewards.congratulations for rewards tracking
-            const currentKudosRewards = user?.kudosRewards || { encouragements: 0, congratulations: 0 };
             updateUser({
                 congratulations: newCount,
                 kudosRewards: {

@@ -2,7 +2,7 @@
 
 import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { Redirect, Slot, Stack, useRouter } from "expo-router";
+import { Redirect, Slot, Stack, router } from "expo-router";
 import React, { useEffect, useState, useRef } from "react";
 
 import { ScrollView, View, ActivityIndicator, Animated, AppState, InteractionManager, LogBox } from "react-native";
@@ -69,7 +69,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const authInitialized = useRef(false);
     const [canTransition, setCanTransition] = useState(false);
     const ThemedColor = useThemeColor();
-    const router = useRouter();
 
     // Handle initial authentication and routing - only run once
     useEffect(() => {

@@ -176,7 +176,7 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
                                 handleFinish();
                             }}
                             title="Skip Time"
-                            outline
+                            secondary
                             style={{ flex: 1 }}
                         />
                         <PrimaryButton

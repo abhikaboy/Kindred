@@ -35,13 +35,13 @@ const Recurring = ({ goToStandard }: Props) => {
     const [frequencyAmount, setFrequencyAmount] = useState<number>(1);
     const [customRepeat, setCustomRepeat] = useState<boolean>(false);
     const [selectedDays, setSelectedDays] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
-    const { 
-        startDate, 
-        startTime, 
-        deadline, 
-        setRecurring, 
-        setRecurFrequency, 
-        setRecurDetails 
+    const {
+        startDate,
+        startTime,
+        deadline,
+        setRecurring,
+        setRecurFrequency,
+        setRecurDetails
     } = useTaskCreation();
 
     const baseQuickOptions: RecurOption[] = [
@@ -73,15 +73,15 @@ const Recurring = ({ goToStandard }: Props) => {
     // Generate dynamic quick options based on reference date
     const generateDynamicOptions = (referenceDate: Date): RecurOption[] => {
         const options: RecurOption[] = [...baseQuickOptions];
-        
+
         const dayOfWeek = referenceDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
         const dayOfMonth = referenceDate.getDate();
         const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        
+
         // Create daysOfWeek array with the specific day selected
         const daysOfWeek = [0, 0, 0, 0, 0, 0, 0];
         daysOfWeek[dayOfWeek] = 1;
-        
+
         // Add "Every [DayName]" option
         options.push({
             label: `Every ${dayNames[dayOfWeek]}`,
@@ -92,7 +92,7 @@ const Recurring = ({ goToStandard }: Props) => {
                 daysOfWeek: daysOfWeek
             }
         });
-        
+
         // Add "Every month on the [day]" option
         options.push({
             label: `Every Month on the ${dayOfMonth}${getDaySuffix(dayOfMonth)}`,
@@ -103,7 +103,7 @@ const Recurring = ({ goToStandard }: Props) => {
                 daysOfMonth: [dayOfMonth]
             }
         });
-        
+
         // Add weekday option if it's a weekday
         if (dayOfWeek >= 1 && dayOfWeek <= 5) {
             options.push({
@@ -116,7 +116,7 @@ const Recurring = ({ goToStandard }: Props) => {
                 }
             });
         }
-        
+
         return options;
     };
 
@@ -231,7 +231,7 @@ const Recurring = ({ goToStandard }: Props) => {
 
         // Set the recurring frequency
         setRecurFrequency(recurFreq);
-        
+
         // Set the recurring details
         setRecurDetails(recurDetailsObj);
 
@@ -259,12 +259,12 @@ const Recurring = ({ goToStandard }: Props) => {
                             title="Repeat Start"
                             onPress={() => setMode("start")}
                             style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
-                            outline={mode !== "start"}
+                            secondary={mode !== "start"}
                             disabled={!isStartConfigured}
                         />
                         <PrimaryButton
                             title="Repeat Deadline"
-                            outline={mode !== "deadline"}
+                            secondary={mode !== "deadline"}
                             onPress={() => setMode("deadline")}
                             style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
                             disabled={!isDeadlineConfigured}
@@ -300,7 +300,7 @@ const Recurring = ({ goToStandard }: Props) => {
                         footerOptions={footerOptions}
                     />
                 </View>
-                <ConditionalView condition={selectedQuickOption.id === "custom"}>         
+                <ConditionalView condition={selectedQuickOption.id === "custom"}>
                     <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
                         Repeat Every
                     </ThemedText>

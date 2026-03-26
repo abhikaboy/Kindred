@@ -567,7 +567,7 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
                         keyExtractor={(item) => item.id}
                     />
                 </View>
-                <PrimaryButton title="Save Order" outline={!hasChanges} onPress={handleSave} disabled={!hasChanges} />
+                <PrimaryButton title="Save Order" secondary={!hasChanges} onPress={handleSave} disabled={!hasChanges} />
             </View>
         </>
     );

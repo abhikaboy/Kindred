@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserKudos } from "@/hooks/useUserKudos";
 import Feather from "@expo/vector-icons/Feather";
 import RewardRedemptionModal, { RewardInfo } from "@/components/modals/RewardRedemptionModal";
 import { redeemRewardAPI } from "@/api/rewards";
@@ -70,9 +71,7 @@ export default function KudosRewards() {
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
-    // Get sent counts from user's kudosRewards for progress tracking
-    const encouragementsProgress = user?.kudosRewards?.encouragements || 0;
-    const congratulationsProgress = user?.kudosRewards?.congratulations || 0;
+    const { sentEncouragements: encouragementsProgress, sentCongratulations: congratulationsProgress } = useUserKudos();
 
     const styles = createStyles(ThemedColor, insets);
 

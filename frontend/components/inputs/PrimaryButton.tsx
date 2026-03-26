@@ -8,14 +8,31 @@ type Props = {
     ghost?: boolean;
     outline?: boolean;
     dottedOutline?: boolean;
+    lightened?: boolean;
+    secondary?: boolean;
     disabled?: boolean;
     children?: React.ReactNode;
     textStyle?: TextStyle;
     colorOverride?: string;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, disabled, children, textStyle, colorOverride }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, lightened, secondary, disabled, children, textStyle, colorOverride }: Props) {
     let ThemedColor = useThemeColor();
+
+    const getBackgroundColor = () => {
+        if (ghost || dottedOutline) return "transparent";
+        if (secondary) return ThemedColor.primary + "30";
+        if (lightened) return ThemedColor.primary + "25";
+        if (outline) return ThemedColor.lightened;
+        return ThemedColor.primary;
+    };
+
+    const getTextColor = () => {
+        if (colorOverride) return colorOverride;
+        if (outline) return ThemedColor.caption;
+        if (ghost || dottedOutline || lightened || secondary) return ThemedColor.primary;
+        return ThemedColor.buttonText;
+    };
 
     return (
         <TouchableOpacity
@@ -24,15 +41,11 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
             style={[
                 {
                     width: "100%",
-                    backgroundColor: ghost || dottedOutline
-                        ? "transparent"
-                        : outline
-                          ? ThemedColor.lightened + "20"
-                          : ThemedColor.primary,
+                    backgroundColor: getBackgroundColor(),
                     borderRadius: 12,
                     paddingVertical: 16,
                     borderWidth: outline || dottedOutline ? 1 : 0,
-                    borderColor: outline || dottedOutline ? ThemedColor.primary : "transparent",
+                    borderColor: outline || dottedOutline ? ThemedColor.caption : "transparent",
                     borderStyle: dottedOutline ? "dashed" : "solid",
                     opacity: disabled ? 0.5 : 1,
                 },
@@ -41,7 +54,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
             {children}
             <Text
                 style={{
-                    color: colorOverride ? colorOverride : ghost || outline || dottedOutline ? ThemedColor.primary : ThemedColor.buttonText,
+                    color: getTextColor(),
                     textAlign: "center",
                     fontFamily: "Outfit",
                     fontWeight: 500,

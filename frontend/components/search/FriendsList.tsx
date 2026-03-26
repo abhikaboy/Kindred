@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getFriendsAPI } from "@/api/connection";
 import { Sparkle, Fire, Camera } from "phosphor-react-native";
 import EncourageModal from "@/components/modals/EncourageModal";
-import { useAuth } from "@/hooks/useAuth";
+import { useUserKudos } from "@/hooks/useUserKudos";
 import * as Haptics from "expo-haptics";
 
 interface FriendData {
@@ -103,17 +103,16 @@ const FriendRow = React.memo(({ friend, onEncourage }: FriendRowProps) => {
 export default function FriendsList() {
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => createStyles(ThemedColor), [ThemedColor]);
-    const { user } = useAuth();
+    const { encouragementsLeft } = useUserKudos();
     const [encourageTarget, setEncourageTarget] = useState<FriendData | null>(null);
     const [showEncourageModal, setShowEncourageModal] = useState(false);
 
-    const { data: friends = [], isLoading } = useQuery<FriendData[]>({
+    const { data, isLoading } = useQuery<FriendData[]>({
         queryKey: ["friends"],
         queryFn: getFriendsAPI,
         staleTime: 1000 * 60 * 2,
     });
-
-    const encouragementsLeft = user?.encouragements || 0;
+    const friends = data ?? [];
 
     const handleEncourage = useCallback((friend: FriendData) => {
         setEncourageTarget(friend);

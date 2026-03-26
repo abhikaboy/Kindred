@@ -27,6 +27,7 @@ import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
 
@@ -194,6 +195,7 @@ const WorkspaceContent = ({
     const { start } = useSpotlightTour();
     const pathname = usePathname();
     const hasTriggeredRef = useRef(false);
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
     const { getWorkspace } = useTasks();
     const currentWorkspace = selected ? getWorkspace(selected) : undefined;
@@ -210,6 +212,7 @@ const WorkspaceContent = ({
 
     useEffect(() => {
         hasTriggeredRef.current = false;
+        setIsCreatingCategory(false);
     }, [selected]);
 
     useEffect(() => {
@@ -421,11 +424,21 @@ const WorkspaceContent = ({
                             triggerDep={selected}
                             style={{ height: "100%", marginTop: 8 }}>
                             <View style={{ flex: 1, alignItems: "flex-start", gap: 16, marginTop: 8 }}>
-                                <ThemedText type="lightBody">This workspace is empty!</ThemedText>
-                                <PrimaryButton
-                                    title="+ Add Category"
-                                    onPress={() => openModal()}
-                                />
+                                {isCreatingCategory ? (
+                                    <InlineCategoryCreator
+                                        onCreated={() => setIsCreatingCategory(false)}
+                                        onCancel={() => setIsCreatingCategory(false)}
+                                    />
+                                ) : (
+                                    <>
+                                        <ThemedText type="lightBody">This workspace is empty!</ThemedText>
+                                        <PrimaryButton
+                                            title="+ Add Category"
+                                            lightened
+                                            onPress={() => setIsCreatingCategory(true)}
+                                        />
+                                    </>
+                                )}
                             </View>
                         </ConditionalView>
 
@@ -463,10 +476,20 @@ const WorkspaceContent = ({
                                             />
                                         );
                                     })}
-                                <PrimaryButton
-                                    title="+ Add Category"
-                                    onPress={() => openModal()}
-                                />
+                                {isCreatingCategory ? (
+                                    <InlineCategoryCreator
+                                        onCreated={() => setIsCreatingCategory(false)}
+                                        onCancel={() => setIsCreatingCategory(false)}
+                                    />
+                                ) : (
+                                    <PrimaryButton
+                                        title="+ Add Category"
+                                        lightened
+                                        onPress={() => setIsCreatingCategory(true)}
+                                        style={{ alignSelf: "flex-start", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 }}
+                                        textStyle={{ fontSize: 13 }}
+                                    />
+                                )}
                             </View>
                         </ConditionalView>
                     </View>

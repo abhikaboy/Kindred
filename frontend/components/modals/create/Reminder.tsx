@@ -246,7 +246,7 @@ const Reminder = ({ goToStandard, onSubmit }: Props) => {
     // State for type options and dropdown options
     const [typeOptions, setTypeOptions] = useState<string[]>([]);
     const [dropdownOptions, setDropdownOptions] = useState<{ label: string; id: string }[]>([]);
-    
+
     // Max values for each unit
     const unitMax: Record<string, number> = useMemo(() => ({
         minutes: 59,
@@ -257,15 +257,15 @@ const Reminder = ({ goToStandard, onSubmit }: Props) => {
     // Update type options based on available times
     useEffect(() => {
         const options: string[] = [];
-        
+
         if (startTime || startDate) {
             options.push("Before start time", "After start time");
         }
-        
+
         if (deadline) {
             options.push("Before deadline", "After deadline");
         }
-        
+
         setTypeOptions(options);
     }, [startTime, startDate, deadline]);
 
@@ -327,11 +327,11 @@ const Reminder = ({ goToStandard, onSubmit }: Props) => {
                             title="Relative"
                             onPress={() => setReminderType("relative")}
                             style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
-                            outline={reminderType !== "relative"}
+                            secondary={reminderType !== "relative"}
                         />
                         <PrimaryButton
                             title="Absolute"
-                            outline={reminderType !== "absolute"}
+                            secondary={reminderType !== "absolute"}
                             onPress={() => setReminderType("absolute")}
                             style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
                         />

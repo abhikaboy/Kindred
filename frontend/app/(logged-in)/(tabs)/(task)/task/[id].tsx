@@ -736,7 +736,7 @@ export default function Task() {
                                 <View key="mark-complete" style={{ marginTop: 0 }}>
                                     <PrimaryButton
                                         title={isCompleting ? "Completing..." : "Mark as Completed"}
-                                        outline
+                                        secondary
                                         style={{
                                             boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
                                         }}
@@ -756,7 +756,7 @@ export default function Task() {
                                 <ConditionalView condition={task?.deadline != null} key="track-deadline">
                                     <PrimaryButton
                                         title={deadlineLiveActivity ? "Stop Tracking Deadline" : "Track Deadline"}
-                                        outline={!deadlineLiveActivity}
+                                        secondary={!deadlineLiveActivity}
                                         style={{
                                             boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
                                         }}

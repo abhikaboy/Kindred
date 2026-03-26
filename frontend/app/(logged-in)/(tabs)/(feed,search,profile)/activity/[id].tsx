@@ -211,11 +211,10 @@ const Activity = () => {
                     <View style={styles.breakdownButtonContainer}>
                         <PrimaryButton
                             title={templates.length === 0 ? "No recurring tasks yet" : "Break Down by Recurring Tasks"}
-                            outline
+                            secondary
                             onPress={() => setBreakdownModalVisible(true)}
                             style={styles.breakdownButton}
                             disabled={templates.length === 0}
-                            colorOverride={ThemedColor.text}
                         />
                         {templates.length === 0 && (
                             <ThemedText type="caption" style={{ textAlign: "center", marginTop: 8, color: ThemedColor.caption }}>
