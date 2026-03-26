@@ -34,7 +34,6 @@ import { ContactsFromPhone } from "@/components/search/ContactsFromPhone";
 import { SuggestedUsers } from "@/components/search/SuggestedUsers";
 import * as Contacts from "expo-contacts";
 import BetterTogetherCard from "@/components/cards/BetterTogetherCard";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -681,13 +680,15 @@ const Search = (props: Props) => {
 
                 {focused && (
                     <Pressable
-                        style={[StyleSheet.absoluteFillObject, { zIndex: 5 }]}
+                        style={[
+                            StyleSheet.absoluteFillObject,
+                            { zIndex: 5, backgroundColor: ThemedColor.background, opacity: 0.95 },
+                        ]}
                         onPress={() => {
                             Keyboard.dismiss();
                             setFocused(false);
-                        }}>
-                        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFillObject} />
-                    </Pressable>
+                        }}
+                    />
                 )}
             </ThemedView>
             <CustomAlert

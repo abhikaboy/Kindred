@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Image,
     Animated,
+    Easing,
 } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
@@ -67,11 +68,14 @@ export function SearchBox({
     const [showResults, setShowResults] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [containerHeight, setContainerHeight] = useState(0);
 
     const resultsOpacity = useRef(new Animated.Value(0)).current;
     const iconTransition = useRef(new Animated.Value(0)).current;
+    const focusProgress = useRef(new Animated.Value(0)).current;
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isMountedRef = useRef(true);
+    const focusTimestampRef = useRef(0);
 
     const shouldShowAutocomplete = showAutocomplete && autocompleteSuggestions.length > 0 && isFocused;
     const shouldShowRecents = recent && recentItems.length > 0 && !shouldShowAutocomplete && isFocused;
@@ -140,6 +144,12 @@ export function SearchBox({
                 duration: 200,
                 useNativeDriver: true,
             }),
+            Animated.timing(focusProgress, {
+                toValue: 0,
+                duration: 220,
+                easing: Easing.inOut(Easing.cubic),
+                useNativeDriver: false,
+            }),
         ]).start(() => {
             if (isMountedRef.current) {
                 setShowResults(false);
@@ -149,7 +159,7 @@ export function SearchBox({
                 if (setFocused) setFocused(false);
             }
         });
-    }, [resultsOpacity, iconTransition, setFocused]);
+    }, [resultsOpacity, iconTransition, focusProgress, setFocused]);
 
     const deleteRecentItem = useCallback(
         async (id: string) => {
@@ -190,28 +200,39 @@ export function SearchBox({
             blurTimeoutRef.current = null;
         }
 
+        focusTimestampRef.current = Date.now();
+        focusProgress.setValue(-1);
         setIsFocused(true);
         if (setFocused) setFocused(true);
+
+        Animated.timing(focusProgress, {
+            toValue: 1,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+        }).start();
 
         if (recent && !showAutocomplete) {
             fetchRecents();
         }
-    }, [recent, showAutocomplete, fetchRecents, setFocused]);
+    }, [recent, showAutocomplete, fetchRecents, setFocused, focusProgress]);
 
     const handleBlur = useCallback(() => {
+        if (Date.now() - focusTimestampRef.current < 300) {
+            setTimeout(() => inputRef.current?.focus(), 0);
+            return;
+        }
+
         if (blurTimeoutRef.current) {
             clearTimeout(blurTimeoutRef.current);
         }
 
         blurTimeoutRef.current = setTimeout(() => {
-            if (isMountedRef.current) {
-                setIsFocused(false);
-                if (showResults && !isAnimating) {
-                    clearRecents();
-                }
+            if (isMountedRef.current && !isAnimating) {
+                clearRecents();
             }
         }, 250);
-    }, [showResults, isAnimating, clearRecents]);
+    }, [isAnimating, clearRecents]);
 
     const handleItemPress = useCallback(
         async (item: RecentSearchItem | AutocompleteSuggestion) => {
@@ -279,10 +300,45 @@ export function SearchBox({
 
     const styles = useStyles(ThemedColor);
     const showClearButton = showResults || value.length > 0;
+    const showResultsPanel = showResults || isLoading;
+
+    const animatedMargin = focusProgress.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [0, 0, -16],
+        extrapolate: "clamp",
+    });
+    const animatedOpacity = focusProgress.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [0.5, 1, 1],
+        extrapolate: "clamp",
+    });
+    const animatedTranslateX = focusProgress.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [-30, 0, 0],
+        extrapolate: "clamp",
+    });
 
     return (
-        <View>
-            <View style={styles.container}>
+        <Animated.View
+            style={{
+                marginHorizontal: animatedMargin,
+                opacity: animatedOpacity,
+                transform: [{ translateX: animatedTranslateX }],
+                overflow: "visible" as const,
+                zIndex: isFocused ? 10 : undefined,
+            }}
+        >
+            <View
+                style={[
+                    styles.container,
+                    isFocused && { borderRadius: 16 },
+                    isFocused && showResultsPanel && styles.containerFocusedWithResults,
+                ]}
+                onLayout={(e) => {
+                    const h = e.nativeEvent.layout.height;
+                    if (h !== containerHeight) setContainerHeight(h);
+                }}
+            >
                 <TextInput
                     id="search-input"
                     placeholder={placeholder}
@@ -313,14 +369,12 @@ export function SearchBox({
                 </TouchableOpacity>
             </View>
 
-            {(showResults || isLoading) && (
+            {showResultsPanel && (
                 <Animated.View
                     style={[
-                        styles.recentsContainer,
-                        {
-                            top: inputHeight,
-                            opacity: resultsOpacity,
-                        },
+                        isFocused ? styles.recentsContainerAttached : styles.recentsContainer,
+                        isFocused ? { top: containerHeight } : { top: inputHeight },
+                        { opacity: resultsOpacity },
                     ]}
                     pointerEvents={showResults ? "auto" : "none"}>
                     {shouldShowAutocomplete ? (
@@ -362,7 +416,7 @@ export function SearchBox({
                     ) : null}
                 </Animated.View>
             )}
-        </View>
+        </Animated.View>
     );
 }
 
@@ -455,12 +509,32 @@ const useStyles = (ThemedColor: any) =>
             paddingVertical: 8,
             marginTop: -50,
             paddingLeft: 16,
-            backgroundColor: ThemedColor.lightened,
+            backgroundColor: ThemedColor.background,
             zIndex: 10,
             borderRadius: 24,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
             boxShadow: ThemedColor.shadowSmall,
+        },
+        recentsContainerAttached: {
+            flexDirection: "column" as const,
+            alignItems: "flex-start" as const,
+            position: "absolute" as const,
+            width: "100%",
+            paddingVertical: 4,
+            paddingHorizontal: 8,
+            backgroundColor: ThemedColor.background,
+            zIndex: 10,
+            borderWidth: 1,
+            borderTopWidth: 0,
+            borderColor: ThemedColor.tertiary,
+            borderBottomLeftRadius: 16,
+            borderBottomRightRadius: 16,
+        },
+        containerFocusedWithResults: {
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
+            borderBottomWidth: 0,
         },
         recent: {
             width: "100%",
