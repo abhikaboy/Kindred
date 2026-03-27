@@ -186,6 +186,41 @@ const SwipableTaskCard = ({
         />
     );
 
+    if (task.isPhantom) {
+        const phantomCard = (
+            <TaskCard
+                content={task.content}
+                value={task.value}
+                priority={task.priority as 1 | 2 | 3}
+                id={task.id}
+                categoryId={categoryId}
+                task={task}
+                redirect={false}
+                highlightContent={false}
+            />
+        );
+        return (
+            <>
+                {highlightContent ? (
+                    <AttachStep index={1} style={{ width: "100%", flex: 1 }}>
+                        {phantomCard}
+                    </AttachStep>
+                ) : (
+                    phantomCard
+                )}
+                {alertVisible && (
+                    <CustomAlert
+                        visible={alertVisible}
+                        setVisible={setAlertVisible}
+                        title={alertTitle}
+                        message={alertMessage}
+                        buttons={alertButtons}
+                    />
+                )}
+            </>
+        );
+    }
+
     return (
         <>
             <ReanimatedSwipeable
@@ -350,7 +385,9 @@ export default React.memo(SwipableTaskCard, (prevProps, nextProps) => {
         prevProps.task.deadline === nextProps.task.deadline &&
         prevProps.task.startDate === nextProps.task.startDate &&
         prevProps.task.active === nextProps.task.active &&
-        prevProps.highlightContent === nextProps.highlightContent
+        prevProps.highlightContent === nextProps.highlightContent &&
+        prevProps.task.isPhantom === nextProps.task.isPhantom &&
+        prevProps.task.nextGenerated === nextProps.task.nextGenerated
     );
 });
 

@@ -32,6 +32,7 @@ import * as PhosphorIcons from "phosphor-react-native";
 import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
+import { UpcomingCategory } from "@/components/UpcomingCategory";
 
 interface WorkspaceContentProps {
     workspaceName?: string; // Optional: if not provided, uses global selected
@@ -207,8 +208,9 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         }
     }, [workspaceSpotlightShown, menuSpotlightShown, selected, start, spotlightLoading]);
 
+    const upcomingCategory = categories.find((c) => c.id.startsWith("upcoming-"));
     const visibleCategories = categories
-        .filter((category) => category.name !== "!-proxy-!")
+        .filter((category) => category.name !== "!-proxy-!" && !category.id.startsWith("upcoming-"))
         .sort((a, b) => b.tasks.length - a.tasks.length);
     const firstCategory = visibleCategories[0];
     const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
@@ -498,6 +500,12 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                 />
                                             );
                                         })}
+                                    {upcomingCategory && upcomingCategory.tasks.length > 0 && (
+                                        <UpcomingCategory
+                                            tasks={upcomingCategory.tasks}
+                                            categoryId={upcomingCategory.id}
+                                        />
+                                    )}
                                     {!isCreatingCategory && (
                                         <TouchableOpacity
                                             onPress={startCreatingCategory}

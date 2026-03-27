@@ -192,9 +192,10 @@ const useStyles = (ThemedColor: any) =>
         searchResultsContainer: {
             paddingHorizontal: 16,
             marginBottom: 112,
+            gap: 4,
         },
         searchResultItem: {
-            marginBottom: 6,
+            marginBottom: 14,
             backgroundColor: ThemedColor.background,
             borderRadius: 16,
         },

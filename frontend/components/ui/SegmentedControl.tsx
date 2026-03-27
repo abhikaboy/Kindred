@@ -32,12 +32,12 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
 
     const handlePress = (option: string) => {
         const index = options.indexOf(option);
-        
+
         // Start animation immediately with optimized config
         translateX.value = withTiming(index * segmentWidth, {
             duration: 200,
         });
-        
+
         // Call the handler immediately - the animation will continue independently
         onOptionPress(option);
     };
@@ -56,9 +56,9 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
     const isSmall = size === 'small';
 
     return (
-        <View 
+        <View
             style={[
-                styles.container, 
+                styles.container,
                 { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary, borderWidth: 1 },
                 isSmall && styles.containerSmall
             ]}
@@ -101,7 +101,7 @@ const stylesheet = (ThemedColor: any) => StyleSheet.create({
         position: "relative",
         overflow: "hidden",
         marginTop: 12,
-        paddingVertical: 16,
+        paddingVertical: 14,
         width: "100%",
     },
     containerSmall: {
@@ -115,7 +115,7 @@ const stylesheet = (ThemedColor: any) => StyleSheet.create({
         borderRadius: 20,
         marginHorizontal: 0,
         borderWidth: 2,
-        borderColor: ThemedColor.background, 
+        borderColor: ThemedColor.background,
     },
     option: {
         justifyContent: "center",

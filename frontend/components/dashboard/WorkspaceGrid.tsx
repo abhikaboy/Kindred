@@ -11,6 +11,7 @@ import { CaretRight, CaretDown, ArrowRight } from "phosphor-react-native";
 import { useTasks } from "@/contexts/tasksContext";
 import { MotiView, AnimatePresence } from "moti";
 import { useRouter } from "expo-router";
+import { parseISO, isToday, isTomorrow, differenceInDays, format } from "date-fns";
 
 interface Workspace {
     name: string;
@@ -96,6 +97,14 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                             const isExpanded = expandedWorkspaces.has(workspace.name);
                             const validCategories = categories?.filter((cat: any) => cat.name !== "!-proxy-!") || [];
 
+                            const pendingTaskCount = categories
+                                ? categories.reduce(
+                                      (sum: number, cat: any) =>
+                                          sum + (cat.tasks?.filter((t: any) => t.active !== false).length ?? 0),
+                                      0
+                                  )
+                                : 0;
+
                             return (
                                 <Skeleton
                                     key={workspace.name}
@@ -107,6 +116,7 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                                             onToggle={() => toggleWorkspace(workspace.name)}
                                             onPress={() => onWorkspacePress(workspace.name)}
                                             ThemedColor={ThemedColor}
+                                            pendingTaskCount={pendingTaskCount}
                                         />
 
                                         <AnimatePresence>
@@ -133,7 +143,8 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                                                         validCategories.length > 0 ? (
                                                             validCategories.map((category: any) => {
                                                                 const hasTasks =
-                                                                    category.tasks && category.tasks.length > 0;
+                                                                    category.tasks &&
+                                                                    category.tasks.length > 0;
                                                                 const isCategoryExpanded = expandedCategories.has(
                                                                     category.id
                                                                 );
@@ -199,8 +210,14 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                                                                                                 (task: any) => (
                                                                                                     <TouchableOpacity
                                                                                                         key={task.id}
-                                                                                                        style={
-                                                                                                            styles.taskItem
+                                                                                                        style={[
+                                                                                                            styles.taskItem,
+                                                                                                            task.isPhantom && {
+                                                                                                                opacity: 0.45,
+                                                                                                            },
+                                                                                                        ]}
+                                                                                                        disabled={
+                                                                                                            task.isPhantom
                                                                                                         }
                                                                                                         onPress={() =>
                                                                                                             handleTaskPress(
@@ -227,6 +244,25 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                                                                                                             }>
                                                                                                             {task.content ||
                                                                                                                 "Untitled task"}
+                                                                                                            {task.isPhantom &&
+                                                                                                                task.nextGenerated &&
+                                                                                                                (() => {
+                                                                                                                    const d = parseISO(task.nextGenerated);
+                                                                                                                    const label = isToday(d)
+                                                                                                                        ? "today"
+                                                                                                                        : isTomorrow(d)
+                                                                                                                          ? "tomorrow"
+                                                                                                                          : differenceInDays(d, new Date()) <= 6
+                                                                                                                            ? format(d, "EEEE")
+                                                                                                                            : format(d, "MMM d");
+                                                                                                                    return (
+                                                                                                                        <ThemedText
+                                                                                                                            type="caption"
+                                                                                                                            style={{ opacity: 0.7 }}>
+                                                                                                                            {" · " + label}
+                                                                                                                        </ThemedText>
+                                                                                                                    );
+                                                                                                                })()}
                                                                                                         </ThemedText>
                                                                                                     </TouchableOpacity>
                                                                                                 )
@@ -283,9 +319,10 @@ interface WorkspaceCardProps {
     onToggle: () => void;
     onPress: () => void;
     ThemedColor: any;
+    pendingTaskCount?: number;
 }
 
-const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, onToggle, onPress, ThemedColor }) => {
+const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, onToggle, onPress, ThemedColor, pendingTaskCount }) => {
     const colorAccent = workspace.color ?? null;
     const IconComponent: PhosphorComponent | null = workspace.icon
         ? ((PhosphorIcons as any)[workspace.icon] as PhosphorComponent) ?? null
@@ -313,6 +350,12 @@ const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, on
                     <ThemedText type="larger_default">{workspace.name}</ThemedText>
                 </View>
             </TouchableOpacity>
+
+            {pendingTaskCount != null && pendingTaskCount > 0 && (
+                <ThemedText type="caption" style={{ marginLeft: "auto", opacity: 0.6 }}>
+                    {pendingTaskCount}
+                </ThemedText>
+            )}
         </View>
     );
 };

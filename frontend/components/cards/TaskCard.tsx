@@ -11,7 +11,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays } from "date-fns";
+import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays, format, isThisWeek } from "date-fns";
 import { AttachStep } from "react-native-spotlight-tour";
 import { Sparkle, Timer, Repeat } from "phosphor-react-native";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
@@ -105,7 +105,24 @@ const TaskCard = ({
 
     // Calculate date display text and color
     const dateDisplay = useMemo(() => {
-        // If detailed is false, don't show any date labels
+        if (task?.isPhantom && task?.nextGenerated) {
+            const nextDate = parseISO(task.nextGenerated);
+            let label: string;
+            if (isToday(nextDate)) {
+                label = "today";
+            } else if (isTomorrow(nextDate)) {
+                label = "tomorrow";
+            } else {
+                const days = differenceInDays(nextDate, new Date());
+                if (days <= 6) {
+                    label = format(nextDate, "EEEE"); // "Monday", "Tuesday", etc.
+                } else {
+                    label = format(nextDate, "MMM d"); // "Apr 2", "Mar 30"
+                }
+            }
+            return { text: label, color: "caption" as const };
+        }
+
         if (!detailed) return null;
 
         const now = new Date();
@@ -208,7 +225,7 @@ const TaskCard = ({
         }
 
         return null;
-    }, [task?.deadline, task?.startDate, task?.startTime, detailed]);
+    }, [task?.deadline, task?.startDate, task?.startTime, task?.isPhantom, task?.nextGenerated, detailed]);
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
@@ -224,6 +241,7 @@ const TaskCard = ({
     };
 
     const handlePress = () => {
+        if (task?.isPhantom) return;
         if (encourage) {
             if (!encouragementConfig?.receiverId || encouragementConfig.receiverId.trim() === "") {
                 console.error("Cannot show encourage modal: missing receiverId");
@@ -257,6 +275,7 @@ const TaskCard = ({
     };
 
     const handleLongPress = () => {
+        if (task?.isPhantom) return;
         if (redirect) setEditing(true);
     };
 
@@ -269,13 +288,15 @@ const TaskCard = ({
                         backgroundColor: ThemedColor.lightenedCard,
                         borderWidth: 1,
                         borderColor: ThemedColor.tertiary,
-                        // borderRightColor: ThemedColor.primary,
-                        // borderRightWidth: 2,
-                        // borderTopRightRadius: 4,
-                        // borderBottomRightRadius: 4,
+                        ...(task?.isPhantom
+                            ? { opacity: 0.45, borderStyle: "dashed" as const }
+                            : null),
                     },
                 ]}
-                disabled={!redirect && !encourage && !congratulate}
+                disabled={
+                    Boolean(task?.isPhantom) ||
+                    (!redirect && !encourage && !congratulate)
+                }
                 onPress={handlePress}
                 onLongPress={handleLongPress}>
                 {editing && <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />}
@@ -407,7 +428,9 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
         prevProps.task?.startTime === nextProps.task?.startTime &&
         prevProps.task?.active === nextProps.task?.active &&
         prevProps.task?.recurring === nextProps.task?.recurring &&
-        prevProps.task?.integration === nextProps.task?.integration
+        prevProps.task?.integration === nextProps.task?.integration &&
+        prevProps.task?.isPhantom === nextProps.task?.isPhantom &&
+        prevProps.task?.nextGenerated === nextProps.task?.nextGenerated
     );
 });
 

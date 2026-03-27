@@ -236,11 +236,11 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
             gap: 16,
         },
         emptyContainer: {
-            flex: 1,
+            ...StyleSheet.absoluteFillObject,
             justifyContent: "center",
             alignItems: "center",
-            paddingTop: 100,
             gap: 8,
+            marginBottom: 120,
         },
         emptyText: {
             color: ThemedColor.text,
@@ -249,6 +249,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         emptySubtext: {
             color: ThemedColor.caption,
             textAlign: "center",
+            width: "65%",
         },
         progressCardWrapper: {
             marginBottom: 8,

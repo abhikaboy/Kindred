@@ -2,6 +2,8 @@ import { useAuth } from "@/hooks/useAuth";
 import React, { useEffect, useMemo, useCallback, startTransition } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
+import { getUserTemplatesAPI } from "@/api/task";
+import { computePhantomTasks } from "@/utils/phantomTasks";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI, updateWorkspaceMeta } from "@/api/category";
 import { isFuture, isPast, isToday } from "date-fns";
@@ -65,7 +67,8 @@ type TaskContextType = {
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [workspaces, setWorkSpaces] = useState<Workspace[]>([]);
+    const [rawWorkspaces, setRawWorkspaces] = useState<Workspace[]>([]);
+    const [templates, setTemplates] = useState<any[]>([]);
     const [selected, setSelected] = useState<string>("");
     const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
     const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
@@ -78,12 +81,32 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const WORKSPACES_CACHE_KEY = `workspaces_cache_${user?._id || 'default'}`;
     const CACHE_DURATION = 5 * 60 * 1000;
 
+    const workspaces = useMemo(() => {
+        if (templates.length === 0) return rawWorkspaces;
+        const phantomMap = computePhantomTasks(templates, rawWorkspaces);
+        if (phantomMap.size === 0) return rawWorkspaces;
+        return rawWorkspaces.map(ws => {
+            const upcomingTasks: Task[] = [];
+            for (const cat of ws.categories) {
+                const phantoms = phantomMap.get(cat.id);
+                if (phantoms) upcomingTasks.push(...phantoms);
+            }
+            if (upcomingTasks.length === 0) return ws;
+            const upcomingCategory: Categories = {
+                id: `upcoming-${ws.name}`,
+                name: "Upcoming",
+                tasks: upcomingTasks,
+            };
+            return { ...ws, categories: [...ws.categories, upcomingCategory] };
+        });
+    }, [rawWorkspaces, templates]);
+
     const unnestedTasks = useMemo(() => {
         const res: Task[] = [];
         for (const workspace of workspaces) {
             for (const category of workspace.categories) {
                 for (const task of category.tasks) {
-                    if (task.active === false) continue;
+                    if (task.active === false || task.isPhantom) continue;
                     res.push({
                         ...task,
                         categoryID: category.id,
@@ -155,10 +178,20 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             try {
                 const cached = await AsyncStorage.getItem(WORKSPACES_CACHE_KEY);
                 if (cached) {
-                    const { data: cachedData, timestamp } = JSON.parse(cached);
+                    const parsed = JSON.parse(cached) as {
+                        data: Workspace[];
+                        timestamp: number;
+                        templates?: any[];
+                    };
+                    const { data: cachedData, timestamp, templates: cachedTemplates } = parsed;
                     const now = Date.now();
                     if ((now - timestamp) < CACHE_DURATION) {
-                        startTransition(() => setWorkSpaces(cachedData));
+                        startTransition(() => {
+                            setRawWorkspaces(cachedData);
+                            if (Array.isArray(cachedTemplates)) {
+                                setTemplates(cachedTemplates);
+                            }
+                        });
                         return;
                     }
                 }
@@ -169,7 +202,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
         setFetchingWorkspaces(true);
         try {
-            const data = await fetchUserWorkspaces(user._id);
+            const [data, userTemplates] = await Promise.all([
+                fetchUserWorkspaces(user._id),
+                getUserTemplatesAPI().catch(err => {
+                    logger.error("Failed to fetch templates", err);
+                    return [];
+                }),
+            ]);
             const subscribedBlueprints = await getUserSubscribedBlueprints();
             const blueprintWorkspaces: BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => ({
                 name: blueprint.name,
@@ -179,12 +218,17 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             }));
 
             const allWorkspaces = [...data, ...blueprintWorkspaces];
-            startTransition(() => setWorkSpaces(allWorkspaces));
+            console.log("[tasksContext] fetched templates:", userTemplates.length, "sample:", JSON.stringify(userTemplates[0], null, 2));
+            startTransition(() => {
+                setRawWorkspaces(allWorkspaces);
+                setTemplates(userTemplates);
+            });
 
             try {
                 await AsyncStorage.setItem(WORKSPACES_CACHE_KEY, JSON.stringify({
                     data: allWorkspaces,
                     timestamp: Date.now(),
+                    templates: userTemplates,
                 }));
             } catch (error) {
                 logger.error("Error caching workspaces", error);
@@ -205,12 +249,12 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             icon: icon ?? null,
             color: color ?? null,
         };
-        setWorkSpaces(prev => [...prev, newWorkspace]);
+        setRawWorkspaces(prev => [...prev, newWorkspace]);
         await invalidateWorkspacesCache();
     }, [invalidateWorkspacesCache]);
 
     const addToCategory = useCallback((categoryId: string, task: Task) => {
-        setWorkSpaces(prev => prev.map(workspace => ({
+        setRawWorkspaces(prev => prev.map(workspace => ({
             ...workspace,
             categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
@@ -226,7 +270,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [invalidateWorkspacesCache]);
 
     const updateTask = useCallback((categoryId: string, taskId: string, updates: Partial<Task>) => {
-        setWorkSpaces(prev => prev.map(workspace => ({
+        setRawWorkspaces(prev => prev.map(workspace => ({
             ...workspace,
             categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
@@ -252,7 +296,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [invalidateWorkspacesCache]);
 
     const addToWorkspace = useCallback((name: string, category: Categories) => {
-        setWorkSpaces(prev => prev.map(workspace => {
+        setRawWorkspaces(prev => prev.map(workspace => {
             if (workspace.name === name) {
                 return { ...workspace, categories: [...workspace.categories, category] };
             }
@@ -262,7 +306,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [invalidateWorkspacesCache]);
 
     const removeFromCategory = useCallback(async (categoryId: string, taskId: string) => {
-        setWorkSpaces(prev => prev.map(workspace => ({
+        setRawWorkspaces(prev => prev.map(workspace => ({
             ...workspace,
             categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
@@ -275,7 +319,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [invalidateWorkspacesCache]);
 
     const removeFromWorkspace = useCallback(async (name: string, categoryId: string) => {
-        setWorkSpaces(prev => prev.map(workspace => {
+        setRawWorkspaces(prev => prev.map(workspace => {
             if (workspace.name === name) {
                 return { ...workspace, categories: workspace.categories.filter(c => c.id !== categoryId) };
             }
@@ -285,7 +329,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [invalidateWorkspacesCache]);
 
     const removeWorkspace = useCallback((name: string) => {
-        setWorkSpaces(prev => {
+        setRawWorkspaces(prev => {
             const filtered = prev.filter(workspace => workspace.name !== name);
             if (selected === name) {
                 setSelected(filtered.length > 0 ? filtered[0].name : "");
@@ -296,7 +340,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [selected, invalidateWorkspacesCache]);
 
     const restoreWorkspace = useCallback(async (workspace: Workspace) => {
-        setWorkSpaces(prev => [...prev, workspace]);
+        setRawWorkspaces(prev => [...prev, workspace]);
         await invalidateWorkspacesCache();
         if (selected === "") {
             setSelected(workspace.name);
@@ -309,7 +353,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const updateWorkspaceIconColor = useCallback(async (name: string, icon?: string | null, color?: string | null) => {
         await updateWorkspaceMeta(name, icon, color);
-        setWorkSpaces(prev => prev.map(w => {
+        setRawWorkspaces(prev => prev.map(w => {
             if (w.name === name) {
                 return {
                     ...w,
@@ -323,7 +367,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [invalidateWorkspacesCache]);
 
     const renameWorkspace = useCallback(async (oldName: string, newName: string) => {
-        setWorkSpaces(prev => prev.map(w =>
+        setRawWorkspaces(prev => prev.map(w =>
             w.name === oldName ? { ...w, name: newName } : w
         ));
         if (selected === oldName) {
@@ -336,7 +380,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             await fetchWorkspaces();
         } catch (error) {
             logger.error("Error renaming workspace", error);
-            setWorkSpaces(prev => prev.map(w =>
+            setRawWorkspaces(prev => prev.map(w =>
                 w.name === newName ? { ...w, name: oldName } : w
             ));
             if (selected === newName) {
@@ -350,7 +394,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const renameCategory = useCallback(async (categoryId: string, newName: string) => {
         let originalName: string | null = null;
 
-        setWorkSpaces(prev => prev.map(workspace => ({
+        setRawWorkspaces(prev => prev.map(workspace => ({
             ...workspace,
             categories: workspace.categories.map(category => {
                 if (category.id === categoryId) {
@@ -369,7 +413,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             logger.error("Error renaming category", error);
             if (originalName !== null) {
                 const rollbackName = originalName;
-                setWorkSpaces(prev => prev.map(workspace => ({
+                setRawWorkspaces(prev => prev.map(workspace => ({
                     ...workspace,
                     categories: workspace.categories.map(category => {
                         if (category.id === categoryId) {
@@ -490,7 +534,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const handle = InteractionManager.runAfterInteractions(() => {
             const firstWorkspace = workspaces.find(w => !w.isBlueprint) || workspaces[0];
             if (!firstWorkspace) return;
-            const allTasks = firstWorkspace.categories.flatMap(c => c.tasks.filter(t => t.active !== false));
+            const allTasks = firstWorkspace.categories.flatMap(c => c.tasks.filter(t => t.active !== false && !t.isPhantom));
             const pendingCount = allTasks.length;
             const topTasks = allTasks.slice(0, 3).map(t => t.content);
 
@@ -507,7 +551,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const value = useMemo<TaskContextType>(() => ({
         workspaces,
-        setWorkSpaces,
+        setWorkSpaces: setRawWorkspaces,
         getWorkspace,
         fetchWorkspaces,
         selected,

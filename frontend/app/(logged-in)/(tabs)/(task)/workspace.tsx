@@ -28,6 +28,7 @@ import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
+import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
 
@@ -447,41 +448,51 @@ const WorkspaceContent = ({
                             animated={true}
                             triggerDep={selected}>
                             <View style={styles.categoriesContainer} key="category-container">
-                                {[...categories]
-                                    .sort((a, b) => b.tasks.length - a.tasks.length)
-                                    .filter((category) => category.name !== "!-proxy-!")
-                                    .map((category, index) => {
-                                        // Highlight first category header (step 2) and first task (step 1)
-                                        const isFirstCategory = index === 0 && category.tasks.length > 0;
-
-                                        // Apply filters to category tasks
-                                        const filteredTasks = applyFilters(category.tasks);
-
-                                        return (
-                                            <Category
-                                                key={category.id + category.name}
-                                                id={category.id}
-                                                name={category.name}
-                                                tasks={filteredTasks}
-                                                onLongPress={(categoryId) => {
-                                                    setEditing(true);
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                                onPress={(categoryId) => {
-                                                    openModal();
-                                                    setFocusedCategory(categoryId);
-                                                }}
-                                                highlightFirstTask={isFirstCategory}
-                                                highlightCategoryHeader={isFirstCategory}
-                                            />
-                                        );
-                                    })}
-                                {isCreatingCategory ? (
+                                {isCreatingCategory && (
                                     <InlineCategoryCreator
                                         onCreated={() => setIsCreatingCategory(false)}
                                         onCancel={() => setIsCreatingCategory(false)}
                                     />
-                                ) : (
+                                )}
+                                {(() => {
+                                    const upcomingCat = categories.find((c) => c.id.startsWith("upcoming-"));
+                                    const visible = [...categories]
+                                        .filter((c) => c.name !== "!-proxy-!" && !c.id.startsWith("upcoming-"))
+                                        .sort((a, b) => b.tasks.length - a.tasks.length);
+                                    return (
+                                        <>
+                                            {visible.map((category, index) => {
+                                                const isFirstCategory = index === 0 && category.tasks.length > 0;
+                                                const filteredTasks = applyFilters(category.tasks);
+                                                return (
+                                                    <Category
+                                                        key={category.id + category.name}
+                                                        id={category.id}
+                                                        name={category.name}
+                                                        tasks={filteredTasks}
+                                                        onLongPress={(categoryId) => {
+                                                            setEditing(true);
+                                                            setFocusedCategory(categoryId);
+                                                        }}
+                                                        onPress={(categoryId) => {
+                                                            openModal();
+                                                            setFocusedCategory(categoryId);
+                                                        }}
+                                                        highlightFirstTask={isFirstCategory}
+                                                        highlightCategoryHeader={isFirstCategory}
+                                                    />
+                                                );
+                                            })}
+                                            {upcomingCat && upcomingCat.tasks.length > 0 && (
+                                                <UpcomingCategory
+                                                    tasks={upcomingCat.tasks}
+                                                    categoryId={upcomingCat.id}
+                                                />
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                                {!isCreatingCategory && (
                                     <PrimaryButton
                                         title="+ Add Category"
                                         lightened

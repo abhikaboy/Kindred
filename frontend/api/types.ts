@@ -81,6 +81,8 @@ export interface Task {
     timeCompleted?: string;
     timeTaken?: string;
     posted?: boolean; // Whether a post has been created for this task
+    isPhantom?: boolean;
+    nextGenerated?: string;
 }
 
 export interface Categories {

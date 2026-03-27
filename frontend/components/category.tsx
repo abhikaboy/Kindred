@@ -5,7 +5,6 @@ import TaskCard from "./cards/TaskCard";
 import { Task } from "../api/types";
 import SwipableTaskCard from "./cards/SwipableTaskCard";
 import { useTasks } from "@/contexts/tasksContext";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { AttachStep } from "react-native-spotlight-tour";
 import { Plus } from "phosphor-react-native";

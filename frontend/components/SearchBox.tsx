@@ -8,7 +8,6 @@ import {
     TouchableOpacity,
     Image,
     Animated,
-    Easing,
 } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
@@ -72,7 +71,6 @@ export function SearchBox({
 
     const resultsOpacity = useRef(new Animated.Value(0)).current;
     const iconTransition = useRef(new Animated.Value(0)).current;
-    const focusProgress = useRef(new Animated.Value(0)).current;
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isMountedRef = useRef(true);
     const focusTimestampRef = useRef(0);
@@ -144,12 +142,6 @@ export function SearchBox({
                 duration: 200,
                 useNativeDriver: true,
             }),
-            Animated.timing(focusProgress, {
-                toValue: 0,
-                duration: 220,
-                easing: Easing.inOut(Easing.cubic),
-                useNativeDriver: false,
-            }),
         ]).start(() => {
             if (isMountedRef.current) {
                 setShowResults(false);
@@ -159,7 +151,7 @@ export function SearchBox({
                 if (setFocused) setFocused(false);
             }
         });
-    }, [resultsOpacity, iconTransition, focusProgress, setFocused]);
+    }, [resultsOpacity, iconTransition, setFocused]);
 
     const deleteRecentItem = useCallback(
         async (id: string) => {
@@ -201,21 +193,13 @@ export function SearchBox({
         }
 
         focusTimestampRef.current = Date.now();
-        focusProgress.setValue(-1);
         setIsFocused(true);
         if (setFocused) setFocused(true);
-
-        Animated.timing(focusProgress, {
-            toValue: 1,
-            duration: 300,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: false,
-        }).start();
 
         if (recent && !showAutocomplete) {
             fetchRecents();
         }
-    }, [recent, showAutocomplete, fetchRecents, setFocused, focusProgress]);
+    }, [recent, showAutocomplete, fetchRecents, setFocused]);
 
     const handleBlur = useCallback(() => {
         if (Date.now() - focusTimestampRef.current < 300) {
@@ -302,38 +286,10 @@ export function SearchBox({
     const showClearButton = showResults || value.length > 0;
     const showResultsPanel = showResults || isLoading;
 
-    const animatedMargin = focusProgress.interpolate({
-        inputRange: [-1, 0, 1],
-        outputRange: [0, 0, -16],
-        extrapolate: "clamp",
-    });
-    const animatedOpacity = focusProgress.interpolate({
-        inputRange: [-1, 0, 1],
-        outputRange: [0.5, 1, 1],
-        extrapolate: "clamp",
-    });
-    const animatedTranslateX = focusProgress.interpolate({
-        inputRange: [-1, 0, 1],
-        outputRange: [-30, 0, 0],
-        extrapolate: "clamp",
-    });
-
     return (
-        <Animated.View
-            style={{
-                marginHorizontal: animatedMargin,
-                opacity: animatedOpacity,
-                transform: [{ translateX: animatedTranslateX }],
-                overflow: "visible" as const,
-                zIndex: isFocused ? 10 : undefined,
-            }}
-        >
+        <View style={{ overflow: "visible" as const, zIndex: isFocused ? 10 : undefined }}>
             <View
-                style={[
-                    styles.container,
-                    isFocused && { borderRadius: 16 },
-                    isFocused && showResultsPanel && styles.containerFocusedWithResults,
-                ]}
+                style={styles.container}
                 onLayout={(e) => {
                     const h = e.nativeEvent.layout.height;
                     if (h !== containerHeight) setContainerHeight(h);
@@ -416,7 +372,7 @@ export function SearchBox({
                     ) : null}
                 </Animated.View>
             )}
-        </Animated.View>
+        </View>
     );
 }
 
@@ -520,21 +476,14 @@ const useStyles = (ThemedColor: any) =>
             flexDirection: "column" as const,
             alignItems: "flex-start" as const,
             position: "absolute" as const,
-            width: "100%",
+            left: -16,
+            right: -16,
             paddingVertical: 4,
-            paddingHorizontal: 8,
+            paddingHorizontal: 16,
             backgroundColor: ThemedColor.background,
             zIndex: 10,
-            borderWidth: 1,
-            borderTopWidth: 0,
-            borderColor: ThemedColor.tertiary,
-            borderBottomLeftRadius: 16,
-            borderBottomRightRadius: 16,
-        },
-        containerFocusedWithResults: {
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-            borderBottomWidth: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: ThemedColor.tertiary,
         },
         recent: {
             width: "100%",
@@ -567,7 +516,7 @@ const useStyles = (ThemedColor: any) =>
             borderColor: ThemedColor.tertiary,
             paddingLeft: HORIZONTAL_PADDING,
             paddingRight: HORIZONTAL_PADDING / 3,
-            paddingVertical: 8,
+            paddingVertical: 4,
             backgroundColor: ThemedColor.background,
         },
         input: {
@@ -576,7 +525,6 @@ const useStyles = (ThemedColor: any) =>
             fontFamily: "OutfitLight",
             alignItems: "flex-start",
             zIndex: 5,
-            paddingVertical: 8,
         },
         iconButton: {
             padding: 12,
