@@ -31,9 +31,11 @@ import (
 	"github.com/abhikaboy/Kindred/internal/xlog"
 
 	"log/slog"
+	"runtime/debug"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humafiber"
+	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -45,7 +47,17 @@ import (
 func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, geminiService *gemini.GeminiService, cfg config.Config) (huma.API, *fiber.App) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			slog.Error("🚨 FIBER ERROR:", "error", err.Error(), "path", c.Path())
+			slog.Error("FIBER ERROR", "error", err.Error(), "method", c.Method(), "path", c.Path())
+
+			if hub := sentry.CurrentHub(); hub.Client() != nil {
+				hub.WithScope(func(scope *sentry.Scope) {
+					scope.SetTag("method", c.Method())
+					scope.SetTag("path", c.Path())
+					scope.SetExtra("ip", c.IP())
+					hub.CaptureException(fmt.Errorf("fiber error on %s %s: %w", c.Method(), c.Path(), err))
+				})
+			}
+
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		},
 	})
@@ -58,7 +70,29 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Add Fiber middleware
 	app.Use(logger.New())
-	app.Use(recover.New())
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace: true,
+		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
+			stack := string(debug.Stack())
+			slog.Error("PANIC RECOVERED",
+				"panic", fmt.Sprintf("%v", e),
+				"method", c.Method(),
+				"path", c.Path(),
+				"stack", stack,
+			)
+
+			if hub := sentry.CurrentHub(); hub.Client() != nil {
+				hub.WithScope(func(scope *sentry.Scope) {
+					scope.SetTag("method", c.Method())
+					scope.SetTag("path", c.Path())
+					scope.SetExtra("stack", stack)
+					scope.SetExtra("ip", c.IP())
+					scope.SetLevel(sentry.LevelFatal)
+					hub.RecoverWithContext(c.Context(), e)
+				})
+			}
+		},
+	}))
 	app.Use(compress.New())
 
 	// Add CORS middleware

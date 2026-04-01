@@ -185,7 +185,9 @@ func newLogger(logLevel string, verbose bool, stderr io.Writer) *slog.Logger {
 		Level:     level,
 		AddSource: logLevel == "debug",
 	})
-	return slog.New(handler)
+	// Wrap with SentryHandler so ERROR+ logs are forwarded to Sentry.
+	// Before sentry.Init completes this is a no-op (checks hub.Client() == nil).
+	return slog.New(xslog.NewSentryHandler(handler))
 }
 
 func fatal(ctx context.Context, msg string, err error) {
@@ -195,6 +197,8 @@ func fatal(ctx context.Context, msg string, err error) {
 		msg,
 		xslog.Error(err),
 	)
+	// Flush Sentry before exiting — defers in main don't run on os.Exit.
+	sentry.Flush(2 * time.Second)
 	os.Exit(1)
 }
 
