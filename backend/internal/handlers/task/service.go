@@ -1398,6 +1398,15 @@ func (s *Service) CreateTemplateForTask(
 		recurDetails.Behavior = "ROLLING"
 	}
 
+	// Flex tasks have their own template creation path
+	if recurDetails != nil && recurDetails.Flex != nil {
+		return s.createFlexTemplateForTask(
+			userID, categoryID, templateID,
+			content, priority, value, public,
+			recurDetails, notes, checklist,
+		)
+	}
+
 	recurType := "OCCURRENCE"
 
 	// if we have a deadline with no start information
@@ -1480,6 +1489,68 @@ func (s *Service) CreateTemplateForTask(
 	_, err = s.CreateTemplateTask(categoryID, &template_doc)
 	if err != nil {
 		return fmt.Errorf("error creating template task: %w", err)
+	}
+
+	return nil
+}
+
+// createFlexTemplateForTask creates a FLEX-type template for a recurring flex task.
+func (s *Service) createFlexTemplateForTask(
+	userID primitive.ObjectID,
+	categoryID primitive.ObjectID,
+	templateID primitive.ObjectID,
+	content string,
+	priority int,
+	value float64,
+	public bool,
+	recurDetails *RecurDetails,
+	notes string,
+	checklist []ChecklistItem,
+) error {
+	flex := recurDetails.Flex
+
+	strategy, err := FlexPeriodFor(flex.Period)
+	if err != nil {
+		return fmt.Errorf("invalid flex period %q: %w", flex.Period, err)
+	}
+
+	ctx := context.Background()
+	loc, _ := s.getUserLocation(ctx, userID)
+	now := xutils.NowUTC()
+	periodStart := strategy.PeriodStart(now, loc)
+
+	templateDoc := TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         userID,
+		CategoryID:     categoryID,
+		Content:        content,
+		Priority:       priority,
+		Value:          value,
+		Public:         public,
+		RecurType:      "FLEX",
+		RecurFrequency: flex.Period,
+		RecurDetails:   recurDetails,
+		LastGenerated:  &now,
+		NextGenerated:  &now,
+		Notes:          notes,
+		Checklist:      checklist,
+		FlexState: &FlexTemplateState{
+			Target:            flex.Target,
+			Period:            flex.Period,
+			CompletedInPeriod: 0,
+			PeriodStart:       &periodStart,
+		},
+		TimesGenerated:  0,
+		TimesCompleted:  0,
+		TimesMissed:     0,
+		Streak:          0,
+		HighestStreak:   0,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err = s.CreateTemplateTask(categoryID, &templateDoc)
+	if err != nil {
+		return fmt.Errorf("error creating flex template task: %w", err)
 	}
 
 	return nil

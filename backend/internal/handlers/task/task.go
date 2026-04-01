@@ -167,6 +167,18 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 			return nil, huma.Error400BadRequest(err.Error(), err)
 		}
 
+		// Set flex-specific fields on the task instance
+		if taskParams.RecurDetails.Flex != nil {
+			flex := taskParams.RecurDetails.Flex
+			task.RecurType = "FLEX"
+			task.RecurFrequency = flex.Period
+			task.FlexInfo = &FlexInstanceInfo{
+				InstanceNumber: 1,
+				Target:         flex.Target,
+				Period:         flex.Period,
+			}
+		}
+
 		err := h.service.CreateTemplateForTask(
 			userObjID,
 			categoryID,
@@ -229,6 +241,20 @@ func (h *Handler) GetTask(ctx context.Context, input *GetTaskInput) (*GetTaskOut
 	}
 
 	return &GetTaskOutput{Body: *task}, nil
+}
+
+// inferRecurType determines the recurrence type and frequency from the given
+func inferRecurType(details *RecurDetails, deadline, startTime, startDate *time.Time) (recurType string, recurFrequency string) {
+	switch {
+	case details.Flex != nil:
+		return "FLEX", details.Flex.Period
+	case deadline != nil && (startTime != nil || startDate != nil):
+		return "WINDOW", ""
+	case deadline != nil:
+		return "DEADLINE", ""
+	default:
+		return "OCCURRENCE", ""
+	}
 }
 
 /*
@@ -311,15 +337,11 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 		// Set the template ID in the update data
 		updateData.TemplateID = &templateID
 
-		// Infer and set RecurType for the task update as well
-		recurType := "OCCURRENCE"
-		if updateData.Deadline != nil {
-			recurType = "DEADLINE"
-			if updateData.StartTime != nil || updateData.StartDate != nil {
-				recurType = "WINDOW"
-			}
-		}
+		recurType, recurFreq := inferRecurType(recurDetails, updateData.Deadline, updateData.StartTime, updateData.StartDate)
 		updateData.RecurType = recurType
+		if recurFreq != "" {
+			updateData.RecurFrequency = recurFreq
+		}
 	}
 
 	// Guard against recurring tasks without a template

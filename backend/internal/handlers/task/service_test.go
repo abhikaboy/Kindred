@@ -986,6 +986,241 @@ func (s *TaskServiceTestSuite) TestCreateTaskFromTemplate_Flex_PeriodRollover_Re
 	s.Equal(0, updatedTemplate.FlexState.CompletedInPeriod, "CompletedInPeriod should be reset to 0")
 }
 
+// ========================================
+// CreateTemplateForTask — Flex Tests
+// ========================================
+
+func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_Weekly_CreatesCorrectTemplate() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+
+	err = s.service.CreateTemplateForTask(
+		user.ID,
+		category.ID,
+		templateID,
+		"Flex weekly task",
+		1,
+		5.0,
+		false,
+		"weekly",
+		&RecurDetails{
+			Every:    1,
+			Behavior: "ROLLING",
+			Flex:     &FlexDetails{Target: 3, Period: "weekly"},
+		},
+		nil, nil, nil, nil, "", nil,
+	)
+	s.NoError(err)
+
+	var stored TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&stored)
+	s.NoError(err)
+
+	s.Equal("FLEX", stored.RecurType, "RecurType should be FLEX")
+	s.Equal("weekly", stored.RecurFrequency, "RecurFrequency should match the flex period")
+	s.NotNil(stored.FlexState, "FlexState should be initialized")
+	s.Equal(3, stored.FlexState.Target, "FlexState.Target should be 3")
+	s.Equal("weekly", stored.FlexState.Period)
+	s.Equal(0, stored.FlexState.CompletedInPeriod, "CompletedInPeriod should start at 0")
+	s.NotNil(stored.FlexState.PeriodStart, "PeriodStart should be set")
+	s.NotNil(stored.NextGenerated, "NextGenerated should be set")
+}
+
+func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_Daily_CreatesCorrectTemplate() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+
+	err = s.service.CreateTemplateForTask(
+		user.ID,
+		category.ID,
+		templateID,
+		"Flex daily task",
+		2,
+		8.0,
+		true,
+		"daily",
+		&RecurDetails{
+			Flex: &FlexDetails{Target: 2, Period: "daily"},
+		},
+		nil, nil, nil, nil, "", nil,
+	)
+	s.NoError(err)
+
+	var stored TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&stored)
+	s.NoError(err)
+
+	s.Equal("FLEX", stored.RecurType)
+	s.Equal("daily", stored.RecurFrequency)
+	s.NotNil(stored.FlexState)
+	s.Equal(2, stored.FlexState.Target)
+	s.Equal("daily", stored.FlexState.Period)
+}
+
+func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_Monthly_CreatesCorrectTemplate() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+
+	err = s.service.CreateTemplateForTask(
+		user.ID,
+		category.ID,
+		templateID,
+		"Flex monthly task",
+		3,
+		10.0,
+		false,
+		"monthly",
+		&RecurDetails{
+			Flex: &FlexDetails{Target: 5, Period: "monthly"},
+		},
+		nil, nil, nil, nil, "some notes", nil,
+	)
+	s.NoError(err)
+
+	var stored TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&stored)
+	s.NoError(err)
+
+	s.Equal("FLEX", stored.RecurType)
+	s.Equal("monthly", stored.RecurFrequency)
+	s.NotNil(stored.FlexState)
+	s.Equal(5, stored.FlexState.Target)
+	s.Equal("monthly", stored.FlexState.Period)
+	s.Equal("some notes", stored.Notes)
+}
+
+func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_InvalidPeriod_ReturnsError() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+
+	err = s.service.CreateTemplateForTask(
+		user.ID,
+		category.ID,
+		templateID,
+		"Bad flex task",
+		1,
+		5.0,
+		false,
+		"biweekly",
+		&RecurDetails{
+			Flex: &FlexDetails{Target: 3, Period: "biweekly"},
+		},
+		nil, nil, nil, nil, "", nil,
+	)
+	s.Error(err, "Invalid flex period should return an error")
+}
+
+func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_ZeroTarget_ReturnsError() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+
+	err = s.service.CreateTemplateForTask(
+		user.ID,
+		category.ID,
+		templateID,
+		"Bad flex task",
+		1,
+		5.0,
+		false,
+		"weekly",
+		&RecurDetails{
+			Flex: &FlexDetails{Target: 0, Period: "weekly"},
+		},
+		nil, nil, nil, nil, "", nil,
+	)
+	s.Error(err, "Zero target flex should return an error")
+}
+
+func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_DoesNotPanic_WithNoDaysOfWeek() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+
+	// This was the exact scenario causing the crash: weekly frequency with
+	// flex details but no DaysOfWeek populated.
+	s.NotPanics(func() {
+		_ = s.service.CreateTemplateForTask(
+			user.ID,
+			category.ID,
+			templateID,
+			"No panic flex task",
+			1,
+			5.0,
+			false,
+			"weekly",
+			&RecurDetails{
+				Flex: &FlexDetails{Target: 4, Period: "weekly"},
+			},
+			nil, nil, nil, nil, "", nil,
+		)
+	}, "Creating a flex template should not panic even without DaysOfWeek")
+}
+
 func (s *TaskServiceTestSuite) TestCreateTaskFromTemplate_Flex_PeriodRollover_TracksMissed() {
 	user := s.GetUser(0)
 
