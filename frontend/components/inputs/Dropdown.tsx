@@ -23,6 +23,8 @@ type Option = {
     label: string;
     id: string;
     special?: boolean;
+    disabled?: boolean;
+    subtitle?: string;
 };
 
 type Props = {
@@ -124,6 +126,7 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                             <AnimatedTouchableOpacity
                                 key={`main-${index}`}
                                 onPress={() => {
+                                    if (item.disabled) return;
                                     setSelected(item);
                                     if (item.special) onSpecial();
                                     expanded.value = false;
@@ -136,13 +139,22 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                                     paddingHorizontal: 16,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
+                                    alignItems: "center",
                                     borderRadius: 12,
+                                    opacity: item.disabled ? 0.4 : 1,
                                 }}>
-                                <ThemedText type="lightBody">{item.label}</ThemedText>
+                                <View style={{ flexDirection: "column" }}>
+                                    <ThemedText type="lightBody">{item.label}</ThemedText>
+                                    {item.subtitle && (
+                                        <ThemedText type="caption" style={{ fontSize: 11, color: ThemedColor.caption }}>
+                                            {item.subtitle}
+                                        </ThemedText>
+                                    )}
+                                </View>
                             </AnimatedTouchableOpacity>
                         );
                     })}
-                    
+
                     <View style={{
                         borderColor: ThemedColor.tertiary,
                         borderBottomLeftRadius: 12,

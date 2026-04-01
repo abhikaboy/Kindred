@@ -30,19 +30,38 @@ type Props = {
 
 const Recurring = ({ goToStandard }: Props) => {
     const ThemedColor = useThemeColor();
-    const [mode, setMode] = useState<"start" | "deadline">("start");
+    const [mode, setMode] = useState<"start" | "deadline" | "flex">("start");
     const [frequency, setFrequency] = useState<"day" | "week" | "month" | "year">("day");
     const [frequencyAmount, setFrequencyAmount] = useState<number>(1);
     const [customRepeat, setCustomRepeat] = useState<boolean>(false);
     const [selectedDays, setSelectedDays] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+    const [flexTarget, setFlexTarget] = useState<number>(2);
+    const [flexPeriod, setFlexPeriod] = useState<"daily" | "weekly" | "monthly">("weekly");
     const {
         startDate,
         startTime,
         deadline,
         setRecurring,
         setRecurFrequency,
-        setRecurDetails
+        setRecurDetails,
+        setFlexDetails,
     } = useTaskCreation();
+
+    const modeOptions = [
+        {
+            label: "Repeat Start",
+            id: "start",
+            disabled: !isStartConfigured,
+            subtitle: !isStartConfigured ? "Requires start date & time" : undefined,
+        },
+        {
+            label: "Repeat Deadline",
+            id: "deadline",
+            disabled: !isDeadlineConfigured,
+            subtitle: !isDeadlineConfigured ? "Requires a deadline" : undefined,
+        },
+        { label: "Flex", id: "flex" },
+    ];
 
     const baseQuickOptions: RecurOption[] = [
         { label: "None", id: "none" },
@@ -173,9 +192,26 @@ const Recurring = ({ goToStandard }: Props) => {
         },
     };
 
-    const constructRecurringObject = () => {
-        // Set recurring to true
+    const constructFlexObject = () => {
         setRecurring(true);
+        setRecurFrequency(flexPeriod);
+        setRecurDetails({
+            every: 1,
+            daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
+            behavior: "ROLLING",
+        });
+        setFlexDetails({ target: flexTarget, period: flexPeriod });
+        goToStandard();
+    };
+
+    const constructRecurringObject = () => {
+        if (mode === "flex") {
+            constructFlexObject();
+            return;
+        }
+
+        setRecurring(true);
+        setFlexDetails(null);
 
         let recurFreq = "";
         let recurDetailsObj: {
@@ -193,18 +229,15 @@ const Recurring = ({ goToStandard }: Props) => {
         if (selectedQuickOption.id === "custom" && frequency === "week") {
             const hasSelectedDays = selectedDays.some(day => day === 1);
             if (!hasSelectedDays) {
-                // Default to Monday if no days are selected
                 recurDetailsObj.daysOfWeek = [0, 1, 0, 0, 0, 0, 0];
             }
         }
 
-        // Handle quick options using the config
         if (selectedQuickOption.id === "none") {
-            // Don't set recurring, just go back
+            setFlexDetails(null);
             goToStandard();
             return;
         } else if (selectedQuickOption.config) {
-            // Use the predefined configuration
             recurFreq = selectedQuickOption.config.frequency;
             recurDetailsObj.every = selectedQuickOption.config.every;
             if (selectedQuickOption.config.daysOfWeek) {
@@ -214,12 +247,10 @@ const Recurring = ({ goToStandard }: Props) => {
                 recurDetailsObj.daysOfMonth = selectedQuickOption.config.daysOfMonth;
             }
         } else if (selectedQuickOption.id === "custom") {
-            // Handle custom frequency
             if (frequency === "day") {
                 recurFreq = "daily";
             } else if (frequency === "week") {
                 recurFreq = "weekly";
-                // Use the selected days from the week picker
                 recurDetailsObj.daysOfWeek = selectedDays;
             } else if (frequency === "month") {
                 recurFreq = "monthly";
@@ -229,13 +260,8 @@ const Recurring = ({ goToStandard }: Props) => {
             recurDetailsObj.every = frequencyAmount;
         }
 
-        // Set the recurring frequency
         setRecurFrequency(recurFreq);
-
-        // Set the recurring details
         setRecurDetails(recurDetailsObj);
-
-        // Navigate back to standard view
         goToStandard();
     };
 
@@ -254,81 +280,93 @@ const Recurring = ({ goToStandard }: Props) => {
                     <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
                         Mode
                     </ThemedText>
-                    <View style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}>
-                        <PrimaryButton
-                            title="Repeat Start"
-                            onPress={() => setMode("start")}
-                            style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
-                            secondary={mode !== "start"}
-                            disabled={!isStartConfigured}
-                        />
-                        <PrimaryButton
-                            title="Repeat Deadline"
-                            secondary={mode !== "deadline"}
-                            onPress={() => setMode("deadline")}
-                            style={{ width: (Dimensions.get("window").width - HORIZONTAL_PADDING * 2 - 16) * 0.5 }}
-                            disabled={!isDeadlineConfigured}
-                        />
-                    </View>
-                    {(!isStartConfigured || !isDeadlineConfigured) && (
-                        <View style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            {!isStartConfigured && (
-                                <ThemedText type="default" style={{ fontSize: 12, color: ThemedColor.text + "80" }}>
-                                    • Repeat Start requires both start date and time to be set
-                                </ThemedText>
-                            )}
-                            {!isDeadlineConfigured && (
-                                <ThemedText type="default" style={{ fontSize: 12, color: ThemedColor.text + "80" }}>
-                                    • Repeat Deadline requires a deadline to be set
-                                </ThemedText>
-                            )}
-                        </View>
-                    )}
-                </View>
-                <View>
-                    <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
-                        Quick Options
-                    </ThemedText>
-                </View>
-                <View>
                     <Dropdown
-                        selected={selectedQuickOption}
-                        setSelected={setSelectedQuickOption}
+                        selected={modeOptions.find(o => o.id === mode) || modeOptions[0]}
+                        setSelected={(opt) => {
+                            setMode((opt as typeof modeOptions[number]).id as "start" | "deadline" | "flex");
+                        }}
                         onSpecial={() => {}}
                         width="100%"
-                        options={quickOptions}
-                        footerOptions={footerOptions}
+                        options={modeOptions}
                     />
                 </View>
-                <ConditionalView condition={selectedQuickOption.id === "custom"}>
-                    <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
-                        Repeat Every
-                    </ThemedText>
-                    <View>
-                        <View style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}>
+                <ConditionalView condition={mode === "flex"}>
+                    <View style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
+                            How many times?
+                        </ThemedText>
+                        <View
+                            style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center" }}
+                            onStartShouldSetResponder={() => true}
+                            onMoveShouldSetResponder={() => true}
+                        >
                             <Picker
-                                style={{ width: "50%" }}
-                                selectedValue={frequencyAmount}
-                                onValueChange={(itemValue) => setFrequencyAmount(itemValue)}>
-                                {Array.from({ length: frequencyLimits[frequency].max }, (_, i) => (
-                                    <Picker.Item key={i} label={`${i + 1}`} value={i + 1} />
+                                style={{ flex: 1 }}
+                                selectedValue={flexTarget}
+                                onValueChange={(val) => setFlexTarget(val)}>
+                                {Array.from({ length: 20 }, (_, i) => (
+                                    <Picker.Item key={i + 1} label={`${i + 1}x`} value={i + 1} />
                                 ))}
                             </Picker>
+                            <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>per</ThemedText>
                             <Picker
-                                style={{ width: "50%" }}
-                                selectedValue={frequency}
-                                onValueChange={(itemValue) => setFrequency(itemValue as "day" | "week" | "month" | "year")}>
-                                <Picker.Item label="Days" value="day" />
-                                <Picker.Item label="Weeks" value="week" />
-                                {/* <Picker.Item label="Months" value="month" />
-                                <Picker.Item label="Years" value="year" /> */}
+                                style={{ flex: 1 }}
+                                selectedValue={flexPeriod}
+                                onValueChange={(val) => setFlexPeriod(val as "daily" | "weekly" | "monthly")}>
+                                <Picker.Item label="Day" value="daily" />
+                                <Picker.Item label="Week" value="weekly" />
+                                <Picker.Item label="Month" value="monthly" />
                             </Picker>
                         </View>
-                        {frequency === "week" && <RecurringWeekPicker rows={1} onDaysChange={(days) => {
-                            // Update the selected days for weekly frequency
-                            setSelectedDays(days);
-                        }} />}
                     </View>
+                </ConditionalView>
+                <ConditionalView condition={mode !== "flex"}>
+                    <View>
+                        <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
+                            Quick Options
+                        </ThemedText>
+                    </View>
+                    <View>
+                        <Dropdown
+                            selected={selectedQuickOption}
+                            setSelected={setSelectedQuickOption}
+                            onSpecial={() => {}}
+                            width="100%"
+                            options={quickOptions}
+                            footerOptions={footerOptions}
+                        />
+                    </View>
+                    <ConditionalView condition={selectedQuickOption.id === "custom"}>
+                        <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
+                            Repeat Every
+                        </ThemedText>
+                        <View>
+                            <View
+                                style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}
+                                onStartShouldSetResponder={() => true}
+                                onMoveShouldSetResponder={() => true}
+                            >
+                                <Picker
+                                    style={{ width: "50%" }}
+                                    selectedValue={frequencyAmount}
+                                    onValueChange={(itemValue) => setFrequencyAmount(itemValue)}>
+                                    {Array.from({ length: frequencyLimits[frequency].max }, (_, i) => (
+                                        <Picker.Item key={i} label={`${i + 1}`} value={i + 1} />
+                                    ))}
+                                </Picker>
+                                <Picker
+                                    style={{ width: "50%" }}
+                                    selectedValue={frequency}
+                                    onValueChange={(itemValue) => setFrequency(itemValue as "day" | "week" | "month" | "year")}>
+                                    <Picker.Item label="Days" value="day" />
+                                    <Picker.Item label="Weeks" value="week" />
+                                </Picker>
+                            </View>
+                            {frequency === "week" && <RecurringWeekPicker rows={1} onDaysChange={(days) => {
+                                setSelectedDays(days);
+                            }} />}
+                        </View>
+                    </ConditionalView>
                 </ConditionalView>
             </ScrollView>
             <PrimaryButton title="Create" onPress={constructRecurringObject} style={{ width: "100%" }} />

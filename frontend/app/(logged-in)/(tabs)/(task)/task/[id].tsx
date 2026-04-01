@@ -689,6 +689,7 @@ export default function Task() {
                                         recurType={template?.recurType}
                                         lastDate={template?.lastGenerated}
                                         nextDate={template?.nextGenerated}
+                                        flexInfo={task?.flexInfo}
                                     />
                                 </ConditionalView>
                                 <ConditionalView condition={task?.reminders != null} key="reminders">

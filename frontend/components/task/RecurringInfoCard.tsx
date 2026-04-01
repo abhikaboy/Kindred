@@ -2,8 +2,9 @@ import { StyleSheet, View } from "react-native";
 import React from "react";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Repeat, Stack, ArrowRight, Clock, CalendarCheck, CalendarPlus } from "phosphor-react-native";
+import { Repeat, Stack, ArrowRight, Clock, CalendarCheck, CalendarPlus, Lightning } from "phosphor-react-native";
 import DataCard from "./DataCard";
+import { FlexInstanceInfo } from "@/api/types";
 
 type Props = {
     recurDetails: {
@@ -18,10 +19,20 @@ type Props = {
     recurType?: string;
     lastDate?: string;
     nextDate?: string;
+    flexInfo?: FlexInstanceInfo;
 };
 
-const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextDate }: Props) => {
+const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextDate, flexInfo }: Props) => {
     const ThemedColor = useThemeColor();
+
+    const getPeriodLabel = (period: string) => {
+        switch (period) {
+            case "daily": return "day";
+            case "weekly": return "week";
+            case "monthly": return "month";
+            default: return period;
+        }
+    };
 
     const renderFrequencyVisual = () => {
         if (frequency === "weekly" && recurDetails.daysOfWeek) {
@@ -98,42 +109,83 @@ const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextD
             icon={<Repeat size={20} color={ThemedColor.text} weight="regular" />}
         >
             <View style={styles.container}>
-                {/* Frequency Header */}
-                <View style={styles.section}>
-                    <ThemedText type="defaultSemiBold">{getFrequencyText()}</ThemedText>
-                    {renderFrequencyVisual()}
-                </View>
-
-                <View style={[styles.divider, { backgroundColor: ThemedColor.border }]} />
-
-                {/* Details Grid */}
-                <View style={styles.grid}>
-                    {/* Behavior */}
-                    <View style={styles.gridItem}>
-                        <View style={styles.iconRow}>
-                            {recurDetails.behavior === "BUILDUP" ? (
-                                <Stack size={16} color={ThemedColor.caption} />
-                            ) : (
-                                <ArrowRight size={16} color={ThemedColor.caption} />
-                            )}
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                Behavior
-                            </ThemedText>
+                {flexInfo ? (
+                    <>
+                        {/* Flex Header */}
+                        <View style={styles.section}>
+                            <View style={styles.iconRow}>
+                                <Lightning size={18} color={ThemedColor.primary} weight="fill" />
+                                <ThemedText type="defaultSemiBold">
+                                    Flex: {flexInfo.target}x per {getPeriodLabel(flexInfo.period)}
+                                </ThemedText>
+                            </View>
                         </View>
-                        <ThemedText type="default" style={{ fontSize: 14 }}>{getBehaviorText()}</ThemedText>
-                    </View>
 
-                    {/* Type */}
-                    <View style={styles.gridItem}>
-                        <View style={styles.iconRow}>
-                            <Clock size={16} color={ThemedColor.caption} />
+                        <View style={[styles.divider, { backgroundColor: ThemedColor.border }]} />
+
+                        {/* Flex Progress */}
+                        <View style={styles.section}>
                             <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                Schedule Type
+                                Progress this {getPeriodLabel(flexInfo.period)}
                             </ThemedText>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                                <View style={{
+                                    flex: 1, height: 8, borderRadius: 4,
+                                    backgroundColor: ThemedColor.border,
+                                    overflow: "hidden",
+                                }}>
+                                    <View style={{
+                                        width: `${(flexInfo.instanceNumber / flexInfo.target) * 100}%`,
+                                        height: "100%",
+                                        borderRadius: 4,
+                                        backgroundColor: flexInfo.instanceNumber >= flexInfo.target
+                                            ? "#4CAF50" : ThemedColor.primary,
+                                    }} />
+                                </View>
+                                <ThemedText type="defaultSemiBold" style={{ fontSize: 14, minWidth: 36, textAlign: "right" }}>
+                                    {flexInfo.instanceNumber}/{flexInfo.target}
+                                </ThemedText>
+                            </View>
                         </View>
-                        <ThemedText type="default" style={{ fontSize: 14 }}>{getTypeText()}</ThemedText>
-                    </View>
-                </View>
+                    </>
+                ) : (
+                    <>
+                        {/* Frequency Header */}
+                        <View style={styles.section}>
+                            <ThemedText type="defaultSemiBold">{getFrequencyText()}</ThemedText>
+                            {renderFrequencyVisual()}
+                        </View>
+
+                        <View style={[styles.divider, { backgroundColor: ThemedColor.border }]} />
+
+                        {/* Details Grid */}
+                        <View style={styles.grid}>
+                            <View style={styles.gridItem}>
+                                <View style={styles.iconRow}>
+                                    {recurDetails.behavior === "BUILDUP" ? (
+                                        <Stack size={16} color={ThemedColor.caption} />
+                                    ) : (
+                                        <ArrowRight size={16} color={ThemedColor.caption} />
+                                    )}
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        Behavior
+                                    </ThemedText>
+                                </View>
+                                <ThemedText type="default" style={{ fontSize: 14 }}>{getBehaviorText()}</ThemedText>
+                            </View>
+
+                            <View style={styles.gridItem}>
+                                <View style={styles.iconRow}>
+                                    <Clock size={16} color={ThemedColor.caption} />
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        Schedule Type
+                                    </ThemedText>
+                                </View>
+                                <ThemedText type="default" style={{ fontSize: 14 }}>{getTypeText()}</ThemedText>
+                            </View>
+                        </View>
+                    </>
+                )}
 
                 {/* Timeline Section */}
                 {(lastDate || nextDate) && (

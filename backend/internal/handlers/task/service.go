@@ -396,15 +396,19 @@ func (s *Service) CompleteTask(
 			}
 		}
 
-		// For rolling recurring tasks, schedule the next instance via the cron
-		// instead of creating it immediately. The cron checks nextGenerated <= now
-		// every minute and will create the task at the appropriate time.
 		template, err := s.GetTemplateByID(*taskToComplete.TemplateID)
 		if err == nil && template != nil {
-			isRolling := template.RecurDetails == nil || template.RecurDetails.Behavior != "BUILDUP"
-			if isRolling {
-				if err := s.ScheduleNextRecurrence(*taskToComplete.TemplateID); err != nil {
-					slog.Error("Failed to schedule next recurring task", "error", err, "templateID", *taskToComplete.TemplateID)
+			if template.RecurType == "FLEX" && template.FlexState != nil {
+				if err := s.handleFlexCompletion(ctx, template); err != nil {
+					slog.Error("Failed to handle flex completion", "error", err, "templateID", *taskToComplete.TemplateID)
+				}
+			} else {
+				// For rolling recurring tasks, schedule the next instance via the cron
+				isRolling := template.RecurDetails == nil || template.RecurDetails.Behavior != "BUILDUP"
+				if isRolling {
+					if err := s.ScheduleNextRecurrence(*taskToComplete.TemplateID); err != nil {
+						slog.Error("Failed to schedule next recurring task", "error", err, "templateID", *taskToComplete.TemplateID)
+					}
 				}
 			}
 		}
@@ -1113,6 +1117,11 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 	// construct a task document from the template
 	task := constructTaskFromTemplate(&templateDoc)
 
+	// Flex tasks have their own generation logic
+	if templateDoc.RecurType == "FLEX" && templateDoc.FlexState != nil {
+		return s.createFlexTaskFromTemplate(ctx, &templateDoc, task)
+	}
+
 	// Ensure NextGenerated is not nil before proceeding
 	if templateDoc.NextGenerated == nil {
 		return nil, fmt.Errorf("template NextGenerated is nil for template %s", templateId.Hex())
@@ -1538,6 +1547,112 @@ func (s *Service) ScheduleNextRecurrence(templateId primitive.ObjectID) error {
 			"nextGenerated": &nextGeneration,
 		},
 	})
+	return err
+}
+
+func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *TemplateTaskDocument, task TaskDocument) (*TaskDocument, error) {
+	strategy, err := FlexPeriodFor(templateDoc.FlexState.Period)
+	if err != nil {
+		return nil, err
+	}
+
+	loc, _ := s.getUserLocation(ctx, templateDoc.UserID)
+	now := xutils.NowUTC()
+	currentPeriodStart := strategy.PeriodStart(now, loc)
+
+	// Detect period rollover
+	periodRolled := templateDoc.FlexState.PeriodStart == nil ||
+		currentPeriodStart.After(*templateDoc.FlexState.PeriodStart)
+
+	if periodRolled {
+		// Track missed instances from the previous period
+		if templateDoc.FlexState.PeriodStart != nil {
+			missed := templateDoc.FlexState.Target - templateDoc.FlexState.CompletedInPeriod
+			if missed > 0 {
+				_, err := s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateDoc.ID}, bson.M{
+					"$inc": bson.M{"timesMissed": missed},
+					"$set": bson.M{
+						"streak":         0,
+						"previousStreak": templateDoc.Streak,
+						"lastMissedAt":   &now,
+					},
+				})
+				if err != nil {
+					slog.Error("Failed to update missed flex stats", "error", err)
+				}
+			}
+		}
+		templateDoc.FlexState.CompletedInPeriod = 0
+		templateDoc.FlexState.PeriodStart = &currentPeriodStart
+	}
+
+	// Delete any existing active flex instance for this template
+	_, _ = s.DeleteTaskFromTemplateID(*templateDoc)
+
+	// Set FlexInfo on the task instance
+	task.FlexInfo = &FlexInstanceInfo{
+		InstanceNumber: templateDoc.FlexState.CompletedInPeriod + 1,
+		Target:         templateDoc.FlexState.Target,
+		Period:         templateDoc.FlexState.Period,
+	}
+
+	nextPeriod := strategy.NextPeriodStart(now, loc)
+
+	update := bson.M{
+		"$set": bson.M{
+			"lastGenerated":               &now,
+			"nextGenerated":               &nextPeriod,
+			"flexState.completedInPeriod": templateDoc.FlexState.CompletedInPeriod,
+			"flexState.periodStart":       templateDoc.FlexState.PeriodStart,
+			"flexState.cooldownUntil":     nil,
+		},
+		"$inc": bson.M{
+			"timesGenerated": 1,
+		},
+	}
+
+	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateDoc.ID}, update)
+	if err != nil {
+		return nil, err
+	}
+
+	// Push the task into the user's category
+	_, err = s.Tasks.UpdateOne(ctx,
+		bson.M{"_id": templateDoc.CategoryID},
+		bson.M{"$push": bson.M{"tasks": task}},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTaskDocument) error {
+	strategy, err := FlexPeriodFor(template.FlexState.Period)
+	if err != nil {
+		return err
+	}
+
+	loc, _ := s.getUserLocation(ctx, template.UserID)
+	now := xutils.NowUTC()
+	newCompleted := template.FlexState.CompletedInPeriod + 1
+
+	update := bson.M{
+		"flexState.completedInPeriod": newCompleted,
+	}
+
+	if newCompleted >= template.FlexState.Target {
+		nextPeriod := strategy.NextPeriodStart(now, loc)
+		update["nextGenerated"] = nextPeriod
+		update["flexState.cooldownUntil"] = nil
+	} else {
+		cooldown := strategy.ComputeCooldown(now, loc)
+		update["nextGenerated"] = cooldown
+		update["flexState.cooldownUntil"] = cooldown
+	}
+
+	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{"$set": update})
 	return err
 }
 

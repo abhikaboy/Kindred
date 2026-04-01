@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { useReminder, Reminder } from "@/hooks/useReminder";
+import { FlexDetails } from "@/api/types";
 
 type TaskCreationContextType = {
     taskName: string;
@@ -29,6 +30,8 @@ type TaskCreationContextType = {
     setIsPublic: (isPublic: boolean) => void;
     isBlueprint: boolean;
     setIsBlueprint: (isBlueprint: boolean) => void;
+    flexDetails: FlexDetails | null;
+    setFlexDetails: (flexDetails: FlexDetails | null) => void;
     integration: string;
     setIntegration: (integration: string) => void;
     setPriority: (priority: number) => void;
@@ -69,6 +72,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [isPublic, setIsPublic] = useState(true);
     const [isBlueprint, setIsBlueprint] = useState(false);
     const [integration, setIntegration] = useState("");
+    const [flexDetails, setFlexDetails] = useState<FlexDetails | null>(null);
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
 
@@ -214,6 +218,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setReminders([]);
         setIsPublic(true);
         setIntegration("");
+        setFlexDetails(null);
         // Don't reset isBlueprint here as it should persist
         setShowAdvanced(false);
     };
@@ -257,6 +262,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setIsPublic(taskData.public !== undefined ? taskData.public : true);
         setBlueprintStateInternal(taskData.isBlueprint || false);
         setIntegration(taskData.integration || "");
+        setFlexDetails(taskData.recurDetails?.flex || null);
     }, []);
 
     const contextValue = useMemo(() => ({
@@ -281,6 +287,8 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setIsPublic,
         isBlueprint,
         setIsBlueprint: setIsBlueprintWithStartDate,
+        flexDetails,
+        setFlexDetails,
         integration,
         setIntegration,
         setPriority,
@@ -295,7 +303,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         taskName, showAdvanced, suggestion, priority, value,
         recurring, recurFrequency, recurDetails, deadline,
         startTime, startDate, reminders, isPublic, isBlueprint,
-        integration, loadTaskData,
+        integration, flexDetails, loadTaskData,
     ]);
 
     return (

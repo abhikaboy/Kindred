@@ -58,6 +58,12 @@ func ValidateRecurDetails(recurFrequency string, details *RecurDetails) error {
 	if details == nil {
 		return fmt.Errorf("recurring details are required")
 	}
+
+	// Flex tasks have their own validation path
+	if details.Flex != nil {
+		return validateFlexDetails(details.Flex)
+	}
+
 	if details.Every < 1 {
 		return fmt.Errorf("recurrence interval must be at least 1")
 	}
@@ -94,6 +100,16 @@ func ValidateRecurDetails(recurFrequency string, details *RecurDetails) error {
 		return fmt.Errorf("invalid recurrence frequency: %s", recurFrequency)
 	}
 
+	return nil
+}
+
+func validateFlexDetails(flex *FlexDetails) error {
+	if flex.Target < 1 {
+		return fmt.Errorf("flex target must be at least 1")
+	}
+	if _, err := FlexPeriodFor(flex.Period); err != nil {
+		return fmt.Errorf("invalid flex period: %s", flex.Period)
+	}
 	return nil
 }
 
@@ -339,7 +355,7 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		}
 	}
 
-	return TaskDocument{
+	task := TaskDocument{
 		ID:             primitive.NewObjectID(),
 		UserID:         templateDoc.UserID,
 		CategoryID:     templateDoc.CategoryID,
@@ -359,6 +375,16 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		Notes:          templateDoc.Notes,
 		Checklist:      checklist,
 	}
+
+	if templateDoc.FlexState != nil {
+		task.FlexInfo = &FlexInstanceInfo{
+			InstanceNumber: templateDoc.FlexState.CompletedInPeriod + 1,
+			Target:         templateDoc.FlexState.Target,
+			Period:         templateDoc.FlexState.Period,
+		}
+	}
+
+	return task
 }
 
 // recomputeReminderTriggerTimes adjusts template reminder trigger times to match
@@ -455,6 +481,11 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			params.RecurDetails.Behavior = "ROLLING"
 		}
 
+		// Flex tasks get their own creation path
+		if params.RecurDetails.Flex != nil {
+			return h.handleFlexTaskCreation(c, doc, params, categoryId, template_id, reminders)
+		}
+
 		recurType := "OCCURRENCE"
 
 		// if we have a deadline with no start information
@@ -541,9 +572,55 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 			slog.LogAttrs(c.Context(), slog.LevelError, "Error creating template task", slog.String("error", err.Error()))
 			return c.Status(fiber.StatusInternalServerError).JSON(err)
 		}
+	}
 
-		// Note: doc.TemplateID could be set here if needed for return value
-		// but currently the function returns nil immediately after template creation
+	return nil
+}
+
+func (h *Handler) handleFlexTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, templateID primitive.ObjectID, reminders []*Reminder) error {
+	flex := params.RecurDetails.Flex
+	strategy, err := FlexPeriodFor(flex.Period)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	loc, _ := h.service.getUserLocation(c.Context(), doc.UserID)
+	now := xutils.NowUTC()
+	periodStart := strategy.PeriodStart(now, loc)
+
+	template_doc := TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         doc.UserID,
+		CategoryID:     categoryId,
+		Content:        params.Content,
+		Priority:       params.Priority,
+		Value:          params.Value,
+		Public:         params.Public,
+		RecurType:      "FLEX",
+		RecurFrequency: flex.Period,
+		RecurDetails:   params.RecurDetails,
+		LastGenerated:  &now,
+		NextGenerated:  &now,
+		Notes:          params.Notes,
+		Checklist:      params.Checklist,
+		FlexState: &FlexTemplateState{
+			Target:            flex.Target,
+			Period:            flex.Period,
+			CompletedInPeriod: 0,
+			PeriodStart:       &periodStart,
+		},
+		TimesGenerated:  0,
+		TimesCompleted:  0,
+		TimesMissed:     0,
+		Streak:          0,
+		HighestStreak:   0,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
+	if err != nil {
+		slog.LogAttrs(c.Context(), slog.LevelError, "Error creating flex template task", slog.String("error", err.Error()))
+		return c.Status(fiber.StatusInternalServerError).JSON(err)
 	}
 
 	return nil

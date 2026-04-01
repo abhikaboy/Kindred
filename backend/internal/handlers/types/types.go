@@ -70,6 +70,8 @@ type TaskDocument struct {
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
 
+	FlexInfo *FlexInstanceInfo `bson:"flexInfo,omitempty" json:"flexInfo,omitempty"`
+
 	// Completion tracking fields (only populated for completed tasks)
 	TimeCompleted *time.Time `bson:"timeCompleted,omitempty" json:"timeCompleted,omitempty"`
 	TimeTaken     *string    `bson:"timeTaken,omitempty" json:"timeTaken,omitempty"`
@@ -129,6 +131,8 @@ type TemplateTaskDocument struct {
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
+
+	FlexState *FlexTemplateState `bson:"flexState,omitempty" json:"flexState,omitempty"`
 }
 
 type RecurDetails struct {
@@ -138,6 +142,26 @@ type RecurDetails struct {
 	Months      []int        `validate:"omitempty,min=1,max=12,unique" bson:"months,omitempty" json:"months,omitempty"`
 	Behavior    string       `validate:"required,oneof=BUILDUP ROLLING" bson:"behavior,omitempty" json:"behavior,omitempty"` // Buildup, Rolling
 	Reminders   []*time.Time `bson:"reminders,omitempty" json:"reminders,omitempty"`
+	Flex        *FlexDetails `bson:"flex,omitempty" json:"flex,omitempty"`
+}
+
+type FlexDetails struct {
+	Target int    `validate:"required,min=1" bson:"target" json:"target"`
+	Period string `validate:"required,oneof=daily weekly monthly" bson:"period" json:"period"`
+}
+
+type FlexTemplateState struct {
+	Target            int        `bson:"target" json:"target"`
+	Period            string     `bson:"period" json:"period"`
+	CompletedInPeriod int        `bson:"completedInPeriod" json:"completedInPeriod"`
+	PeriodStart       *time.Time `bson:"periodStart,omitempty" json:"periodStart,omitempty"`
+	CooldownUntil     *time.Time `bson:"cooldownUntil,omitempty" json:"cooldownUntil,omitempty"`
+}
+
+type FlexInstanceInfo struct {
+	InstanceNumber int    `bson:"instanceNumber" json:"instanceNumber"`
+	Target         int    `bson:"target" json:"target"`
+	Period         string `bson:"period" json:"period"`
 }
 
 type ChecklistItem struct {

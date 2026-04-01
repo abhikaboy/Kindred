@@ -332,7 +332,14 @@ const TaskCard = ({
                                 <Timer size={20} color={ThemedColor.caption} weight="regular" />
                             </ConditionalView>
                             <ConditionalView condition={task?.recurring}>
-                                <Repeat size={20} color={ThemedColor.caption} weight="regular" />
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                                    <Repeat size={20} color={ThemedColor.caption} weight="regular" />
+                                    {task?.flexInfo && (
+                                        <ThemedText type="caption" style={{ color: ThemedColor.primary, fontWeight: "600", fontSize: 12 }}>
+                                            {task.flexInfo.instanceNumber}/{task.flexInfo.target}
+                                        </ThemedText>
+                                    )}
+                                </View>
                             </ConditionalView>
                             <ConditionalView condition={!!task?.integration}>
                                 {getIntegrationIcon(task?.integration, ThemedColor.caption)}
@@ -428,6 +435,7 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
         prevProps.task?.startTime === nextProps.task?.startTime &&
         prevProps.task?.active === nextProps.task?.active &&
         prevProps.task?.recurring === nextProps.task?.recurring &&
+        prevProps.task?.flexInfo?.instanceNumber === nextProps.task?.flexInfo?.instanceNumber &&
         prevProps.task?.integration === nextProps.task?.integration &&
         prevProps.task?.isPhantom === nextProps.task?.isPhantom &&
         prevProps.task?.nextGenerated === nextProps.task?.nextGenerated

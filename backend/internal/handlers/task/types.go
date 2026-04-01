@@ -39,6 +39,9 @@ type RecurDetails = types.RecurDetails
 type TemplateTaskDocument = types.TemplateTaskDocument
 type ChecklistItem = types.ChecklistItem
 type Reminder = types.Reminder
+type FlexDetails = types.FlexDetails
+type FlexTemplateState = types.FlexTemplateState
+type FlexInstanceInfo = types.FlexInstanceInfo
 
 type UpdateTaskDocument struct {
 	Priority       int           `bson:"priority" json:"priority"`

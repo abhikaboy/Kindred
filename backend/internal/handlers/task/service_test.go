@@ -740,3 +740,309 @@ func (s *TaskServiceTestSuite) TestGetDueRecurringTasks_GracePeriod_IncludesOldT
 	}
 	s.True(found, "Task past the grace period should be returned")
 }
+
+// ========================================
+// Flex Task Tests
+// ========================================
+
+func (s *TaskServiceTestSuite) createFlexTemplate(user *types.User, category *types.CategoryDocument, target int, period string, completedInPeriod int) (*TemplateTaskDocument, primitive.ObjectID) {
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	periodStart := now.Add(-1 * time.Hour) // Started this period an hour ago
+
+	template := &TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         user.ID,
+		CategoryID:     category.ID,
+		Content:        "Flex Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: period,
+		RecurType:      "FLEX",
+		RecurDetails: &RecurDetails{
+			Every:    1,
+			Behavior: "ROLLING",
+			Flex: &FlexDetails{
+				Target: target,
+				Period: period,
+			},
+		},
+		NextGenerated: &now,
+		FlexState: &FlexTemplateState{
+			Target:            target,
+			Period:            period,
+			CompletedInPeriod: completedInPeriod,
+			PeriodStart:       &periodStart,
+		},
+		TimesGenerated:  completedInPeriod,
+		TimesCompleted:  completedInPeriod,
+		TimesMissed:     0,
+		Streak:          completedInPeriod,
+		HighestStreak:   completedInPeriod,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err := s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	return template, templateID
+}
+
+func (s *TaskServiceTestSuite) TestCompleteFlexTask_IncrementsCompletedInPeriod() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	_, templateID := s.createFlexTemplate(user, category, 4, "weekly", 0)
+
+	taskID := primitive.NewObjectID()
+	task := TaskDocument{
+		ID:         taskID,
+		UserID:     user.ID,
+		CategoryID: category.ID,
+		Content:    "Flex Task",
+		Priority:   1,
+		Value:      10.0,
+		Recurring:  true,
+		TemplateID: &templateID,
+		Active:     true,
+		Timestamp:  xutils.NowUTC(),
+		FlexInfo: &FlexInstanceInfo{
+			InstanceNumber: 1,
+			Target:         4,
+			Period:         "weekly",
+		},
+	}
+
+	_, err = s.Collections["categories"].UpdateOne(s.Ctx,
+		bson.M{"_id": category.ID},
+		bson.M{"$push": bson.M{"tasks": task}},
+	)
+	s.NoError(err)
+
+	_, err = s.service.CompleteTask(user.ID, taskID, category.ID, CompleteTaskDocument{
+		TimeCompleted: xutils.NowUTC().Format(time.RFC3339),
+		TimeTaken:     "PT0S",
+	})
+	s.NoError(err)
+
+	var updatedTemplate TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&updatedTemplate)
+	s.NoError(err)
+
+	s.Equal(1, updatedTemplate.FlexState.CompletedInPeriod, "CompletedInPeriod should be 1")
+	s.NotNil(updatedTemplate.FlexState.CooldownUntil, "CooldownUntil should be set")
+	s.Equal(1, updatedTemplate.TimesCompleted, "TimesCompleted should be 1")
+}
+
+func (s *TaskServiceTestSuite) TestCompleteFlexTask_AllTargetsMet_SetsNextPeriod() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	// 3 of 4 already completed — this will be the last one
+	_, templateID := s.createFlexTemplate(user, category, 4, "weekly", 3)
+
+	taskID := primitive.NewObjectID()
+	task := TaskDocument{
+		ID:         taskID,
+		UserID:     user.ID,
+		CategoryID: category.ID,
+		Content:    "Flex Task",
+		Priority:   1,
+		Value:      10.0,
+		Recurring:  true,
+		TemplateID: &templateID,
+		Active:     true,
+		Timestamp:  xutils.NowUTC(),
+		FlexInfo: &FlexInstanceInfo{
+			InstanceNumber: 4,
+			Target:         4,
+			Period:         "weekly",
+		},
+	}
+
+	_, err = s.Collections["categories"].UpdateOne(s.Ctx,
+		bson.M{"_id": category.ID},
+		bson.M{"$push": bson.M{"tasks": task}},
+	)
+	s.NoError(err)
+
+	_, err = s.service.CompleteTask(user.ID, taskID, category.ID, CompleteTaskDocument{
+		TimeCompleted: xutils.NowUTC().Format(time.RFC3339),
+		TimeTaken:     "PT0S",
+	})
+	s.NoError(err)
+
+	var updatedTemplate TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&updatedTemplate)
+	s.NoError(err)
+
+	s.Equal(4, updatedTemplate.FlexState.CompletedInPeriod, "CompletedInPeriod should be 4")
+	// NextGenerated should be in the future (next Monday)
+	s.True(updatedTemplate.NextGenerated.After(xutils.NowUTC()), "NextGenerated should be in the future (next period)")
+}
+
+func (s *TaskServiceTestSuite) TestCreateTaskFromTemplate_Flex_GeneratesCorrectInstanceNumber() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	// 2 already completed
+	_, templateID := s.createFlexTemplate(user, category, 4, "weekly", 2)
+
+	newTask, err := s.service.CreateTaskFromTemplate(templateID)
+	s.NoError(err)
+	s.NotNil(newTask)
+	s.NotNil(newTask.FlexInfo)
+	s.Equal(3, newTask.FlexInfo.InstanceNumber, "Should be instance 3 of 4")
+	s.Equal(4, newTask.FlexInfo.Target)
+	s.Equal("weekly", newTask.FlexInfo.Period)
+}
+
+func (s *TaskServiceTestSuite) TestCreateTaskFromTemplate_Flex_PeriodRollover_ResetsCounter() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	lastWeek := now.Add(-8 * 24 * time.Hour)
+
+	template := &TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         user.ID,
+		CategoryID:     category.ID,
+		Content:        "Flex Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "weekly",
+		RecurType:      "FLEX",
+		RecurDetails: &RecurDetails{
+			Every:    1,
+			Behavior: "ROLLING",
+			Flex:     &FlexDetails{Target: 4, Period: "weekly"},
+		},
+		NextGenerated: &now,
+		FlexState: &FlexTemplateState{
+			Target:            4,
+			Period:            "weekly",
+			CompletedInPeriod: 2,
+			PeriodStart:       &lastWeek,
+		},
+		TimesGenerated:  2,
+		TimesCompleted:  2,
+		TimesMissed:     0,
+		Streak:          2,
+		HighestStreak:   2,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err = s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	newTask, err := s.service.CreateTaskFromTemplate(templateID)
+	s.NoError(err)
+	s.NotNil(newTask)
+	s.NotNil(newTask.FlexInfo)
+	s.Equal(1, newTask.FlexInfo.InstanceNumber, "After period rollover, should be instance 1")
+
+	// Verify template state was reset
+	var updatedTemplate TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&updatedTemplate)
+	s.NoError(err)
+	s.Equal(0, updatedTemplate.FlexState.CompletedInPeriod, "CompletedInPeriod should be reset to 0")
+}
+
+func (s *TaskServiceTestSuite) TestCreateTaskFromTemplate_Flex_PeriodRollover_TracksMissed() {
+	user := s.GetUser(0)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Flex Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+	now := xutils.NowUTC()
+	lastWeek := now.Add(-8 * 24 * time.Hour)
+
+	template := &TemplateTaskDocument{
+		ID:             templateID,
+		UserID:         user.ID,
+		CategoryID:     category.ID,
+		Content:        "Flex Task",
+		Priority:       1,
+		Value:          10.0,
+		RecurFrequency: "weekly",
+		RecurType:      "FLEX",
+		RecurDetails: &RecurDetails{
+			Every:    1,
+			Behavior: "ROLLING",
+			Flex:     &FlexDetails{Target: 4, Period: "weekly"},
+		},
+		NextGenerated: &now,
+		FlexState: &FlexTemplateState{
+			Target:            4,
+			Period:            "weekly",
+			CompletedInPeriod: 2,
+			PeriodStart:       &lastWeek,
+		},
+		TimesGenerated:  2,
+		TimesCompleted:  2,
+		TimesMissed:     0,
+		Streak:          2,
+		HighestStreak:   2,
+		CompletionDates: []time.Time{},
+	}
+
+	_, err = s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	_, err = s.service.CreateTaskFromTemplate(templateID)
+	s.NoError(err)
+
+	var updatedTemplate TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&updatedTemplate)
+	s.NoError(err)
+
+	// Missed 2 (target 4 - completed 2)
+	s.Equal(2, updatedTemplate.TimesMissed, "Should have 2 missed tasks from previous period")
+	s.Equal(0, updatedTemplate.Streak, "Streak should be reset due to missed tasks")
+}

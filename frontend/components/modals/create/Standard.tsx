@@ -130,6 +130,7 @@ const StandardContent = ({
         recurring,
         recurFrequency,
         recurDetails,
+        flexDetails,
         deadline,
         startTime,
         startDate,
@@ -325,9 +326,14 @@ const StandardContent = ({
             })),
             integration: integration || undefined,
         };
-        if (recurring) {
+        if (recurring || flexDetails) {
             postBody.recurFrequency = recurFrequency;
-            postBody.recurDetails = recurDetails as RecurDetails;
+            postBody.recurring = true;
+            const details = { ...recurDetails } as any;
+            if (flexDetails) {
+                details.flex = flexDetails;
+            }
+            postBody.recurDetails = details as RecurDetails;
         }
 
         try {
@@ -360,20 +366,24 @@ const StandardContent = ({
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
 
+    const effectiveRecurring = recurring || !!flexDetails;
+    const effectiveRecurDetails = (() => {
+        if (effectiveRecurring) {
+            const details = { ...recurDetails } as any;
+            if (flexDetails) details.flex = flexDetails;
+            return details as RecurDetails;
+        }
+        return { every: 1, daysOfWeek: [0, 0, 0, 0, 0, 0, 0], behavior: "ROLLING" as const };
+    })();
+
     let updateData: any = {
         content: trimmedTaskName,
         priority: priority,
         value: value,
-        recurring: recurring,
+        recurring: effectiveRecurring,
         public: isPublic,
         active: task.active || false,
-        recurDetails: recurring
-            ? (recurDetails as RecurDetails)
-            : {
-                  every: 1,
-                  daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
-                  behavior: "ROLLING",
-              },
+        recurDetails: effectiveRecurDetails,
         startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
         startTime: startTime?.toISOString(),
         deadline: deadline?.toISOString(),
@@ -396,12 +406,9 @@ const StandardContent = ({
         behavior: "ROLLING",
     };
 
-    // Check if we should request template generation
-    // Only generate template if recurring is true AND it wasn't recurring before (or didn't have a template)
-    const generateTemplate = recurring && (!task.recurring || !task.templateID);
+    const generateTemplate = effectiveRecurring && (!task.recurring || !task.templateID);
 
-    // Merge what would have been in the second block here if needed
-    if (recurring) {
+    if (effectiveRecurring) {
         updateData.recurFrequency = recurFrequency;
     }
     updateData.generateTemplate = generateTemplate;
@@ -849,6 +856,7 @@ const AdvancedOptionList = ({
         reminders,
         recurring,
         recurFrequency,
+        flexDetails,
         isBlueprint: isBlueprintMode,
         integration,
     } = useTaskCreation();
@@ -895,11 +903,17 @@ const AdvancedOptionList = ({
             />
             <AdvancedOption
                 icon="repeat"
-                label={recurring ? "Recurring: " + recurFrequency : "Make Recurring"}
+                label={
+                    flexDetails
+                        ? `Flex: ${flexDetails.target}x per ${flexDetails.period.replace("ly", "").replace("dai", "day")}`
+                        : recurring
+                            ? "Recurring: " + recurFrequency
+                            : "Make Recurring"
+                }
                 screen={Screen.RECURRING}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}
-                configured={recurring}
+                configured={recurring || !!flexDetails}
             />
             <AdvancedOption
                 icon="alarm"

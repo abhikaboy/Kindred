@@ -42,6 +42,17 @@ export interface ChecklistItem {
     id?: string; // for frontend use
 }
 
+export interface FlexDetails {
+    target: number;
+    period: "daily" | "weekly" | "monthly";
+}
+
+export interface FlexInstanceInfo {
+    instanceNumber: number;
+    target: number;
+    period: "daily" | "weekly" | "monthly";
+}
+
 export interface RecurDetails {
     every: number;
     daysOfWeek?: number[];
@@ -49,6 +60,7 @@ export interface RecurDetails {
     months?: number[];
     behavior: "BUILDUP" | "ROLLING";
     reminders?: string[];
+    flex?: FlexDetails;
 }
 
 export interface Task {
@@ -76,6 +88,8 @@ export interface Task {
     checklist?: ChecklistItem[];
     reminders?: Reminder[];
     integration?: string; // Integration app name (amazon, gmail, etc.)
+
+    flexInfo?: FlexInstanceInfo;
 
     // Completion tracking fields (only populated for completed tasks)
     timeCompleted?: string;
