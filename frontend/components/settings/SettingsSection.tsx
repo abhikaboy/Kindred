@@ -25,7 +25,6 @@ const styles = StyleSheet.create({
     },
     sectionHeader: {
         marginBottom: 16,
-        fontSize: 12,
         letterSpacing: 1,
     },
 });

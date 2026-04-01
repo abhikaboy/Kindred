@@ -11,6 +11,7 @@ import * as StoreReview from 'expo-store-review';
 import { deleteAccount } from '@/api/auth';
 import { showToast } from '@/utils/showToast';
 import { useContactConsent } from '@/hooks/useContactConsent';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { SettingsCard } from '@/components/settings/SettingsCard';
@@ -29,6 +30,7 @@ export default function Settings() {
     const router = useRouter();
     const { logout } = useAuth();
     const { hasConsent, resetConsent } = useContactConsent();
+    const { isPro, presentPaywall, presentCustomerCenter } = useRevenueCat();
     const insets = useSafeAreaInsets();
 
     // Fetch user settings
@@ -343,9 +345,9 @@ export default function Settings() {
                     </ThemedText>
                     <View style={styles.saveButton} />
                 </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={styles.centerState}>
                     <ActivityIndicator size="large" color={ThemedColor.primary} />
-                    <ThemedText style={{ marginTop: 16, color: ThemedColor.caption }}>
+                    <ThemedText type="caption" style={styles.centerStateText}>
                         Loading settings...
                     </ThemedText>
                 </View>
@@ -366,12 +368,12 @@ export default function Settings() {
                     </ThemedText>
                     <View style={styles.saveButton} />
                 </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                <View style={[styles.centerState, { padding: 20 }]}>
                     <Ionicons name="alert-circle-outline" size={48} color={ThemedColor.error} />
-                    <ThemedText style={{ marginTop: 16, color: ThemedColor.text, textAlign: 'center' }}>
+                    <ThemedText type="default" style={[styles.centerStateText, { textAlign: 'center' }]}>
                         Failed to load settings
                     </ThemedText>
-                    <ThemedText style={{ marginTop: 8, color: ThemedColor.caption, textAlign: 'center' }}>
+                    <ThemedText type="caption" style={{ marginTop: 8, textAlign: 'center' }}>
                         Please try again later
                     </ThemedText>
                 </View>
@@ -415,10 +417,10 @@ export default function Settings() {
                 <View style={styles.content}>
                 <SettingsSection title="NOTIFICATIONS">
                     <View style={styles.checkinSection}>
-                        <ThemedText type="lightBody" style={[styles.settingLabel, { color: ThemedColor.caption }]}>
+                        <ThemedText type="default">
                             Check-in Frequency
                         </ThemedText>
-                        <ThemedText type="caption" style={[styles.checkinDescription, { color: ThemedColor.text + '80' }]}>
+                        <ThemedText type="caption" style={styles.checkinDescription}>
                             How often you'd like reminders about overdue tasks
                         </ThemedText>
                         <SegmentedControl
@@ -451,6 +453,7 @@ export default function Settings() {
                             label="Recent Workspaces"
                             value={localSettings.recentWorkspaces}
                             onValueChange={() => handleToggle('recentWorkspaces')}
+                            isLast
                         />
                     </SettingsCard>
                 </SettingsSection>
@@ -476,7 +479,7 @@ export default function Settings() {
                                 </View>
                                 <View style={styles.integrationContent}>
                                     <View style={styles.integrationHeader}>
-                                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                        <ThemedText type="defaultSemiBold">
                                             Google Calendar
                                         </ThemedText>
                                         <View style={[
@@ -484,15 +487,12 @@ export default function Settings() {
                                             { backgroundColor: ThemedColor.warning + '15' }
                                         ]}>
                                             <View style={[styles.connectedDot, { backgroundColor: ThemedColor.warning }]} />
-                                            <ThemedText type="caption" style={[
-                                                styles.connectedText,
-                                                { color: ThemedColor.warning }
-                                            ]}>
+                                            <ThemedText type="caption" style={{ color: ThemedColor.warning }}>
                                                 Setup Required
                                             </ThemedText>
                                         </View>
                                     </View>
-                                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                    <ThemedText type="caption">
                                         {pendingCalendarConnection.provider_account_id}
                                     </ThemedText>
                                 </View>
@@ -520,7 +520,7 @@ export default function Settings() {
                                 </View>
                                 <View style={styles.integrationContent}>
                                     <View style={styles.integrationHeader}>
-                                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                        <ThemedText type="defaultSemiBold">
                                             Google Calendar
                                         </ThemedText>
                                         <View style={[
@@ -528,15 +528,12 @@ export default function Settings() {
                                             { backgroundColor: ThemedColor.primary + '15' }
                                         ]}>
                                             <View style={[styles.connectedDot, { backgroundColor: ThemedColor.primary }]} />
-                                            <ThemedText type="caption" style={[
-                                                styles.connectedText,
-                                                { color: ThemedColor.primary }
-                                            ]}>
+                                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
                                                 Connected
                                             </ThemedText>
                                         </View>
                                     </View>
-                                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                    <ThemedText type="caption">
                                         {connection.provider_account_id}
                                     </ThemedText>
                                 </View>
@@ -563,10 +560,10 @@ export default function Settings() {
                                 )}
                             </View>
                             <View style={styles.integrationContent}>
-                                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text }}>
+                                <ThemedText type="defaultSemiBold">
                                     {calendarConnections.length > 0 ? 'Add another account' : 'Connect Google Calendar'}
                                 </ThemedText>
-                                <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption, marginTop: 2 }}>
+                                <ThemedText type="caption">
                                     {isConnectingCalendar ? 'Opening Google sign-in...' : 'Sync your events as tasks'}
                                 </ThemedText>
                             </View>
@@ -578,54 +575,60 @@ export default function Settings() {
                 </SettingsSection>
 
                 <SettingsSection title="PRIVACY & DATA">
-                    <SettingsCard>
-                        <TouchableOpacity
-                            style={styles.privacyRow}
-                            onPress={handleResetContactConsent}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.privacyInfo}>
-                                <View style={styles.privacyTitleRow}>
-                                    <ThemedText type="lightBody" style={[styles.settingLabel, { color: ThemedColor.caption }]}>
-                                        Phone Contacts
-                                    </ThemedText>
-                                    <View style={[
-                                        styles.statusBadge,
-                                        {
-                                            backgroundColor: hasConsent === true
-                                                ? ThemedColor.primary + '20'
-                                                : ThemedColor.tertiary
-                                        }
-                                    ]}>
-                                        <ThemedText type="caption" style={[
-                                            styles.statusBadgeText,
-                                            {
-                                                color: hasConsent === true
-                                                    ? ThemedColor.primary
-                                                    : ThemedColor.text + 'AA'
-                                            }
-                                        ]}>
-                                            {hasConsent === null && 'Not Set'}
-                                            {hasConsent === true && 'Enabled'}
-                                            {hasConsent === false && 'Disabled'}
-                                        </ThemedText>
-                                    </View>
-                                </View>
-                                <ThemedText type="caption" style={[styles.privacyDescription, { color: ThemedColor.text + '80' }]}>
-                                    {hasConsent === null && 'Sync contacts to find friends'}
-                                    {hasConsent === true && 'Contacts are synced'}
-                                    {hasConsent === false && 'Contact sync disabled'}
-                                </ThemedText>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />
-                        </TouchableOpacity>
-                    </SettingsCard>
-
+                    <SettingsActionRow
+                        label={`Phone Contacts${hasConsent === true ? ' — Enabled' : hasConsent === false ? ' — Disabled' : ''}`}
+                        onPress={handleResetContactConsent}
+                        icon="people-outline"
+                    />
                     <SettingsActionRow
                         label="Blocked Users"
                         onPress={() => router.push('/(logged-in)/(tabs)/(task)/blocked-users')}
                         icon="ban-outline"
                     />
+                </SettingsSection>
+
+                <SettingsSection title="SUBSCRIPTION">
+                    <SettingsCard>
+                        <TouchableOpacity
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                paddingVertical: 12,
+                            }}
+                            onPress={isPro ? presentCustomerCenter : presentPaywall}
+                            activeOpacity={0.7}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <Ionicons
+                                    name={isPro ? "star" : "star-outline"}
+                                    size={20}
+                                    color={isPro ? ThemedColor.primary : ThemedColor.caption}
+                                />
+                                <ThemedText type="default">
+                                    Kindred Pro
+                                </ThemedText>
+                            </View>
+                            {isPro ? (
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: ThemedColor.primary + '15',
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 3,
+                                    borderRadius: 6,
+                                    gap: 4,
+                                }}>
+                                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: ThemedColor.primary }} />
+                                    <ThemedText type="caption" style={{ color: ThemedColor.primary, fontSize: 11, fontWeight: '500' }}>
+                                        Active
+                                    </ThemedText>
+                                </View>
+                            ) : (
+                                <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />
+                            )}
+                        </TouchableOpacity>
+                    </SettingsCard>
                 </SettingsSection>
 
                 <SettingsSection title="RESOURCES">
@@ -728,45 +731,18 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
         content: {
             paddingHorizontal: horizontalPadding,
         },
-        settingLabel: {
+        centerState: {
             flex: 1,
-        },
-        privacyRow: {
-            flexDirection: 'row',
+            justifyContent: 'center',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: 12,
-            minHeight: 36,
         },
-        privacyInfo: {
-            flex: 1,
-            gap: 6,
-        },
-        privacyTitleRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-        },
-        statusBadge: {
-            paddingHorizontal: 8,
-            paddingVertical: 3,
-            borderRadius: 6,
-        },
-        statusBadgeText: {
-            fontSize: 11,
-            fontWeight: '600',
-        },
-        privacyDescription: {
-            fontSize: 12,
-            lineHeight: 16,
+        centerStateText: {
+            marginTop: 16,
         },
         checkinSection: {
             borderRadius: 12,
         },
         checkinDescription: {
-            fontSize: 12,
-            lineHeight: 16,
             marginTop: 4,
             marginBottom: 8,
         },
@@ -804,10 +780,6 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
             width: 6,
             height: 6,
             borderRadius: 3,
-        },
-        connectedText: {
-            fontSize: 11,
-            fontWeight: '500',
         },
         integrationAction: {
             width: 32,

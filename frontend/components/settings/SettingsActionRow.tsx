@@ -15,15 +15,15 @@ type Props = {
 export const SettingsActionRow = ({ label, onPress, icon, iconColor, showChevron = false }: Props) => {
     const ThemedColor = useThemeColor();
     const finalIconColor = iconColor || ThemedColor.text;
-    
+
     return (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={[styles.row, { borderBottomColor: ThemedColor.tertiary }]}
             onPress={onPress}
             activeOpacity={0.7}
         >
             <View style={styles.content}>
-                <ThemedText type="lightBody" style={{ color: ThemedColor.text }}>
+                <ThemedText type="default">
                     {label}
                 </ThemedText>
                 {icon && <Ionicons name={icon} size={24} color={finalIconColor} />}

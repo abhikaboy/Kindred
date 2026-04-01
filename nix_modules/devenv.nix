@@ -57,6 +57,7 @@
           go.enable = true;
           javascript = {
             enable = true;
+            package = pkgs.nodejs_22;
           };
           nix.enable = true;
           typescript.enable = true;

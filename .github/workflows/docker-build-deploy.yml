@@ -67,6 +67,10 @@ jobs:
                   GOOGLE_CALENDAR_WEBHOOK_BASE_URL=${{ secrets.GOOGLE_CALENDAR_WEBHOOK_BASE_URL }}
                   # Posthog Configuration
                   POSTHOG_API_KEY=${{ secrets.POSTHOG_API_KEY }}
+
+                  # Sentry Configuration
+                  SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+                  APP_ENV=production
                   EOF
 
             - name: Log in to the Container registry

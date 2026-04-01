@@ -13,6 +13,7 @@ type Config struct {
 	Posthog        `envPrefix:"POSTHOG_"`
 	Sentry         `envPrefix:"SENTRY_"`
 	GoogleCalendar `envPrefix:"GOOGLE_CALENDAR_"`
+	RevenueCat     `envPrefix:"REVENUECAT_"`
 }
 
 func Load() (Config, error) {

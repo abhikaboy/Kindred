@@ -64,7 +64,6 @@ func (s *Subscription) GetCreditMultiplier() float64 {
 type SubscriptionFeatures struct {
 	UnlimitedVoice           bool
 	UnlimitedNaturalLanguage bool
-	UnlimitedGroups          bool
 	UnlimitedAnalytics       bool
 	NoAds                    bool
 	PrioritySupport          bool
@@ -84,7 +83,6 @@ func (s *Subscription) GetFeatures() SubscriptionFeatures {
 		return SubscriptionFeatures{
 			UnlimitedVoice:           false,
 			UnlimitedNaturalLanguage: false,
-			UnlimitedGroups:          false,
 			UnlimitedAnalytics:       false,
 			NoAds:                    true,
 			PrioritySupport:          false,
@@ -94,7 +92,6 @@ func (s *Subscription) GetFeatures() SubscriptionFeatures {
 		return SubscriptionFeatures{
 			UnlimitedVoice:           true,
 			UnlimitedNaturalLanguage: true,
-			UnlimitedGroups:          true,
 			UnlimitedAnalytics:       true,
 			NoAds:                    true,
 			PrioritySupport:          true,

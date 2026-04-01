@@ -30,6 +30,10 @@ func newService(collections map[string]*mongo.Collection, config config.Config) 
 	}
 }
 
+func NewServiceWithConfig(collections map[string]*mongo.Collection, cfg config.Config) *Service {
+	return newService(collections, cfg)
+}
+
 type Handler struct {
 	service *Service
 	config  config.Config

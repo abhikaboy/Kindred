@@ -138,7 +138,6 @@ export interface Subscription {
 export interface SubscriptionFeatures {
     unlimitedVoice: boolean;
     unlimitedNaturalLanguage: boolean;
-    unlimitedGroups: boolean;
     unlimitedAnalytics: boolean;
     noAds: boolean;
     prioritySupport: boolean;

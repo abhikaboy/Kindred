@@ -24,6 +24,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/rewards"
 	"github.com/abhikaboy/Kindred/internal/handlers/settings"
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
+	"github.com/abhikaboy/Kindred/internal/handlers/subscription"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
 	"github.com/abhikaboy/Kindred/internal/posthog"
@@ -137,6 +138,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register calendar routes
 	calendar.Routes(api, collections, cfg)
+
+	// Register subscription webhook routes
+	subscription.Routes(api, collections, cfg)
 
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)

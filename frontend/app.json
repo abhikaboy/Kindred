@@ -46,6 +46,9 @@
         ],
         "com.apple.security.application-groups": [
           "group.com.kindred.kindredtsl"
+        ],
+        "com.apple.developer.in-app-payments": [
+          "Default"
         ]
       },
       "usesAppleSignIn": true,

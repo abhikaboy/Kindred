@@ -7,14 +7,18 @@ type Props = {
     label: string;
     value: boolean;
     onValueChange: (value: boolean) => void;
+    isLast?: boolean;
 };
 
-export const SettingsToggleRow = ({ label, value, onValueChange }: Props) => {
+export const SettingsToggleRow = ({ label, value, onValueChange, isLast = false }: Props) => {
     const ThemedColor = useThemeColor();
-    
+
     return (
-        <View style={styles.row}>
-            <ThemedText type="lightBody" style={[styles.label, { color: ThemedColor.caption }]}>
+        <View style={[
+            styles.row,
+            !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: ThemedColor.tertiary },
+        ]}>
+            <ThemedText type="default" style={styles.label}>
                 {label}
             </ThemedText>
             <Switch
@@ -23,6 +27,7 @@ export const SettingsToggleRow = ({ label, value, onValueChange }: Props) => {
                 trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
                 thumbColor={'#ffffff'}
                 ios_backgroundColor={ThemedColor.tertiary}
+                style={styles.switch}
             />
         </View>
     );
@@ -33,10 +38,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 12,
-        minHeight: 36,
+        paddingVertical: 14,
+        minHeight: 44,
     },
     label: {
         flex: 1,
+    },
+    switch: {
+        transform: [{ scale: 0.85 }],
     },
 });

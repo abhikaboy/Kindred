@@ -5,9 +5,9 @@ import { Subscription, SubscriptionFeatures, SubscriptionTier } from '@/api/type
  */
 export function isSubscriptionActive(subscription: Subscription): boolean {
     if (!subscription) return false;
-    
-    if (subscription.status !== 'active' && 
-        subscription.status !== 'trial' && 
+
+    if (subscription.status !== 'active' &&
+        subscription.status !== 'trial' &&
         subscription.status !== 'canceled') {
         return false;
     }
@@ -66,7 +66,6 @@ export function getSubscriptionFeatures(subscription: Subscription | null): Subs
         return {
             unlimitedVoice: false,
             unlimitedNaturalLanguage: false,
-            unlimitedGroups: false,
             unlimitedAnalytics: false,
             noAds: false,
             prioritySupport: false,
@@ -79,7 +78,6 @@ export function getSubscriptionFeatures(subscription: Subscription | null): Subs
             return {
                 unlimitedVoice: false,
                 unlimitedNaturalLanguage: false,
-                unlimitedGroups: false,
                 unlimitedAnalytics: false,
                 noAds: true,
                 prioritySupport: false,
@@ -90,7 +88,6 @@ export function getSubscriptionFeatures(subscription: Subscription | null): Subs
             return {
                 unlimitedVoice: true,
                 unlimitedNaturalLanguage: true,
-                unlimitedGroups: true,
                 unlimitedAnalytics: true,
                 noAds: true,
                 prioritySupport: true,
@@ -100,7 +97,6 @@ export function getSubscriptionFeatures(subscription: Subscription | null): Subs
             return {
                 unlimitedVoice: false,
                 unlimitedNaturalLanguage: false,
-                unlimitedGroups: false,
                 unlimitedAnalytics: false,
                 noAds: false,
                 prioritySupport: false,
@@ -177,7 +173,7 @@ export function canUseFeature(
  */
 export function getDaysUntilRenewal(subscription: Subscription): number | null {
     if (!subscription) return null;
-    
+
     const targetDate = subscription.renewalDate || subscription.endDate;
     if (!targetDate) return null;
 
@@ -185,7 +181,7 @@ export function getDaysUntilRenewal(subscription: Subscription): number | null {
     const target = new Date(targetDate);
     const diffTime = target.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays;
 }
 
@@ -194,13 +190,13 @@ export function getDaysUntilRenewal(subscription: Subscription): number | null {
  */
 export function formatRenewalDate(subscription: Subscription): string {
     const days = getDaysUntilRenewal(subscription);
-    
+
     if (days === null) return '';
     if (days < 0) return 'Expired';
     if (days === 0) return 'Today';
     if (days === 1) return 'Tomorrow';
     if (days <= 7) return `In ${days} days`;
-    
+
     const date = new Date(subscription.renewalDate || subscription.endDate!);
     return date.toLocaleDateString();
 }
@@ -231,11 +227,10 @@ export function getUpgradeMessage(subscription: Subscription | null): string {
  */
 export function getSubscriptionBadge(subscription: Subscription | null): string | null {
     if (!subscription || subscription.tier === 'free') return null;
-    
+
     if (subscription.tier === 'lifetime') return '👑 Lifetime';
     if (subscription.tier === 'premium') return '⭐ Premium';
     if (subscription.tier === 'basic') return '✨ Basic';
-    
+
     return null;
 }
-

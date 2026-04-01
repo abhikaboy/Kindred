@@ -1,6 +1,6 @@
 # Kindred Project Makefile
 
-.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit
+.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit loadtest loadtest-quick
 
 # Default target
 help: ## Show this help message
@@ -284,3 +284,17 @@ install-pre-commit-framework: ## Install pre-commit framework (requires Python)
 run-pre-commit: ## Run pre-commit on all files
 	@echo "🔍 Running pre-commit on all files..."
 	@pre-commit run --all-files
+
+# Load Testing
+loadtest: ## Run load tests (use RATE=100 DURATION=30s SCENARIO=all)
+	@echo "🔥 Running load tests..."
+	@$(MAKE) mongodb-start
+	@sleep 2
+	@cd backend && TEST_MONGO_URI=mongodb://localhost:27017 AUTH_SECRET=loadtest-secret-key \
+		go run ./loadtest \
+		--rate=$(or $(RATE),50) \
+		--duration=$(or $(DURATION),30s) \
+		--scenario=$(or $(SCENARIO),all)
+
+loadtest-quick: ## Quick load test (10s, health only)
+	@$(MAKE) loadtest RATE=100 DURATION=10s SCENARIO=health

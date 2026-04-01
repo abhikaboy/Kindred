@@ -1,4 +1,4 @@
-import { View, Image, TouchableOpacity, Dimensions, Linking, Platform, Modal, ScrollView } from "react-native";
+import { View, Image, TouchableOpacity, Dimensions, Platform } from "react-native";
 import React, { useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -14,8 +14,8 @@ import { router } from "expo-router";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { isSubscriptionActive } from "@/utils/subscription";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { useRevenueCat } from "@/hooks/useRevenueCat";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -24,15 +24,12 @@ const Edit = () => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-    // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertTitle, setAlertTitle] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
-    // Form state
     const [displayName, setDisplayName] = useState(user?.display_name || "");
     const [handle, setHandle] = useState(user?.handle || "");
     const [activityEnabled, setActivityEnabled] = useState(true);
@@ -40,6 +37,7 @@ const Edit = () => {
     const [todaysTasks, setTodaysTasks] = useState(false);
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
+    const { isPro, presentPaywall, presentCustomerCenter } = useRevenueCat();
 
     const pickImage = async () => {
         const result = await pickImageFromLibrary();
@@ -52,47 +50,31 @@ const Edit = () => {
     };
 
     const handleUpgradePress = async () => {
-        try {
-            if (Platform.OS === 'ios') {
-                // Open App Store subscriptions page
-                const appStoreUrl = 'https://apps.apple.com/account/subscriptions';
-                const canOpen = await Linking.canOpenURL(appStoreUrl);
-                
-                if (canOpen) {
-                    await Linking.openURL(appStoreUrl);
-                } else {
-                    setAlertTitle("Unable to Open");
-                    setAlertMessage("Please visit the App Store to manage your subscriptions.");
-                    setAlertButtons([{ text: "OK", style: "default" }]);
-                    setAlertVisible(true);
-                }
-            } else if (Platform.OS === 'android') {
-                // Open Google Play subscriptions page
-                const playStoreUrl = 'https://play.google.com/store/account/subscriptions';
-                const canOpen = await Linking.canOpenURL(playStoreUrl);
-                
-                if (canOpen) {
-                    await Linking.openURL(playStoreUrl);
-                } else {
-                    setAlertTitle("Unable to Open");
-                    setAlertMessage("Please visit the Play Store to manage your subscriptions.");
-                    setAlertButtons([{ text: "OK", style: "default" }]);
-                    setAlertVisible(true);
-                }
-            } else {
-                // Web or other platforms
-                setAlertTitle("Kindred Plus");
-                setAlertMessage("Get unlimited access to all premium features!\n\n• Unlimited voice credits\n• Unlimited natural language\n• Unlimited groups\n• Advanced analytics\n• Priority support\n\nSubscription management coming soon!");
-                setAlertButtons([{ text: "OK", style: "default" }]);
-                setAlertVisible(true);
-            }
-        } catch (error) {
-            console.error("Error opening subscription:", error);
-            setAlertTitle("Error");
-            setAlertMessage("Unable to open subscription settings. Please try again later.");
+        if (Platform.OS === 'web') {
+            setAlertTitle("Kindred Pro");
+            setAlertMessage("In-app purchases are available on iOS and Android. Please upgrade from your mobile device.");
+            setAlertButtons([{ text: "OK", style: "default" }]);
+            setAlertVisible(true);
+            return;
+        }
+
+        const purchased = await presentPaywall();
+        if (purchased) {
+            setAlertTitle("Welcome to Kindred Pro!");
+            setAlertMessage("You now have unlimited access to all premium features.");
+            setAlertButtons([{ text: "Awesome!", style: "default" }]);
+            setAlertVisible(true);
+        } else if (__DEV__) {
+            setAlertTitle("Development Mode");
+            setAlertMessage("The paywall requires a native development build. It won't work in Expo Go.\n\nRun 'eas build --profile development' to test purchases.");
             setAlertButtons([{ text: "OK", style: "default" }]);
             setAlertVisible(true);
         }
+    };
+
+    const handleManageSubscription = async () => {
+        if (Platform.OS === 'web') return;
+        await presentCustomerCenter();
     };
 
     const handleSave = async () => {
@@ -108,7 +90,6 @@ const Edit = () => {
         try {
             let profilePictureUrl = user.profile_picture;
 
-            // If there's a new image selected, upload it first
             if (selectedImage && selectedImage !== user.profile_picture) {
                 console.log("Uploading new profile picture...");
                 profilePictureUrl = await uploadImageSmart("profile", user._id, selectedImage, { variant: "medium" });
@@ -116,7 +97,6 @@ const Edit = () => {
                 console.log("Type of profilePictureUrl:", typeof profilePictureUrl);
             }
 
-            // Prepare update data with snake_case field names as expected by API
             const updateData: any = {};
 
             if (displayName !== user.display_name) {
@@ -128,7 +108,6 @@ const Edit = () => {
             }
 
             if (profilePictureUrl !== user.profile_picture) {
-                // Ensure profilePictureUrl is a string, not an object
                 if (typeof profilePictureUrl === "string") {
                     updateData.profile_picture = profilePictureUrl;
                 } else {
@@ -137,16 +116,13 @@ const Edit = () => {
                 }
             }
 
-            // Debug: Log the update data
             console.log("Update data being sent:", JSON.stringify(updateData, null, 2));
 
-            // Only update if there are changes
             if (Object.keys(updateData).length > 0) {
                 console.log("Updating profile with data:", updateData);
                 await updateProfile(user._id, updateData);
                 console.log("Profile updated successfully");
 
-                // Update the local user state using the auth context
                 updateUser({
                     display_name: displayName,
                     handle: handle,
@@ -159,8 +135,7 @@ const Edit = () => {
                 setAlertMessage("Profile updated successfully!");
                 setAlertButtons([{ text: "OK", style: "default" }]);
                 setAlertVisible(true);
-                
-                // Delay navigation to let user see success message
+
                 setTimeout(() => {
                     router.back();
                 }, 1500);
@@ -171,7 +146,6 @@ const Edit = () => {
             console.error("Save failed:", error);
             console.error("Error details:", error.message);
 
-            // Provide more specific error messages
             let errorMessage = "Failed to save profile. Please try again.";
             if (error.response?.status === 422) {
                 errorMessage = "Invalid profile data. Please check your input and try again.";
@@ -346,12 +320,32 @@ const Edit = () => {
                 />
             </View>
 
-            {/* Learn about Kindred Plus Button - Only show for users without active subscription */}
-            {user && !(user as any).subscription?.tier && (
+            {/* Kindred Pro */}
+            {isPro ? (
+                <View style={{ marginTop: 32, marginBottom: 16 }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        marginBottom: 12,
+                    }}>
+                        <Feather name="check-circle" size={20} color={ThemedColor.primary} />
+                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
+                            Kindred Pro Active
+                        </ThemedText>
+                    </View>
+                    <TouchableOpacity onPress={handleManageSubscription}>
+                        <ThemedText type="default" style={{ textAlign: 'center', opacity: 0.6, textDecorationLine: 'underline' }}>
+                            Manage Subscription
+                        </ThemedText>
+                    </TouchableOpacity>
+                </View>
+            ) : (
                 <View style={{ marginTop: 32, marginBottom: 16 }}>
                     <PrimaryButton
-                        title="Learn about Kindred Plus"
-                        onPress={() => setShowUpgradeModal(true)}
+                        title="Upgrade to Kindred Pro"
+                        onPress={handleUpgradePress}
                         style={{
                             shadowColor: ThemedColor.primary,
                             shadowOffset: { width: 0, height: 4 },
@@ -366,144 +360,6 @@ const Edit = () => {
                     />
                 </View>
             )}
-
-            {/* Kindred Plus Benefits Modal */}
-            <Modal
-                visible={showUpgradeModal}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setShowUpgradeModal(false)}
-            >
-                <ThemedView style={{ flex: 1 }}>
-                    <ScrollView
-                        style={{ flex: 1 }}
-                        contentContainerStyle={{
-                            paddingHorizontal: HORIZONTAL_PADDING,
-                            paddingTop: insets.top + 16,
-                            paddingBottom: insets.bottom + 24,
-                        }}
-                    >
-                        {/* Header */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <View style={{ flex: 1 }}>
-                                <ThemedText type="title" style={{ fontSize: 28 }}>
-                                    Kindred Plus
-                                </ThemedText>
-                                <ThemedText type="default" style={{ opacity: 0.7, fontSize: 16, marginTop: 4 }}>
-                                    Upgrade for $4.99/month
-                                </ThemedText>
-                            </View>
-                            <TouchableOpacity onPress={() => setShowUpgradeModal(false)}>
-                                <Feather name="x" size={28} color={ThemedColor.text} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={{ height: 24 }} />
-
-                        {/* Benefits */}
-                        <ThemedText type="defaultSemiBold" style={{ fontSize: 18, marginBottom: 16 }}>
-                            What's Included:
-                        </ThemedText>
-
-                        {[
-                            { icon: 'mic', title: 'Unlimited Voice Credits', description: 'Create tasks with your voice without limits' },
-                            { icon: 'message-circle', title: 'Unlimited Natural Language', description: 'Use AI to create tasks naturally' },
-                            { icon: 'users', title: 'Unlimited Group Creation', description: 'Collaborate with unlimited groups' },
-                            { icon: 'layers', title: 'Unlimited Blueprint Subscriptions', description: 'Subscribe to as many blueprints as you want' },
-                            { icon: 'eye-off', title: 'Ad-Free Experience', description: 'Enjoy Kindred without any advertisements' },
-                        ].map((benefit, index) => (
-                            <View
-                                key={index}
-                                style={{
-                                    flexDirection: 'row',
-                                    marginBottom: 20,
-                                    paddingVertical: 12,
-                                    paddingHorizontal: 16,
-                                    backgroundColor: ThemedColor.lightenedCard,
-                                    borderRadius: 12,
-                                }}
-                            >
-                                <View style={{ marginRight: 16, marginTop: 4 }}>
-                                    <Feather name={benefit.icon as any} size={24} color={ThemedColor.primary} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <ThemedText type="defaultSemiBold" style={{ marginBottom: 4 }}>
-                                        {benefit.title}
-                                    </ThemedText>
-                                    <ThemedText type="default" style={{ opacity: 0.7, fontSize: 14 }}>
-                                        {benefit.description}
-                                    </ThemedText>
-                                </View>
-                            </View>
-                        ))}
-
-                        {/* Additional Info */}
-                        <View
-                            style={{
-                                backgroundColor: ThemedColor.lightenedCard,
-                                padding: 16,
-                                borderRadius: 12,
-                                marginTop: 16,
-                                marginBottom: 24,
-                            }}
-                        >
-                            <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textAlign: 'center' }}>
-                                $4.99/month • Auto-renewable subscription
-                            </ThemedText>
-                            <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
-                                Cancel anytime. No commitment required.
-                            </ThemedText>
-                            
-                            {/* Required: Privacy Policy and Terms Links */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
-                                <TouchableOpacity onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}>
-                                    <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textDecorationLine: 'underline', color: ThemedColor.primary }}>
-                                        Privacy Policy
-                                    </ThemedText>
-                                </TouchableOpacity>
-                                <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13 }}>•</ThemedText>
-                                <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
-                                    <ThemedText type="default" style={{ opacity: 0.7, fontSize: 13, textDecorationLine: 'underline', color: ThemedColor.primary }}>
-                                        Terms of Use
-                                    </ThemedText>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Upgrade Button */}
-                        <PrimaryButton
-                            title="Upgrade to Kindred Plus"
-                            onPress={() => {
-                                setShowUpgradeModal(false);
-                                handleUpgradePress();
-                            }}
-                            disabled={true}
-                            style={{
-                                shadowColor: ThemedColor.primary,
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.5,
-                                shadowRadius: 12,
-                                elevation: 8,
-                                marginBottom: 12,
-                            }}
-                            textStyle={{
-                                fontSize: 16,
-                                fontWeight: "700",
-                            }}
-                        />
-
-                        {/* Cancel Button */}
-                        <TouchableOpacity
-                            onPress={() => setShowUpgradeModal(false)}
-                            style={{ paddingVertical: 12 }}
-                        >
-                            <ThemedText type="default" style={{ textAlign: 'center', opacity: 0.6 }}>
-                                Maybe Later
-                            </ThemedText>
-                        </TouchableOpacity>
-                    </ScrollView>
-                </ThemedView>
-            </Modal>
 
             <CustomAlert
                 visible={alertVisible}

@@ -8,9 +8,9 @@ type Props = {
 
 export const SettingsCard = ({ children }: Props) => {
     const ThemedColor = useThemeColor();
-    
+
     return (
-        <View style={[styles.container, { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary }]}>
+        <View style={[styles.container, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary }]}>
             {children}
         </View>
     );
@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     container: {
         borderRadius: 12,
         paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingVertical: 8,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,

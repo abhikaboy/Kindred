@@ -35,6 +35,7 @@ import { SelectedGroupProvider } from "@/contexts/SelectedGroupContext";
 import { AlertProvider } from "@/contexts/AlertContext";
 import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
+import { RevenueCatProvider } from "@/hooks/useRevenueCat";
 
 try {
     const previousHandler = ErrorUtils.getGlobalHandler();
@@ -154,6 +155,7 @@ export default Sentry.wrap(function RootLayout() {
         <QueryClientProvider client={queryClient}>
             <AnimatePresence>
                 <AuthProvider>
+                    <RevenueCatProvider>
                     <OnboardingProvider>
                         <SpotlightProvider>
                             <FocusModeProvider>
@@ -191,6 +193,7 @@ export default Sentry.wrap(function RootLayout() {
                             </FocusModeProvider>
                         </SpotlightProvider>
                     </OnboardingProvider>
+                    </RevenueCatProvider>
                 </AuthProvider>
             </AnimatePresence>
         </QueryClientProvider>
