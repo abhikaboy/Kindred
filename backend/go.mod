@@ -18,6 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.76.1
 	github.com/disintegration/imaging v1.6.2
 	github.com/firebase/genkit/go v1.0.2
+	github.com/getsentry/sentry-go v0.44.1
 	github.com/gofiber/contrib/socketio v1.1.6
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.2.1

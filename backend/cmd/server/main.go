@@ -24,6 +24,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/unsplash"
 	"github.com/abhikaboy/Kindred/internal/xslog"
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/getsentry/sentry-go"
 	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
 	"gopkg.in/yaml.v3"
@@ -56,6 +57,21 @@ func run(stderr io.Writer, args []string) {
 	config, err := config.Load()
 	if err != nil {
 		fatal(ctx, "Failed to load config", err)
+	}
+
+	// Sentry Setup
+	if config.Sentry.DSN != "" {
+		err = sentry.Init(sentry.ClientOptions{
+			Dsn:              config.Sentry.DSN,
+			TracesSampleRate: 0.2,
+			Environment:      os.Getenv("APP_ENV"),
+		})
+		if err != nil {
+			slog.Warn("Sentry initialization failed, error reporting will be disabled", "error", err)
+		} else {
+			slog.Info("Sentry initialized")
+			defer sentry.Flush(2 * time.Second)
+		}
 	}
 
 	port, err := strconv.Atoi(config.App.Port)

@@ -11,6 +11,7 @@ type Config struct {
 	Sinch          `envPrefix:"SINCH_"`
 	Unsplash       `envPrefix:"UNSPLASH_"`
 	Posthog        `envPrefix:"POSTHOG_"`
+	Sentry         `envPrefix:"SENTRY_"`
 	GoogleCalendar `envPrefix:"GOOGLE_CALENDAR_"`
 }
 

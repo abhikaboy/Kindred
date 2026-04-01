@@ -8,6 +8,7 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
+	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -229,11 +230,11 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 
 func (s *Service) getUserLocation(ctx context.Context, userID primitive.ObjectID) (*time.Location, error) {
 	var user types.User
-	// We need to use FindOne here.
 	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
 	if err != nil {
 		slog.Error("Failed to fetch user for timezone", "userID", userID, "error", err)
-		return time.UTC, nil // Default to UTC on error
+		sentry.CaptureException(fmt.Errorf("failed to fetch user %s for timezone: %w", userID.Hex(), err))
+		return time.UTC, fmt.Errorf("failed to fetch user for timezone: %w", err)
 	}
 
 	if user.Timezone == "" {
@@ -243,7 +244,8 @@ func (s *Service) getUserLocation(ctx context.Context, userID primitive.ObjectID
 	loc, err := time.LoadLocation(user.Timezone)
 	if err != nil {
 		slog.Error("Failed to load user location", "timezone", user.Timezone, "error", err)
-		return time.UTC, nil
+		sentry.CaptureException(fmt.Errorf("failed to load timezone %q for user %s: %w", user.Timezone, userID.Hex(), err))
+		return time.UTC, fmt.Errorf("failed to load timezone %q: %w", user.Timezone, err)
 	}
 	return loc, nil
 }
@@ -578,9 +580,16 @@ func (h *Handler) HandleRecurringTaskCreation(c *fiber.Ctx, doc TaskDocument, pa
 }
 
 func (h *Handler) handleFlexTaskCreation(c *fiber.Ctx, doc TaskDocument, params CreateTaskParams, categoryId primitive.ObjectID, templateID primitive.ObjectID, reminders []*Reminder) error {
+	if params.RecurDetails == nil || params.RecurDetails.Flex == nil {
+		err := fmt.Errorf("flex details missing for flex task creation, template %s", templateID.Hex())
+		sentry.CaptureException(err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Flex details are required"})
+	}
+
 	flex := params.RecurDetails.Flex
 	strategy, err := FlexPeriodFor(flex.Period)
 	if err != nil {
+		sentry.CaptureException(fmt.Errorf("invalid flex period %q for template %s: %w", flex.Period, templateID.Hex(), err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -620,7 +629,8 @@ func (h *Handler) handleFlexTaskCreation(c *fiber.Ctx, doc TaskDocument, params 
 	_, err = h.service.CreateTemplateTask(categoryId, &template_doc)
 	if err != nil {
 		slog.LogAttrs(c.Context(), slog.LevelError, "Error creating flex template task", slog.String("error", err.Error()))
-		return c.Status(fiber.StatusInternalServerError).JSON(err)
+		sentry.CaptureException(fmt.Errorf("failed to create flex template task %s: %w", templateID.Hex(), err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create flex task template"})
 	}
 
 	return nil

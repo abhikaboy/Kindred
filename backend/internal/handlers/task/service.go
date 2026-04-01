@@ -13,6 +13,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
+	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -1551,12 +1552,22 @@ func (s *Service) ScheduleNextRecurrence(templateId primitive.ObjectID) error {
 }
 
 func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *TemplateTaskDocument, task TaskDocument) (*TaskDocument, error) {
-	strategy, err := FlexPeriodFor(templateDoc.FlexState.Period)
-	if err != nil {
+	if templateDoc.FlexState == nil {
+		err := fmt.Errorf("FlexState is nil for FLEX template %s", templateDoc.ID.Hex())
+		sentry.CaptureException(err)
 		return nil, err
 	}
 
-	loc, _ := s.getUserLocation(ctx, templateDoc.UserID)
+	strategy, err := FlexPeriodFor(templateDoc.FlexState.Period)
+	if err != nil {
+		sentry.CaptureException(fmt.Errorf("invalid flex period for template %s: %w", templateDoc.ID.Hex(), err))
+		return nil, err
+	}
+
+	loc, err := s.getUserLocation(ctx, templateDoc.UserID)
+	if err != nil {
+		sentry.CaptureMessage(fmt.Sprintf("Failed to load timezone for user %s on template %s: %v", templateDoc.UserID.Hex(), templateDoc.ID.Hex(), err))
+	}
 	now := xutils.NowUTC()
 	currentPeriodStart := strategy.PeriodStart(now, loc)
 
@@ -1579,6 +1590,7 @@ func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *T
 				})
 				if err != nil {
 					slog.Error("Failed to update missed flex stats", "error", err)
+					sentry.CaptureException(fmt.Errorf("failed to update missed flex stats for template %s: %w", templateDoc.ID.Hex(), err))
 				}
 			}
 		}
@@ -1613,6 +1625,7 @@ func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *T
 
 	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": templateDoc.ID}, update)
 	if err != nil {
+		sentry.CaptureException(fmt.Errorf("failed to update flex template %s: %w", templateDoc.ID.Hex(), err))
 		return nil, err
 	}
 
@@ -1622,6 +1635,7 @@ func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *T
 		bson.M{"$push": bson.M{"tasks": task}},
 	)
 	if err != nil {
+		sentry.CaptureException(fmt.Errorf("failed to push flex task into category %s: %w", templateDoc.CategoryID.Hex(), err))
 		return nil, err
 	}
 
@@ -1629,12 +1643,22 @@ func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *T
 }
 
 func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTaskDocument) error {
-	strategy, err := FlexPeriodFor(template.FlexState.Period)
-	if err != nil {
+	if template.FlexState == nil {
+		err := fmt.Errorf("FlexState is nil for FLEX template %s during completion", template.ID.Hex())
+		sentry.CaptureException(err)
 		return err
 	}
 
-	loc, _ := s.getUserLocation(ctx, template.UserID)
+	strategy, err := FlexPeriodFor(template.FlexState.Period)
+	if err != nil {
+		sentry.CaptureException(fmt.Errorf("invalid flex period for template %s: %w", template.ID.Hex(), err))
+		return err
+	}
+
+	loc, err := s.getUserLocation(ctx, template.UserID)
+	if err != nil {
+		sentry.CaptureMessage(fmt.Sprintf("Failed to load timezone for user %s on template %s: %v", template.UserID.Hex(), template.ID.Hex(), err))
+	}
 	now := xutils.NowUTC()
 	newCompleted := template.FlexState.CompletedInPeriod + 1
 
@@ -1653,6 +1677,9 @@ func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTa
 	}
 
 	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{"$set": update})
+	if err != nil {
+		sentry.CaptureException(fmt.Errorf("failed to update flex completion for template %s: %w", template.ID.Hex(), err))
+	}
 	return err
 }
 

@@ -14,7 +14,7 @@ RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /app/backend ./cmd/server/
 # Final stage
 FROM alpine:latest
 # Update and install ca-certificates for HTTPS (using apk instead of apt-get)
-RUN apk update && apk add --no-cache ca-certificates && rm -rf /var/cache/apk/*
+RUN apk update && apk add --no-cache ca-certificates tzdata && rm -rf /var/cache/apk/*
 WORKDIR /root/
 # Copy the binary from builder
 COPY --from=builder /app/backend /root/backend
