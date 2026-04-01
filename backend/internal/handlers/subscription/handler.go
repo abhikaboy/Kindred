@@ -62,19 +62,19 @@ type WebhookEvent struct {
 	}
 }
 
-type WebhookOutput struct {
+type SubscriptionWebhookOutput struct {
 	Body struct {
 		Status string `json:"status"`
 	}
 }
 
-func webhookOK() *WebhookOutput {
-	return &WebhookOutput{Body: struct {
+func webhookOK() *SubscriptionWebhookOutput {
+	return &SubscriptionWebhookOutput{Body: struct {
 		Status string `json:"status"`
 	}{Status: "ok"}}
 }
 
-func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookEvent) (*WebhookOutput, error) {
+func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookEvent) (*SubscriptionWebhookOutput, error) {
 	event := input.Body.Event
 	slog.Info("RevenueCat webhook received",
 		"type", event.Type,

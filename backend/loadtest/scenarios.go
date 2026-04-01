@@ -1,13 +1,19 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"net/http"
 
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
+
+func cryptoIntn(n int) int {
+	val, _ := rand.Int(rand.Reader, big.NewInt(int64(n)))
+	return int(val.Int64())
+}
 
 type Scenario struct {
 	Name     string
@@ -56,7 +62,7 @@ func tasksScenario(env *LoadTestEnv) Scenario {
 			}
 			body, _ := json.Marshal(map[string]interface{}{
 				"priority": 2,
-				"content":  fmt.Sprintf("Load test task %d", rand.Intn(10000)),
+				"content":  fmt.Sprintf("Load test task %d", cryptoIntn(10000)),
 				"value":    3.0,
 			})
 			targets = append(targets, vegeta.Target{
@@ -193,7 +199,7 @@ func mixedScenario(env *LoadTestEnv) Scenario {
 	return Scenario{
 		Name: "mixed",
 		Targeter: func(tgt *vegeta.Target) error {
-			r := rand.Intn(totalWeight)
+			r := cryptoIntn(totalWeight)
 			cumulative := 0
 			for _, w := range weighted {
 				cumulative += w.weight
@@ -217,7 +223,7 @@ func roundRobinTargeter(targets []vegeta.Target) vegeta.Targeter {
 
 func randomTargeter(targets []vegeta.Target) vegeta.Targeter {
 	return func(tgt *vegeta.Target) error {
-		*tgt = targets[rand.Intn(len(targets))]
+		*tgt = targets[cryptoIntn(len(targets))]
 		return nil
 	}
 }

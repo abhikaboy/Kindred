@@ -41,7 +41,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Listen failed: %v\n", err)
 		os.Exit(1)
 	}
-	actualPort := ln.Addr().(*net.TCPAddr).Port
+	tcpAddr, ok := ln.Addr().(*net.TCPAddr)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "Failed to get TCP address from listener\n")
+		os.Exit(1)
+	}
+	actualPort := tcpAddr.Port
 	fmt.Printf("  Listening on :%d\n", actualPort)
 
 	go func() {
@@ -49,7 +54,9 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
 		}
 	}()
-	defer env.App.Shutdown()
+	defer func() {
+		_ = env.App.Shutdown()
+	}()
 
 	// Give the server a moment to start
 	time.Sleep(200 * time.Millisecond)
