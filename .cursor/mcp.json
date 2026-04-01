@@ -16,11 +16,7 @@
     },
     "mongodb": {
       "command": "/opt/homebrew/bin/npx",
-      "args": ["-y", "mongodb-mcp-server"],
-      "env": {
-        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
-        "MDB_MCP_CONNECTION_STRING": "mongodb+srv://beak:wACR3JySVqKrZjJD@Development.q2lnn.mongodb.net/"
-      }
+      "args": ["-y", "mongodb-mcp-server"]
     }
   }
 }
