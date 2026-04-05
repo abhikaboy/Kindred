@@ -29,6 +29,7 @@ type ProfileDocument struct {
 	Friends        []primitive.ObjectID `bson:"friends" json:"friends"`
 	// Relationship information - only included when viewing another user's profile
 	Relationship   *RelationshipInfo    `bson:"-" json:"relationship,omitempty"`
+	IsPrivate      bool                 `bson:"-" json:"is_private"`
 	Tasks          []types.TaskDocument `bson:"tasks" json:"tasks,omitempty"`
 	CompletedTasks []types.TaskDocument `bson:"-" json:"completed_tasks,omitempty"`
 }

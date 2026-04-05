@@ -285,8 +285,15 @@ type SafeUser struct {
 
 // UserSettings contains all user preference settings
 type UserSettings struct {
-	Notifications NotificationSettings `bson:"notifications" json:"notifications"`
-	Display       DisplaySettings      `bson:"display" json:"display"`
+	Notifications NotificationSettings  `bson:"notifications" json:"notifications"`
+	Display       DisplaySettings       `bson:"display" json:"display"`
+	AccessControl AccessControlSettings `bson:"access_control" json:"access_control"`
+}
+
+// AccessControlSettings controls privacy and visibility preferences
+type AccessControlSettings struct {
+	PrivateAccount bool `bson:"private_account" json:"private_account"`
+	ShowInSearch   bool `bson:"show_in_search" json:"show_in_search"`
 }
 
 // NotificationSettings controls notification preferences
@@ -329,6 +336,10 @@ func DefaultUserSettings() UserSettings {
 			RecentWorkspaces:    true,
 			FriendActivityFeed:  true,
 			NearDeadlinesWidget: true,
+		},
+		AccessControl: AccessControlSettings{
+			PrivateAccount: true,
+			ShowInSearch:   true,
 		},
 	}
 }
