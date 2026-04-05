@@ -338,7 +338,7 @@ func DefaultUserSettings() UserSettings {
 			NearDeadlinesWidget: true,
 		},
 		AccessControl: AccessControlSettings{
-			PrivateAccount: true,
+			PrivateAccount: true, // Default to private: tasks are only visible to friends (matches prior behavior)
 			ShowInSearch:   true,
 		},
 	}

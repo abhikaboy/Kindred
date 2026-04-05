@@ -115,7 +115,7 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 	accessControl, err := h.service.GetUserAccessControl(id)
 	if err != nil {
 		slog.Error("Failed to get user access control settings", "error", err.Error())
-		// Default to private behaviour on error
+		// Default to private behavior on error to protect user content
 		accessControl = &types.AccessControlSettings{PrivateAccount: true, ShowInSearch: true}
 	}
 	profile.IsPrivate = accessControl.PrivateAccount
