@@ -24,6 +24,7 @@
         "NSLocationWhenInUseUsageDescription": "We use your location to look up nearby restaurants and addresses.",
         "ITSAppUsesNonExemptEncryption": false,
         "NSPrivacyPolicyURL": "https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a",
+        "NSTermsOfUseURL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSExceptionDomains": {
