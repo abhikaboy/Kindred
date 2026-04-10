@@ -108,9 +108,9 @@ const HumanCentricOnboarding = (props: Props) => {
             <Animated.View style={{ zIndex: 1, opacity: buttonFadeAnimation }}>
                 <OnboardButton
                     disabled={false}
-                    onPress={() => {
-                        // Navigate to the circle screen
-                        router.push("/(onboarding)/circle");
+                    onPress={async () => {
+                        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+                        router.push("/login");
                     }}
                 />
             </Animated.View>

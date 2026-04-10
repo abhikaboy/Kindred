@@ -496,6 +496,52 @@ func (s *ConnectionServiceTestSuite) TestBlockUser_UpdateExisting() {
 	s.Equal(Connection.RelationshipBlocked, relationship)
 }
 
+func (s *ConnectionServiceTestSuite) TestBlockUser_RemovesFromFriendsList() {
+
+	blocker := s.GetUser(0)
+	blocked := s.GetUser(1)
+
+	// Clean up and create a friendship
+	s.Collections["friend-requests"].DeleteMany(s.Ctx, bson.M{
+		"users": bson.M{"$all": []primitive.ObjectID{blocker.ID, blocked.ID}},
+	})
+	// Remove from friends arrays
+	s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": blocker.ID}, bson.M{"$pull": bson.M{"friends": blocked.ID}})
+	s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": blocked.ID}, bson.M{"$pull": bson.M{"friends": blocker.ID}})
+
+	connection, err := s.service.CreateConnectionRequest(blocker.ID, blocked.ID)
+	s.NoError(err)
+
+	connectionID, err := primitive.ObjectIDFromHex(connection.ID)
+	s.NoError(err)
+
+	err = s.service.AcceptConnection(connectionID, blocked.ID)
+	s.NoError(err)
+
+	// Verify they are friends
+	friends, err := s.service.GetFriends(blocker.ID)
+	s.NoError(err)
+	s.GreaterOrEqual(len(friends), 1, "Blocker should have blocked user as friend before blocking")
+
+	// Block the user
+	err = s.service.BlockUser(context.Background(), blocker.ID, blocked.ID)
+	s.NoError(err)
+
+	// Verify blocker's friends list no longer contains blocked user
+	friends, err = s.service.GetFriends(blocker.ID)
+	s.NoError(err)
+	for _, f := range friends {
+		s.NotEqual(blocked.ID.Hex(), f.ID, "Blocked user should not appear in blocker's friends list")
+	}
+
+	// Verify blocked user's friends list no longer contains blocker
+	friends, err = s.service.GetFriends(blocked.ID)
+	s.NoError(err)
+	for _, f := range friends {
+		s.NotEqual(blocker.ID.Hex(), f.ID, "Blocker should not appear in blocked user's friends list")
+	}
+}
+
 // ========================================
 // UnblockUser Tests
 // ========================================

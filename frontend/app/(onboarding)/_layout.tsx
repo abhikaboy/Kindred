@@ -18,7 +18,6 @@ export default function OnboardingLayout() {
             <Stack.Screen name="productivity" />
             <Stack.Screen name="positivity" />
             <Stack.Screen name="human" />
-            <Stack.Screen name="circle" />
             <Stack.Screen name="name" />
             <Stack.Screen name="photo" />
             <Stack.Screen name="referral" />

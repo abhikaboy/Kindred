@@ -107,6 +107,10 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
 
     const presentPaywall = useCallback(async (): Promise<boolean> => {
         if (Platform.OS === "web") return false;
+        if (!isReady) {
+            logger.warn("Cannot present paywall — RevenueCat not configured");
+            return false;
+        }
 
         try {
             const result: PAYWALL_RESULT = await RevenueCatUI.presentPaywall();
@@ -134,10 +138,14 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
             }
             return false;
         }
-    }, []);
+    }, [isReady]);
 
     const presentPaywallIfNeeded = useCallback(async (): Promise<boolean> => {
         if (Platform.OS === "web") return false;
+        if (!isReady) {
+            logger.warn("Cannot present paywall — RevenueCat not configured");
+            return false;
+        }
 
         try {
             const result: PAYWALL_RESULT = await RevenueCatUI.presentPaywallIfNeeded({
@@ -162,7 +170,7 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
             }
             return false;
         }
-    }, []);
+    }, [isReady]);
 
     const presentCustomerCenter = useCallback(async (): Promise<void> => {
         if (Platform.OS === "web") return;

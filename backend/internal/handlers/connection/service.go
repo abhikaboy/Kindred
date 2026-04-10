@@ -580,27 +580,44 @@ func (s *Service) BlockUser(ctx context.Context, blockerID, blockedID primitive.
 				},
 			},
 		)
-		return err
-	}
+		if err != nil {
+			return err
+		}
+	} else if err == mongo.ErrNoDocuments {
+		// No relationship exists, create new blocked relationship
+		now := time.Now()
+		blockedRelationship := &ConnectionDocumentInternal{
+			ID:        primitive.NewObjectID(),
+			Users:     sortedIDs,
+			Status:    StatusBlocked,
+			BlockerID: &blockerID,
+			CreatedAt: now,
+			UpdatedAt: &now,
+		}
 
-	if err != mongo.ErrNoDocuments {
+		_, err = s.Connections.InsertOne(ctx, blockedRelationship)
+		if err != nil {
+			return fmt.Errorf("failed to create blocked relationship: %w", err)
+		}
+	} else {
 		return fmt.Errorf("failed to check existing relationship: %w", err)
 	}
 
-	// No relationship exists, create new blocked relationship
-	now := time.Now()
-	blockedRelationship := &ConnectionDocumentInternal{
-		ID:        primitive.NewObjectID(),
-		Users:     sortedIDs,
-		Status:    StatusBlocked,
-		BlockerID: &blockerID,
-		CreatedAt: now,
-		UpdatedAt: &now,
+	// Remove each user from the other's friends list
+	_, err = s.Users.UpdateOne(ctx,
+		bson.M{"_id": blockerID},
+		bson.M{"$pull": bson.M{"friends": blockedID}},
+	)
+	if err != nil {
+		slog.Warn("Failed to remove blocked user from blocker's friends list", "error", err)
 	}
 
-	_, err = s.Connections.InsertOne(ctx, blockedRelationship)
+	_, err = s.Users.UpdateOne(ctx,
+		bson.M{"_id": blockedID},
+		bson.M{"$pull": bson.M{"friends": blockerID}},
+	)
 	if err != nil {
-		return fmt.Errorf("failed to create blocked relationship: %w", err)
+		slog.Warn("Failed to remove blocker from blocked user's friends list", "error", err)
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "User blocked",
