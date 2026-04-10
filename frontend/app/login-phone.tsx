@@ -4,6 +4,7 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { PhoneInput } from "@/components/inputs/PhoneInput";
+import { BigInput } from "@/components/inputs/BigInput";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { useVerification } from "@/hooks/useVerification";
 import { OtpInput } from "react-native-otp-entry";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("screen");
 
@@ -18,16 +20,15 @@ const LoginPhone = () => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { loginWithOTP } = useAuth();
-    const {
-        sendOTP,
-        sendingOTP,
-        sendOTPError,
-    } = useVerification();
+    const { loginWithOTP, loginWithPhone } = useAuth();
+    const { sendOTP, sendingOTP, sendOTPError } = useVerification();
 
     const [phoneNumber, setPhoneNumber] = useState("");
     const [otpCode, setOtpCode] = useState("");
-    const [step, setStep] = useState<"phone" | "otp">("phone");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [step, setStep] = useState<"phone" | "otp" | "password">("phone");
+    const [loginMode, setLoginMode] = useState<"otp" | "password">("otp");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [canResend, setCanResend] = useState(false);
@@ -45,15 +46,20 @@ const LoginPhone = () => {
         }
     }, [resendTimer, step]);
 
-    const handleSendOTP = async () => {
+    const handleContinuePhone = async () => {
         if (!phoneNumber) {
             setError("Please enter your phone number");
             return;
         }
 
+        if (loginMode === "password") {
+            setError("");
+            setStep("password");
+            return;
+        }
+
         setLoading(true);
         setError("");
-
         try {
             await sendOTP(phoneNumber);
             setStep("otp");
@@ -67,7 +73,7 @@ const LoginPhone = () => {
         }
     };
 
-    const handleLogin = async () => {
+    const handleLoginWithOTP = async () => {
         if (!otpCode || otpCode.length !== 4) {
             setError("Please enter the 4-digit code");
             return;
@@ -75,7 +81,6 @@ const LoginPhone = () => {
 
         setLoading(true);
         setError("");
-
         try {
             await loginWithOTP(phoneNumber, otpCode);
             router.push("/(logged-in)/(tabs)/(task)");
@@ -93,20 +98,36 @@ const LoginPhone = () => {
         }
     };
 
+    const handleLoginWithPassword = async () => {
+        if (!password) {
+            setError("Please enter your password");
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+        try {
+            await loginWithPhone(phoneNumber, password);
+            router.push("/(logged-in)/(tabs)/(task)");
+        } catch (err: any) {
+            console.error("Login failed:", err);
+            setError("Invalid phone number or password. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleResend = async () => {
         if (canResend) {
             setCanResend(false);
             setResendTimer(30);
             setOtpCode("");
-            setError(""); // Clear any existing errors
+            setError("");
             try {
                 await sendOTP(phoneNumber);
-                // Show success feedback
-                console.log("Code resent successfully");
             } catch (err) {
                 console.error("Resend failed:", err);
                 setError("Failed to resend code. Please try again.");
-                // Reset timer on failure so user can try again
                 setCanResend(true);
                 setResendTimer(0);
             }
@@ -114,13 +135,25 @@ const LoginPhone = () => {
     };
 
     const handleBack = () => {
-        if (step === "otp") {
+        if (step === "otp" || step === "password") {
             setStep("phone");
             setOtpCode("");
+            setPassword("");
             setError("");
         } else {
             router.back();
         }
+    };
+
+    const toggleLoginMode = () => {
+        setLoginMode(loginMode === "otp" ? "password" : "otp");
+        setError("");
+    };
+
+    const getTitle = () => {
+        if (step === "otp") return "Enter code";
+        if (step === "password") return "Enter password";
+        return "Login";
     };
 
     return (
@@ -132,32 +165,23 @@ const LoginPhone = () => {
                 keyboardShouldPersistTaps="handled"
                 bounces={false}>
                 <View style={[styles.container, { paddingTop: insets.top }]}>
-                    {/* Background Graphics */}
                     <OnboardingBackground variant="default" />
 
-                    {/* Main Content */}
                     <View style={styles.contentContainer}>
-                        {/* Back Button */}
-                        {(step === "otp" || step === "phone") && (
-                            <TouchableOpacity
-                                onPress={handleBack}
-                                style={styles.backButton}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <ThemedText style={styles.backButtonText}>← Back</ThemedText>
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            onPress={handleBack}
+                            style={styles.backButton}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <ThemedText style={styles.backButtonText}>← Back</ThemedText>
+                        </TouchableOpacity>
 
-                        {/* Title */}
-                        <ThemedText
-                            type="titleFraunces"
-                            style={styles.title}>
-                            {step === "phone" ? "Login" : "Enter code"}
+                        <ThemedText type="titleFraunces" style={styles.title}>
+                            {getTitle()}
                         </ThemedText>
 
-                        {step === "phone" ? (
+                        {step === "phone" && (
                             <>
-                                {/* Phone Input */}
                                 <View style={styles.inputContainer}>
                                     <PhoneInput
                                         value={phoneNumber}
@@ -165,21 +189,33 @@ const LoginPhone = () => {
                                         placeholder="(555) 123-4567"
                                     />
                                     <ThemedText style={styles.helperText}>
-                                        We'll send you a verification code
+                                        {loginMode === "otp"
+                                            ? "We'll send you a verification code"
+                                            : "Enter the phone number for your account"}
                                     </ThemedText>
                                 </View>
 
-                                {/* Send Code Button */}
                                 <PrimaryButton
-                                    title={sendingOTP ? "Sending..." : "Send Code"}
-                                    onPress={handleSendOTP}
+                                    title={loginMode === "otp"
+                                        ? (sendingOTP ? "Sending..." : "Send Code")
+                                        : "Continue"}
+                                    onPress={handleContinuePhone}
                                     disabled={loading || sendingOTP || !phoneNumber}
                                     style={styles.continueButton}
                                 />
+
+                                <TouchableOpacity onPress={toggleLoginMode} style={styles.toggleModeButton}>
+                                    <ThemedText style={[styles.toggleModeText, { color: ThemedColor.tint }]}>
+                                        {loginMode === "otp"
+                                            ? "Use a password instead"
+                                            : "Use a verification code instead"}
+                                    </ThemedText>
+                                </TouchableOpacity>
                             </>
-                        ) : (
+                        )}
+
+                        {step === "otp" && (
                             <>
-                                {/* OTP Input */}
                                 <View style={styles.otpContainer}>
                                     <ThemedText style={styles.subtitleText}>
                                         Enter the 4-digit code sent to your phone
@@ -189,10 +225,9 @@ const LoginPhone = () => {
                                         numberOfDigits={4}
                                         onTextChange={(text) => {
                                             setOtpCode(text);
-                                            // Clear error when user starts typing
                                             if (error) setError("");
                                         }}
-                                        onFilled={handleLogin}
+                                        onFilled={handleLoginWithOTP}
                                         theme={{
                                             containerStyle: styles.otpInputContainer,
                                             pinCodeContainerStyle: {
@@ -220,7 +255,6 @@ const LoginPhone = () => {
                                         disabled={loading}
                                     />
 
-                                    {/* Resend Section */}
                                     <View style={styles.resendContainer}>
                                         <ThemedText style={[styles.resendText, { color: ThemedColor.caption }]}>
                                             Didn't receive a code?{' '}
@@ -239,17 +273,50 @@ const LoginPhone = () => {
                                     </View>
                                 </View>
 
-                                {/* Login Button */}
                                 <PrimaryButton
                                     title={loading ? "Logging in..." : "Login"}
-                                    onPress={handleLogin}
+                                    onPress={handleLoginWithOTP}
                                     disabled={loading || otpCode.length !== 4}
                                     style={styles.continueButton}
                                 />
                             </>
                         )}
 
-                        {/* Error Message */}
+                        {step === "password" && (
+                            <>
+                                <View style={styles.inputContainer}>
+                                    <BigInput
+                                        label="Password"
+                                        value={password}
+                                        onChangeText={(text) => {
+                                            setPassword(text);
+                                            if (error) setError("");
+                                        }}
+                                        placeholder="Enter your password"
+                                        showError={false}
+                                        secureTextEntry={!showPassword}
+                                        autoFocus
+                                        suffix={
+                                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                                <Ionicons
+                                                    name={showPassword ? "eye-off" : "eye"}
+                                                    size={22}
+                                                    color={ThemedColor.caption}
+                                                />
+                                            </TouchableOpacity>
+                                        }
+                                    />
+                                </View>
+
+                                <PrimaryButton
+                                    title={loading ? "Logging in..." : "Login"}
+                                    onPress={handleLoginWithPassword}
+                                    disabled={loading || !password}
+                                    style={styles.continueButton}
+                                />
+                            </>
+                        )}
+
                         {(error || sendOTPError) && (
                             <View style={styles.errorContainer}>
                                 <ThemedText style={styles.errorText}>
@@ -340,6 +407,15 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingVertical: 12,
         marginTop: 12,
+    },
+    toggleModeButton: {
+        alignItems: 'center',
+        marginTop: -8,
+    },
+    toggleModeText: {
+        fontSize: 14,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
     },
     errorContainer: {
         width: "100%",

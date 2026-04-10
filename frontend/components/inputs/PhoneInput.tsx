@@ -13,7 +13,7 @@ type Props = {
     onChangeText: (text: string) => void;
     placeholder?: string;
     autoFocus?: boolean;
-    forceTheme?: "light" | "dark"; // Force a specific theme
+    forceTheme?: "light" | "dark";
 };
 
 export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567", autoFocus = false, forceTheme }: Props) => {
@@ -23,13 +23,24 @@ export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567"
     const [phoneNumber, setPhoneNumber] = useState("");
 
     const formatPhoneNumber = (text: string) => {
-        // Remove all non-numeric characters
         const cleaned = text.replace(/\D/g, '');
         setPhoneNumber(cleaned);
-        
-        // Update parent with full phone number including country code
         const fullPhoneNumber = `${countryCode}${cleaned}`;
         onChangeText(fullPhoneNumber);
+    };
+
+    const getDisplayPhoneNumber = () => {
+        if (countryCode !== '+1' || phoneNumber.length === 0) {
+            return phoneNumber;
+        }
+        const digits = phoneNumber;
+        if (digits.length <= 3) {
+            return `(${digits}`;
+        }
+        if (digits.length <= 6) {
+            return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        }
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
     };
 
     return (
@@ -40,7 +51,6 @@ export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567"
                 pickerButtonOnPress={(item) => {
                     setCountryCode(item.dial_code);
                     setShow(false);
-                    // Update parent with new country code
                     const fullPhoneNumber = `${item.dial_code}${phoneNumber}`;
                     onChangeText(fullPhoneNumber);
                 }}
@@ -84,12 +94,9 @@ export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567"
                 }}
             />
 
-            <View style={styles.phoneInputWrapper}>
+            <View style={[styles.unifiedWrapper, { backgroundColor: ThemedColor.lightened }]}>
                 <TouchableOpacity
-                    style={[
-                        styles.countryCodeButton,
-                        { backgroundColor: ThemedColor.lightened }
-                    ]}
+                    style={styles.countryCodeButton}
                     onPress={() => setShow(true)}
                     activeOpacity={0.7}
                 >
@@ -97,22 +104,16 @@ export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567"
                         {countryCode}
                     </ThemedText>
                 </TouchableOpacity>
-                
+
                 <TextInput
-                    style={[
-                        styles.phoneInput,
-                        {
-                            backgroundColor: ThemedColor.lightened,
-                            color: ThemedColor.text,
-                        }
-                    ]}
+                    style={[styles.phoneInput, { color: ThemedColor.text }]}
                     placeholder={placeholder}
                     placeholderTextColor={ThemedColor.caption}
-                    value={phoneNumber}
+                    value={getDisplayPhoneNumber()}
                     onChangeText={formatPhoneNumber}
                     keyboardType="phone-pad"
                     autoFocus={autoFocus}
-                    maxLength={15}
+                    maxLength={14}
                 />
             </View>
         </>
@@ -120,30 +121,31 @@ export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567"
 };
 
 const styles = StyleSheet.create({
-    phoneInputWrapper: {
+    unifiedWrapper: {
         flexDirection: 'row',
-        gap: 12,
+        alignItems: 'center',
+        borderRadius: 16,
+        paddingLeft: 20,
     },
     countryCodeButton: {
-        paddingVertical: 16,
-        paddingHorizontal: 16,
-        borderRadius: 12,
+        paddingVertical: 20,
+        paddingRight: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        minWidth: 70,
+        minWidth: 60,
     },
     countryCodeText: {
-        fontSize: 16,
-        fontFamily: 'OutfitLight',
+        fontSize: 18,
+        fontFamily: 'Outfit',
         fontWeight: '500',
     },
     phoneInput: {
         flex: 1,
-        fontSize: 16,
-        fontFamily: 'OutfitLight',
+        fontSize: 18,
+        fontFamily: 'Outfit',
         fontWeight: '400',
-        paddingVertical: 16,
-        paddingHorizontal: 22,
-        borderRadius: 12,
+        paddingVertical: 20,
+        paddingRight: 24,
+        backgroundColor: 'transparent',
     },
 });
