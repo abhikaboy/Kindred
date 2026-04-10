@@ -43,6 +43,9 @@ func NewService(collections map[string]*mongo.Collection) *Service {
 
 // GetReportedPostIDs returns IDs of all posts that have been reported by any user with pending or reviewed status
 func (s *Service) GetReportedPostIDs(ctx context.Context) ([]primitive.ObjectID, error) {
+	if s.Reports == nil {
+		return []primitive.ObjectID{}, nil
+	}
 	cursor, err := s.Reports.Find(ctx, bson.M{
 		"content_type": "post",
 		"status":       bson.M{"$in": []string{"pending", "reviewed"}},
@@ -68,6 +71,9 @@ func (s *Service) GetReportedPostIDs(ctx context.Context) ([]primitive.ObjectID,
 
 // GetUserReportedPostIDs returns IDs of posts reported by a specific user (any status)
 func (s *Service) GetUserReportedPostIDs(ctx context.Context, userID primitive.ObjectID) ([]primitive.ObjectID, error) {
+	if s.Reports == nil {
+		return []primitive.ObjectID{}, nil
+	}
 	cursor, err := s.Reports.Find(ctx, bson.M{
 		"reporter_id":  userID,
 		"content_type": "post",

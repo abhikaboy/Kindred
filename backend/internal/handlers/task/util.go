@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // getBaseTime returns the appropriate base time for recurrence calculations
@@ -232,6 +234,10 @@ func (s *Service) getUserLocation(ctx context.Context, userID primitive.ObjectID
 	var user types.User
 	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			slog.Warn("User not found for timezone lookup, defaulting to UTC", "userID", userID)
+			return time.UTC, nil
+		}
 		slog.Error("Failed to fetch user for timezone", "userID", userID, "error", err)
 		sentry.CaptureException(fmt.Errorf("failed to fetch user %s for timezone: %w", userID.Hex(), err))
 		return time.UTC, fmt.Errorf("failed to fetch user for timezone: %w", err)
