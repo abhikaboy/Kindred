@@ -16,7 +16,7 @@
       "web"
     ],
     "ios": {
-      "buildNumber": "70",
+      "buildNumber": "96",
       "jsEngine": "hermes",
       "supportsTablet": false,
       "requireFullScreen": true,
@@ -72,6 +72,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-dev-client",
       "expo-apple-authentication",
       "expo-router",
       "expo-notifications",
@@ -122,41 +123,60 @@
               "name": "TodayTasksWidget",
               "displayName": "Today's Tasks",
               "description": "See your tasks due today and track your progress.",
-              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"]
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge"
+              ]
             },
             {
               "name": "WorkspaceSnapshotWidget",
               "displayName": "Workspace",
               "description": "A quick look at your workspace tasks.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ]
             },
             {
               "name": "ActivityStreakWidget",
               "displayName": "Activity Streak",
               "description": "Track your task completion streak.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ]
             },
             {
               "name": "LockScreenCircularWidget",
               "displayName": "Today Progress",
               "description": "Circular progress ring for today's tasks.",
-              "supportedFamilies": ["accessoryCircular"]
+              "supportedFamilies": [
+                "accessoryCircular"
+              ]
             },
             {
               "name": "LockScreenRectangularWidget",
               "displayName": "Next Task",
               "description": "Shows your next due task.",
-              "supportedFamilies": ["accessoryRectangular"]
+              "supportedFamilies": [
+                "accessoryRectangular"
+              ]
             },
             {
               "name": "LockScreenInlineWidget",
               "displayName": "Streak",
               "description": "Shows your current streak.",
-              "supportedFamilies": ["accessoryInline"]
+              "supportedFamilies": [
+                "accessoryInline"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "@sentry/react-native",
+      "expo-image",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
