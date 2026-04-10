@@ -16,7 +16,7 @@
       "web"
     ],
     "ios": {
-      "buildNumber": "96",
+      "buildNumber": "97",
       "jsEngine": "hermes",
       "supportsTablet": false,
       "requireFullScreen": true,

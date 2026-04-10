@@ -11,6 +11,7 @@
         enterShell = ''
           printf "\033[0;1;36mKINDRED DEVELOPMENT ENVIRONMENT\033[0m\n"
           export GOTOOLCHAIN=auto
+          export PATH="/opt/homebrew/bin:$PATH"
 
           # Install Genkit CLI if not already available
           if ! command -v genkit &> /dev/null; then
@@ -165,6 +166,19 @@
               bun run test
             '';
          };
+         "frontend-run-native" = {
+            description = "Builds a native dev client. Use 'frontend-run-native simulator' for simulator.";
+            exec = ''
+              cd "$DEVENV_ROOT"/frontend
+              if [ "$1" = "simulator" ]; then
+                echo "📱 Building for iOS Simulator..."
+                bunx eas build --profile development-simulator --platform ios --local
+              else
+                echo "📱 Building for physical device..."
+                bunx eas build --profile development --platform ios --local
+              fi
+            '';
+          };
          "cli-run" = {
             description = "Runs the CLI.";
             exec = ''

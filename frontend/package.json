@@ -74,7 +74,7 @@
     "expo-system-ui": "~55.0.15",
     "expo-tenor-search": "^1.0.37",
     "expo-web-browser": "~55.0.14",
-    "expo-widgets": "^55.0.2",
+    "expo-widgets": "^55.0.13",
     "i": "^0.3.7",
     "moti": "^0.30.0",
     "openapi-fetch": "^0.14.0",
