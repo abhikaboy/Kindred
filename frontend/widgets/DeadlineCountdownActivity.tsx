@@ -13,16 +13,14 @@ export type DeadlineCountdownProps = {
     timeRemainingLabel: string;
 };
 
-const PRIORITY_COLORS = ['#6B7280', '#3B82F6', '#F59E0B', '#EF4444'];
-const PRIORITY_LABELS = ['None', 'Low', 'Medium', 'High'];
-
-const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
-
-const ACCENT = '#8B5CF6';
-
 const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     'widget';
+
+    const ACCENT = '#8B5CF6';
+    const PRIORITY_COLORS = ['#6B7280', '#3B82F6', '#F59E0B', '#EF4444'];
+    const PRIORITY_LABELS = ['None', 'Low', 'Medium', 'High'];
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 
     const { taskName, workspaceName, priority, timeRemainingLabel } = props;
     const priorityColor = PRIORITY_COLORS[Math.min(priority, 3)];

@@ -19,15 +19,14 @@ export type TodayTasksWidgetProps = {
     workspaceGroups: { workspaceName: string; tasks: string[] }[];
 };
 
-const ACCENT = '#8B5CF6';
-
-const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
-const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
-const accent = foregroundStyle(ACCENT);
-
 const TodayTasksWidget = (props: WidgetBase<TodayTasksWidgetProps>) => {
     'widget';
+
+    const ACCENT = '#8B5CF6';
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+    const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
+    const accent = foregroundStyle(ACCENT);
 
     const { completedCount, totalCount, taskTitles, workspaceGroups, family } = props;
     const progressText = totalCount > 0 ? `${completedCount}/${totalCount}` : '—';

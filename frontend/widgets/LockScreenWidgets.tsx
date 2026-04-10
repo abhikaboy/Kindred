@@ -5,9 +5,6 @@ import { Text, VStack } from '@expo/ui/swift-ui';
 import { font, foregroundStyle, padding } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, WidgetBase } from 'expo-widgets';
 
-const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
-
 // --- Circular: today completion ring ---
 
 export type LockScreenCircularProps = {
@@ -17,6 +14,8 @@ export type LockScreenCircularProps = {
 
 const LockScreenCircularComponent = (props: WidgetBase<LockScreenCircularProps>) => {
     'widget';
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
     const { completedCount, totalCount } = props;
     const label = totalCount > 0 ? `${completedCount}/${totalCount}` : '—';
     return (
@@ -42,6 +41,8 @@ export type LockScreenRectangularProps = {
 
 const LockScreenRectangularComponent = (props: WidgetBase<LockScreenRectangularProps>) => {
     'widget';
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
     const { taskTitle, dueTime } = props;
     return (
         <VStack modifiers={[padding({ horizontal: 4 })]}>
@@ -67,6 +68,7 @@ export type LockScreenInlineProps = {
 
 const LockScreenInlineComponent = (props: WidgetBase<LockScreenInlineProps>) => {
     'widget';
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
     const { streak } = props;
     return (
         <Text modifiers={[font({ weight: 'medium', size: 12 }), primary]}>

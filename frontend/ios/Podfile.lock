@@ -312,7 +312,7 @@ PODS:
     - React-RCTFabric
   - ExpoWebBrowser (55.0.14):
     - ExpoModulesCore
-  - ExpoWidgets (55.0.8):
+  - ExpoWidgets (55.0.13):
     - ExpoModulesCore
     - ExpoUI
   - EXUpdatesInterface (55.1.5):
@@ -3171,7 +3171,7 @@ SPEC CHECKSUMS:
   ExpoSystemUI: 709410d6e473378d568e5df28fe409cade0ba530
   ExpoUI: 5e98fba91241cd4bdd976729be965ab71d7f761d
   ExpoWebBrowser: f88a3ba50a025b673236a46d2654a49b985953d6
-  ExpoWidgets: f86f1137e5be7a308360b0a9a465c401576f7bea
+  ExpoWidgets: aaff7ba384c779790dfd7a53dfad574e25f017d0
   EXUpdatesInterface: 39d05400a9226c438565dbaaa8447b5f0672ba45
   FBLazyVector: 061f518bbd81677ed8a8317e2ae60b8779495808
   hermes-engine: dd6fb2cf9491caf20350de323f2906efd52becb7

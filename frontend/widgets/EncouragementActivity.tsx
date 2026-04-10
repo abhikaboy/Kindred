@@ -14,12 +14,12 @@ export type EncouragementActivityProps = {
     messageType: 'message' | 'image';
 };
 
-const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
-const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
-
 const EncouragementActivityComponent = (props: EncouragementActivityProps) => {
     'widget';
+
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+    const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
 
     const { senderName, taskName, message, kudosEarned, type, messageType } = props;
     const isEncouragement = type === 'encouragement';

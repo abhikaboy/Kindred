@@ -27,6 +27,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
 import CreateModal from "@/components/modals/CreateModal";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { useKudos } from "@/contexts/kudosContext";
 import { updateTimezone } from "@/api/profile";
 import * as Localization from 'expo-localization';
 import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
@@ -61,6 +62,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 const layout = ({ children }: { children: React.ReactNode }) => {
     const { user, fetchAuthData } = useAuth();
+    const { fetchKudosData } = useKudos();
     const [isLoading, setIsLoading] = useState(true);
     const [redirectPath, setRedirectPath] = useState<string | null>(null);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
@@ -168,6 +170,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         initNotificationHandler();
         notificationListener.current = addNotificationListener((notification) => {
+            const data = notification.request.content.data;
+            if (data?.type === 'encouragement' || data?.type === 'congratulation') {
+                fetchKudosData();
+            }
             showToastable({
                 message: notification.request.content.body || "New notification",
                 title: notification.request.content.title || "Notification",
@@ -175,7 +181,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 duration: 3000,
                 renderContent: (props) => <DefaultToast {...props} />,
                 onPress: () => {
-                    const data = notification.request.content.data;
                     if (data?.url) {
                         router.push(data.url);
                     }

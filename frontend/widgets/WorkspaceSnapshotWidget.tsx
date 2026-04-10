@@ -9,23 +9,25 @@ import {
     frame,
     lineLimit,
     opacity,
+    background,
+    cornerRadius,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, WidgetBase } from 'expo-widgets';
 
 export type WorkspaceSnapshotWidgetProps = {
     workspaceName: string;
-    workspaceIcon: string | null;
-    workspaceColor: string | null;
+    workspaceIcon: string;
+    workspaceColor: string;
     pendingCount: number;
     topTasks: string[];
 };
 
-const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
-const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
-
 const WorkspaceSnapshotWidget = (props: WidgetBase<WorkspaceSnapshotWidgetProps>) => {
     'widget';
+
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+    const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
 
     const { workspaceName, workspaceIcon, workspaceColor, pendingCount, topTasks, family } = props;
     const accentColor = workspaceColor || '#8B5CF6';
@@ -57,7 +59,7 @@ const WorkspaceSnapshotWidget = (props: WidgetBase<WorkspaceSnapshotWidgetProps>
 
     return (
         <HStack modifiers={[padding({ all: 14 }), frame({ maxWidth: 10000, maxHeight: 10000, alignment: 'topLeading' })]}>
-            <VStack modifiers={[frame({ width: 100, alignment: 'leading' })]}>
+            <VStack modifiers={[frame({ width: 90, alignment: 'leading' })]}>
                 <Text modifiers={[font({ size: 22 })]}>
                     {icon}
                 </Text>
@@ -69,18 +71,27 @@ const WorkspaceSnapshotWidget = (props: WidgetBase<WorkspaceSnapshotWidgetProps>
                     {pendingCount}
                 </Text>
                 <Text modifiers={[font({ weight: 'medium', size: 11 }), secondary]}>
-                    {pendingCount === 1 ? 'pending' : 'pending'}
+                    pending
                 </Text>
             </VStack>
             <VStack modifiers={[frame({ maxWidth: 10000, alignment: 'leading' }), padding({ leading: 8 })]}>
                 {topTasks.length > 0 ? (
                     topTasks.map((title, i) => (
-                        <HStack key={i} modifiers={[padding({ top: i === 0 ? 0 : 2 })]}>
-                            <Text modifiers={[font({ size: 10 }), foregroundStyle(accentColor), opacity(0.7)]}>
+                        <HStack
+                            key={i}
+                            modifiers={[
+                                padding({ horizontal: 10, vertical: 6 }),
+                                frame({ maxWidth: 10000, alignment: 'leading' }),
+                                background('#78788014'),
+                                cornerRadius(8),
+                                padding({ top: i === 0 ? 0 : 3 }),
+                            ]}
+                        >
+                            <Text modifiers={[font({ size: 8 }), foregroundStyle(accentColor), opacity(0.8)]}>
                                 ●
                             </Text>
                             <Text
-                                modifiers={[font({ size: 13 }), secondary, lineLimit(1), padding({ leading: 4 })]}
+                                modifiers={[font({ size: 13 }), primary, lineLimit(1), padding({ leading: 4 })]}
                             >
                                 {title}
                             </Text>

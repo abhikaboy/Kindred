@@ -534,14 +534,14 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const handle = InteractionManager.runAfterInteractions(() => {
             const firstWorkspace = workspaces.find(w => !w.isBlueprint) || workspaces[0];
             if (!firstWorkspace) return;
-            const allTasks = firstWorkspace.categories.flatMap(c => c.tasks.filter(t => t.active !== false && !t.isPhantom));
+            const allTasks = firstWorkspace.categories.flatMap(c => c.tasks);
             const pendingCount = allTasks.length;
             const topTasks = allTasks.slice(0, 3).map(t => t.content);
 
             WorkspaceSnapshotWidget.updateSnapshot({
                 workspaceName: firstWorkspace.name,
-                workspaceIcon: firstWorkspace.icon || null,
-                workspaceColor: firstWorkspace.color || null,
+                workspaceIcon: firstWorkspace.icon || '',
+                workspaceColor: firstWorkspace.color || '',
                 pendingCount,
                 topTasks,
             });

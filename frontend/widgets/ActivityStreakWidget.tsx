@@ -19,16 +19,15 @@ export type ActivityStreakWidgetProps = {
     weeklyLevels: number[];
 };
 
-const ACCENT = '#8B5CF6';
-const LEVEL_COLORS = ['#78788033', '#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA'];
-
-const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
-const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
-const accent = foregroundStyle(ACCENT);
-
 const ActivityStreakWidget = (props: WidgetBase<ActivityStreakWidgetProps>) => {
     'widget';
+
+    const ACCENT = '#8B5CF6';
+    const LEVEL_COLORS = ['#78788033', '#6D28D9', '#7C3AED', '#8B5CF6', '#A78BFA'];
+    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+    const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
+    const accent = foregroundStyle(ACCENT);
 
     const { streak, tasksCompletedToday, weeklyLevels, family } = props;
 
