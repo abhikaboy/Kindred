@@ -386,7 +386,7 @@ PODS:
     - React-utils
     - ReactNativeDependencies
     - Yoga
-  - React-Core-prebuilt (0.83.2):
+  - React-Core-prebuilt (0.83.4):
     - ReactNativeDependencies
   - React-Core/CoreModulesHeaders (0.83.4):
     - hermes-engine
@@ -2303,7 +2303,7 @@ PODS:
     - React-perflogger (= 0.83.4)
     - React-utils (= 0.83.4)
     - ReactNativeDependencies
-  - ReactNativeDependencies (0.83.2)
+  - ReactNativeDependencies (0.83.4)
   - RevenueCat (5.67.0)
   - RevenueCatUI (5.67.0):
     - RevenueCat (= 5.67.0)
@@ -2662,9 +2662,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - SDWebImage (5.21.6):
-    - SDWebImage/Core (= 5.21.6)
-  - SDWebImage/Core (5.21.6)
+  - SDWebImage (5.21.7):
+    - SDWebImage/Core (= 5.21.7)
+  - SDWebImage/Core (5.21.7)
   - SDWebImageAVIFCoder (0.11.1):
     - libavif/core (>= 0.11.0)
     - SDWebImage (~> 5.10)
@@ -3189,7 +3189,7 @@ SPEC CHECKSUMS:
   React: 3e14066ac707b3e369d09e2e923d8bee7f8c33ff
   React-callinvoker: bd7959a24564feaf5e4c8c11789e64884da13482
   React-Core: f060f4e14e9301685ce63ea65fbe903bf3397e45
-  React-Core-prebuilt: 262e30d11525b1da0a0cf5f53c5a1467fcbe55ec
+  React-Core-prebuilt: f5e261759233a2b03c433b4820afaa940b76e152
   React-CoreModules: 89a1a544297be88ca4cdff317423f9e0d0c192a4
   React-cxxreact: 81b1bfa305b1b759cc0fe18327644816216e5993
   React-debug: 234fddb309822e13b9b442ef1bdca8d2b8c3cbf2
@@ -3256,7 +3256,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 2b19d66e5ddfe8dc7afb6338a4626156cbf2bab1
   ReactCodegen: 43f0948182edee9407c7b977fb059455dfeb9361
   ReactCommon: c6e81cc1ae185fa84863f3ea1d58caac4be741d7
-  ReactNativeDependencies: 5a2f7e58cf00a9483ddcbf048d9db8f5db88e546
+  ReactNativeDependencies: 5776f321cc3839f5fa8124c071a17a5fc41cf9ed
   RevenueCat: f0d05079b59c33c645293bbc1fa78469ea7fcae7
   RevenueCatUI: a285e58fd30bb3810d1442b5020bd45a1772c358
   RNCAsyncStorage: 3a4f5e2777dae1688b781a487923a08569e27fe4
@@ -3270,7 +3270,7 @@ SPEC CHECKSUMS:
   RNSentry: fbdf0705a341b40f9c78cce0cb3adf7fdcc895cf
   RNSVG: 0bd149b873018bc6e0e3321e2f6435bdba294460
   RNWorklets: 0e736f568c3c61cb3326cdcda767c4daee56a8a9
-  SDWebImage: 1bb6a1b84b6fe87b972a102bdc77dd589df33477
+  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
