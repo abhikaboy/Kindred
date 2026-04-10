@@ -15,6 +15,7 @@ const (
 	RelationshipReceived  RelationshipStatus = "received"  // Connection request received by authenticated user
 	RelationshipConnected RelationshipStatus = "connected" // Users are connected/friends
 	RelationshipSelf      RelationshipStatus = "self"      // Viewing own profile
+	RelationshipBlocked   RelationshipStatus = "blocked"   // User is blocked
 )
 
 type ProfileDocument struct {

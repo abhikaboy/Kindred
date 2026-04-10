@@ -403,7 +403,7 @@ func (s *Service) convertConnectionToRelationshipInfo(relationship Connection.Co
 	case Connection.StatusFriends:
 		return &RelationshipInfo{Status: RelationshipConnected}
 	case Connection.StatusBlocked:
-		return &RelationshipInfo{Status: RelationshipNone} // Treat blocked as none for now
+		return &RelationshipInfo{Status: RelationshipBlocked}
 	case Connection.StatusPending:
 		// Check who is the requester to determine the relationship type
 		if relationship.Requester.ID == userAID {

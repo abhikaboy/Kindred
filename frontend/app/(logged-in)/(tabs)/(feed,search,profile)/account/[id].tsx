@@ -211,6 +211,15 @@ export default function Profile() {
                             <ProfileGallery userId={galleryUserId} />
                         </AnimatedTabContent>
                     </>
+                ) : profile.relationship?.status === "blocked" ? (
+                    <View style={styles.privateProfileContainer}>
+                        <ThemedText type="subtitle" style={{ textAlign: "center", marginBottom: 8 }}>
+                            You have blocked this user
+                        </ThemedText>
+                        <ThemedText style={{ textAlign: "center", opacity: 0.7 }}>
+                            Unblock {profile.display_name} to see their profile and posts
+                        </ThemedText>
+                    </View>
                 ) : (
                     <View style={styles.privateProfileContainer}>
                         <Image

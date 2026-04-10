@@ -2,7 +2,7 @@ import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from "
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
-import { createConnectionAPI, deleteConnectionAPI, acceptConnectionAPI } from "@/api/connection";
+import { createConnectionAPI, deleteConnectionAPI, acceptConnectionAPI, unblockUser } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
 import * as Haptics from "expo-haptics";
@@ -52,6 +52,11 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
             text: "Friends",
             color: ThemedColor.lightened,
             action: "none",
+        },
+        blocked: {
+            text: "Unblock",
+            color: ThemedColor.lightened,
+            action: "unblock",
         },
         self: {
             text: "Edit Profile",
@@ -106,6 +111,12 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                         console.error("No request_id found for acceptance");
                         showToast("Unable to accept request", "danger");
                     }
+                    break;
+
+                case "unblock":
+                    await unblockUser(profile.id);
+                    onRelationshipChange?.("none");
+                    showToast("User unblocked", "success");
                     break;
 
                 case "edit":

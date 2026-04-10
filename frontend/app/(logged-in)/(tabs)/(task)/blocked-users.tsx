@@ -23,7 +23,7 @@ export default function BlockedUsersScreen() {
         try {
             await unblockUser(user._id);
             showToast(`${user.name} has been unblocked`, 'success');
-            
+
             // Invalidate queries to refresh
             queryClient.invalidateQueries({ queryKey: ['blockedUsers'] });
             queryClient.invalidateQueries({ queryKey: ['posts'] });
@@ -38,7 +38,10 @@ export default function BlockedUsersScreen() {
 
     const renderBlockedUser = ({ item }: { item: BlockedUser }) => (
         <View style={[styles.userCard, { backgroundColor: ThemedColor.card, borderColor: ThemedColor.border }]}>
-            <View style={styles.userInfo}>
+            <TouchableOpacity
+                style={styles.userInfo}
+                onPress={() => router.push(`/(logged-in)/(tabs)/(feed,search,profile)/account/${item._id}`)}
+            >
                 <View style={[styles.avatar, { backgroundColor: ThemedColor.primary + '20' }]}>
                     <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
                         {item.name.charAt(0).toUpperCase()}
@@ -50,8 +53,8 @@ export default function BlockedUsersScreen() {
                         @{item.handle}
                     </ThemedText>
                 </View>
-            </View>
-            
+            </TouchableOpacity>
+
             <TouchableOpacity
                 style={[styles.unblockButton, { backgroundColor: ThemedColor.primary }]}
                 onPress={() => handleUnblock(item)}

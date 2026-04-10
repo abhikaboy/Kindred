@@ -162,7 +162,7 @@ export interface CompleteTaskBody {
 }
 
 // Relationship status types
-export type RelationshipStatus = "none" | "requested" | "received" | "connected" | "self";
+export type RelationshipStatus = "none" | "requested" | "received" | "connected" | "self" | "blocked";
 
 export interface RelationshipInfo {
     status: RelationshipStatus;

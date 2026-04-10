@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PostCard from "@/components/cards/PostCard";
+import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
@@ -80,6 +81,10 @@ export default function Feed() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+
+    // Hidden/blocked state for immediate UX feedback
+    const [hiddenPostIds, setHiddenPostIds] = useState<Set<string>>(new Set());
+    const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
 
     // Pagination state
     const [offset, setOffset] = useState(0);
@@ -271,15 +276,34 @@ export default function Feed() {
         }
     }, [loadingMore, hasMore, loading, currentFeed.id, offset]);
 
+    // Callbacks for hiding posts and blocking users from feed
+    const handleHidePost = useCallback((postId: string) => {
+        setHiddenPostIds((prev) => new Set(prev).add(postId));
+    }, []);
+
+    const handleBlockUser = useCallback((userId: string) => {
+        setBlockedUserIds((prev) => new Set(prev).add(userId));
+    }, []);
+
+    const handleDismissHidden = useCallback((postId: string) => {
+        setHiddenPostIds((prev) => {
+            const next = new Set(prev);
+            next.delete(postId);
+            return next;
+        });
+    }, []);
+
     // Memoize sorted posts to prevent unnecessary recalculations
     // Use spread to avoid mutating the original array
     const sortedPosts = useMemo(() => {
-        return [...posts].sort((a, b) => {
-            const dateA = new Date(a.metadata?.createdAt || 0);
-            const dateB = new Date(b.metadata?.createdAt || 0);
-            return dateB.getTime() - dateA.getTime();
-        });
-    }, [posts]);
+        return [...posts]
+            .filter((post) => !blockedUserIds.has(post.user?._id))
+            .sort((a, b) => {
+                const dateA = new Date(a.metadata?.createdAt || 0);
+                const dateB = new Date(b.metadata?.createdAt || 0);
+                return dateB.getTime() - dateA.getTime();
+            });
+    }, [posts, blockedUserIds]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -412,6 +436,16 @@ export default function Feed() {
         }));
     }, []);
 
+    // Filter feed items to exclude blocked users
+    const filteredFeedItems = useMemo(() => {
+        return feedItems.filter((item) => {
+            if (item.type === "post" && item.post) {
+                return !blockedUserIds.has(item.post.user?._id);
+            }
+            return true;
+        });
+    }, [feedItems, blockedUserIds]);
+
     const renderFeedItem = useCallback(
         ({ item }: { item: FeedItem }) => {
             if (item.type === "task" && item.task) {
@@ -430,8 +464,13 @@ export default function Feed() {
                     />
                 );
             } else if (item.type === "post" && item.post) {
-                // Render post card
                 const post = item.post as any;
+
+                // Show reported/hidden placeholder
+                if (hiddenPostIds.has(post._id)) {
+                    return <ReportedPostCard onDismiss={() => handleDismissHidden(post._id)} />;
+                }
+
                 const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
                 const postReactions = post.reactions ? transformReactions(post.reactions) : [];
 
@@ -451,16 +490,23 @@ export default function Feed() {
                         comments={post.comments}
                         category={post.task?.category?.name}
                         taskName={post.task?.content}
+                        onHide={handleHidePost}
+                        onBlockUser={handleBlockUser}
                     />
                 );
             }
             return null;
         },
-        [calculatePostTime, transformReactions]
+        [calculatePostTime, transformReactions, hiddenPostIds, handleHidePost, handleBlockUser, handleDismissHidden]
     );
 
     const renderPost = useCallback(
         ({ item: post }: { item: PostData }) => {
+            // Show reported/hidden placeholder
+            if (hiddenPostIds.has(post._id)) {
+                return <ReportedPostCard onDismiss={() => handleDismissHidden(post._id)} />;
+            }
+
             const postTime = post.metadata?.createdAt ? calculatePostTime(post.metadata.createdAt) : 0;
             const postReactions = post.reactions ? transformReactions(post.reactions) : [];
 
@@ -484,10 +530,12 @@ export default function Feed() {
                     size={post.size}
                     onReactionUpdate={() => refreshSinglePost(post._id)}
                     id={post._id}
+                    onHide={handleHidePost}
+                    onBlockUser={handleBlockUser}
                 />
             );
         },
-        [refreshSinglePost, calculatePostTime, transformReactions]
+        [refreshSinglePost, calculatePostTime, transformReactions, hiddenPostIds, handleHidePost, handleBlockUser, handleDismissHidden]
     );
 
     const renderHeader = useCallback(() => {
@@ -660,7 +708,7 @@ export default function Feed() {
 
             <FlashList
                 ref={flatListRef}
-                data={currentFeed.id === "feed" ? feedItems : sortedPosts}
+                data={currentFeed.id === "feed" ? filteredFeedItems : sortedPosts}
                 keyExtractor={(item) => {
                     if (currentFeed.id === "feed") {
                         const feedItem = item as FeedItem;

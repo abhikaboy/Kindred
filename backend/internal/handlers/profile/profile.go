@@ -305,6 +305,15 @@ func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesI
 		profiles[i].Relationship = relationship
 	}
 
+	// Filter out blocked users from search results
+	filtered := make([]ProfileDocument, 0, len(profiles))
+	for _, p := range profiles {
+		if p.Relationship == nil || p.Relationship.Status != RelationshipBlocked {
+			filtered = append(filtered, p)
+		}
+	}
+	profiles = filtered
+
 	resp := &SearchProfilesOutput{Body: profiles}
 	return resp, nil
 }
@@ -342,6 +351,15 @@ func (h *Handler) AutocompleteProfilesHuma(ctx context.Context, input *Autocompl
 		}
 		profiles[i].Relationship = relationship
 	}
+
+	// Filter out blocked users from autocomplete results
+	filtered := make([]ProfileDocument, 0, len(profiles))
+	for _, p := range profiles {
+		if p.Relationship == nil || p.Relationship.Status != RelationshipBlocked {
+			filtered = append(filtered, p)
+		}
+	}
+	profiles = filtered
 
 	resp := &AutocompleteProfilesOutput{Body: profiles}
 	return resp, nil

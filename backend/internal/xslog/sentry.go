@@ -91,9 +91,7 @@ func (h *SentryHandler) reportToSentry(r slog.Record) {
 		if h.group != "" {
 			scope.SetTag("slog.group", h.group)
 		}
-		for k, v := range extra {
-			scope.SetExtra(k, v)
-		}
+		scope.SetContext("slog.extra", extra)
 		hub.CaptureException(sentryErr)
 	})
 }

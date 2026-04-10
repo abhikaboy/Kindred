@@ -57,6 +57,8 @@ type Props = {
     size?: ImageSize;
     onReactionUpdate?: () => void;
     onHeightChange?: (height: number) => void;
+    onHide?: (postId: string) => void;
+    onBlockUser?: (userId: string) => void;
 };
 
 const PostCard = React.memo(({
@@ -78,6 +80,8 @@ const PostCard = React.memo(({
     id,
     size,
     onHeightChange,
+    onHide,
+    onBlockUser,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
@@ -531,6 +535,7 @@ const PostCard = React.memo(({
         try {
             await reportPost(id, reason as 'inappropriate' | 'spam' | 'harassment' | 'other');
             showToast("Report submitted. Thank you for helping keep Kindred safe.", "success");
+            onHide?.(id);
         } catch (error) {
             console.error(`Failed to report post ${id}:`, error);
             showToast("Failed to submit report. Please try again.", "danger");
@@ -553,6 +558,10 @@ const PostCard = React.memo(({
                         try {
                             await blockUser(userId);
                             showToast(`${name} has been blocked`, "success");
+
+                            // Hide this post and remove all posts by the blocked user from feed
+                            if (id) onHide?.(id);
+                            onBlockUser?.(userId);
 
                             // Invalidate queries to refresh feed and remove blocked user's content
                             queryClient.invalidateQueries({ queryKey: ['posts'] });
