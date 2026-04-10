@@ -4171,6 +4171,7 @@ export interface components {
             near_deadlines_widget: boolean;
             recent_workspaces: boolean;
             show_task_details: boolean;
+            content_filter: boolean;
         };
         EditResultResponse: {
             /**

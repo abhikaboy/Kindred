@@ -44,6 +44,7 @@ export default function Settings() {
         nearDeadlines: true,
         showTaskDetails: true,
         recentWorkspaces: true,
+        contentFilter: true,
     });
 
     // Check-in frequency options
@@ -66,6 +67,7 @@ export default function Settings() {
                 nearDeadlines: userSettings.display?.near_deadlines_widget ?? true,
                 showTaskDetails: userSettings.display?.show_task_details ?? true,
                 recentWorkspaces: userSettings.display?.recent_workspaces ?? true,
+                contentFilter: userSettings.display?.content_filter ?? true,
             });
 
             // Map backend frequency to display format
@@ -113,6 +115,7 @@ export default function Settings() {
             nearDeadlines: 'near_deadlines_widget',
             showTaskDetails: 'show_task_details',
             recentWorkspaces: 'recent_workspaces',
+            contentFilter: 'content_filter',
         };
 
         updateSettings({
@@ -575,6 +578,14 @@ export default function Settings() {
                 </SettingsSection>
 
                 <SettingsSection title="PRIVACY & DATA">
+                    <SettingsCard>
+                        <SettingsToggleRow
+                            label="Content Filter"
+                            value={localSettings.contentFilter}
+                            onValueChange={() => handleToggle('contentFilter')}
+                            isLast
+                        />
+                    </SettingsCard>
                     <SettingsActionRow
                         label={`Phone Contacts${hasConsent === true ? ' — Enabled' : hasConsent === false ? ' — Disabled' : ''}`}
                         onPress={handleResetContactConsent}

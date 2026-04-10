@@ -308,6 +308,7 @@ type DisplaySettings struct {
 	RecentWorkspaces    bool `bson:"recent_workspaces" json:"recent_workspaces"`
 	FriendActivityFeed  bool `bson:"friend_activity_feed" json:"friend_activity_feed"`
 	NearDeadlinesWidget bool `bson:"near_deadlines_widget" json:"near_deadlines_widget"`
+	ContentFilter       bool `bson:"content_filter" json:"content_filter"`
 }
 
 // DefaultUserSettings returns default settings for new users
@@ -329,6 +330,7 @@ func DefaultUserSettings() UserSettings {
 			RecentWorkspaces:    true,
 			FriendActivityFeed:  true,
 			NearDeadlinesWidget: true,
+			ContentFilter:       true,
 		},
 	}
 }
