@@ -1,0 +1,39 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "0.0.1",
+    "copyright": "2025 Kindred",
+    "info": {
+      "en-US": {
+        "title": "Kindred Todo",
+        "subtitle": "Social Productivity",
+        "description": "Kindred is a to do list built on real intrinsic, sustainable motivation.\n\nTerms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\nPrivacy Policy: https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a",
+        "keywords": [
+          "todo",
+          "to do list",
+          "tasks",
+          "productivity",
+          "motivation",
+          "habits",
+          "planner",
+          "organizer",
+          "reminders",
+          "goals"
+        ],
+        "supportUrl": "https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a",
+        "privacyPolicyUrl": "https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a",
+        "promoText": "A to-do list built on real motivation — not guilt, not streaks, just you."
+      }
+    },
+    "review": {
+      "firstName": "Abhik",
+      "lastName": "Ray",
+      "email": "bleubarryinc@gmail.com",
+      "phone": "6097751922",
+      "notes": "Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\nThis link is also included in the App Description.\n\nPrivacy Policy: https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a"
+    },
+    "release": {
+      "phasedRelease": true
+    }
+  }
+}
