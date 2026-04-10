@@ -53,7 +53,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 				hub.WithScope(func(scope *sentry.Scope) {
 					scope.SetTag("method", c.Method())
 					scope.SetTag("path", c.Path())
-					scope.SetExtra("ip", c.IP())
+					scope.SetContext("request", map[string]interface{}{"ip": c.IP()})
 					hub.CaptureException(fmt.Errorf("fiber error on %s %s: %w", c.Method(), c.Path(), err))
 				})
 			}
@@ -85,8 +85,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 				hub.WithScope(func(scope *sentry.Scope) {
 					scope.SetTag("method", c.Method())
 					scope.SetTag("path", c.Path())
-					scope.SetExtra("stack", stack)
-					scope.SetExtra("ip", c.IP())
+					scope.SetContext("request", map[string]interface{}{"stack": stack, "ip": c.IP()})
 					scope.SetLevel(sentry.LevelFatal)
 					hub.RecoverWithContext(c.Context(), e)
 				})

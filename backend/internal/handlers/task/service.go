@@ -2110,21 +2110,22 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 		return err
 	}
 
-	fmt.Println("Sending reminder to user", user.PushToken)
+	if user.PushToken == "" {
+		slog.Warn("User has no push token, skipping reminder", "user_id", userID)
+		return nil
+	}
 
 	// Generate descriptive reminder message
 	message := s.generateReminderMessage(reminder, task)
 
 	// send the reminder to the user
-	err = xutils.SendNotification(xutils.Notification{
+	return xutils.SendNotification(xutils.Notification{
 		Token:   user.PushToken,
 		Message: message,
 		Data: map[string]string{
 			"taskId": task.ID.Hex(),
 		},
 	})
-
-	return err
 }
 
 // generateReminderMessage creates a descriptive reminder message based on timing and task details

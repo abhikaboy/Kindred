@@ -21,6 +21,9 @@ func init() {
 // SendNotification sends a single push notification using the default sender
 // This function maintains backward compatibility with existing code
 func SendNotification(notification Notification) error {
+	if notification.Token == "" {
+		return nil
+	}
 	return DefaultPushSender.SendNotification(notification)
 }
 

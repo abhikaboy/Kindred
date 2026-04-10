@@ -15,6 +15,10 @@ import (
 
 // ReportPost creates a report for a post
 func (s *Service) ReportPost(ctx context.Context, reporterID, postID primitive.ObjectID, reason types.ReportReason, description string) (*types.ReportDocument, error) {
+	if s.Reports == nil {
+		return nil, fmt.Errorf("reports collection not available")
+	}
+
 	// Check if post exists and get owner ID
 	var post struct {
 		ID   primitive.ObjectID `bson:"_id"`
@@ -74,6 +78,10 @@ func (s *Service) ReportPost(ctx context.Context, reporterID, postID primitive.O
 
 // ReportComment creates a report for a comment
 func (s *Service) ReportComment(ctx context.Context, reporterID, commentID primitive.ObjectID, reason types.ReportReason, description string) (*types.ReportDocument, error) {
+	if s.Reports == nil {
+		return nil, fmt.Errorf("reports collection not available")
+	}
+
 	// Find the post containing this comment to get comment owner
 	var post struct {
 		ID       primitive.ObjectID      `bson:"_id"`
@@ -146,6 +154,10 @@ func (s *Service) ReportComment(ctx context.Context, reporterID, commentID primi
 
 // GetReports retrieves reports with optional filtering
 func (s *Service) GetReports(ctx context.Context, status string, limit, offset int) ([]types.ReportDocument, int, error) {
+	if s.Reports == nil {
+		return nil, 0, fmt.Errorf("reports collection not available")
+	}
+
 	filter := bson.M{}
 
 	// Add status filter if provided
