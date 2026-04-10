@@ -31,6 +31,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Categories:          collections["categories"],
 		Groups:              collections["groups"],
 		Connections:         collections["friend-requests"],
+		Reports:             collections["reports"],
 		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
@@ -38,6 +39,68 @@ func newService(collections map[string]*mongo.Collection) *Service {
 // NewService is the exported version for testing
 func NewService(collections map[string]*mongo.Collection) *Service {
 	return newService(collections)
+}
+
+// GetReportedPostIDs returns IDs of all posts that have been reported by any user with pending or reviewed status
+func (s *Service) GetReportedPostIDs(ctx context.Context) ([]primitive.ObjectID, error) {
+	cursor, err := s.Reports.Find(ctx, bson.M{
+		"content_type": "post",
+		"status":       bson.M{"$in": []string{"pending", "reviewed"}},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query reported posts: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var reports []struct {
+		ContentID primitive.ObjectID `bson:"content_id"`
+	}
+	if err := cursor.All(ctx, &reports); err != nil {
+		return nil, fmt.Errorf("failed to decode reports: %w", err)
+	}
+
+	ids := make([]primitive.ObjectID, 0, len(reports))
+	for _, r := range reports {
+		ids = append(ids, r.ContentID)
+	}
+	return ids, nil
+}
+
+// GetUserReportedPostIDs returns IDs of posts reported by a specific user (any status)
+func (s *Service) GetUserReportedPostIDs(ctx context.Context, userID primitive.ObjectID) ([]primitive.ObjectID, error) {
+	cursor, err := s.Reports.Find(ctx, bson.M{
+		"reporter_id":  userID,
+		"content_type": "post",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user reported posts: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var reports []struct {
+		ContentID primitive.ObjectID `bson:"content_id"`
+	}
+	if err := cursor.All(ctx, &reports); err != nil {
+		return nil, fmt.Errorf("failed to decode user reports: %w", err)
+	}
+
+	ids := make([]primitive.ObjectID, 0, len(reports))
+	for _, r := range reports {
+		ids = append(ids, r.ContentID)
+	}
+	return ids, nil
+}
+
+// GetUserSettings retrieves the display settings for a user
+func (s *Service) GetUserContentFilterEnabled(ctx context.Context, userID primitive.ObjectID) (bool, error) {
+	var user struct {
+		Settings types.UserSettings `bson:"settings"`
+	}
+	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		return false, err
+	}
+	return user.Settings.Display.ContentFilter, nil
 }
 
 // GetAllPosts fetches all Post documents from MongoDB with pagination
@@ -292,6 +355,45 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		}
 	}
 
+	// Get post IDs that the current user has personally reported (always hidden)
+	userReportedIDs, err := s.GetUserReportedPostIDs(ctx, userID)
+	if err != nil {
+		slog.Warn("Failed to get user reported posts, continuing without filter", "error", err)
+		userReportedIDs = []primitive.ObjectID{}
+	}
+
+	// If content filter is enabled, also get all globally reported post IDs
+	contentFilterEnabled, err := s.GetUserContentFilterEnabled(ctx, userID)
+	if err != nil {
+		slog.Warn("Failed to get content filter setting, defaulting to enabled", "error", err)
+		contentFilterEnabled = true
+	}
+
+	var allReportedIDs []primitive.ObjectID
+	if contentFilterEnabled {
+		allReportedIDs, err = s.GetReportedPostIDs(ctx)
+		if err != nil {
+			slog.Warn("Failed to get reported posts, continuing without filter", "error", err)
+			allReportedIDs = []primitive.ObjectID{}
+		}
+	}
+
+	// Merge user-reported IDs and content-filter reported IDs into one exclusion set
+	excludedPostIDSet := make(map[primitive.ObjectID]struct{})
+	for _, id := range userReportedIDs {
+		excludedPostIDSet[id] = struct{}{}
+	}
+	for _, id := range allReportedIDs {
+		excludedPostIDSet[id] = struct{}{}
+	}
+	var excludedPostIDsArray bson.A
+	for id := range excludedPostIDSet {
+		excludedPostIDsArray = append(excludedPostIDsArray, id)
+	}
+	if excludedPostIDsArray == nil {
+		excludedPostIDsArray = bson.A{}
+	}
+
 	// Get user's groups to check group membership
 	userGroups, err := s.GetUserGroups(userID)
 	if err != nil {
@@ -355,6 +457,32 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		},
 	})
 
+	// Build the common match conditions for both count and data pipelines
+	feedMatchConditions := []bson.M{
+		{"$eq": []interface{}{"$metadata.isDeleted", false}},
+		{
+			"$or": visibilityConditions,
+		},
+		// Filter out posts from blocked users
+		{
+			"$not": bson.M{
+				"$in": []interface{}{
+					bson.M{"$toObjectId": "$user._id"},
+					blockedUserIDsArray,
+				},
+			},
+		},
+	}
+
+	// Filter out reported posts (user's own reports + content filter)
+	if len(excludedPostIDsArray) > 0 {
+		feedMatchConditions = append(feedMatchConditions, bson.M{
+			"$not": bson.M{
+				"$in": []interface{}{"$_id", excludedPostIDsArray},
+			},
+		})
+	}
+
 	// First, get the total count of visible posts
 	countPipeline := mongo.Pipeline{
 		// Stage 1: Match the specific user
@@ -381,21 +509,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 				// Match posts that are not deleted and meet visibility criteria
 				{{Key: "$match", Value: bson.M{
 					"$expr": bson.M{
-						"$and": []bson.M{
-							{"$eq": []interface{}{"$metadata.isDeleted", false}},
-							{
-								"$or": visibilityConditions,
-							},
-							// Filter out posts from blocked users
-							{
-								"$not": bson.M{
-									"$in": []interface{}{
-										bson.M{"$toObjectId": "$user._id"},
-										blockedUserIDsArray,
-									},
-								},
-							},
-						},
+						"$and": feedMatchConditions,
 					},
 				}}},
 			},
@@ -454,21 +568,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 				// Match posts that are not deleted and meet visibility criteria
 				{{Key: "$match", Value: bson.M{
 					"$expr": bson.M{
-						"$and": []bson.M{
-							{"$eq": []interface{}{"$metadata.isDeleted", false}},
-							{
-								"$or": visibilityConditions,
-							},
-							// Filter out posts from blocked users
-							{
-								"$not": bson.M{
-									"$in": []interface{}{
-										bson.M{"$toObjectId": "$user._id"},
-										blockedUserIDsArray,
-									},
-								},
-							},
-						},
+						"$and": feedMatchConditions,
 					},
 				}}},
 				// Sort by creation date (newest first)

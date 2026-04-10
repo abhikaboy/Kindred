@@ -239,5 +239,6 @@ type Service struct {
 	Blueprints          *mongo.Collection
 	Groups              *mongo.Collection
 	Connections         *mongo.Collection
+	Reports             *mongo.Collection
 	NotificationService *notifications.Service
 }

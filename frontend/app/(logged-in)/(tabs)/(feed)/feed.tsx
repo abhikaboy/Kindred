@@ -24,6 +24,9 @@ import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 import { HeartStraightIcon } from "phosphor-react-native";
+import TermsAcceptanceModal from "@/components/modals/TermsAcceptanceModal";
+import { useAuth } from "@/hooks/useAuth";
+import { acceptTerms } from "@/api/auth";
 const HORIZONTAL_PADDING = 16;
 
 type PostData = {
@@ -66,6 +69,8 @@ export default function Feed() {
     const insets = useSafeAreaInsets();
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor, insets);
+    const { user, updateUser } = useAuth();
+    const [showTermsModal, setShowTermsModal] = useState(false);
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
@@ -299,6 +304,24 @@ export default function Feed() {
         initializeFeed();
         isInitialMount.current = false;
     }, []); // Only run once on mount
+
+    // Show terms modal if user hasn't accepted terms yet
+    useEffect(() => {
+        if (user && !user.terms_accepted_at) {
+            setShowTermsModal(true);
+        }
+    }, [user]);
+
+    const handleAcceptTerms = useCallback(async () => {
+        try {
+            await acceptTerms("1.0");
+            updateUser({ terms_accepted_at: new Date().toISOString() } as any);
+            setShowTermsModal(false);
+        } catch (error) {
+            console.error("Failed to accept terms:", error);
+            showToast("Failed to accept terms. Please try again.", "danger");
+        }
+    }, [updateUser]);
 
     // Load posts when feed changes (skip initial mount)
     useEffect(() => {
@@ -587,6 +610,10 @@ export default function Feed() {
 
     return (
         <View style={styles.container}>
+            <TermsAcceptanceModal
+                visible={showTermsModal}
+                onAccept={handleAcceptTerms}
+            />
             <Animated.View
                 style={[
                     styles.animatedHeader,
