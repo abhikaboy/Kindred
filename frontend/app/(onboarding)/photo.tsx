@@ -12,11 +12,12 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import Svg, { Path, Rect } from "react-native-svg";
 import { showToast } from "@/utils/showToast";
 import { uploadImageSmart } from "@/api/upload";
-import { useAuth } from "@/hooks/useAuth";
 import { ObjectId } from "bson";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
 
 type Props = {};
 
@@ -24,8 +25,6 @@ const PhotoOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updateProfilePicture, validationErrors, registerWithEmail, registerWithApple, registerWithGoogle, isLoading } = useOnboarding();
-    const { user } = useAuth();
-
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -63,48 +62,30 @@ const PhotoOnboarding = (props: Props) => {
     };
 
     const handleContinue = async () => {
-        if (!selectedImage) {
-            showToast('Please select a profile photo to continue', 'warning');
-            return;
-        }
-
         setIsUploading(true);
 
         try {
-            // Step 1: Generate a temporary ObjectID for the upload
-            // This follows the same pattern as banner image upload in Details.tsx
-            const tempUserId = new ObjectId().toString();
-            console.log('Generated temporary user ID for upload:', tempUserId);
+            let pictureUrl = DEFAULT_PICTURE;
 
-            // Step 2: Upload the profile picture with the temporary ID
-            console.log('Uploading profile picture with temporary ID...');
-            const profilePictureUrl = await uploadImageSmart("profile", tempUserId, selectedImage, { variant: "medium" });
-
-            const uploadedUrl = typeof profilePictureUrl === 'string'
-                ? profilePictureUrl
-                : profilePictureUrl.public_url;
-
-            console.log('Profile picture uploaded successfully:', uploadedUrl);
-
-            // Step 3: Update onboarding data with the uploaded URL
-            updateProfilePicture(uploadedUrl);
-
-            // Step 4: Register the user with the uploaded profile picture URL
-            console.log('Registering user with uploaded profile picture...');
-
-            // Check if this is an Apple, Google, or email registration
-            if (onboardingData.appleId) {
-                await registerWithApple(uploadedUrl);
-            } else if (onboardingData.googleId) {
-                await registerWithGoogle(uploadedUrl);
-            } else {
-                await registerWithEmail(uploadedUrl);
+            if (selectedImage) {
+                const tempUserId = new ObjectId().toString();
+                const profilePictureUrl = await uploadImageSmart("profile", tempUserId, selectedImage, { variant: "medium" });
+                pictureUrl = typeof profilePictureUrl === 'string'
+                    ? profilePictureUrl
+                    : profilePictureUrl.public_url;
             }
 
-            console.log('User registered successfully!');
-            showToast('Account created successfully! 🎉', 'success');
+            updateProfilePicture(pictureUrl);
 
-            // Step 5: Navigate to referral screen
+            if (onboardingData.appleId) {
+                await registerWithApple(pictureUrl);
+            } else if (onboardingData.googleId) {
+                await registerWithGoogle(pictureUrl);
+            } else {
+                await registerWithEmail(pictureUrl);
+            }
+
+            showToast('Account created successfully! 🎉', 'success');
             router.replace('/(onboarding)/referral');
 
         } catch (error: any) {
@@ -119,50 +100,6 @@ const PhotoOnboarding = (props: Props) => {
                     errorMessage = error.message;
                 }
             } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.toString().includes('email')) {
-                errorMessage = 'This email is already registered. Please use a different email.';
-            } else if (error.toString().includes('handle')) {
-                errorMessage = 'This handle is already taken. Please choose a different one.';
-            }
-
-            showToast(errorMessage, 'danger');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleSkip = async () => {
-        // Set a default profile picture and register directly
-        const defaultPicture = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
-        updateProfilePicture(defaultPicture);
-
-        setIsUploading(true);
-
-        try {
-            console.log('Registering user with default profile picture...');
-
-            // Check if this is an Apple, Google, or email registration
-            if (onboardingData.appleId) {
-                await registerWithApple(defaultPicture);
-            } else if (onboardingData.googleId) {
-                await registerWithGoogle(defaultPicture);
-            } else {
-                await registerWithEmail(defaultPicture);
-            }
-
-            console.log('User registered successfully!');
-            showToast('Account created successfully! 🎉', 'success');
-
-            // Navigate to referral screen
-            router.replace('/(onboarding)/referral');
-
-        } catch (error: any) {
-            console.error('Registration error:', error);
-
-            let errorMessage = 'Unable to create account. Please try again.';
-
-            if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             } else if (error.toString().includes('email')) {
                 errorMessage = 'This email is already registered. Please use a different email.';
@@ -199,10 +136,7 @@ const PhotoOnboarding = (props: Props) => {
                     ]}
                 >
                     <ThemedText style={styles.titleText}>
-                        Add a profile photo
-                    </ThemedText>
-                    <ThemedText style={styles.subtitleText}>
-                        Help others recognize you
+                        Complete your profile
                     </ThemedText>
                 </Animated.View>
 
@@ -220,7 +154,7 @@ const PhotoOnboarding = (props: Props) => {
                         disabled={isLoading || isUploading}
                     >
                         <Image
-                            source={{ uri: selectedImage || onboardingData.profilePicture }}
+                            source={{ uri: selectedImage || DEFAULT_PICTURE }}
                             style={[
                                 styles.photoImage,
                                 {
@@ -264,19 +198,10 @@ const PhotoOnboarding = (props: Props) => {
                     ]}
                 >
                     <PrimaryButton
-                        title={isUploading ? "Uploading photo..." : isLoading ? "Creating account..." : "Complete"}
+                        title={isUploading ? "Uploading photo..." : isLoading ? "Creating account..." : "Continue"}
                         onPress={handleContinue}
-                        disabled={isLoading || isUploading || !selectedImage}
-                    />
-                    <TouchableOpacity
-                        style={styles.skipButton}
-                        onPress={handleSkip}
                         disabled={isLoading || isUploading}
-                    >
-                        <ThemedText style={[styles.skipText, { color: ThemedColor.primary, opacity: (isLoading || isUploading) ? 0.5 : 1 }]}>
-                            Skip for now
-                        </ThemedText>
-                    </TouchableOpacity>
+                    />
                 </Animated.View>
             </View>
         </ThemedView>
@@ -305,13 +230,6 @@ const styles = StyleSheet.create({
         lineHeight: Math.min(screenWidth * 0.102, 38),
         letterSpacing: -1,
     },
-    subtitleText: {
-        fontSize: 16,
-        fontFamily: 'Outfit',
-        fontWeight: '400',
-        opacity: 0.6,
-        marginTop: 8,
-    },
     photoContainer: {
         flex: 1,
         alignItems: 'center',
@@ -332,15 +250,6 @@ const styles = StyleSheet.create({
     buttonContainer: {
         width: '100%',
         gap: 16,
-    },
-    skipButton: {
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    skipText: {
-        fontSize: 16,
-        fontFamily: 'Outfit',
-        fontWeight: '500',
     },
 });
 

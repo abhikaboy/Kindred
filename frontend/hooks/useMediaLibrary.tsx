@@ -30,23 +30,23 @@ export const useMediaLibrary = (): UseMediaLibraryResult => {
     const requestPermission = async (): Promise<boolean> => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            
+
             if (status === 'granted') {
                 return true;
             }
-            
+
             // Permission denied - on iOS, if the user previously denied, the system won't show
             // the dialog again, so we need to guide them to settings
             if (status === 'denied') {
                 // Check if this is a "permanent" denial (user needs to go to settings)
                 // On iOS, canAskAgain is always false after first denial
                 const { canAskAgain } = await ImagePicker.getMediaLibraryPermissionsAsync();
-                
+
                 if (!canAskAgain) {
                     // User previously denied - need to go to settings
                     Alert.alert(
-                        'Camera Roll Access Required',
-                        'Kindred needs access to your photos to upload images. Please enable camera roll access in your device settings.',
+                        'Photo Access',
+                        'To select a photo, allow photo library access in Settings.',
                         [
                             { text: 'Cancel', style: 'cancel' },
                             {
@@ -64,7 +64,7 @@ export const useMediaLibrary = (): UseMediaLibraryResult => {
                 }
                 return false;
             }
-            
+
             return false;
         } catch (error) {
             console.error('Error requesting media library permission:', error);
@@ -90,7 +90,7 @@ export const useMediaLibrary = (): UseMediaLibraryResult => {
 
             // Check if we already have permission
             const hasPermission = await checkPermission();
-            
+
             if (!hasPermission) {
                 // Request permission if we don't have it
                 const granted = await requestPermission();
@@ -102,7 +102,7 @@ export const useMediaLibrary = (): UseMediaLibraryResult => {
 
             // Launch image picker
             const result = await ImagePicker.launchImageLibraryAsync(options);
-            
+
             setIsLoading(false);
             return result;
         } catch (error) {
@@ -120,4 +120,3 @@ export const useMediaLibrary = (): UseMediaLibraryResult => {
         isLoading,
     };
 };
-
