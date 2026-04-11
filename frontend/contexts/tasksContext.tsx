@@ -490,17 +490,14 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     // Sync Today's Tasks widget and lock screen circular widget
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
-            const allTodayTasks = [
-                ...startTodayTasks,
-                ...dueTodayTasks.filter(t => !startTodayTasks.some(s => s.id === t.id)),
-            ];
-            const completedCount = allTodayTasks.filter(t => !t.active).length;
-            const totalCount = allTodayTasks.length;
+            const incompleteTasks = unnestedTasks.filter(t => t.active);
+            const completedCount = unnestedTasks.filter(t => !t.active).length;
+            const totalCount = unnestedTasks.length;
 
-            const taskTitles = allTodayTasks.slice(0, 3).map(t => t.content);
+            const taskTitles = incompleteTasks.slice(0, 3).map(t => t.content);
 
             const groupMap = new Map<string, string[]>();
-            allTodayTasks.forEach(t => {
+            incompleteTasks.forEach(t => {
                 const ws = t.workspaceName || 'Tasks';
                 if (!groupMap.has(ws)) groupMap.set(ws, []);
                 groupMap.get(ws)!.push(t.content);
@@ -526,7 +523,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             }
         });
         return () => handle.cancel();
-    }, [startTodayTasks, dueTodayTasks]);
+    }, [unnestedTasks, dueTodayTasks]);
 
     // Sync Workspace Snapshot widget
     useEffect(() => {
@@ -540,7 +537,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
             WorkspaceSnapshotWidget.updateSnapshot({
                 workspaceName: firstWorkspace.name,
-                workspaceIcon: firstWorkspace.icon || '',
                 workspaceColor: firstWorkspace.color || '',
                 pendingCount,
                 topTasks,

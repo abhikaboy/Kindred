@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTypedMutation } from "@/hooks/useTypedAPI";
 import { components } from "@/api/generated/types";
 import { router } from "expo-router";
-import client from "@/api/client";
+import client, { setUnauthorizedHandler, clearUnauthorizedHandler } from "@/api/client";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger('AuthHook');
@@ -70,6 +70,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Add these for rate limiting
     const lastFetchTime = useRef<number>(0);
     const fetchPromiseRef = useRef<Promise<any> | null>(null);
+
+    // Register 401 handler so API client can trigger logout
+    useEffect(() => {
+        setUnauthorizedHandler(() => {
+            logger.warn("Auto-logout triggered by 401 response");
+            setUser(null);
+            SecureStore.deleteItemAsync("auth_data");
+            queryClient.clear();
+            router.replace("/login");
+        });
+        return () => clearUnauthorizedHandler();
+    }, [queryClient]);
 
     // Apple login mutation
     const appleLoginMutation = useTypedMutation("post", "/v1/auth/login/apple");

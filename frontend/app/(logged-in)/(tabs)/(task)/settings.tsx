@@ -335,54 +335,8 @@ export default function Settings() {
 
     const styles = createStyles(ThemedColor, screenWidth);
 
-    // Show loading state
-    if (isLoadingSettings) {
-        return (
-            <ThemedView style={styles.container}>
-                <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
-                    </TouchableOpacity>
-                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                        Settings
-                    </ThemedText>
-                    <View style={styles.saveButton} />
-                </View>
-                <View style={styles.centerState}>
-                    <ActivityIndicator size="large" color={ThemedColor.primary} />
-                    <ThemedText type="caption" style={styles.centerStateText}>
-                        Loading settings...
-                    </ThemedText>
-                </View>
-            </ThemedView>
-        );
-    }
-
-    // Show error state
-    if (settingsError) {
-        return (
-            <ThemedView style={styles.container}>
-                <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
-                    </TouchableOpacity>
-                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                        Settings
-                    </ThemedText>
-                    <View style={styles.saveButton} />
-                </View>
-                <View style={[styles.centerState, { padding: 20 }]}>
-                    <Ionicons name="alert-circle-outline" size={48} color={ThemedColor.error} />
-                    <ThemedText type="default" style={[styles.centerStateText, { textAlign: 'center' }]}>
-                        Failed to load settings
-                    </ThemedText>
-                    <ThemedText type="caption" style={{ marginTop: 8, textAlign: 'center' }}>
-                        Please try again later
-                    </ThemedText>
-                </View>
-            </ThemedView>
-        );
-    }
+    // Whether display/notification settings are available
+    const settingsAvailable = !isLoadingSettings && !settingsError;
 
     return (
         <ThemedView style={styles.container}>
@@ -418,6 +372,7 @@ export default function Settings() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.content}>
+                <View style={{ opacity: settingsAvailable ? 1 : 0.5 }} pointerEvents={settingsAvailable ? 'auto' : 'none'}>
                 <SettingsSection title="NOTIFICATIONS">
                     <View style={styles.checkinSection}>
                         <ThemedText type="default">
@@ -426,12 +381,16 @@ export default function Settings() {
                         <ThemedText type="caption" style={styles.checkinDescription}>
                             How often you'd like reminders about overdue tasks
                         </ThemedText>
-                        <SegmentedControl
-                            options={checkinFrequencyOptions}
-                            selectedOption={checkinFrequency}
-                            onOptionPress={handleCheckinFrequencyChange}
-                            size="small"
-                        />
+                        {isLoadingSettings ? (
+                            <ActivityIndicator size="small" color={ThemedColor.primary} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />
+                        ) : (
+                            <SegmentedControl
+                                options={checkinFrequencyOptions}
+                                selectedOption={checkinFrequency}
+                                onOptionPress={handleCheckinFrequencyChange}
+                                size="small"
+                            />
+                        )}
                     </View>
                 </SettingsSection>
 
@@ -460,6 +419,7 @@ export default function Settings() {
                         />
                     </SettingsCard>
                 </SettingsSection>
+                </View>
 
                 <SettingsSection title="INTEGRATIONS">
                     <SettingsCard>
@@ -741,14 +701,6 @@ const createStyles = (ThemedColor: any, screenWidth: number) => {
         },
         content: {
             paddingHorizontal: horizontalPadding,
-        },
-        centerState: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        centerStateText: {
-            marginTop: 16,
         },
         checkinSection: {
             borderRadius: 12,

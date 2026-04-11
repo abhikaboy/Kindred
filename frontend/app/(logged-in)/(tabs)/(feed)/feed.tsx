@@ -79,7 +79,6 @@ export default function Feed() {
     const [loading, setLoading] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
     // Hidden/blocked state for immediate UX feedback
@@ -161,7 +160,6 @@ export default function Feed() {
     const fetchPosts = useCallback(
         async (feedId?: string, resetPagination = true) => {
             setLoading(true);
-            setError(null);
             try {
                 const currentFeedId = feedId || currentFeed.id;
                 let result;
@@ -212,8 +210,6 @@ export default function Feed() {
                 setLastUpdated(new Date());
             } catch (error) {
                 console.error("Error fetching posts:", error);
-                const errorMessage = error.message || "Failed to load posts";
-                setError(errorMessage);
                 showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
                 setPosts([]);
                 setFeedItems([]);
@@ -573,22 +569,6 @@ export default function Feed() {
     }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
 
     const renderEmptyComponent = useCallback(() => {
-        if (error) {
-            return (
-                <View style={styles.errorContainer}>
-                    <Ionicons name="alert-circle-outline" size={50} color={ThemedColor.danger || "#ff4444"} />
-                    <ThemedText style={[styles.errorText, { color: ThemedColor.danger || "#ff4444" }]}>
-                        {error || "Something went wrong"}
-                    </ThemedText>
-                    <TouchableOpacity
-                        style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
-                        onPress={() => fetchPosts(currentFeed.id)}>
-                        <ThemedText style={styles.retryButtonText}>Try Again</ThemedText>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
         if (posts.length === 0 && !loading) {
             const isFriendsFeed = currentFeed.id === "friends";
             const isBlueprintFeed = currentFeed.id.startsWith("blueprint-");
@@ -626,7 +606,7 @@ export default function Feed() {
         }
 
         return null;
-    }, [loading, initialLoading, error, posts.length, ThemedColor, fetchPosts, currentFeed.id, currentFeed.name]);
+    }, [loading, initialLoading, posts.length, ThemedColor, currentFeed.id, currentFeed.name]);
 
     const renderFooter = useCallback(() => {
         if (loadingMore) {
@@ -845,18 +825,6 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         emptySubtext: {
             marginTop: 8,
         },
-        errorContainer: {
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            paddingVertical: 20,
-        },
-        errorText: {
-            fontSize: 18,
-            fontWeight: "bold",
-            marginTop: 10,
-            textAlign: "center",
-        },
         loadingMoreContainer: {
             paddingVertical: 20,
             alignItems: "center",
@@ -869,16 +837,5 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             fontSize: 16,
             color: ThemedColor.caption,
             fontWeight: "500",
-        },
-        retryButton: {
-            marginTop: 15,
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            borderRadius: 8,
-        },
-        retryButtonText: {
-            color: "#ffffff",
-            fontSize: 16,
-            fontWeight: "600",
         },
     });

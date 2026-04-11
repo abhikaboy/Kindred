@@ -16,7 +16,6 @@ import { createWidget, WidgetBase } from 'expo-widgets';
 
 export type WorkspaceSnapshotWidgetProps = {
     workspaceName: string;
-    workspaceIcon: string;
     workspaceColor: string;
     pendingCount: number;
     topTasks: string[];
@@ -29,20 +28,13 @@ const WorkspaceSnapshotWidget = (props: WidgetBase<WorkspaceSnapshotWidgetProps>
     const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
     const tertiary = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
 
-    const { workspaceName, workspaceIcon, workspaceColor, pendingCount, topTasks, family } = props;
+    const { workspaceName, workspaceColor, pendingCount, topTasks, family } = props;
     const accentColor = workspaceColor || '#8B5CF6';
-    const icon = workspaceIcon || '📋';
     const accent = foregroundStyle(accentColor);
 
     if (family === 'systemSmall') {
         return (
             <VStack modifiers={[padding({ all: 14 }), frame({ maxWidth: 10000, maxHeight: 10000, alignment: 'topLeading' })]}>
-                <HStack>
-                    <Text modifiers={[font({ size: 22 })]}>
-                        {icon}
-                    </Text>
-                    <Spacer />
-                </HStack>
                 <Text modifiers={[font({ weight: 'semibold', size: 13 }), primary, lineLimit(1)]}>
                     {workspaceName}
                 </Text>
@@ -60,9 +52,6 @@ const WorkspaceSnapshotWidget = (props: WidgetBase<WorkspaceSnapshotWidgetProps>
     return (
         <HStack modifiers={[padding({ all: 14 }), frame({ maxWidth: 10000, maxHeight: 10000, alignment: 'topLeading' })]}>
             <VStack modifiers={[frame({ width: 90, alignment: 'leading' })]}>
-                <Text modifiers={[font({ size: 22 })]}>
-                    {icon}
-                </Text>
                 <Text modifiers={[font({ weight: 'semibold', size: 13 }), primary, lineLimit(1)]}>
                     {workspaceName}
                 </Text>

@@ -6,6 +6,17 @@ import { createLogger } from "@/utils/logger";
 
 const logger = createLogger('API');
 
+// Logout handler registered by AuthProvider to handle 401s
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: () => void) {
+    onUnauthorized = handler;
+}
+
+export function clearUnauthorizedHandler() {
+    onUnauthorized = null;
+}
+
 // Create the base client
 const baseClient = createClient<paths>({
     baseUrl: (process.env.EXPO_PUBLIC_URL ?? "") + "/api",
@@ -50,6 +61,14 @@ baseClient.use({
     },
 
     async onResponse({ response, request }) {
+        // Handle 401 — both tokens invalid, force logout
+        if (response.status === 401 && onUnauthorized) {
+            logger.warn("Received 401, triggering auto-logout");
+            await SecureStore.deleteItemAsync("auth_data");
+            onUnauthorized();
+            return response;
+        }
+
         // Handle token refresh in headers
         const access_token = response.headers.get("access_token");
         const refresh_token = response.headers.get("refresh_token");
