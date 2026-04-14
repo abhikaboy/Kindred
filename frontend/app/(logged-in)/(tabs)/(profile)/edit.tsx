@@ -16,6 +16,7 @@ import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useRevenueCat } from "@/hooks/useRevenueCat";
+import { SUBSCRIPTIONS_ENABLED } from "@/constants/subscription";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -321,7 +322,7 @@ const Edit = () => {
             </View>
 
             {/* Kindred Pro */}
-            {isPro ? (
+            {SUBSCRIPTIONS_ENABLED && (isPro ? (
                 <View style={{ marginTop: 32, marginBottom: 16 }}>
                     <View style={{
                         flexDirection: 'row',
@@ -359,7 +360,7 @@ const Edit = () => {
                         }}
                     />
                 </View>
-            )}
+            ))}
 
             <CustomAlert
                 visible={alertVisible}

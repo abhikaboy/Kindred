@@ -37,7 +37,7 @@ export default function BlockedUsersScreen() {
     };
 
     const renderBlockedUser = ({ item }: { item: BlockedUser }) => (
-        <View style={[styles.userCard, { backgroundColor: ThemedColor.card, borderColor: ThemedColor.border }]}>
+        <View style={[styles.userCard, { backgroundColor: ThemedColor.card }]}>
             <TouchableOpacity
                 style={styles.userInfo}
                 onPress={() => router.push(`/(logged-in)/(tabs)/(feed,search,profile)/account/${item._id}`)}
@@ -152,7 +152,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         borderRadius: 12,
-        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 2,
     },
     userInfo: {
         flexDirection: 'row',

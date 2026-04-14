@@ -80,11 +80,11 @@ const PhoneOnboarding = (props: Props) => {
     const canContinue = isValidPhone && agreedToTerms;
 
     const handleTermsPress = () => {
-        Linking.openURL('https://kindredtodo.com/terms');
+        Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100');
     };
 
     const handlePrivacyPress = () => {
-        Linking.openURL('https://kindredtodo.com/privacy');
+        Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a');
     };
 
     return (

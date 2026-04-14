@@ -12,6 +12,7 @@ import { deleteAccount } from '@/api/auth';
 import { showToast } from '@/utils/showToast';
 import { useContactConsent } from '@/hooks/useContactConsent';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { SUBSCRIPTIONS_ENABLED } from '@/constants/subscription';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { SettingsCard } from '@/components/settings/SettingsCard';
@@ -558,6 +559,7 @@ export default function Settings() {
                     />
                 </SettingsSection>
 
+                {SUBSCRIPTIONS_ENABLED && (
                 <SettingsSection title="SUBSCRIPTION">
                     <SettingsCard>
                         <TouchableOpacity
@@ -601,6 +603,7 @@ export default function Settings() {
                         </TouchableOpacity>
                     </SettingsCard>
                 </SettingsSection>
+                )}
 
                 <SettingsSection title="RESOURCES">
                     <SettingsActionRow
@@ -623,7 +626,7 @@ export default function Settings() {
                     />
                     <SettingsActionRow
                         label="Terms & Conditions"
-                        onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
+                        onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
                         icon="open-outline"
                         iconColor={ThemedColor.text + '60'}
                     />

@@ -6,7 +6,7 @@ import Purchases, {
     LOG_LEVEL,
 } from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
-import { REVENUECAT_API_KEY, ENTITLEMENT_ID } from "@/constants/subscription";
+import { REVENUECAT_API_KEY, ENTITLEMENT_ID, SUBSCRIPTIONS_ENABLED } from "@/constants/subscription";
 import { useAuth } from "@/hooks/useAuth";
 import { createLogger } from "@/utils/logger";
 
@@ -35,6 +35,7 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
     const isPro = customerInfo?.entitlements.active[ENTITLEMENT_ID]?.isActive ?? false;
 
     useEffect(() => {
+        if (!SUBSCRIPTIONS_ENABLED) return;
         if (Platform.OS === "web") return;
         if (!REVENUECAT_API_KEY) {
             logger.warn("RevenueCat API key not configured");
