@@ -34,7 +34,7 @@ const SwipableTaskCard = ({
     categoryName,
     highlightContent = false,
 }: Props) => {
-    const { removeFromCategory, setShowConfetti, categories } = useTasks();
+    const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
 
     // Alert state
@@ -112,6 +112,15 @@ const SwipableTaskCard = ({
 
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
+
+            // If backend returned the next flex instance, insert it immediately
+            if (res.nextFlexTask) {
+                addToCategory(res.nextFlexTask.categoryId, {
+                    ...res.nextFlexTask.task,
+                    categoryID: res.nextFlexTask.categoryId,
+                } as Task);
+            }
+
             setShowConfetti(true);
 
             if (Platform.OS === "ios") {
