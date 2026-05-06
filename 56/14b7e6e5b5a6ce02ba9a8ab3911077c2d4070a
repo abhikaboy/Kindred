@@ -1,0 +1,49 @@
+frontend/components/modals/OnboardModal.tsx
+  f6d6e8b0dad1c1f9 21-23,69-71,75,77-78,85-88,183,205-207,209,235,238-241
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "5614b7e6e5b5a6ce02ba9a8ab3911077c2d4070a",
+  "prompts": {
+    "defdd9cbf41154fb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06eee962-d989-4780-9556-8bf7ee6a9f42",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 40,
+      "overriden_lines": 0
+    },
+    "e306126fc7b636b7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "85a0aab0-4092-46de-a9c3-d4fde5e2a0c0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1134,
+      "overriden_lines": 0
+    },
+    "f6d6e8b0dad1c1f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "909da93f-632b-4ce3-8bc7-765b79dad5bb",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 657,
+      "total_deletions": 31,
+      "accepted_lines": 59,
+      "overriden_lines": 0
+    }
+  }
+}
