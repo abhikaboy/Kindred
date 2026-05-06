@@ -29,6 +29,7 @@ import (
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
 	"github.com/abhikaboy/Kindred/internal/posthog"
 	"github.com/abhikaboy/Kindred/internal/xlog"
+	"github.com/abhikaboy/Kindred/internal/xsentry"
 
 	"log/slog"
 	"runtime/debug"
@@ -49,14 +50,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			slog.Error("FIBER ERROR", "error", err.Error(), "method", c.Method(), "path", c.Path())
 
-			if hub := sentry.CurrentHub(); hub.Client() != nil {
-				hub.WithScope(func(scope *sentry.Scope) {
-					scope.SetTag("method", c.Method())
-					scope.SetTag("path", c.Path())
-					scope.SetContext("request", map[string]interface{}{"ip": c.IP()})
-					hub.CaptureException(fmt.Errorf("fiber error on %s %s: %w", c.Method(), c.Path(), err))
-				})
-			}
+			// Use request-scoped hub from xsentry middleware (already has context)
+			hub := xsentry.GetHub(c)
+			hub.CaptureException(fmt.Errorf("fiber error on %s %s: %w", c.Method(), c.Path(), err))
 
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		},
@@ -81,17 +77,19 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 				"stack", stack,
 			)
 
-			if hub := sentry.CurrentHub(); hub.Client() != nil {
-				hub.WithScope(func(scope *sentry.Scope) {
-					scope.SetTag("method", c.Method())
-					scope.SetTag("path", c.Path())
-					scope.SetContext("request", map[string]interface{}{"stack": stack, "ip": c.IP()})
-					scope.SetLevel(sentry.LevelFatal)
-					hub.RecoverWithContext(c.Context(), e)
-				})
-			}
+			// Use request-scoped hub — it already has request context
+			hub := xsentry.GetHub(c)
+			hub.WithScope(func(scope *sentry.Scope) {
+				scope.SetExtra("stack", stack)
+				scope.SetLevel(sentry.LevelFatal)
+				hub.RecoverWithContext(c.Context(), e)
+			})
 		},
 	}))
+
+	// Add Sentry request context middleware (after recovery, before auth)
+	app.Use(xsentry.FiberMiddleware())
+
 	app.Use(compress.New())
 
 	// Add CORS middleware
