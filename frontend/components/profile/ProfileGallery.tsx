@@ -333,7 +333,7 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
     const renderFooter = useCallback(() => {
         if (!isLoadingMore) return null;
         return (
-            <View style={styles.footerLoader}>
+            <View style={{ padding: 16, alignItems: "center" }}>
                 <ActivityIndicator size="small" color={ThemedColor.primary} />
             </View>
         );
@@ -363,10 +363,7 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.5}
                     ListFooterComponent={renderFooter}
-                    initialNumToRender={12}
-                    maxToRenderPerBatch={9}
-                    windowSize={5}
-                    estimatedItemSize={120}
+                    drawDistance={250}
                 />
             </View>
             {alertVisible && (
