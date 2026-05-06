@@ -1,0 +1,29 @@
+frontend/api/post.ts
+  e306126fc7b636b7 208,210-211,213,216,223-232
+frontend/components/profile/ProfileGallery.tsx
+  e306126fc7b636b7 1-2,101-102,109-111,119-135,139-140,154,157,159-160,163-164,166-167,179-201,309,333-341,363-369,415-419
+frontend/components/profile/BlueprintSection.tsx
+  e306126fc7b636b7 149-151
+frontend/components/profile/BlueprintGallery.tsx
+  e306126fc7b636b7 239-242
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "b45e9dc0fe6a18741ac73ce73fca38d9596b0220",
+  "prompts": {
+    "e306126fc7b636b7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "85a0aab0-4092-46de-a9c3-d4fde5e2a0c0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 1528,
+      "total_deletions": 52,
+      "accepted_lines": 1520,
+      "overriden_lines": 0
+    }
+  }
+}
