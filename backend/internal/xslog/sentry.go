@@ -34,7 +34,7 @@ func (h *SentryHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	// Only forward ERROR and above to Sentry.
 	if r.Level >= slog.LevelError {
-		h.reportToSentry(r)
+		h.reportToSentry(ctx, r)
 	}
 
 	return err
@@ -56,8 +56,12 @@ func (h *SentryHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
-func (h *SentryHandler) reportToSentry(r slog.Record) {
-	hub := sentry.CurrentHub()
+func (h *SentryHandler) reportToSentry(ctx context.Context, r slog.Record) {
+	// Try request-scoped hub first, fall back to global hub
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		hub = sentry.CurrentHub()
+	}
 	if hub.Client() == nil {
 		return
 	}
