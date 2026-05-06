@@ -46,7 +46,6 @@ const login = (props: Props) => {
     // Landing page is always light mode
     const heroCardBg = Colors.dark.background;
     const heroCardText = Colors.dark.text;
-    const heroCardBorder = Colors.light.background;
 
     return (
         <View
@@ -68,18 +67,6 @@ const login = (props: Props) => {
                     alignItems: "center",
                     paddingTop: Dimensions.get("screen").height * 0.06,
                 }}>
-                <View
-                    style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 4,
-                        borderRadius: 24,
-                        borderWidth: 1,
-                        borderColor: heroCardBorder,
-                    }}>
-                    <ThemedText type="lightBody" style={{ color: heroCardText }}>
-                        Beta
-                    </ThemedText>
-                </View>
                 <ThemedText
                     type="titleFraunces"
                     style={{
