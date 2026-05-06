@@ -468,7 +468,6 @@ const useStyles = (ThemedColor: any) =>
             borderWidth: 1,
             borderColor: ThemedColor.tertiary + "30",
             position: "relative",
-            opacity: 0.7, // Slightly dimmed to indicate unavailable
         },
         googleButtonText: {
             color: "#1F1F1F",
