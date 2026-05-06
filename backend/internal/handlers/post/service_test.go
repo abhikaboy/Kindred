@@ -429,10 +429,11 @@ func (s *PostServiceTestSuite) TestGetUserPosts_Success() {
 	}
 
 	// Get user posts
-	posts, err := s.service.GetUserPosts(user.ID)
+	posts, total, err := s.service.GetUserPosts(user.ID, 50, 0)
 
 	s.NoError(err)
 	s.GreaterOrEqual(len(posts), 3)
+	s.GreaterOrEqual(total, 3)
 
 	// Verify all posts belong to the user
 	for _, post := range posts {
@@ -445,10 +446,11 @@ func (s *PostServiceTestSuite) TestGetUserPosts_EmptyResult() {
 	// Create a user with no posts
 	fakeUserID := testpkg.GenerateObjectID()
 
-	posts, err := s.service.GetUserPosts(fakeUserID)
+	posts, total, err := s.service.GetUserPosts(fakeUserID, 50, 0)
 
 	s.NoError(err)
 	s.Empty(posts)
+	s.Equal(0, total)
 }
 
 func (s *PostServiceTestSuite) TestGetUserPosts_ExcludesDeleted() {
@@ -469,7 +471,7 @@ func (s *PostServiceTestSuite) TestGetUserPosts_ExcludesDeleted() {
 	s.NoError(err)
 
 	// Get user posts - should not include deleted
-	posts, err := s.service.GetUserPosts(user.ID)
+	posts, _, err := s.service.GetUserPosts(user.ID, 50, 0)
 	s.NoError(err)
 
 	for _, post := range posts {
