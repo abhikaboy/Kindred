@@ -57,7 +57,6 @@ func FiberMiddleware() fiber.Handler {
 
 		hub.ConfigureScope(func(scope *sentry.Scope) {
 			scope.SetTag("http.status_code", fmt.Sprintf("%d", statusCode))
-			scope.SetExtra("duration_ms", duration.Milliseconds())
 
 			// Enrich with user info if auth middleware set it
 			if userID, ok := c.Locals("user_id").(string); ok && userID != "" {
@@ -67,14 +66,19 @@ func FiberMiddleware() fiber.Handler {
 				scope.SetTag("user.timezone", timezone)
 			}
 
-			// Capture error response body for 4xx/5xx (truncated)
+			// Response context with duration and error body
+			responseCtx := map[string]interface{}{
+				"status_code": statusCode,
+				"duration_ms": duration.Milliseconds(),
+			}
 			if statusCode >= 400 {
 				body := string(c.Response().Body())
 				if len(body) > maxErrorBodyLen {
 					body = body[:maxErrorBodyLen] + "..."
 				}
-				scope.SetExtra("response_body", body)
+				responseCtx["body"] = body
 			}
+			scope.SetContext("response", responseCtx)
 		})
 
 		return err
