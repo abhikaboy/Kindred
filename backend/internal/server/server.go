@@ -80,7 +80,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 			// Use request-scoped hub — it already has request context
 			hub := xsentry.GetHub(c)
 			hub.WithScope(func(scope *sentry.Scope) {
-				scope.SetExtra("stack", stack)
+				scope.SetContext("panic", map[string]interface{}{"stack": stack})
 				scope.SetLevel(sentry.LevelFatal)
 				hub.RecoverWithContext(c.Context(), e)
 			})
