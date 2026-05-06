@@ -1,13 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
-import * as Google from 'expo-auth-session/providers/google';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-
-// Complete the auth session for web browser
-WebBrowser.maybeCompleteAuthSession();
+import { useEffect, useState, useRef, useCallback } from "react";
+import {
+  GoogleSignin,
+  statusCodes,
+  isErrorWithCode,
+} from "@react-native-google-signin/google-signin";
 
 export interface GoogleAuthResult {
-  type: 'success' | 'error' | 'cancel';
+  type: "success" | "error" | "cancel";
   user?: {
     id: string;
     email: string;
@@ -17,7 +16,6 @@ export interface GoogleAuthResult {
     family_name?: string;
   };
   idToken?: string;
-  accessToken?: string;
   error?: string;
 }
 
@@ -27,111 +25,84 @@ export interface UseGoogleAuthProps {
 }
 
 export const useGoogleAuth = (props?: UseGoogleAuthProps) => {
-  const [userInfo, setUserInfo] = useState<GoogleAuthResult['user'] | null>(null);
+  const [userInfo, setUserInfo] = useState<GoogleAuthResult["user"] | null>(null);
   const [loading, setLoading] = useState(false);
   const propsRef = useRef(props);
   propsRef.current = props;
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: '955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6.apps.googleusercontent.com',
-    webClientId: '955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com',
-    scopes: ['openid', 'profile', 'email'],
-  });
-
   useEffect(() => {
-    if (response?.type === 'success') {
-      setLoading(true);
-      fetchUserInfo(response.params.id_token)
-        .then((result) => {
-          setUserInfo(result.user);
-          propsRef.current?.onSuccess?.(result);
-        })
-        .catch((error) => {
-          console.error('Google auth error:', error);
-          const errorMessage = error.message || 'Failed to authenticate with Google';
-          propsRef.current?.onError?.(errorMessage);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else if (response?.type === 'error') {
-      const errorMessage = response.error?.message || 'Authentication failed';
-      console.error('Google auth error:', response.error);
-      propsRef.current?.onError?.(errorMessage);
-    }
-  }, [response]);
+    GoogleSignin.configure({
+      iosClientId:
+        "955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6.apps.googleusercontent.com",
+      webClientId:
+        "955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com",
+    });
+  }, []);
 
-  const fetchUserInfo = async (idToken: string): Promise<GoogleAuthResult> => {
-    if (!idToken) {
-      throw new Error('No ID token received');
-    }
-
-    try {
-      // Decode the ID token to get user info (JWT payload)
-      const base64Payload = idToken.split('.')[1];
-      const payload = JSON.parse(atob(base64Payload));
-
-      const user = {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-        given_name: payload.given_name,
-        family_name: payload.family_name,
-      };
-
-      return {
-        type: 'success',
-        user,
-        idToken,
-      };
-    } catch (error) {
-      console.error('Failed to parse Google ID token:', error);
-      throw new Error('Failed to parse user information');
-    }
-  };
-
-  const signInAsync = async (): Promise<GoogleAuthResult> => {
+  const signInAsync = useCallback(async (): Promise<GoogleAuthResult> => {
     try {
       setLoading(true);
-      const result = await promptAsync();
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
 
-      if (result.type === 'success') {
-        const userResult = await fetchUserInfo(result.params.id_token);
-        setUserInfo(userResult.user);
-        return userResult;
-      } else if (result.type === 'cancel') {
-        return { type: 'cancel' };
-      } else {
-        return {
-          type: 'error',
-          error: 'Authentication failed'
-        };
+      if (response.type === "cancelled") {
+        return { type: "cancel" };
       }
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      return {
-        type: 'error',
-        error: error instanceof Error ? error.message : 'Authentication failed'
+
+      const { user: googleUser } = response.data!;
+      const user = {
+        id: googleUser.id,
+        email: googleUser.email,
+        name: googleUser.name ?? "",
+        picture: googleUser.photo ?? undefined,
+        given_name: googleUser.givenName ?? undefined,
+        family_name: googleUser.familyName ?? undefined,
       };
+
+      setUserInfo(user);
+
+      const result: GoogleAuthResult = {
+        type: "success",
+        user,
+        idToken: response.data?.idToken ?? undefined,
+      };
+
+      propsRef.current?.onSuccess?.(result);
+      return result;
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+          return { type: "cancel" };
+        }
+        if (error.code === statusCodes.IN_PROGRESS) {
+          return { type: "cancel" };
+        }
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Google sign-in failed";
+      propsRef.current?.onError?.(errorMessage);
+      return { type: "error", error: errorMessage };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const signOut = () => {
+  const signOut = useCallback(async () => {
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // silent
+    }
     setUserInfo(null);
-  };
+  }, []);
 
   return {
-    request,
-    response,
-    promptAsync,
     signInAsync,
     signOut,
     userInfo,
     loading,
-    isReady: !!request,
+    isReady: true, // native SDK is always ready after configure
   };
 };
 
