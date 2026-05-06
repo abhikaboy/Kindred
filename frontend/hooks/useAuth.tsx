@@ -7,6 +7,9 @@ import { components } from "@/api/generated/types";
 import { router } from "expo-router";
 import client, { setUnauthorizedHandler, clearUnauthorizedHandler } from "@/api/client";
 import { createLogger } from "@/utils/logger";
+import * as Sentry from "@sentry/react-native";
+import { showToast } from "@/utils/showToast";
+import { ERROR_MESSAGES } from "@/utils/errorParser";
 
 const logger = createLogger('AuthHook');
 
@@ -116,7 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return result;
         } catch (error) {
             logger.error("Registration failed", error);
-            alert("Unable to complete registration. Please try again.");
+            Sentry.captureException(error, {
+                tags: { "auth.method": "apple", "auth.flow": "register" },
+            });
+            showToast(ERROR_MESSAGES.APPLE_AUTH_FAILED, "danger", "Registration Failed");
             throw error;
         }
     }
@@ -134,6 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return result;
         } catch (error) {
             logger.error("Google registration failed", error);
+            Sentry.captureException(error, {
+                tags: { "auth.method": "google", "auth.flow": "register" },
+            });
+            showToast(ERROR_MESSAGES.GOOGLE_AUTH_FAILED, "danger", "Registration Failed");
             throw error;
         }
     }
@@ -199,7 +209,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Login failed with exception:", error);
-            console.error("Error stack:", error.stack);
+            Sentry.captureException(error, {
+                tags: { "auth.method": "apple", "auth.flow": "login" },
+            });
             throw error;
         }
     }
@@ -262,7 +274,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Google login failed with exception:", error);
-            console.error("Error stack:", error.stack);
+            Sentry.captureException(error, {
+                tags: { "auth.method": "google", "auth.flow": "login" },
+            });
             throw error;
         }
     }
@@ -315,8 +329,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Phone login failed with exception:", error);
-            console.error("Error stack:", error.stack);
-            alert("Looks like we couldn't find your account, try to register instead!");
+            Sentry.captureException(error, {
+                tags: { "auth.method": "phone", "auth.flow": "login" },
+            });
+            showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_PHONE, "warning", "Sign-In Failed");
             throw error;
         }
     }
@@ -380,7 +396,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("OTP login failed with exception:", error);
-            console.error("Error stack:", error.stack);
+            Sentry.captureException(error, {
+                tags: { "auth.method": "otp", "auth.flow": "login" },
+            });
             throw error;
         }
     }
