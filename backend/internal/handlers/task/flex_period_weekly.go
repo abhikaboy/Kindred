@@ -7,9 +7,7 @@ type WeeklyFlexPeriod struct{}
 func (w WeeklyFlexPeriod) String() string { return "weekly" }
 
 func (w WeeklyFlexPeriod) ComputeCooldown(now time.Time, loc *time.Location) time.Time {
-	local := now.In(loc)
-	tomorrow := time.Date(local.Year(), local.Month(), local.Day()+1, 0, 0, 0, 0, loc)
-	return tomorrow.In(time.UTC)
+	return now.Add(5 * time.Minute).In(time.UTC)
 }
 
 func (w WeeklyFlexPeriod) PeriodStart(now time.Time, loc *time.Location) time.Time {
