@@ -839,8 +839,14 @@ func (s *TaskServiceTestSuite) TestCompleteFlexTask_IncrementsCompletedInPeriod(
 	s.NoError(err)
 
 	s.Equal(1, updatedTemplate.FlexState.CompletedInPeriod, "CompletedInPeriod should be 1")
-	s.NotNil(updatedTemplate.FlexState.CooldownUntil, "CooldownUntil should be set")
+	s.Nil(updatedTemplate.FlexState.CooldownUntil, "CooldownUntil should not be set when inline-spawning next instance")
 	s.Equal(1, updatedTemplate.TimesCompleted, "TimesCompleted should be 1")
+
+	// Verify a new task was inline-spawned into the category
+	var updatedCategory types.CategoryDocument
+	err = s.Collections["categories"].FindOne(s.Ctx, bson.M{"_id": category.ID}).Decode(&updatedCategory)
+	s.NoError(err)
+	s.Equal(1, len(updatedCategory.Tasks), "A new flex task should have been inline-spawned into the category")
 }
 
 func (s *TaskServiceTestSuite) TestCompleteFlexTask_AllTargetsMet_SetsNextPeriod() {
