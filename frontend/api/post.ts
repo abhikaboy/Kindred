@@ -205,21 +205,31 @@ export const getPostById = async (postId: string): Promise<PostDocumentAPI> => {
 
 
 /**
- * Get user's posts
+ * Get user's posts with pagination
  * @param userId
+ * @param limit - Number of posts to return (default: 18)
+ * @param offset - Number of posts to skip (default: 0)
  */
-export const getUserPosts = async (userId: string): Promise<PostDocument[]> => {
+export const getUserPosts = async (userId: string, limit: number = 18, offset: number = 0): Promise<PaginatedPostsResponse> => {
     // @ts-ignore - Path updated to /v1/user/{userId}/posts but OpenAPI spec needs regeneration
     const { data, error } = await client.GET("/v1/user/{userId}/posts", {
-        params: withAuthHeaders({ path: { userId } }),
+        params: withAuthHeaders({ path: { userId }, query: { limit, offset } }),
     });
 
     if (error) {
         throw new Error(`Failed to get user posts: ${JSON.stringify(error)}`);
     }
 
-    // @ts-ignore - Backend returns { body: PostDocument[] } (lowercase b per JSON tag)
-    return data || []
+    // @ts-ignore - OpenAPI types not yet regenerated with pagination fields
+    return {
+        posts: (data as any)?.posts || [],
+        // @ts-ignore
+        total: (data as any)?.total || 0,
+        // @ts-ignore
+        hasMore: (data as any)?.hasMore || false,
+        // @ts-ignore
+        nextOffset: (data as any)?.nextOffset || 0,
+    };
 };
 
 /**

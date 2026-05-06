@@ -113,10 +113,17 @@ type GetPostOutput struct {
 type GetUserPostsInput struct {
 	Authorization string `header:"Authorization" required:"true"`
 	ID            string `path:"userId" example:"507f1f77bcf86cd799439011"`
+	Limit         int    `query:"limit" default:"18" minimum:"1" maximum:"50" doc:"Number of posts to return (default: 18)"`
+	Offset        int    `query:"offset" default:"0" minimum:"0" doc:"Number of posts to skip (default: 0)"`
 }
 
 type GetUserPostsOutput struct {
-	Body []types.PostDocument `json:"body"`
+	Body struct {
+		Posts      []types.PostDocumentAPI `json:"posts"`
+		Total      int                     `json:"total" doc:"Total number of posts available"`
+		HasMore    bool                    `json:"hasMore" doc:"Whether there are more posts to fetch"`
+		NextOffset int                     `json:"nextOffset" doc:"Offset for the next page"`
+	} `json:"body"`
 }
 
 // Update Post

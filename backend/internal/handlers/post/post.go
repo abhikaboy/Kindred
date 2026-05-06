@@ -485,18 +485,44 @@ func (h *Handler) GetUserPostsHuma(ctx context.Context, input *GetUserPostsInput
 		return nil, huma.Error500InternalServerError("Failed to check relationship", err)
 	}
 
-	// If not authorized to view, return empty posts array (similar to tasks behavior)
+	// If not authorized to view, return empty paginated response (similar to tasks behavior)
 	if !canView {
-		return &GetUserPostsOutput{Body: []types.PostDocument{}}, nil
+		output := &GetUserPostsOutput{}
+		output.Body.Posts = []types.PostDocumentAPI{}
+		output.Body.Total = 0
+		output.Body.HasMore = false
+		output.Body.NextOffset = 0
+		return output, nil
+	}
+
+	// Set defaults if not provided
+	limit := input.Limit
+	if limit <= 0 {
+		limit = 18
+	}
+	offset := input.Offset
+	if offset < 0 {
+		offset = 0
 	}
 
 	// User is authorized (friend or self), fetch their posts
-	posts, err := h.service.GetUserPosts(profileUserID)
+	posts, total, err := h.service.GetUserPosts(profileUserID, limit, offset)
 	if err != nil {
 		return nil, huma.Error404NotFound("Posts not found", err)
 	}
 
-	return &GetUserPostsOutput{Body: posts}, nil
+	var apiPosts []types.PostDocumentAPI
+	for _, post := range posts {
+		apiPosts = append(apiPosts, *post.ToAPI())
+	}
+
+	output := &GetUserPostsOutput{}
+	output.Body.Posts = apiPosts
+	output.Body.Total = total
+	output.Body.HasMore = offset+len(apiPosts) < total
+	output.Body.NextOffset = offset + len(apiPosts)
+
+	return output, nil
 }
 
 func (h *Handler) UpdatePostHuma(ctx context.Context, input *UpdatePostInput) (*UpdatePostOutput, error) {

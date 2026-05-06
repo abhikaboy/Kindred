@@ -236,6 +236,7 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.galleryContainer}
                     removeClippedSubviews={true}
+                    drawDistance={250}
                 />
             </View>
             {alertVisible && (
