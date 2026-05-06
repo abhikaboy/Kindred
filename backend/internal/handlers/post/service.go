@@ -310,8 +310,8 @@ func (s *Service) DeletePost(id primitive.ObjectID) error {
 	return err
 }
 
-// GetUserPosts fetches posts for a specific user
-func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument, error) {
+// GetUserPosts fetches posts for a specific user with pagination
+func (s *Service) GetUserPosts(userID primitive.ObjectID, limit, offset int) ([]types.PostDocument, int, error) {
 	ctx := context.Background()
 
 	filter := bson.M{
@@ -319,18 +319,35 @@ func (s *Service) GetUserPosts(userID primitive.ObjectID) ([]types.PostDocument,
 		"metadata.isDeleted": false,
 	}
 
-	cursor, err := s.Posts.Find(ctx, filter)
+	// Set default limit if not provided
+	if limit <= 0 {
+		limit = 18
+	}
+
+	// Get total count
+	total, err := s.Posts.CountDocuments(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	// Find with pagination
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "metadata.createdAt", Value: -1}}).
+		SetLimit(int64(limit)).
+		SetSkip(int64(offset))
+
+	cursor, err := s.Posts.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
 	var results []types.PostDocument
 	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return results, nil
+	return results, int(total), nil
 }
 
 // GetFriendsPosts fetches posts from the user's friends using aggregation pipeline with group visibility, ordered chronologically (newest first) with pagination
