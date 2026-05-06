@@ -18,6 +18,9 @@ import {
     AppleAuthenticationButtonType,
 } from "expo-apple-authentication";
 import Feather from "@expo/vector-icons/Feather";
+import * as Sentry from "@sentry/react-native";
+import { showToast } from "@/utils/showToast";
+import { ERROR_MESSAGES } from "@/utils/errorParser";
 
 type Props = {
     visible: boolean;
@@ -44,7 +47,6 @@ export const OnboardModal = (props: Props) => {
             if (result.user && result.user.id && result.user.email) {
                 try {
                     if (mode === "register") {
-                        // Store Google info in onboarding context (don't register yet)
                         const displayName = result.user.name ||
                             `${result.user.given_name || ''} ${result.user.family_name || ''}`.trim();
 
@@ -55,31 +57,35 @@ export const OnboardModal = (props: Props) => {
                         });
 
                         console.log("Stored Google credentials in onboarding context");
-
-                        // Navigate to name screen (skip phone for Google users like Apple)
                         router.replace("/(onboarding)/name");
                         setVisible(false);
                     } else {
-                        // Login mode - try to log in
                         await loginWithGoogle(result.user.id);
                         router.push("/(logged-in)/(tabs)/(task)");
                         setVisible(false);
                     }
                 } catch (error: any) {
                     console.error("Google authentication error:", error);
+                    Sentry.captureException(error, {
+                        tags: { "auth.method": "google", "auth.flow": mode },
+                    });
 
                     if (error?.message === "ACCOUNT_NOT_FOUND") {
-                        // Account doesn't exist - show friendly message
                         if (mode === "login") {
-                            alert("No account found. Please sign up first!");
+                            showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_GOOGLE, "warning", "No Account Found");
                         }
+                    } else {
+                        showToast(ERROR_MESSAGES.GOOGLE_AUTH_FAILED, "danger", "Sign-In Failed");
                     }
                 }
             }
         },
         onError: (error) => {
             console.error("Google auth error:", error);
-            alert("Google authentication failed. Please try again.");
+            Sentry.captureException(new Error(error), {
+                tags: { "auth.method": "google", "auth.flow": mode },
+            });
+            showToast(ERROR_MESSAGES.GOOGLE_AUTH_FAILED, "danger", "Sign-In Failed");
         },
     });
 
@@ -168,30 +174,19 @@ export const OnboardModal = (props: Props) => {
                 console.log("Apple didn't provide email/name. Checking if account exists...");
                 try {
                     await login(appleAccountID);
-                    // Login succeeded - they have an account!
                     console.log("Account exists! Logging in...");
                     router.push("/(logged-in)/(tabs)/(task)");
                     return;
                 } catch (loginError: any) {
                     if (loginError.message === "ACCOUNT_NOT_FOUND") {
-                        // Account doesn't exist - they need to provide info manually
                         console.log("No account found. User needs to provide email/name manually.");
-                        alert(
-                            "Apple didn't share your email and name with us. This usually happens if you've authorized this app before but didn't complete sign-up.\n\n" +
-                            "To fix this:\n" +
-                            "1. Go to Settings > Apple ID > Password & Security > Apps Using Apple ID\n" +
-                            "2. Find 'Kindred' and tap 'Stop Using Apple ID'\n" +
-                            "3. Come back and try signing up again\n\n" +
-                            "Or use a different sign-up method."
-                        );
+                        showToast(ERROR_MESSAGES.APPLE_AUTH_NO_DATA, "warning", "Apple Sign-In");
                         throw new Error("Apple authorization incomplete");
                     } else {
-                        // Some other login error
                         throw loginError;
                     }
                 }
             } else {
-                // Apple provided email/name - proceed with normal registration
                 const displayName = `${firstName} ${lastName}`.trim();
                 updateOnboardingData({
                     email: email,
@@ -200,22 +195,20 @@ export const OnboardModal = (props: Props) => {
                 });
 
                 console.log("Pre-filled onboarding data with Apple credentials");
-
-                // Navigate directly to name screen (skip phone/OTP for Apple users)
                 router.replace("/(onboarding)/name");
             }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("User cancelled Apple sign in");
-                // Don't show error for user cancellation
             } else {
                 console.error("Apple registration error:", e.code, e);
-                // Only show alert if we haven't already shown one
+                Sentry.captureException(e, {
+                    tags: { "auth.method": "apple", "auth.flow": "register" },
+                });
                 if (e.message !== "Apple authorization incomplete") {
-                    alert(`Apple sign up failed: ${e.message || "An unexpected error occurred"}`);
+                    showToast(ERROR_MESSAGES.APPLE_AUTH_FAILED, "danger", "Sign-Up Failed");
                 }
             }
-            // Re-throw to let caller know it failed
             throw e;
         }
     };
@@ -234,20 +227,19 @@ export const OnboardModal = (props: Props) => {
             await login(appleAccountID);
 
             router.push("/(logged-in)/(tabs)/(task)");
-            // Success - modal will be closed by caller
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 console.log("User cancelled Apple sign in");
-                // Don't show error for user cancellation
             } else if (e.message === "ACCOUNT_NOT_FOUND") {
-                // Account doesn't exist - show friendly message
                 console.log("Account not found, directing to sign up");
-                alert("No account found. Please sign up first!");
+                showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_APPLE, "warning", "No Account Found");
             } else {
                 console.error("Apple login error:", e.code, e);
-                alert(`Apple sign in failed: ${e.message || "An unexpected error occurred"}`);
+                Sentry.captureException(e, {
+                    tags: { "auth.method": "apple", "auth.flow": "login" },
+                });
+                showToast(ERROR_MESSAGES.APPLE_AUTH_FAILED, "danger", "Sign-In Failed");
             }
-            // Re-throw to let caller know it failed
             throw e;
         }
     };
@@ -468,7 +460,6 @@ const useStyles = (ThemedColor: any) =>
             borderWidth: 1,
             borderColor: ThemedColor.tertiary + "30",
             position: "relative",
-            opacity: 0.7, // Slightly dimmed to indicate unavailable
         },
         googleButtonText: {
             color: "#1F1F1F",
