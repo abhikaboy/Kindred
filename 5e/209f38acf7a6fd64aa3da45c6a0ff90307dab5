@@ -1,0 +1,44 @@
+frontend/hooks/useTaskCompletion.tsx
+  e306126fc7b636b7 6,31,53-60,137
+frontend/components/daily/CalendarView.tsx
+  e306126fc7b636b7 62,466,471-479
+frontend/components/cards/SwipableTaskCard.tsx
+  e306126fc7b636b7 37,115-123
+frontend/app/(logged-in)/(tabs)/(task)/review.tsx
+  e306126fc7b636b7 23,179-187
+frontend/api/task.ts
+  e306126fc7b636b7 108-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "5e209f38acf7a6fd64aa3da45c6a0ff90307dab5",
+  "prompts": {
+    "defdd9cbf41154fb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06eee962-d989-4780-9556-8bf7ee6a9f42",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 41,
+      "overriden_lines": 0
+    },
+    "e306126fc7b636b7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "85a0aab0-4092-46de-a9c3-d4fde5e2a0c0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 61,
+      "total_deletions": 7,
+      "accepted_lines": 1195,
+      "overriden_lines": 0
+    }
+  }
+}
