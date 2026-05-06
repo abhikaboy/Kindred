@@ -19,6 +19,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Test account for Apple App Store review — bypasses Sinch SMS verification
+const (
+	testReviewPhone = "+15551234567"
+	testReviewOTP   = "1234"
+)
+
 /*
 Health Service to be used by Health Handler to interact with the
 Database layer of the application
@@ -528,6 +534,10 @@ func min(a, b int) int {
 */
 
 func (s *Service) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
+	if phoneNumber == testReviewPhone {
+		slog.Info("Test review phone detected, skipping Sinch OTP send", "phone", phoneNumber)
+		return "test-verification-id", nil
+	}
 	return s.sendOTPAsync(ctx, phoneNumber)
 }
 
@@ -538,6 +548,10 @@ func (s *Service) SendOTP(ctx context.Context, phoneNumber string) (string, erro
 */
 
 func (s *Service) VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, string, error) {
+	if phoneNumber == testReviewPhone && code == testReviewOTP {
+		slog.Info("Test review phone OTP verified via bypass", "phone", phoneNumber)
+		return true, "SUCCESSFUL", nil
+	}
 	return s.verifyOTPAsync(ctx, phoneNumber, code)
 }
 
