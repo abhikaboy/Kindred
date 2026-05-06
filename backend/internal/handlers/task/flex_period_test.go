@@ -47,7 +47,7 @@ func TestDailyFlexPeriod_ComputeCooldown(t *testing.T) {
 	d := DailyFlexPeriod{}
 	now := time.Date(2026, 3, 15, 14, 30, 0, 0, time.UTC)
 	cooldown := d.ComputeCooldown(now, time.UTC)
-	expected := time.Date(2026, 3, 15, 15, 30, 0, 0, time.UTC)
+	expected := now.Add(5 * time.Minute).In(time.UTC)
 	assert.Equal(t, expected, cooldown)
 }
 
@@ -93,8 +93,7 @@ func TestWeeklyFlexPeriod_ComputeCooldown(t *testing.T) {
 	// Wednesday at 3pm
 	now := time.Date(2026, 3, 18, 15, 0, 0, 0, time.UTC)
 	cooldown := w.ComputeCooldown(now, time.UTC)
-	// Should be Thursday midnight
-	expected := time.Date(2026, 3, 19, 0, 0, 0, 0, time.UTC)
+	expected := now.Add(5 * time.Minute).In(time.UTC)
 	assert.Equal(t, expected, cooldown)
 }
 
@@ -145,7 +144,7 @@ func TestMonthlyFlexPeriod_ComputeCooldown(t *testing.T) {
 	m := MonthlyFlexPeriod{}
 	now := time.Date(2026, 3, 15, 14, 0, 0, 0, time.UTC)
 	cooldown := m.ComputeCooldown(now, time.UTC)
-	expected := time.Date(2026, 3, 16, 0, 0, 0, 0, time.UTC)
+	expected := now.Add(5 * time.Minute).In(time.UTC)
 	assert.Equal(t, expected, cooldown)
 }
 

@@ -20,7 +20,7 @@ type Props = {};
 const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { fetchWorkspaces, unnestedTasks } = useTasks();
+    const { fetchWorkspaces, unnestedTasks, addToCategory } = useTasks();
     const [isLoading, setIsLoading] = useState(false);
     const childRefs = useRef<{ [key: number]: any }>({});
     const [removedTasks, setRemovedTasks] = useState<string[]>([]);
@@ -176,7 +176,15 @@ const Review = (props: Props) => {
             timeTaken: "PT0S", // ISO 8601 duration: 0 seconds
         };
 
-        await markAsCompletedAPI(task.categoryID, task.id, completeData);
+        const res = await markAsCompletedAPI(task.categoryID, task.id, completeData);
+
+        // If backend returned the next flex instance, insert it immediately
+        if (res.nextFlexTask) {
+            addToCategory(res.nextFlexTask.categoryId, {
+                ...res.nextFlexTask.task,
+                categoryID: res.nextFlexTask.categoryId,
+            } as Task);
+        }
 
         // Debounced refresh tasks after completion
         debouncedFetchWorkspaces();

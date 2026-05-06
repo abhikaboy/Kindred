@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { markAsCompletedAPI } from '@/api/task';
 import { useTasks } from '@/contexts/tasksContext';
+import { Task } from '@/api/types';
 import { showToastable } from 'react-native-toastable';
 import TaskToast from '@/components/ui/TaskToast';
 import DefaultToast from '@/components/ui/DefaultToast';
@@ -27,7 +28,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
     const optionsRef = useRef(options);
     optionsRef.current = options;
 
-    const { removeFromCategory, setShowConfetti, categories } = useTasks();
+    const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
     const { user } = useAuth();
     const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,6 +49,14 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             });
 
             removeFromCategory(categoryId, taskId);
+
+            // If backend returned the next flex instance, insert it immediately
+            if (res.nextFlexTask) {
+                addToCategory(res.nextFlexTask.categoryId, {
+                    ...res.nextFlexTask.task,
+                    categoryID: res.nextFlexTask.categoryId,
+                } as Task);
+            }
 
             setShowConfetti(true);
             if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
@@ -125,7 +134,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             isCompletingRef.current = false;
             setIsCompleting(false);
         }
-    }, [removeFromCategory, setShowConfetti, categories, user]);
+    }, [removeFromCategory, addToCategory, setShowConfetti, categories, user]);
 
     return {
         markTaskAsCompleted,

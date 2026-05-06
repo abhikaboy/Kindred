@@ -105,6 +105,25 @@ export interface TaskCompletionResult {
     streakChanged: boolean;
     currentStreak: number;
     tasksComplete: number;
+    nextFlexTask?: {
+        task: {
+            id: string;
+            priority: number;
+            content: string;
+            value: number;
+            recurring: boolean;
+            recurFrequency?: string;
+            recurType?: string;
+            recurDetails?: import("./types").RecurDetails;
+            public: boolean;
+            active: boolean;
+            timestamp: string;
+            lastEdited: string;
+            templateID?: string;
+            flexInfo?: import("./types").FlexInstanceInfo;
+        };
+        categoryId: string;
+    };
 }
 
 /**

@@ -59,7 +59,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     onDragCreateComplete,
 }) => {
     const ThemedColor = useThemeColor();
-    const { setSelected, updateTask, removeFromCategory } = useTasks();
+    const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
     const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
         useDailyTasks(selectedDate);
     const currentTimeLineRef = useRef<View>(null);
@@ -463,11 +463,20 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
         setIsCompleting(true);
         try {
-            await markAsCompletedAPI(selectedTask.categoryID, selectedTask.id, {
+            const res = await markAsCompletedAPI(selectedTask.categoryID, selectedTask.id, {
                 timeCompleted: new Date().toISOString(),
                 timeTaken: "PT0S",
             });
             removeFromCategory(selectedTask.categoryID, selectedTask.id);
+
+            // If backend returned the next flex instance, insert it immediately
+            if (res.nextFlexTask) {
+                addToCategory(res.nextFlexTask.categoryId, {
+                    ...res.nextFlexTask.task,
+                    categoryID: res.nextFlexTask.categoryId,
+                } as any);
+            }
+
             if (Platform.OS === "ios") {
                 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }

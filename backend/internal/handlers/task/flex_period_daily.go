@@ -7,7 +7,7 @@ type DailyFlexPeriod struct{}
 func (d DailyFlexPeriod) String() string { return "daily" }
 
 func (d DailyFlexPeriod) ComputeCooldown(now time.Time, loc *time.Location) time.Time {
-	return now.Add(1 * time.Hour).In(time.UTC)
+	return now.Add(5 * time.Minute).In(time.UTC)
 }
 
 func (d DailyFlexPeriod) PeriodStart(now time.Time, loc *time.Location) time.Time {

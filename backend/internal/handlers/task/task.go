@@ -413,6 +413,12 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 	resp.Body.StreakChanged = result.StreakChanged
 	resp.Body.CurrentStreak = result.CurrentStreak
 	resp.Body.TasksComplete = result.TasksComplete
+	if result.NextFlexTask != nil {
+		resp.Body.NextFlexTask = &NextFlexTaskDTO{
+			Task:       result.NextFlexTask.Task,
+			CategoryID: result.NextFlexTask.CategoryID,
+		}
+	}
 	return resp, nil
 }
 

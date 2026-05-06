@@ -79,12 +79,18 @@ type CompleteTaskInput struct {
 	Body          CompleteTaskDocument `json:"body"`
 }
 
+type NextFlexTaskDTO struct {
+	Task       TaskDocument `json:"task"`
+	CategoryID string       `json:"categoryId"`
+}
+
 type CompleteTaskOutput struct {
 	Body struct {
-		Message       string  `json:"message" example:"Task completed successfully"`
-		StreakChanged bool    `json:"streakChanged" example:"true" doc:"Indicates if the user's streak increased"`
-		CurrentStreak int     `json:"currentStreak" example:"5" doc:"The user's current streak count"`
-		TasksComplete float64 `json:"tasksComplete" example:"42" doc:"Total tasks completed by user"`
+		Message       string           `json:"message" example:"Task completed successfully"`
+		StreakChanged bool             `json:"streakChanged" example:"true" doc:"Indicates if the user's streak increased"`
+		CurrentStreak int              `json:"currentStreak" example:"5" doc:"The user's current streak count"`
+		TasksComplete float64          `json:"tasksComplete" example:"42" doc:"Total tasks completed by user"`
+		NextFlexTask  *NextFlexTaskDTO `json:"nextFlexTask,omitempty" doc:"If this was a flex task and more instances remain, the next task instance"`
 	}
 }
 

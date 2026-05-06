@@ -280,6 +280,12 @@ type TaskCompletionResult struct {
 	StreakChanged bool
 	CurrentStreak int
 	TasksComplete float64
+	NextFlexTask  *NextFlexTaskInfo
+}
+
+type NextFlexTaskInfo struct {
+	Task       TaskDocument `json:"task"`
+	CategoryID string       `json:"categoryId"`
 }
 
 func (s *Service) CompleteTask(
@@ -354,6 +360,7 @@ func (s *Service) CompleteTask(
 	}
 
 	// Update recurring template stats if this was a recurring task
+	var flexResult *NextFlexTaskInfo
 	if taskToComplete.TemplateID != nil {
 		result, err := s.TemplateTasks.UpdateOne(ctx,
 			bson.M{"_id": *taskToComplete.TemplateID},
@@ -400,9 +407,11 @@ func (s *Service) CompleteTask(
 		template, err := s.GetTemplateByID(*taskToComplete.TemplateID)
 		if err == nil && template != nil {
 			if template.RecurType == "FLEX" && template.FlexState != nil {
-				if err := s.handleFlexCompletion(ctx, template); err != nil {
+				nextFlexTask, err := s.handleFlexCompletion(ctx, template)
+				if err != nil {
 					slog.Error("Failed to handle flex completion", "error", err, "templateID", *taskToComplete.TemplateID)
 				}
+				flexResult = nextFlexTask
 			} else {
 				// For rolling recurring tasks, schedule the next instance via the cron
 				isRolling := template.RecurDetails == nil || template.RecurDetails.Behavior != "BUILDUP"
@@ -460,6 +469,7 @@ func (s *Service) CompleteTask(
 		StreakChanged: streakChanged,
 		CurrentStreak: userAfter.Streak,
 		TasksComplete: userAfter.TasksComplete,
+		NextFlexTask:  flexResult,
 	}, nil
 }
 
@@ -1713,17 +1723,17 @@ func (s *Service) createFlexTaskFromTemplate(ctx context.Context, templateDoc *T
 	return &task, nil
 }
 
-func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTaskDocument) error {
+func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTaskDocument) (*NextFlexTaskInfo, error) {
 	if template.FlexState == nil {
 		err := fmt.Errorf("FlexState is nil for FLEX template %s during completion", template.ID.Hex())
 		sentry.CaptureException(err)
-		return err
+		return nil, err
 	}
 
 	strategy, err := FlexPeriodFor(template.FlexState.Period)
 	if err != nil {
 		sentry.CaptureException(fmt.Errorf("invalid flex period for template %s: %w", template.ID.Hex(), err))
-		return err
+		return nil, err
 	}
 
 	loc, err := s.getUserLocation(ctx, template.UserID)
@@ -1733,25 +1743,58 @@ func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTa
 	now := xutils.NowUTC()
 	newCompleted := template.FlexState.CompletedInPeriod + 1
 
-	update := bson.M{
-		"flexState.completedInPeriod": newCompleted,
-	}
-
 	if newCompleted >= template.FlexState.Target {
+		// All instances completed for this period — schedule next period
 		nextPeriod := strategy.NextPeriodStart(now, loc)
-		update["nextGenerated"] = nextPeriod
-		update["flexState.cooldownUntil"] = nil
-	} else {
-		cooldown := strategy.ComputeCooldown(now, loc)
-		update["nextGenerated"] = cooldown
-		update["flexState.cooldownUntil"] = cooldown
+		update := bson.M{
+			"flexState.completedInPeriod": newCompleted,
+			"nextGenerated":               nextPeriod,
+			"flexState.cooldownUntil":     nil,
+		}
+		_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{"$set": update})
+		if err != nil {
+			sentry.CaptureException(fmt.Errorf("failed to update flex completion for template %s: %w", template.ID.Hex(), err))
+		}
+		return nil, err
 	}
 
-	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{"$set": update})
+	// Target not yet reached — update completedInPeriod then spawn next instance inline
+	_, err = s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{
+		"$set": bson.M{
+			"flexState.completedInPeriod": newCompleted,
+		},
+	})
 	if err != nil {
-		sentry.CaptureException(fmt.Errorf("failed to update flex completion for template %s: %w", template.ID.Hex(), err))
+		sentry.CaptureException(fmt.Errorf("failed to update flex completedInPeriod for template %s: %w", template.ID.Hex(), err))
+		return nil, err
 	}
-	return err
+
+	// Re-fetch the template to get updated state for createFlexTaskFromTemplate
+	updatedTemplate, err := s.GetTemplateByID(template.ID)
+	if err != nil {
+		sentry.CaptureException(fmt.Errorf("failed to re-fetch template %s after flex completion: %w", template.ID.Hex(), err))
+		return nil, err
+	}
+
+	newTask, err := s.CreateTaskFromTemplate(updatedTemplate.ID)
+	if err != nil {
+		slog.Error("Failed to inline-spawn next flex instance, cron will pick it up",
+			"error", err, "templateID", template.ID.Hex())
+		// Fall back to cooldown — cron will handle it
+		cooldown := strategy.ComputeCooldown(now, loc)
+		s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{
+			"$set": bson.M{
+				"nextGenerated":           cooldown,
+				"flexState.cooldownUntil": cooldown,
+			},
+		})
+		return nil, nil // Don't fail the completion
+	}
+
+	return &NextFlexTaskInfo{
+		Task:       *newTask,
+		CategoryID: updatedTemplate.CategoryID.Hex(),
+	}, nil
 }
 
 // GetDueRecurringTasks returns all recurring tasks that are due for generation.
