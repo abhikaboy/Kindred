@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, Animated, Image, Dimensions, useColorScheme } from "react-native";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { View, StyleSheet, TouchableOpacity, Animated, Image, Dimensions, useColorScheme, ActivityIndicator } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
@@ -98,12 +98,17 @@ const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
     );
 };
 
+const GALLERY_PAGE_SIZE = 18;
+
 const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
     const { user } = useAuth();
     const ThemedColor = useThemeColor();
     const [postImages, setPostImages] = useState<PostImage[]>([]);
     const [deletingPosts, setDeletingPosts] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [offset, setOffset] = useState(0);
 
     // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
@@ -111,9 +116,28 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
+    const mapPostsToImages = (posts: any[], fallbackUserId?: string): PostImage[] =>
+        posts
+            .filter((post) => post.images && post.images.length > 0)
+            .sort((a, b) => {
+                const dateA = new Date(a.metadata?.createdAt || 0);
+                const dateB = new Date(b.metadata?.createdAt || 0);
+                return dateB.getTime() - dateA.getTime();
+            })
+            .map((post) => {
+                const postUserId = post.user?._id || fallbackUserId || "";
+                return {
+                    imageUrl: post.images[0],
+                    postId: post._id,
+                    postUserId,
+                };
+            });
+
     useEffect(() => {
         const fetchImages = async () => {
             setIsLoading(true);
+            setOffset(0);
+            setHasMore(false);
 
             if (images && images.length > 0) {
                 const legacyImages = images.map((imageUrl, index) => ({
@@ -127,47 +151,20 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
             }
 
             try {
-                let posts;
+                let response;
 
-                // If userId is provided, fetch all posts for that user without pagination
-                // Otherwise, fetch all posts (this case is for backward compatibility)
                 if (userId) {
-                    posts = await getUserPosts(userId);
+                    response = await getUserPosts(userId, GALLERY_PAGE_SIZE, 0);
                 } else {
-                    // Fallback to getAllPosts with a large limit for backward compatibility
-                    const response = await getAllPosts(10000, 0);
-                    posts = response.posts;
+                    // Fallback to getAllPosts for backward compatibility
+                    response = await getAllPosts(GALLERY_PAGE_SIZE, 0);
                 }
 
-                const postImageData: PostImage[] = posts
-                    .filter((post) => {
-                        return post.images && post.images.length > 0;
-                    })
-                    .sort((a, b) => {
-                        const dateA = new Date(a.metadata?.createdAt || 0);
-                        const dateB = new Date(b.metadata?.createdAt || 0);
-                        return dateB.getTime() - dateA.getTime();
-                    })
-                    .map((post) => {
-                        const postUserId = post.user?._id || userId || "";
-                        console.log("ProfileGallery: Mapping post", {
-                            postId: post._id,
-                            hasUser: !!post.user,
-                            postUserIdFromPost: post.user?._id,
-                            userIdProp: userId,
-                            finalPostUserId: postUserId,
-                        });
-                        return {
-                            imageUrl: post.images[0],
-                            postId: post._id,
-                            // Use post.user._id if available, otherwise fall back to userId prop
-                            // This handles cases where the API doesn't populate the user field
-                            postUserId: postUserId,
-                        };
-                    });
-
-                console.log("ProfileGallery: Total post images:", postImageData.length);
+                const postImageData = mapPostsToImages(response.posts, userId);
+                console.log("ProfileGallery: Total post images loaded:", postImageData.length);
                 setPostImages(postImageData);
+                setHasMore(response.hasMore);
+                setOffset(response.nextOffset);
             } catch (error) {
                 console.error("Error fetching post images:", error);
                 setPostImages([]);
@@ -178,6 +175,29 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
 
         fetchImages();
     }, [userId, images]);
+
+    const handleLoadMore = useCallback(async () => {
+        if (!hasMore || isLoadingMore || isLoading) return;
+
+        setIsLoadingMore(true);
+        try {
+            let response;
+            if (userId) {
+                response = await getUserPosts(userId, GALLERY_PAGE_SIZE, offset);
+            } else {
+                response = await getAllPosts(GALLERY_PAGE_SIZE, offset);
+            }
+
+            const newImages = mapPostsToImages(response.posts, userId);
+            setPostImages((prev) => [...prev, ...newImages]);
+            setHasMore(response.hasMore);
+            setOffset(response.nextOffset);
+        } catch (error) {
+            console.error("Error loading more post images:", error);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }, [hasMore, isLoadingMore, isLoading, userId, offset]);
 
     const handleImagePress = (postId: string) => {
         if (postId.startsWith("legacy-")) {
@@ -286,7 +306,7 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         showPostOptions(postId, postUserId);
     };
 
-    // Memoize render function BEFORE any conditional returns
+    // Memoize render functions BEFORE any conditional returns
     const renderItem = React.useCallback(({ item }: { item: PostImage }) => {
         const isDeleting = deletingPosts.has(item.postId);
 
@@ -310,6 +330,15 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         );
     }, [deletingPosts, handleImagePress, handleImageLongPress]);
 
+    const renderFooter = useCallback(() => {
+        if (!isLoadingMore) return null;
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={ThemedColor.primary} />
+            </View>
+        );
+    }, [isLoadingMore, ThemedColor.primary]);
+
     // Show skeleton while loading
     if (isLoading) {
         return <GallerySkeleton ThemedColor={ThemedColor} />;
@@ -331,6 +360,13 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.galleryContainer}
                     removeClippedSubviews={true}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
+                    initialNumToRender={12}
+                    maxToRenderPerBatch={9}
+                    windowSize={5}
+                    estimatedItemSize={120}
                 />
             </View>
             {alertVisible && (
@@ -375,6 +411,11 @@ const styles = StyleSheet.create({
         aspectRatio: 1,
         margin: 2,
         borderRadius: 4,
+    },
+    // Footer loader
+    footerLoader: {
+        paddingVertical: 16,
+        alignItems: "center",
     },
     // Empty state styles
     emptyContainer: {

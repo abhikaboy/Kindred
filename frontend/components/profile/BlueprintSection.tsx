@@ -146,6 +146,9 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.horizontalList}
                     keyExtractor={(item) => item.id}
+                    initialNumToRender={3}
+                    maxToRenderPerBatch={3}
+                    windowSize={3}
                 />
             )}
         </View>
