@@ -165,6 +165,21 @@ export const ERROR_MESSAGES = {
     NETWORK_ERROR: "Unable to connect. Please check your internet connection.",
     TIMEOUT: "Request timed out. Please try again.",
 
+    // Authentication - Google
+    GOOGLE_AUTH_FAILED: "Google sign-in failed. Please try again.",
+
+    // Authentication - Apple
+    APPLE_AUTH_FAILED: "Apple sign-in failed. Please try again.",
+    APPLE_AUTH_NO_DATA:
+        "Apple didn't share your info. Go to Settings > Apple ID > Sign-In & Security > Sign in with Apple, remove Kindred, then try again.",
+
+    // Authentication - General
+    ACCOUNT_NOT_FOUND_GOOGLE: "No account found with this Google account. Sign up first!",
+    ACCOUNT_NOT_FOUND_APPLE: "No account found with this Apple ID. Sign up first!",
+    ACCOUNT_NOT_FOUND_PHONE: "No account found with this phone number. Sign up first!",
+    DUPLICATE_ACCOUNT: "An account already exists with this sign-in method. Try signing in instead.",
+    OTP_INVALID: "Invalid or expired code. Please try again.",
+
     // Authentication
     AUTH_REQUIRED: "Please log in to continue.",
     SESSION_EXPIRED: "Your session has expired. Please log in again.",
