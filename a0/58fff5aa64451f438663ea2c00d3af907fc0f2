@@ -1,0 +1,23 @@
+frontend/app/(onboarding)/phone.tsx
+  fa7c17458a5939d8 1,13,15,19,21,25-33,35-36,41-47,50-51,70-116,119-128,131-137,139-152,154-171,173,179-195,197-198,202,209,212,222-226,228-229,231,240-258,260-267,269-281,283-311,313-365,367-396,399-417,419-422,424-438,479-489,527-576
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "a058fff5aa64451f438663ea2c00d3af907fc0f2",
+  "prompts": {
+    "fa7c17458a5939d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af49ff35-c01c-4d70-988b-0730c55adff2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 404,
+      "total_deletions": 176,
+      "accepted_lines": 404,
+      "overriden_lines": 0
+    }
+  }
+}
