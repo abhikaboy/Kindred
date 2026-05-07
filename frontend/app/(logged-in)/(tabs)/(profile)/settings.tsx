@@ -554,7 +554,7 @@ export default function Settings() {
                     />
                     <SettingsActionRow
                         label="Blocked Users"
-                        onPress={() => router.push('/(logged-in)/(tabs)/(task)/blocked-users')}
+                        onPress={() => router.push('/(logged-in)/(tabs)/(profile)/blocked-users')}
                         icon="ban-outline"
                     />
                 </SettingsSection>
