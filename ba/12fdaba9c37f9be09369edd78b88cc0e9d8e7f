@@ -1,0 +1,25 @@
+frontend/app/(onboarding)/_layout.tsx
+  fa7c17458a5939d8 17,19
+frontend/app/(onboarding)/positivity.tsx
+  fa7c17458a5939d8 169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "ba12fdaba9c37f9be09369edd78b88cc0e9d8e7f",
+  "prompts": {
+    "fa7c17458a5939d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af49ff35-c01c-4d70-988b-0730c55adff2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 8,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
