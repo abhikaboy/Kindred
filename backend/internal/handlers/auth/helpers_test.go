@@ -8,6 +8,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func TestTimezoneOrDefault_Empty(t *testing.T) {
+	assert.Equal(t, "UTC", timezoneOrDefault(""))
+}
+
+func TestTimezoneOrDefault_Set(t *testing.T) {
+	assert.Equal(t, "America/New_York", timezoneOrDefault("America/New_York"))
+}
+
 func TestBuildSafeUserResponse(t *testing.T) {
 	userID := primitive.NewObjectID()
 	user := &User{
