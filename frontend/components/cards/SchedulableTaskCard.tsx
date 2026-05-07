@@ -10,13 +10,13 @@ import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS
 import { Dimensions, Platform, StyleSheet, TouchableOpacity } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
+import { markAsCompletedAPI, activateTaskAPI } from "@/api/task";
 import { useTasks } from "@/contexts/tasksContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
-import CustomAlert, { AlertButton } from "../modals/CustomAlert";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 
 type Props = {
     redirect?: boolean;
@@ -35,66 +35,14 @@ const SchedulableTaskCard = ({
 }: Props) => {
     const { removeFromCategory, setShowConfetti } = useTasks();
     const ThemedColor = useThemeColor();
-
-    // Alert state
-    const [alertVisible, setAlertVisible] = React.useState(false);
-    const [alertTitle, setAlertTitle] = React.useState("");
-    const [alertMessage, setAlertMessage] = React.useState("");
-    const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
-
-    /*
-  Mark as completed function
-*/
-
-    const deleteTask = async (categoryId: string, taskId: string) => {
-        const performDelete = async (deleteRecurring: boolean) => {
-            try {
-                const res = await removeFromCategoryAPI(categoryId, taskId, deleteRecurring);
-                removeFromCategory(categoryId, taskId);
-                console.log(res);
-            } catch (error) {
-                console.log(error);
-                showToastable({
-                    title: "Error",
-                    status: "danger",
-                    position: "top",
-                    message: "Error deleting task",
-                    swipeDirection: "up",
-                    renderContent: (props) => <DefaultToast {...props} />,
-                });
-            }
-        };
-
-        if (task.templateID) {
-            setAlertTitle("Delete Recurring Task");
-            setAlertMessage("Do you want to delete only this task or all future tasks?");
-            setAlertButtons([
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-                {
-                    text: "Only This Task",
-                    onPress: () => performDelete(false),
-                },
-                {
-                    text: "All Future Tasks",
-                    onPress: () => performDelete(true),
-                    style: "destructive",
-                },
-            ]);
-            setAlertVisible(true);
-        } else {
-            performDelete(false);
-        }
-    };
+    const { deleteWithUndo, alertElement } = useUndoableDelete();
 
     // Custom right swipe action - either use provided callback or default delete
     const handleRightSwipe = () => {
         if (onRightSwipe) {
             onRightSwipe();
         } else {
-            deleteTask(categoryId, task.id);
+            deleteWithUndo(task, categoryId);
         }
     };
 
@@ -128,15 +76,7 @@ const SchedulableTaskCard = ({
                 />
             </ReanimatedSwipeable>
 
-            {alertVisible && (
-                <CustomAlert
-                    visible={alertVisible}
-                    setVisible={setAlertVisible}
-                    title={alertTitle}
-                    message={alertMessage}
-                    buttons={alertButtons}
-                />
-            )}
+            {alertElement}
         </>
     );
 }
