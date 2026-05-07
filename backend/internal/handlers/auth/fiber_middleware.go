@@ -9,7 +9,6 @@ import (
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/xlog"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -114,34 +113,8 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 
 // validateRefreshTokenFiber validates a refresh token and returns the count and timezone (Fiber version)
 func validateRefreshTokenFiber(service *Service, refreshToken string) (float64, string, error) {
-	slog.Info("🔄 REFRESH TOKEN FIBER: Starting validation process")
-
-	// Validate the refresh token
-	userID, count, timezone, err := service.ValidateToken(refreshToken)
-	if err != nil {
-		slog.Error("❌ REFRESH TOKEN FIBER: Token validation failed", "error", err.Error())
-		return 0, "", fmt.Errorf("refresh token invalid: %v", err)
-	}
-
-	// Check if the refresh token is unused
-	id, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		slog.Error("❌ REFRESH TOKEN FIBER: Invalid user ID format", "user_id", userID, "error", err.Error())
-		return 0, "", fmt.Errorf("invalid user ID in refresh token: %v", err)
-	}
-
-	used, err := service.CheckIfTokenUsed(id)
-	if err != nil {
-		slog.Error("❌ REFRESH TOKEN FIBER: Error checking token usage", "error", err.Error())
-		return 0, "", fmt.Errorf("error checking token usage: %v", err)
-	}
-
-	if used {
-		slog.Error("❌ REFRESH TOKEN FIBER: Token already used", "user_id", userID)
-		return 0, "", fmt.Errorf("refresh token has already been used")
-	}
-
-	return count, timezone, nil
+	_, count, timezone, err := validateRefreshTokenCore(service, refreshToken)
+	return count, timezone, err
 }
 
 // GetUserIDFromFiberContext extracts the user ID from the Fiber context
