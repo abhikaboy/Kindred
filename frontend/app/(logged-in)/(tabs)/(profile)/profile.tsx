@@ -18,6 +18,7 @@ import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
+import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
 import BlueprintSection from "@/components/profile/BlueprintSection";
 import ReferralCard from "@/components/profile/ReferralCard";
 import { components } from "@/api/generated/types";
@@ -33,6 +34,9 @@ export default function Profile() {
     let ThemedColor = useThemeColor();
 
     const [activeTab, setActiveTab] = useState(0);
+
+    const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
+    const hasDefaultAvatar = !user?.profile_picture || user.profile_picture === DEFAULT_PICTURE;
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
 
@@ -96,12 +100,14 @@ export default function Profile() {
                 backgroundColor={ThemedColor.background}
                 headerHeight={HEADER_HEIGHT}
             />
-            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} userId={user?._id} />
+            <ProfileHeader displayName={user?.display_name || ""} handle={user?.handle || ""} userId={user?._id} showCameraBadge={hasDefaultAvatar} />
 
             <View style={[styles.contentContainer, { marginTop: 24 + HEADER_HEIGHT }]}>
                 <View style={{ width: "100%" }}>
                     <ProfileEdit friendsCount={user?.friends.length || 0} />
                 </View>
+
+                <CompleteProfileCard />
 
                 <TodayStats userId={user?._id} />
 
