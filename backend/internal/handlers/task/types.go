@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -132,8 +133,8 @@ Database layer of the application
 */
 
 type Service struct {
-	Users               *mongo.Collection
-	Tasks               *mongo.Collection
+	Users               repository.UserRepository
+	Tasks               *mongo.Collection // categories — complex aggregation pipelines
 	CompletedTasks      *mongo.Collection
 	TemplateTasks       *mongo.Collection
 	EncouragementHelper EncouragementServiceInterface

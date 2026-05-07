@@ -11,7 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // CheckinSchedule defines the time-to-message and title mapping for daily checkins
@@ -277,36 +276,5 @@ func (s *Service) GetUserTaskCountsForToday(userID primitive.ObjectID) (*TaskCou
 // GetUsersWithPushTokens retrieves all users that have push tokens for notifications
 func (s *Service) GetUsersWithPushTokens() ([]types.User, error) {
 	ctx := context.Background()
-
-	// Find users that have non-empty push tokens
-	filter := bson.M{
-		"push_token": bson.M{
-			"$exists": true,
-			"$ne":     "",
-		},
-	}
-
-	// Select the fields we need for notifications including timezone and settings
-	projection := bson.M{
-		"_id":          1,
-		"push_token":   1,
-		"display_name": 1,
-		"timezone":     1,
-		"settings":     1,
-	}
-
-	cursor, err := s.Users.Find(ctx, filter, &options.FindOptions{
-		Projection: projection,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to query users with push tokens: %w", err)
-	}
-	defer cursor.Close(ctx)
-
-	var users []types.User
-	if err := cursor.All(ctx, &users); err != nil {
-		return nil, fmt.Errorf("failed to decode users: %w", err)
-	}
-
-	return users, nil
+	return s.Users.GetUsersWithPushTokens(ctx)
 }

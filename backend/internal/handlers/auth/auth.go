@@ -29,37 +29,15 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 		return nil, huma.Error401Unauthorized("Invalid email or password", err)
 	}
 
-	// Use user's timezone, default to UTC if not set
-	timezone := user.Timezone
-	if timezone == "" {
-		timezone = "UTC"
-	}
-
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
+	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
-	resp.AccessToken = access
-	resp.RefreshToken = refresh
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-		Points:          user.Points,
-		PostsMade:       user.PostsMade,
-	}
-
+	resp.AccessToken = result.AccessToken
+	resp.RefreshToken = result.RefreshToken
+	resp.Body = result.User
 	return resp, nil
 }
 
@@ -76,37 +54,15 @@ func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneI
 		return nil, huma.Error401Unauthorized("Invalid phone number or password", err)
 	}
 
-	// Use user's timezone, default to UTC if not set
-	timezone := user.Timezone
-	if timezone == "" {
-		timezone = "UTC"
-	}
-
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
+	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
-	resp.AccessToken = access
-	resp.RefreshToken = refresh
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-		Points:          user.Points,
-		PostsMade:       user.PostsMade,
-	}
-
+	resp.AccessToken = result.AccessToken
+	resp.RefreshToken = result.RefreshToken
+	resp.Body = result.User
 	return resp, nil
 }
 
@@ -165,37 +121,15 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 		return nil, huma.Error401Unauthorized("Unable to sign in with Google. Please try again.", err)
 	}
 
-	// Use user's timezone, default to UTC if not set
-	timezone := user.Timezone
-	if timezone == "" {
-		timezone = "UTC"
-	}
-
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
+	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
-	resp.AccessToken = access
-	resp.RefreshToken = refresh
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-		Points:          user.Points,
-		PostsMade:       user.PostsMade,
-	}
-
+	resp.AccessToken = result.AccessToken
+	resp.RefreshToken = result.RefreshToken
+	resp.Body = result.User
 	return resp, nil
 }
 
@@ -398,22 +332,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	resp := &RegisterOutput{}
 	resp.AccessToken = access
 	resp.RefreshToken = refresh
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-		Points:          user.Points,
-		PostsMade:       user.PostsMade,
-	}
+	resp.Body = buildSafeUserResponse(&user)
 
 	return resp, nil
 }
@@ -431,37 +350,15 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 		return nil, huma.Error401Unauthorized("Unable to sign in with Apple. Please try again.", err)
 	}
 
-	// Use user's timezone, default to UTC if not set
-	timezone := user.Timezone
-	if timezone == "" {
-		timezone = "UTC"
-	}
-
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
+	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
-	resp.AccessToken = access
-	resp.RefreshToken = refresh
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-		Points:          user.Points,
-		PostsMade:       user.PostsMade,
-	}
-
+	resp.AccessToken = result.AccessToken
+	resp.RefreshToken = result.RefreshToken
+	resp.Body = result.User
 	return resp, nil
 }
 
@@ -648,39 +545,17 @@ func (h *Handler) LoginWithOTPHuma(ctx context.Context, input *LoginWithOTPInput
 		return nil, huma.Error404NotFound("No account found with this phone number. Please sign up first.", err)
 	}
 
-	// Step 3: Use user's timezone, default to UTC if not set
-	timezone := user.Timezone
-	if timezone == "" {
-		timezone = "UTC"
-	}
-
-	// Step 4: Generate tokens
-	access, refresh, err := h.service.GenerateTokens(id.Hex(), *count, timezone)
+	// Step 3: Generate tokens and build response
+	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
 		slog.Error("Token generation failed during OTP login", "error", err, "user_id", id.Hex())
 		return nil, huma.Error500InternalServerError("Token generation failed", err)
 	}
 
-	// Step 5: Build response
 	resp := &LoginWithOTPOutput{}
-	resp.AccessToken = access
-	resp.RefreshToken = refresh
-	resp.Body = types.SafeUser{
-		ID:              user.ID,
-		DisplayName:     user.DisplayName,
-		Handle:          user.Handle,
-		ProfilePicture:  user.ProfilePicture,
-		Categories:      user.Categories,
-		Friends:         user.Friends,
-		TasksComplete:   user.TasksComplete,
-		RecentActivity:  user.RecentActivity,
-		Encouragements:  user.Encouragements,
-		Congratulations: user.Congratulations,
-		Streak:          user.Streak,
-		StreakEligible:  user.StreakEligible,
-		Points:          user.Points,
-		PostsMade:       user.PostsMade,
-	}
+	resp.AccessToken = result.AccessToken
+	resp.RefreshToken = result.RefreshToken
+	resp.Body = result.User
 
 	slog.Info("OTP login successful", "user_id", id.Hex(), "phone", input.Body.PhoneNumber)
 	return resp, nil

@@ -20,7 +20,7 @@ const (
 
 // AuthMiddleware creates a middleware function for validating JWT tokens
 func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config) func(http.Handler) http.Handler {
-	service := newService(collections, cfg)
+	service := NewServiceWithConfig(collections, cfg)
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -120,39 +120,41 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 	}
 }
 
-// validateRefreshToken validates a refresh token and returns the count and timezone
-func validateRefreshToken(service *Service, refreshToken string) (float64, string, error) {
-	slog.Info("🔄 REFRESH TOKEN: Starting validation process")
+// validateRefreshTokenCore contains the shared refresh token validation logic
+// used by both HTTP and Fiber middleware adapters.
+func validateRefreshTokenCore(service *Service, refreshToken string) (userID string, count float64, timezone string, err error) {
+	slog.Info("Refresh token: starting validation")
 
-	// Validate the refresh token
-	userID, count, timezone, err := service.ValidateToken(refreshToken)
+	userID, count, timezone, err = service.ValidateToken(refreshToken)
 	if err != nil {
-		slog.Error("❌ REFRESH TOKEN: Token validation failed", "error", err.Error())
-		return 0, "", fmt.Errorf("refresh token invalid: %v", err)
+		slog.Error("Refresh token: validation failed", "error", err.Error())
+		return "", 0, "", fmt.Errorf("refresh token invalid: %v", err)
 	}
 
-	slog.Info("✅ REFRESH TOKEN: Token structure valid", "user_id", userID, "count", count, "timezone", timezone)
-
-	// Check if the refresh token is unused
 	id, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		slog.Error("❌ REFRESH TOKEN: Invalid user ID format", "user_id", userID, "error", err.Error())
-		return 0, "", fmt.Errorf("invalid user ID in refresh token: %v", err)
+		slog.Error("Refresh token: invalid user ID format", "user_id", userID, "error", err.Error())
+		return "", 0, "", fmt.Errorf("invalid user ID in refresh token: %v", err)
 	}
 
 	used, err := service.CheckIfTokenUsed(id)
 	if err != nil {
-		slog.Error("❌ REFRESH TOKEN: Error checking token usage", "error", err.Error())
-		return 0, "", fmt.Errorf("error checking token usage: %v", err)
+		slog.Error("Refresh token: error checking usage", "error", err.Error())
+		return "", 0, "", fmt.Errorf("error checking token usage: %v", err)
 	}
 
 	if used {
-		slog.Error("❌ REFRESH TOKEN: Token already used", "user_id", userID)
-		return 0, "", fmt.Errorf("refresh token has already been used")
+		slog.Error("Refresh token: already used", "user_id", userID)
+		return "", 0, "", fmt.Errorf("refresh token has already been used")
 	}
 
-	slog.Info("✅ REFRESH TOKEN: Validation complete", "user_id", userID, "count", count, "timezone", timezone)
-	return count, timezone, nil
+	return userID, count, timezone, nil
+}
+
+// validateRefreshToken validates a refresh token and returns the count and timezone
+func validateRefreshToken(service *Service, refreshToken string) (float64, string, error) {
+	_, count, timezone, err := validateRefreshTokenCore(service, refreshToken)
+	return count, timezone, err
 }
 
 // GetUserIDFromContext extracts the user ID from the request context
