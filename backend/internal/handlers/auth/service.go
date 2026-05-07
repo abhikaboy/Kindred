@@ -111,83 +111,67 @@ func (s *Service) ValidateToken(token string) (string, float64, string, error) {
 	return idString, tokenCount, timezone, nil
 }
 
-func (s *Service) LoginFromCredentials(email string, password string) (*primitive.ObjectID, *float64, *User, error) {
-
+// findByField is the private implementation detail for typed user lookups.
+func (s *Service) findByField(field string, value string) (*User, error) {
 	var user User
-	err := s.users.FindOne(context.Background(), bson.M{"email": email}).Decode(&user)
+	err := s.users.FindOne(context.Background(), bson.M{field: value}).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		return nil, fiber.NewError(404, "Account does not exist")
 	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *Service) LoginFromCredentials(email string, password string) (*primitive.ObjectID, *float64, *User, error) {
+	user, err := s.findByField("email", email)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
-
-	return &user.ID, &user.Count, &user, nil
+	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitive.ObjectID, *float64, *User, error) {
-
-	var user User
-	err := s.users.FindOne(context.Background(), bson.M{"phone": phoneNumber}).Decode(&user)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, nil, nil, fiber.NewError(404, "Account does not exist")
-	}
+	user, err := s.findByField("phone", phoneNumber)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
 	}
-
-	return &user.ID, &user.Count, &user, nil
+	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64, *User, error) {
-
-	var user User
-	err := s.users.FindOne(context.Background(), bson.M{"apple_id": apple_id}).Decode(&user)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, nil, nil, fiber.NewError(404, "Account does not exist, Try to register")
-	}
+	user, err := s.findByField("apple_id", apple_id)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return &user.ID, &user.Count, &user, nil
+	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) LoginFromGoogle(google_id string) (*primitive.ObjectID, *float64, *User, error) {
-
-	var user User
-	err := s.users.FindOne(context.Background(), bson.M{"google_id": google_id}).Decode(&user)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, nil, nil, fiber.NewError(404, "Account does not exist, Try to register")
-	}
+	user, err := s.findByField("google_id", google_id)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return &user.ID, &user.Count, &user, nil
+	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) LoginFromPhoneOTP(phone_number string) (*primitive.ObjectID, *float64, *User, error) {
-
-	var user User
-	err := s.users.FindOne(context.Background(), bson.M{"phone": phone_number}).Decode(&user)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, nil, nil, fiber.NewError(404, "Account does not exist, Try to register")
-	}
+	user, err := s.findByField("phone", phone_number)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return &user.ID, &user.Count, &user, nil
+	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) InvalidateTokens(user_id string) error {
