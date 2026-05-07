@@ -9,14 +9,14 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { markAsCompletedAPI, activateTaskAPI, removeFromCategoryAPI } from "@/api/task";
+import { markAsCompletedAPI, activateTaskAPI } from "@/api/task";
 import { useTasks } from "@/contexts/tasksContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
 import { Bell, Flag, Trash } from "phosphor-react-native";
-import CustomAlert, { AlertButton } from "../modals/CustomAlert";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { AttachStep } from "react-native-spotlight-tour";
 
 type Props = {
@@ -36,12 +36,7 @@ const SwipableTaskCard = ({
 }: Props) => {
     const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
-
-    // Alert state
-    const [alertVisible, setAlertVisible] = React.useState(false);
-    const [alertTitle, setAlertTitle] = React.useState("");
-    const [alertMessage, setAlertMessage] = React.useState("");
-    const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
+    const { deleteWithUndo, alertElement } = useUndoableDelete();
 
     const finalCategoryName =
         categoryName ||
@@ -54,53 +49,6 @@ const SwipableTaskCard = ({
   Mark as completed function
 
 */
-
-    const deleteTask = async (categoryId: string, taskId: string) => {
-        if (Platform.OS === "ios") {
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        }
-
-        const performDelete = async (deleteRecurring: boolean) => {
-            try {
-                const res = await removeFromCategoryAPI(categoryId, taskId, deleteRecurring);
-                removeFromCategory(categoryId, taskId);
-                console.log(res);
-            } catch (error) {
-                console.log(error);
-                showToastable({
-                    title: "Error",
-                    status: "danger",
-                    position: "top",
-                    message: "Error deleting task",
-                    swipeDirection: "up",
-                    renderContent: (props) => <DefaultToast {...props} />,
-                });
-            }
-        };
-
-        if (task.templateID) {
-             setAlertTitle("Delete Recurring Task");
-             setAlertMessage("Do you want to delete only this task or all future tasks?");
-             setAlertButtons([
-                 {
-                     text: "Cancel",
-                     style: "cancel",
-                 },
-                 {
-                     text: "Only This Task",
-                     onPress: () => performDelete(false),
-                 },
-                 {
-                     text: "All Future Tasks",
-                     onPress: () => performDelete(true),
-                     style: "destructive",
-                 },
-             ]);
-             setAlertVisible(true);
-        } else {
-            performDelete(false);
-        }
-    };
 
     const markAsCompleted = async (categoryId: string, taskId: string) => {
         try {
@@ -217,15 +165,7 @@ const SwipableTaskCard = ({
                 ) : (
                     phantomCard
                 )}
-                {alertVisible && (
-                    <CustomAlert
-                        visible={alertVisible}
-                        setVisible={setAlertVisible}
-                        title={alertTitle}
-                        message={alertMessage}
-                        buttons={alertButtons}
-                    />
-                )}
+                {alertElement}
             </>
         );
     }
@@ -265,7 +205,7 @@ const SwipableTaskCard = ({
                         {RightAction(
                             prog,
                             drag,
-                            () => deleteTask(categoryId, task.id),
+                            () => deleteWithUndo(task, categoryId),
                             3,
                             <Trash size={24} color="white" weight="regular" />,
                             ThemedColor.error
@@ -281,15 +221,7 @@ const SwipableTaskCard = ({
                 )}
             </ReanimatedSwipeable>
 
-            {alertVisible && (
-                <CustomAlert
-                    visible={alertVisible}
-                    setVisible={setAlertVisible}
-                    title={alertTitle}
-                    message={alertMessage}
-                    buttons={alertButtons}
-                />
-            )}
+            {alertElement}
         </>
     );
 }
