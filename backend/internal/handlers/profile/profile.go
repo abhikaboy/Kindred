@@ -111,6 +111,15 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 		return nil, huma.Error404NotFound("Profile not found", err)
 	}
 
+	// Fetch the profile owner's access control settings
+	accessControl, err := h.service.GetUserAccessControl(id)
+	if err != nil {
+		slog.Error("Failed to get user access control settings", "error", err.Error())
+		// Default to private behavior on error to protect user content
+		accessControl = &types.AccessControlSettings{PrivateAccount: true, ShowInSearch: true}
+	}
+	profile.IsPrivate = accessControl.PrivateAccount
+
 	// Try to get authenticated user ID - if not present, continue without relationship check
 	authenticatedUserID, isAuthenticated := auth.OptionalAuth(ctx)
 
@@ -144,8 +153,15 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 	// Add relationship information to the profile
 	profile.Relationship = relationship
 
-	// if the profile relationship is friend or self, add tasks to the profile
-	if relationship.Status == RelationshipConnected || relationship.Status == RelationshipSelf {
+	// Determine task visibility:
+	// - Self always sees their own tasks
+	// - Friends always see tasks
+	// - Non-friends see tasks only if the account is not private
+	canSeeTasks := relationship.Status == RelationshipConnected ||
+		relationship.Status == RelationshipSelf ||
+		!accessControl.PrivateAccount
+
+	if canSeeTasks {
 		tasks, err := h.service.GetProfileTasks(id)
 		if err != nil {
 			return nil, huma.Error500InternalServerError("Failed to get profile tasks", err)

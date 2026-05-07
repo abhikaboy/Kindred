@@ -12,6 +12,20 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// GetUserAccessControl returns the access control settings for a user
+func (s *Service) GetUserAccessControl(userID primitive.ObjectID) (*types.AccessControlSettings, error) {
+	ctx := context.Background()
+
+	var user types.User
+	opts := options.FindOne().SetProjection(bson.M{"settings.access_control": 1})
+	err := s.Profiles.FindOne(ctx, bson.M{"_id": userID}, opts).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user.Settings.AccessControl, nil
+}
+
 // NewService receives the map of collections and picks out Jobs
 func NewService(collections map[string]*mongo.Collection) *Service {
 	return &Service{

@@ -124,3 +124,61 @@ func (s *SettingsServiceTestSuite) TestUpdateUserSettings_MultipleFields() {
 	s.True(updatedSettings.Display.ShowTaskDetails)
 	s.True(updatedSettings.Display.RecentWorkspaces)
 }
+
+// ========================================
+// AccessControl Settings Tests
+// ========================================
+
+func (s *SettingsServiceTestSuite) TestGetUserSettings_DefaultAccessControl() {
+	user := s.GetUser(0)
+
+	settings, err := s.service.GetUserSettings(user.ID)
+
+	s.NoError(err)
+	s.NotNil(settings)
+	// Default: private account enabled, visible in search
+	s.True(settings.AccessControl.PrivateAccount)
+	s.True(settings.AccessControl.ShowInSearch)
+}
+
+func (s *SettingsServiceTestSuite) TestUpdateUserSettings_AccessControl() {
+	user := s.GetUser(0)
+
+	newSettings := types.UserSettings{
+		AccessControl: types.AccessControlSettings{
+			PrivateAccount: false,
+			ShowInSearch:   false,
+		},
+	}
+
+	err := s.service.UpdateUserSettings(user.ID, newSettings)
+
+	s.NoError(err)
+
+	// Verify access control settings were updated
+	updatedSettings, err := s.service.GetUserSettings(user.ID)
+	s.NoError(err)
+	s.False(updatedSettings.AccessControl.PrivateAccount)
+	s.False(updatedSettings.AccessControl.ShowInSearch)
+}
+
+func (s *SettingsServiceTestSuite) TestUpdateUserSettings_PrivateAccountOnly() {
+	user := s.GetUser(0)
+
+	// Enable private account only
+	newSettings := types.UserSettings{
+		AccessControl: types.AccessControlSettings{
+			PrivateAccount: true,
+			ShowInSearch:   true,
+		},
+	}
+
+	err := s.service.UpdateUserSettings(user.ID, newSettings)
+
+	s.NoError(err)
+
+	updatedSettings, err := s.service.GetUserSettings(user.ID)
+	s.NoError(err)
+	s.True(updatedSettings.AccessControl.PrivateAccount)
+	s.True(updatedSettings.AccessControl.ShowInSearch)
+}
