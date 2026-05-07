@@ -1,0 +1,23 @@
+frontend/components/profile/CompleteProfileCard.tsx
+  fa7c17458a5939d8 1-345
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "3ae7c949d150506ff94e514934eca77d7fc7bd7c",
+  "prompts": {
+    "fa7c17458a5939d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af49ff35-c01c-4d70-988b-0730c55adff2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 345,
+      "total_deletions": 0,
+      "accepted_lines": 345,
+      "overriden_lines": 0
+    }
+  }
+}
