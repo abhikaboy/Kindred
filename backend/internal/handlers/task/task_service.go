@@ -483,6 +483,14 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 	}
 
 	// Parse and validate all task IDs and category IDs upfront
+	itemSlice := make([]bulkTaskItem, len(tasks))
+	for i, t := range tasks {
+		itemSlice[i] = t
+	}
+	parsedTasks, failedIDs := parseBulkTaskIDs(itemSlice)
+	output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, failedIDs...)
+
+	// Build the structures that the rest of the method expects
 	type taskMapping struct {
 		taskID        primitive.ObjectID
 		categoryID    primitive.ObjectID
@@ -490,34 +498,20 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 		originalIndex int
 	}
 
-	validTasks := make([]taskMapping, 0, len(tasks))
+	validTasks := make([]taskMapping, 0, len(parsedTasks))
 	taskIDMap := make(map[primitive.ObjectID]taskMapping) // For quick lookup
-	taskIDs := make([]primitive.ObjectID, 0, len(tasks))
+	taskIDs := make([]primitive.ObjectID, 0, len(parsedTasks))
 
-	for i, taskItem := range tasks {
-		taskID, err := primitive.ObjectIDFromHex(taskItem.TaskID)
-		if err != nil {
-			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, taskItem.TaskID)
-			slog.Warn("Invalid task ID in bulk complete", "taskID", taskItem.TaskID, "error", err)
-			continue
-		}
-
-		categoryID, err := primitive.ObjectIDFromHex(taskItem.CategoryID)
-		if err != nil {
-			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, taskItem.TaskID)
-			slog.Warn("Invalid category ID in bulk complete", "categoryID", taskItem.CategoryID, "error", err)
-			continue
-		}
-
+	for _, p := range parsedTasks {
 		mapping := taskMapping{
-			taskID:        taskID,
-			categoryID:    categoryID,
-			completeData:  taskItem.CompleteData,
-			originalIndex: i,
+			taskID:        p.taskID,
+			categoryID:    p.categoryID,
+			completeData:  tasks[p.index].CompleteData,
+			originalIndex: p.index,
 		}
 		validTasks = append(validTasks, mapping)
-		taskIDMap[taskID] = mapping
-		taskIDs = append(taskIDs, taskID)
+		taskIDMap[p.taskID] = mapping
+		taskIDs = append(taskIDs, p.taskID)
 	}
 
 	if len(validTasks) == 0 {
@@ -797,6 +791,14 @@ func (s *Service) BulkDeleteTask(userId primitive.ObjectID, tasks []BulkDeleteTa
 	output.Body.FailedTaskIDs = []string{}
 
 	// Parse and validate all task IDs and category IDs upfront
+	itemSlice := make([]bulkTaskItem, len(tasks))
+	for i, t := range tasks {
+		itemSlice[i] = t
+	}
+	parsedTasks, failedIDs := parseBulkTaskIDs(itemSlice)
+	output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, failedIDs...)
+
+	// Build the structures that the rest of the method expects
 	type taskMapping struct {
 		taskID          primitive.ObjectID
 		categoryID      primitive.ObjectID
@@ -804,32 +806,18 @@ func (s *Service) BulkDeleteTask(userId primitive.ObjectID, tasks []BulkDeleteTa
 		originalIndex   int
 	}
 
-	validTasks := make([]taskMapping, 0, len(tasks))
-	taskIDs := make([]primitive.ObjectID, 0, len(tasks))
+	validTasks := make([]taskMapping, 0, len(parsedTasks))
+	taskIDs := make([]primitive.ObjectID, 0, len(parsedTasks))
 
-	for i, taskItem := range tasks {
-		taskID, err := primitive.ObjectIDFromHex(taskItem.TaskID)
-		if err != nil {
-			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, taskItem.TaskID)
-			slog.Warn("Invalid task ID in bulk delete", "taskID", taskItem.TaskID, "error", err)
-			continue
-		}
-
-		categoryID, err := primitive.ObjectIDFromHex(taskItem.CategoryID)
-		if err != nil {
-			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, taskItem.TaskID)
-			slog.Warn("Invalid category ID in bulk delete", "categoryID", taskItem.CategoryID, "error", err)
-			continue
-		}
-
+	for _, p := range parsedTasks {
 		mapping := taskMapping{
-			taskID:          taskID,
-			categoryID:      categoryID,
-			deleteRecurring: taskItem.DeleteRecurring,
-			originalIndex:   i,
+			taskID:          p.taskID,
+			categoryID:      p.categoryID,
+			deleteRecurring: tasks[p.index].DeleteRecurring,
+			originalIndex:   p.index,
 		}
 		validTasks = append(validTasks, mapping)
-		taskIDs = append(taskIDs, taskID)
+		taskIDs = append(taskIDs, p.taskID)
 	}
 
 	if len(validTasks) == 0 {

@@ -114,6 +114,9 @@ type BulkCompleteTaskItem struct {
 	CompleteData CompleteTaskDocument `json:"completeData" doc:"The completion data for the task"`
 }
 
+func (b BulkCompleteTaskItem) GetTaskID() string     { return b.TaskID }
+func (b BulkCompleteTaskItem) GetCategoryID() string { return b.CategoryID }
+
 type BulkCompleteTaskInput struct {
 	Authorization string `header:"Authorization" required:"true"`
 	Body          struct {
@@ -139,6 +142,9 @@ type BulkDeleteTaskItem struct {
 	CategoryID      string `json:"categoryId" example:"507f1f77bcf86cd799439011" doc:"The ID of the category the task belongs to"`
 	DeleteRecurring bool   `json:"deleteRecurring,omitempty" example:"false" doc:"Optional. If true, also delete the recurring template. Defaults to false."`
 }
+
+func (b BulkDeleteTaskItem) GetTaskID() string     { return b.TaskID }
+func (b BulkDeleteTaskItem) GetCategoryID() string { return b.CategoryID }
 
 type BulkDeleteTaskInput struct {
 	Authorization string `header:"Authorization" required:"true"`
