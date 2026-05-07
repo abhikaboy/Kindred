@@ -109,3 +109,16 @@ type LoginWithOTPRequest struct {
 	PhoneNumber string `validate:"required" json:"phone_number"`
 	Code        string `validate:"required" json:"code"`
 }
+
+// AuthResult is the unified return type for all login/register flows.
+type AuthResult struct {
+	AccessToken  string
+	RefreshToken string
+	User         types.SafeUser
+}
+
+// OAuthProvider identifies an OAuth provider for registration.
+type OAuthProvider struct {
+	Type string // "google" or "apple"
+	ID   string
+}
