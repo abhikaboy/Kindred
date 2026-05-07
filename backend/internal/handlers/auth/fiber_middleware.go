@@ -14,7 +14,7 @@ import (
 
 // FiberAuthMiddleware creates a Fiber-native middleware function for validating JWT tokens
 func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config) fiber.Handler {
-	service := newService(collections, cfg)
+	service := NewServiceWithConfig(collections, cfg)
 
 	return func(c *fiber.Ctx) error {
 

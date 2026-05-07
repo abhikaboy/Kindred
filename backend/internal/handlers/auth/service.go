@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,13 +51,7 @@ func (s *Service) GenerateAccessToken(id string, count float64, timezone string)
 }
 
 func (s *Service) GetUserCount(id primitive.ObjectID) (float64, error) {
-	var user User
-
-	err := s.users.FindOne(context.Background(), bson.M{"_id": id}).Decode(&user)
-	if err != nil {
-		return 0, err
-	}
-	return user.Count, nil
+	return s.users.CheckTokenCount(context.Background(), id)
 }
 
 func (s *Service) ValidateToken(token string) (string, float64, string, error) {
@@ -111,22 +105,12 @@ func (s *Service) ValidateToken(token string) (string, float64, string, error) {
 	return idString, tokenCount, timezone, nil
 }
 
-// findByField is the private implementation detail for typed user lookups.
-func (s *Service) findByField(field string, value string) (*User, error) {
-	var user User
-	err := s.users.FindOne(context.Background(), bson.M{field: value}).Decode(&user)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, fiber.NewError(404, "Account does not exist")
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
 func (s *Service) LoginFromCredentials(email string, password string) (*primitive.ObjectID, *float64, *User, error) {
-	user, err := s.findByField("email", email)
+	user, err := s.users.GetUserByEmail(context.Background(), email)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		}
 		return nil, nil, nil, err
 	}
 	// Compare the hashed password with the provided password
@@ -138,8 +122,11 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 }
 
 func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitive.ObjectID, *float64, *User, error) {
-	user, err := s.findByField("phone", phoneNumber)
+	user, err := s.users.GetUserByPhone(context.Background(), phoneNumber)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		}
 		return nil, nil, nil, err
 	}
 	// Compare the hashed password with the provided password
@@ -151,33 +138,44 @@ func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitiv
 }
 
 func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64, *User, error) {
-	user, err := s.findByField("apple_id", apple_id)
+	user, err := s.users.GetUserByAppleID(context.Background(), apple_id)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		}
 		return nil, nil, nil, err
 	}
 	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) LoginFromGoogle(google_id string) (*primitive.ObjectID, *float64, *User, error) {
-	user, err := s.findByField("google_id", google_id)
+	user, err := s.users.GetUserByGoogleID(context.Background(), google_id)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		}
 		return nil, nil, nil, err
 	}
 	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) LoginFromPhoneOTP(phone_number string) (*primitive.ObjectID, *float64, *User, error) {
-	user, err := s.findByField("phone", phone_number)
+	user, err := s.users.GetUserByPhone(context.Background(), phone_number)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+		}
 		return nil, nil, nil, err
 	}
 	return &user.ID, &user.Count, user, nil
 }
 
 func (s *Service) InvalidateTokens(user_id string) error {
-	// increase the count by one
-	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$inc": bson.M{"count": 1}})
-	return err
+	id, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return err
+	}
+	return s.users.IncrementUserCount(context.Background(), id)
 }
 
 func (s *Service) GenerateRefreshToken(id string, count float64, timezone string) (string, error) {
@@ -186,18 +184,15 @@ func (s *Service) GenerateRefreshToken(id string, count float64, timezone string
 }
 
 func (s *Service) UseToken(user_id string) error {
-	_, err := s.users.UpdateOne(context.Background(), bson.M{"_id": user_id}, bson.M{"$set": bson.M{"token_used": true}})
-	return err
+	id, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return err
+	}
+	return s.users.MarkTokenUsed(context.Background(), id)
 }
 
 func (s *Service) CheckIfTokenUsed(user_id primitive.ObjectID) (bool, error) {
-	var user User
-
-	err := s.users.FindOne(context.Background(), bson.M{"_id": user_id}).Decode(&user)
-	if err != nil {
-		return false, err
-	}
-	return user.TokenUsed, nil
+	return s.users.CheckIfTokenUsed(context.Background(), user_id)
 }
 
 func (s *Service) GenerateTokens(id string, count float64, timezone string) (string, string, error) {
@@ -213,30 +208,51 @@ func (s *Service) GenerateTokens(id string, count float64, timezone string) (str
 }
 
 func (s *Service) GetUser(user_id string) (*SafeUser, error) {
-	var user SafeUser
 	// convert the user_id to a primitive.ObjectID
 	user_id_object, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
 		return nil, err
 	}
-	err = s.users.FindOne(context.Background(), bson.M{"_id": user_id_object}).Decode(&user)
+	user, err := s.users.GetUserByID(context.Background(), user_id_object)
 	if err != nil {
 		return nil, err
 	}
-	return &user, nil
+	safeUser := SafeUser{
+		ID:              user.ID,
+		DisplayName:     user.DisplayName,
+		Handle:          user.Handle,
+		ProfilePicture:  user.ProfilePicture,
+		Categories:      user.Categories,
+		Friends:         user.Friends,
+		TasksComplete:   user.TasksComplete,
+		RecentActivity:  user.RecentActivity,
+		Encouragements:  user.Encouragements,
+		Congratulations: user.Congratulations,
+		Streak:          user.Streak,
+		StreakEligible:  user.StreakEligible,
+		Points:          user.Points,
+		PostsMade:       user.PostsMade,
+		Credits:         user.Credits,
+		KudosRewards:    user.KudosRewards,
+		Subscription:    user.Subscription,
+		Timezone:        user.Timezone,
+		Settings:        user.Settings,
+		TermsAcceptedAt: user.TermsAcceptedAt,
+		TermsVersion:    user.TermsVersion,
+	}
+	return &safeUser, nil
 }
 
 /*
-	Create a new user in the database
+Create a new user in the database
 */
 
 func (s *Service) CreateUser(user User) error {
-	_, err := s.users.InsertOne(context.Background(), user)
-	return err
+	return s.users.CreateUser(context.Background(), &user)
 }
 
 /*
-	Setup default workspace with starter tasks for a new user
+Setup default workspace with starter tasks for a new user
 */
 
 func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.ObjectID) error {
@@ -436,7 +452,7 @@ func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.Ob
 }
 
 /*
-	Update the push token for a user
+Update the push token for a user
 */
 
 func (s *Service) UpdatePushToken(user_id primitive.ObjectID, push_token string) error {
@@ -447,58 +463,14 @@ func (s *Service) UpdatePushToken(user_id primitive.ObjectID, push_token string)
 		"push_token_length", len(push_token),
 		"push_token_prefix", push_token[:min(10, len(push_token))])
 
-	// Check if user exists first
-	var existingUser bson.M
-	err := s.users.FindOne(ctx, bson.M{"_id": user_id}).Decode(&existingUser)
+	err := s.users.UpdatePushToken(ctx, user_id, push_token)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, repository.ErrNotFound) {
 			slog.Error("❌ [Service] User not found", "user_id", user_id.Hex())
-			return fmt.Errorf("user not found: %w", err)
+			return fmt.Errorf("user not found")
 		}
-		slog.Error("❌ [Service] Error finding user", "user_id", user_id.Hex(), "error", err)
-		return fmt.Errorf("error finding user: %w", err)
-	}
-	slog.Info("✅ [Service] User found", "user_id", user_id.Hex())
-
-	// Log current push token if exists
-	if currentToken, ok := existingUser["push_token"].(string); ok && currentToken != "" {
-		slog.Info("📝 [Service] User has existing push token",
-			"user_id", user_id.Hex(),
-			"current_token_length", len(currentToken),
-			"is_same", currentToken == push_token)
-	} else {
-		slog.Info("📝 [Service] User has no existing push token", "user_id", user_id.Hex())
-	}
-
-	// Perform the update
-	slog.Info("🔄 [Service] Executing MongoDB UpdateOne...", "user_id", user_id.Hex())
-	result, err := s.users.UpdateOne(ctx, bson.M{"_id": user_id}, bson.M{"$set": bson.M{"push_token": push_token}})
-
-	if err != nil {
-		slog.Error("❌ [Service] MongoDB UpdateOne failed",
-			"user_id", user_id.Hex(),
-			"error", err,
-			"error_type", fmt.Sprintf("%T", err))
+		slog.Error("❌ [Service] Error updating push token", "user_id", user_id.Hex(), "error", err)
 		return fmt.Errorf("failed to update push token in database: %w", err)
-	}
-
-	slog.Info("✅ [Service] MongoDB UpdateOne succeeded",
-		"user_id", user_id.Hex(),
-		"matched_count", result.MatchedCount,
-		"modified_count", result.ModifiedCount,
-		"upserted_count", result.UpsertedCount)
-
-	// Verify the update
-	var updatedUser bson.M
-	err = s.users.FindOne(ctx, bson.M{"_id": user_id}).Decode(&updatedUser)
-	if err != nil {
-		slog.Warn("⚠️ [Service] Could not verify update", "user_id", user_id.Hex(), "error", err)
-	} else {
-		if verifyToken, ok := updatedUser["push_token"].(string); ok {
-			slog.Info("✅ [Service] Update verified",
-				"user_id", user_id.Hex(),
-				"stored_token_matches", verifyToken == push_token)
-		}
 	}
 
 	slog.Info("🎉 [Service] UpdatePushToken completed successfully", "user_id", user_id.Hex())
@@ -513,8 +485,8 @@ func min(a, b int) int {
 }
 
 /*
-	Send OTP via Sinch SMS verification API
-	This method makes an async/non-blocking HTTP request to Sinch
+Send OTP via Sinch SMS verification API
+This method makes an async/non-blocking HTTP request to Sinch
 */
 
 func (s *Service) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
@@ -526,9 +498,9 @@ func (s *Service) SendOTP(ctx context.Context, phoneNumber string) (string, erro
 }
 
 /*
-	Verify OTP via Sinch SMS verification API
-	This method makes an async/non-blocking HTTP request to Sinch
-	Returns: valid (bool), status (string), error
+Verify OTP via Sinch SMS verification API
+This method makes an async/non-blocking HTTP request to Sinch
+Returns: valid (bool), status (string), error
 */
 
 func (s *Service) VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, string, error) {
@@ -540,28 +512,24 @@ func (s *Service) VerifyOTP(ctx context.Context, phoneNumber string, code string
 }
 
 /*
-	Delete a user account and all associated data
-	This includes:
-	- Removing user from friends lists of all their friends
-	- Deleting all connection documents where user is involved
-	- Deleting all categories (and their tasks) belonging to the user
-	- Deleting all template tasks belonging to the user
-	- Finally, deleting the user document itself
+Delete a user account and all associated data
+This includes:
+  - Removing user from friends lists of all their friends
+  - Deleting all connection documents where user is involved
+  - Deleting all categories (and their tasks) belonging to the user
+  - Deleting all template tasks belonging to the user
+  - Finally, deleting the user document itself
 */
 
 func (s *Service) DeleteAccount(ctx context.Context, userID primitive.ObjectID) error {
 	// 1. Remove user from friends lists of all users
-	_, err := s.users.UpdateMany(
-		ctx,
-		bson.M{"friends": userID},
-		bson.M{"$pull": bson.M{"friends": userID}},
-	)
+	err := s.users.RemoveFromFriendsLists(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("failed to remove user from friends lists: %w", err)
 	}
 
 	// 2. Delete all connection documents where user is involved
-	connectionsCollection := s.users.Database().Collection("friend-requests")
+	connectionsCollection := s.categories.Database().Collection("friend-requests")
 	_, err = connectionsCollection.DeleteMany(
 		ctx,
 		bson.M{"users": userID},
@@ -571,7 +539,7 @@ func (s *Service) DeleteAccount(ctx context.Context, userID primitive.ObjectID) 
 	}
 
 	// 3. Delete all categories (and their tasks) belonging to the user
-	categoriesCollection := s.users.Database().Collection("categories")
+	categoriesCollection := s.categories.Database().Collection("categories")
 	_, err = categoriesCollection.DeleteMany(
 		ctx,
 		bson.M{"user": userID},
@@ -581,7 +549,7 @@ func (s *Service) DeleteAccount(ctx context.Context, userID primitive.ObjectID) 
 	}
 
 	// 4. Delete all template tasks belonging to the user
-	templateTasksCollection := s.users.Database().Collection("template-tasks")
+	templateTasksCollection := s.categories.Database().Collection("template-tasks")
 	_, err = templateTasksCollection.DeleteMany(
 		ctx,
 		bson.M{"user": userID},
@@ -591,16 +559,12 @@ func (s *Service) DeleteAccount(ctx context.Context, userID primitive.ObjectID) 
 	}
 
 	// 5. Delete the user document itself
-	result, err := s.users.DeleteOne(
-		ctx,
-		bson.M{"_id": userID},
-	)
+	err = s.users.DeleteUser(ctx, userID)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return fmt.Errorf("user not found")
+		}
 		return fmt.Errorf("failed to delete user account: %w", err)
-	}
-
-	if result.DeletedCount == 0 {
-		return fmt.Errorf("user not found")
 	}
 
 	return nil
@@ -667,24 +631,5 @@ func (s *Service) CreateReferralDocumentForUser(ctx context.Context, userID prim
 
 // AcceptTerms records the user's acceptance of Terms of Service
 func (s *Service) AcceptTerms(ctx context.Context, userID primitive.ObjectID, termsVersion string) (*time.Time, error) {
-	now := time.Now()
-
-	// Update user document with terms acceptance
-	update := bson.M{
-		"$set": bson.M{
-			"terms_accepted_at": now,
-			"terms_version":     termsVersion,
-		},
-	}
-
-	_, err := s.users.UpdateOne(ctx, bson.M{"_id": userID}, update)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update terms acceptance: %w", err)
-	}
-
-	slog.LogAttrs(ctx, slog.LevelInfo, "User accepted terms",
-		slog.String("userId", userID.Hex()),
-		slog.String("termsVersion", termsVersion))
-
-	return &now, nil
+	return s.users.AcceptTerms(ctx, userID, termsVersion)
 }

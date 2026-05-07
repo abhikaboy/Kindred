@@ -3,6 +3,8 @@ package auth
 import (
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/internal/repository"
+	mongorepo "github.com/abhikaboy/Kindred/internal/repository/mongo"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -15,23 +17,24 @@ const (
 )
 
 type Service struct {
-	users      *mongo.Collection
+	users      repository.UserRepository
 	categories *mongo.Collection
 	referrals  *mongo.Collection
 	config     config.Config
 }
 
-func newService(collections map[string]*mongo.Collection, config config.Config) *Service {
+func newService(users repository.UserRepository, categories *mongo.Collection, referrals *mongo.Collection, cfg config.Config) *Service {
 	return &Service{
-		users:      collections["users"],
-		categories: collections["categories"],
-		referrals:  collections["referrals"],
-		config:     config,
+		users:      users,
+		categories: categories,
+		referrals:  referrals,
+		config:     cfg,
 	}
 }
 
 func NewServiceWithConfig(collections map[string]*mongo.Collection, cfg config.Config) *Service {
-	return newService(collections, cfg)
+	users := mongorepo.NewUserRepository(collections["users"])
+	return newService(users, collections["categories"], collections["referrals"], cfg)
 }
 
 type Handler struct {

@@ -20,7 +20,7 @@ const (
 
 // AuthMiddleware creates a middleware function for validating JWT tokens
 func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config) func(http.Handler) http.Handler {
-	service := newService(collections, cfg)
+	service := NewServiceWithConfig(collections, cfg)
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

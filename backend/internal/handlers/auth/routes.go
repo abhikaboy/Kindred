@@ -17,7 +17,7 @@ func Routes(api huma.API, collections map[string]*mongo.Collection) {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
-	service := newService(collections, cfg)
+	service := NewServiceWithConfig(collections, cfg)
 	authHandler := Handler{service, cfg}
 
 	RegisterAuthOperations(api, &authHandler)
@@ -31,7 +31,7 @@ func NewServiceForServer(collections map[string]*mongo.Collection) *Service {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
-	return newService(collections, cfg)
+	return NewServiceWithConfig(collections, cfg)
 }
 
 /*
