@@ -78,7 +78,7 @@ const AccomplishmentOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={styles.mainContainer}>
-            <OnboardingProgressBar currentStep={8} totalSteps={8} />
+            <OnboardingProgressBar currentStep={4} totalSteps={4} />
             {/* Confetti */}
             {showConfetti && (
                 <View
@@ -220,7 +220,17 @@ const AccomplishmentOnboarding = (props: Props) => {
                         }
                     ]}
                 >
-                    <ThemedText style={[styles.mainText, { color: ThemedColor.text }]}>
+                    <ThemedText style={[styles.welcomeText, { color: ThemedColor.text }]}>
+                        Welcome!
+                    </ThemedText>
+                    <ThemedText style={[styles.familyText, { color: ThemedColor.text }]}>
+                        You've joined the{' '}
+                        <ThemedText style={[styles.familyText, { color: '#854dff' }]}>
+                            kindred
+                        </ThemedText>
+                        {' '}family
+                    </ThemedText>
+                    <ThemedText style={[styles.mainText, { color: ThemedColor.text, marginTop: 32 }]}>
                         Let's celebrate your first accomplishment.
                     </ThemedText>
                 </Animated.View>
@@ -381,6 +391,20 @@ const styles = StyleSheet.create({
         fontFamily: 'Fraunces',
         fontWeight: '600',
         lineHeight: 38,
+        letterSpacing: -1,
+    },
+    welcomeText: {
+        fontSize: 24,
+        fontFamily: 'Fraunces',
+        fontWeight: '400',
+        letterSpacing: -1,
+        marginBottom: 8,
+    },
+    familyText: {
+        fontSize: 36,
+        fontFamily: 'Fraunces',
+        fontWeight: '600',
+        lineHeight: 44,
         letterSpacing: -1,
     },
     taskContainer: {
