@@ -1,0 +1,23 @@
+frontend/app/(onboarding)/name.tsx
+  fa7c17458a5939d8 13,16,23,51,58-74,76,95-96,177,179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "c263fa48445d5e754177153b23e7185d31245e7b",
+  "prompts": {
+    "fa7c17458a5939d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af49ff35-c01c-4d70-988b-0730c55adff2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 9,
+      "accepted_lines": 26,
+      "overriden_lines": 0
+    }
+  }
+}
