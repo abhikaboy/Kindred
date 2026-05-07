@@ -19,7 +19,7 @@ interface PendingDelete {
 
 export function useUndoableDelete() {
     const { removeFromCategory, addToCategory } = useTasks();
-    const pendingRef = useRef<Map<string, PendingDelete>>(new Map());
+    const pendingRef = useRef<Map<string, PendingDelete>>(new Map<string, PendingDelete>());
     const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
     // Alert state for recurring task dialog

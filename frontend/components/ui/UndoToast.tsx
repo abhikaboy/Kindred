@@ -19,7 +19,7 @@ interface UndoToastProps extends ToastableBodyParams {
     count: number;
 }
 
-export default function UndoToast({ message, onUndo, count }: UndoToastProps) {
+export default function UndoToast({ onUndo, count }: UndoToastProps) {
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
@@ -70,13 +70,15 @@ export default function UndoToast({ message, onUndo, count }: UndoToastProps) {
             }
         });
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: translateX.value },
-            { translateY: translateY.value },
-        ],
-        opacity: opacity.value,
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                { translateX: translateX.value },
+                { translateY: translateY.value },
+            ] as any,
+            opacity: opacity.value,
+        };
+    });
 
     const label = count === 1 ? "1 task deleted" : `${count} tasks deleted`;
 
