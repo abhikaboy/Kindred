@@ -278,7 +278,7 @@ const DrawerContent = ({
                 }}
                 onPress={() => {
                     close();
-                    router.push("/(logged-in)/(tabs)/(task)/settings");
+                    router.push("/(logged-in)/(tabs)/(profile)/settings");
                 }}>
                 <ThemedText type="default">Settings</ThemedText>
                 <Gear size={20} color={ThemedColor.text} weight="regular" />

@@ -11,7 +11,8 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useTasks } from "@/contexts/tasksContext";
 import { Task } from "@/api/types";
 import ConditionalView from "@/components/ui/ConditionalView";
-import { markAsCompletedAPI, removeFromCategoryAPI } from "@/api/task";
+import { markAsCompletedAPI } from "@/api/task";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReviewSkeletonCard from "@/components/cards/ReviewSkeletonCard";
 import ReviewTaskCard from "@/components/cards/ReviewTaskCard";
@@ -21,6 +22,7 @@ const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { fetchWorkspaces, unnestedTasks, addToCategory } = useTasks();
+    const { deleteWithUndo, alertElement } = useUndoableDelete();
     const [isLoading, setIsLoading] = useState(false);
     const childRefs = useRef<{ [key: number]: any }>({});
     const [removedTasks, setRemovedTasks] = useState<string[]>([]);
@@ -194,11 +196,7 @@ const Review = (props: Props) => {
         if (!task.categoryID) {
             throw new Error("Task category ID is missing");
         }
-
-        await removeFromCategoryAPI(task.categoryID, task.id, false);
-
-        // Debounced refresh tasks after deletion
-        debouncedFetchWorkspaces();
+        deleteWithUndo(task, task.categoryID);
     };
 
     const resetAnimationAndProcessing = (taskId: string) => {
@@ -361,6 +359,7 @@ const Review = (props: Props) => {
                     />
                 </View> */}
             </View>
+            {alertElement}
         </ThemedView>
     );
 };

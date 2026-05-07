@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { View, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
     useSharedValue,
@@ -21,7 +21,9 @@ import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useTasks } from "@/contexts/tasksContext";
-import { updateTaskAPI, removeFromCategoryAPI, markAsCompletedAPI } from "@/api/task";
+import { updateTaskAPI, markAsCompletedAPI } from "@/api/task";
+import { Task } from "@/api/types";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
@@ -62,6 +64,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
     const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
         useDailyTasks(selectedDate);
+    const { deleteWithUndo, alertElement } = useUndoableDelete();
     const currentTimeLineRef = useRef<View>(null);
     const hasScrolledToFirstEvent = useRef(false);
 
@@ -69,7 +72,6 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     const [contextMenuVisible, setContextMenuVisible] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isHiding, setIsHiding] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
 
     // Ghost block state
@@ -426,36 +428,10 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
         }
     };
 
-    const handleDeleteTask = async () => {
+    const handleDeleteTask = () => {
         if (!selectedTask?.id || !selectedTask?.categoryID) return;
-
-        const performDelete = async (deleteRecurring: boolean) => {
-            setIsDeleting(true);
-            try {
-                await removeFromCategoryAPI(selectedTask.categoryID, selectedTask.id, deleteRecurring);
-                removeFromCategory(selectedTask.categoryID, selectedTask.id);
-                setContextMenuVisible(false);
-            } catch (error) {
-                logger.error("Failed to delete task", error);
-            } finally {
-                setIsDeleting(false);
-            }
-        };
-
-        if (selectedTask.templateID) {
-            setContextMenuVisible(false);
-            Alert.alert(
-                "Delete Recurring Task",
-                "Do you want to delete only this task or all future tasks?",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Only This Task", onPress: () => performDelete(false) },
-                    { text: "All Future Tasks", onPress: () => performDelete(true), style: "destructive" },
-                ]
-            );
-        } else {
-            await performDelete(false);
-        }
+        setContextMenuVisible(false);
+        deleteWithUndo(selectedTask as Task, selectedTask.categoryID);
     };
 
     const handleCompleteTask = async () => {
@@ -884,32 +860,26 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                     <TouchableOpacity
                         style={styles.menuOption}
                         onPress={handleDeleteTask}
-                        disabled={isDeleting}
                     >
                         <Ionicons
                             name="trash-outline"
                             size={24}
-                            color={
-                                isDeleting
-                                    ? ThemedColor.caption
-                                    : ThemedColor.error
-                            }
+                            color={ThemedColor.error}
                         />
                         <ThemedText
                             type="default"
                             style={{
                                 marginLeft: 12,
                                 flex: 1,
-                                color: isDeleting
-                                    ? ThemedColor.caption
-                                    : ThemedColor.error,
+                                color: ThemedColor.error,
                             }}
                         >
-                            {isDeleting ? "Deleting..." : "Delete Task"}
+                            Delete Task
                         </ThemedText>
                     </TouchableOpacity>
                 </View>
             </DefaultModal>
+            {alertElement}
         </View>
     );
 };
