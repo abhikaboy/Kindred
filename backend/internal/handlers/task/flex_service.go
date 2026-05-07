@@ -224,12 +224,14 @@ func (s *Service) handleFlexCompletion(ctx context.Context, template *TemplateTa
 			"error", err, "templateID", template.ID.Hex())
 		// Fall back to cooldown — cron will handle it
 		cooldown := strategy.ComputeCooldown(now, loc)
-		s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{
+		if _, err := s.TemplateTasks.UpdateOne(ctx, bson.M{"_id": template.ID}, bson.M{
 			"$set": bson.M{
 				"nextGenerated":           cooldown,
 				"flexState.cooldownUntil": cooldown,
 			},
-		})
+		}); err != nil {
+			slog.Error("Failed to set cooldown on template", "error", err, "templateID", template.ID.Hex())
+		}
 		return nil, nil // Don't fail the completion
 	}
 
