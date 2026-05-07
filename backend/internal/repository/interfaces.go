@@ -26,4 +26,7 @@ type UserRepository interface {
 	CheckIfTokenUsed(ctx context.Context, id primitive.ObjectID) (bool, error)
 	AcceptTerms(ctx context.Context, id primitive.ObjectID, version string) (*time.Time, error)
 	RemoveFromFriendsLists(ctx context.Context, id primitive.ObjectID) error
+	ConsumeCredit(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) error
+	AddCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType, amount int) error
+	CheckCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) (bool, error)
 }

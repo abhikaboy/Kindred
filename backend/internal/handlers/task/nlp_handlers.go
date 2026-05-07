@@ -29,7 +29,7 @@ func (h *Handler) QueryTasksNaturalLanguage(ctx context.Context, input *QueryTas
 	}
 
 	// Consume credit
-	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	err = h.service.Users.ConsumeCredit(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
 		if err == types.ErrInsufficientCredits {
 			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
@@ -60,7 +60,7 @@ func (h *Handler) QueryTasksNaturalLanguage(ctx context.Context, input *QueryTas
 		queryOutput, err = h.callGeminiQueryFlow(ctx, userID, input.Body.Text, timezone)
 		if err != nil {
 			// Refund credit on failure
-			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
+			refundErr := h.service.Users.AddCredits(ctx, userObjID, types.CreditTypeNaturalLanguage, 1)
 			if refundErr != nil {
 				slog.LogAttrs(ctx, slog.LevelError, "Failed to refund credit after AI failure",
 					slog.String("userID", userID),
@@ -110,7 +110,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 	}
 
 	// Consume credit atomically - this checks and decrements in one operation
-	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	err = h.service.Users.ConsumeCredit(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
 		if err == types.ErrInsufficientCredits {
 			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
@@ -148,7 +148,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 				slog.String("error", err.Error()))
 
 			// Refund the credit that was consumed earlier
-			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
+			refundErr := h.service.Users.AddCredits(ctx, userObjID, types.CreditTypeNaturalLanguage, 1)
 			if refundErr != nil {
 				slog.LogAttrs(ctx, slog.LevelError, "Failed to refund credit after AI failure",
 					slog.String("userID", userID),
@@ -234,7 +234,7 @@ func (h *Handler) EditTasksNaturalLanguage(ctx context.Context, input *EditTasks
 	}
 
 	// Consume credit
-	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	err = h.service.Users.ConsumeCredit(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
 		if err == types.ErrInsufficientCredits {
 			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
@@ -265,7 +265,7 @@ func (h *Handler) EditTasksNaturalLanguage(ctx context.Context, input *EditTasks
 		editOutput, err = h.callGeminiEditFlow(ctx, userID, input.Body.Text, timezone)
 		if err != nil {
 			// Refund credit on failure
-			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
+			refundErr := h.service.Users.AddCredits(ctx, userObjID, types.CreditTypeNaturalLanguage, 1)
 			if refundErr != nil {
 				slog.LogAttrs(ctx, slog.LevelError, "Failed to refund credit after AI failure",
 					slog.String("userID", userID),
@@ -673,7 +673,7 @@ func (h *Handler) IntentTaskNaturalLanguage(ctx context.Context, input *IntentTa
 		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
-	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	err = h.service.Users.ConsumeCredit(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
 		if err == types.ErrInsufficientCredits {
 			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)
@@ -702,7 +702,7 @@ func (h *Handler) IntentTaskNaturalLanguage(ctx context.Context, input *IntentTa
 
 		intentOutput, err = h.callGeminiIntentFlow(ctx, userID, input.Body.Text, timezone)
 		if err != nil {
-			refundErr := types.AddCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage, 1)
+			refundErr := h.service.Users.AddCredits(ctx, userObjID, types.CreditTypeNaturalLanguage, 1)
 			if refundErr != nil {
 				slog.LogAttrs(ctx, slog.LevelError, "Failed to refund credit after AI failure",
 					slog.String("userID", userID),
@@ -798,7 +798,7 @@ func (h *Handler) PreviewTaskNaturalLanguage(ctx context.Context, input *Preview
 	}
 
 	// Check credits without consuming
-	hasCredit, err := types.CheckCredits(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	hasCredit, err := h.service.Users.CheckCredits(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Failed to check credits", err)
 	}
@@ -856,7 +856,7 @@ func (h *Handler) ConfirmTaskNaturalLanguage(ctx context.Context, input *Confirm
 	}
 
 	// Consume credit atomically
-	err = types.ConsumeCredit(ctx, h.service.Users, userObjID, types.CreditTypeNaturalLanguage)
+	err = h.service.Users.ConsumeCredit(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
 		if err == types.ErrInsufficientCredits {
 			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", err)

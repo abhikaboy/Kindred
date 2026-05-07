@@ -108,3 +108,15 @@ func (r *userRepo) RemoveFromFriendsLists(ctx context.Context, id primitive.Obje
 	)
 	return err
 }
+
+func (r *userRepo) ConsumeCredit(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) error {
+	return types.ConsumeCredit(ctx, r.collection, id, creditType)
+}
+
+func (r *userRepo) AddCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType, amount int) error {
+	return types.AddCredits(ctx, r.collection, id, creditType, amount)
+}
+
+func (r *userRepo) CheckCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) (bool, error) {
+	return types.CheckCredits(ctx, r.collection, id, creditType)
+}

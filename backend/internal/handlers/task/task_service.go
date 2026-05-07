@@ -11,6 +11,7 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	mongorepo "github.com/abhikaboy/Kindred/internal/repository/mongo"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -56,9 +57,10 @@ func getTaskArrayFilterOptions(taskId primitive.ObjectID) *options.UpdateOptions
 
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
+	users := mongorepo.NewUserRepository(collections["users"])
 	return &Service{
 		Tasks:               collections["categories"],
-		Users:               collections["users"],
+		Users:               users,
 		CompletedTasks:      collections["completed-tasks"],
 		TemplateTasks:       collections["template-tasks"],
 		EncouragementHelper: encouragement.NewEncouragementService(collections),
@@ -314,11 +316,11 @@ func (s *Service) CompleteTask(
 	}
 
 	// Get user's current streak and tasks_complete before completion
-	var userBefore types.User
-	err = s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userBefore)
+	userBeforePtr, err := s.Users.GetUserByID(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
+	userBefore := *userBeforePtr
 
 	// Move task to completed-tasks collection
 	pipeline := getTasksByUserPipeline(userId)
@@ -421,20 +423,17 @@ func (s *Service) CompleteTask(
 	}
 
 	// Update user's tasks_complete count
-	_, err = s.Users.UpdateOne(ctx,
-		bson.M{"_id": userId},
-		bson.M{"$inc": bson.M{"tasks_complete": 1}},
-	)
+	err = s.Users.UpdateUser(ctx, userId, bson.M{"tasks_complete": userBefore.TasksComplete + 1})
 	if err != nil {
 		return nil, err
 	}
 
 	// Get user's current streak and tasks_complete after completion
-	var userAfter types.User
-	err = s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userAfter)
+	userAfterPtr, err := s.Users.GetUserByID(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
+	userAfter := *userAfterPtr
 
 	// Check if user was streak eligible (first task of the day)
 	// This indicates the streak would increase, even though we don't update it here
@@ -476,11 +475,11 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 	output.Body.FailedTaskIDs = []string{}
 
 	// Get user's initial state
-	var userBefore types.User
-	err := s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userBefore)
+	userBeforePtr, err := s.Users.GetUserByID(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
+	userBefore := *userBeforePtr
 
 	// Parse and validate all task IDs and category IDs upfront
 	itemSlice := make([]bulkTaskItem, len(tasks))
@@ -725,23 +724,20 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 
 	// Update user's tasks_complete count once
 	if successfulCount > 0 {
-		_, err = s.Users.UpdateOne(ctx,
-			bson.M{"_id": userId},
-			bson.M{"$inc": bson.M{"tasks_complete": float64(successfulCount)}},
-		)
+		err = s.Users.UpdateUser(ctx, userId, bson.M{"tasks_complete": userBefore.TasksComplete + float64(successfulCount)})
 		if err != nil {
 			slog.Error("Failed to update user tasks_complete count", "error", err)
 		}
 	}
 
 	// Get final user state
-	var userAfter types.User
-	err = s.Users.FindOne(ctx, bson.M{"_id": userId}).Decode(&userAfter)
+	userAfterPtr, err := s.Users.GetUserByID(ctx, userId)
 	if err != nil {
 		// Use before state as fallback
 		output.Body.CurrentStreak = userBefore.Streak
 		output.Body.TasksComplete = userBefore.TasksComplete
 	} else {
+		userAfter := *userAfterPtr
 		output.Body.CurrentStreak = userAfter.Streak
 		output.Body.TasksComplete = userAfter.TasksComplete
 		// Check if streak changed
@@ -972,23 +968,17 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 		return fiber.ErrNotFound // 404
 	}
 
-	result, err := s.Users.UpdateOne(ctx,
-		bson.M{
-			"_id": userId,
-		},
-		bson.M{
-			"$inc": bson.M{"tasks_complete": 1},
-			"$set": bson.M{"last_completed": xutils.NowUTC()},
-		},
-	)
-
+	user, err := s.Users.GetUserByID(ctx, userId)
 	if err != nil {
 		return err
 	}
 
-	resultDecoded := *result
-	if resultDecoded.ModifiedCount == 0 {
-		return errors.New("No tasks found")
+	err = s.Users.UpdateUser(ctx, userId, bson.M{
+		"tasks_complete": user.TasksComplete + 1,
+		"last_completed": xutils.NowUTC(),
+	})
+	if err != nil {
+		return err
 	}
 
 	err = s.DeleteTask(categoryId, id)

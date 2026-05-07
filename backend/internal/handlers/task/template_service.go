@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -185,8 +184,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 
 		totalMissed := skippedOccurrences + deletedCount
 		go func() {
-			var user types.User
-			err := s.Users.FindOne(ctx, bson.M{"_id": templateDoc.UserID}).Decode(&user)
+			user, err := s.Users.GetUserByID(ctx, templateDoc.UserID)
 			if err != nil {
 				slog.Error("Failed to find user for missed task notification", "error", err)
 				return
@@ -220,8 +218,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 
 		if isRollingOrOccurrence {
 			go func() {
-				var user types.User
-				err := s.Users.FindOne(ctx, bson.M{"_id": templateDoc.UserID}).Decode(&user)
+				user, err := s.Users.GetUserByID(ctx, templateDoc.UserID)
 				if err != nil {
 					slog.Error("Failed to find user for completion notification", "error", err)
 					return

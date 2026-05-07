@@ -172,8 +172,7 @@ func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, task *TaskDocument) error {
 	ctx := context.Background()
 	// lookup the user
-	var user types.User
-	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	user, err := s.Users.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
 	}

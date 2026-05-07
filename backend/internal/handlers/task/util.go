@@ -7,13 +7,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/internal/repository"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // getBaseTime returns the appropriate base time for recurrence calculations
@@ -231,10 +229,9 @@ func (s *Service) calculateNextRecurrence(template *TemplateTaskDocument, baseTi
 }
 
 func (s *Service) getUserLocation(ctx context.Context, userID primitive.ObjectID) (*time.Location, error) {
-	var user types.User
-	err := s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
+	user, err := s.Users.GetUserByID(ctx, userID)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		if errors.Is(err, repository.ErrNotFound) {
 			slog.Warn("User not found for timezone lookup, defaulting to UTC", "userID", userID)
 			return time.UTC, nil
 		}
