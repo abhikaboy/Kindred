@@ -1,0 +1,23 @@
+frontend/app/(onboarding)/password.tsx
+  fa7c17458a5939d8 14,17,24,52,57-68,87,194,196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "16a6ae49d8705d30841d0fabfa48ed7fa1a910ee",
+  "prompts": {
+    "fa7c17458a5939d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af49ff35-c01c-4d70-988b-0730c55adff2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 6,
+      "accepted_lines": 19,
+      "overriden_lines": 0
+    }
+  }
+}
