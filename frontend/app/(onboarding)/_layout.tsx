@@ -12,16 +12,11 @@ export default function OnboardingLayout() {
                 },
             }}
         >
-            <Stack.Screen name="phone" />
-            <Stack.Screen name="verify-phone" />
-            <Stack.Screen name="password" />
             <Stack.Screen name="productivity" />
             <Stack.Screen name="positivity" />
-            <Stack.Screen name="human" />
+            <Stack.Screen name="phone" />
             <Stack.Screen name="name" />
-            <Stack.Screen name="photo" />
-            <Stack.Screen name="referral" />
-            <Stack.Screen name="notifications" />
+            <Stack.Screen name="password" />
             <Stack.Screen name="accomplishment" />
         </Stack>
     );
