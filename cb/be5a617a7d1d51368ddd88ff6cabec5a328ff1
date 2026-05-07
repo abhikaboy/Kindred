@@ -1,0 +1,39 @@
+backend/internal/handlers/task/checkin.go
+  fa7c17458a5939d8 279
+backend/internal/handlers/task/task_service.go
+  fa7c17458a5939d8 14,60,63,319,323,426,432,436,478,482,727,734,740,971,976-981
+backend/internal/repository/interfaces.go
+  fa7c17458a5939d8 29-31
+backend/internal/repository/mongo/user_repo.go
+  fa7c17458a5939d8 111-122
+backend/internal/handlers/task/util.go
+  fa7c17458a5939d8 10,232,234
+backend/internal/handlers/task/nlp_handlers.go
+  fa7c17458a5939d8 32,63,113,151,237,268,676,705,801,859
+backend/internal/handlers/task/template_service.go
+  fa7c17458a5939d8 187,221
+backend/internal/handlers/task/reminder.go
+  fa7c17458a5939d8 175
+backend/internal/handlers/task/types.go
+  fa7c17458a5939d8 7,136-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "cbbe5a617a7d1d51368ddd88ff6cabec5a328ff1",
+  "prompts": {
+    "fa7c17458a5939d8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af49ff35-c01c-4d70-988b-0730c55adff2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 1836,
+      "total_deletions": 88,
+      "accepted_lines": 1836,
+      "overriden_lines": 0
+    }
+  }
+}
