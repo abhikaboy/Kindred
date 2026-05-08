@@ -9,9 +9,12 @@ import { isFuture, isPast, isToday, isWithinInterval } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createLogger } from "@/utils/logger";
-import TodayTasksWidget from "@/widgets/TodayTasksWidget";
-import WorkspaceSnapshotWidget from "@/widgets/WorkspaceSnapshotWidget";
-import { LockScreenCircularWidget, LockScreenRectangularWidget } from "@/widgets/LockScreenWidgets";
+import {
+    TodayTasksWidgetUpdater as TodayTasksWidget,
+    WorkspaceSnapshotWidgetUpdater as WorkspaceSnapshotWidget,
+    LockScreenCircularWidgetUpdater as LockScreenCircularWidget,
+    LockScreenRectangularWidgetUpdater as LockScreenRectangularWidget,
+} from "@/widgets/widgetUpdaters";
 
 const logger = createLogger('TasksContext');
 
