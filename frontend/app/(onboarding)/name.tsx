@@ -63,7 +63,7 @@ const NameOnboarding = (props: Props) => {
                         await registerWithGoogle(DEFAULT_PICTURE);
                     }
                     showToast('Account created successfully! 🎉', 'success');
-                    router.replace('/(onboarding)/accomplishment');
+                    router.replace('/(onboarding)/welcome');
                 } catch (error: any) {
                     console.error('Registration error:', error);
                     let errorMessage = 'Unable to create account. Please try again.';
@@ -93,7 +93,7 @@ const NameOnboarding = (props: Props) => {
         <ThemedView style={themedStyles.mainContainer}>
             <OnboardingProgressBar
                 currentStep={2}
-                totalSteps={onboardingData.appleId || onboardingData.googleId ? 3 : 4}
+                totalSteps={onboardingData.appleId || onboardingData.googleId ? 4 : 5}
             />
             {/* Background graphics */}
             <View style={themedStyles.backgroundContainer}>
