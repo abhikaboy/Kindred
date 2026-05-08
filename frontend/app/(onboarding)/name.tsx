@@ -10,15 +10,17 @@ import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics
 import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { BigInput } from "@/components/inputs/BigInput";
+import { showToast } from "@/utils/showToast";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
 
 type Props = {};
 
 const NameOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { onboardingData, updateDisplayName, updateHandle, validationErrors } = useOnboarding();
+    const { onboardingData, updateDisplayName, updateHandle, validationErrors, registerWithApple, registerWithGoogle, isLoading } = useOnboarding();
 
     const [name, setName] = useState(onboardingData.displayName);
     const [handle, setHandle] = useState(onboardingData.handle.replace('@', ''));
@@ -46,17 +48,32 @@ const NameOnboarding = (props: Props) => {
         ]).start();
     }, []);
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         updateDisplayName(name);
         updateHandle(handle);
         setShowErrors(true);
 
         if (!validationErrors.displayName && !validationErrors.handle && isValid) {
-            // If Apple ID is present, skip password screen and go directly to photo
-            // Apple users don't need a password
             if (onboardingData.appleId || onboardingData.googleId) {
-                router.push("/(onboarding)/photo");
+                // Social auth: register here, skip password
+                try {
+                    if (onboardingData.appleId) {
+                        await registerWithApple(DEFAULT_PICTURE);
+                    } else {
+                        await registerWithGoogle(DEFAULT_PICTURE);
+                    }
+                    showToast('Account created successfully! 🎉', 'success');
+                    router.replace('/(onboarding)/accomplishment');
+                } catch (error: any) {
+                    console.error('Registration error:', error);
+                    let errorMessage = 'Unable to create account. Please try again.';
+                    if (error.message) {
+                        errorMessage = error.message;
+                    }
+                    showToast(errorMessage, 'danger');
+                }
             } else {
+                // Email auth: go to password screen
                 router.push("/(onboarding)/password");
             }
         }
@@ -75,8 +92,8 @@ const NameOnboarding = (props: Props) => {
     return (
         <ThemedView style={themedStyles.mainContainer}>
             <OnboardingProgressBar
-                currentStep={onboardingData.appleId || onboardingData.googleId ? 1 : 3}
-                totalSteps={onboardingData.appleId || onboardingData.googleId ? 5 : 8}
+                currentStep={2}
+                totalSteps={onboardingData.appleId || onboardingData.googleId ? 3 : 4}
             />
             {/* Background graphics */}
             <View style={themedStyles.backgroundContainer}>
@@ -157,9 +174,9 @@ const NameOnboarding = (props: Props) => {
                     ]}
                 >
                     <PrimaryButton
-                        title="Continue"
+                        title={isLoading ? "Creating account..." : "Continue"}
                         onPress={handleContinue}
-                        disabled={!isValid}
+                        disabled={!isValid || isLoading}
                     />
                 </Animated.View>
             </KeyboardAvoidingView>
