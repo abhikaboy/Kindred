@@ -120,3 +120,7 @@ func (r *userRepo) AddCredits(ctx context.Context, id primitive.ObjectID, credit
 func (r *userRepo) CheckCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) (bool, error) {
 	return types.CheckCredits(ctx, r.collection, id, creditType)
 }
+
+func (r *userRepo) LinkGoogleID(ctx context.Context, id primitive.ObjectID, googleID string) error {
+	return updateOneByID(ctx, r.collection, id, bson.M{"$set": bson.M{"google_id": googleID}})
+}

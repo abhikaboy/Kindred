@@ -67,6 +67,7 @@ type LoginRequestApple struct {
 
 type LoginRequestGoogle struct {
 	GoogleID string `validate:"required" json:"google_id"`
+	Email    string `json:"email,omitempty"` // Optional: used to link Google account to existing email-based account
 }
 
 type RegisterRequestApple struct {

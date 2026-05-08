@@ -55,7 +55,7 @@ interface AuthContextType {
     loginWithOTP: (phoneNumber: string, code: string) => Promise<SafeUser | void>;
     register: (email: string, appleAccountID: string) => Promise<any>;
     registerWithGoogle: (email: string, googleID: string) => Promise<any>;
-    loginWithGoogle: (googleID: string) => Promise<SafeUser | void>;
+    loginWithGoogle: (googleID: string, email?: string) => Promise<SafeUser | void>;
     logout: () => void;
     refresh: () => void;
     fetchAuthData: () => Promise<SafeUser | null>;
@@ -149,48 +149,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function login(appleAccountID: string): Promise<SafeUser | void> {
-        logger.debug("Logging in with Apple", {
-            appleAccountID,
-            apiUrl: process.env.EXPO_PUBLIC_URL + "/api"
-        });
+        logger.debug("Apple login attempt");
 
         try {
-            logger.debug("About to make POST request");
-            console.log("Request body:", { apple_id: appleAccountID });
-
             const result = await client.POST("/v1/auth/login/apple", {
                 body: {
                     apple_id: appleAccountID,
                 }
             });
 
-            logger.debug("Raw result from client.POST", result);
-            logger.debug("Result data", result.data);
-            logger.debug("Result error", result.error);
-            logger.debug("Result response", result.response);
-
             if (result.error) {
-                logger.error("Error details", JSON.stringify(result.error, null, 2));
-
-                // Check if this is a "account doesn't exist" error (404)
-                const errorDetail = result.error?.detail || '';
+                const errorDetail = (result.error as any)?.detail || '';
                 const errorStatus = result.response?.status;
 
-                if (errorStatus === 404 || errorDetail.includes('Account does not exist')) {
-                    // User-friendly error for account not found
+                logger.error("Apple login error", { status: errorStatus, detail: errorDetail });
+
+                if (errorStatus === 404) {
                     throw new Error("ACCOUNT_NOT_FOUND");
                 }
 
-                // For other errors, provide a generic message
-                throw new Error(`Login failed: ${errorDetail || 'An unexpected error occurred'}`);
+                // Surface the API's descriptive error message
+                throw new Error(errorDetail || 'Apple sign-in failed. Please try again.');
             }
 
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
 
-                // Save tokens if they exist in response headers
-                logger.debug("Response headers", result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');
@@ -208,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
-            console.error("Login failed with exception:", error);
+            console.error("Apple login failed with exception:", error);
             Sentry.captureException(error, {
                 tags: { "auth.method": "apple", "auth.flow": "login" },
             });
@@ -216,38 +201,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function loginWithGoogle(googleID: string): Promise<SafeUser | void> {
+    async function loginWithGoogle(googleID: string, email?: string): Promise<SafeUser | void> {
         logger.debug("Google login with ID", googleID);
 
         try {
             logger.debug("About to make POST request to Google login endpoint...");
-            logger.debug("Request body", { google_id: googleID });
+
+            const body: Record<string, string> = { google_id: googleID };
+            if (email) {
+                body.email = email;
+            }
 
             const result = await client.POST("/v1/auth/login/google" as any, {
-                body: {
-                    google_id: googleID,
-                } as any
+                body: body as any
             });
 
-            logger.debug("Raw result from client.POST", result);
-            logger.debug("Result data", result.data);
-            logger.debug("Result error", result.error);
-            logger.debug("Result response", result.response);
-
             if (result.error) {
-                logger.error("Error details", JSON.stringify(result.error, null, 2));
-
-                // Check if this is a "account doesn't exist" error (404)
-                const errorDetail = result.error?.detail || '';
+                const errorDetail = (result.error as any)?.detail || '';
                 const errorStatus = result.response?.status;
 
-                if (errorStatus === 404 || errorDetail.includes('Account does not exist')) {
-                    // User-friendly error for account not found
+                logger.error("Google login error", { status: errorStatus, detail: errorDetail });
+
+                if (errorStatus === 404) {
                     throw new Error("ACCOUNT_NOT_FOUND");
                 }
 
-                // For other errors, provide a generic message
-                throw new Error(`Google login failed: ${errorDetail || 'An unexpected error occurred'}`);
+                // Surface the API's descriptive error message
+                throw new Error(errorDetail || 'Google sign-in failed. Please try again.');
             }
 
             if (result.data) {
@@ -255,7 +235,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(userData);
 
                 // Save tokens if they exist in response headers
-                logger.debug("Response headers", result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');
@@ -282,12 +261,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     async function loginWithPhone(phoneNumber: string, password: string): Promise<SafeUser | void> {
-        logger.debug("Phone login with number", phoneNumber);
+        logger.debug("Phone login attempt");
 
         try {
-            logger.debug("About to make POST request to phone login endpoint...");
-            logger.debug("Request body", { phone_number: phoneNumber, password: "***" });
-
             const result = await client.POST("/v1/auth/login/phone" as any, {
                 body: {
                     phone_number: phoneNumber,
@@ -295,22 +271,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } as any
             });
 
-            console.log("Raw result from client.POST:", result);
-            console.log("Result data:", result.data);
-            console.log("Result error:", result.error);
-            console.log("Result response:", result.response);
-
             if (result.error) {
-                console.log("Error details:", JSON.stringify(result.error, null, 2));
-                throw new Error(`Phone login failed: ${JSON.stringify(result.error)}`);
+                const errorDetail = (result.error as any)?.detail || '';
+                const errorStatus = result.response?.status;
+
+                logger.error("Phone login error", { status: errorStatus, detail: errorDetail });
+
+                if (errorStatus === 404) {
+                    throw new Error("ACCOUNT_NOT_FOUND");
+                }
+
+                // Surface the API's descriptive error message
+                throw new Error(errorDetail || 'Phone login failed. Please try again.');
             }
 
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
 
-                // Save tokens if they exist in response headers
-                console.log(result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');
@@ -326,24 +304,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return userData;
             }
 
-            console.log("No data or error in response - this is unexpected");
+            logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Phone login failed with exception:", error);
             Sentry.captureException(error, {
                 tags: { "auth.method": "phone", "auth.flow": "login" },
             });
-            showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_PHONE, "warning", "Sign-In Failed");
             throw error;
         }
     }
 
     async function loginWithOTP(phoneNumber: string, code: string): Promise<SafeUser | void> {
-        logger.debug("OTP login with number", phoneNumber);
+        logger.debug("OTP login attempt");
 
         try {
-            logger.debug("About to make POST request to OTP login endpoint...");
-            logger.debug("Request body", { phone_number: phoneNumber, code: "***" });
-
             const result = await client.POST("/v1/auth/login/otp" as any, {
                 body: {
                     phone_number: phoneNumber,
@@ -351,33 +325,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } as any
             });
 
-            logger.debug("Raw result from client.POST", result);
-            logger.debug("Result data", result.data);
-            logger.debug("Result error", result.error);
-            logger.debug("Result response", result.response);
-
             if (result.error) {
-                logger.error("Error details", JSON.stringify(result.error, null, 2));
-
-                // Check for specific error types
-                const errorDetail = result.error?.detail || '';
+                const errorDetail = (result.error as any)?.detail || '';
                 const errorStatus = result.response?.status;
 
-                if (errorStatus === 401 || errorDetail.includes('Invalid or expired OTP')) {
+                logger.error("OTP login error", { status: errorStatus, detail: errorDetail });
+
+                if (errorStatus === 401) {
                     throw new Error("INVALID_OTP");
-                } else if (errorStatus === 404 || errorDetail.includes('Account does not exist')) {
+                } else if (errorStatus === 404) {
                     throw new Error("ACCOUNT_NOT_FOUND");
                 }
 
-                throw new Error(`OTP login failed: ${errorDetail || 'An unexpected error occurred'}`);
+                // Surface the API's descriptive error message
+                throw new Error(errorDetail || 'OTP login failed. Please try again.');
             }
 
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
 
-                // Save tokens if they exist in response headers
-                logger.debug("Response headers", result.response?.headers);
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
                     const refreshToken = result.response.headers.get('refresh_token');

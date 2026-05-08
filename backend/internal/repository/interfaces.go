@@ -29,4 +29,5 @@ type UserRepository interface {
 	ConsumeCredit(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) error
 	AddCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType, amount int) error
 	CheckCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) (bool, error)
+	LinkGoogleID(ctx context.Context, id primitive.ObjectID, googleID string) error
 }

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -23,14 +24,30 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 		return nil, huma.Error400BadRequest("Please check your email and password", fmt.Errorf("validation errors: %v", errs))
 	}
 
+	slog.LogAttrs(ctx, slog.LevelInfo, "Email login attempt",
+		slog.String("email", input.Body.Email),
+	)
+
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromCredentials(input.Body.Email, input.Body.Password)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Invalid email or password", err)
+		// Propagate the specific error message from the service (e.g., "No account found..." or "Incorrect password...")
+		var fiberErr *fiber.Error
+		if errors.As(err, &fiberErr) {
+			if fiberErr.Code == 404 {
+				return nil, huma.Error404NotFound(fiberErr.Message, err)
+			}
+			return nil, huma.Error401Unauthorized(fiberErr.Message, err)
+		}
+		return nil, huma.Error500InternalServerError("Unable to sign in. Please try again.", err)
 	}
 
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during email login",
+			slog.String("userId", id.Hex()),
+			slog.String("error", err.Error()),
+		)
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
@@ -45,17 +62,30 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneInput) (*LoginOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your phone number and password", fmt.Errorf("validation errors: %v", errs))
 	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Phone login attempt")
 
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromPhone(input.Body.PhoneNumber, input.Body.Password)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Invalid phone number or password", err)
+		var fiberErr *fiber.Error
+		if errors.As(err, &fiberErr) {
+			if fiberErr.Code == 404 {
+				return nil, huma.Error404NotFound(fiberErr.Message, err)
+			}
+			return nil, huma.Error401Unauthorized(fiberErr.Message, err)
+		}
+		return nil, huma.Error500InternalServerError("Unable to sign in. Please try again.", err)
 	}
 
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during phone login",
+			slog.String("userId", id.Hex()),
+			slog.String("error", err.Error()),
+		)
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
@@ -112,17 +142,34 @@ func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWith
 func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogleInput) (*LoginOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide a valid Google account", fmt.Errorf("validation errors: %v", errs))
 	}
 
+	slog.LogAttrs(ctx, slog.LevelInfo, "Google login attempt",
+		slog.Bool("hasEmail", input.Body.Email != ""),
+	)
+
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromGoogle(input.Body.GoogleID)
+	id, count, user, err := h.service.LoginFromGoogle(input.Body.GoogleID, input.Body.Email)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "Google login failed",
+			slog.String("error", err.Error()),
+			slog.Bool("hasEmail", input.Body.Email != ""),
+		)
+		// Check for 404 (account not found) vs other errors
+		var fiberErr *fiber.Error
+		if errors.As(err, &fiberErr) && fiberErr.Code == 404 {
+			return nil, huma.Error404NotFound(fiberErr.Message, err)
+		}
 		return nil, huma.Error401Unauthorized("Unable to sign in with Google. Please try again.", err)
 	}
 
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during Google login",
+			slog.String("userId", id.Hex()),
+			slog.String("error", err.Error()),
+		)
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
@@ -341,17 +388,30 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleInput) (*LoginOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide a valid Apple ID", fmt.Errorf("validation errors: %v", errs))
 	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Apple login attempt")
 
 	// database call to find the user and verify credentials and get count
 	id, count, user, err := h.service.LoginFromApple(input.Body.AppleID)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "Apple login failed",
+			slog.String("error", err.Error()),
+		)
+		var fiberErr *fiber.Error
+		if errors.As(err, &fiberErr) && fiberErr.Code == 404 {
+			return nil, huma.Error404NotFound(fiberErr.Message, err)
+		}
 		return nil, huma.Error401Unauthorized("Unable to sign in with Apple. Please try again.", err)
 	}
 
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during Apple login",
+			slog.String("userId", id.Hex()),
+			slog.String("error", err.Error()),
+		)
 		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
 	}
 
