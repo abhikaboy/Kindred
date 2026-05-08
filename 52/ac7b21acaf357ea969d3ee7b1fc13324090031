@@ -1,0 +1,120 @@
+backend/internal/handlers/spaces/s3bucket.go
+  cac02daf18d0fa73 8,44-45,55-56,70-71,81-82,117-118,142-143,182-183,189-190,207-208,239-240
+  f03ddea6c0be0afa 100-101
+backend/internal/handlers/waitlist/waitlist.go
+  f03ddea6c0be0afa 81-82,128-129
+  cac02daf18d0fa73 54,105-106
+backend/internal/handlers/calendar/calendar.go
+  cac02daf18d0fa73 37,123,150,206,252,279,350
+backend/internal/handlers/subscription/handler.go
+  cac02daf18d0fa73 121
+backend/internal/handlers/settings/settings.go
+  cac02daf18d0fa73 5,26-27,47-48
+backend/internal/handlers/congratulation/congratulation.go
+  cac02daf18d0fa73 6,105-106,129-130,149-150,171-172,209-210
+  ff1325a26f8b8107 45-46
+backend/internal/handlers/blueprint/blueprint.go
+  cac02daf18d0fa73 6,62-63,72-73,106-107,128-129,159-160,190-191,202-203,216-217,236-237,257-258,267-268,297-298,304-305,332-333
+backend/internal/handlers/connection/connection.go
+  cac02daf18d0fa73 6,21,45-46,61-62,77,82,98,103-104,124-125,144-145,166-167,196-197,220-221,252-253,281-282,305-306
+backend/internal/handlers/auth/fiber_middleware.go
+  cac02daf18d0fa73 37,81,90,156
+backend/internal/handlers/auth/forgot_pass/forgot_pass.go
+  cac02daf18d0fa73 5,40,42,100-103
+backend/internal/handlers/group/group.go
+  cac02daf18d0fa73 6,30,82-83,103-104,132,143-144,148,157,173,178-179,203,208-209,222,248-249,262,288-289
+backend/internal/handlers/task/task_handlers.go
+  cac02daf18d0fa73 6,71-72,200-201,207-208,217-218,337,365-366,404-405,414-415,474-475,483,523-524,554-555,590-591,607-608,639-640,673-674,707-708,741-742,775-776
+backend/internal/handlers/task/nlp_handlers.go
+  cac02daf18d0fa73 40,79-80,86-87,123,247,686,805-806,870
+backend/internal/handlers/activity/activity.go
+  cac02daf18d0fa73 5,18-19,82-83,97-98,114-115,182-183
+backend/internal/handlers/notifications/operations.go
+  cac02daf18d0fa73 4,17,49,51,58,60,76,104,106,120,133,135,149,163,165
+backend/internal/handlers/category/category.go
+  cac02daf18d0fa73 48-49,67-68,121-122,149-150,180-181,212-213,235-236,259-260,416-417
+backend/internal/handlers/auth/auth.go
+  cac02daf18d0fa73 42-46,55,84-87,96,116-120,266,457,462,473-477,506-507,553,560,574,581,601,608,627,672
+backend/internal/handlers/post/post.go
+  cac02daf18d0fa73 6,43-44,69,97-98,126-127,168-169,219-220,407-408,436-437,493-494,564-565,600-601,628-629,669-670,682,704-705,768-769
+backend/internal/handlers/referral/referral.go
+  cac02daf18d0fa73 6,38-39,126-127,158-159
+  ff1325a26f8b8107 71-72
+backend/internal/handlers/rewards/rewards.go
+  cac02daf18d0fa73 19,57
+backend/internal/handlers/report/handler.go
+  cac02daf18d0fa73 50,95,132
+backend/internal/handlers/encouragement/encouragement.go
+  f03ddea6c0be0afa 74-75
+  ff1325a26f8b8107 169-170
+  cac02daf18d0fa73 6,104-105,125-126,149-150,191-192,229-230
+backend/internal/handlers/auth/middleware.go
+  cac02daf18d0fa73 44,47,85-86,94-95
+backend/internal/handlers/task/query_handlers.go
+  cac02daf18d0fa73 27-28,60-61,115
+backend/internal/handlers/profile/profile.go
+  cac02daf18d0fa73 20-21,34-35,50-51,62,71,88-89,100-101,116,156-157,184-185,200-201,212,222,245,254-255,265,275-276,303-304,352-353,394-395
+backend/internal/handlers/notifications/huma_handlers.go
+  cac02daf18d0fa73 6,50-51,57-58,85,97,105-106,131-132,164-165
+backend/internal/handlers/task/template_handlers.go
+  cac02daf18d0fa73 26-27,50-51,71-72,86-87,107-108,129-130,157-158,186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "52ac7b21acaf357ea969d3ee7b1fc13324090031",
+  "prompts": {
+    "cac02daf18d0fa73": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2af40c59-e4c0-47cd-a2f5-458e3a40a07e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 1635,
+      "total_deletions": 8495,
+      "accepted_lines": 444,
+      "overriden_lines": 0
+    },
+    "cdc9cb390ae065cc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ecc86e85-496a-41b0-9bc8-12dbcd5c5c54",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 544,
+      "total_deletions": 0,
+      "accepted_lines": 514,
+      "overriden_lines": 0
+    },
+    "f03ddea6c0be0afa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "66078c97-a4d8-4f3e-b9a7-d403ef8f7663",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 249,
+      "total_deletions": 8,
+      "accepted_lines": 249,
+      "overriden_lines": 0
+    },
+    "ff1325a26f8b8107": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "683efc5f-eb24-4d63-854c-621b161e127e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 56,
+      "total_deletions": 33,
+      "accepted_lines": 56,
+      "overriden_lines": 0
+    }
+  }
+}
