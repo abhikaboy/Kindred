@@ -57,7 +57,7 @@ const PasswordOnboarding = (props: Props) => {
             try {
                 await registerWithEmail(DEFAULT_PICTURE);
                 showToast('Account created successfully! 🎉', 'success');
-                router.replace('/(onboarding)/accomplishment');
+                router.replace('/(onboarding)/welcome');
             } catch (error: any) {
                 console.error('Registration error:', error);
                 let errorMessage = 'Unable to create account. Please try again.';
@@ -84,7 +84,7 @@ const PasswordOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={themedStyles.mainContainer}>
-            <OnboardingProgressBar currentStep={3} totalSteps={4} />
+            <OnboardingProgressBar currentStep={3} totalSteps={5} />
             <View style={themedStyles.backgroundContainer}>
                 <OnboardingBackground />
             </View>

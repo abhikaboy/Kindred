@@ -1,14 +1,11 @@
-import { Dimensions, StyleSheet, View, Animated, Platform } from "react-native";
-import React, { useEffect, useRef, useState } from "react";
+import { Dimensions, StyleSheet, View, Animated } from "react-native";
+import React, { useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
-import ConfettiCannon from "react-native-confetti-cannon";
+import OnboardButton from "@/components/inputs/OnboardButton";
 import { Svg, Circle, Path, Polygon } from "react-native-svg";
 import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -17,19 +14,18 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 type Props = {};
 
-const AccomplishmentOnboarding = (props: Props) => {
+const WelcomeOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
-    const { onboardingData } = useOnboarding();
-    const isSocialAuth = !!(onboardingData.appleId || onboardingData.googleId);
-    const totalSteps = isSocialAuth ? 4 : 5;
     const router = useRouter();
-    const confettiRef = useRef<any>(null);
-    const [showConfetti, setShowConfetti] = useState(false);
+    const { onboardingData } = useOnboarding();
 
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
     const slideAnimation = useRef(new Animated.Value(30)).current;
-    const swipeHintAnim = useRef(new Animated.Value(0)).current;
+    const buttonFadeAnimation = useRef(new Animated.Value(0)).current;
+
+    const isSocialAuth = !!(onboardingData.appleId || onboardingData.googleId);
+    const totalSteps = isSocialAuth ? 4 : 5;
 
     useEffect(() => {
         // Fade in animation on mount
@@ -48,66 +44,18 @@ const AccomplishmentOnboarding = (props: Props) => {
             }),
         ]).start();
 
-        const hintTimeout = setTimeout(() => {
-            Animated.sequence([
-                Animated.timing(swipeHintAnim, {
-                    toValue: 60,
-                    duration: 500,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(swipeHintAnim, {
-                    toValue: 0,
-                    friction: 6,
-                    tension: 40,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        }, 1800);
-
-        return () => clearTimeout(hintTimeout);
+        // Button fade in after text animation
+        Animated.timing(buttonFadeAnimation, {
+            toValue: 1,
+            duration: 640,
+            delay: 1200,
+            useNativeDriver: true,
+        }).start();
     }, []);
-
-    const handleComplete = async () => {
-        setShowConfetti(true);
-
-        if (Platform.OS === "ios") {
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-
-        // Navigate to the main app after a delay
-        setTimeout(() => {
-            router.replace('/(logged-in)/(tabs)/(task)' as any);
-        }, 2000);
-    };
 
     return (
         <ThemedView style={styles.mainContainer}>
-            <OnboardingProgressBar currentStep={totalSteps} totalSteps={totalSteps} />
-            {/* Confetti */}
-            {showConfetti && (
-                <View
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 10,
-                        height: screenHeight,
-                    }}>
-                    <ConfettiCannon
-                        ref={confettiRef}
-                        count={50}
-                        origin={{
-                            x: screenWidth / 2,
-                            y: (screenHeight / 4) * 3.7,
-                        }}
-                        fallSpeed={1200}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                    />
-                </View>
-            )}
+            <OnboardingProgressBar currentStep={totalSteps - 1} totalSteps={totalSteps} />
 
             {/* Background decorative elements */}
             <View style={styles.backgroundGraphics}>
@@ -224,106 +172,31 @@ const AccomplishmentOnboarding = (props: Props) => {
                         }
                     ]}
                 >
-                    <ThemedText style={[styles.mainText, { color: ThemedColor.text }]}>
-                        Let's celebrate your first accomplishment.
+                    <ThemedText style={[styles.welcomeText, { color: ThemedColor.text }]}>
+                        Welcome!
+                    </ThemedText>
+                    <ThemedText style={[styles.familyText, { color: ThemedColor.text }]}>
+                        You've joined the{' '}
+                        <ThemedText style={[styles.familyText, { color: '#854dff' }]}>
+                            kindred
+                        </ThemedText>
+                        {' '}family
                     </ThemedText>
                 </Animated.View>
-
-                {/* Swipeable Task Card */}
-                <Animated.View
-                    style={[
-                        styles.taskContainer,
-                        {
-                            opacity: fadeAnimation,
-                            transform: [
-                                { translateY: slideAnimation },
-                                { translateX: swipeHintAnim },
-                            ],
-                        }
-                    ]}
-                >
-                    <ReanimatedSwipeable
-                        friction={1.3}
-                        rightThreshold={100}
-                        renderLeftActions={(prog, drag) =>
-                            LeftAction(prog, drag, handleComplete, ThemedColor)
-                        }
-                    >
-                        <View style={[
-                            styles.taskCard,
-                            {
-                                backgroundColor: ThemedColor.lightened,
-                                borderColor: ThemedColor.tertiary
-                            }
-                        ]}>
-                            <ThemedText style={[styles.taskText, { color: ThemedColor.text }]}>
-                                Finish Kindred Onboarding
-                            </ThemedText>
-                        </View>
-                    </ReanimatedSwipeable>
-
-                    <ThemedText style={[styles.instructionText, { color: ThemedColor.caption }]}>
-                        Swipe the task to Mark it Complete  →
-                    </ThemedText>
-                </Animated.View>
-
-                {/* Spacer */}
-                <View style={{ flex: 1 }} />
             </View>
+
+            {/* Navigation button */}
+            <Animated.View style={{ zIndex: 1, opacity: buttonFadeAnimation }}>
+                <OnboardButton
+                    disabled={false}
+                    onPress={() => {
+                        router.push("/(onboarding)/accomplishment");
+                    }}
+                />
+            </Animated.View>
         </ThemedView>
     );
 };
-
-function LeftAction(
-    prog: SharedValue<number>,
-    drag: SharedValue<number>,
-    onComplete: () => void,
-    ThemedColor: any
-) {
-    let width = Dimensions.get("window").width;
-    const [isCompleting, setIsCompleting] = React.useState(false);
-
-    // Use useAnimatedReaction to watch the drag value
-    useAnimatedReaction(
-        () => drag.value,
-        (currentValue) => {
-            let threshold = width / 4;
-            let percent = (currentValue - threshold * 3) / threshold;
-            let opacity = 1 - percent;
-
-            if (opacity <= 0 && !isCompleting) {
-                runOnJS(setIsCompleting)(true);
-                runOnJS(onComplete)();
-            }
-        }
-    );
-
-    const styleAnimation = useAnimatedStyle(() => {
-        let threshold = width / 4;
-        let percent = (drag.value - threshold * 3) / threshold;
-        let opacity = 1 - percent;
-
-        return {
-            transform: [{ translateX: drag.value - width }],
-            opacity: opacity,
-            display: opacity > 0 ? "flex" : "none",
-        };
-    });
-
-    return (
-        <Reanimated.View
-            style={[
-                styleAnimation,
-                {
-                    backgroundColor: ThemedColor.success,
-                    width: width,
-                    justifyContent: "center",
-                    alignItems: "center",
-                },
-            ]}
-        />
-    );
-}
 
 const styles = StyleSheet.create({
     mainContainer: {
@@ -380,32 +253,20 @@ const styles = StyleSheet.create({
     mainTextContainer: {
         marginBottom: 36,
     },
-    mainText: {
-        fontSize: 32,
+    welcomeText: {
+        fontSize: 24,
+        fontFamily: 'Fraunces',
+        fontWeight: '400',
+        letterSpacing: -1,
+        marginBottom: 8,
+    },
+    familyText: {
+        fontSize: 36,
         fontFamily: 'Fraunces',
         fontWeight: '600',
-        lineHeight: 38,
+        lineHeight: 44,
         letterSpacing: -1,
-    },
-    taskContainer: {
-        gap: 16,
-    },
-    taskCard: {
-        borderRadius: 16,
-        borderWidth: 1,
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-    },
-    taskText: {
-        fontSize: 16,
-        fontFamily: 'Outfit',
-        fontWeight: '300',
-    },
-    instructionText: {
-        fontSize: 14,
-        fontFamily: 'Outfit',
-        fontWeight: '300',
     },
 });
 
-export default AccomplishmentOnboarding;
+export default WelcomeOnboarding;

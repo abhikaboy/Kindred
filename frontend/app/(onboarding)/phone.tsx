@@ -16,7 +16,7 @@ import { OtpInput } from "react-native-otp-entry";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const TOTAL_STEPS = 4; // Will be overridden for social auth
+const TOTAL_STEPS = 5; // Will be overridden for social auth
 
 const PhoneOnboarding = () => {
     const ThemedColor = useThemeColor();
@@ -195,7 +195,7 @@ const PhoneOnboarding = () => {
     });
 
     const isSocialAuth = !!(onboardingData.appleId || onboardingData.googleId);
-    const totalSteps = isSocialAuth ? 3 : TOTAL_STEPS;
+    const totalSteps = isSocialAuth ? 4 : TOTAL_STEPS;
 
     return (
         <ThemedView style={styles.mainContainer}>
