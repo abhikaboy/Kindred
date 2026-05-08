@@ -16,3 +16,10 @@ backend/.genkit
 # Test coverage
 coverage.out
 coverage.html
+
+# Claude Code
+.claude/
+
+# Superpowers
+.superpowers/
+docs/superpowers/
