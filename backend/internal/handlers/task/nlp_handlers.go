@@ -37,7 +37,7 @@ func (h *Handler) QueryTasksNaturalLanguage(ctx context.Context, input *QueryTas
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+		return nil, huma.Error500InternalServerError("Unable to process your credit. Please try again later.", err)
 	}
 
 	timezone := input.Body.Timezone
@@ -76,13 +76,15 @@ func (h *Handler) QueryTasksNaturalLanguage(ctx context.Context, input *QueryTas
 	// Convert AI output to TaskQueryFilters
 	filters, err := convertQueryOutput(queryOutput)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to parse AI query response", err)
+		slog.Error("Failed to parse AI query response", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("The AI response could not be interpreted. Please try rephrasing your query.", err)
 	}
 
 	// Execute query
 	tasks, err := h.service.QueryTasksByUser(userObjID, filters)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to query tasks. Please try again.", err)
+		slog.Error("Failed to execute natural language task query", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to query tasks due to a server error. Please try again.", err)
 	}
 
 	output := &QueryTasksNaturalLanguageOutput{}
@@ -118,7 +120,7 @@ func (h *Handler) CreateTaskNaturalLanguage(ctx context.Context, input *CreateTa
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+		return nil, huma.Error500InternalServerError("Unable to process your credit. Please try again later.", err)
 	}
 
 	// Default to EST if no timezone provided
@@ -242,7 +244,7 @@ func (h *Handler) EditTasksNaturalLanguage(ctx context.Context, input *EditTasks
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+		return nil, huma.Error500InternalServerError("Unable to process your credit. Please try again later.", err)
 	}
 
 	timezone := input.Body.Timezone
@@ -681,7 +683,7 @@ func (h *Handler) IntentTaskNaturalLanguage(ctx context.Context, input *IntentTa
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+		return nil, huma.Error500InternalServerError("Unable to process your credit. Please try again later.", err)
 	}
 
 	timezone := input.Body.Timezone
@@ -800,7 +802,8 @@ func (h *Handler) PreviewTaskNaturalLanguage(ctx context.Context, input *Preview
 	// Check credits without consuming
 	hasCredit, err := h.service.Users.CheckCredits(ctx, userObjID, types.CreditTypeNaturalLanguage)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to check credits", err)
+		slog.Error("Failed to check user credits", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to verify your credit balance. Please try again later.", err)
 	}
 	if !hasCredit {
 		return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", types.ErrInsufficientCredits)
@@ -864,7 +867,7 @@ func (h *Handler) ConfirmTaskNaturalLanguage(ctx context.Context, input *Confirm
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to consume credit",
 			slog.String("userID", userID),
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+		return nil, huma.Error500InternalServerError("Unable to process your credit. Please try again later.", err)
 	}
 
 	// Process new categories with their tasks

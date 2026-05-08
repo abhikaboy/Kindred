@@ -34,7 +34,7 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			xlog.AuthError(fmt.Sprintf("Invalid authorization header format (parts: %d, first: %s)",
 				len(parts), parts[0]))
 			return c.Status(401).JSON(fiber.Map{
-				"error":  "Invalid authorization header format",
+				"error":  "Invalid authorization header format. Expected: Bearer <token>",
 				"status": 401,
 			})
 		}
@@ -78,7 +78,7 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			if err != nil {
 				xlog.AuthError(fmt.Sprintf("Failed to generate new tokens: %v", err))
 				return c.Status(500).JSON(fiber.Map{
-					"error":  "Failed to generate new tokens",
+					"error":  "Session refresh failed. Please log in again.",
 					"status": 500,
 				})
 			}
@@ -87,7 +87,7 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 			if err := service.UseToken(userID); err != nil {
 				xlog.AuthError(fmt.Sprintf("Failed to mark token as used: %v", err))
 				return c.Status(500).JSON(fiber.Map{
-					"error":  "Failed to update token usage",
+					"error":  "Session update failed. Please log in again.",
 					"status": 500,
 				})
 			}
@@ -153,7 +153,7 @@ func FiberAuthMiddlewareForServer(collections map[string]*mongo.Collection) fibe
 	if err != nil {
 		slog.Error("Failed to load configuration for Fiber auth middleware", "error", err.Error())
 		return func(c *fiber.Ctx) error {
-			return c.Status(500).JSON(fiber.Map{"error": "Server configuration error"})
+			return c.Status(500).JSON(fiber.Map{"error": "Server configuration error. Authentication service is unavailable."})
 		}
 	}
 	return FiberAuthMiddleware(collections, cfg)

@@ -24,7 +24,8 @@ func (h *Handler) QueryTasksByUser(ctx context.Context, input *QueryTasksByUserI
 
 	tasks, err := h.service.QueryTasksByUser(user_id_obj, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to query tasks. Please try again.", err)
+		slog.Error("Failed to query tasks", "userId", user_id_obj.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to query tasks due to a server error. Please try again.", err)
 	}
 
 	return &QueryTasksByUserOutput{Body: tasks}, nil
@@ -56,7 +57,8 @@ func (h *Handler) GetCompletedTasks(ctx context.Context, input *GetCompletedTask
 
 	tasks, totalCount, err := h.service.GetCompletedTasks(userObjID, page, limit)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
+		slog.Error("Failed to fetch completed tasks", "userId", userObjID.Hex(), "page", page, "limit", limit, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load completed tasks. Please try again.", err)
 	}
 
 	// Calculate total pages
@@ -110,7 +112,7 @@ func (h *Handler) GetCompletedTasksByDate(ctx context.Context, input *GetComplet
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "GetCompletedTasksByDate: service error",
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to fetch completed tasks", err)
+		return nil, huma.Error500InternalServerError("Unable to load completed tasks for the specified date. Please try again.", err)
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "GetCompletedTasksByDate: returning tasks",

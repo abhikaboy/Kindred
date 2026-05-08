@@ -39,7 +39,11 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 			}
 			return nil, huma.Error401Unauthorized(fiberErr.Message, err)
 		}
-		return nil, huma.Error500InternalServerError("Unable to sign in. Please try again.", err)
+		slog.LogAttrs(ctx, slog.LevelError, "Unexpected error during email login",
+			slog.String("email", input.Body.Email),
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error500InternalServerError("Unable to sign in due to a server error. Please try again later.", err)
 	}
 
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
@@ -48,7 +52,7 @@ func (h *Handler) LoginHuma(ctx context.Context, input *LoginInput) (*LoginOutpu
 			slog.String("userId", id.Hex()),
 			slog.String("error", err.Error()),
 		)
-		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login due to a token generation error. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -77,7 +81,10 @@ func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneI
 			}
 			return nil, huma.Error401Unauthorized(fiberErr.Message, err)
 		}
-		return nil, huma.Error500InternalServerError("Unable to sign in. Please try again.", err)
+		slog.LogAttrs(ctx, slog.LevelError, "Unexpected error during phone login",
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error500InternalServerError("Unable to sign in due to a server error. Please try again later.", err)
 	}
 
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
@@ -86,7 +93,7 @@ func (h *Handler) LoginWithPhoneHuma(ctx context.Context, input *LoginWithPhoneI
 			slog.String("userId", id.Hex()),
 			slog.String("error", err.Error()),
 		)
-		return nil, huma.Error500InternalServerError("Unable to complete login. Please try again.", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login due to a token generation error. Please try again.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -106,7 +113,11 @@ func (h *Handler) LoginWithTokenHuma(ctx context.Context, input *LoginWithTokenI
 
 	user, err := h.service.GetUser(user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to load your profile. Please try again.", err)
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to load user profile during token login",
+			slog.String("userId", user_id),
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error500InternalServerError("Unable to load your profile. Your account may have been deleted or is temporarily unavailable.", err)
 	}
 
 	resp := &LoginOutput{}
@@ -252,7 +263,7 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		slog.LogAttrs(ctx, slog.LevelError, "Token generation failed during registration",
 			slog.String("error", err.Error()),
 		)
-		return nil, huma.Error500InternalServerError("Token generation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to complete registration due to a token generation error. Please try again.", err)
 	}
 
 	aaid := ctx.Value(appleIDContextKey)
@@ -443,12 +454,12 @@ func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOu
 
 	split := strings.Split(input.Authorization, " ")
 	if len(split) != 2 {
-		return nil, huma.Error400BadRequest("Invalid authorization format", nil)
+		return nil, huma.Error400BadRequest("Invalid authorization format. Expected: Bearer <token>", nil)
 	}
 
 	tokenType, accessToken := split[0], split[1]
 	if tokenType != "Bearer" {
-		return nil, huma.Error400BadRequest("Invalid authorization type", nil)
+		return nil, huma.Error400BadRequest("Invalid authorization type. Expected Bearer token.", nil)
 	}
 
 	// increase the count by one
@@ -459,7 +470,11 @@ func (h *Handler) LogoutHuma(ctx context.Context, input *LogoutInput) (*LogoutOu
 
 	err = h.service.InvalidateTokens(user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to log out. Please try again.", err)
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to invalidate tokens during logout",
+			slog.String("userId", user_id),
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error500InternalServerError("Unable to log out due to a server error. Please try again later.", err)
 	}
 
 	resp := &LogoutOutput{}
@@ -488,8 +503,8 @@ func (h *Handler) UpdatePushTokenHuma(ctx context.Context, input *UpdatePushToke
 
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		slog.Error("❌ Push token validation failed", "errors", errs)
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		slog.Error("Push token validation failed", "errors", errs)
+		return nil, huma.Error400BadRequest("Invalid push token. Please check the token format and try again.", fmt.Errorf("validation errors: %v", errs))
 	}
 	slog.Info("✅ Push token validated successfully")
 
@@ -535,14 +550,14 @@ func RequireAuthFromHuma(ctx context.Context) (string, error) {
 func (h *Handler) SendOTPHuma(ctx context.Context, input *SendOTPInput) (*SendOTPOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide a valid phone number", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Call the service method which handles the async Sinch API call
 	verificationID, err := h.service.SendOTP(ctx, input.Body.PhoneNumber)
 	if err != nil {
 		slog.Error("Failed to send OTP", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error500InternalServerError("Unable to send verification code. Please try again.", err)
+		return nil, huma.Error500InternalServerError("Unable to send verification code. The SMS service may be temporarily unavailable.", err)
 	}
 
 	resp := &SendOTPOutput{}
@@ -556,14 +571,14 @@ func (h *Handler) SendOTPHuma(ctx context.Context, input *SendOTPInput) (*SendOT
 func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*VerifyOTPOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide a valid phone number and verification code", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Call the service method which handles the async Sinch API call
 	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
 	if err != nil {
 		slog.Error("Failed to verify OTP", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error500InternalServerError("Unable to verify code. Please try again.", err)
+		return nil, huma.Error500InternalServerError("Unable to verify code. The verification service may be temporarily unavailable.", err)
 	}
 
 	resp := &VerifyOTPOutput{}
@@ -583,14 +598,14 @@ func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*Ve
 func (h *Handler) LoginWithOTPHuma(ctx context.Context, input *LoginWithOTPInput) (*LoginWithOTPOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide a valid phone number and verification code", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Step 1: Verify the OTP code
 	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
 	if err != nil {
 		slog.Error("Failed to verify OTP during login", "error", err, "phone", input.Body.PhoneNumber)
-		return nil, huma.Error500InternalServerError("Unable to verify code. Please try again.", err)
+		return nil, huma.Error500InternalServerError("Unable to verify code. The verification service may be temporarily unavailable.", err)
 	}
 
 	if !valid {
@@ -609,7 +624,7 @@ func (h *Handler) LoginWithOTPHuma(ctx context.Context, input *LoginWithOTPInput
 	result, err := completeLogin(h.service, id.Hex(), *count, user)
 	if err != nil {
 		slog.Error("Token generation failed during OTP login", "error", err, "user_id", id.Hex())
-		return nil, huma.Error500InternalServerError("Token generation failed", err)
+		return nil, huma.Error500InternalServerError("Unable to complete login due to a token generation error. Please try again.", err)
 	}
 
 	resp := &LoginWithOTPOutput{}
@@ -654,7 +669,7 @@ func (h *Handler) AcceptTermsHuma(ctx context.Context, input *AcceptTermsInput) 
 	// Validate input
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide a valid terms version to accept", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Extract user_id from context (set by auth middleware)

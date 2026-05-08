@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -46,13 +47,15 @@ func (h *Handler) GetNotificationsHuma(ctx context.Context, input *GetNotificati
 	// Get notifications
 	notifications, err := h.service.GetUserNotifications(userObjectID, limit, skip)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch notifications", err)
+		slog.Error("Failed to fetch notifications", "userId", userObjectID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load your notifications. Please try again.", err)
 	}
 
 	// Get unread count
 	unreadCount, err := h.service.GetUnreadCount(userObjectID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch unread count", err)
+		slog.Error("Failed to fetch unread notification count", "userId", userObjectID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load notification count. Please try again.", err)
 	}
 
 	return &GetNotificationsOutput{
@@ -79,7 +82,7 @@ func (h *Handler) MarkNotificationsReadHuma(ctx context.Context, input *MarkNoti
 	// Add explicit validation
 	errs := xvalidator.Validator.Validate(input)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please provide valid notification IDs", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	if len(input.Body.ID) == 0 {
@@ -91,7 +94,7 @@ func (h *Handler) MarkNotificationsReadHuma(ctx context.Context, input *MarkNoti
 	for i, idStr := range input.Body.ID {
 		id, err := primitive.ObjectIDFromHex(idStr)
 		if err != nil {
-			return nil, huma.Error400BadRequest("Invalid ID format", fmt.Errorf("invalid ID at index %d: %s", i, idStr))
+			return nil, huma.Error400BadRequest(fmt.Sprintf("Invalid notification ID format at position %d", i), fmt.Errorf("invalid ID at index %d: %s", i, idStr))
 		}
 		objectIDs[i] = id
 	}
@@ -99,7 +102,8 @@ func (h *Handler) MarkNotificationsReadHuma(ctx context.Context, input *MarkNoti
 	// Mark notifications as read
 	err = h.service.MarkNotificationsAsRead(objectIDs)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to mark notifications as read", err)
+		slog.Error("Failed to mark notifications as read", "notificationCount", len(objectIDs), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to mark notifications as read. Please try again.", err)
 	}
 
 	resp := &MarkNotificationsReadOutput{}
@@ -124,7 +128,8 @@ func (h *Handler) MarkAllNotificationsReadHuma(ctx context.Context, input *MarkA
 	// Mark all notifications as read
 	err = h.service.MarkAllAsReadForUser(userObjectID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to mark all notifications as read", err)
+		slog.Error("Failed to mark all notifications as read", "userId", userObjectID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to mark all notifications as read. Please try again.", err)
 	}
 
 	return &MarkAllNotificationsReadOutput{
@@ -156,7 +161,8 @@ func (h *Handler) DeleteNotificationHuma(ctx context.Context, input *DeleteNotif
 		if err == mongo.ErrNoDocuments {
 			return nil, huma.Error404NotFound("Notification not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to delete notification", err)
+		slog.Error("Failed to delete notification", "notificationId", notificationID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete notification. Please try again.", err)
 	}
 
 	return &DeleteNotificationOutput{

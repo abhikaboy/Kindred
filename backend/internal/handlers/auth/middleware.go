@@ -41,10 +41,10 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 			// Parse Bearer token
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				slog.Error("❌ AUTH MIDDLEWARE: Invalid authorization header format",
+				slog.Error("AUTH MIDDLEWARE: Invalid authorization header format",
 					"parts_count", len(parts),
 					"first_part", parts[0])
-				http.Error(w, `{"error":"Invalid authorization header format","status":401}`, http.StatusUnauthorized)
+				http.Error(w, `{"error":"Invalid authorization header format. Expected: Bearer <token>","status":401}`, http.StatusUnauthorized)
 				return
 			}
 
@@ -82,8 +82,8 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 				timezone = newTimezone
 				newAccess, newRefresh, err := service.GenerateTokens(userID, newCount, timezone)
 				if err != nil {
-					slog.Error("❌ AUTH MIDDLEWARE: Failed to generate new tokens", "error", err.Error())
-					http.Error(w, `{"error":"Failed to generate new tokens","status":500}`, http.StatusInternalServerError)
+					slog.Error("AUTH MIDDLEWARE: Failed to generate new tokens", "error", err.Error())
+					http.Error(w, `{"error":"Session refresh failed. Please log in again.","status":500}`, http.StatusInternalServerError)
 					return
 				}
 
@@ -91,8 +91,8 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 
 				// Mark refresh token as used
 				if err := service.UseToken(userID); err != nil {
-					slog.Error("❌ AUTH MIDDLEWARE: Failed to mark token as used", "error", err.Error())
-					http.Error(w, `{"error":"Failed to update token usage","status":500}`, http.StatusInternalServerError)
+					slog.Error("AUTH MIDDLEWARE: Failed to mark token as used", "error", err.Error())
+					http.Error(w, `{"error":"Session update failed. Please log in again.","status":500}`, http.StatusInternalServerError)
 					return
 				}
 

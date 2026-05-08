@@ -3,6 +3,7 @@ package Post
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -39,7 +40,8 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 	var user types.User
 	err = h.service.Users.FindOne(context.Background(), bson.M{"_id": userObjID}).Decode(&user)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get user info", err)
+		slog.Error("failed to get user info for post creation", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get user info. Please try again.", err)
 	}
 
 	doc := types.PostDocument{
@@ -64,7 +66,7 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 	if input.Body.BlueprintID != nil {
 		blueprintID, err := primitive.ObjectIDFromHex(*input.Body.BlueprintID)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Invalid blueprint id", err)
+			return nil, huma.Error400BadRequest("Invalid blueprint ID format", err)
 		}
 
 		blueprintIsPublic := false
@@ -92,7 +94,8 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 
 	createdPost, userStats, err := h.service.CreatePost(&doc)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create post", err)
+		slog.Error("failed to create post", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create post. Please try again.", err)
 	}
 
 	// Prepare response with user stats
@@ -120,7 +123,8 @@ func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetP
 
 	posts, total, err := h.service.GetAllPosts(limit, offset)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get posts", err)
+		slog.Error("failed to get posts", "limit", limit, "offset", offset, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get posts. Please try again.", err)
 	}
 
 	var apiPosts []types.PostDocumentAPI
@@ -161,7 +165,8 @@ func (h *Handler) GetFriendsPostsHuma(ctx context.Context, input *GetFriendsPost
 
 	posts, total, err := h.service.GetFriendsPosts(userID, limit, offset)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get friends posts", err)
+		slog.Error("failed to get friends posts", "userId", userIDStr, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get friends posts. Please try again.", err)
 	}
 
 	var apiPosts []types.PostDocumentAPI
@@ -211,7 +216,8 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 	// Get friends posts
 	posts, postsTotal, err := h.service.GetFriendsPosts(userID, postsNeeded, offset)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get feed", err)
+		slog.Error("failed to get feed posts", "userId", userIDStr, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get feed. Please try again.", err)
 	}
 
 	// Get friends' public tasks (with user data from aggregation pipeline)
@@ -398,7 +404,8 @@ func (h *Handler) GetUserGroupsHuma(ctx context.Context, input *GetUserGroupsInp
 
 	groups, err := h.service.GetUserGroups(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get user groups", err)
+		slog.Error("failed to get user groups", "userId", userIDStr, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get user groups. Please try again.", err)
 	}
 
 	var apiGroups []types.GroupDocumentAPI
@@ -426,7 +433,8 @@ func (h *Handler) GetPostsByBlueprintHuma(ctx context.Context, input *GetPostsBy
 
 	posts, err := h.service.GetPostsByBlueprint(blueprintID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get posts by blueprint", err)
+		slog.Error("failed to get posts by blueprint", "blueprintId", input.BlueprintID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get posts by blueprint. Please try again.", err)
 	}
 
 	var apiPosts []types.PostDocumentAPI
@@ -482,7 +490,8 @@ func (h *Handler) GetUserPostsHuma(ctx context.Context, input *GetUserPostsInput
 	// Check relationship between viewer and profile user
 	canView, err := h.service.CheckRelationship(viewerID, profileUserID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to check relationship", err)
+		slog.Error("failed to check relationship", "viewerId", viewerIDStr, "profileUserId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to check relationship. Please try again.", err)
 	}
 
 	// If not authorized to view, return empty paginated response (similar to tasks behavior)
@@ -552,7 +561,8 @@ func (h *Handler) UpdatePostHuma(ctx context.Context, input *UpdatePostInput) (*
 	}
 
 	if err := h.service.UpdatePartialPost(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update post", err)
+		slog.Error("failed to update post", "userId", user_id, "postId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update post. Please try again.", err)
 	}
 
 	resp := &UpdatePostOutput{}
@@ -587,7 +597,8 @@ func (h *Handler) DeletePostHuma(ctx context.Context, input *DeletePostInput) (*
 	}
 
 	if err := h.service.DeletePost(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete post", err)
+		slog.Error("failed to delete post", "userId", user_id, "postId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete post. Please try again.", err)
 	}
 
 	resp := &DeletePostOutput{}
@@ -614,7 +625,8 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 	var user types.User
 	err = h.service.Users.FindOne(context.Background(), bson.M{"_id": userObjID}).Decode(&user)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get user info", err)
+		slog.Error("failed to get user info for comment", "userId", user_id, "postId", input.PostID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get user info. Please try again.", err)
 	}
 
 	// Parse mentions
@@ -654,7 +666,8 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 	}
 
 	if err := h.service.AddComment(postID, doc); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to add comment", err)
+		slog.Error("failed to add comment", "userId", user_id, "postId", input.PostID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to add comment. Please try again.", err)
 	}
 
 	output := &AddCommentOutput{}
@@ -666,7 +679,7 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 func (h *Handler) ToggleReactionHuma(ctx context.Context, input *AddReactionInput) (*AddReactionOutput, error) {
 	user_id, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Unauthorized", err)
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(user_id)
@@ -688,7 +701,8 @@ func (h *Handler) ToggleReactionHuma(ctx context.Context, input *AddReactionInpu
 	wasAdded, err := h.service.ToggleReaction(reaction)
 
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to process reaction", err)
+		slog.Error("failed to process reaction", "userId", user_id, "postId", input.PostID, "emoji", input.Body.Emoji, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to process reaction. Please try again.", err)
 	}
 
 	var message string
@@ -751,7 +765,8 @@ func (h *Handler) DeleteCommentHuma(ctx context.Context, input *DeleteCommentInp
 	}
 
 	if err := h.service.DeleteComment(postID, commentID); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete comment", err)
+		slog.Error("failed to delete comment", "userId", user_id, "postId", input.PostID, "commentId", input.CommentID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete comment. Please try again.", err)
 	}
 
 	resp := &DeleteCommentOutput{}

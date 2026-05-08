@@ -17,7 +17,8 @@ type Handler struct {
 func (h *Handler) GetProfiles(ctx context.Context, input *GetProfilesInput) (*GetProfilesOutput, error) {
 	profiles, err := h.service.GetAllProfiles()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get profiles", err)
+		slog.Error("Failed to fetch profiles", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load profiles. Please try again.", err)
 	}
 
 	return &GetProfilesOutput{Body: profiles}, nil
@@ -30,7 +31,8 @@ func (h *Handler) UpdatePartialProfile(ctx context.Context, input *UpdateProfile
 	}
 
 	if err := h.service.UpdatePartialProfile(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update profile", err)
+		slog.Error("Failed to update profile", "profileId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update profile. Please try again.", err)
 	}
 
 	resp := &UpdateProfileOutput{}
@@ -45,7 +47,8 @@ func (h *Handler) DeleteProfile(ctx context.Context, input *DeleteProfileInput) 
 	}
 
 	if err := h.service.DeleteProfile(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete profile", err)
+		slog.Error("Failed to delete profile", "profileId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete profile. Please try again.", err)
 	}
 
 	resp := &DeleteProfileOutput{}
@@ -56,7 +59,7 @@ func (h *Handler) DeleteProfile(ctx context.Context, input *DeleteProfileInput) 
 func (h *Handler) GetProfileByEmail(ctx context.Context, input *GetProfileByEmailInput) (*GetProfileByEmailOutput, error) {
 	profile, err := h.service.GetProfileByEmail(input.Email)
 	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
+		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
 	return &GetProfileByEmailOutput{Body: *profile}, nil
@@ -65,7 +68,7 @@ func (h *Handler) GetProfileByEmail(ctx context.Context, input *GetProfileByEmai
 func (h *Handler) GetProfileByPhone(ctx context.Context, input *GetProfileByPhoneInput) (*GetProfileByPhoneOutput, error) {
 	profile, err := h.service.GetProfileByPhone(input.Phone)
 	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
+		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
 	return &GetProfileByPhoneOutput{Body: *profile}, nil
@@ -82,7 +85,8 @@ func (h *Handler) SearchProfiles(ctx context.Context, input *SearchProfilesInput
 	}
 
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
+		slog.Error("Failed to search profiles", "query", input.Query, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to search profiles. Please try again.", err)
 	}
 
 	return &SearchProfilesOutput{Body: profiles}, nil
@@ -93,7 +97,8 @@ func (h *Handler) SearchProfiles(ctx context.Context, input *SearchProfilesInput
 func (h *Handler) GetProfilesHuma(ctx context.Context, input *GetProfilesInput) (*GetProfilesOutput, error) {
 	profiles, err := h.service.GetAllProfiles()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get profiles", err)
+		slog.Error("Failed to fetch profiles", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load profiles. Please try again.", err)
 	}
 
 	resp := &GetProfilesOutput{Body: profiles}
@@ -108,7 +113,7 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 
 	profile, err := h.service.GetProfileByID(id)
 	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
+		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
 	// Try to get authenticated user ID - if not present, continue without relationship check
@@ -148,7 +153,8 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 	if relationship.Status == RelationshipConnected || relationship.Status == RelationshipSelf {
 		tasks, err := h.service.GetProfileTasks(id)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Failed to get profile tasks", err)
+			slog.Error("Failed to get profile tasks", "profileId", id.Hex(), "error", err)
+			return nil, huma.Error500InternalServerError("Unable to load profile tasks. Please try again.", err)
 		}
 		profile.Tasks = tasks
 
@@ -175,7 +181,8 @@ func (h *Handler) UpdateProfileHuma(ctx context.Context, input *UpdateProfileInp
 	}
 
 	if err := h.service.UpdatePartialProfile(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update profile", err)
+		slog.Error("Failed to update profile", "profileId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update profile. Please try again.", err)
 	}
 
 	resp := &UpdateProfileOutput{}
@@ -190,7 +197,8 @@ func (h *Handler) DeleteProfileHuma(ctx context.Context, input *DeleteProfileInp
 	}
 
 	if err := h.service.DeleteProfile(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete profile", err)
+		slog.Error("Failed to delete profile", "profileId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete profile. Please try again.", err)
 	}
 
 	resp := &DeleteProfileOutput{}
@@ -201,7 +209,7 @@ func (h *Handler) DeleteProfileHuma(ctx context.Context, input *DeleteProfileInp
 func (h *Handler) GetProfileByEmailHuma(ctx context.Context, input *GetProfileByEmailInput) (*GetProfileByEmailOutput, error) {
 	profile, err := h.service.GetProfileByEmail(input.Email)
 	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
+		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
 	resp := &GetProfileByEmailOutput{Body: *profile}
@@ -211,7 +219,7 @@ func (h *Handler) GetProfileByEmailHuma(ctx context.Context, input *GetProfileBy
 func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileByPhoneInput) (*GetProfileByPhoneOutput, error) {
 	profile, err := h.service.GetProfileByPhone(input.Phone)
 	if err != nil {
-		return nil, huma.Error404NotFound("Profile not found", err)
+		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
 	resp := &GetProfileByPhoneOutput{Body: *profile}
@@ -234,7 +242,7 @@ func (h *Handler) GetUserCredits(ctx context.Context, input *GetUserCreditsInput
 	credits, err := types.GetCredits(ctx, h.service.Profiles, userObjID)
 	if err != nil {
 		slog.Error("Failed to get user credits", "error", err.Error(), "userID", userID)
-		return nil, huma.Error500InternalServerError("Failed to retrieve credits", err)
+		return nil, huma.Error500InternalServerError("Unable to retrieve your credits. Please try again.", err)
 	}
 
 	return &GetUserCreditsOutput{Body: *credits}, nil
@@ -243,7 +251,8 @@ func (h *Handler) GetUserCredits(ctx context.Context, input *GetUserCreditsInput
 func (h *Handler) GetSuggestedUsers(ctx context.Context, input *GetSuggestedUsersInput) (*GetSuggestedUsersOutput, error) {
 	users, err := h.service.GetSuggestedUsers()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get suggested users", err)
+		slog.Error("Failed to get suggested users", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load suggested users. Please try again.", err)
 	}
 
 	return &GetSuggestedUsersOutput{Body: users}, nil
@@ -253,7 +262,7 @@ func (h *Handler) FindUsersByPhoneNumbers(ctx context.Context, input *FindUsersB
 	// Get authenticated user ID
 	userIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
-		return nil, huma.Error401Unauthorized("Unauthorized", err)
+		return nil, huma.Error401Unauthorized("Authentication required", err)
 	}
 
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
@@ -263,7 +272,8 @@ func (h *Handler) FindUsersByPhoneNumbers(ctx context.Context, input *FindUsersB
 
 	users, err := h.service.FindUsersByPhoneNumbers(input.Body.Numbers, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to find users by phone numbers", err)
+		slog.Error("Failed to find users by phone numbers", "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to find users by phone numbers. Please try again.", err)
 	}
 
 	return &FindUsersByPhoneNumbersOutput{Body: users}, nil
@@ -290,7 +300,8 @@ func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesI
 	}
 
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to search profiles", err)
+		slog.Error("Failed to search profiles", "query", input.Query, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to search profiles. Please try again.", err)
 	}
 
 	// Add relationship information to each profile
@@ -338,7 +349,8 @@ func (h *Handler) AutocompleteProfilesHuma(ctx context.Context, input *Autocompl
 
 	profiles, err := h.service.AutocompleteProfiles(input.Query)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to autocomplete profiles", err)
+		slog.Error("Failed to autocomplete profiles", "query", input.Query, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to search profiles. Please try again.", err)
 	}
 
 	// Add relationship information to each profile
@@ -379,7 +391,8 @@ func (h *Handler) UpdateTimezone(ctx context.Context, input *UpdateTimezoneInput
 	}
 
 	if err := h.service.UpdateTimezone(authUserID, input.Body.Timezone); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update timezone", err)
+		slog.Error("Failed to update timezone", "userId", authUserID.Hex(), "timezone", input.Body.Timezone, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update timezone. Please try again.", err)
 	}
 
 	resp := &UpdateTimezoneOutput{}

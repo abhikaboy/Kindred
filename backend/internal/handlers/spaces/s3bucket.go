@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -40,7 +41,8 @@ func (h *Handler) GetPresignedUrlHuma(ctx context.Context, input *GetPresignedUr
 	// get the name of the bucket
 	bucketName := h.config.DO.SpacesBucket
 	if bucketName == "" {
-		return nil, huma.Error500InternalServerError("SPACES_BUCKET environment variable is not set", fmt.Errorf("bucket name not configured"))
+		slog.Error("SPACES_BUCKET environment variable is not set")
+		return nil, huma.Error500InternalServerError("File upload service is not configured. Please contact support.", fmt.Errorf("bucket name not configured"))
 	}
 
 	object := &GetParams{
@@ -50,7 +52,8 @@ func (h *Handler) GetPresignedUrlHuma(ctx context.Context, input *GetPresignedUr
 
 	url, err := h.service.GetPresignedUrl(object)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to generate presigned URL", err)
+		slog.Error("Unable to generate presigned URL", "key", key, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to generate presigned URL. Please try again.", err)
 	}
 
 	return &GetPresignedUrlOutput{Body: url}, nil
@@ -64,7 +67,8 @@ func (h *Handler) CreatePresignedUrlHuma(ctx context.Context, input *CreatePresi
 
 	bucketName := h.config.DO.SpacesBucket
 	if bucketName == "" {
-		return nil, huma.Error500InternalServerError("SPACES_BUCKET environment variable is not set", fmt.Errorf("bucket name not configured"))
+		slog.Error("SPACES_BUCKET environment variable is not set")
+		return nil, huma.Error500InternalServerError("File upload service is not configured. Please contact support.", fmt.Errorf("bucket name not configured"))
 	}
 
 	object := &PostParams{
@@ -74,7 +78,8 @@ func (h *Handler) CreatePresignedUrlHuma(ctx context.Context, input *CreatePresi
 
 	urlAndKey, err := h.service.CreateUrlAndKey(object)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create presigned URL", err)
+		slog.Error("Unable to create presigned URL", "fileType", fileType, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create presigned URL. Please try again.", err)
 	}
 
 	return &CreatePresignedUrlOutput{Body: urlAndKey}, nil
@@ -92,7 +97,8 @@ func (h *Handler) GenerateImageUploadURL(ctx context.Context, input *GenerateIma
 		bucketName = h.config.DO.SpacesBucket
 	}
 	if bucketName == "" {
-		return nil, huma.Error500InternalServerError("No bucket configured", fmt.Errorf("neither Spaces nor DO Spaces bucket is configured"))
+		slog.Error("No bucket configured for image upload", "resourceType", input.ResourceType, "resourceID", input.ResourceID)
+		return nil, huma.Error500InternalServerError("File upload service is not configured. Please contact support.", fmt.Errorf("neither Spaces nor DO Spaces bucket is configured"))
 	}
 
 	// Get spaces URL for public URL generation
@@ -108,7 +114,8 @@ func (h *Handler) GenerateImageUploadURL(ctx context.Context, input *GenerateIma
 	// Generate presigned URL
 	result, err := h.service.GenerateImageUploadURL(ctx, params, bucketName, spacesURL)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to generate upload URL", err)
+		slog.Error("Unable to generate upload URL", "resourceType", input.ResourceType, "resourceID", input.ResourceID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to generate upload URL. Please try again.", err)
 	}
 
 	resp := &GenerateImageUploadURLOutput{}
@@ -132,7 +139,8 @@ func (h *Handler) ConfirmImageUpload(ctx context.Context, input *ConfirmImageUpl
 		// Update profile picture in database
 		err = h.updateProfilePicture(objectID, input.Body.PublicURL)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Failed to update profile picture", err)
+			slog.Error("Unable to update profile picture during image upload confirmation", "userID", input.ResourceID, "error", err)
+			return nil, huma.Error500InternalServerError("Unable to update profile picture. Please try again.", err)
 		}
 
 	case "blueprint":
@@ -171,13 +179,15 @@ func (h *Handler) ProcessAndUploadImage(ctx context.Context, input *ProcessAndUp
 	// Process the image
 	processedImage, err := h.processor.ProcessImage(ctx, imageData, variant)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to process image", err)
+		slog.Error("Unable to process image", "resourceType", input.ResourceType, "resourceID", input.ResourceID, "variant", variant, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to process image. Please try again.", err)
 	}
 
 	// Get bucket configuration
 	bucketName := h.config.DO.SpacesBucket
 	if bucketName == "" {
-		return nil, huma.Error500InternalServerError("Spaces bucket not configured", fmt.Errorf("bucket name not configured"))
+		slog.Error("Spaces bucket not configured for image processing", "resourceType", input.ResourceType, "resourceID", input.ResourceID)
+		return nil, huma.Error500InternalServerError("File upload service is not configured. Please contact support.", fmt.Errorf("bucket name not configured"))
 	}
 
 	// Generate key for the processed image
@@ -194,7 +204,8 @@ func (h *Handler) ProcessAndUploadImage(ctx context.Context, input *ProcessAndUp
 	})
 
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to upload processed image", err)
+		slog.Error("Unable to upload processed image", "key", key, "bucket", bucketName, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to upload processed image. Please try again.", err)
 	}
 
 	// Generate URLs using auto-CDN logic
@@ -225,7 +236,8 @@ func (h *Handler) ProcessAndUploadImage(ctx context.Context, input *ProcessAndUp
 		}
 		err = h.updateProfilePicture(objectID, publicURL)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Failed to update profile picture", err)
+			slog.Error("Unable to update profile picture after image processing", "userID", input.ResourceID, "error", err)
+			return nil, huma.Error500InternalServerError("Unable to update profile picture. Please try again.", err)
 		}
 	case "blueprint":
 		// For blueprints, no immediate database update needed
