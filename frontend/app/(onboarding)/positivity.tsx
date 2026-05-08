@@ -166,7 +166,7 @@ const PositivityOnboarding = (props: Props) => {
                 <OnboardButton
                     disabled={false}
                     onPress={() => {
-                        router.push("/(onboarding)/human");
+                        router.push("/(onboarding)/circle");
                     }}
                 />
             </Animated.View>
