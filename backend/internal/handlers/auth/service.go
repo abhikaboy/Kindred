@@ -109,14 +109,27 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 	user, err := s.users.GetUserByEmail(context.Background(), email)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+			slog.Warn("Login attempt for non-existent email",
+				"email", email,
+				"provider", "email",
+			)
+			return nil, nil, nil, fiber.NewError(404, "No account found with this email address. Please sign up first.")
 		}
-		return nil, nil, nil, err
+		slog.Error("Database error during email login",
+			"email", email,
+			"error", err.Error(),
+		)
+		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
+		slog.Warn("Invalid password attempt",
+			"email", email,
+			"userId", user.ID.Hex(),
+			"provider", "email",
+		)
+		return nil, nil, nil, fiber.NewError(401, "Incorrect password. Please try again.")
 	}
 	return &user.ID, &user.Count, user, nil
 }
@@ -125,14 +138,24 @@ func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitiv
 	user, err := s.users.GetUserByPhone(context.Background(), phoneNumber)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+			slog.Warn("Login attempt for non-existent phone",
+				"provider", "phone",
+			)
+			return nil, nil, nil, fiber.NewError(404, "No account found with this phone number. Please sign up first.")
 		}
-		return nil, nil, nil, err
+		slog.Error("Database error during phone login",
+			"error", err.Error(),
+		)
+		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return nil, nil, nil, fiber.NewError(400, "Not Authorized, Invalid Credentials")
+		slog.Warn("Invalid password attempt",
+			"userId", user.ID.Hex(),
+			"provider", "phone",
+		)
+		return nil, nil, nil, fiber.NewError(401, "Incorrect password. Please try again.")
 	}
 	return &user.ID, &user.Count, user, nil
 }
@@ -141,20 +164,51 @@ func (s *Service) LoginFromApple(apple_id string) (*primitive.ObjectID, *float64
 	user, err := s.users.GetUserByAppleID(context.Background(), apple_id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+			slog.Warn("Login attempt for non-existent Apple ID",
+				"provider", "apple",
+			)
+			return nil, nil, nil, fiber.NewError(404, "No account found with this Apple ID. Please sign up first.")
 		}
-		return nil, nil, nil, err
+		slog.Error("Database error during Apple login",
+			"error", err.Error(),
+		)
+		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
 	return &user.ID, &user.Count, user, nil
 }
 
-func (s *Service) LoginFromGoogle(google_id string) (*primitive.ObjectID, *float64, *User, error) {
-	user, err := s.users.GetUserByGoogleID(context.Background(), google_id)
+func (s *Service) LoginFromGoogle(googleID string, email string) (*primitive.ObjectID, *float64, *User, error) {
+	user, err := s.users.GetUserByGoogleID(context.Background(), googleID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+			// No account with this Google ID — try to find by email and link
+			if email != "" {
+				emailUser, emailErr := s.users.GetUserByEmail(context.Background(), email)
+				if emailErr == nil && emailUser != nil {
+					// Found an existing account with this email — link Google ID
+					linkErr := s.users.LinkGoogleID(context.Background(), emailUser.ID, googleID)
+					if linkErr != nil {
+						slog.Error("Failed to link Google ID to existing account",
+							"email", email,
+							"userId", emailUser.ID.Hex(),
+							"error", linkErr.Error(),
+						)
+						return nil, nil, nil, fmt.Errorf("failed to link Google account: %w", linkErr)
+					}
+					slog.Info("Linked Google ID to existing account",
+						"email", email,
+						"userId", emailUser.ID.Hex(),
+					)
+					return &emailUser.ID, &emailUser.Count, emailUser, nil
+				}
+			}
+			return nil, nil, nil, fiber.NewError(404, "No account found. Please sign up first.")
 		}
-		return nil, nil, nil, err
+		slog.Error("Database error during Google login",
+			"googleID", googleID,
+			"error", err.Error(),
+		)
+		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
 	return &user.ID, &user.Count, user, nil
 }
@@ -163,9 +217,15 @@ func (s *Service) LoginFromPhoneOTP(phone_number string) (*primitive.ObjectID, *
 	user, err := s.users.GetUserByPhone(context.Background(), phone_number)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, nil, nil, fiber.NewError(404, "Account does not exist")
+			slog.Warn("OTP login attempt for non-existent phone",
+				"provider", "phone_otp",
+			)
+			return nil, nil, nil, fiber.NewError(404, "No account found with this phone number. Please sign up first.")
 		}
-		return nil, nil, nil, err
+		slog.Error("Database error during OTP login",
+			"error", err.Error(),
+		)
+		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
 	return &user.ID, &user.Count, user, nil
 }

@@ -91,7 +91,11 @@ const LoginPhone = () => {
             } else if (err?.message === "ACCOUNT_NOT_FOUND") {
                 setError("No account found with this phone number. Please sign up first!");
             } else {
-                setError("Login failed. Please try again.");
+                // Surface the API error message if it's descriptive, otherwise use fallback
+                const msg = err?.message;
+                setError(msg && msg !== "INVALID_OTP" && msg !== "ACCOUNT_NOT_FOUND"
+                    ? msg
+                    : "Login failed. Please try again.");
             }
         } finally {
             setLoading(false);
@@ -111,7 +115,15 @@ const LoginPhone = () => {
             router.push("/(logged-in)/(tabs)/(task)");
         } catch (err: any) {
             console.error("Login failed:", err);
-            setError("Invalid phone number or password. Please try again.");
+            if (err?.message === "ACCOUNT_NOT_FOUND") {
+                setError("No account found with this phone number. Please sign up first!");
+            } else {
+                // Surface the API error message if descriptive
+                const msg = err?.message;
+                setError(msg && msg !== "ACCOUNT_NOT_FOUND"
+                    ? msg
+                    : "Invalid phone number or password. Please try again.");
+            }
         } finally {
             setLoading(false);
         }

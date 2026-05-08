@@ -60,7 +60,7 @@ export const OnboardModal = (props: Props) => {
                         router.replace("/(onboarding)/name");
                         setVisible(false);
                     } else {
-                        await loginWithGoogle(result.user.id);
+                        await loginWithGoogle(result.user.id, result.user.email);
                         router.push("/(logged-in)/(tabs)/(task)");
                         setVisible(false);
                     }
@@ -75,7 +75,12 @@ export const OnboardModal = (props: Props) => {
                             showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_GOOGLE, "warning", "No Account Found");
                         }
                     } else {
-                        showToast(ERROR_MESSAGES.GOOGLE_AUTH_FAILED, "danger", "Sign-In Failed");
+                        // Surface the API error message if descriptive, otherwise use fallback
+                        const msg = error?.message;
+                        const displayMsg = msg && msg !== "ACCOUNT_NOT_FOUND"
+                            ? msg
+                            : ERROR_MESSAGES.GOOGLE_AUTH_FAILED;
+                        showToast(displayMsg, "danger", "Sign-In Failed");
                     }
                 }
             }

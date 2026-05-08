@@ -177,6 +177,8 @@ export const ERROR_MESSAGES = {
     ACCOUNT_NOT_FOUND_GOOGLE: "No account found with this Google account. Sign up first!",
     ACCOUNT_NOT_FOUND_APPLE: "No account found with this Apple ID. Sign up first!",
     ACCOUNT_NOT_FOUND_PHONE: "No account found with this phone number. Sign up first!",
+    ACCOUNT_NOT_FOUND_EMAIL: "No account found with this email. Please sign up first.",
+    INCORRECT_PASSWORD: "Incorrect password. Please try again.",
     DUPLICATE_ACCOUNT: "An account already exists with this sign-in method. Try signing in instead.",
     OTP_INVALID: "Invalid or expired code. Please try again.",
 
