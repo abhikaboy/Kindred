@@ -11,15 +11,17 @@ import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { Ionicons } from '@expo/vector-icons';
 import { BigInput } from "@/components/inputs/BigInput";
+import { showToast } from "@/utils/showToast";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
 
 type Props = {};
 
 const PasswordOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { onboardingData, updatePassword, validationErrors } = useOnboarding();
+    const { onboardingData, updatePassword, validationErrors, registerWithEmail, isLoading } = useOnboarding();
 
     const [password, setPassword] = useState(onboardingData.password);
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,12 +49,23 @@ const PasswordOnboarding = (props: Props) => {
         ]).start();
     }, []);
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         updatePassword(password);
         setShowErrors(true);
 
         if (!validationErrors.password && isValid && passwordsMatch) {
-            router.push("/(onboarding)/photo");
+            try {
+                await registerWithEmail(DEFAULT_PICTURE);
+                showToast('Account created successfully! 🎉', 'success');
+                router.replace('/(onboarding)/accomplishment');
+            } catch (error: any) {
+                console.error('Registration error:', error);
+                let errorMessage = 'Unable to create account. Please try again.';
+                if (error.message) {
+                    errorMessage = error.message;
+                }
+                showToast(errorMessage, 'danger');
+            }
         }
     };
 
@@ -71,7 +84,7 @@ const PasswordOnboarding = (props: Props) => {
 
     return (
         <ThemedView style={themedStyles.mainContainer}>
-            <OnboardingProgressBar currentStep={4} totalSteps={8} />
+            <OnboardingProgressBar currentStep={3} totalSteps={4} />
             <View style={themedStyles.backgroundContainer}>
                 <OnboardingBackground />
             </View>
@@ -178,9 +191,9 @@ const PasswordOnboarding = (props: Props) => {
                     ]}
                 >
                     <PrimaryButton
-                        title="Continue"
+                        title={isLoading ? "Creating account..." : "Continue"}
                         onPress={handleContinue}
-                        disabled={!isValid || !passwordsMatch || confirmPassword.length === 0}
+                        disabled={!isValid || !passwordsMatch || confirmPassword.length === 0 || isLoading}
                     />
                 </Animated.View>
             </KeyboardAvoidingView>
