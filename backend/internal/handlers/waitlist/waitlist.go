@@ -51,7 +51,7 @@ func (h *Handler) CreateWaitlistHuma(ctx context.Context, input *CreateWaitlistI
 			return nil, huma.Error409Conflict("Duplicate email", fmt.Errorf("email %s already exists in waitlist", internalDoc.Email))
 		}
 
-		return nil, huma.Error500InternalServerError("Failed to create waitlist entry", err)
+		return nil, huma.Error500InternalServerError("Unable to create waitlist entry. Please try again.", err)
 	}
 
 	err = twillio.SendWaitlistEmail(internalDoc.Email, internalDoc.Name)
@@ -78,7 +78,8 @@ func (h *Handler) GetWaitlistsHuma(ctx context.Context, input *GetWaitlistsInput
 
 	waitlists, err := h.service.GetAllWaitlists()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch waitlists", err)
+		slog.Error("Unable to fetch waitlists", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch waitlists. Please try again.", err)
 	}
 
 	return &GetWaitlistsOutput{Body: waitlists}, nil
@@ -101,7 +102,8 @@ func (h *Handler) GetWaitlistHuma(ctx context.Context, input *GetWaitlistInput) 
 		if strings.Contains(err.Error(), "no documents") {
 			return nil, huma.Error404NotFound("Waitlist entry not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to fetch waitlist entry", err)
+		slog.Error("Unable to fetch waitlist entry", "id", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch waitlist entry. Please try again.", err)
 	}
 
 	return &GetWaitlistOutput{Body: *waitlist}, nil
@@ -123,7 +125,8 @@ func (h *Handler) DeleteWaitlistHuma(ctx context.Context, input *DeleteWaitlistI
 		if strings.Contains(err.Error(), "no documents") {
 			return nil, huma.Error404NotFound("Waitlist entry not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to delete waitlist entry", err)
+		slog.Error("Unable to delete waitlist entry", "id", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete waitlist entry. Please try again.", err)
 	}
 
 	resp := &DeleteWaitlistOutput{}

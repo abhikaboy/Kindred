@@ -3,6 +3,7 @@ package Connection
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -17,7 +18,7 @@ type Handler struct {
 func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnectionInput) (*CreateConnectionOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your connection request details", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Extract user_id from context for authorization
@@ -41,7 +42,8 @@ func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnect
 	// Create connection request - service will fetch requester details
 	connection, err := h.service.CreateConnectionRequest(requesterID, receiverID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create connection", err)
+		slog.Error("Failed to create connection request", "requesterId", requesterID.Hex(), "receiverId", receiverID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to send connection request. The user may not exist or a request may already be pending.", err)
 	}
 
 	return &CreateConnectionOutput{Body: *connection}, nil
@@ -56,7 +58,8 @@ func (h *Handler) GetConnectionsHuma(ctx context.Context, input *GetConnectionsI
 
 	Connections, err := h.service.GetAllConnections()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get connections", err)
+		slog.Error("Failed to fetch all connections", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load connections. Please try again.", err)
 	}
 
 	return &GetConnectionsOutput{Body: Connections}, nil
@@ -71,11 +74,12 @@ func (h *Handler) GetConnectionHuma(ctx context.Context, input *GetConnectionInp
 
 	id, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	Connection, err := h.service.GetConnectionByID(id)
 	if err != nil {
+		slog.Error("Connection not found", "userId", id.Hex(), "error", err)
 		return nil, huma.Error404NotFound("Connection not found", err)
 	}
 
@@ -91,12 +95,13 @@ func (h *Handler) GetConnectionsByReceiverHuma(ctx context.Context, input *GetCo
 
 	id, err := primitive.ObjectIDFromHex(user_id)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid user ID", err)
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	connections, err := h.service.GetPendingRequestsByReceiver(id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get connections", err)
+		slog.Error("Failed to fetch pending connection requests", "userId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load pending connection requests. Please try again.", err)
 	}
 
 	return &GetConnectionsByReceiverOutput{Body: connections}, nil
@@ -116,7 +121,8 @@ func (h *Handler) GetConnectionsByRequesterHuma(ctx context.Context, input *GetC
 
 	connections, err := h.service.GetByRequester(id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get connections", err)
+		slog.Error("Failed to fetch connections by requester", "requesterId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load sent connection requests. Please try again.", err)
 	}
 
 	return &GetConnectionsByRequesterOutput{Body: connections}, nil
@@ -135,7 +141,8 @@ func (h *Handler) UpdateConnectionHuma(ctx context.Context, input *UpdateConnect
 	}
 
 	if err := h.service.UpdatePartialConnection(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update connection", err)
+		slog.Error("Failed to update connection", "connectionId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update connection. Please try again.", err)
 	}
 
 	resp := &UpdateConnectionOutput{}
@@ -156,7 +163,8 @@ func (h *Handler) DeleteConnectionHuma(ctx context.Context, input *DeleteConnect
 	}
 
 	if err := h.service.DeleteConnection(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete connection", err)
+		slog.Error("Failed to delete connection", "connectionId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to remove connection. Please try again.", err)
 	}
 
 	resp := &DeleteConnectionOutput{}
@@ -185,7 +193,8 @@ func (h *Handler) AcceptConnectionHuma(ctx context.Context, input *AcceptConnect
 
 	// Accept the connection request
 	if err := h.service.AcceptConnection(connectionID, userID); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to accept connection", err)
+		slog.Error("Failed to accept connection request", "connectionId", connectionID.Hex(), "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to accept connection request. It may have been withdrawn or already accepted.", err)
 	}
 
 	resp := &AcceptConnectionOutput{}
@@ -208,7 +217,8 @@ func (h *Handler) GetFriendsHuma(ctx context.Context, input *GetFriendsInput) (*
 
 	friends, err := h.service.GetFriends(userOID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get friends", err)
+		slog.Error("Failed to fetch friends list", "userId", userOID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load your friends list. Please try again.", err)
 	}
 
 	return &GetFriendsOutput{Body: friends}, nil
@@ -239,7 +249,8 @@ func (h *Handler) BlockUserHuma(ctx context.Context, input *BlockUserInput) (*Bl
 
 	err = h.service.BlockUser(ctx, blockerID, blockedID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to block user", err)
+		slog.Error("Failed to block user", "blockerId", blockerID.Hex(), "blockedId", blockedID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to block user. Please try again.", err)
 	}
 
 	resp := &BlockUserOutput{}
@@ -267,7 +278,8 @@ func (h *Handler) UnblockUserHuma(ctx context.Context, input *UnblockUserInput) 
 
 	err = h.service.UnblockUser(ctx, blockerID, blockedID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to unblock user", err)
+		slog.Error("Failed to unblock user", "blockerId", blockerID.Hex(), "blockedId", blockedID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to unblock user. Please try again.", err)
 	}
 
 	resp := &UnblockUserOutput{}
@@ -290,7 +302,8 @@ func (h *Handler) GetBlockedUsersHuma(ctx context.Context, input *GetBlockedUser
 
 	blockedUsers, err := h.service.GetBlockedUsers(ctx, userOID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get blocked users", err)
+		slog.Error("Failed to fetch blocked users", "userId", userOID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load blocked users list. Please try again.", err)
 	}
 
 	return &GetBlockedUsersOutput{Body: blockedUsers}, nil

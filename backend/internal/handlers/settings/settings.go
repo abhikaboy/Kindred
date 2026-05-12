@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/danielgtaylor/huma/v2"
@@ -22,7 +23,8 @@ func (h *Handler) GetUserSettingsHuma(ctx context.Context, input *GetUserSetting
 
 	settings, err := h.service.GetUserSettings(userObjID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get settings", err)
+		slog.Error("Failed to fetch user settings", "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load your settings. Please try again.", err)
 	}
 
 	return &GetUserSettingsOutput{Body: *settings}, nil
@@ -42,7 +44,8 @@ func (h *Handler) UpdateUserSettingsHuma(ctx context.Context, input *UpdateUserS
 
 	err = h.service.UpdateUserSettings(userObjID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update settings", err)
+		slog.Error("Failed to update user settings", "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update your settings. Please try again.", err)
 	}
 
 	return &UpdateUserSettingsOutput{

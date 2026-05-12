@@ -118,7 +118,7 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookEvent) (*Subs
 
 	if err != nil {
 		slog.Error("Error handling webhook event", "type", event.Type, "error", err)
-		return nil, huma.Error500InternalServerError(fmt.Sprintf("Failed to handle event: %v", err))
+		return nil, huma.Error500InternalServerError(fmt.Sprintf("Unable to handle event. Please try again. (%s)", event.Type))
 	}
 
 	return webhookOK(), nil

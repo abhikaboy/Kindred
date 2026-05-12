@@ -3,6 +3,7 @@ package congratulation
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -41,7 +42,8 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 	// Get sender information from the users collection
 	senderInfo, err := h.service.GetSenderInfo(senderID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get sender information", err)
+		slog.Error("failed to get sender information", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get sender information. Please try again.", err)
 	}
 
 	// Default type to "message" if not provided
@@ -79,7 +81,8 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		if strings.Contains(err.Error(), "insufficient congratulation balance") {
 			return nil, huma.Error400BadRequest("Insufficient congratulation balance", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to create congratulation", err)
+		slog.Error("failed to create congratulation", "userId", user_id, "receiver", input.Body.Receiver, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create congratulation. Please try again.", err)
 	}
 
 	return &CreateCongratulationOutput{Body: *congratulation}, nil
@@ -99,7 +102,8 @@ func (h *Handler) GetCongratulationsHuma(ctx context.Context, input *GetCongratu
 
 	congratulations, err := h.service.GetAllCongratulations(receiverID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get congratulations", err)
+		slog.Error("failed to get congratulations", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get congratulations. Please try again.", err)
 	}
 
 	return &GetCongratulationsOutput{Body: congratulations}, nil
@@ -122,7 +126,8 @@ func (h *Handler) GetCongratulationHuma(ctx context.Context, input *GetCongratul
 		if err == mongo.ErrNoDocuments {
 			return nil, huma.Error404NotFound("Congratulation not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to get congratulation", err)
+		slog.Error("failed to get congratulation", "congratulationId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get congratulation. Please try again.", err)
 	}
 
 	return &GetCongratulationOutput{Body: *congratulation}, nil
@@ -141,7 +146,8 @@ func (h *Handler) UpdateCongratulationHuma(ctx context.Context, input *UpdateCon
 	}
 
 	if err := h.service.UpdatePartialCongratulation(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update congratulation", err)
+		slog.Error("failed to update congratulation", "congratulationId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update congratulation. Please try again.", err)
 	}
 
 	resp := &UpdateCongratulationOutput{}
@@ -162,7 +168,8 @@ func (h *Handler) DeleteCongratulationHuma(ctx context.Context, input *DeleteCon
 	}
 
 	if err := h.service.DeleteCongratulation(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete congratulation", err)
+		slog.Error("failed to delete congratulation", "congratulationId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete congratulation. Please try again.", err)
 	}
 
 	resp := &DeleteCongratulationOutput{}
@@ -199,7 +206,8 @@ func (h *Handler) MarkCongratulationsReadHuma(ctx context.Context, input *MarkCo
 
 	count, err := h.service.MarkCongratulationsAsRead(objectIDs)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to mark congratulations as read", err)
+		slog.Error("failed to mark congratulations as read", "ids", input.Body.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to mark congratulations as read. Please try again.", err)
 	}
 
 	resp := &MarkCongratulationsReadOutput{}

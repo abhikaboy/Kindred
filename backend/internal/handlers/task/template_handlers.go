@@ -23,7 +23,8 @@ func (h *Handler) CreateTaskFromTemplate(ctx context.Context, input *CreateTaskF
 
 	doc, err := h.service.CreateTaskFromTemplate(templateID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create task from template", err)
+		slog.Error("Failed to create task from template", "templateId", templateID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create task from template. The template may be invalid or unavailable.", err)
 	}
 
 	return &CreateTaskFromTemplateOutput{Body: *doc}, nil
@@ -46,7 +47,8 @@ func (h *Handler) GetTasksWithStartTimesOlderThanOneDay(ctx context.Context, inp
 
 	tasks, err := h.service.GetTasksWithStartTimesOlderThanOneDay(userObjID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to load tasks. Please try again.", err)
+		slog.Error("Failed to fetch overdue tasks", "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load overdue tasks. Please try again.", err)
 	}
 
 	return &GetTasksWithStartTimesOlderThanOneDayOutput{Body: tasks}, nil
@@ -66,7 +68,8 @@ func (h *Handler) GetRecurringTasksWithPastDeadlines(ctx context.Context, input 
 
 	tasks, err := h.service.GetRecurringTasksWithPastDeadlines(userObjID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch recurring tasks", err)
+		slog.Error("Failed to fetch recurring tasks with past deadlines", "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load recurring tasks with past deadlines. Please try again.", err)
 	}
 
 	return &GetRecurringTasksWithPastDeadlinesOutput{Body: tasks}, nil
@@ -80,7 +83,8 @@ func (h *Handler) GetTemplateByID(ctx context.Context, input *GetTemplateByIDInp
 
 	template, err := h.service.GetTemplateByID(id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch template", err)
+		slog.Error("Failed to fetch template", "templateId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load template. It may have been deleted.", err)
 	}
 
 	return &GetTemplateByIDOutput{Body: *template}, nil
@@ -100,7 +104,8 @@ func (h *Handler) UpdateTemplate(ctx context.Context, input *UpdateTemplateInput
 
 	err = h.service.UpdateTemplateTask(id, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update template task", err)
+		slog.Error("Failed to update template task", "templateId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update template. Please try again.", err)
 	}
 
 	resp := &UpdateTemplateOutput{}
@@ -121,7 +126,8 @@ func (h *Handler) ResetTemplateMetrics(ctx context.Context, input *ResetTemplate
 
 	err = h.service.ResetTemplateMetrics(id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to reset template metrics", err)
+		slog.Error("Failed to reset template metrics", "templateId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to reset template metrics. Please try again.", err)
 	}
 
 	resp := &ResetTemplateMetricsOutput{}
@@ -148,7 +154,8 @@ func (h *Handler) UndoMissedTask(ctx context.Context, input *UndoMissedTaskInput
 		if err.Error() == "no recent miss to undo" {
 			return nil, huma.Error409Conflict("No recent miss to undo for this template", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to undo missed task", err)
+		slog.Error("Failed to undo missed task", "templateId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to undo missed task. Please try again.", err)
 	}
 
 	resp := &UndoMissedTaskOutput{}
@@ -176,7 +183,7 @@ func (h *Handler) GetUserTemplates(ctx context.Context, input *GetUserTemplatesI
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to fetch templates",
 			slog.String("error", err.Error()))
-		return nil, huma.Error500InternalServerError("Failed to fetch templates", err)
+		return nil, huma.Error500InternalServerError("Unable to load your templates. Please try again.", err)
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "GetUserTemplates handler returning",

@@ -3,6 +3,7 @@ package encouragement
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -70,7 +71,8 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 	// Get sender information from the users collection
 	senderInfo, err := h.service.GetSenderInfo(senderID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get sender information", err)
+		slog.Error("failed to get sender information", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get sender information. Please try again.", err)
 	}
 
 	// Default type to "message" if not provided
@@ -99,7 +101,8 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		if strings.Contains(err.Error(), "insufficient encouragement balance") {
 			return nil, huma.Error400BadRequest("Insufficient encouragement balance", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to create encouragement", err)
+		slog.Error("failed to create encouragement", "userId", user_id, "receiver", input.Body.Receiver, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create encouragement. Please try again.", err)
 	}
 
 	return &CreateEncouragementOutput{Body: *encouragement}, nil
@@ -119,7 +122,8 @@ func (h *Handler) GetEncouragementsHuma(ctx context.Context, input *GetEncourage
 
 	encouragements, err := h.service.GetAllEncouragements(receiverID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get encouragements", err)
+		slog.Error("failed to get encouragements", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get encouragements. Please try again.", err)
 	}
 
 	return &GetEncouragementsOutput{Body: encouragements}, nil
@@ -142,7 +146,8 @@ func (h *Handler) GetEncouragementHuma(ctx context.Context, input *GetEncouragem
 		if err == mongo.ErrNoDocuments {
 			return nil, huma.Error404NotFound("Encouragement not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to get encouragement", err)
+		slog.Error("failed to get encouragement", "encouragementId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get encouragement. Please try again.", err)
 	}
 
 	return &GetEncouragementOutput{Body: *encouragement}, nil
@@ -161,7 +166,8 @@ func (h *Handler) UpdateEncouragementHuma(ctx context.Context, input *UpdateEnco
 	}
 
 	if err := h.service.UpdatePartialEncouragement(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update encouragement", err)
+		slog.Error("failed to update encouragement", "encouragementId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update encouragement. Please try again.", err)
 	}
 
 	resp := &UpdateEncouragementOutput{}
@@ -182,7 +188,8 @@ func (h *Handler) DeleteEncouragementHuma(ctx context.Context, input *DeleteEnco
 	}
 
 	if err := h.service.DeleteEncouragement(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete encouragement", err)
+		slog.Error("failed to delete encouragement", "encouragementId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete encouragement. Please try again.", err)
 	}
 
 	resp := &DeleteEncouragementOutput{}
@@ -219,7 +226,8 @@ func (h *Handler) MarkEncouragementsReadHuma(ctx context.Context, input *MarkEnc
 
 	count, err := h.service.MarkEncouragementsAsRead(objectIDs)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to mark encouragements as read", err)
+		slog.Error("failed to mark encouragements as read", "ids", input.Body.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to mark encouragements as read. Please try again.", err)
 	}
 
 	resp := &MarkEncouragementsReadOutput{}

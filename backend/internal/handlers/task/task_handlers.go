@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -67,7 +68,8 @@ func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput
 
 	tasks, err := h.service.GetTasksByUser(user_id_obj, sortDocument)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to load tasks. Please try again.", err)
+		slog.Error("Failed to fetch tasks for user", "userId", user_id_obj.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load your tasks due to a server error. Please try again later.", err)
 	}
 
 	return &GetTasksByUserOutput{Body: tasks}, nil
@@ -195,13 +197,15 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 			taskParams.Checklist,
 		)
 		if err != nil {
-			return nil, huma.Error500InternalServerError("Unable to create recurring task. Please try again.", err)
+			slog.Error("Failed to create recurring task template", "userId", userObjID.Hex(), "categoryId", categoryID.Hex(), "error", err)
+			return nil, huma.Error500InternalServerError("Unable to create recurring task template. Please try again.", err)
 		}
 	}
 
 	doc, err := h.service.CreateTask(categoryID, &task)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to create task. Please try again.", err)
+		slog.Error("Failed to create task", "userId", userObjID.Hex(), "categoryId", categoryID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create task due to a database error. Please try again.", err)
 	}
 
 	return &CreateTaskOutput{Body: *doc}, nil
@@ -210,7 +214,8 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 func (h *Handler) GetTasks(ctx context.Context, input *GetTasksInput) (*GetTasksOutput, error) {
 	tasks, err := h.service.GetAllTasks()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to load tasks. Please try again.", err)
+		slog.Error("Failed to fetch all tasks", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load tasks due to a server error. Please try again later.", err)
 	}
 
 	return &GetTasksOutput{Body: tasks}, nil
@@ -329,6 +334,7 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 			updateData.Checklist,
 		)
 		if err != nil {
+			slog.Error("Failed to create recurring template during task update", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
 			return nil, huma.Error500InternalServerError("Unable to create recurring template. Please try again.", err)
 		}
 
@@ -356,7 +362,8 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 	// Use the UpdatePartialTask service method which matches the available service signature
 	_, err = h.service.UpdatePartialTask(id, categoryID, updateData)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to update task. Please try again.", err)
+		slog.Error("Failed to update task", "taskId", id.Hex(), "categoryId", categoryID.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task due to a database error. Please try again.", err)
 	}
 
 	resp := &UpdateTaskOutput{}
@@ -394,7 +401,8 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 	// Use the CompleteTask service method and get streak info
 	result, err := h.service.CompleteTask(userObjID, id, categoryID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to complete task. Please try again.", err)
+		slog.Error("Failed to complete task", "taskId", id.Hex(), "categoryId", categoryID.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to complete task due to a server error. Please try again.", err)
 	}
 
 	// Delete the task from the tasks collection
@@ -403,7 +411,8 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 		Category: input.Category,
 	})
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to delete task. Please try again.", err)
+		slog.Error("Failed to delete task after completion", "taskId", id.Hex(), "categoryId", categoryID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Task was completed but could not be removed. Please try again.", err)
 	}
 
 	resp := &CompleteTaskOutput{}
@@ -462,7 +471,8 @@ func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*Dele
 	// Delete the task
 	err = h.service.DeleteTask(categoryID, id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to delete task. Please try again.", err)
+		slog.Error("Failed to delete task", "taskId", id.Hex(), "categoryId", categoryID.Hex(), "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete task due to a database error. Please try again.", err)
 	}
 
 	// If requested and template exists, delete the recurring template as well
@@ -470,7 +480,7 @@ func (h *Handler) DeleteTask(ctx context.Context, input *DeleteTaskInput) (*Dele
 		err = h.service.DeleteTemplateTask(*templateID)
 		if err != nil {
 			// Log the error but don't fail the entire operation since the task was already deleted
-			fmt.Printf("Warning: Failed to delete template task %s: %v\n", templateID.Hex(), err)
+			slog.Error("Failed to delete template task after task deletion", "templateId", templateID.Hex(), "error", err)
 		}
 	}
 
@@ -510,7 +520,8 @@ func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskI
 	// Call the bulk complete service method
 	result, err := h.service.BulkCompleteTask(userObjID, input.Body.Tasks)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to complete tasks. Please try again.", err)
+		slog.Error("Failed to bulk complete tasks", "userId", userObjID.Hex(), "taskCount", len(input.Body.Tasks), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to complete tasks due to a server error. Please try again.", err)
 	}
 
 	return result, nil
@@ -540,7 +551,8 @@ func (h *Handler) BulkDeleteTask(ctx context.Context, input *BulkDeleteTaskInput
 	// Call the bulk delete service method
 	result, err := h.service.BulkDeleteTask(userObjID, input.Body.Tasks)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to delete tasks. Please try again.", err)
+		slog.Error("Failed to bulk delete tasks", "userId", userObjID.Hex(), "taskCount", len(input.Body.Tasks), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete tasks due to a server error. Please try again.", err)
 	}
 
 	return result, nil
@@ -575,7 +587,8 @@ func (h *Handler) ActivateTask(ctx context.Context, input *ActivateTaskInput) (*
 
 	err = h.service.ActivateTask(userObjID, categoryID, id, active)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task activation status", err)
+		slog.Error("Failed to update task activation status", "taskId", id.Hex(), "userId", userObjID.Hex(), "active", active, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task activation status. Please try again.", err)
 	}
 
 	resp := &ActivateTaskOutput{}
@@ -591,7 +604,8 @@ func (h *Handler) GetActiveTasks(ctx context.Context, input *GetActiveTasksInput
 
 	tasks, err := h.service.GetActiveTasks(id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch active tasks", err)
+		slog.Error("Failed to fetch active tasks", "userId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load active tasks. Please try again.", err)
 	}
 
 	return &GetActiveTasksOutput{Body: tasks}, nil
@@ -622,7 +636,8 @@ func (h *Handler) UpdateTaskNotes(ctx context.Context, input *UpdateTaskNotesInp
 
 	err = h.service.UpdateTaskNotes(id, categoryID, userObjID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task notes", err)
+		slog.Error("Failed to update task notes", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task notes. Please try again.", err)
 	}
 
 	resp := &UpdateTaskNotesOutput{}
@@ -655,7 +670,8 @@ func (h *Handler) UpdateTaskChecklist(ctx context.Context, input *UpdateTaskChec
 
 	err = h.service.UpdateTaskChecklist(id, categoryID, userObjID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task checklist", err)
+		slog.Error("Failed to update task checklist", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task checklist. Please try again.", err)
 	}
 
 	resp := &UpdateTaskChecklistOutput{}
@@ -688,7 +704,8 @@ func (h *Handler) UpdateTaskDeadline(ctx context.Context, input *UpdateTaskDeadl
 
 	err = h.service.UpdateTaskDeadline(id, categoryID, userObjID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task deadline", err)
+		slog.Error("Failed to update task deadline", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task deadline. Please try again.", err)
 	}
 
 	resp := &UpdateTaskDeadlineOutput{}
@@ -721,7 +738,8 @@ func (h *Handler) UpdateTaskStart(ctx context.Context, input *UpdateTaskStartInp
 
 	err = h.service.UpdateTaskStart(id, categoryID, userObjID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task start date/time", err)
+		slog.Error("Failed to update task start date/time", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task start date/time. Please try again.", err)
 	}
 
 	resp := &UpdateTaskStartOutput{}
@@ -754,7 +772,8 @@ func (h *Handler) UpdateTaskReminders(ctx context.Context, input *UpdateTaskRemi
 
 	err = h.service.UpdateTaskReminders(id, categoryID, userObjID, input.Body)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update task reminders", err)
+		slog.Error("Failed to update task reminders", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task reminders. Please try again.", err)
 	}
 
 	resp := &UpdateTaskReminderOutput{}

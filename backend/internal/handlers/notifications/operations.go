@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"log/slog"
 	"strconv"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -13,7 +14,7 @@ func (s *Service) GetNotifications(c *fiber.Ctx) error {
 	userIDStr, err := auth.RequireAuthFiber(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
+			"error": "Authentication required",
 		})
 	}
 
@@ -45,16 +46,18 @@ func (s *Service) GetNotifications(c *fiber.Ctx) error {
 
 	notifications, err := s.GetUserNotifications(userID, limit, skip)
 	if err != nil {
+		slog.Error("Failed to fetch notifications", "userId", userID.Hex(), "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch notifications",
+			"error": "Unable to load your notifications. Please try again.",
 		})
 	}
 
 	// Get unread count
 	unreadCount, err := s.GetUnreadCount(userID)
 	if err != nil {
+		slog.Error("Failed to fetch unread notification count", "userId", userID.Hex(), "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch unread count",
+			"error": "Unable to load notification count. Please try again.",
 		})
 	}
 
@@ -70,7 +73,7 @@ func (s *Service) MarkAsRead(c *fiber.Ctx) error {
 	_, err := auth.RequireAuthFiber(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
+			"error": "Authentication required",
 		})
 	}
 
@@ -98,8 +101,9 @@ func (s *Service) MarkAsRead(c *fiber.Ctx) error {
 
 	err = s.MarkNotificationsAsRead(notificationIDs)
 	if err != nil {
+		slog.Error("Failed to mark notifications as read", "count", len(notificationIDs), "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to mark notifications as read",
+			"error": "Unable to mark notifications as read. Please try again.",
 		})
 	}
 
@@ -113,7 +117,7 @@ func (s *Service) MarkAllAsRead(c *fiber.Ctx) error {
 	userIDStr, err := auth.RequireAuthFiber(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
+			"error": "Authentication required",
 		})
 	}
 
@@ -126,8 +130,9 @@ func (s *Service) MarkAllAsRead(c *fiber.Ctx) error {
 
 	err = s.MarkAllAsReadForUser(userID)
 	if err != nil {
+		slog.Error("Failed to mark all notifications as read", "userId", userID.Hex(), "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to mark all notifications as read",
+			"error": "Unable to mark all notifications as read. Please try again.",
 		})
 	}
 
@@ -141,7 +146,7 @@ func (s *Service) DeleteNotificationHandler(c *fiber.Ctx) error {
 	_, err := auth.RequireAuthFiber(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
+			"error": "Authentication required",
 		})
 	}
 
@@ -155,8 +160,9 @@ func (s *Service) DeleteNotificationHandler(c *fiber.Ctx) error {
 
 	err = s.DeleteNotification(notificationID)
 	if err != nil {
+		slog.Error("Failed to delete notification", "notificationId", notificationID.Hex(), "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete notification",
+			"error": "Unable to delete notification. Please try again.",
 		})
 	}
 

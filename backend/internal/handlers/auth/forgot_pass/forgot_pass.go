@@ -2,6 +2,7 @@ package forgot_pass
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/xerr"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -36,8 +37,9 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 	err = h.service.CreateOTP(reqBody.Email, 15)
 
 	if err != nil {
+		slog.Error("Failed to create OTP for password reset", "email", reqBody.Email, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal server error",
+			"error": "Unable to send password reset email. Please try again later.",
 		})
 	}
 
@@ -95,8 +97,10 @@ func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 				JSON(xerr.Unauthorized("OTP not verified or does not exist"))
 		} else if errors.Is(err, ErrNoResetDoc) {
 			// Could not find corresponding doc in pw-resets
-			return c.Status(fiber.StatusInternalServerError).
-				JSON(xerr.InternalServerError())
+			slog.Error("No password reset request found when changing password", "email", reqBody.Email)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "No active password reset request found. Please request a new password reset first.",
+			})
 		}
 		return err
 	}

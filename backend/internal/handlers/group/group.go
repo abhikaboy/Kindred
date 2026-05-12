@@ -3,6 +3,7 @@ package Group
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -26,7 +27,7 @@ func NewHandler(collections map[string]*mongo.Collection) *Handler {
 func (h *Handler) CreateGroupHuma(ctx context.Context, input *CreateGroupInput) (*CreateGroupOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your group details", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Extract user_id from context (set by auth middleware)
@@ -78,7 +79,8 @@ func (h *Handler) CreateGroupHuma(ctx context.Context, input *CreateGroupInput) 
 
 	createdGroup, err := h.service.CreateGroup(&group)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create group", err)
+		slog.Error("Failed to create group", "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create group due to a database error. Please try again.", err)
 	}
 
 	return &CreateGroupOutput{Body: *createdGroup.ToAPI()}, nil
@@ -98,7 +100,8 @@ func (h *Handler) GetGroupsHuma(ctx context.Context, input *GetGroupsInput) (*Ge
 
 	groups, err := h.service.GetAllGroups(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get groups", err)
+		slog.Error("Failed to fetch groups", "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load your groups. Please try again.", err)
 	}
 
 	var apiGroups []types.GroupDocumentAPI
@@ -126,7 +129,7 @@ func (h *Handler) GetGroupHuma(ctx context.Context, input *GetGroupInput) (*GetG
 
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
+		return nil, huma.Error400BadRequest("Invalid group ID format", err)
 	}
 
 	group, err := h.service.GetGroupByID(id)
@@ -137,11 +140,12 @@ func (h *Handler) GetGroupHuma(ctx context.Context, input *GetGroupInput) (*GetG
 	// Check if user has access to this group
 	hasAccess, err := h.service.IsUserInGroup(id, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to check group access", err)
+		slog.Error("Failed to check group membership", "groupId", id.Hex(), "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to verify group access. Please try again.", err)
 	}
 
 	if !hasAccess {
-		return nil, huma.Error403Forbidden("Access denied", fmt.Errorf("user not in group"))
+		return nil, huma.Error403Forbidden("You do not have access to this group", fmt.Errorf("user not in group"))
 	}
 
 	return &GetGroupOutput{Body: *group.ToAPI()}, nil
@@ -150,7 +154,7 @@ func (h *Handler) GetGroupHuma(ctx context.Context, input *GetGroupInput) (*GetG
 func (h *Handler) UpdateGroupHuma(ctx context.Context, input *UpdateGroupInput) (*UpdateGroupOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your group details", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Extract user_id from context for authorization
@@ -166,12 +170,13 @@ func (h *Handler) UpdateGroupHuma(ctx context.Context, input *UpdateGroupInput) 
 
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
+		return nil, huma.Error400BadRequest("Invalid group ID format", err)
 	}
 
 	err = h.service.UpdateGroup(id, input.Body, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update group", err)
+		slog.Error("Failed to update group", "groupId", id.Hex(), "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update group. Please try again.", err)
 	}
 
 	return &UpdateGroupOutput{
@@ -195,12 +200,13 @@ func (h *Handler) DeleteGroupHuma(ctx context.Context, input *DeleteGroupInput) 
 
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {
-		return nil, huma.Error400BadRequest("Invalid ID format", err)
+		return nil, huma.Error400BadRequest("Invalid group ID format", err)
 	}
 
 	err = h.service.DeleteGroup(id, userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete group", err)
+		slog.Error("Failed to delete group", "groupId", id.Hex(), "userId", userID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete group. You may not have permission or the group may not exist.", err)
 	}
 
 	return &DeleteGroupOutput{
@@ -213,7 +219,7 @@ func (h *Handler) DeleteGroupHuma(ctx context.Context, input *DeleteGroupInput) 
 func (h *Handler) AddMemberHuma(ctx context.Context, input *AddMemberInput) (*AddMemberOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your group details", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Extract user_id from context for authorization
@@ -239,7 +245,8 @@ func (h *Handler) AddMemberHuma(ctx context.Context, input *AddMemberInput) (*Ad
 
 	err = h.service.AddMember(groupID, userID, requesterID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to add member", err)
+		slog.Error("Failed to add member to group", "groupId", groupID.Hex(), "memberId", userID.Hex(), "requesterId", requesterID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to add member to group. The user may already be a member or you may not have permission.", err)
 	}
 
 	return &AddMemberOutput{
@@ -252,7 +259,7 @@ func (h *Handler) AddMemberHuma(ctx context.Context, input *AddMemberInput) (*Ad
 func (h *Handler) RemoveMemberHuma(ctx context.Context, input *RemoveMemberInput) (*RemoveMemberOutput, error) {
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
-		return nil, huma.Error400BadRequest("Validation failed", fmt.Errorf("validation errors: %v", errs))
+		return nil, huma.Error400BadRequest("Please check your group details", fmt.Errorf("validation errors: %v", errs))
 	}
 
 	// Extract user_id from context for authorization
@@ -278,7 +285,8 @@ func (h *Handler) RemoveMemberHuma(ctx context.Context, input *RemoveMemberInput
 
 	err = h.service.RemoveMember(groupID, userID, requesterID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to remove member", err)
+		slog.Error("Failed to remove member from group", "groupId", groupID.Hex(), "memberId", userID.Hex(), "requesterId", requesterID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to remove member from group. You may not have permission.", err)
 	}
 
 	return &RemoveMemberOutput{

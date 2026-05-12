@@ -3,6 +3,7 @@ package Blueprint
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -58,7 +59,8 @@ func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprin
 
 	blueprint, err := h.service.CreateBlueprint(&internalDoc)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create blueprint", err)
+		slog.Error("failed to create blueprint", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create blueprint. Please try again.", err)
 	}
 
 	return &CreateBlueprintOutput{Body: *blueprint}, nil
@@ -67,7 +69,8 @@ func (h *Handler) CreateBlueprintHuma(ctx context.Context, input *CreateBlueprin
 func (h *Handler) GetBlueprintsHuma(ctx context.Context, input *GetBlueprintsInput) (*GetBlueprintsOutput, error) {
 	blueprints, err := h.service.GetAllBlueprints()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get blueprints", err)
+		slog.Error("failed to get blueprints", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to retrieve blueprints. Please try again.", err)
 	}
 
 	return &GetBlueprintsOutput{Body: blueprints}, nil
@@ -100,7 +103,8 @@ func (h *Handler) UpdateBlueprintHuma(ctx context.Context, input *UpdateBlueprin
 	}
 
 	if err := h.service.UpdatePartialBlueprint(id, input.Body); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update blueprint", err)
+		slog.Error("failed to update blueprint", "blueprintId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update blueprint. Please try again.", err)
 	}
 
 	resp := &UpdateBlueprintOutput{}
@@ -121,7 +125,8 @@ func (h *Handler) DeleteBlueprintHuma(ctx context.Context, input *DeleteBlueprin
 	}
 
 	if err := h.service.DeleteBlueprint(id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete blueprint", err)
+		slog.Error("failed to delete blueprint", "blueprintId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete blueprint. Please try again.", err)
 	}
 
 	resp := &DeleteBlueprintOutput{}
@@ -151,7 +156,8 @@ func (h *Handler) SubscribeToBlueprintHuma(ctx context.Context, input *Subscribe
 		if err == mongo.ErrNoDocuments {
 			return nil, huma.Error400BadRequest("Already subscribed or blueprint not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to subscribe", err)
+		slog.Error("failed to subscribe to blueprint", "blueprintId", input.ID, "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to subscribe to blueprint. Please try again.", err)
 	}
 
 	resp := &SubscribeToBlueprintOutput{}
@@ -181,7 +187,8 @@ func (h *Handler) UnsubscribeFromBlueprintHuma(ctx context.Context, input *Unsub
 		if err == mongo.ErrNoDocuments {
 			return nil, huma.Error400BadRequest("Not subscribed or blueprint not found", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to unsubscribe", err)
+		slog.Error("failed to unsubscribe from blueprint", "blueprintId", input.ID, "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to unsubscribe from blueprint. Please try again.", err)
 	}
 
 	resp := &UnsubscribeFromBlueprintOutput{}
@@ -192,7 +199,8 @@ func (h *Handler) UnsubscribeFromBlueprintHuma(ctx context.Context, input *Unsub
 func (h *Handler) SearchBlueprintsHuma(ctx context.Context, input *SearchBlueprintsInput) (*SearchBlueprintsOutput, error) {
 	blueprints, err := h.service.SearchBlueprints(input.Query)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to search blueprints", err)
+		slog.Error("failed to search blueprints", "query", input.Query, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to search blueprints. Please try again.", err)
 	}
 	return &SearchBlueprintsOutput{Body: blueprints}, nil
 }
@@ -205,7 +213,8 @@ func (h *Handler) AutocompleteBlueprintsHuma(ctx context.Context, input *Autocom
 
 	blueprints, err := h.service.AutocompleteBlueprints(input.Query)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to autocomplete blueprints", err)
+		slog.Error("failed to autocomplete blueprints", "query", input.Query, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to autocomplete blueprints. Please try again.", err)
 	}
 	return &AutocompleteBlueprintsOutput{Body: blueprints}, nil
 }
@@ -224,7 +233,8 @@ func (h *Handler) GetUserSubscribedBlueprintsHuma(ctx context.Context, input *Ge
 
 	blueprints, err := h.service.GetUserSubscribedBlueprints(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get subscribed blueprints", err)
+		slog.Error("failed to get subscribed blueprints", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to retrieve subscribed blueprints. Please try again.", err)
 	}
 
 	return &GetUserSubscribedBlueprintsOutput{Body: blueprints}, nil
@@ -244,7 +254,8 @@ func (h *Handler) GetBlueprintsByCreatorHuma(ctx context.Context, input *GetBlue
 
 	blueprints, err := h.service.GetBlueprintsByCreator(creatorID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get blueprints by creator", err)
+		slog.Error("failed to get blueprints by creator", "creatorId", input.CreatorID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to retrieve blueprints by creator. Please try again.", err)
 	}
 
 	return &GetBlueprintsByCreatorOutput{Body: blueprints}, nil
@@ -253,7 +264,8 @@ func (h *Handler) GetBlueprintsByCreatorHuma(ctx context.Context, input *GetBlue
 func (h *Handler) GetBlueprintByCategoryHuma(ctx context.Context, input *GetBlueprintByCategoryInput) (*GetBlueprintByCategoryOutput, error) {
 	blueprintGroups, err := h.service.GetBlueprintByCategory()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get blueprints by category", err)
+		slog.Error("failed to get blueprints by category", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to retrieve blueprints by category. Please try again.", err)
 	}
 
 	return &GetBlueprintByCategoryOutput{Body: blueprintGroups}, nil
@@ -282,13 +294,15 @@ func (h *Handler) GenerateAndCreateBlueprintHuma(ctx context.Context, input *Gen
 		if err == types.ErrInsufficientCredits {
 			return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 AI credit to generate a blueprint.", err)
 		}
-		return nil, huma.Error500InternalServerError("Failed to process credit", err)
+		slog.Error("failed to process credit for blueprint generation", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to process credit. Please try again.", err)
 	}
 
 	// Call Genkit flow to generate blueprint
 	generatedBlueprint, err := h.callGeminiGenerateBlueprintFlow(ctx, userID, input.Body.Description)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to generate blueprint with AI", err)
+		slog.Error("failed to generate blueprint with AI", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to generate blueprint with AI. Please try again.", err)
 	}
 
 	// Create internal document for database operations
@@ -315,7 +329,8 @@ func (h *Handler) GenerateAndCreateBlueprintHuma(ctx context.Context, input *Gen
 	// Save blueprint to database
 	blueprint, err := h.service.CreateBlueprint(&internalDoc)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create blueprint", err)
+		slog.Error("failed to save generated blueprint", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to save generated blueprint. Please try again.", err)
 	}
 
 	return &GenerateAndCreateBlueprintOutput{Body: *blueprint}, nil

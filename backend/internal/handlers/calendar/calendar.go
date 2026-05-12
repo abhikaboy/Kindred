@@ -34,6 +34,7 @@ func (h *Handler) ConnectGoogle(ctx context.Context, input *ConnectGoogleInput) 
 
 	authURL, err := h.service.InitiateOAuth(ProviderGoogle, userID)
 	if err != nil {
+		slog.Error("Failed to initiate Google OAuth", "userId", userID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to initiate Google Calendar connection. Please try again.", err)
 	}
 
@@ -119,6 +120,7 @@ func (h *Handler) GetConnections(ctx context.Context, input *GetConnectionsInput
 
 	connections, err := h.service.GetConnections(ctx, userObjID)
 	if err != nil {
+		slog.Error("Failed to get calendar connections", "userId", userID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to load calendar connections. Please try again.", err)
 	}
 
@@ -145,6 +147,7 @@ func (h *Handler) Disconnect(ctx context.Context, input *DisconnectInput) (*Disc
 	}
 
 	if err := h.service.DisconnectProvider(ctx, userObjID, connectionID); err != nil {
+		slog.Error("Failed to disconnect calendar provider", "userId", userID, "connectionId", input.ConnectionID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to disconnect calendar. Please try again.", err)
 	}
 
@@ -200,6 +203,7 @@ func (h *Handler) GetEvents(ctx context.Context, input *GetEventsInput) (*GetEve
 	// Fetch events
 	events, err := h.service.FetchEvents(ctx, connectionID, startTime, endTime)
 	if err != nil {
+		slog.Error("Failed to fetch calendar events", "connectionId", input.ConnectionID, "start", startTime, "end", endTime, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to fetch calendar events. Please try again.", err)
 	}
 
@@ -245,6 +249,7 @@ func (h *Handler) ListCalendars(ctx context.Context, input *ListCalendarsInput) 
 
 	calendars, err := h.service.ListCalendarsForConnection(ctx, connectionID, userObjID)
 	if err != nil {
+		slog.Error("Failed to list calendars for connection", "userId", userID, "connectionId", input.ConnectionID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to list calendars. Please try again.", err)
 	}
 
@@ -271,6 +276,7 @@ func (h *Handler) SetupWorkspaces(ctx context.Context, input *SetupWorkspacesInp
 	}
 
 	if err := h.service.SetupWorkspacesForConnection(ctx, connectionID, userObjID, input.Body.CalendarIDs, input.Body.MergeIntoOne, input.Body.MakePublic); err != nil {
+		slog.Error("Failed to set up calendar workspaces", "userId", userID, "connectionId", input.ConnectionID, "calendarIds", input.Body.CalendarIDs, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to set up calendar workspaces. Please try again.", err)
 	}
 
@@ -341,6 +347,7 @@ func (h *Handler) SyncEvents(ctx context.Context, input *SyncEventsInput) (*Sync
 	// Sync events to tasks
 	result, err := h.service.SyncEventsToTasks(ctx, connectionID, userObjID, startTime, endTime)
 	if err != nil {
+		slog.Error("Failed to sync calendar events to tasks", "userId", userID, "connectionId", input.ConnectionID, "start", startTime, "end", endTime, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to sync calendar events. Please try again.", err)
 	}
 

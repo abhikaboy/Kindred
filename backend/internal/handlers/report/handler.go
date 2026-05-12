@@ -47,7 +47,7 @@ func (h *Handler) ReportPostHuma(ctx context.Context, input *ReportPostInput) (*
 			return nil, huma.Error409Conflict("You have already reported this content", err)
 		}
 		slog.Error("Failed to report post", "error", err, "user_id", user_id, "post_id", input.PostID)
-		return nil, huma.Error500InternalServerError("Failed to submit report", err)
+		return nil, huma.Error500InternalServerError("Unable to submit report. Please try again.", err)
 	}
 
 	resp := &ReportPostOutput{}
@@ -92,7 +92,7 @@ func (h *Handler) ReportCommentHuma(ctx context.Context, input *ReportCommentInp
 			return nil, huma.Error409Conflict("You have already reported this content", err)
 		}
 		slog.Error("Failed to report comment", "error", err, "user_id", user_id, "comment_id", input.CommentID)
-		return nil, huma.Error500InternalServerError("Failed to submit report", err)
+		return nil, huma.Error500InternalServerError("Unable to submit report. Please try again.", err)
 	}
 
 	resp := &ReportCommentOutput{}
@@ -129,7 +129,7 @@ func (h *Handler) GetReportsHuma(ctx context.Context, input *GetReportsInput) (*
 	reports, total, err := h.service.GetReports(ctx, input.Status, limit, offset)
 	if err != nil {
 		slog.Error("Failed to get reports", "error", err)
-		return nil, huma.Error500InternalServerError("Failed to retrieve reports", err)
+		return nil, huma.Error500InternalServerError("Unable to retrieve reports. Please try again.", err)
 	}
 
 	// Convert to API format

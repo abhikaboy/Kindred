@@ -3,6 +3,7 @@ package referral
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -34,7 +35,8 @@ func (h *Handler) GetReferralInfoHuma(ctx context.Context, input *GetReferralInf
 	// GetReferralByUserID auto-creates document if it doesn't exist
 	referral, err := h.service.GetReferralByUserID(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get referral info", err)
+		slog.Error("Failed to get referral info", "error", err, "user_id", userIDStr)
+		return nil, huma.Error500InternalServerError("Unable to get referral info. Please try again.", err)
 	}
 
 	return &GetReferralInfoOutput{Body: *referral}, nil
@@ -66,13 +68,15 @@ func (h *Handler) ApplyReferralCodeHuma(ctx context.Context, input *ApplyReferra
 	// Get referrer info
 	referrer, err := h.service.GetReferralByCode(input.Body.ReferralCode)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get referrer info", err)
+		slog.Error("Failed to get referrer info", "error", err, "referral_code", input.Body.ReferralCode)
+		return nil, huma.Error500InternalServerError("Unable to get referrer info. Please try again.", err)
 	}
 
 	var referrerUser types.User
 	err = h.service.Users.FindOne(context.Background(), bson.M{"_id": referrer.UserID}).Decode(&referrerUser)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get referrer user info", err)
+		slog.Error("Failed to get referrer user info", "error", err, "referrer_user_id", referrer.UserID)
+		return nil, huma.Error500InternalServerError("Unable to get referrer user info. Please try again.", err)
 	}
 
 	return &ApplyReferralCodeOutput{
@@ -119,7 +123,8 @@ func (h *Handler) UnlockFeatureHuma(ctx context.Context, input *UnlockFeatureInp
 	// Get updated referral info
 	referral, err := h.service.GetReferralByUserID(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get updated referral info", err)
+		slog.Error("Failed to get updated referral info", "error", err, "user_id", userIDStr)
+		return nil, huma.Error500InternalServerError("Unable to get updated referral info. Please try again.", err)
 	}
 
 	return &UnlockFeatureOutput{
@@ -150,7 +155,8 @@ func (h *Handler) GetReferralStatsHuma(ctx context.Context, input *GetReferralSt
 	// GetReferralByUserID auto-creates document if it doesn't exist
 	referral, err := h.service.GetReferralByUserID(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get referral stats", err)
+		slog.Error("Failed to get referral stats", "error", err, "user_id", userIDStr)
+		return nil, huma.Error500InternalServerError("Unable to get referral stats. Please try again.", err)
 	}
 
 	activeReferrals := 0

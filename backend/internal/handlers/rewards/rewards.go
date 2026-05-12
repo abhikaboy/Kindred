@@ -16,7 +16,7 @@ func (h *Handler) RedeemRewardHuma(ctx context.Context, input *RedeemRewardInput
 	userID, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
 		slog.Error("Failed to get user ID from context")
-		return nil, huma.Error401Unauthorized("unauthorized")
+		return nil, huma.Error401Unauthorized("Authentication required")
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
@@ -54,7 +54,7 @@ func (h *Handler) RedeemRewardHuma(ctx context.Context, input *RedeemRewardInput
 			return nil, huma.Error400BadRequest(err.Error())
 		}
 
-		return nil, huma.Error500InternalServerError("failed to redeem reward")
+		return nil, huma.Error500InternalServerError("Unable to redeem reward. Please try again.")
 	}
 
 	slog.Info("Reward redeemed successfully", "user_id", userID, "reward_type", rewardType, "kudos_remaining", response.KudosRemaining)

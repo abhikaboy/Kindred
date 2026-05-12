@@ -2,6 +2,7 @@ package Activity
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,7 +15,8 @@ type Handler struct {
 func (h *Handler) GetActivities(ctx context.Context, input *GetActivitiesInput) (*GetActivitiesOutput, error) {
 	activities, err := h.service.GetAllActivitys()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch activities", err)
+		slog.Error("unable to fetch activities", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch activities. Please try again.", err)
 	}
 
 	return &GetActivitiesOutput{Body: activities}, nil
@@ -77,7 +79,8 @@ func (h *Handler) GetActivityByUserAndYear(ctx context.Context, input *GetActivi
 
 	activities, err := h.service.GetActivityByUserAndYear(userID, input.Year)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch activities", err)
+		slog.Error("unable to fetch activities by user and year", "userId", input.UserID, "year", input.Year, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch activities for the specified year. Please try again.", err)
 	}
 
 	return &GetActivityByUserAndYearOutput{Body: activities}, nil
@@ -91,7 +94,8 @@ func (h *Handler) GetRecentActivity(ctx context.Context, input *GetRecentActivit
 
 	activities, err := h.service.GetRecentActivity(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch recent activity", err)
+		slog.Error("unable to fetch recent activity", "userId", input.UserID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch recent activity. Please try again.", err)
 	}
 
 	// Ensure we always return an empty array instead of null
@@ -107,7 +111,8 @@ func (h *Handler) GetRecentActivity(ctx context.Context, input *GetRecentActivit
 func (h *Handler) GetActivitiesHuma(ctx context.Context, input *GetActivitiesInput) (*GetActivitiesOutput, error) {
 	activities, err := h.service.GetAllActivitys()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to get activities", err)
+		slog.Error("unable to get activities", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch activities. Please try again.", err)
 	}
 
 	resp := &GetActivitiesOutput{Body: activities}
@@ -174,7 +179,8 @@ func (h *Handler) GetRecentActivityHuma(ctx context.Context, input *GetRecentAct
 
 	activities, err := h.service.GetRecentActivity(userID)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch recent activity", err)
+		slog.Error("unable to fetch recent activity", "userId", input.UserID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch recent activity. Please try again.", err)
 	}
 
 	// Ensure we always return an empty array instead of null

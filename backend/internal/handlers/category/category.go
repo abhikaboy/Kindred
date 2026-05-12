@@ -45,7 +45,8 @@ func (h *Handler) CreateCategory(ctx context.Context, input *CreateCategoryInput
 
 	_, err = h.service.CreateCategory(&doc)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to create Category", err)
+		slog.Error("unable to create category", "userId", user_id, "categoryName", input.Body.Name, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to create category. Please try again.", err)
 	}
 
 	// When creating a proxy category, upsert workspace metadata if icon/color provided
@@ -63,7 +64,8 @@ func (h *Handler) CreateCategory(ctx context.Context, input *CreateCategoryInput
 func (h *Handler) GetCategories(ctx context.Context, input *GetCategoriesInput) (*GetCategoriesOutput, error) {
 	Categories, err := h.service.GetAllCategories()
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch categories", err)
+		slog.Error("unable to fetch categories", "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch categories. Please try again.", err)
 	}
 
 	return &GetCategoriesOutput{Body: Categories}, nil
@@ -116,7 +118,8 @@ func (h *Handler) UpdatePartialCategory(ctx context.Context, input *UpdateCatego
 
 	_, err = h.service.UpdatePartialCategory(id, input.Body, user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update category", err)
+		slog.Error("unable to update category", "userId", user_id_str, "categoryId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update category. Please try again.", err)
 	}
 
 	// Return a simple success response
@@ -143,7 +146,8 @@ func (h *Handler) DeleteCategory(ctx context.Context, input *DeleteCategoryInput
 	}
 
 	if err := h.service.DeleteCategory(user_id_obj, id); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete category", err)
+		slog.Error("unable to delete category", "userId", user_id, "categoryId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete category. Please try again.", err)
 	}
 
 	resp := &DeleteCategoryOutput{}
@@ -173,7 +177,8 @@ func (h *Handler) DeleteWorkspace(ctx context.Context, input *DeleteWorkspaceInp
 
 	err = h.service.DeleteWorkspace(workspaceName, user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to delete workspace", err)
+		slog.Error("unable to delete workspace", "userId", user_id_str, "workspaceName", workspaceName, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to delete workspace. Please try again.", err)
 	}
 
 	resp := &DeleteWorkspaceOutput{}
@@ -204,7 +209,8 @@ func (h *Handler) RenameWorkspace(ctx context.Context, input *RenameWorkspaceInp
 
 	err = h.service.RenameWorkspace(oldWorkspaceName, newWorkspaceName, user_id)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to rename workspace", err)
+		slog.Error("unable to rename workspace", "userId", user_id_str, "oldName", oldWorkspaceName, "newName", newWorkspaceName, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to rename workspace. Please try again.", err)
 	}
 
 	resp := &RenameWorkspaceOutput{}
@@ -226,7 +232,8 @@ func (h *Handler) GetWorkspaces(ctx context.Context, input *GetWorkspacesInput) 
 
 	workspaces, err := h.service.GetWorkspaces(user_id_obj)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Failed to fetch workspaces", err)
+		slog.Error("unable to fetch workspaces", "userId", user_id_str, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch workspaces. Please try again.", err)
 	}
 
 	return &GetWorkspacesOutput{Body: workspaces}, nil
@@ -249,7 +256,8 @@ func (h *Handler) UpdateWorkspace(ctx context.Context, input *UpdateWorkspaceInp
 	}
 
 	if err := h.service.UpdateWorkspaceMeta(workspaceName, user_id, input.Body.Icon, input.Body.Color); err != nil {
-		return nil, huma.Error500InternalServerError("Failed to update workspace metadata", err)
+		slog.Error("unable to update workspace metadata", "userId", user_id_str, "workspaceName", workspaceName, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update workspace metadata. Please try again.", err)
 	}
 
 	resp := &UpdateWorkspaceOutput{}
@@ -405,7 +413,8 @@ func (h *Handler) SetupDefaultWorkspace(ctx context.Context, input *SetupDefault
 	}
 
 	if len(createdCategories) == 0 {
-		return nil, huma.Error500InternalServerError("Failed to create any categories", err)
+		slog.Error("unable to create any default workspace categories", "userId", user_id, "workspaceName", workspaceName, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to set up default workspace. Please try again.", err)
 	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "Default workspace created with multiple categories",
