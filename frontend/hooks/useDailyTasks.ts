@@ -42,7 +42,7 @@ export const useDailyTasks = (selectedDate: Date) => {
         return tasksForSelectedDate.filter((task) => {
             // Strictly require startTime to be present
             if (task.startTime) return true;
-            
+
             // Fallback: check if startDate has specific time AND startTime is not explicitly null (if data structure allows)
             // But user feedback suggests we should be stricter.
             // If startTime is missing, but startDate has time, it might be timezone noise.
@@ -50,20 +50,20 @@ export const useDailyTasks = (selectedDate: Date) => {
             if (task.startDate) {
                 const taskDate = new Date(task.startDate);
                 const hasTime = taskDate.getHours() !== 0 || taskDate.getMinutes() !== 0 || taskDate.getSeconds() !== 0;
-                
+
                 // Only treat as specific time if it has non-zero time AND we don't have a conflicting signal
-                // For now, we'll assume that if it has a time component, it's intentional, 
+                // For now, we'll assume that if it has a time component, it's intentional,
                 // UNLESS it looks like a default UTC midnight in local time.
                 // But determining "default UTC midnight" depends on user timezone.
                 // Safer bet: If startTime is missing, treat as "all day" / "no specific time" unless clearly scheduled.
                 // Actually, the previous logic WAS checking for non-zero time.
                 // The user said "tasks without a start time" (implies null startTime).
                 // So we should probably ONLY rely on startTime for specific placement if possible.
-                
+
                 // Proposed fix: Only use startTime.
                 // If tasks migrate from legacy system using startDate as time, this might break them.
                 // But for new tasks, startTime should be used.
-                return false; 
+                return false;
             }
             return false;
         });
@@ -113,7 +113,7 @@ export const useDailyTasks = (selectedDate: Date) => {
         });
     }, [allTasks]);
 
-    const pastTasks = useMemo(() => {
+    const openTasks = useMemo(() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return allTasks.filter((task) => {
@@ -144,8 +144,7 @@ export const useDailyTasks = (selectedDate: Date) => {
         tasksUnscheduled,
         listUnscheduledTasks,
         upcomingTasks,
-        pastTasks,
+        openTasks,
         overdueTasks,
     };
 };
-
