@@ -33,6 +33,7 @@ import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
+import { OpenTasksCategory } from "@/components/OpenTasksCategory";
 
 interface WorkspaceContentProps {
     workspaceName?: string; // Optional: if not provided, uses global selected
@@ -215,6 +216,23 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     const firstCategory = visibleCategories[0];
     const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
     const groupByDay = state.groupByDay;
+
+    const openTasks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const result: { task: any; categoryId: string }[] = [];
+        visibleCategories.forEach((category) => {
+            category.tasks.forEach((task) => {
+                if (!task.startDate) return;
+                const taskStartDate = new Date(task.startDate);
+                taskStartDate.setHours(0, 0, 0, 0);
+                if (taskStartDate < today && !task.deadline) {
+                    result.push({ task, categoryId: category.id });
+                }
+            });
+        });
+        return result;
+    }, [visibleCategories]);
 
     const groupedByDay = useMemo(() => {
         if (!groupByDay) return [];
@@ -500,6 +518,9 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                 />
                                             );
                                         })}
+                                    {openTasks.length > 0 && (
+                                        <OpenTasksCategory tasks={openTasks} />
+                                    )}
                                     {upcomingCategory && upcomingCategory.tasks.length > 0 && (
                                         <UpcomingCategory
                                             tasks={upcomingCategory.tasks}

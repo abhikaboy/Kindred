@@ -129,6 +129,12 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		LastEdited:     time.Now(),
 	}
 
+	// Auto-inject a FOLLOW_UP reminder if the task has a deadline or startTime
+	followUp := BuildFollowUpReminder(task.Deadline, task.StartTime)
+	if followUp != nil {
+		task.Reminders = append(task.Reminders, followUp)
+	}
+
 	// Frontend now sends a pre-combined startDate (date + time in local timezone),
 	// so we only need to handle the fallback when startDate is nil.
 	if task.StartDate == nil {

@@ -1287,3 +1287,52 @@ func (s *TaskServiceTestSuite) TestCreateTaskFromTemplate_Flex_PeriodRollover_Tr
 	s.Equal(2, updatedTemplate.TimesMissed, "Should have 2 missed tasks from previous period")
 	s.Equal(0, updatedTemplate.Streak, "Streak should be reset due to missed tasks")
 }
+
+// ========================================
+// BuildFollowUpReminder Tests
+// ========================================
+
+func (s *TaskServiceTestSuite) TestBuildFollowUpReminder_WithDeadline() {
+	deadline := xutils.NowUTC().Add(2 * time.Hour)
+	reminder := BuildFollowUpReminder(&deadline, nil)
+
+	s.NotNil(reminder)
+	s.Equal(FollowUpReminderType, reminder.Type)
+	s.False(reminder.Sent)
+	// Trigger time should be deadline + 3 hours
+	expectedTrigger := deadline.Add(3 * time.Hour)
+	s.WithinDuration(expectedTrigger, reminder.TriggerTime, time.Second)
+}
+
+func (s *TaskServiceTestSuite) TestBuildFollowUpReminder_WithStartTime() {
+	startTime := xutils.NowUTC().Add(1 * time.Hour)
+	reminder := BuildFollowUpReminder(nil, &startTime)
+
+	s.NotNil(reminder)
+	s.Equal(FollowUpReminderType, reminder.Type)
+	expectedTrigger := startTime.Add(3 * time.Hour)
+	s.WithinDuration(expectedTrigger, reminder.TriggerTime, time.Second)
+}
+
+func (s *TaskServiceTestSuite) TestBuildFollowUpReminder_DeadlineTakesPriority() {
+	deadline := xutils.NowUTC().Add(5 * time.Hour)
+	startTime := xutils.NowUTC().Add(1 * time.Hour)
+	reminder := BuildFollowUpReminder(&deadline, &startTime)
+
+	s.NotNil(reminder)
+	// Should use deadline, not startTime
+	expectedTrigger := deadline.Add(3 * time.Hour)
+	s.WithinDuration(expectedTrigger, reminder.TriggerTime, time.Second)
+}
+
+func (s *TaskServiceTestSuite) TestBuildFollowUpReminder_NilWhenNoTimes() {
+	reminder := BuildFollowUpReminder(nil, nil)
+	s.Nil(reminder)
+}
+
+func (s *TaskServiceTestSuite) TestBuildFollowUpReminder_NilWhenStale() {
+	// Trigger time would be in the past
+	pastDeadline := xutils.NowUTC().Add(-4 * time.Hour)
+	reminder := BuildFollowUpReminder(&pastDeadline, nil)
+	s.Nil(reminder)
+}

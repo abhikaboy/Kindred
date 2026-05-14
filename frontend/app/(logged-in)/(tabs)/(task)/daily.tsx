@@ -89,7 +89,7 @@ const Daily = (props: Props) => {
         tasksUnscheduled,
         listUnscheduledTasks,
         upcomingTasks,
-        pastTasks,
+        openTasks,
         overdueTasks,
     } = useDailyTasks(selectedDate);
 
@@ -206,7 +206,7 @@ const Daily = (props: Props) => {
                             tasksForSelectedDate={tasksForSelectedDate}
                             overdueTasks={overdueTasks}
                             upcomingTasks={upcomingTasks}
-                            pastTasks={pastTasks}
+                            openTasks={openTasks}
                             unscheduledTasks={listUnscheduledTasks}
                             onQuickSchedule={handleQuickSchedule}
                         />
