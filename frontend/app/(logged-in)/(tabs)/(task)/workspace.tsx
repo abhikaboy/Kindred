@@ -29,6 +29,7 @@ import { usePathname } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
+import { OpenTasksCategory } from "@/components/OpenTasksCategory";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
 
@@ -459,6 +460,19 @@ const WorkspaceContent = ({
                                     const visible = [...categories]
                                         .filter((c) => c.name !== "!-proxy-!" && !c.id.startsWith("upcoming-"))
                                         .sort((a, b) => b.tasks.length - a.tasks.length);
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    const openTasksList: { task: any; categoryId: string }[] = [];
+                                    visible.forEach((category) => {
+                                        category.tasks.forEach((task) => {
+                                            if (!task.startDate) return;
+                                            const taskStartDate = new Date(task.startDate);
+                                            taskStartDate.setHours(0, 0, 0, 0);
+                                            if (taskStartDate < today && !task.deadline) {
+                                                openTasksList.push({ task, categoryId: category.id });
+                                            }
+                                        });
+                                    });
                                     return (
                                         <>
                                             {visible.map((category, index) => {
@@ -483,6 +497,9 @@ const WorkspaceContent = ({
                                                     />
                                                 );
                                             })}
+                                            {openTasksList.length > 0 && (
+                                                <OpenTasksCategory tasks={openTasksList} />
+                                            )}
                                             {upcomingCat && upcomingCat.tasks.length > 0 && (
                                                 <UpcomingCategory
                                                     tasks={upcomingCat.tasks}
