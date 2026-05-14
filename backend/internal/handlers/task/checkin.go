@@ -33,6 +33,14 @@ var CheckinTimes = []CheckinInfo{
 	},
 }
 
+// openTaskCheckinMessage returns a check-in message that includes open task count when applicable
+func openTaskCheckinMessage(displayName string, openTaskCount int, baseMessage string) string {
+	if openTaskCount > 0 {
+		return fmt.Sprintf("Hey %s, you have %d open tasks from today \u2014 tap to review!", displayName, openTaskCount)
+	}
+	return fmt.Sprintf(baseMessage, displayName)
+}
+
 func (h *Handler) HandleCheckin() (fiber.Map, error) {
 	// Get current time in UTC
 	nowUTC := time.Now().UTC()
@@ -139,8 +147,15 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 			taskCounts = &TaskCounts{ScheduledToday: 0, DeadlineToday: 0}
 		}
 
-		// Personalize the message with the user's display name
-		personalizedMessage := fmt.Sprintf(matchedCheckin.Message, user.DisplayName)
+		// Get open task count for this user
+		openTaskCount, openErr := h.service.GetOpenTaskCountForUser(user.ID, loc)
+		if openErr != nil {
+			slog.Error("Error getting open task count for user", "user_id", user.ID, "error", openErr)
+			openTaskCount = 0
+		}
+
+		// Personalize the message — include open task count when available
+		personalizedMessage := openTaskCheckinMessage(user.DisplayName, openTaskCount, matchedCheckin.Message)
 
 		notifications = append(notifications, xutils.Notification{
 			Token:   user.PushToken,
@@ -152,6 +167,7 @@ func (h *Handler) HandleCheckin() (fiber.Map, error) {
 				"timestamp":       userLocalTime.Format(time.RFC3339),
 				"scheduled_today": fmt.Sprintf("%d", taskCounts.ScheduledToday),
 				"deadline_today":  fmt.Sprintf("%d", taskCounts.DeadlineToday),
+				"open_tasks":      fmt.Sprintf("%d", openTaskCount),
 				"url":             "/(logged-in)/(tabs)/(task)/review",
 			},
 		})
@@ -271,6 +287,45 @@ func (s *Service) GetUserTaskCountsForTodayWithTimezone(userID primitive.ObjectI
 // This uses UTC for backward compatibility
 func (s *Service) GetUserTaskCountsForToday(userID primitive.ObjectID) (*TaskCounts, error) {
 	return s.GetUserTaskCountsForTodayWithTimezone(userID, time.UTC)
+}
+
+// GetOpenTaskCountForUser returns the count of tasks where startDate <= today and have no deadline
+func (s *Service) GetOpenTaskCountForUser(userID primitive.ObjectID, loc *time.Location) (int, error) {
+	ctx := context.Background()
+
+	now := time.Now().In(loc)
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, loc).UTC()
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"user": userID}},
+		{"$unwind": "$tasks"},
+		{"$match": bson.M{
+			"tasks.startDate": bson.M{
+				"$ne":  nil,
+				"$lte": endOfDay,
+			},
+			"tasks.deadline":  nil,
+			"tasks.startTime": nil,
+		}},
+		{"$count": "total"},
+	}
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count open tasks: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var result struct {
+		Total int `bson:"total"`
+	}
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(&result); err != nil {
+			return 0, fmt.Errorf("failed to decode open task count: %w", err)
+		}
+	}
+
+	return result.Total, nil
 }
 
 // GetUsersWithPushTokens retrieves all users that have push tokens for notifications
