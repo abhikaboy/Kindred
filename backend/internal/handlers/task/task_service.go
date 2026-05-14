@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -1184,8 +1185,12 @@ func (s *Service) UpdateTaskDeadline(id primitive.ObjectID, categoryID primitive
 		bson.M{"$set": updateFields},
 		getTaskArrayFilterOptions(id),
 	)
+	if err != nil {
+		return handleMongoError(ctx, "update task deadline", err)
+	}
 
-	return handleMongoError(ctx, "update task deadline", err)
+	// Recalculate FOLLOW_UP reminder
+	return s.recalculateFollowUp(ctx, id, categoryID, update.Deadline)
 }
 
 // UpdateTaskStart updates the start date and time fields of a task
@@ -1240,4 +1245,34 @@ func (s *Service) UpdateTaskReminders(id primitive.ObjectID, categoryID primitiv
 	)
 
 	return handleMongoError(ctx, "update task reminders", err)
+}
+
+// recalculateFollowUp removes any existing FOLLOW_UP reminder and injects a new one based on the new deadline.
+func (s *Service) recalculateFollowUp(ctx context.Context, taskID primitive.ObjectID, categoryID primitive.ObjectID, deadline *time.Time) error {
+	// Remove existing FOLLOW_UP reminders
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$pull": bson.M{"tasks.$[t].reminders": bson.M{"type": FollowUpReminderType}}},
+		getTaskArrayFilterOptions(taskID),
+	)
+	if err != nil {
+		return handleMongoError(ctx, "remove old follow-up reminder", err)
+	}
+
+	// Build and inject new follow-up based on the new deadline
+	followUp := BuildFollowUpReminder(deadline, nil)
+	if followUp != nil {
+		_, err = s.Tasks.UpdateOne(
+			ctx,
+			bson.M{"_id": categoryID},
+			bson.M{"$push": bson.M{"tasks.$[t].reminders": followUp}},
+			getTaskArrayFilterOptions(taskID),
+		)
+		if err != nil {
+			return handleMongoError(ctx, "inject new follow-up reminder", err)
+		}
+	}
+
+	return nil
 }

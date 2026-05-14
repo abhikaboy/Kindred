@@ -389,6 +389,12 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		}
 	}
 
+	// Auto-inject a FOLLOW_UP reminder for the generated task instance
+	followUp := BuildFollowUpReminder(task.Deadline, task.StartTime)
+	if followUp != nil {
+		task.Reminders = append(task.Reminders, followUp)
+	}
+
 	return task
 }
 
