@@ -11,7 +11,7 @@ interface TaskListViewProps {
     tasksForSelectedDate: any[];
     overdueTasks: any[];
     upcomingTasks: any[];
-    pastTasks: any[];
+    openTasks: any[];
     unscheduledTasks: any[];
     onQuickSchedule: (task: any, type: 'deadline' | 'startDate') => void;
 }
@@ -21,7 +21,7 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
     tasksForSelectedDate,
     overdueTasks,
     upcomingTasks,
-    pastTasks,
+    openTasks,
     unscheduledTasks,
     onQuickSchedule,
 }) => {
@@ -45,28 +45,28 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
             {
                 key: "overdue",
                 tasks: overdueTasks,
-                title: "Overdue Tasks",
+                title: "Overdue",
                 description: "",
                 emptyMessage: "No overdue tasks",
             },
             {
+                key: "open",
+                tasks: openTasks,
+                title: "Open Tasks",
+                description: "These tasks have started but haven't been completed yet.",
+                emptyMessage: "No open tasks",
+            },
+            {
                 key: "upcoming",
                 tasks: upcomingTasks,
-                title: "Upcoming Tasks",
+                title: "Upcoming",
                 description: "These tasks have future start dates or deadlines.",
                 emptyMessage: "No upcoming tasks",
             },
             {
-                key: "past",
-                tasks: pastTasks,
-                title: "Past Tasks",
-                description: "These tasks started in the past but have no deadline.",
-                emptyMessage: "No past tasks",
-            },
-            {
                 key: "unscheduled",
                 tasks: unscheduledTasks,
-                title: "Unscheduled Tasks",
+                title: "Unscheduled",
                 description: "These are tasks that don't have a start date or deadline. Swipe right to schedule for this day.",
                 emptyMessage: "No unscheduled tasks",
                 useSchedulable: true,
@@ -78,7 +78,7 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
         const active = all.filter((s) => s.tasks.length > 0);
         const empty = all.filter((s) => s.tasks.length === 0);
         return [...active, ...empty];
-    }, [overdueTasks, upcomingTasks, pastTasks, unscheduledTasks, onQuickSchedule]);
+    }, [overdueTasks, openTasks, upcomingTasks, unscheduledTasks, onQuickSchedule]);
 
     return (
         <View style={styles.container}>
@@ -122,10 +122,10 @@ export const TaskListView = React.memo(TaskListViewComponent, (prevProps, nextPr
     const sameSelectedTasks = prevProps.tasksForSelectedDate.length === nextProps.tasksForSelectedDate.length;
     const sameOverdue = prevProps.overdueTasks.length === nextProps.overdueTasks.length;
     const sameUpcoming = prevProps.upcomingTasks.length === nextProps.upcomingTasks.length;
-    const samePast = prevProps.pastTasks.length === nextProps.pastTasks.length;
+    const sameOpen = prevProps.openTasks.length === nextProps.openTasks.length;
     const sameUnscheduled = prevProps.unscheduledTasks.length === nextProps.unscheduledTasks.length;
 
-    return sameDate && sameSelectedTasks && sameOverdue && sameUpcoming && samePast && sameUnscheduled;
+    return sameDate && sameSelectedTasks && sameOverdue && sameUpcoming && sameOpen && sameUnscheduled;
 });
 
 const styles = StyleSheet.create({
