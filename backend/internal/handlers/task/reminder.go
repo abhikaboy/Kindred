@@ -15,6 +15,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const FollowUpReminderType = "FOLLOW_UP"
+const FollowUpDelay = 3 * time.Hour
+
 func (h *Handler) HandleReminder() (fiber.Map, error) {
 	tasks, err := h.service.GetTasksWithPastReminders()
 	if err != nil {
@@ -142,6 +145,31 @@ func ParseReminder(params CreateTaskParams) []*Reminder {
 	return reminders
 }
 
+// BuildFollowUpReminder creates a FOLLOW_UP reminder for a task based on its timing.
+// Returns nil if the task doesn't qualify (no deadline, no startTime, or trigger time already stale).
+func BuildFollowUpReminder(deadline *time.Time, startTime *time.Time) *Reminder {
+	var triggerTime time.Time
+
+	if deadline != nil {
+		triggerTime = deadline.Add(FollowUpDelay)
+	} else if startTime != nil {
+		triggerTime = startTime.Add(FollowUpDelay)
+	} else {
+		return nil
+	}
+
+	// Don't create follow-up if trigger time is already in the past
+	if triggerTime.Before(xutils.NowUTC()) {
+		return nil
+	}
+
+	return &Reminder{
+		TriggerTime: triggerTime,
+		Type:        FollowUpReminderType,
+		Sent:        false,
+	}
+}
+
 func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 	ctx := context.Background()
 
@@ -185,12 +213,19 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 	// Generate descriptive reminder message
 	message := s.generateReminderMessage(reminder, task)
 
+	title := ""
+	if reminder.Type == FollowUpReminderType {
+		title = fmt.Sprintf("How was %s?", task.Content)
+	}
+
 	// send the reminder to the user
 	return xutils.SendNotification(xutils.Notification{
 		Token:   user.PushToken,
 		Message: message,
+		Title:   title,
 		Data: map[string]string{
 			"taskId": task.ID.Hex(),
+			"type":   reminder.Type,
 		},
 	})
 }
@@ -200,6 +235,11 @@ func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument
 	now := time.Now()
 	taskName := task.Content
 	hasWindow := task.Deadline != nil && (task.StartDate != nil || task.StartTime != nil)
+
+	// Follow-up reminders use specific copy
+	if reminder.Type == FollowUpReminderType {
+		return "Swipe to document this task as complete"
+	}
 
 	// Use custom message if provided
 	if reminder.CustomMessage != nil && *reminder.CustomMessage != "" {
