@@ -27,6 +27,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/subscription"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
+	"github.com/abhikaboy/Kindred/internal/jobs"
 	"github.com/abhikaboy/Kindred/internal/posthog"
 	"github.com/abhikaboy/Kindred/internal/xlog"
 	"github.com/abhikaboy/Kindred/internal/xsentry"
@@ -176,7 +177,15 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)
 
-	task.Cron(collections)
+	cronScheduler := task.Cron(collections)
+
+	// Wire up calendar watch channel renewal (runs every 6h + once on startup)
+	if calendarConns := collections["calendar_connections"]; calendarConns != nil {
+		renewalJob := jobs.NewCalendarWatchRenewalJob(calendarConns, collections["categories"], cfg)
+		renewalJob.StartCron(cronScheduler)
+	} else {
+		slog.Warn("Calendar watch renewal disabled: calendar_connections collection not available")
+	}
 
 	xlog.ServerLog("All routes registered, Fiber app ready")
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/config"
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -159,6 +160,7 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 			err = s.SetupWatchChannels(ctx, &connection, token, s.config.GoogleCalendar.WebhookBaseURL)
 			if err != nil {
 				slog.Error("Failed to setup watch channels", "connection_id", connection.ID, "error", err)
+				sentry.CaptureException(fmt.Errorf("watch channel setup failed for new connection %s: %w", connection.ID.Hex(), err))
 				// Don't fail the connection creation, user can still manually sync
 			}
 		}
@@ -196,6 +198,7 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 		err = s.SetupWatchChannels(ctx, &existingConn, token, s.config.GoogleCalendar.WebhookBaseURL)
 		if err != nil {
 			slog.Error("Failed to setup watch channels", "connection_id", existingConn.ID, "error", err)
+			sentry.CaptureException(fmt.Errorf("watch channel setup failed for existing connection %s: %w", existingConn.ID.Hex(), err))
 			// Don't fail the connection update
 		}
 	}
@@ -924,6 +927,7 @@ func (s *Service) RenewWatchChannel(ctx context.Context, connection *CalendarCon
 		newToken, err := p.RefreshToken(ctx, connection.RefreshToken)
 		if err != nil {
 			slog.Error("Failed to refresh token for watch renewal", "connection_id", connection.ID, "error", err)
+			sentry.CaptureException(fmt.Errorf("token refresh failed during watch renewal: connection=%s: %w", connection.ID.Hex(), err))
 			return fmt.Errorf("failed to refresh token: %w", err)
 		}
 		token = newToken

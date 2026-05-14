@@ -2,10 +2,12 @@ package calendar
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -60,6 +62,7 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 		return nil, huma.Error404NotFound("Calendar connection not found. Please reconnect your calendar.")
 	} else if err != nil {
 		slog.Error("Failed to find connection for webhook", "connection_id", input.ConnectionID, "error", err)
+		sentry.CaptureException(fmt.Errorf("webhook: failed to find connection %s: %w", input.ConnectionID, err))
 		return nil, huma.Error500InternalServerError("Failed to verify calendar connection", err)
 	}
 
@@ -105,6 +108,7 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 			_, err := h.service.SyncEventsToTasks(bgCtx, connection.ID, connection.UserID, startTime, endTime)
 			if err != nil {
 				slog.Error("Failed to sync events after webhook", "connection_id", connection.ID, "error", err)
+				sentry.CaptureException(fmt.Errorf("webhook sync failed: connection=%s: %w", connection.ID.Hex(), err))
 				return
 			}
 

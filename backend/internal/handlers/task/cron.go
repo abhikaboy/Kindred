@@ -6,22 +6,19 @@ import (
 	"runtime/debug"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/gofiber/fiber/v2"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 /*
-Router maps endpoints to handlers
+Cron sets up periodic background jobs for tasks, reminders, and checkins.
 */
-func Cron(collections map[string]*mongo.Collection) {
+func Cron(collections map[string]*mongo.Collection) *cron.Cron {
 	service := newService(collections)
 	handler := Handler{
 		service:       service,
 		geminiService: nil,
 	}
-
-	/* Recurring Tasks */
 
 	c := cron.New()
 	id, err := c.AddFunc("@every 1m", func() {
@@ -34,6 +31,8 @@ func Cron(collections map[string]*mongo.Collection) {
 			}
 		}()
 
+		/* Recurring Tasks */
+
 		tasks := make([]TemplateTaskDocument, 0)
 		recurringTasks, err := service.GetDueRecurringTasks()
 		if err != nil {
@@ -43,12 +42,10 @@ func Cron(collections map[string]*mongo.Collection) {
 		tasks = append(tasks, recurringTasks...)
 
 		for _, task := range tasks {
-			newTask, err := service.CreateTaskFromTemplate(task.ID)
+			_, err := service.CreateTaskFromTemplate(task.ID)
 			if err != nil {
 				slog.Error("Error creating task from template", "error", err, "templateID", task.ID.Hex())
 				sentry.CaptureException(fmt.Errorf("cron: failed to create task from template %s: %w", task.ID.Hex(), err))
-			} else {
-				fmt.Println(newTask)
 			}
 		}
 
@@ -56,9 +53,7 @@ func Cron(collections map[string]*mongo.Collection) {
 
 		reminder_result, err := handler.HandleReminder()
 		if err != nil {
-			slog.Error("Error handling reminder", "error", fiber.Map{
-				"error": err.Error(),
-			})
+			slog.Error("Error handling reminder", "error", err)
 			sentry.CaptureException(fmt.Errorf("cron: reminder handling failed: %w", err))
 		}
 
@@ -70,13 +65,17 @@ func Cron(collections map[string]*mongo.Collection) {
 
 		checkin_result, err := handler.HandleCheckin()
 		if err != nil {
-			slog.Error("Error handling checkin", "error", fiber.Map{
-				"error": err.Error(),
-			})
+			slog.Error("Error handling checkin", "error", err)
 			sentry.CaptureException(fmt.Errorf("cron: checkin handling failed: %w", err))
 		}
-		fmt.Println(checkin_result)
 
+		// Only log checkin results when notifications were actually sent
+		if notifCount, ok := checkin_result["notifications_sent"].(int); ok && notifCount > 0 {
+			slog.Info("Checkin notifications sent",
+				"notifications_sent", notifCount,
+				"matched_users", checkin_result["matched_users"],
+				"total_users", checkin_result["total_users"])
+		}
 	})
 	if err != nil {
 		slog.Error("Error adding cron job", "error", err)
@@ -84,4 +83,5 @@ func Cron(collections map[string]*mongo.Collection) {
 
 	c.Start()
 	slog.Info("Cron scheduler started", "id", id)
+	return c
 }
