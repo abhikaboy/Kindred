@@ -195,27 +195,6 @@ func (s *Service) LoginFromGoogle(googleID string, email string) (*primitive.Obj
 	user, err := s.users.GetUserByGoogleID(context.Background(), googleID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			// No account with this Google ID — try to find by email and link
-			if email != "" {
-				emailUser, emailErr := s.users.GetUserByEmail(context.Background(), email)
-				if emailErr == nil && emailUser != nil {
-					// Found an existing account with this email — link Google ID
-					linkErr := s.users.LinkGoogleID(context.Background(), emailUser.ID, googleID)
-					if linkErr != nil {
-						slog.Error("Failed to link Google ID to existing account",
-							"email", email,
-							"userId", emailUser.ID.Hex(),
-							"error", linkErr.Error(),
-						)
-						return nil, nil, nil, fmt.Errorf("failed to link Google account: %w", linkErr)
-					}
-					slog.Info("Linked Google ID to existing account",
-						"email", email,
-						"userId", emailUser.ID.Hex(),
-					)
-					return &emailUser.ID, &emailUser.Count, emailUser, nil
-				}
-			}
 			return nil, nil, nil, fiber.NewError(404, "No account found. Please sign up first.")
 		}
 		slog.Error("Database error during Google login",
