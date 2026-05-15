@@ -1,0 +1,50 @@
+frontend/components/auth/SignUpButton.tsx
+  436691b7ba7fad54 31,43
+frontend/components/modals/OnboardModal.tsx
+  436691b7ba7fad54 197,216,249
+frontend/components/auth/LogInButton.tsx
+  436691b7ba7fad54 29
+backend/internal/handlers/auth/types.go
+  436691b7ba7fad54 66,81
+backend/internal/handlers/auth/auth.go
+  436691b7ba7fad54 135-149,151,457-472,474
+frontend/hooks/useAuth.tsx
+  436691b7ba7fad54 53,56,104,111,116,153,160
+frontend/hooks/useOnboarding.tsx
+  436691b7ba7fad54 18,76,387
+backend/internal/handlers/auth/apple_verifier.go
+  436691b7ba7fad54 1-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "c0af6a028ef62b6655af8430edfdae7d81bf7cd2",
+  "prompts": {
+    "436691b7ba7fad54": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "68786d09-24b0-4b6a-b42f-5a021ce6d530",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 223,
+      "total_deletions": 19,
+      "accepted_lines": 2840,
+      "overriden_lines": 0
+    },
+    "8a840762f2b5068e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "800eba8a-0987-4ea6-a046-7f277b33c6cf",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1534,
+      "overriden_lines": 0
+    }
+  }
+}
