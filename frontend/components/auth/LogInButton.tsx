@@ -26,7 +26,7 @@ export default function LogInButton() {
 
                     const appleAccountID = credential.user;
 
-                    await login(appleAccountID);
+                    await login(appleAccountID, credential.identityToken ?? undefined);
 
                     router.replace("/home");
                 } catch (e: any) {

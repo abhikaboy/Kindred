@@ -50,10 +50,10 @@ export async function getAuthData(): Promise<AuthData | null> {
 interface AuthContextType {
     user: SafeUser | null;
     setUser: (user: SafeUser | null) => void;
-    login: (appleAccountID: string) => Promise<SafeUser | void>;
+    login: (appleAccountID: string, idToken?: string) => Promise<SafeUser | void>;
     loginWithPhone: (phoneNumber: string, password: string) => Promise<SafeUser | void>;
     loginWithOTP: (phoneNumber: string, code: string) => Promise<SafeUser | void>;
-    register: (email: string, appleAccountID: string) => Promise<any>;
+    register: (email: string, appleAccountID: string, idToken?: string) => Promise<any>;
     registerWithGoogle: (email: string, googleID: string, idToken?: string) => Promise<any>;
     loginWithGoogle: (googleID: string, email?: string, idToken?: string) => Promise<SafeUser | void>;
     logout: () => void;
@@ -101,18 +101,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // NOTE: This is a legacy function kept for backward compatibility with old components
     // New code should use the mutations directly from useOnboarding
-    async function register(email: string, appleAccountID: string): Promise<any> {
+    async function register(email: string, appleAccountID: string, idToken?: string): Promise<any> {
         // @ts-ignore - Legacy function with incomplete type signature
         try {
             const result = await appleRegisterMutation.mutateAsync({
                 body: {
                     apple_id: appleAccountID,
                     email: email,
+                    id_token: idToken,
                     // These fields should be provided by the caller but aren't in the old signature
                     display_name: '',
                     handle: '',
                     profile_picture: '',
-                }
+                } as any
             });
 
             logger.info("Registration successful");
@@ -149,13 +150,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function login(appleAccountID: string): Promise<SafeUser | void> {
+    async function login(appleAccountID: string, idToken?: string): Promise<SafeUser | void> {
         logger.debug("Apple login attempt");
 
         try {
             const result = await client.POST("/v1/auth/login/apple", {
                 body: {
                     apple_id: appleAccountID,
+                    id_token: idToken,
                 }
             });
 

@@ -28,7 +28,7 @@ export default function SignUpButton() {
                     const email = credential.email;
                     const firstName = credential.fullName?.givenName;
                     const lastName = credential.fullName?.familyName;
-                    
+
                     if (!email || !firstName || !lastName) {
                         alert(
                             "Apple didn't share your email and name with us. This usually happens if you've authorized this app before but didn't complete sign-up.\n\n" +
@@ -40,7 +40,7 @@ export default function SignUpButton() {
                         );
                         return;
                     }
-                    let data = await register(email, appleAccountID);
+                    let data = await register(email, appleAccountID, credential.identityToken ?? undefined);
                     console.log(data);
 
                     router.replace({

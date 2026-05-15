@@ -63,6 +63,7 @@ type LoginRequestPhone struct {
 
 type LoginRequestApple struct {
 	AppleID string `validate:"required" json:"apple_id"`
+	IDToken string `json:"id_token,omitempty"`
 }
 
 type LoginRequestGoogle struct {
@@ -77,6 +78,7 @@ type RegisterRequestApple struct {
 	DisplayName    string `validate:"required" json:"display_name"`
 	Handle         string `validate:"required" json:"handle"`
 	ProfilePicture string `validate:"required" json:"profile_picture"`
+	IDToken        string `json:"id_token,omitempty"`
 }
 
 type RegisterRequestGoogle struct {

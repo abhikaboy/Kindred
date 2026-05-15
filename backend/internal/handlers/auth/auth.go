@@ -132,8 +132,23 @@ func (h *Handler) RegisterHuma(ctx context.Context, input *RegisterInput) (*Regi
 
 // RegisterWithAppleHuma handles Apple registration
 func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
+	appleID := input.Body.AppleID
+
+	if input.Body.IDToken != "" {
+		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Apple ID token verification failed during registration",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Apple authentication failed. Please try again.", err)
+		}
+		appleID = claims.Sub
+	} else if h.config.OAuth.AppleBundleID != "" {
+		return nil, huma.Error400BadRequest("Apple identity token is required for registration", nil)
+	}
+
 	// Convert to regular register input and add Apple ID to context
-	ctxWithApple := context.WithValue(ctx, appleIDContextKey, input.Body.AppleID)
+	ctxWithApple := context.WithValue(ctx, appleIDContextKey, appleID)
 
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
@@ -439,8 +454,24 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "Apple login attempt")
 
+	appleID := input.Body.AppleID
+
+	// Verify Apple identity token if provided
+	if input.Body.IDToken != "" {
+		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Apple ID token verification failed",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Apple authentication failed. Please try again.", err)
+		}
+		appleID = claims.Sub
+	} else if h.config.OAuth.AppleBundleID != "" {
+		return nil, huma.Error400BadRequest("Apple identity token is required for authentication", nil)
+	}
+
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromApple(input.Body.AppleID)
+	id, count, user, err := h.service.LoginFromApple(appleID)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelWarn, "Apple login failed",
 			slog.String("error", err.Error()),
