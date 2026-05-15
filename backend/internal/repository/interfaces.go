@@ -24,6 +24,11 @@ type UserRepository interface {
 	CheckTokenCount(ctx context.Context, id primitive.ObjectID) (float64, error)
 	MarkTokenUsed(ctx context.Context, id primitive.ObjectID) error
 	CheckIfTokenUsed(ctx context.Context, id primitive.ObjectID) (bool, error)
+	// ResetTokenUsed sets token_used back to false (called on fresh login)
+	ResetTokenUsed(ctx context.Context, id primitive.ObjectID) error
+	// AtomicMarkTokenUsed atomically marks token as used if not already used.
+	// Returns true if successfully marked (was unused), false if already used.
+	AtomicMarkTokenUsed(ctx context.Context, id primitive.ObjectID) (bool, error)
 	AcceptTerms(ctx context.Context, id primitive.ObjectID, version string) (*time.Time, error)
 	RemoveFromFriendsLists(ctx context.Context, id primitive.ObjectID) error
 	ConsumeCredit(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) error
