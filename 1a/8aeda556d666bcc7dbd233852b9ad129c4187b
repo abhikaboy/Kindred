@@ -1,0 +1,42 @@
+backend/internal/handlers/auth/types.go
+  436691b7ba7fad54 92
+backend/internal/handlers/auth/service.go
+  436691b7ba7fad54 122-129,157-164
+backend/internal/handlers/auth/auth_test.go
+  436691b7ba7fad54 729-730
+backend/internal/handlers/auth/auth.go
+  436691b7ba7fad54 141-142,202-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "1a8aeda556d666bcc7dbd233852b9ad129c4187b",
+  "prompts": {
+    "436691b7ba7fad54": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "68786d09-24b0-4b6a-b42f-5a021ce6d530",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 23,
+      "total_deletions": 7,
+      "accepted_lines": 2638,
+      "overriden_lines": 0
+    },
+    "8a840762f2b5068e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "800eba8a-0987-4ea6-a046-7f277b33c6cf",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1539,
+      "overriden_lines": 0
+    }
+  }
+}
