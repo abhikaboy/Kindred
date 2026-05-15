@@ -70,8 +70,6 @@ func (s *Service) ValidateToken(token string) (string, float64, string, error) {
 		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid Token")
 	}
 
-	fmt.Println(claims)
-
 	idString, ok := claims["user_id"].(string)
 	if !ok {
 		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid user_id in token")
