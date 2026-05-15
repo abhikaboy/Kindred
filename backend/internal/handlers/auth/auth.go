@@ -132,14 +132,29 @@ func (h *Handler) RegisterHuma(ctx context.Context, input *RegisterInput) (*Regi
 
 // RegisterWithAppleHuma handles Apple registration
 func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWithAppleInput) (*RegisterOutput, error) {
+	appleID := input.Body.AppleID
+
+	if input.Body.IDToken != "" {
+		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Apple ID token verification failed during registration",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Apple authentication failed. Please try again.", err)
+		}
+		appleID = claims.Sub
+	} else if h.config.OAuth.AppleBundleID != "" {
+		return nil, huma.Error400BadRequest("Apple identity token is required for registration", nil)
+	}
+
 	// Convert to regular register input and add Apple ID to context
-	ctxWithApple := context.WithValue(ctx, appleIDContextKey, input.Body.AppleID)
+	ctxWithApple := context.WithValue(ctx, appleIDContextKey, appleID)
 
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:          input.Body.Email,
-			Password:       input.Body.AppleID, // Use Apple ID as password for validation
-			Phone:          "",                 // Phone is optional for Apple users
+			Password:       "", // OAuth users don't need a password
+			Phone:          "", // Phone is optional for Apple users
 			DisplayName:    input.Body.DisplayName,
 			Handle:         input.Body.Handle,
 			ProfilePicture: input.Body.ProfilePicture,
@@ -160,8 +175,28 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 		slog.Bool("hasEmail", input.Body.Email != ""),
 	)
 
+	googleID := input.Body.GoogleID
+	email := input.Body.Email
+
+	// Verify Google ID token if provided
+	if input.Body.IDToken != "" {
+		claims, err := VerifyGoogleIDToken(input.Body.IDToken, h.config.OAuth.GoogleClientIDs)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Google ID token verification failed",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Google authentication failed. Please try again.", err)
+		}
+		googleID = claims.Sub
+		if claims.Email != "" {
+			email = claims.Email
+		}
+	} else if h.config.OAuth.GoogleClientIDs != "" {
+		return nil, huma.Error400BadRequest("Google ID token is required for authentication", nil)
+	}
+
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromGoogle(input.Body.GoogleID, input.Body.Email)
+	id, count, user, err := h.service.LoginFromGoogle(googleID, email)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelWarn, "Google login failed",
 			slog.String("error", err.Error()),
@@ -193,14 +228,29 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 
 // RegisterWithGoogleHuma handles Google registration
 func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWithGoogleInput) (*RegisterOutput, error) {
+	googleID := input.Body.GoogleID
+
+	if input.Body.IDToken != "" {
+		claims, err := VerifyGoogleIDToken(input.Body.IDToken, h.config.OAuth.GoogleClientIDs)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Google ID token verification failed during registration",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Google authentication failed. Please try again.", err)
+		}
+		googleID = claims.Sub
+	} else if h.config.OAuth.GoogleClientIDs != "" {
+		return nil, huma.Error400BadRequest("Google ID token is required for registration", nil)
+	}
+
 	// Convert to regular register input and add Google ID to context
-	ctxWithGoogle := context.WithValue(ctx, googleIDContextKey, input.Body.GoogleID)
+	ctxWithGoogle := context.WithValue(ctx, googleIDContextKey, googleID)
 
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:          input.Body.Email,
-			Password:       input.Body.GoogleID, // Use Google ID as password for validation
-			Phone:          "",                  // Phone is optional for Google users
+			Password:       "", // OAuth users don't need a password
+			Phone:          "", // Phone is optional for Google users
 			DisplayName:    input.Body.DisplayName,
 			Handle:         input.Body.Handle,
 			ProfilePicture: input.Body.ProfilePicture,
@@ -404,8 +454,24 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "Apple login attempt")
 
+	appleID := input.Body.AppleID
+
+	// Verify Apple identity token if provided
+	if input.Body.IDToken != "" {
+		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Apple ID token verification failed",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Apple authentication failed. Please try again.", err)
+		}
+		appleID = claims.Sub
+	} else if h.config.OAuth.AppleBundleID != "" {
+		return nil, huma.Error400BadRequest("Apple identity token is required for authentication", nil)
+	}
+
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromApple(input.Body.AppleID)
+	id, count, user, err := h.service.LoginFromApple(appleID)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelWarn, "Apple login failed",
 			slog.String("error", err.Error()),

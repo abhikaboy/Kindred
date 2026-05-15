@@ -87,6 +87,23 @@ func (r *userRepo) CheckIfTokenUsed(ctx context.Context, id primitive.ObjectID) 
 	return user.TokenUsed, nil
 }
 
+func (r *userRepo) ResetTokenUsed(ctx context.Context, id primitive.ObjectID) error {
+	return updateOneByID(ctx, r.collection, id, bson.M{"$set": bson.M{"token_used": false}})
+}
+
+func (r *userRepo) AtomicMarkTokenUsed(ctx context.Context, id primitive.ObjectID) (bool, error) {
+	result, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id, "token_used": false},
+		bson.M{"$set": bson.M{"token_used": true}},
+	)
+	if err != nil {
+		return false, err
+	}
+	// If MatchedCount is 0, the token was already used (filter didn't match)
+	return result.MatchedCount > 0, nil
+}
+
 func (r *userRepo) AcceptTerms(ctx context.Context, id primitive.ObjectID, version string) (*time.Time, error) {
 	now := time.Now()
 	err := updateOneByID(ctx, r.collection, id, bson.M{

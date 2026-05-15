@@ -83,15 +83,6 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 				})
 			}
 
-			// Mark refresh token as used
-			if err := service.UseToken(userID); err != nil {
-				xlog.AuthError(fmt.Sprintf("Failed to mark token as used: %v", err))
-				return c.Status(500).JSON(fiber.Map{
-					"error":  "Session update failed. Please log in again.",
-					"status": 500,
-				})
-			}
-
 			// Set new tokens in response headers
 			c.Set("access_token", newAccess)
 			c.Set("refresh_token", newRefresh)

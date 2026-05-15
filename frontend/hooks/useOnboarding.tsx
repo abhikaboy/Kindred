@@ -15,6 +15,7 @@ export interface OnboardingData {
     handle: string;
     profilePicture: string;
     appleId?: string;
+    appleIdToken?: string;
     googleId?: string;
 }
 
@@ -72,6 +73,7 @@ const initialData: OnboardingData = {
     handle: '',
     profilePicture: '',
     appleId: '',
+    appleIdToken: undefined,
     googleId: '',
 };
 
@@ -382,6 +384,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
                     display_name: onboardingData.displayName,
                     handle: onboardingData.handle,
                     profile_picture: profilePic,
+                    id_token: onboardingData.appleIdToken,
                 }
             });
 

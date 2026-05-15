@@ -726,8 +726,8 @@ func TestBadInputValidation(t *testing.T) {
 					Handle:         "testuser",
 					ProfilePicture: "https://example.com/pic.jpg",
 				},
-				shouldFail:  true,
-				description: "Should fail with empty password",
+				shouldFail:  false,
+				description: "Should pass with empty password (OAuth users don't need a password)",
 			},
 			{
 				name: "Password too short",

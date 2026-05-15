@@ -1,6 +1,12 @@
 package auth
 
-import "github.com/abhikaboy/Kindred/internal/handlers/types"
+import (
+	"context"
+	"fmt"
+
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 // timezoneOrDefault returns the timezone string, defaulting to "UTC" if empty.
 func timezoneOrDefault(tz string) string {
@@ -18,6 +24,15 @@ func completeLogin(service *Service, userID string, count float64, user *User) (
 	access, refresh, err := service.GenerateTokens(userID, count, timezone)
 	if err != nil {
 		return nil, err
+	}
+
+	// Reset token_used so the new refresh token can be used
+	id, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+	if err := service.users.ResetTokenUsed(context.Background(), id); err != nil {
+		return nil, fmt.Errorf("failed to reset token usage: %w", err)
 	}
 
 	return &AuthResult{

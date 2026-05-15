@@ -70,8 +70,6 @@ func (s *Service) ValidateToken(token string) (string, float64, string, error) {
 		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid Token")
 	}
 
-	fmt.Println(claims)
-
 	idString, ok := claims["user_id"].(string)
 	if !ok {
 		return "", 0, "", fiber.NewError(400, "Not Authorized, Invalid user_id in token")
@@ -121,6 +119,14 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 		)
 		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
+	// Reject password login for OAuth-only accounts
+	if user.Password == "" {
+		slog.Warn("Password login attempted on OAuth-only account",
+			"email", email,
+			"userId", user.ID.Hex(),
+		)
+		return nil, nil, nil, fiber.NewError(401, "This account uses social login. Please sign in with Apple or Google.")
+	}
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
@@ -147,6 +153,14 @@ func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitiv
 			"error", err.Error(),
 		)
 		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
+	}
+	// Reject password login for OAuth-only accounts
+	if user.Password == "" {
+		slog.Warn("Password login attempted on OAuth-only account",
+			"userId", user.ID.Hex(),
+			"provider", "phone",
+		)
+		return nil, nil, nil, fiber.NewError(401, "This account uses social login. Please sign in with Apple or Google.")
 	}
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
@@ -181,27 +195,6 @@ func (s *Service) LoginFromGoogle(googleID string, email string) (*primitive.Obj
 	user, err := s.users.GetUserByGoogleID(context.Background(), googleID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			// No account with this Google ID — try to find by email and link
-			if email != "" {
-				emailUser, emailErr := s.users.GetUserByEmail(context.Background(), email)
-				if emailErr == nil && emailUser != nil {
-					// Found an existing account with this email — link Google ID
-					linkErr := s.users.LinkGoogleID(context.Background(), emailUser.ID, googleID)
-					if linkErr != nil {
-						slog.Error("Failed to link Google ID to existing account",
-							"email", email,
-							"userId", emailUser.ID.Hex(),
-							"error", linkErr.Error(),
-						)
-						return nil, nil, nil, fmt.Errorf("failed to link Google account: %w", linkErr)
-					}
-					slog.Info("Linked Google ID to existing account",
-						"email", email,
-						"userId", emailUser.ID.Hex(),
-					)
-					return &emailUser.ID, &emailUser.Count, emailUser, nil
-				}
-			}
 			return nil, nil, nil, fiber.NewError(404, "No account found. Please sign up first.")
 		}
 		slog.Error("Database error during Google login",

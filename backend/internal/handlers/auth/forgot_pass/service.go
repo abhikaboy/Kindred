@@ -131,10 +131,10 @@ func (s *Service) CreateOTP(email string, expiryInMinutes int8) error {
 }
 
 // VerifyOTP updates the 'verified' flag in the pw-resets collection.
-func (s *Service) VerifyOTP(otp string) error {
+func (s *Service) VerifyOTP(email string, otp string) error {
 	ctx := context.Background()
 
-	filter := bson.M{"otp": otp}
+	filter := bson.M{"otp": otp, "email": email}
 	update := bson.M{"$set": bson.M{"verified": true}}
 
 	result, err := s.pwResets.UpdateOne(ctx, filter, update)
@@ -180,6 +180,12 @@ func (s *Service) ChangePassword(email, newPass string) error {
 	_, err = s.users.UpdateOne(ctx, userFilter, userUpdate, options.Update().SetUpsert(false))
 	if err != nil {
 		return err
+	}
+
+	// Invalidate all existing tokens by incrementing the user count
+	_, err = s.users.UpdateOne(ctx, userFilter, bson.M{"$inc": bson.M{"count": 1}}, options.Update().SetUpsert(false))
+	if err != nil {
+		return fmt.Errorf("failed to invalidate existing tokens: %w", err)
 	}
 
 	// Delete the reset document

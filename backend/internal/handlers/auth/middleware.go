@@ -89,13 +89,6 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 
 				slog.Info("✅ AUTH MIDDLEWARE: New tokens generated successfully")
 
-				// Mark refresh token as used
-				if err := service.UseToken(userID); err != nil {
-					slog.Error("AUTH MIDDLEWARE: Failed to mark token as used", "error", err.Error())
-					http.Error(w, `{"error":"Session update failed. Please log in again.","status":500}`, http.StatusInternalServerError)
-					return
-				}
-
 				// Set new tokens in response headers
 				w.Header().Set("access_token", newAccess)
 				w.Header().Set("refresh_token", newRefresh)
@@ -137,13 +130,14 @@ func validateRefreshTokenCore(service *Service, refreshToken string) (userID str
 		return "", 0, "", fmt.Errorf("invalid user ID in refresh token: %v", err)
 	}
 
-	used, err := service.CheckIfTokenUsed(id)
+	// Atomically check and mark token as used — prevents race conditions
+	ok, err := service.users.AtomicMarkTokenUsed(context.Background(), id)
 	if err != nil {
-		slog.Error("Refresh token: error checking usage", "error", err.Error())
-		return "", 0, "", fmt.Errorf("error checking token usage: %v", err)
+		slog.Error("Refresh token: error marking as used", "error", err.Error())
+		return "", 0, "", fmt.Errorf("error processing refresh token: %v", err)
 	}
 
-	if used {
+	if !ok {
 		slog.Error("Refresh token: already used", "user_id", userID)
 		return "", 0, "", fmt.Errorf("refresh token has already been used")
 	}

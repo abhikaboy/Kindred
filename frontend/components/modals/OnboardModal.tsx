@@ -97,51 +97,67 @@ export const OnboardModal = (props: Props) => {
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
+    // Guard to prevent handleSheetChanges from interfering during presentation
+    const isPresentingRef = useRef(false);
+
     // Define snap points
     const snapPoints = useMemo(() => ["75%"], []);
 
-    // Handle visibility changes
+    // Handle visibility changes — dismiss before present to reset internal state
     useEffect(() => {
-        console.log(visible);
         if (visible) {
-            bottomSheetModalRef.current?.present();
-            // Reset animations
-            phoneOpacity.setValue(0);
-            appleOpacity.setValue(0);
-            googleOpacity.setValue(0);
+            isPresentingRef.current = true;
+            // Force dismiss first to clear any stale internal state
+            bottomSheetModalRef.current?.dismiss();
+            const timer = setTimeout(() => {
+                bottomSheetModalRef.current?.present();
+                // Reset animations
+                phoneOpacity.setValue(0);
+                appleOpacity.setValue(0);
+                googleOpacity.setValue(0);
 
-            // Staggered fade-in animation with initial delay
-            setTimeout(() => {
-                Animated.sequence([
-                    Animated.timing(phoneOpacity, {
-                        toValue: 1,
-                        duration: 500,
-                        useNativeDriver: true,
-                    }),
-                    Animated.parallel([
-                        Animated.timing(appleOpacity, {
+                // Clear the guard after the present animation settles
+                setTimeout(() => {
+                    isPresentingRef.current = false;
+                }, 500);
+
+                // Staggered fade-in animation with initial delay
+                setTimeout(() => {
+                    Animated.sequence([
+                        Animated.timing(phoneOpacity, {
                             toValue: 1,
                             duration: 500,
                             useNativeDriver: true,
                         }),
-                        Animated.timing(googleOpacity, {
-                            toValue: 1,
-                            duration: 500,
-                            delay: 200,
-                            useNativeDriver: true,
-                        }),
-                    ]),
-                ]).start();
-            }, 300);
+                        Animated.parallel([
+                            Animated.timing(appleOpacity, {
+                                toValue: 1,
+                                duration: 500,
+                                useNativeDriver: true,
+                            }),
+                            Animated.timing(googleOpacity, {
+                                toValue: 1,
+                                duration: 500,
+                                delay: 200,
+                                useNativeDriver: true,
+                            }),
+                        ]),
+                    ]).start();
+                }, 300);
+            }, 100);
+            return () => {
+                clearTimeout(timer);
+                isPresentingRef.current = false;
+            };
         } else {
             bottomSheetModalRef.current?.dismiss();
         }
     }, [visible]);
 
-    // Handle sheet changes
+    // Handle sheet changes — guarded so dismiss events during presentation are ignored
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1) {
+            if (index === -1 && !isPresentingRef.current) {
                 setVisible(false);
             }
         },
@@ -178,7 +194,7 @@ export const OnboardModal = (props: Props) => {
             if (!email || !firstName || !lastName) {
                 console.log("Apple didn't provide email/name. Checking if account exists...");
                 try {
-                    await login(appleAccountID);
+                    await login(appleAccountID, credential.identityToken ?? undefined);
                     console.log("Account exists! Logging in...");
                     router.push("/(logged-in)/(tabs)/(task)");
                     return;
@@ -197,6 +213,7 @@ export const OnboardModal = (props: Props) => {
                     email: email,
                     displayName: displayName,
                     appleId: appleAccountID,
+                    appleIdToken: credential.identityToken ?? undefined,
                 });
 
                 console.log("Pre-filled onboarding data with Apple credentials");
@@ -229,7 +246,7 @@ export const OnboardModal = (props: Props) => {
 
             const appleAccountID = credential.user;
 
-            await login(appleAccountID);
+            await login(appleAccountID, credential.identityToken ?? undefined);
 
             router.push("/(logged-in)/(tabs)/(task)");
         } catch (e: any) {
@@ -304,6 +321,7 @@ export const OnboardModal = (props: Props) => {
                             <View style={styles.buttonSection}>
                                 <Animated.View style={{ opacity: phoneOpacity }}>
                                     <PrimaryButton
+                                        testID="continue-with-phone"
                                         title="Continue with Phone"
                                         onPress={() => {
                                             setVisible(false);
@@ -320,6 +338,7 @@ export const OnboardModal = (props: Props) => {
 
                                 <Animated.View style={{ opacity: appleOpacity }}>
                                     <TouchableOpacity
+                                        testID="continue-with-apple"
                                         style={styles.appleButton}
                                         onPress={async () => {
                                             try {
@@ -344,6 +363,7 @@ export const OnboardModal = (props: Props) => {
 
                                 <Animated.View style={{ opacity: googleOpacity }}>
                                     <TouchableOpacity
+                                        testID="continue-with-google"
                                         style={styles.googleButton}
                                         onPress={async () => {
                                             try {
