@@ -182,6 +182,12 @@ func (s *Service) ChangePassword(email, newPass string) error {
 		return err
 	}
 
+	// Invalidate all existing tokens by incrementing the user count
+	_, err = s.users.UpdateOne(ctx, userFilter, bson.M{"$inc": bson.M{"count": 1}}, options.Update().SetUpsert(false))
+	if err != nil {
+		return fmt.Errorf("failed to invalidate existing tokens: %w", err)
+	}
+
 	// Delete the reset document
 	_, err = s.pwResets.DeleteOne(ctx, filter)
 	if err != nil {
