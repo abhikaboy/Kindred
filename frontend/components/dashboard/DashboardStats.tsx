@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, LayoutAnimation, UIManager, Platform, TouchableOpacity } from "react-native";
+import { View, StyleSheet, LayoutAnimation, UIManager, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -81,11 +81,11 @@ const DashboardStats: React.FC = () => {
                         />
                     ))}
                     {openTasks.length > MAX_VISIBLE && (
-                        <TouchableOpacity style={styles.showAll} activeOpacity={0.7}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                                Show all {openTasks.length} open →
+                        <View style={styles.showAll}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                +{openTasks.length - MAX_VISIBLE} more
                             </ThemedText>
-                        </TouchableOpacity>
+                        </View>
                     )}
                 </View>
             )}
@@ -97,11 +97,11 @@ const DashboardStats: React.FC = () => {
                         <CompletedTaskRow key={task.id || index} task={task} />
                     ))}
                     {completedThisWeek.length > MAX_VISIBLE && (
-                        <TouchableOpacity style={styles.showAll} activeOpacity={0.7}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                                Show all {completedThisWeek.length} completed →
+                        <View style={styles.showAll}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                +{completedThisWeek.length - MAX_VISIBLE} more
                             </ThemedText>
-                        </TouchableOpacity>
+                        </View>
                     )}
                 </View>
             )}
