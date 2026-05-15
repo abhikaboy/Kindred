@@ -63,7 +63,7 @@ func (h *Handler) VerifyOTP(c *fiber.Ctx) error {
 	}
 
 	// Service call
-	if err := h.service.VerifyOTP(reqInputs.OTP); err != nil {
+	if err := h.service.VerifyOTP(reqInputs.Email, reqInputs.OTP); err != nil {
 		if errors.Is(err, ErrUnauthorized) {
 			// Return 401 if OTP not found or invalid
 			return c.Status(fiber.StatusUnauthorized).

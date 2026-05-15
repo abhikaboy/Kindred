@@ -131,10 +131,10 @@ func (s *Service) CreateOTP(email string, expiryInMinutes int8) error {
 }
 
 // VerifyOTP updates the 'verified' flag in the pw-resets collection.
-func (s *Service) VerifyOTP(otp string) error {
+func (s *Service) VerifyOTP(email string, otp string) error {
 	ctx := context.Background()
 
-	filter := bson.M{"otp": otp}
+	filter := bson.M{"otp": otp, "email": email}
 	update := bson.M{"$set": bson.M{"verified": true}}
 
 	result, err := s.pwResets.UpdateOne(ctx, filter, update)
