@@ -68,6 +68,7 @@ type LoginRequestApple struct {
 type LoginRequestGoogle struct {
 	GoogleID string `validate:"required" json:"google_id"`
 	Email    string `json:"email,omitempty"` // Optional: used to link Google account to existing email-based account
+	IDToken  string `json:"id_token,omitempty"`
 }
 
 type RegisterRequestApple struct {
@@ -84,6 +85,7 @@ type RegisterRequestGoogle struct {
 	DisplayName    string `validate:"required" json:"display_name"`
 	Handle         string `validate:"required" json:"handle"`
 	ProfilePicture string `validate:"required" json:"profile_picture"`
+	IDToken        string `json:"id_token,omitempty"`
 }
 
 type RegisterRequest struct {

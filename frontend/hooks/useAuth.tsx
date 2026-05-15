@@ -54,8 +54,8 @@ interface AuthContextType {
     loginWithPhone: (phoneNumber: string, password: string) => Promise<SafeUser | void>;
     loginWithOTP: (phoneNumber: string, code: string) => Promise<SafeUser | void>;
     register: (email: string, appleAccountID: string) => Promise<any>;
-    registerWithGoogle: (email: string, googleID: string) => Promise<any>;
-    loginWithGoogle: (googleID: string, email?: string) => Promise<SafeUser | void>;
+    registerWithGoogle: (email: string, googleID: string, idToken?: string) => Promise<any>;
+    loginWithGoogle: (googleID: string, email?: string, idToken?: string) => Promise<SafeUser | void>;
     logout: () => void;
     refresh: () => void;
     fetchAuthData: () => Promise<SafeUser | null>;
@@ -127,12 +127,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function registerWithGoogle(email: string, googleID: string): Promise<any> {
+    async function registerWithGoogle(email: string, googleID: string, idToken?: string): Promise<any> {
         try {
             const result = await googleRegisterMutation.mutateAsync({
                 body: {
                     google_id: googleID,
                     email: email,
+                    id_token: idToken,
                 } as any
             });
 
@@ -201,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function loginWithGoogle(googleID: string, email?: string): Promise<SafeUser | void> {
+    async function loginWithGoogle(googleID: string, email?: string, idToken?: string): Promise<SafeUser | void> {
         logger.debug("Google login with ID", googleID);
 
         try {
@@ -210,6 +211,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const body: Record<string, string> = { google_id: googleID };
             if (email) {
                 body.email = email;
+            }
+            if (idToken) {
+                body.id_token = idToken;
             }
 
             const result = await client.POST("/v1/auth/login/google" as any, {

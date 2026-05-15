@@ -14,6 +14,7 @@ type Config struct {
 	Sentry         `envPrefix:"SENTRY_"`
 	GoogleCalendar `envPrefix:"GOOGLE_CALENDAR_"`
 	RevenueCat     `envPrefix:"REVENUECAT_"`
+	OAuth          `envPrefix:"OAUTH_"`
 }
 
 func Load() (Config, error) {

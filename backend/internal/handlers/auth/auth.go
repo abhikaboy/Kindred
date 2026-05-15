@@ -160,8 +160,28 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 		slog.Bool("hasEmail", input.Body.Email != ""),
 	)
 
+	googleID := input.Body.GoogleID
+	email := input.Body.Email
+
+	// Verify Google ID token if provided
+	if input.Body.IDToken != "" {
+		claims, err := VerifyGoogleIDToken(input.Body.IDToken, h.config.OAuth.GoogleClientIDs)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Google ID token verification failed",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Google authentication failed. Please try again.", err)
+		}
+		googleID = claims.Sub
+		if claims.Email != "" {
+			email = claims.Email
+		}
+	} else if h.config.OAuth.GoogleClientIDs != "" {
+		return nil, huma.Error400BadRequest("Google ID token is required for authentication", nil)
+	}
+
 	// database call to find the user and verify credentials and get count
-	id, count, user, err := h.service.LoginFromGoogle(input.Body.GoogleID, input.Body.Email)
+	id, count, user, err := h.service.LoginFromGoogle(googleID, email)
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelWarn, "Google login failed",
 			slog.String("error", err.Error()),
@@ -193,8 +213,23 @@ func (h *Handler) LoginWithGoogleHuma(ctx context.Context, input *LoginWithGoogl
 
 // RegisterWithGoogleHuma handles Google registration
 func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWithGoogleInput) (*RegisterOutput, error) {
+	googleID := input.Body.GoogleID
+
+	if input.Body.IDToken != "" {
+		claims, err := VerifyGoogleIDToken(input.Body.IDToken, h.config.OAuth.GoogleClientIDs)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Google ID token verification failed during registration",
+				slog.String("error", err.Error()),
+			)
+			return nil, huma.Error401Unauthorized("Google authentication failed. Please try again.", err)
+		}
+		googleID = claims.Sub
+	} else if h.config.OAuth.GoogleClientIDs != "" {
+		return nil, huma.Error400BadRequest("Google ID token is required for registration", nil)
+	}
+
 	// Convert to regular register input and add Google ID to context
-	ctxWithGoogle := context.WithValue(ctx, googleIDContextKey, input.Body.GoogleID)
+	ctxWithGoogle := context.WithValue(ctx, googleIDContextKey, googleID)
 
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
