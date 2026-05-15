@@ -17,12 +17,133 @@ export function clearUnauthorizedHandler() {
     onUnauthorized = null;
 }
 
+// --- Token refresh infrastructure ---
+
+// Mutex: only one refresh can happen at a time. Other requests wait for it.
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Decode the `exp` claim from a JWT without a library.
+ * Returns expiry as epoch milliseconds, or null if unparseable.
+ */
+function getTokenExpiry(token: string): number | null {
+    try {
+        const payload = token.split('.')[1];
+        if (!payload) return null;
+        // Handle base64url → base64
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const json = atob(base64);
+        const claims = JSON.parse(json);
+        return typeof claims.exp === 'number' ? claims.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Returns true if the token is expired or will expire within `bufferMs`.
+ * Defaults to a 60-second buffer so we refresh proactively.
+ */
+function isTokenExpired(token: string, bufferMs = 60_000): boolean {
+    const exp = getTokenExpiry(token);
+    if (exp === null) return true;
+    return Date.now() + bufferMs >= exp;
+}
+
+/**
+ * Perform a token refresh by hitting a lightweight authenticated endpoint.
+ * The server middleware detects the expired access token, validates the
+ * refresh token, and returns new tokens in response headers.
+ *
+ * Returns true if refresh succeeded (new tokens saved).
+ */
+async function performRefresh(): Promise<boolean> {
+    try {
+        const authData = await SecureStore.getItemAsync("auth_data");
+        if (!authData) return false;
+
+        const { access_token, refresh_token } = JSON.parse(authData);
+        if (!refresh_token) return false;
+
+        logger.debug("Performing token refresh");
+
+        const response = await fetch(
+            (process.env.EXPO_PUBLIC_URL ?? "") + "/api/v1/user/login",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${access_token}`,
+                    "refresh_token": refresh_token,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        if (response.status === 401) {
+            logger.warn("Refresh failed: server returned 401");
+            return false;
+        }
+
+        // Check for new tokens in response headers
+        const newAccess = response.headers.get("access_token");
+        const newRefresh = response.headers.get("refresh_token");
+
+        if (newAccess && newRefresh) {
+            const newAuthData = { access_token: newAccess, refresh_token: newRefresh };
+            await SecureStore.setItemAsync("auth_data", JSON.stringify(newAuthData));
+
+            // Keep axios defaults in sync for legacy code
+            axios.defaults.headers.common["Authorization"] = `Bearer ${newAccess}`;
+            axios.defaults.headers.common["refresh_token"] = newRefresh;
+
+            logger.debug("Token refresh succeeded, new tokens saved");
+            return true;
+        }
+
+        // No new tokens but request succeeded — tokens were still valid
+        if (response.ok) return true;
+
+        return false;
+    } catch (error) {
+        logger.error("Token refresh error", error);
+        return false;
+    }
+}
+
+/**
+ * Ensure we have a valid (non-expired) access token before making a request.
+ * If the token is expired, triggers a refresh with a mutex so concurrent
+ * callers share a single refresh attempt.
+ */
+async function ensureValidToken(): Promise<boolean> {
+    const authData = await SecureStore.getItemAsync("auth_data");
+    if (!authData) return false;
+
+    const { access_token } = JSON.parse(authData);
+    if (!access_token) return false;
+
+    // Token still valid — no refresh needed
+    if (!isTokenExpired(access_token)) return true;
+
+    // Token expired — refresh, but only one at a time
+    if (refreshPromise) {
+        logger.debug("Waiting for in-progress token refresh");
+        return refreshPromise;
+    }
+
+    refreshPromise = performRefresh().finally(() => {
+        refreshPromise = null;
+    });
+
+    return refreshPromise;
+}
+
 // Create the base client
 const baseClient = createClient<paths>({
     baseUrl: (process.env.EXPO_PUBLIC_URL ?? "") + "/api",
 });
 
-// Add request interceptor for authentication
+// Add request/response interceptors
 baseClient.use({
     async onRequest({ request }) {
         logger.debug("Making request", {
@@ -31,6 +152,9 @@ baseClient.use({
         });
 
         try {
+            // Proactively refresh if token is expired — prevents 401 race
+            await ensureValidToken();
+
             const authData = await SecureStore.getItemAsync("auth_data");
 
             if (authData) {
@@ -61,31 +185,45 @@ baseClient.use({
     },
 
     async onResponse({ response, request }) {
-        // Handle 401 — both tokens invalid, force logout
-        if (response.status === 401 && onUnauthorized) {
-            logger.warn("Received 401, triggering auto-logout");
-            await SecureStore.deleteItemAsync("auth_data");
-            onUnauthorized();
+        // Handle 401 — but don't immediately log out.
+        // Check if tokens were already refreshed by another concurrent request.
+        if (response.status === 401) {
+            const authData = await SecureStore.getItemAsync("auth_data");
+
+            if (authData) {
+                const { access_token } = JSON.parse(authData);
+                const requestToken = request.headers.get("Authorization")?.replace("Bearer ", "");
+
+                // If the stored token differs from what this request used,
+                // another request already refreshed. Don't log out.
+                if (access_token && requestToken && access_token !== requestToken) {
+                    logger.debug("401 on stale request — tokens already refreshed, skipping logout");
+                    return response;
+                }
+            }
+
+            // Tokens haven't changed — this is a genuine auth failure
+            if (onUnauthorized) {
+                logger.warn("Received 401 with current tokens, triggering logout");
+                await SecureStore.deleteItemAsync("auth_data");
+                onUnauthorized();
+            }
+
             return response;
         }
 
-        // Handle token refresh in headers
+        // Handle token refresh in response headers (server-side middleware refreshed for us)
         const access_token = response.headers.get("access_token");
         const refresh_token = response.headers.get("refresh_token");
 
         if (access_token && refresh_token) {
-            logger.debug("Saving tokens from response headers");
+            logger.debug("Saving refreshed tokens from response headers");
             const authData = {
                 access_token: access_token,
                 refresh_token: refresh_token,
             };
 
             await SecureStore.setItemAsync("auth_data", JSON.stringify(authData));
-            logger.debug("Tokens saved successfully");
-
-            // Verify what was actually saved
-            const savedData = await SecureStore.getItemAsync("auth_data");
-            logger.debug("Verified saved data", { exists: !!savedData });
 
             // Update axios defaults for compatibility with existing code
             axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;

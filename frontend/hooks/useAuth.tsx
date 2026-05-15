@@ -471,7 +471,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     } catch (tokenError) {
                         logger.error("❌ Token login exception:", tokenError);
                         logger.error("❌ Error details:", tokenError.message);
-                        logout();
+                        // Only log out if this was an auth rejection (401).
+                        // Network errors or transient failures should not clear the session.
+                        const is401 = tokenError?.message?.includes('401') || tokenError?.status === 401;
+                        if (is401) {
+                            logout();
+                        }
                         return null;
                     }
                 }
@@ -481,7 +486,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return null;
             } catch (error) {
                 logger.error("Error fetching auth data:", error);
-                logout();
+                // Don't log out on transient errors (network issues, SecureStore hiccups).
+                // The user's session is still valid — we just couldn't verify it right now.
                 return null;
             }
         })();
