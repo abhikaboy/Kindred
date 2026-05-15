@@ -1,0 +1,34 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.1",
+  "base_commit_sha": "0e464448b2f8740828d1423ee99bf4b31b53ef2b",
+  "prompts": {
+    "436691b7ba7fad54": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "68786d09-24b0-4b6a-b42f-5a021ce6d530",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 2,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "8a840762f2b5068e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "800eba8a-0987-4ea6-a046-7f277b33c6cf",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Abhik Ray",
+      "messages": [],
+      "total_additions": 1562,
+      "total_deletions": 23,
+      "accepted_lines": 1539,
+      "overriden_lines": 0
+    }
+  }
+}
