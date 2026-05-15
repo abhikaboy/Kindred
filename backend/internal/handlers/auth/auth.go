@@ -138,8 +138,8 @@ func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWith
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:          input.Body.Email,
-			Password:       input.Body.AppleID, // Use Apple ID as password for validation
-			Phone:          "",                 // Phone is optional for Apple users
+			Password:       "", // OAuth users don't need a password
+			Phone:          "", // Phone is optional for Apple users
 			DisplayName:    input.Body.DisplayName,
 			Handle:         input.Body.Handle,
 			ProfilePicture: input.Body.ProfilePicture,
@@ -199,8 +199,8 @@ func (h *Handler) RegisterWithGoogleHuma(ctx context.Context, input *RegisterWit
 	registerInput := &RegisterInput{
 		Body: RegisterRequest{
 			Email:          input.Body.Email,
-			Password:       input.Body.GoogleID, // Use Google ID as password for validation
-			Phone:          "",                  // Phone is optional for Google users
+			Password:       "", // OAuth users don't need a password
+			Phone:          "", // Phone is optional for Google users
 			DisplayName:    input.Body.DisplayName,
 			Handle:         input.Body.Handle,
 			ProfilePicture: input.Body.ProfilePicture,

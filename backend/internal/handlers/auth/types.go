@@ -89,7 +89,7 @@ type RegisterRequestGoogle struct {
 type RegisterRequest struct {
 	Email          string `validate:"omitempty,email" json:"email"`
 	Phone          string `json:"phone"`
-	Password       string `validate:"required,min=8" json:"password"`
+	Password       string `validate:"omitempty,min=8" json:"password"`
 	DisplayName    string `validate:"required" json:"display_name"`
 	Handle         string `validate:"required" json:"handle"`
 	ProfilePicture string `validate:"required" json:"profile_picture"`

@@ -119,6 +119,14 @@ func (s *Service) LoginFromCredentials(email string, password string) (*primitiv
 		)
 		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
 	}
+	// Reject password login for OAuth-only accounts
+	if user.Password == "" {
+		slog.Warn("Password login attempted on OAuth-only account",
+			"email", email,
+			"userId", user.ID.Hex(),
+		)
+		return nil, nil, nil, fiber.NewError(401, "This account uses social login. Please sign in with Apple or Google.")
+	}
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
@@ -145,6 +153,14 @@ func (s *Service) LoginFromPhone(phoneNumber string, password string) (*primitiv
 			"error", err.Error(),
 		)
 		return nil, nil, nil, fmt.Errorf("unable to look up account: %w", err)
+	}
+	// Reject password login for OAuth-only accounts
+	if user.Password == "" {
+		slog.Warn("Password login attempted on OAuth-only account",
+			"userId", user.ID.Hex(),
+			"provider", "phone",
+		)
+		return nil, nil, nil, fiber.NewError(401, "This account uses social login. Please sign in with Apple or Google.")
 	}
 	// Compare the hashed password with the provided password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
