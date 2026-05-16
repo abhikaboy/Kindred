@@ -144,6 +144,14 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	activity.Routes(api, collections)
 	profile.Routes(api, collections)
 	task.Routes(api, collections, geminiService)
+
+	// SSE streaming routes for NLP flows (raw Fiber, bypass Huma)
+	taskStreamHandler := task.NewStreamHandler(collections, geminiService)
+	app.Post("/api/v1/user/tasks/natural-language/intent/stream", taskStreamHandler.StreamIntentNaturalLanguage)
+	app.Post("/api/v1/user/tasks/natural-language/stream", taskStreamHandler.StreamCreateNaturalLanguage)
+	app.Post("/api/v1/user/tasks/natural-language/query/stream", taskStreamHandler.StreamQueryNaturalLanguage)
+	app.Post("/api/v1/user/tasks/natural-language/edit/stream", taskStreamHandler.StreamEditNaturalLanguage)
+
 	connection.Routes(api, collections)
 	group.RegisterRoutes(api, collections)
 	post.Routes(api, collections)

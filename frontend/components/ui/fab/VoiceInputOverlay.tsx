@@ -106,6 +106,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         errorDetails,
         pendingOpsCount,
         currentOpIndex,
+        streamMessage,
         processText,
         confirmCreate,
         dismissEditResult,
@@ -757,30 +758,45 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     ) : !hasPreview ? (
                         <>
                             {transcription ? (
-                                <ThemedText style={styles.transcriptionText}>
-                                    {isPreviewing ? (
-                                        transcriptionWords.map((word, index) => (
-                                            <Animated.Text
-                                                key={`${word}-${index}`}
-                                                style={[
-                                                    styles.transcriptionWord,
-                                                    {
-                                                        opacity: readingProgress.interpolate({
-                                                            inputRange: [index - 1, index, index + 1],
-                                                            outputRange: [0.25, 1, 0.25],
-                                                            extrapolate: "clamp",
-                                                        }),
-                                                    },
-                                                ]}
-                                            >
-                                                {word}
-                                                {index < transcriptionWords.length - 1 ? " " : ""}
-                                            </Animated.Text>
-                                        ))
-                                    ) : (
-                                        transcription
+                                <>
+                                    <ThemedText style={styles.transcriptionText}>
+                                        {isPreviewing ? (
+                                            transcriptionWords.map((word, index) => (
+                                                <Animated.Text
+                                                    key={`${word}-${index}`}
+                                                    style={[
+                                                        styles.transcriptionWord,
+                                                        {
+                                                            opacity: readingProgress.interpolate({
+                                                                inputRange: [index - 1, index, index + 1],
+                                                                outputRange: [0.25, 1, 0.25],
+                                                                extrapolate: "clamp",
+                                                            }),
+                                                        },
+                                                    ]}
+                                                >
+                                                    {word}
+                                                    {index < transcriptionWords.length - 1 ? " " : ""}
+                                                </Animated.Text>
+                                            ))
+                                        ) : (
+                                            transcription
+                                        )}
+                                    </ThemedText>
+                                    {isPreviewing && streamMessage && (
+                                        <ThemedText
+                                            type="default"
+                                            style={{
+                                                fontSize: 14,
+                                                color: "rgba(255,255,255,0.5)",
+                                                textAlign: "center",
+                                                marginTop: 8,
+                                            }}
+                                        >
+                                            {streamMessage}
+                                        </ThemedText>
                                     )}
-                                </ThemedText>
+                                </>
                             ) : (
                                 recognizing ? (
                                     <ThemedText style={styles.placeholderText}>

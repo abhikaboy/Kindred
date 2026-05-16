@@ -22,6 +22,7 @@ const TextDump = (props: Props) => {
     const { fetchWorkspaces } = useTasks();
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [streamMessage, setStreamMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [credits, setCredits] = useState<UserCredits | null>(null);
     const [showCreditsSheet, setShowCreditsSheet] = useState(false);
@@ -42,7 +43,7 @@ const TextDump = (props: Props) => {
     const handleGenerateTasks = async () => {
         // Clear any previous errors
         setError(null);
-        
+
         // Validate input
         if (text.trim().length < 4) {
             setError("Please enter at least 4 characters");
@@ -50,13 +51,14 @@ const TextDump = (props: Props) => {
         }
 
         setIsLoading(true);
+        setStreamMessage(null);
 
         try {
             const result = await createTasksFromNaturalLanguageAPI(text.trim());
-            
+
             // Invalidate cache and trigger workspace refetch to get new tasks/categories
             fetchWorkspaces(true);
-            
+
             // Refetch credits to update the count
             try {
                 const updatedCredits = await getUserCredits();
@@ -64,10 +66,10 @@ const TextDump = (props: Props) => {
             } catch (error) {
                 console.error("Failed to refetch credits:", error);
             }
-            
+
             // Clear the text input
             setText("");
-            
+
             // Navigate to preview screen with the task data
             router.push({
                 pathname: "/(logged-in)/(tabs)/(task)/preview" as any,
@@ -81,7 +83,7 @@ const TextDump = (props: Props) => {
         } catch (err) {
             // Handle different error types
             let errorMessage = "Failed to generate tasks. Please try again.";
-            
+
             if (err instanceof Error) {
                 // Extract meaningful error message
                 if (err.message.includes("Failed to create tasks from natural language")) {
@@ -92,22 +94,23 @@ const TextDump = (props: Props) => {
                     errorMessage = err.message;
                 }
             }
-            
+
             setError(errorMessage);
             console.error("Error generating tasks:", err);
         } finally {
             setIsLoading(false);
+            setStreamMessage(null);
         }
     };
 
     return (
         <ThemedView style={{ flex: 1 }}>
-            <ScrollView 
+            <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 style={styles.container}>
                 {/* Back Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={() => router.back()}
                     style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
@@ -118,8 +121,8 @@ const TextDump = (props: Props) => {
                     <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                         Text Dump
                     </ThemedText>
-                    <ThemedText 
-                        type="default" 
+                    <ThemedText
+                        type="default"
                         style={[styles.subtitle, { color: ThemedColor.caption }]}>
                         Write down your thoughts freely
                     </ThemedText>
@@ -149,8 +152,8 @@ const TextDump = (props: Props) => {
                 {/* Character Count */}
                 {text.length > 0 && (
                     <View style={styles.characterCountSection}>
-                        <ThemedText 
-                            type="default" 
+                        <ThemedText
+                            type="default"
                             style={[styles.characterCount, { color: ThemedColor.caption }]}>
                             {text.length} character{text.length !== 1 ? 's' : ''}
                         </ThemedText>
@@ -162,9 +165,9 @@ const TextDump = (props: Props) => {
 
                 {/* Loading State */}
                 {isLoading && (
-                    <TaskGenerationLoading 
-                        message="Processing your text with AI..." 
-                        submessage="This may take a few moments"
+                    <TaskGenerationLoading
+                        message="Processing your text with AI..."
+                        submessage={streamMessage ?? "This may take a few moments"}
                     />
                 )}
 
@@ -187,16 +190,16 @@ const TextDump = (props: Props) => {
                             <ThemedText type="default" style={{ fontWeight: '600' }}>
                                 {credits.naturalLanguage}
                             </ThemedText>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={() => {
                                     console.log('Info icon pressed, opening sheet');
                                     setShowCreditsSheet(true);
                                 }}
                                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
-                                <Ionicons 
-                                    name="information-circle-outline" 
-                                    size={16} 
+                                <Ionicons
+                                    name="information-circle-outline"
+                                    size={16}
                                     color={ThemedColor.caption}
                                     style={{ marginLeft: 4 }}
                                 />
@@ -207,7 +210,7 @@ const TextDump = (props: Props) => {
             </ScrollView>
 
             {/* Credits Info Sheet */}
-            <CreditsInfoSheet 
+            <CreditsInfoSheet
                 visible={showCreditsSheet}
                 onClose={() => {
                     console.log('Closing sheet');
@@ -283,4 +286,3 @@ const styles = StyleSheet.create({
         width: "100%",
     },
 });
-

@@ -205,14 +205,17 @@ type TaskQueryFiltersOutput struct {
 // --- getUserActiveTasks types ---
 
 type GetUserActiveTasksInput struct {
-	UserID string `json:"userId" jsonschema_description:"The user's ObjectID as a hex string"`
+	UserID string `json:"userId"          jsonschema_description:"The user's ObjectID as a hex string"`
+	Query  string `json:"query,omitempty" jsonschema_description:"Optional keyword search. If provided, returns only tasks whose content or notes match (case-insensitive, max 20 results with full detail). If omitted, returns all tasks in slim format."`
 }
 
 type GetUserActiveTasksOutput struct {
-	UserID    string               `json:"userId"`
-	Tasks     []ActiveTaskInfo     `json:"tasks"     jsonschema_description:"Regular (non-recurring) active tasks"`
-	Templates []ActiveTemplateInfo `json:"templates" jsonschema_description:"Recurring template tasks"`
-	Total     int                  `json:"total"`
+	UserID        string               `json:"userId"`
+	Tasks         []ActiveTaskInfo     `json:"tasks,omitempty"         jsonschema_description:"Full-detail tasks (populated when query is provided)"`
+	Templates     []ActiveTemplateInfo `json:"templates,omitempty"     jsonschema_description:"Full-detail templates (populated when query is provided)"`
+	SlimTasks     []SlimTaskInfo       `json:"slimTasks,omitempty"     jsonschema_description:"Slim tasks with minimal fields (populated when no query)"`
+	SlimTemplates []SlimTemplateInfo   `json:"slimTemplates,omitempty" jsonschema_description:"Slim templates with minimal fields (populated when no query)"`
+	Total         int                  `json:"total"`
 }
 
 // ActiveTaskInfo is a Genkit-safe representation of a task with string IDs.
@@ -251,6 +254,25 @@ type ActiveTemplateInfo struct {
 	StartDate      string  `json:"startDate,omitempty"      jsonschema_description:"ISO8601 start date, absent if none"`
 	StartTime      string  `json:"startTime,omitempty"      jsonschema_description:"ISO8601 start time, absent if none"`
 	Notes          string  `json:"notes,omitempty"          jsonschema_description:"Template notes (truncated to 200 chars)"`
+}
+
+// SlimTaskInfo is a minimal representation of a task for broad/unfocused queries.
+// Contains just enough for the model to identify tasks without consuming excessive tokens.
+type SlimTaskInfo struct {
+	ID         string `json:"id"                    jsonschema_description:"Hex ObjectID of the task"`
+	CategoryID string `json:"categoryId"            jsonschema_description:"Hex ObjectID of the containing category"`
+	Content    string `json:"content"               jsonschema_description:"Task title / description"`
+	Priority   int    `json:"priority"              jsonschema_description:"1=low, 2=medium, 3=high"`
+	Deadline   string `json:"deadline,omitempty"    jsonschema_description:"ISO8601 deadline, absent if none"`
+}
+
+// SlimTemplateInfo is a minimal representation of a recurring template for broad queries.
+type SlimTemplateInfo struct {
+	ID         string `json:"id"                    jsonschema_description:"Hex ObjectID of the template"`
+	CategoryID string `json:"categoryId"            jsonschema_description:"Hex ObjectID of the containing category"`
+	Content    string `json:"content"               jsonschema_description:"Template title / description"`
+	Priority   int    `json:"priority"              jsonschema_description:"1=low, 2=medium, 3=high"`
+	Deadline   string `json:"deadline,omitempty"    jsonschema_description:"ISO8601 deadline, absent if none"`
 }
 
 // --- Edit tasks flow types ---
