@@ -10,6 +10,7 @@ import (
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/core"
 	"github.com/firebase/genkit/go/genkit"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 )
@@ -79,14 +80,47 @@ func InitFlows(g *genkit.Genkit, tools *ToolSet, categoryService *Category.Servi
 	// Enhanced flow with category context and tool calling
 	multiTaskFromTextFlowWithContext := genkit.DefineFlow(g, "multiTaskFromTextFlowWithContext",
 		func(ctx context.Context, input MultiTaskFromTextInputWithUser) (MultiTaskFromTextOutput, error) {
-			// Enhanced prompt that instructs the AI to use the tool
-			prompt := BuildMultiTaskWithContextPrompt(input.UserID, input.Text, input.Timezone)
+			currentTime := time.Now().UTC().Format(time.RFC3339)
+
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return MultiTaskFromTextOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return MultiTaskFromTextOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
+			prompt := fmt.Sprintf(`You are a task organization assistant. Generate a set of categories and tasks based on the user's input text.
+
+The user's existing workspaces and categories:
+%s
+
+Current time: %s
+User input: %s
+
+TEXT NORMALIZATION (apply to all task content you generate):
+- Fix capitalization: sentence case for task names ("buy groceries" -> "Buy groceries")
+- Remove filler words from voice input (um, uh, like, you know, so basically, i guess)
+- Keep the user's phrasing — do NOT significantly rewrite or paraphrase their words
+- Split compound sentences into separate tasks when they describe distinct actions
+  Example: "call mom and also buy groceries" -> two tasks: "Call mom", "Buy groceries"
+- Infer deadlines from context: "finish the report by friday" -> set deadline to this Friday
+- Infer priorities from urgency cues: "urgently fix the bug" -> priority 3, "maybe clean my desk" -> priority 1
+- When no priority cue exists, default to priority 2
+- When no deadline is mentioned, omit it — do not guess
+
+Your response should include:
+1. categories: An array of category objects with "name" and "workspaceName" fields. New categories should include tasks in the tasks array.
+2. tasks: An array of categoryTaskPair objects, each with appropriate fields. The categoryId should be the ID of the existing category from the list above. These are exclusively for tasks that belong to existing categories.
+
+When choosing category names, prefer existing categories from the list above when the task fits. Only create new categories when the task doesn't match any existing category.`, categorySummary, currentTime, input.Text)
 
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.MultiTaskFromTextWithContext")
 			defer span.End()
 			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g,
 				ai.WithPrompt(prompt),
-				ai.WithTools(tools.GetUserCategories),
 			)
 			if err != nil {
 				span.RecordError(err)
@@ -167,23 +201,33 @@ Be specific with numbers, encouraging in tone, and actionable in recommendations
 		func(ctx context.Context, input GenerateBlueprintInput) (GenerateBlueprintOutput, error) {
 			currentTime := time.Now().UTC().Format(time.RFC3339)
 
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return GenerateBlueprintOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return GenerateBlueprintOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
 			prompt := fmt.Sprintf(`You are a blueprint creation assistant. Generate a comprehensive, well-structured blueprint based on the user's description.
 
-User ID: %s
 Description: %s
 Current time: %s
 
+The user's existing workspaces and categories:
+%s
+
 IMPORTANT INSTRUCTIONS:
 
-1. CALL getUserCategories tool with userId "%s" to understand the user's existing categories and workspaces. This will help you create relevant and contextually appropriate blueprints.
-
-2. CALL fetchUnsplashImage tool with a relevant search query based on the blueprint theme to get a beautiful banner image. For example:
+1. CALL fetchUnsplashImage tool with a relevant search query based on the blueprint theme to get a beautiful banner image. For example:
    - For a "Morning Routine" blueprint, use query "morning sunrise coffee"
    - For a "Workout Plan" blueprint, use query "fitness gym workout"
    - For a "Meal Prep" blueprint, use query "healthy food meal prep"
    Choose a descriptive query that matches the blueprint's theme. Use the returned URL for the banner field.
 
-3. Create a complete blueprint with the following structure:
+2. Create a complete blueprint with the following structure:
    - name: A clear, concise name for the blueprint (e.g., "Morning Productivity Routine", "Weekly Meal Prep Plan")
    - description: A detailed description explaining the purpose and benefits of this blueprint
    - banner: Use the image URL returned from fetchUnsplashImage tool
@@ -207,7 +251,7 @@ IMPORTANT INSTRUCTIONS:
        - checklist: Array of checklist items (optional)
        - reminders: Array of reminder objects (optional)
 
-4. BLUEPRINT DESIGN GUIDELINES:
+3. BLUEPRINT DESIGN GUIDELINES:
    - Create 2-5 categories that logically organize the tasks
    - Each category should have 3-8 tasks
    - Tasks should be specific, actionable, and ordered logically
@@ -216,22 +260,22 @@ IMPORTANT INSTRUCTIONS:
    - For recurring tasks, consider daily/weekly patterns
    - Add helpful notes for tasks that need clarification
 
-5. QUALITY STANDARDS:
+4. QUALITY STANDARDS:
    - Ensure tasks are complete and actionable
    - Order tasks in a logical sequence
    - Balance task priorities across the blueprint
    - Make the blueprint immediately useful and practical
-   - Consider the user's existing workspace patterns from getUserCategories
+   - Consider the user's existing workspace patterns from the category list above
    - Use high-quality, relevant banner images from Unsplash
 
-Generate a high-quality, comprehensive blueprint that the user can immediately subscribe to and start using.`, input.UserID, input.Description, currentTime, input.UserID)
+Generate a high-quality, comprehensive blueprint that the user can immediately subscribe to and start using.`, input.Description, currentTime, categorySummary)
 
-			// Generate structured blueprint data with user context and Unsplash tool
+			// Generate structured blueprint data with Unsplash tool
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.GenerateBlueprint")
 			defer span.End()
 			resp, _, err := genkit.GenerateData[GenerateBlueprintOutput](ctx, g,
 				ai.WithPrompt(prompt),
-				ai.WithTools(tools.GetUserCategories, tools.FetchUnsplashImage),
+				ai.WithTools(tools.FetchUnsplashImage),
 			)
 			if err != nil {
 				span.RecordError(err)
@@ -245,13 +289,45 @@ Generate a high-quality, comprehensive blueprint that the user can immediately s
 	// NL-to-query flow: converts natural language into structured task filter parameters
 	queryTasksFlow := genkit.DefineFlow(g, "queryTasksFlow",
 		func(ctx context.Context, input QueryTasksFlowInput) (TaskQueryFiltersOutput, error) {
-			prompt := BuildQueryTasksPrompt(input.UserID, input.Text, input.Timezone)
+			currentTime := time.Now().UTC().Format(time.RFC3339)
+
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return TaskQueryFiltersOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return TaskQueryFiltersOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
+			prompt := fmt.Sprintf(`You are a task search assistant. Convert the user's natural language query into structured filter parameters for searching their tasks.
+
+The user's existing workspaces and categories:
+%s
+
+Current time: %s
+User's timezone: %s
+
+User query: "%s"
+
+Return a TaskQueryFiltersOutput with the appropriate filters:
+- categoryIds: IDs of relevant categories (match by name from the list above). Leave empty if no specific category is mentioned.
+- priorities: relevant priority values (1=low, 2=medium, 3=high). E.g. [3] for "high priority", [1,2] for "low and medium priority".
+- deadlineFrom/deadlineTo: ISO8601 datetime range for deadline filter. E.g. for "due this week", set deadlineFrom to start of current week and deadlineTo to end of current week in the user's timezone.
+- startTimeFrom/startTimeTo: ISO8601 datetime range for start date filter.
+- hasDeadline: set to true if user says "with deadline" or "due", false if "without deadline".
+- hasStartTime: set to true if user says "scheduled" or "with start date", false if "unscheduled".
+- sortBy: appropriate sorting field (timestamp, priority, value, deadline). Default to "timestamp".
+- sortDir: -1 for "newest/latest/most recent", 1 for "oldest". Default to -1.
+
+Be precise with date ranges based on the user's timezone. Only set filters that are clearly implied by the query.`,
+				categorySummary, currentTime, input.Timezone, input.Text)
 
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.QueryTasks")
 			defer span.End()
 			resp, _, err := genkit.GenerateData[TaskQueryFiltersOutput](ctx, g,
 				ai.WithPrompt(prompt),
-				ai.WithTools(tools.GetUserCategories),
 			)
 			if err != nil {
 				span.RecordError(err)
@@ -264,7 +340,49 @@ Generate a high-quality, comprehensive blueprint that the user can immediately s
 	// Edit tasks via natural language
 	editTasksFlow := genkit.DefineFlow(g, "editTasksFlow",
 		func(ctx context.Context, input EditTasksFlowInput) (EditTasksFlowOutput, error) {
-			prompt := BuildEditTasksPrompt(input.UserID, input.Text, input.Timezone)
+			now := time.Now().UTC().Format(time.RFC3339)
+
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return EditTasksFlowOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return EditTasksFlowOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
+			prompt := fmt.Sprintf(`You are a task editing assistant. The user wants to edit one or more of their tasks or recurring templates.
+
+The user's existing workspaces and categories:
+%s
+
+STEP 1: Call getUserActiveTasks with userId "%s" and a query keyword extracted from the user's instruction to find the relevant tasks. If the instruction is broad (e.g., "change all my tasks"), call it without a query to get a slim overview of all tasks.
+STEP 2: Identify which item(s) the user is referring to by matching their description to content/notes.
+         If the user mentions something recurring or a "template", look in templates first.
+STEP 3: Construct edit instructions for each matched item.
+
+Current time: %s
+User's timezone: %s
+User instruction: "%s"
+
+Return an EditTasksFlowOutput with two arrays:
+- instructions: edits for regular tasks. Each entry must have:
+    - taskId: exact hex ID from the results
+    - categoryId: exact hex categoryId from the results
+    - updates: only include fields that should change
+- templateInstructions: edits for recurring templates. Each entry must have:
+    - taskId: exact hex ID from the results
+    - categoryId: exact hex categoryId from the results
+    - updates: only include fields that should change
+
+For time fields in updates:
+    - Omit entirely to leave unchanged
+    - ISO8601 string to set a new value (interpret relative times like "next Friday" using current time + timezone)
+    - Empty string "" to explicitly clear/remove the field
+
+If the user's instruction doesn't match anything, return empty arrays for both.`,
+				categorySummary, input.UserID, now, input.Timezone, input.Text)
 
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.EditTasks")
 			defer span.End()
@@ -285,13 +403,79 @@ Generate a high-quality, comprehensive blueprint that the user can immediately s
 	// then deletes (destructive, needs user confirmation), then creates (additive, needs preview).
 	intentRouterFlow := genkit.DefineFlow(g, "intentRouterFlow",
 		func(ctx context.Context, input IntentRouterInput) (IntentRouterOutput, error) {
-			prompt := BuildIntentRouterPrompt(input.UserID, input.Text, input.Timezone)
+			now := time.Now().UTC().Format(time.RFC3339)
+
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return IntentRouterOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return IntentRouterOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
+			prompt := fmt.Sprintf(`You are a task management assistant. The user has given you a natural language instruction that may contain one or more operations: creating new tasks, editing existing tasks, or deleting existing tasks.
+
+The user's existing workspaces and categories:
+%s
+
+STEP 1: If the instruction involves editing or deleting specific tasks, call getUserActiveTasks with userId "%s" and a query keyword to find the relevant tasks. If the instruction is broad, call it without a query for a slim overview.
+STEP 2: Decompose the user's instruction into one or more typed operations.
+
+Current time: %s
+User's timezone: %s
+User instruction: "%s"
+
+TEXT NORMALIZATION (apply to all task content you create):
+- Fix capitalization: sentence case for task names ("buy groceries" -> "Buy groceries")
+- Remove filler words from voice input (um, uh, like, you know, so basically, i guess)
+- Keep the user's phrasing — do NOT significantly rewrite or paraphrase their words
+- Split compound sentences into separate tasks when they describe distinct actions
+  Example: "call mom and also buy groceries" -> two tasks: "Call mom", "Buy groceries"
+- Infer deadlines from context: "finish the report by friday" -> set deadline to this Friday
+- Infer priorities from urgency cues: "urgently fix the bug" -> priority 3, "maybe clean my desk" -> priority 1
+- When no priority cue exists, default to priority 2
+- When no deadline is mentioned, omit it — do not guess
+
+Return an IntentRouterOutput with an "ops" array. Each element must have:
+- "type": one of "create", "edit", or "delete"
+- Exactly one payload field matching the type:
+  - For "create": populate "createPayload" with:
+      { "categories": [...new categories with tasks...], "tasks": [...tasks for existing categories...] }
+      Use the categoryIds from the list above when assigning tasks to existing categories.
+  - For "edit": populate "editPayload" with:
+      { "instructions": [...], "templateInstructions": [...] }
+      Use exact hex IDs from getUserActiveTasks results.
+  - For "delete": populate "deletePayload" with query filters to match the tasks the user wants to delete.
+      ONLY these fields are allowed — do NOT include any other fields:
+        - "categoryIds": string array of category IDs (from the list above)
+        - "priorities": integer array of priority values (1=low, 2=medium, 3=high)
+        - "deadlineFrom": ISO8601 datetime string (start of deadline range, optional)
+        - "deadlineTo": ISO8601 datetime string (end of deadline range, optional)
+        - "startTimeFrom": ISO8601 datetime string (start of start-time range, optional)
+        - "startTimeTo": ISO8601 datetime string (end of start-time range, optional)
+        - "hasDeadline": boolean (true = only tasks with a deadline, optional)
+        - "hasStartTime": boolean (true = only scheduled tasks, optional)
+        - "sortBy": one of "timestamp", "priority", "value", "deadline" (optional)
+        - "sortDir": -1 (newest first) or 1 (oldest first) (optional)
+      IMPORTANT: Do NOT include "taskIds", "ids", "taskId", or any direct task identifiers.
+
+ORDERING RULES (important):
+1. Edit operations first (non-destructive, applied immediately server-side)
+2. Delete operations second (destructive, user will confirm in UI)
+3. Create operations last (additive, user will preview in UI)
+
+If the instruction contains only one type of operation, return a single-element "ops" array.
+If no matching tasks are found for an edit or delete, return an empty "ops" array rather than guessing.
+Only include operations that are clearly implied by the user's instruction.`,
+				categorySummary, input.UserID, now, input.Timezone, input.Text)
 
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.IntentRouter")
 			defer span.End()
 			resp, _, err := genkit.GenerateData[IntentRouterOutput](ctx, g,
 				ai.WithPrompt(prompt),
-				ai.WithTools(tools.GetUserActiveTasks, tools.GetUserCategories),
+				ai.WithTools(tools.GetUserActiveTasks),
 			)
 			if err != nil {
 				span.RecordError(err)
