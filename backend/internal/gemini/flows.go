@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/core"
@@ -27,7 +28,7 @@ type FlowSet struct {
 }
 
 // InitFlows initializes and registers all Genkit flows
-func InitFlows(g *genkit.Genkit, tools *ToolSet) *FlowSet {
+func InitFlows(g *genkit.Genkit, tools *ToolSet, categoryService *Category.Service) *FlowSet {
 	// Generate single task from description
 	generateTaskFlow := genkit.DefineFlow(g, "generateTaskFlow",
 		func(ctx context.Context, input GenerateTaskParams) (*task.CreateTaskParams, error) {

@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 
+	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	"github.com/abhikaboy/Kindred/internal/unsplash"
 	"github.com/firebase/genkit/go/genkit"
 	"github.com/firebase/genkit/go/plugins/googlegenai"
@@ -20,8 +21,11 @@ func InitGenkit(collections map[string]*mongo.Collection, unsplashClient *unspla
 	// Initialize tools
 	tools := InitTools(g, collections, unsplashClient)
 
-	// Initialize flows with tools
-	flows := InitFlows(g, tools)
+	// Initialize category service for prompt injection
+	categoryService := Category.NewService(collections)
+
+	// Initialize flows with tools and category service
+	flows := InitFlows(g, tools, categoryService)
 
 	return &GeminiService{
 		Genkit:                           g,
