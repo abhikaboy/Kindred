@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { intentTaskNaturalLanguageAPI, confirmTasksFromNaturalLanguageAPI, bulkDeleteTasksAPI } from "@/api/task";
 import type { IntentOp } from "@/api/task";
 import type { components } from "@/api/generated/types";
+import { useSSEStream } from "@/hooks/useSSEStream";
 
 type PreviewPayload = components["schemas"]["ConfirmTaskNaturalLanguageInputBody"];
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -21,6 +22,8 @@ type UseIntentRouterFlowReturn = {
     errorDetails: string[];
     pendingOpsCount: number;
     currentOpIndex: number;
+    streamStage: string | null;
+    streamMessage: string | null;
     processText: (text: string, timezone?: string) => Promise<void>;
     confirmCreate: () => Promise<void>;
     dismissEditResult: () => void;
@@ -46,6 +49,8 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
     // Ref for use inside callbacks (avoids stale closures); state for render-time consumption.
     const [currentOpIndex, setCurrentOpIndex] = useState(0);
     const currentOpIndexRef = useRef(0);
+
+    const sseStream = useSSEStream<{ ops: IntentOp[] }>();
 
     const clearError = useCallback(() => {
         setErrorTitle("");
@@ -119,11 +124,22 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
             if (!text.trim()) return;
             clearError();
             setIsPreviewing(true);
+            sseStream.reset();
             try {
                 const resolvedTimezone =
                     timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-                const result = await intentTaskNaturalLanguageAPI(text.trim(), resolvedTimezone);
-                const ops = result.ops ?? [];
+
+                // Try streaming endpoint first
+                const streamResult = await sseStream.start(
+                    "/v1/user/tasks/natural-language/intent/stream",
+                    { text: text.trim(), timezone: resolvedTimezone },
+                );
+
+                if (!streamResult || sseStream.error) {
+                    throw new Error(sseStream.error || "Stream failed");
+                }
+
+                const ops = streamResult.ops ?? [];
                 if (ops.length === 0) {
                     setError("Nothing to do", [
                         "No matching tasks or instructions found. Try rephrasing.",
@@ -135,12 +151,30 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
                 currentOpIndexRef.current = 0;
                 advanceToNextOp(ops, 0);
             } catch (error) {
-                setErrorFromModel(error, "Couldn't Process Request", "Please try again.");
+                // Fallback to non-streaming endpoint
+                try {
+                    const resolvedTimezone =
+                        timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const result = await intentTaskNaturalLanguageAPI(text.trim(), resolvedTimezone);
+                    const ops = result.ops ?? [];
+                    if (ops.length === 0) {
+                        setError("Nothing to do", [
+                            "No matching tasks or instructions found. Try rephrasing.",
+                        ]);
+                        setIsPreviewing(false);
+                        return;
+                    }
+                    setPendingOps(ops);
+                    currentOpIndexRef.current = 0;
+                    advanceToNextOp(ops, 0);
+                } catch (fallbackError) {
+                    setErrorFromModel(fallbackError, "Couldn't Process Request", "Please try again.");
+                }
             } finally {
                 setIsPreviewing(false);
             }
         },
-        [advanceToNextOp, clearError, setError, setErrorFromModel]
+        [advanceToNextOp, clearError, setError, setErrorFromModel, sseStream],
     );
 
     const confirmCreate = useCallback(async () => {
@@ -204,7 +238,8 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
         setIsConfirming(false);
         setIsDeletingTasks(false);
         clearError();
-    }, [clearError]);
+        sseStream.reset();
+    }, [clearError, sseStream]);
 
     return {
         isPreviewing,
@@ -217,6 +252,8 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
         errorDetails,
         pendingOpsCount: pendingOps.length,
         currentOpIndex,
+        streamStage: sseStream.stage,
+        streamMessage: sseStream.message,
         processText,
         confirmCreate,
         dismissEditResult,
