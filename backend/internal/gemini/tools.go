@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
@@ -202,72 +203,100 @@ func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection, unspl
 				return GetUserActiveTasksOutput{}, fmt.Errorf("invalid user ID: %w", err)
 			}
 
-			// Fetch categories — each category document embeds its tasks, so we get the
-			// correct categoryID from the parent document (avoids NilObjectID on older tasks
-			// that lack a stored categoryID field in the subdocument).
 			workspaces, err := categoryService.GetCategoriesByUser(userID)
 			if err != nil {
 				return GetUserActiveTasksOutput{}, fmt.Errorf("failed to fetch categories: %w", err)
 			}
 
-			output := GetUserActiveTasksOutput{
-				UserID: input.UserID,
-				Tasks:  make([]ActiveTaskInfo, 0),
-			}
+			hasQuery := strings.TrimSpace(input.Query) != ""
+			queryLower := strings.ToLower(strings.TrimSpace(input.Query))
 
-			for _, workspace := range workspaces {
-				for _, cat := range workspace.Categories {
-					for _, t := range cat.Tasks {
-						if len(output.Tasks) >= 200 {
-							break
-						}
+			output := GetUserActiveTasksOutput{UserID: input.UserID}
 
-						notes := t.Notes
-						if len(notes) > 200 {
-							notes = notes[:200]
+			if hasQuery {
+				// Targeted search: return full-detail matches, capped at 20
+				output.Tasks = make([]ActiveTaskInfo, 0)
+				for _, workspace := range workspaces {
+					for _, cat := range workspace.Categories {
+						for _, t := range cat.Tasks {
+							if len(output.Tasks) >= 20 {
+								break
+							}
+							contentLower := strings.ToLower(t.Content)
+							notesLower := strings.ToLower(t.Notes)
+							if !strings.Contains(contentLower, queryLower) && !strings.Contains(notesLower, queryLower) {
+								continue
+							}
+							notes := t.Notes
+							if len(notes) > 200 {
+								notes = notes[:200]
+							}
+							info := ActiveTaskInfo{
+								ID:             t.ID.Hex(),
+								CategoryID:     cat.ID.Hex(),
+								CategoryName:   cat.Name,
+								Content:        t.Content,
+								Priority:       t.Priority,
+								Value:          t.Value,
+								Recurring:      t.Recurring,
+								RecurFrequency: t.RecurFrequency,
+								Active:         t.Active,
+								Notes:          notes,
+							}
+							if t.Deadline != nil {
+								info.Deadline = t.Deadline.Format(time.RFC3339)
+							}
+							if t.StartDate != nil {
+								info.StartDate = t.StartDate.Format(time.RFC3339)
+							}
+							if t.StartTime != nil {
+								info.StartTime = t.StartTime.Format(time.RFC3339)
+							}
+							if t.TemplateID != nil {
+								info.TemplateID = t.TemplateID.Hex()
+							}
+							output.Tasks = append(output.Tasks, info)
 						}
-
-						info := ActiveTaskInfo{
-							// CategoryID comes from the parent document — always correct.
-							ID:             t.ID.Hex(),
-							CategoryID:     cat.ID.Hex(),
-							CategoryName:   cat.Name,
-							Content:        t.Content,
-							Priority:       t.Priority,
-							Value:          t.Value,
-							Recurring:      t.Recurring,
-							RecurFrequency: t.RecurFrequency,
-							Active:         t.Active,
-							Notes:          notes,
+					}
+				}
+			} else {
+				// Broad fallback: return slim format for all tasks, capped at 200
+				output.SlimTasks = make([]SlimTaskInfo, 0)
+				for _, workspace := range workspaces {
+					for _, cat := range workspace.Categories {
+						for _, t := range cat.Tasks {
+							if len(output.SlimTasks) >= 200 {
+								break
+							}
+							slim := SlimTaskInfo{
+								ID:         t.ID.Hex(),
+								CategoryID: cat.ID.Hex(),
+								Content:    t.Content,
+								Priority:   t.Priority,
+							}
+							if t.Deadline != nil {
+								slim.Deadline = t.Deadline.Format(time.RFC3339)
+							}
+							output.SlimTasks = append(output.SlimTasks, slim)
 						}
-						if t.Deadline != nil {
-							info.Deadline = t.Deadline.Format(time.RFC3339)
-						}
-						if t.StartDate != nil {
-							info.StartDate = t.StartDate.Format(time.RFC3339)
-						}
-						if t.StartTime != nil {
-							info.StartTime = t.StartTime.Format(time.RFC3339)
-						}
-						if t.TemplateID != nil {
-							info.TemplateID = t.TemplateID.Hex()
-						}
-
-						output.Tasks = append(output.Tasks, info)
 					}
 				}
 			}
 
-			// Fetch recurring template tasks
+			// Fetch recurring templates
 			templates, err := taskService.GetTemplatesByUserWithCategory(userID)
 			if err != nil {
-				// Non-fatal: log and continue without templates
 				fmt.Printf("⚠️  getUserActiveTasks: failed to fetch templates: %v\n", err)
-			} else {
-				output.Templates = make([]ActiveTemplateInfo, 0, len(templates))
-				for i, tmpl := range templates {
-					if i >= 200 {
+			} else if hasQuery {
+				output.Templates = make([]ActiveTemplateInfo, 0)
+				for _, tmpl := range templates {
+					if len(output.Templates) >= 20 {
 						break
+					}
+					contentLower := strings.ToLower(tmpl.Content)
+					notesLower := strings.ToLower(tmpl.Notes)
+					if !strings.Contains(contentLower, queryLower) && !strings.Contains(notesLower, queryLower) {
+						continue
 					}
 					notes := tmpl.Notes
 					if len(notes) > 200 {
@@ -296,10 +325,30 @@ func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection, unspl
 					}
 					output.Templates = append(output.Templates, info)
 				}
+			} else {
+				output.SlimTemplates = make([]SlimTemplateInfo, 0)
+				for i, tmpl := range templates {
+					if i >= 200 {
+						break
+					}
+					slim := SlimTemplateInfo{
+						ID:         tmpl.ID.Hex(),
+						CategoryID: tmpl.CategoryID.Hex(),
+						Content:    tmpl.Content,
+						Priority:   tmpl.Priority,
+					}
+					if tmpl.Deadline != nil {
+						slim.Deadline = tmpl.Deadline.Format(time.RFC3339)
+					}
+					output.SlimTemplates = append(output.SlimTemplates, slim)
+				}
 			}
 
-			output.Total = len(output.Tasks) + len(output.Templates)
-			fmt.Printf("🔍 getUserActiveTasks called for user: %s, found %d tasks + %d templates\n", input.UserID, len(output.Tasks), len(output.Templates))
+			totalTasks := len(output.Tasks) + len(output.SlimTasks)
+			totalTemplates := len(output.Templates) + len(output.SlimTemplates)
+			output.Total = totalTasks + totalTemplates
+			fmt.Printf("🔍 getUserActiveTasks called for user: %s (query=%q), found %d tasks + %d templates\n",
+				input.UserID, input.Query, totalTasks, totalTemplates)
 			return output, nil
 		},
 	)
