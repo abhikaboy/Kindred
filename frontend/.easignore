@@ -1,0 +1,15 @@
+# Parent repo (EAS archives from monorepo root)
+../.git
+../backend
+../docs
+../.claude
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Test coverage
+coverage/

@@ -15,19 +15,31 @@ type Props = {
 const StartDateBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onStartDateUpdate }: Props) => {
     const ThemedColor = useThemeColor();
     const startDateSheetRef = useRef<BottomSheetModal>(null);
+    const isPresentingRef = useRef(false);
     const snapPoints = useMemo(() => ["50%", "80%"], []);
 
-    // Handle modal visibility changes
+    // Handle modal visibility changes — dismiss before present to reset internal state
     useEffect(() => {
         if (visible) {
-            startDateSheetRef.current?.present();
+            isPresentingRef.current = true;
+            startDateSheetRef.current?.dismiss();
+            const timer = setTimeout(() => {
+                startDateSheetRef.current?.present();
+                setTimeout(() => {
+                    isPresentingRef.current = false;
+                }, 500);
+            }, 100);
+            return () => {
+                clearTimeout(timer);
+                isPresentingRef.current = false;
+            };
         } else {
             startDateSheetRef.current?.dismiss();
         }
     }, [visible]);
 
     const handleSheetChanges = useCallback((index: number) => {
-        if (index === -1) {
+        if (index === -1 && !isPresentingRef.current) {
             setVisible(false);
         }
     }, [setVisible]);
@@ -61,11 +73,11 @@ const StartDateBottomSheetModal = ({ visible, setVisible, taskId, categoryId, on
                 return;
             }
         }
-        
+
         if (onStartDateUpdate) {
             onStartDateUpdate(startDate, startTime);
         }
-        
+
         hideModal();
     };
 
@@ -83,7 +95,7 @@ const StartDateBottomSheetModal = ({ visible, setVisible, taskId, categoryId, on
                 style={{
                     paddingHorizontal: 20,
                 }}>
-                <StartDate 
+                <StartDate
                     goToStandard={hideModal}
                     onSubmit={handleStartDateSubmit}
                 />

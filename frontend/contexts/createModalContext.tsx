@@ -23,6 +23,9 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
     const [modalConfig, setModalConfig] = useState<CreateModalConfig>({});
     const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Ref tracks latest visible to avoid stale closures in openModal
+    const visibleRef = useRef(visible);
+    visibleRef.current = visible;
 
     useEffect(() => {
         return () => {
@@ -32,18 +35,15 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
     }, []);
 
     const openModal = useCallback((config: CreateModalConfig = {}) => {
-        if (visible) {
-            setVisible(false);
-            if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
-            openTimeoutRef.current = setTimeout(() => {
-                setModalConfig(config);
-                setVisible(true);
-            }, 100);
-        } else {
+        // Always force a close-then-open cycle so the modal presents reliably,
+        // regardless of whether visible is currently true or false
+        setVisible(false);
+        if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+        openTimeoutRef.current = setTimeout(() => {
             setModalConfig(config);
             setVisible(true);
-        }
-    }, [visible]);
+        }, 50);
+    }, []);
 
     const closeModal = useCallback(() => {
         setVisible(false);

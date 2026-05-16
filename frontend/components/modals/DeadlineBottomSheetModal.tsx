@@ -15,19 +15,31 @@ type Props = {
 const DeadlineBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onDeadlineUpdate }: Props) => {
     const ThemedColor = useThemeColor();
     const deadlineSheetRef = useRef<BottomSheetModal>(null);
+    const isPresentingRef = useRef(false);
     const snapPoints = useMemo(() => ["90%"], []);
 
-    // Handle modal visibility changes
+    // Handle modal visibility changes — dismiss before present to reset internal state
     useEffect(() => {
         if (visible) {
-            deadlineSheetRef.current?.present();
+            isPresentingRef.current = true;
+            deadlineSheetRef.current?.dismiss();
+            const timer = setTimeout(() => {
+                deadlineSheetRef.current?.present();
+                setTimeout(() => {
+                    isPresentingRef.current = false;
+                }, 500);
+            }, 100);
+            return () => {
+                clearTimeout(timer);
+                isPresentingRef.current = false;
+            };
         } else {
             deadlineSheetRef.current?.dismiss();
         }
     }, [visible]);
 
     const handleSheetChanges = useCallback((index: number) => {
-        if (index === -1) {
+        if (index === -1 && !isPresentingRef.current) {
             setVisible(false);
         }
     }, [setVisible]);
@@ -61,11 +73,11 @@ const DeadlineBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onD
                 return;
             }
         }
-        
+
         if (onDeadlineUpdate) {
             onDeadlineUpdate(deadline);
         }
-        
+
         hideModal();
     };
 
@@ -83,7 +95,7 @@ const DeadlineBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onD
                 style={{
                     paddingHorizontal: 20,
                 }}>
-                <Deadline 
+                <Deadline
                     goToStandard={hideModal}
                     onSubmit={handleDeadlineSubmit}
                 />

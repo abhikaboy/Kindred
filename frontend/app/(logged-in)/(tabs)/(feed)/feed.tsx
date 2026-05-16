@@ -25,9 +25,9 @@ import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 import { HeartStraightIcon } from "phosphor-react-native";
-import TermsAcceptanceModal from "@/components/modals/TermsAcceptanceModal";
 import { useAuth } from "@/hooks/useAuth";
-import { acceptTerms } from "@/api/auth";
+import { Handshake } from "phosphor-react-native";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
 const HORIZONTAL_PADDING = 16;
 
 type PostData = {
@@ -71,7 +71,6 @@ export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor, insets);
     const { user, updateUser } = useAuth();
-    const [showTermsModal, setShowTermsModal] = useState(false);
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
@@ -325,23 +324,6 @@ export default function Feed() {
         isInitialMount.current = false;
     }, []); // Only run once on mount
 
-    // Show terms modal if user hasn't accepted terms yet
-    useEffect(() => {
-        if (user && !user.terms_accepted_at) {
-            setShowTermsModal(true);
-        }
-    }, [user]);
-
-    const handleAcceptTerms = useCallback(async () => {
-        try {
-            await acceptTerms("1.0");
-            updateUser({ terms_accepted_at: new Date().toISOString() } as any);
-            setShowTermsModal(false);
-        } catch (error) {
-            console.error("Failed to accept terms:", error);
-            showToast("Failed to accept terms. Please try again.", "danger");
-        }
-    }, [updateUser]);
 
     // Load posts when feed changes (skip initial mount)
     useEffect(() => {
@@ -573,23 +555,37 @@ export default function Feed() {
             const isFriendsFeed = currentFeed.id === "friends";
             const isBlueprintFeed = currentFeed.id.startsWith("blueprint-");
 
-            let emptyText = "No posts yet";
-            let emptySubtext = "Pull down to refresh";
-
-            if (isFriendsFeed) {
-                emptyText = "No posts from friends yet";
-                emptySubtext = "Add friends to see their posts here";
-            } else if (isBlueprintFeed) {
-                emptyText = `No posts in ${currentFeed.name} yet`;
-                emptySubtext = "Create posts using this blueprint to see them here";
+            if (isBlueprintFeed) {
+                return (
+                    <View style={styles.emptyContainer}>
+                        <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
+                            No posts in {currentFeed.name} yet
+                        </ThemedText>
+                        <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
+                            Create posts using this blueprint to see them here
+                        </ThemedText>
+                    </View>
+                );
             }
 
             return (
                 <View style={styles.emptyContainer}>
-                    <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>{emptyText}</ThemedText>
-                    <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
-                        {emptySubtext}
+                    <View style={[styles.emptyIconRow, { backgroundColor: ThemedColor.primary + "10" }]}>
+                        <Handshake size={32} color={ThemedColor.primary} weight="duotone" />
+                    </View>
+                    <ThemedText style={styles.emptyTitle}>
+                        {isFriendsFeed ? "It's quiet... too quiet" : "It's quiet... too quiet"}
                     </ThemedText>
+                    <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
+                        When your friends complete tasks and share updates, they'll show up here. Send them kudos to keep each other going.
+                    </ThemedText>
+                    <View style={{ width: "100%", marginTop: 8 }}>
+                        <PrimaryButton
+                            title="Find friends"
+                            secondary
+                            onPress={() => router.push("/(logged-in)/(tabs)/(search)/search")}
+                        />
+                    </View>
                 </View>
             );
         }
@@ -638,10 +634,6 @@ export default function Feed() {
 
     return (
         <View style={styles.container}>
-            <TermsAcceptanceModal
-                visible={showTermsModal}
-                onAccept={handleAcceptTerms}
-            />
             <Animated.View
                 style={[
                     styles.animatedHeader,
@@ -813,8 +805,25 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         emptyContainer: {
             flex: 1,
-            paddingVertical: 20,
-            paddingHorizontal: 20,
+            paddingVertical: 40,
+            paddingHorizontal: 24,
+            alignItems: "flex-start",
+            gap: 12,
+        },
+        emptyIconRow: {
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: 4,
+        },
+        emptyTitle: {
+            fontSize: 24,
+            fontFamily: "Fraunces",
+            fontWeight: "500",
+            textAlign: "left",
+            letterSpacing: -1,
         },
         emptyText: {
             fontSize: 20,
@@ -823,7 +832,9 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             width: "70%",
         },
         emptySubtext: {
-            marginTop: 8,
+            fontSize: 15,
+            textAlign: "left",
+            lineHeight: 22,
         },
         loadingMoreContainer: {
             paddingVertical: 20,

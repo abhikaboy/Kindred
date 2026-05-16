@@ -293,6 +293,7 @@ const CircleOnboarding = (props: Props) => {
             {/* Navigation button */}
             <Animated.View style={{ zIndex: 1, opacity: buttonFadeAnimation }}>
                 <OnboardButton
+                    testID="onboard-next-btn"
                     disabled={false}
                     onPress={async () => {
                         // Mark onboarding as seen

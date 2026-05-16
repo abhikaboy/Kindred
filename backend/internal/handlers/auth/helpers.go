@@ -60,5 +60,6 @@ func buildSafeUserResponse(user *User) types.SafeUser {
 		StreakEligible:  user.StreakEligible,
 		Points:          user.Points,
 		PostsMade:       user.PostsMade,
+		TermsAcceptedAt: user.TermsAcceptedAt,
 	}
 }

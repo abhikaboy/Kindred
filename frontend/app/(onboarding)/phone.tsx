@@ -11,6 +11,7 @@ import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics
 import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useVerification } from "@/hooks/useVerification";
+import { useAuth } from "@/hooks/useAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { OtpInput } from "react-native-otp-entry";
 
@@ -22,6 +23,7 @@ const PhoneOnboarding = () => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updateOnboardingData } = useOnboarding();
+    const { loginWithOTP } = useAuth();
     const {
         sendOTP,
         sendingOTP,
@@ -78,13 +80,28 @@ const PhoneOnboarding = () => {
         }
     }, [resendTimer, codeSent]);
 
-    // Navigate on successful verification
+    // After OTP verified, check if account exists — login or continue to registration
     useEffect(() => {
-        if (isVerified) {
-            setTimeout(() => {
-                router.push("/(onboarding)/name");
-            }, 1000);
-        }
+        if (!isVerified) return;
+
+        const checkExistingAccount = async () => {
+            try {
+                await loginWithOTP(fullPhoneNumber, otpCode);
+                // Account exists and user is now logged in — go to home
+                router.replace("/");
+            } catch (error: any) {
+                if (error.message === "ACCOUNT_NOT_FOUND") {
+                    // New phone — continue registration
+                    router.push("/(onboarding)/name");
+                } else {
+                    // Unexpected error — still continue to registration
+                    console.error("Account check failed:", error);
+                    router.push("/(onboarding)/name");
+                }
+            }
+        };
+
+        setTimeout(() => checkExistingAccount(), 800);
     }, [isVerified]);
 
     // Shake on OTP error
@@ -389,6 +406,7 @@ const PhoneOnboarding = () => {
                     {!codeSent && (
                         <Animated.View style={[styles.termsContainer, { opacity: fadeAnimation }]}>
                             <TouchableOpacity
+                                testID="terms-checkbox"
                                 style={styles.checkboxContainer}
                                 onPress={() => setAgreedToTerms(!agreedToTerms)}
                                 activeOpacity={0.7}
@@ -425,12 +443,14 @@ const PhoneOnboarding = () => {
                     <Animated.View style={[styles.buttonContainer, { opacity: fadeAnimation }]}>
                         {!codeSent ? (
                             <PrimaryButton
+                                testID="send-code-btn"
                                 title={sendingOTP ? "Sending..." : "Send Code"}
                                 onPress={handleSendCode}
                                 disabled={!canContinue || sendingOTP}
                             />
                         ) : (
                             <PrimaryButton
+                                testID="verify-btn"
                                 title={verifyingOTP ? "Verifying..." : "Verify"}
                                 onPress={handleVerify}
                                 disabled={otpCode.length !== 4 || verifyingOTP || isVerified}

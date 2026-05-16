@@ -1,0 +1,37 @@
+# Verify the registration flow UI (phone path)
+# Does NOT create a real account - stops before OTP verification
+appId: com.suntex.kindred
+tags:
+  - smoke
+  - onboarding
+  - register
+---
+- launchApp:
+    clearState: true
+
+# Skip onboarding if shown
+- runFlow:
+    when:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+
+# Tap Join Kindred
+- tapOn:
+    id: "join-kindred-btn"
+
+# The modal should show register options
+- assertVisible: "Almost there!"
+- assertVisible: "Continue with Phone"
+
+# Go to phone registration
+- tapOn:
+    id: "continue-with-phone"
+
+# Phone onboarding screen
+- assertVisible: "What's your phone number?"
+- assertVisible: "We'll send you a verification code"
+
+# Terms checkbox should be visible
+- assertVisible: "Terms of Service"
+- assertVisible: "Privacy Policy"

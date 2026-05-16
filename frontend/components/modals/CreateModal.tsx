@@ -51,6 +51,9 @@ const CreateModal = (props: Props) => {
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
+    // Guard to prevent handleSheetChanges from interfering during presentation
+    const isPresentingRef = useRef(false);
+
     const snapPoints = useMemo(
         () => (screen === Screen.NEW_CATEGORY ? ["20%"] : ["90%"]),
         [screen]
@@ -63,6 +66,7 @@ const CreateModal = (props: Props) => {
     // Auto-present on mount and when visible changes
     useEffect(() => {
         if (props.visible) {
+            isPresentingRef.current = true;
             // Light haptic feedback when modal becomes visible
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -75,20 +79,28 @@ const CreateModal = (props: Props) => {
                     bottomSheetModalRef.current.dismiss();
                     setTimeout(() => {
                         bottomSheetModalRef.current?.present();
+                        // Clear the guard after the present animation settles
+                        setTimeout(() => {
+                            isPresentingRef.current = false;
+                        }, 500);
                     }, 50);
                 } catch (error) {
                     console.error("Error presenting modal:", error);
+                    isPresentingRef.current = false;
                 }
             }, 100);
 
-            return () => clearTimeout(timer);
+            return () => {
+                clearTimeout(timer);
+                isPresentingRef.current = false;
+            };
         }
-    }, [props.visible, props.categoryId, props.edit]); // Re-run when visible or key props change (removed screen from deps)
+    }, [props.visible, props.categoryId, props.edit]);
 
-    // Handle sheet changes
+    // Handle sheet changes — guarded so dismiss events during presentation are ignored
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1) {
+            if (index === -1 && !isPresentingRef.current) {
                 props.setVisible(false);
             }
         },

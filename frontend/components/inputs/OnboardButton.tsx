@@ -5,13 +5,15 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 type Props = {
     onPress: () => void;
     disabled: boolean;
+    testID?: string;
 };
 
-const OnboardButton = ({ onPress, disabled }: Props) => {
+const OnboardButton = ({ onPress, disabled, testID }: Props) => {
     let ThemedColor = useThemeColor();
 
     return (
         <TouchableOpacity
+            testID={testID}
             onPress={onPress}
             disabled={disabled}
             style={{

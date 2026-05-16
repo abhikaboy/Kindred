@@ -13,22 +13,24 @@ interface StatItemProps {
     isDimmed: boolean;
     onPress: () => void;
     isLoading?: boolean;
+    align?: "left" | "center" | "right";
 }
 
-const StatItem: React.FC<StatItemProps> = ({ value, label, isSelected, isDimmed, onPress, isLoading }) => {
+const alignMap = {
+    left: "flex-start",
+    center: "center",
+    right: "flex-end",
+} as const;
+
+const StatItem: React.FC<StatItemProps> = ({ value, label, isSelected, isDimmed, onPress, isLoading, align = "center" }) => {
     const ThemedColor = useThemeColor();
 
     return (
         <TouchableOpacity
-            style={[styles.container, isDimmed && styles.dimmed]}
+            style={[styles.container, { alignItems: alignMap[align] }, isDimmed && styles.dimmed]}
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <ThemedText
-                style={[styles.number, { color: ThemedColor.header }]}
-            >
-                {isLoading ? "—" : value}
-            </ThemedText>
             <ThemedText
                 type="caption"
                 style={[
@@ -36,7 +38,12 @@ const StatItem: React.FC<StatItemProps> = ({ value, label, isSelected, isDimmed,
                     isSelected && { color: ThemedColor.primary, fontWeight: "600" },
                 ]}
             >
-                {label} {isSelected ? "‹" : "›"}
+                {label} {isSelected ? "▾" : "▸"}
+            </ThemedText>
+            <ThemedText
+                style={[styles.number, { color: ThemedColor.header }]}
+            >
+                {isLoading ? "—" : value}
             </ThemedText>
         </TouchableOpacity>
     );
@@ -44,14 +51,14 @@ const StatItem: React.FC<StatItemProps> = ({ value, label, isSelected, isDimmed,
 
 const styles = StyleSheet.create({
     container: {
-        alignItems: "center",
         flex: 1,
+        gap: 2,
     },
     dimmed: {
         opacity: 0.4,
     },
     number: {
-        fontFamily: "Fraunces",
+        fontFamily: "Outfit",
         fontSize: 36 * scale,
         fontWeight: "600",
         lineHeight: 40 * scale,

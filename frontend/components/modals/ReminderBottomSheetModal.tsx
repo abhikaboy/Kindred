@@ -21,19 +21,31 @@ type Props = {
 const ReminderBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onReminderUpdate }: Props) => {
     const ThemedColor = useThemeColor();
     const reminderSheetRef = useRef<BottomSheetModal>(null);
+    const isPresentingRef = useRef(false);
     const snapPoints = useMemo(() => ["60%", "90%"], []);
 
-    // Handle modal visibility changes
+    // Handle modal visibility changes — dismiss before present to reset internal state
     useEffect(() => {
         if (visible) {
-            reminderSheetRef.current?.present();
+            isPresentingRef.current = true;
+            reminderSheetRef.current?.dismiss();
+            const timer = setTimeout(() => {
+                reminderSheetRef.current?.present();
+                setTimeout(() => {
+                    isPresentingRef.current = false;
+                }, 500);
+            }, 100);
+            return () => {
+                clearTimeout(timer);
+                isPresentingRef.current = false;
+            };
         } else {
             reminderSheetRef.current?.dismiss();
         }
     }, [visible]);
 
     const handleSheetChanges = useCallback((index: number) => {
-        if (index === -1) {
+        if (index === -1 && !isPresentingRef.current) {
             setVisible(false);
         }
     }, [setVisible]);
@@ -67,11 +79,11 @@ const ReminderBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onR
                 return;
             }
         }
-        
+
         if (onReminderUpdate) {
             onReminderUpdate(reminders);
         }
-        
+
         hideModal();
     };
 
@@ -89,7 +101,7 @@ const ReminderBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onR
                 style={{
                     paddingHorizontal: 20,
                 }}>
-                <ReminderComponent 
+                <ReminderComponent
                     goToStandard={hideModal}
                     onSubmit={handleReminderSubmit}
                 />

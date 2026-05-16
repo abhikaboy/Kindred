@@ -1,0 +1,35 @@
+# Verify home screen and tab navigation after login
+# PREREQUISITE: user must already be logged in
+# Run this after a successful login flow or with a pre-authenticated state
+appId: com.suntex.kindred
+tags:
+  - navigation
+  - home
+  - requires-auth
+---
+- launchApp
+
+# Home screen should show a welcome header
+# (The exact name depends on the logged-in user)
+- assertVisible: "Jump Back In"
+
+# Tab bar should be visible with all tabs
+# Using accessibility labels set on the tab bar
+- assertVisible: "Tasks"
+- assertVisible: "Feed"
+- assertVisible: "Search"
+- assertVisible: "Activity"
+- assertVisible: "Profile"
+
+# Navigate to Feed tab
+- tapOn: "Feed"
+
+# Navigate to Search tab
+- tapOn: "Search"
+
+# Navigate to Profile tab
+- tapOn: "Profile"
+
+# Navigate back to Tasks tab
+- tapOn: "Tasks"
+- assertVisible: "Jump Back In"

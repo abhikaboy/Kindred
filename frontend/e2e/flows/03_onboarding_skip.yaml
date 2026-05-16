@@ -1,0 +1,16 @@
+# Verify the skip button on onboarding goes straight to login
+appId: com.suntex.kindred
+tags:
+  - smoke
+  - onboarding
+---
+- launchApp:
+    clearState: true
+
+# First screen should show Skip button
+- assertVisible: "Productivity is something"
+- tapOn: "Skip"
+
+# Should land on the login page
+- assertVisible: "kindred"
+- assertVisible: "Join Kindred"

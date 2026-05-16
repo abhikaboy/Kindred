@@ -23,8 +23,13 @@ const PasswordOnboarding = (props: Props) => {
     const router = useRouter();
     const { onboardingData, updatePassword, validationErrors, registerWithEmail, isLoading } = useOnboarding();
 
-    const [password, setPassword] = useState(onboardingData.password);
+    const [password, setPasswordLocal] = useState(onboardingData.password);
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    const setPassword = (value: string) => {
+        setPasswordLocal(value);
+        updatePassword(value);
+    };
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [showErrors, setShowErrors] = useState(false);
@@ -50,7 +55,6 @@ const PasswordOnboarding = (props: Props) => {
     }, []);
 
     const handleContinue = async () => {
-        updatePassword(password);
         setShowErrors(true);
 
         if (!validationErrors.password && isValid && passwordsMatch) {
@@ -191,6 +195,7 @@ const PasswordOnboarding = (props: Props) => {
                     ]}
                 >
                     <PrimaryButton
+                        testID="continue-btn"
                         title={isLoading ? "Creating account..." : "Continue"}
                         onPress={handleContinue}
                         disabled={!isValid || !passwordsMatch || confirmPassword.length === 0 || isLoading}

@@ -10,7 +10,6 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Category } from "@/components/category";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { Task } from "@/api/types";
-import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
 import { Gear, FolderPlus, CheckSquare } from "phosphor-react-native";
@@ -111,7 +110,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     spotlightLoading,
 }) => {
     const ThemedColor = useThemeColor();
-    const { workspaces, categories: globalCategories, selected: globalSelected, showConfetti, getWorkspace } = useTasks();
+    const { workspaces, categories: globalCategories, selected: globalSelected, getWorkspace } = useTasks();
     // Use prop if provided, otherwise fall back to global selected
     const selected = workspaceName || globalSelected;
     const currentWorkspace = selected ? getWorkspace(selected) : undefined;
@@ -297,29 +296,6 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     return (
         <>
-            <ConditionalView condition={showConfetti}>
-                <View
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        zIndex: 10,
-                        height: Dimensions.get("screen").height,
-                    }}>
-                    <ConfettiCannon
-                        count={50}
-                        origin={{
-                            x: Dimensions.get("screen").width / 2,
-                            y: (Dimensions.get("screen").height / 4) * 3.7,
-                        }}
-                        fallSpeed={1200}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                    />
-                </View>
-            </ConditionalView>
             {editing && (
                 <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             )}

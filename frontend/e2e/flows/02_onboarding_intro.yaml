@@ -1,0 +1,31 @@
+# Verify the onboarding intro screens (productivity -> positivity -> circle)
+# This flow covers the pre-auth intro that first-time users see
+appId: com.suntex.kindred
+tags:
+  - smoke
+  - onboarding
+---
+- launchApp:
+    clearState: true
+
+# First screen: productivity
+- assertVisible: "Productivity is something"
+- assertVisible: "Skip"
+
+# Tap the arrow button to advance
+- tapOn:
+    id: "onboard-next-btn"
+
+# Second screen: positivity
+- assertVisible: "Something rooted in"
+- tapOn:
+    id: "onboard-next-btn"
+
+# Third screen: circle (positive feedback loops)
+- assertVisible: "Built around positive"
+- tapOn:
+    id: "onboard-next-btn"
+
+# Should arrive at the login/landing page
+- assertVisible: "kindred"
+- assertVisible: "Join Kindred"

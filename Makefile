@@ -1,6 +1,6 @@
 # Kindred Project Makefile
 
-.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit loadtest loadtest-quick
+.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit loadtest loadtest-quick e2e e2e-smoke e2e-studio e2e-record e2e-hierarchy
 
 # Default target
 help: ## Show this help message
@@ -298,3 +298,24 @@ loadtest: ## Run load tests (use RATE=100 DURATION=30s SCENARIO=all)
 
 loadtest-quick: ## Quick load test (10s, health only)
 	@$(MAKE) loadtest RATE=100 DURATION=10s SCENARIO=health
+
+# E2E Testing (Maestro)
+e2e: ## Run all Maestro E2E tests
+	@echo "🧪 Running all E2E flows..."
+	@cd frontend && maestro test e2e/flows/
+
+e2e-smoke: ## Run only smoke-tagged E2E tests
+	@echo "🧪 Running smoke E2E flows..."
+	@cd frontend && maestro test --include-tags=smoke e2e/flows/
+
+e2e-studio: ## Open Maestro Studio (interactive test builder)
+	@echo "🎨 Opening Maestro Studio..."
+	@maestro studio
+
+e2e-record: ## Run E2E tests and record video (use FLOW=filename.yaml)
+	@echo "🎬 Recording E2E flow..."
+	@cd frontend && maestro record e2e/flows/$(or $(FLOW),01_landing.yaml)
+
+e2e-hierarchy: ## Dump current app view hierarchy (useful for writing tests)
+	@echo "🔍 Dumping view hierarchy..."
+	@maestro hierarchy

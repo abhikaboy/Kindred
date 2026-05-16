@@ -1,0 +1,49 @@
+# Verify the phone login screen UI and navigation
+# NOTE: This does NOT actually send OTP or log in (no real credentials)
+appId: com.suntex.kindred
+tags:
+  - smoke
+  - login
+---
+- launchApp:
+    clearState: true
+
+# Skip onboarding if shown
+- runFlow:
+    when:
+      visible: "Skip"
+    commands:
+      - tapOn: "Skip"
+
+# Open the login modal
+- tapOn:
+    id: "login-link"
+
+# The modal should show auth options
+- assertVisible: "Welcome back"
+- assertVisible: "Continue with Phone"
+
+# Go to phone login
+- tapOn:
+    id: "continue-with-phone"
+
+# Phone login screen
+- assertVisible: "Login"
+- assertVisible: "(555) 123-4567"
+- assertVisible: "Send Code"
+- assertVisible: "Use a password instead"
+
+# Toggle to password mode
+- tapOn:
+    id: "toggle-login-mode"
+- assertVisible: "Use a verification code instead"
+- assertVisible: "Continue"
+
+# Toggle back to OTP mode
+- tapOn:
+    id: "toggle-login-mode"
+- assertVisible: "Send Code"
+
+# Navigate back
+- tapOn:
+    id: "back-btn"

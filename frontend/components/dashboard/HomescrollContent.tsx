@@ -1,5 +1,5 @@
-import React from "react";
-import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl } from "react-native";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl, Animated } from "react-native";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceGrid } from "./WorkspaceGrid";
@@ -41,6 +41,7 @@ interface HomeScrollContentProps {
     jumpBackInRef?: React.RefObject<View>;
     kudosRef?: React.RefObject<View>;
     onSpotlightLayout?: (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => void;
+    onStatsExpandChange?: (expanded: boolean) => void;
 }
 
 export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
@@ -61,9 +62,25 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     jumpBackInRef,
     kudosRef,
     onSpotlightLayout,
+    onStatsExpandChange,
 }) => {
     const router = useRouter();
     const { showAlert } = useAlert();
+    const [statsExpanded, setStatsExpanded] = useState(false);
+    const dimAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        Animated.timing(dimAnim, {
+            toValue: statsExpanded ? 0.15 : 1,
+            duration: 250,
+            useNativeDriver: true,
+        }).start();
+    }, [statsExpanded]);
+
+    const handleStatsExpandChange = useCallback((expanded: boolean) => {
+        setStatsExpanded(expanded);
+        onStatsExpandChange?.(expanded);
+    }, [onStatsExpandChange]);
     const [showGoogleCalendarCard, setShowGoogleCalendarCard] = React.useState(true);
     const [calendarLoading, setCalendarLoading] = React.useState(false);
     const [isCalendarLinked, setIsCalendarLinked] = React.useState(false);
@@ -297,9 +314,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                 {/* Dashboard Stats */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
-                    <DashboardStats />
+                    <DashboardStats onExpandChange={handleStatsExpandChange} />
                 </View>
 
+                <Animated.View style={{ opacity: dimAnim }}>
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
                     <AttachStep index={0}>
@@ -402,6 +420,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 {/* Recently Completed Tasks */}
                 <RecentlyCompletedTasks />
                 </ScrollView>
+                </Animated.View>
             </MotiView>
 
             {pendingConnectionId && (

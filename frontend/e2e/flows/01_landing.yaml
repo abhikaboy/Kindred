@@ -1,0 +1,14 @@
+# Smoke test: verify the landing page renders correctly
+appId: com.suntex.kindred
+tags:
+  - smoke
+  - landing
+---
+- launchApp:
+    clearState: true
+
+# The landing screen shows "kindred" branding and auth options
+- assertVisible: "kindred"
+- assertVisible: "human centered productivity"
+- assertVisible: "Join Kindred"
+- assertVisible: "Log in"

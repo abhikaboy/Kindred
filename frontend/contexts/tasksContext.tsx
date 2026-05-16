@@ -106,7 +106,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         for (const workspace of workspaces) {
             for (const category of workspace.categories) {
                 for (const task of category.tasks) {
-                    if (task.active === false || task.isPhantom) continue;
+                    if (task.isPhantom) continue;
                     res.push({
                         ...task,
                         categoryID: category.id,

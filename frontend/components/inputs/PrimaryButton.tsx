@@ -14,9 +14,10 @@ type Props = {
     children?: React.ReactNode;
     textStyle?: TextStyle;
     colorOverride?: string;
+    testID?: string;
 };
 
-export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, lightened, secondary, disabled, children, textStyle, colorOverride }: Props) {
+export default function PrimaryButton({ title, onPress, style, ghost, outline, dottedOutline, lightened, secondary, disabled, children, textStyle, colorOverride, testID }: Props) {
     let ThemedColor = useThemeColor();
 
     const getBackgroundColor = () => {
@@ -36,6 +37,7 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
 
     return (
         <TouchableOpacity
+            testID={testID}
             disabled={disabled}
             onPress={onPress}
             style={[

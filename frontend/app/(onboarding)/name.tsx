@@ -22,9 +22,19 @@ const NameOnboarding = (props: Props) => {
     const router = useRouter();
     const { onboardingData, updateDisplayName, updateHandle, validationErrors, registerWithApple, registerWithGoogle, isLoading } = useOnboarding();
 
-    const [name, setName] = useState(onboardingData.displayName);
-    const [handle, setHandle] = useState(onboardingData.handle.replace('@', ''));
+    const [name, setNameLocal] = useState(onboardingData.displayName);
+    const [handle, setHandleLocal] = useState(onboardingData.handle.replace('@', ''));
     const [showErrors, setShowErrors] = useState(false);
+
+    const setName = (value: string) => {
+        setNameLocal(value);
+        updateDisplayName(value);
+    };
+
+    const setHandle = (value: string) => {
+        setHandleLocal(value);
+        updateHandle(value);
+    };
 
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -49,8 +59,6 @@ const NameOnboarding = (props: Props) => {
     }, []);
 
     const handleContinue = async () => {
-        updateDisplayName(name);
-        updateHandle(handle);
         setShowErrors(true);
 
         if (!validationErrors.displayName && !validationErrors.handle && isValid) {
@@ -174,6 +182,7 @@ const NameOnboarding = (props: Props) => {
                     ]}
                 >
                     <PrimaryButton
+                        testID="continue-btn"
                         title={isLoading ? "Creating account..." : "Continue"}
                         onPress={handleContinue}
                         disabled={!isValid || isLoading}

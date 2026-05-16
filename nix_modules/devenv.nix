@@ -13,6 +13,12 @@
           export GOTOOLCHAIN=auto
           export PATH="/opt/homebrew/bin:$PATH"
 
+          # Use real Xcode toolchain instead of Nix Apple SDK for iOS builds.
+          # Nix provides its own clang, xcbuild, and Apple SDK which conflict with Xcode's
+          # native tools (missing -index-store-path support, wrong SDK version, etc.)
+          unset DEVELOPER_DIR
+          export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v -E 'xcbuild|clang|apple-sdk|cctools|binutils' | tr '\n' ':')"
+
           # Install Genkit CLI if not already available
           if ! command -v genkit &> /dev/null; then
             echo "Installing Genkit CLI..."
@@ -156,7 +162,7 @@
             description = "Runs the frontend server in tunnel mode.";
             exec = ''
               cd "$DEVENV_ROOT"/frontend
-              bunx expo start --tunnel
+              bunx expo start --tunnel --clear
             '';
          };
         "frontend-test" = {

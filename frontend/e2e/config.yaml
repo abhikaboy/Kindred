@@ -1,0 +1,9 @@
+# Maestro E2E test configuration for Kindred
+# https://maestro.mobile.dev/
+
+# Use the dev client bundle ID (not Expo Go)
+appId: com.suntex.kindred
+
+# Default tags for filtering flows
+tags:
+  - smoke

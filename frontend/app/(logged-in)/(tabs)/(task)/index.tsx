@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, TouchableOpacity } from "react-native";
+import { Dimensions, StyleSheet, View, TouchableOpacity, Animated } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
@@ -313,6 +313,17 @@ const HomeContent = ({
 }: any) => {
     const { start } = useSpotlightTour();
     const { selected } = useTasks();
+    const [statsExpanded, setStatsExpanded] = useState(false);
+    const headerDimAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        Animated.timing(headerDimAnim, {
+            toValue: statsExpanded ? 0.15 : 1,
+            duration: 250,
+            useNativeDriver: true,
+        }).start();
+    }, [statsExpanded]);
+
     const homeScrollRef = useRef<any>(null);
     const homeStep0Ref = useRef<View>(null);
     const homeStep1Ref = useRef<View>(null);
@@ -392,14 +403,14 @@ const HomeContent = ({
                     {/* Home View - Dashboard with workspaces */}
                     <AnimatedView visible={isHome}>
                         <ThemedView style={[styles.viewContainer, { paddingTop: insets.top }]}>
-                            <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
+                            <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
                                 <WelcomeHeader
                                     userName={user?.display_name}
                                     onMenuPress={() => drawerRef.current?.openDrawer()}
                                     ThemedColor={ThemedColor}
                                     menuRef={homeStep2Ref}
                                 />
-                            </View>
+                            </Animated.View>
 
                             <HomeScrollContent
                                 encouragementCount={encouragementCount}
@@ -419,6 +430,7 @@ const HomeContent = ({
                                 jumpBackInRef={homeStep0Ref}
                                 kudosRef={homeStep1Ref}
                                 onSpotlightLayout={registerHomeLayout}
+                                onStatsExpandChange={setStatsExpanded}
                             />
                         </ThemedView>
                     </AnimatedView>

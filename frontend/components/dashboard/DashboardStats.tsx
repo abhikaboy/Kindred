@@ -17,7 +17,11 @@ const MAX_VISIBLE = 5;
 
 type ExpandedStat = "open" | "doneThisWeek" | null;
 
-const DashboardStats: React.FC = () => {
+interface DashboardStatsProps {
+    onExpandChange?: (expanded: boolean) => void;
+}
+
+const DashboardStats: React.FC<DashboardStatsProps> = ({ onExpandChange }) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const { unnestedTasks, dueTodayTasks } = useTasks();
@@ -28,21 +32,24 @@ const DashboardStats: React.FC = () => {
 
     const handlePress = useCallback((stat: "open" | "dueToday" | "doneThisWeek") => {
         if (stat === "dueToday") {
-            if (dueTodayTasks.length === 0) return;
             router.push("/(logged-in)/(tabs)/(task)/daily");
             return;
         }
         if (stat === "open" && openTasks.length === 0) return;
         if (stat === "doneThisWeek" && completedThisWeek.length === 0) return;
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setExpanded((prev) => (prev === stat ? null : stat));
-    }, [router, dueTodayTasks.length, openTasks.length, completedThisWeek.length]);
+        setExpanded((prev) => {
+            const next = prev === stat ? null : stat;
+            onExpandChange?.(next !== null);
+            return next;
+        });
+    }, [router, dueTodayTasks.length, openTasks.length, completedThisWeek.length, onExpandChange]);
 
     const visibleOpen = openTasks.slice(0, MAX_VISIBLE);
     const visibleCompleted = completedThisWeek.slice(0, MAX_VISIBLE);
 
     return (
-        <View style={styles.wrapper}>
+        <View style={[styles.wrapper, expanded !== null && styles.wrapperExpanded]}>
             {/* Stats row */}
             <View style={styles.row}>
                 <StatItem
@@ -51,6 +58,7 @@ const DashboardStats: React.FC = () => {
                     isSelected={expanded === "open"}
                     isDimmed={expanded !== null && expanded !== "open"}
                     onPress={() => handlePress("open")}
+                    align="center"
                 />
                 <StatItem
                     value={dueTodayTasks.length}
@@ -58,6 +66,7 @@ const DashboardStats: React.FC = () => {
                     isSelected={false}
                     isDimmed={expanded !== null}
                     onPress={() => handlePress("dueToday")}
+                    align="center"
                 />
                 <StatItem
                     value={completedThisWeek.length}
@@ -66,6 +75,7 @@ const DashboardStats: React.FC = () => {
                     isDimmed={expanded !== null && expanded !== "doneThisWeek"}
                     onPress={() => handlePress("doneThisWeek")}
                     isLoading={completedLoading}
+                    align="center"
                 />
             </View>
 
@@ -113,9 +123,12 @@ const styles = StyleSheet.create({
     wrapper: {
         gap: 16,
     },
+    wrapperExpanded: {
+        zIndex: 999,
+    },
     row: {
         flexDirection: "row",
-        justifyContent: "space-around",
+        justifyContent: "space-between",
     },
     expandedList: {
         gap: 8,

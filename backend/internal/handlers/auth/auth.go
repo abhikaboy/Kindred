@@ -346,14 +346,16 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		hashedPassword = string(hashedBytes)
 	}
 
+	now := time.Now().UTC()
 	user := User{
-		Email:        input.Body.Email,
-		Phone:        input.Body.Phone,
-		Password:     hashedPassword, // Store the hashed password
-		ID:           id,
-		RefreshToken: refresh,
-		TokenUsed:    false,
-		Count:        0,
+		Email:           input.Body.Email,
+		Phone:           input.Body.Phone,
+		Password:        hashedPassword, // Store the hashed password
+		ID:              id,
+		RefreshToken:    refresh,
+		TokenUsed:       false,
+		Count:           0,
+		TermsAcceptedAt: &now,
 
 		Categories:     make([]types.CategoryDocument, 0),
 		Friends:        make([]primitive.ObjectID, 0),

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useTypedMutation } from './useTypedAPI';
-import { useAuth } from './useAuth';
+import { useAuth, saveAuthData } from './useAuth';
 import client from '@/api/client';
 import { createLogger } from '@/utils/logger';
 
@@ -310,6 +310,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             const userData = result.data as any;
             setUser(userData);
 
+            // Save auth tokens from response headers
+            if (result.response?.headers) {
+                const accessToken = result.response.headers.get('access_token');
+                const refreshToken = result.response.headers.get('refresh_token');
+                if (accessToken && refreshToken) {
+                    await saveAuthData({ access_token: accessToken, refresh_token: refreshToken });
+                }
+            }
+
             logger.info('User registered and logged in', {
                 userId: userData._id,
                 displayName: userData.display_name
@@ -395,20 +404,23 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
             console.log('✅ Apple registration successful!');
 
-            // Registration now returns the full user data in the response body!
-            // No need for a separate login call
             const userData = result.data as any;
             setUser(userData);
+
+            // Save auth tokens from response headers
+            if (result.response?.headers) {
+                const accessToken = result.response.headers.get('access_token');
+                const refreshToken = result.response.headers.get('refresh_token');
+                if (accessToken && refreshToken) {
+                    await saveAuthData({ access_token: accessToken, refresh_token: refreshToken });
+                }
+            }
 
             logger.info('User registered and logged in', {
                 userId: userData._id,
                 displayName: userData.display_name
             });
 
-            // Note: Default workspace is created automatically by the backend during registration
-            // No need to call setupDefaultWorkspace() here
-
-            // Reset after successful registration and login
             logger.debug('Resetting onboarding state');
             reset();
             logger.info('Registration flow complete');
@@ -499,20 +511,23 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
             console.log('✅ Google registration successful!');
 
-            // Registration now returns the full user data in the response body!
-            // No need for a separate login call
             const userData = result.data as any;
             setUser(userData);
+
+            // Save auth tokens from response headers
+            if (result.response?.headers) {
+                const accessToken = result.response.headers.get('access_token');
+                const refreshToken = result.response.headers.get('refresh_token');
+                if (accessToken && refreshToken) {
+                    await saveAuthData({ access_token: accessToken, refresh_token: refreshToken });
+                }
+            }
 
             logger.info('User registered and logged in', {
                 userId: userData._id,
                 displayName: userData.display_name
             });
 
-            // Note: Default workspace is created automatically by the backend during registration
-            // No need to call setupDefaultWorkspace() here
-
-            // Reset after successful registration and login
             logger.debug('Resetting onboarding state');
             reset();
             logger.info('Registration flow complete');

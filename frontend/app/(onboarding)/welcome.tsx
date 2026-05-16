@@ -188,9 +188,10 @@ const WelcomeOnboarding = (props: Props) => {
             {/* Navigation button */}
             <Animated.View style={{ zIndex: 1, opacity: buttonFadeAnimation }}>
                 <OnboardButton
+                    testID="onboard-next-btn"
                     disabled={false}
                     onPress={() => {
-                        router.push("/(onboarding)/accomplishment");
+                        router.push("/(onboarding)/calendar");
                     }}
                 />
             </Animated.View>

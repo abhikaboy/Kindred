@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import PagerView from "react-native-pager-view";
+import ConfettiCannon from "react-native-confetti-cannon";
 import { WorkspaceContent } from "./WorkspaceContent";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTasks } from "@/contexts/tasksContext";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -85,10 +87,24 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
         [workspaces, selected, onWorkspaceChange]
     );
 
+    const { showConfetti } = useTasks();
+    const { width: screenWidth, height: screenHeight } = Dimensions.get("screen");
+
     if (workspaces.length === 0) return null;
 
     return (
         <View style={styles.container}>
+            {showConfetti && (
+                <View style={styles.confettiContainer}>
+                    <ConfettiCannon
+                        count={50}
+                        origin={{ x: screenWidth / 2, y: (screenHeight / 4) * 3.7 }}
+                        fallSpeed={1200}
+                        explosionSpeed={300}
+                        fadeOut={true}
+                    />
+                </View>
+            )}
             <PagerView
                 ref={pagerRef}
                 style={styles.pager}
@@ -220,6 +236,14 @@ const Dot: React.FC<{
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    confettiContainer: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
     },
     pager: {
         flex: 1,

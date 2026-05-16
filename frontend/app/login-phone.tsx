@@ -181,6 +181,7 @@ const LoginPhone = () => {
 
                     <View style={styles.contentContainer}>
                         <TouchableOpacity
+                            testID="back-btn"
                             onPress={handleBack}
                             style={styles.backButton}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -208,6 +209,7 @@ const LoginPhone = () => {
                                 </View>
 
                                 <PrimaryButton
+                                    testID="send-code-btn"
                                     title={loginMode === "otp"
                                         ? (sendingOTP ? "Sending..." : "Send Code")
                                         : "Continue"}
@@ -216,7 +218,7 @@ const LoginPhone = () => {
                                     style={styles.continueButton}
                                 />
 
-                                <TouchableOpacity onPress={toggleLoginMode} style={styles.toggleModeButton}>
+                                <TouchableOpacity testID="toggle-login-mode" onPress={toggleLoginMode} style={styles.toggleModeButton}>
                                     <ThemedText style={[styles.toggleModeText, { color: ThemedColor.tint }]}>
                                         {loginMode === "otp"
                                             ? "Use a password instead"
@@ -286,6 +288,7 @@ const LoginPhone = () => {
                                 </View>
 
                                 <PrimaryButton
+                                    testID="login-otp-btn"
                                     title={loading ? "Logging in..." : "Login"}
                                     onPress={handleLoginWithOTP}
                                     disabled={loading || otpCode.length !== 4}
@@ -321,6 +324,7 @@ const LoginPhone = () => {
                                 </View>
 
                                 <PrimaryButton
+                                    testID="login-password-btn"
                                     title={loading ? "Logging in..." : "Login"}
                                     onPress={handleLoginWithPassword}
                                     disabled={loading || !password}
