@@ -189,9 +189,9 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	// Create notification in the database
 	var notificationContent string
 	if r.Scope == "profile" {
-		notificationContent = fmt.Sprintf("%s sent you an encouragement: \"%s\"", r.Sender.Name, r.Message)
+		notificationContent = fmt.Sprintf("%s says: \"%s\"", r.Sender.Name, r.Message)
 	} else {
-		notificationContent = fmt.Sprintf("%s has sent you an encouragement on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
+		notificationContent = fmt.Sprintf("%s on \"%s\": \"%s\"", r.Sender.Name, r.TaskName, r.Message)
 	}
 	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, id)
 	if err != nil {
@@ -362,10 +362,10 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 	// Handle profile-level encouragements
 	if scope == "profile" {
 		if encouragementType == "image" {
-			message = fmt.Sprintf("%s sent you an encouragement!", senderName)
+			message = fmt.Sprintf("%s is rooting for you!", senderName)
 			notification = xutils.Notification{
 				Token:    receiver.PushToken,
-				Title:    "New Encouragement!",
+				Title:    "You've got a fan!",
 				Message:  message,
 				ImageURL: encouragementText, // The message field contains the image URL for type="image"
 				Data: map[string]string{
@@ -376,10 +376,10 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 				},
 			}
 		} else {
-			message = fmt.Sprintf("%s sent you an encouragement! \"%s\"", senderName, encouragementText)
+			message = fmt.Sprintf("%s says: \"%s\"", senderName, encouragementText)
 			notification = xutils.Notification{
 				Token:   receiver.PushToken,
-				Title:   "New Encouragement!",
+				Title:   "You've got a fan!",
 				Message: message,
 				Data: map[string]string{
 					"type":         "encouragement",
@@ -392,10 +392,10 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 	} else {
 		// Task-level encouragements
 		if encouragementType == "image" {
-			message = fmt.Sprintf("%s has sent you an encouragement image on %s", senderName, taskName)
+			message = fmt.Sprintf("%s is cheering you on for \"%s\"!", senderName, taskName)
 			notification = xutils.Notification{
 				Token:    receiver.PushToken,
-				Title:    "New Encouragement!",
+				Title:    "Someone believes in you!",
 				Message:  message,
 				ImageURL: encouragementText, // The message field contains the image URL for type="image"
 				Data: map[string]string{
@@ -407,10 +407,10 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 				},
 			}
 		} else {
-			message = fmt.Sprintf("%s has sent you an encouragement on %s \"%s\"", senderName, taskName, encouragementText)
+			message = fmt.Sprintf("%s on \"%s\": \"%s\"", senderName, taskName, encouragementText)
 			notification = xutils.Notification{
 				Token:   receiver.PushToken,
-				Title:   "New Encouragement!",
+				Title:   "Someone believes in you!",
 				Message: message,
 				// No ImageURL for text encouragements
 				Data: map[string]string{
@@ -474,11 +474,11 @@ func (s *Service) NotifyEncouragersOfCompletion(taskID, taskOwnerID primitive.Ob
 		}
 
 		// Send notification
-		message := fmt.Sprintf("%s completed the task you encouraged: \"%s\"", taskOwner.DisplayName, taskName)
+		message := fmt.Sprintf("%s finished \"%s\" - your encouragement paid off!", taskOwner.DisplayName, taskName)
 
 		notification := xutils.Notification{
 			Token:   encourager.PushToken,
-			Title:   "Task Completed! 🎉",
+			Title:   "They did it! 🎉",
 			Message: message,
 			Data: map[string]string{
 				"type":          "task_completion",

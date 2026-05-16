@@ -62,7 +62,7 @@ func (s *ExamplePushNotificationTestSuite) TestNotificationContent() {
 
 	// Verify notification content
 	notification := notifications[0]
-	s.Equal("New Friend Request!", notification.Title)
+	s.Equal("New friend request", notification.Title)
 	s.Contains(notification.Message, requester.DisplayName)
 	s.Equal("friend_request", notification.Data["type"])
 	s.Equal(requester.ID.Hex(), notification.Data["requester_id"])

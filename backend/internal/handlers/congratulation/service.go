@@ -157,7 +157,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	}
 
 	// Create notification in the database with thumbnail (first image from post if available)
-	notificationContent := fmt.Sprintf("%s has sent you a congratulation on %s: \"%s\"", r.Sender.Name, r.TaskName, r.Message)
+	notificationContent := fmt.Sprintf("%s on \"%s\": \"%s\"", r.Sender.Name, r.TaskName, r.Message)
 	var thumbnail string
 
 	// If we have a post ID, try to fetch the post to get the thumbnail
@@ -341,10 +341,10 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 
 	// Check if it's an image congratulation
 	if congratulationType == "image" {
-		message = fmt.Sprintf("%s has sent you a congratulation image on %s", senderName, taskName)
+		message = fmt.Sprintf("%s is celebrating your work on \"%s\"!", senderName, taskName)
 		notification = xutils.Notification{
 			Token:    receiver.PushToken,
-			Title:    "New Congratulation!",
+			Title:    "You're killing it!",
 			Message:  message,
 			ImageURL: congratulationText, // The message field contains the image URL for type="image"
 			Data: map[string]string{
@@ -355,10 +355,10 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 			},
 		}
 	} else {
-		message = fmt.Sprintf("%s has sent you a congratulation on %s \"%s\"", senderName, taskName, congratulationText)
+		message = fmt.Sprintf("%s on \"%s\": \"%s\"", senderName, taskName, congratulationText)
 		notification = xutils.Notification{
 			Token:   receiver.PushToken,
-			Title:   "New Congratulation!",
+			Title:   "You're killing it!",
 			Message: message,
 			// No ImageURL for text congratulations
 			Data: map[string]string{

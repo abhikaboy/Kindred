@@ -875,7 +875,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		}
 
 		// Create notification in the database with thumbnail (first image from post if available)
-		notificationContent := fmt.Sprintf("%s commented on your post: \"%s\"", comment.User.DisplayName, comment.Content)
+		notificationContent := fmt.Sprintf("%s commented: \"%s\"", comment.User.DisplayName, comment.Content)
 		var thumbnail string
 		if len(post.Images) > 0 {
 			thumbnail = post.Images[0]
@@ -894,7 +894,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 			continue
 		}
 
-		notificationContent := fmt.Sprintf("%s mentioned you in a comment: \"%s\"", comment.User.DisplayName, comment.Content)
+		notificationContent := fmt.Sprintf("%s mentioned you: \"%s\"", comment.User.DisplayName, comment.Content)
 		var thumbnail string
 		if len(post.Images) > 0 {
 			thumbnail = post.Images[0]
@@ -1033,11 +1033,11 @@ func (s *Service) sendCommentNotification(postOwnerID primitive.ObjectID, commen
 		return nil // Not an error, just no notification sent
 	}
 
-	message := fmt.Sprintf("%s has commented on your post \"%s\"", commenterName, commentText)
+	message := fmt.Sprintf("%s commented: \"%s\"", commenterName, commentText)
 
 	notification := xutils.Notification{
 		Token:   postOwner.PushToken,
-		Title:   "New Comment!",
+		Title:   "New comment on your post",
 		Message: message,
 		Data: map[string]string{
 			"type":           "comment",

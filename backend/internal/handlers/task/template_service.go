@@ -191,13 +191,13 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 			}
 
 			if user.PushToken != "" {
-				message := fmt.Sprintf("You missed your recurring task: %s", templateDoc.Content)
+				message := fmt.Sprintf("Looks like \"%s\" slipped by - no worries, you can still get to it!", templateDoc.Content)
 				if totalMissed > 1 {
-					message = fmt.Sprintf("You missed %d occurrences of: %s", totalMissed, templateDoc.Content)
+					message = fmt.Sprintf("You missed %d rounds of \"%s\" - want to catch up?", totalMissed, templateDoc.Content)
 				}
 				if err := xutils.SendNotification(xutils.Notification{
 					Token:   user.PushToken,
-					Title:   "Task Missed",
+					Title:   "Missed one!",
 					Message: message,
 					Data: map[string]string{
 						"taskId": templateDoc.ID.Hex(),
@@ -227,8 +227,8 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 				if user.PushToken != "" {
 					if err := xutils.SendNotification(xutils.Notification{
 						Token:   user.PushToken,
-						Title:   "Great Job!",
-						Message: fmt.Sprintf("We've added '%s' back to your todo list.", templateDoc.Content),
+						Title:   "Nice work!",
+						Message: fmt.Sprintf("You crushed \"%s\"! It's back on your list for next time.", templateDoc.Content),
 						Data: map[string]string{
 							"taskId": templateDoc.ID.Hex(),
 							"type":   "TASK_REGENERATED",

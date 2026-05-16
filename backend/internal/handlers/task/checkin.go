@@ -25,8 +25,8 @@ type CheckinInfo struct {
 
 var CheckinTimes = []CheckinInfo{
 	{
-		Title:    "Afternoon Check-in 🌙",
-		Message:  "Hey %s, time to review the tasks you have scheduled!",
+		Title:    "How's your day going?",
+		Message:  "Hey %s, you still have some tasks on your plate today - take a look!",
 		SendTask: false,
 		Hour:     17, // 5 PM local time
 		Minute:   1,
@@ -36,7 +36,7 @@ var CheckinTimes = []CheckinInfo{
 // openTaskCheckinMessage returns a check-in message that includes open task count when applicable
 func openTaskCheckinMessage(displayName string, openTaskCount int, baseMessage string) string {
 	if openTaskCount > 0 {
-		return fmt.Sprintf("Hey %s, you have %d open tasks from today \u2014 tap to review!", displayName, openTaskCount)
+		return fmt.Sprintf("Hey %s, you've got %d things left today - you got this!", displayName, openTaskCount)
 	}
 	return fmt.Sprintf(baseMessage, displayName)
 }

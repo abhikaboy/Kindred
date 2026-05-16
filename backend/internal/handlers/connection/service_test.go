@@ -148,7 +148,7 @@ func (s *ConnectionServiceTestSuite) TestCreateConnectionRequest_Success() {
 	s.AssertPushNotificationCount(1, "Expected one push notification to be sent")
 	notifications := s.GetSentPushNotificationsForToken(receiver.PushToken)
 	s.Require().Len(notifications, 1, "Expected notification to be sent to receiver")
-	s.Equal("New Friend Request!", notifications[0].Title)
+	s.Equal("New friend request", notifications[0].Title)
 	s.Contains(notifications[0].Message, requester.DisplayName)
 	s.Equal("friend_request", notifications[0].Data["type"])
 }
@@ -235,7 +235,7 @@ func (s *ConnectionServiceTestSuite) TestAcceptConnection_Success() {
 	s.AssertPushNotificationCount(1, "Expected one push notification to be sent")
 	notifications := s.GetSentPushNotificationsForToken(requester.PushToken)
 	s.Require().Len(notifications, 1, "Expected notification to be sent to requester")
-	s.Equal("Friend Request Accepted!", notifications[0].Title)
+	s.Equal("You're connected!", notifications[0].Title)
 	s.Contains(notifications[0].Message, receiver.DisplayName)
 	s.Equal("friend_request_accepted", notifications[0].Data["type"])
 }

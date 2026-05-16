@@ -238,7 +238,7 @@ func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument
 
 	// Follow-up reminders use specific copy
 	if reminder.Type == FollowUpReminderType {
-		return "Swipe to document this task as complete"
+		return "How'd it go? Tap to mark it done!"
 	}
 
 	// Use custom message if provided

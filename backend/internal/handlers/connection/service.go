@@ -306,11 +306,11 @@ func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, r
 		return nil // Not an error, just no notification sent
 	}
 
-	message := fmt.Sprintf("%s sent you a friend request", requesterName)
+	message := fmt.Sprintf("%s wants to be friends!", requesterName)
 
 	notification := xutils.Notification{
 		Token:   receiver.PushToken,
-		Title:   "New Friend Request!",
+		Title:   "New friend request",
 		Message: message,
 		Data: map[string]string{
 			"type":           "friend_request",
@@ -408,11 +408,11 @@ func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.Ob
 		return nil // Not an error, just no notification sent
 	}
 
-	message := fmt.Sprintf("%s accepted your friend request", accepterName)
+	message := fmt.Sprintf("You and %s are now friends!", accepterName)
 
 	notification := xutils.Notification{
 		Token:   requester.PushToken,
-		Title:   "Friend Request Accepted!",
+		Title:   "You're connected!",
 		Message: message,
 		Data: map[string]string{
 			"type":          "friend_request_accepted",
