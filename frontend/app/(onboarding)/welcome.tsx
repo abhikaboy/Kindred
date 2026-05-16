@@ -1,5 +1,7 @@
 import { Dimensions, StyleSheet, View, Animated } from "react-native";
 import React, { useEffect, useRef } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -18,6 +20,7 @@ const WelcomeOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData } = useOnboarding();
+    const { capture } = useAnalytics();
 
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
@@ -26,6 +29,13 @@ const WelcomeOnboarding = (props: Props) => {
 
     const isSocialAuth = !!(onboardingData.appleId || onboardingData.googleId);
     const totalSteps = isSocialAuth ? 4 : 5;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.WELCOME.name,
+            step_index: OnboardingSteps.WELCOME.index,
+        });
+    }, []);
 
     useEffect(() => {
         // Fade in animation on mount
@@ -191,6 +201,10 @@ const WelcomeOnboarding = (props: Props) => {
                     testID="onboard-next-btn"
                     disabled={false}
                     onPress={() => {
+                        capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                            step_name: OnboardingSteps.WELCOME.name,
+                            step_index: OnboardingSteps.WELCOME.index,
+                        });
                         router.push("/(onboarding)/calendar");
                     }}
                 />

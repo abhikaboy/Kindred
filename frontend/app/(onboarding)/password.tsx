@@ -1,5 +1,7 @@
 import { Dimensions, StyleSheet, View, Animated, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -22,6 +24,7 @@ const PasswordOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updatePassword, validationErrors, registerWithEmail, isLoading } = useOnboarding();
+    const { capture } = useAnalytics();
 
     const [password, setPasswordLocal] = useState(onboardingData.password);
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,6 +39,13 @@ const PasswordOnboarding = (props: Props) => {
 
     const fadeAnimation = useRef(new Animated.Value(0)).current;
     const slideAnimation = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.PASSWORD.name,
+            step_index: OnboardingSteps.PASSWORD.index,
+        });
+    }, []);
 
     useEffect(() => {
         Animated.parallel([
@@ -61,6 +71,10 @@ const PasswordOnboarding = (props: Props) => {
             try {
                 await registerWithEmail(DEFAULT_PICTURE);
                 showToast('Account created successfully! 🎉', 'success');
+                capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                    step_name: OnboardingSteps.PASSWORD.name,
+                    step_index: OnboardingSteps.PASSWORD.index,
+                });
                 router.replace('/(onboarding)/welcome');
             } catch (error: any) {
                 console.error('Registration error:', error);

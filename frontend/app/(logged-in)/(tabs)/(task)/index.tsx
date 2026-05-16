@@ -29,6 +29,8 @@ import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
 import { List } from "phosphor-react-native";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type Props = {};
 
@@ -53,6 +55,7 @@ const Home = (props: Props) => {
     const { focusMode, toggleFocusMode } = useFocusMode();
     const [refreshing, setRefreshing] = useState(false);
     const queryClient = useQueryClient();
+    const { capture } = useAnalytics();
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -192,6 +195,9 @@ const Home = (props: Props) => {
 
     // Refresh all data (for pull-to-refresh)
     const handleRefresh = React.useCallback(async () => {
+        capture(AnalyticsEvents.PULL_TO_REFRESH, {
+            screen_name: "task_home",
+        });
         setRefreshing(true);
         try {
             console.log("Refreshing all data...");
@@ -206,7 +212,7 @@ const Home = (props: Props) => {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkspaces, fetchKudosCounts, queryClient]);
+    }, [fetchWorkspaces, fetchKudosCounts, queryClient, capture]);
 
     const drawerRef = useRef<DrawerLayout>(null);
 

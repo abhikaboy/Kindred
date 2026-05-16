@@ -31,6 +31,8 @@ import { useKudos } from "@/contexts/kudosContext";
 import { updateTimezone } from "@/api/profile";
 import * as Localization from 'expo-localization';
 import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -63,6 +65,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 const layout = ({ children }: { children: React.ReactNode }) => {
     const { user, fetchAuthData } = useAuth();
     const { fetchKudosData } = useKudos();
+    const { identify, capture } = useAnalytics();
     const [isLoading, setIsLoading] = useState(true);
     const [redirectPath, setRedirectPath] = useState<string | null>(null);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
@@ -96,6 +99,16 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     }
                 } else {
                     console.log('User authenticated, staying in app');
+
+                    // Identify user in PostHog
+                    identify(userData._id, {
+                        display_name: userData.display_name,
+                        handle: (userData as any).handle,
+                        timezone: (userData as any).timezone,
+                        streak: userData.streak ?? 0,
+                        created_at: (userData as any).created_at,
+                    });
+
                     // Update user timezone on successful auth if it has changed
                     try {
                         const deviceTimezone = Localization.getCalendars()[0].timeZone || 'UTC';

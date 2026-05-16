@@ -42,6 +42,8 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import ContactConsentModal from "@/components/modals/ContactConsentModal";
 import { useContactConsent } from "@/hooks/useContactConsent";
 import FriendsList from "@/components/search/FriendsList";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -118,6 +120,7 @@ const Search = (props: Props) => {
     const [headerHeight, setHeaderHeight] = useState(0);
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
+    const { capture } = useAnalytics();
     const { getContacts, isLoading: isLoadingContacts } = useContacts();
     const { matchedContacts, addMatchedContacts, isLoading: isLoadingMatchedContacts } = useMatchedContacts();
     const { hasConsent, grantConsent, denyConsent } = useContactConsent();
@@ -304,6 +307,10 @@ const Search = (props: Props) => {
                     users: userResults || [],
                 },
             });
+            capture(AnalyticsEvents.SEARCH_PERFORMED, {
+                query_length: query.trim().length,
+                result_count: (blueprintResults?.length ?? 0) + (userResults?.length ?? 0),
+            });
         } catch (error) {
             console.error("🔎 Search error:", error);
             dispatch({ type: "SEARCH_ERROR", payload: error.message });
@@ -390,6 +397,9 @@ const Search = (props: Props) => {
                 banner: suggestion.banner,
             };
             appendSearch(recentItem);
+            capture(AnalyticsEvents.SEARCH_RESULT_TAPPED, {
+                result_type: suggestion.type,
+            });
 
             if (suggestion.type === "user") {
                 // Navigate to user profile

@@ -16,6 +16,8 @@ import { AttachStep } from "react-native-spotlight-tour";
 import { Sparkle, Timer, Repeat } from "phosphor-react-native";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -80,6 +82,7 @@ const TaskCard = ({
     const { setTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
+    const { capture } = useAnalytics();
 
     // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
@@ -241,6 +244,7 @@ const TaskCard = ({
     };
 
     const handlePress = () => {
+        capture(AnalyticsEvents.TASK_DETAIL_OPENED, {});
         if (task?.isPhantom) return;
         if (encourage) {
             if (!encouragementConfig?.receiverId || encouragementConfig.receiverId.trim() === "") {

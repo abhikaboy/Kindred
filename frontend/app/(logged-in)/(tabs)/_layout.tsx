@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Platform, Animated } from "react-native";
 import { usePathname } from "expo-router";
 
@@ -13,6 +13,8 @@ import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 
 // Import Phosphor icons
 import {
@@ -81,10 +83,23 @@ export default function TabLayout() {
     const { focusMode } = useFocusMode();
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
     const currentIndex = useTabIndex();
+    const { capture } = useAnalytics();
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
     };
+
+    const prevTabIndex = useRef(currentIndex);
+
+    useEffect(() => {
+        if (currentIndex >= 0 && currentIndex !== prevTabIndex.current) {
+            capture(AnalyticsEvents.TAB_SWITCHED, {
+                from_tab: TabNames[prevTabIndex.current as keyof typeof TabNames] ?? "unknown",
+                to_tab: TabNames[currentIndex as keyof typeof TabNames] ?? "unknown",
+            });
+            prevTabIndex.current = currentIndex;
+        }
+    }, [currentIndex]);
 
     // Calculate total tasks for today
     const todayTaskCount = useMemo(() => {

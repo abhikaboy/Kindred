@@ -1,5 +1,7 @@
 import { Dimensions, StyleSheet, View, Animated, Platform } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -23,6 +25,7 @@ const AccomplishmentOnboarding = (props: Props) => {
     const isSocialAuth = !!(onboardingData.appleId || onboardingData.googleId);
     const totalSteps = isSocialAuth ? 4 : 5;
     const router = useRouter();
+    const { capture } = useAnalytics();
     const confettiRef = useRef<any>(null);
     const [showConfetti, setShowConfetti] = useState(false);
 
@@ -30,6 +33,13 @@ const AccomplishmentOnboarding = (props: Props) => {
     const fadeAnimation = useRef(new Animated.Value(0)).current;
     const slideAnimation = useRef(new Animated.Value(30)).current;
     const swipeHintAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.ACCOMPLISHMENT.name,
+            step_index: OnboardingSteps.ACCOMPLISHMENT.index,
+        });
+    }, []);
 
     useEffect(() => {
         // Fade in animation on mount
@@ -76,6 +86,11 @@ const AccomplishmentOnboarding = (props: Props) => {
 
         // Navigate to the main app after a delay
         setTimeout(() => {
+            capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                step_name: OnboardingSteps.ACCOMPLISHMENT.name,
+                step_index: OnboardingSteps.ACCOMPLISHMENT.index,
+            });
+            capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
             router.replace('/(logged-in)/(tabs)/(task)' as any);
         }, 2000);
     };

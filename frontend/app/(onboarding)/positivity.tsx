@@ -9,6 +9,8 @@ import OnboardButton from "@/components/inputs/OnboardButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -18,6 +20,7 @@ const PositivityOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { capture } = useAnalytics();
 
     const handleSkip = async () => {
         await AsyncStorage.setItem('hasSeenOnboarding', 'true');
@@ -33,6 +36,13 @@ const PositivityOnboarding = (props: Props) => {
     const connectionFade = useRef(new Animated.Value(0)).current;
     const happinessFade = useRef(new Animated.Value(0)).current;
     const buttonFadeAnimation = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.POSITIVITY.name,
+            step_index: OnboardingSteps.POSITIVITY.index,
+        });
+    }, []);
 
     useEffect(() => {
         // Initial fade in animation for main text
@@ -167,6 +177,10 @@ const PositivityOnboarding = (props: Props) => {
                     testID="onboard-next-btn"
                     disabled={false}
                     onPress={() => {
+                        capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                            step_name: OnboardingSteps.POSITIVITY.name,
+                            step_index: OnboardingSteps.POSITIVITY.index,
+                        });
                         router.push("/(onboarding)/circle");
                     }}
                 />

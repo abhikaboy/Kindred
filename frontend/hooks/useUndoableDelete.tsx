@@ -8,6 +8,8 @@ import { Task } from "@/api/types";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import UndoToast from "@/components/ui/UndoToast";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 const UNDO_DELAY_MS = 5000;
 
@@ -19,6 +21,7 @@ interface PendingDelete {
 
 export function useUndoableDelete() {
     const { removeFromCategory, addToCategory } = useTasks();
+    const { capture } = useAnalytics();
     const pendingRef = useRef<Map<string, PendingDelete>>(new Map<string, PendingDelete>());
     const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -51,6 +54,9 @@ export function useUndoableDelete() {
                 if (bulkable.length === 1) {
                     const { categoryId, task } = bulkable[0];
                     await removeFromCategoryAPI(categoryId, task.id, false);
+                    capture(AnalyticsEvents.TASK_DELETED, {
+                        count: 1,
+                    });
                 } else {
                     await bulkDeleteTasksAPI(
                         bulkable.map(({ categoryId, task }) => ({
@@ -59,6 +65,9 @@ export function useUndoableDelete() {
                             deleteRecurring: false,
                         }))
                     );
+                    capture(AnalyticsEvents.TASK_BULK_DELETED, {
+                        count: bulkable.length,
+                    });
                 }
             } catch (error) {
                 // Restore failed tasks to UI
@@ -80,6 +89,9 @@ export function useUndoableDelete() {
         for (const entry of individual) {
             try {
                 await removeFromCategoryAPI(entry.categoryId, entry.task.id, true);
+                capture(AnalyticsEvents.TASK_DELETED, {
+                    count: 1,
+                });
             } catch (error) {
                 addToCategory(entry.categoryId, entry.task);
                 showToastable({
@@ -92,7 +104,7 @@ export function useUndoableDelete() {
                 });
             }
         }
-    }, [addToCategory]);
+    }, [addToCategory, capture]);
 
     // On unmount: flush immediately (no more undo possible)
     useEffect(() => {

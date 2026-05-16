@@ -17,6 +17,8 @@ import { PostTaskSelectionView } from "./fab/PostTaskSelectionView";
 import { VoiceInputOverlay } from "./fab/VoiceInputOverlay";
 import { useFABAnimations } from "./fab/useFABAnimations";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 const TAB_BAR_HEIGHT = 83;
 
@@ -32,6 +34,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     const segments = useSegments();
     const { workspaces, selected, setSelected } = useTasks();
     const { openModal } = useCreateModal();
+    const { capture } = useAnalytics();
 
     // State
     const [fabState, setFabState] = useState<FABState>("collapsed");
@@ -100,6 +103,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 
     // Handlers
     const handleFABPress = () => {
+        capture(AnalyticsEvents.FAB_PRESSED, {});
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         animations.animateFABPress().start();
 
@@ -148,6 +152,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     };
 
     const handleTaskPress = () => {
+        capture(AnalyticsEvents.FAB_OPTION_SELECTED, { option: "task" });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (workspaces.length !== workspaceCountAtMeasure.current) {
             workspaceSelectionHeight.current = 0;
@@ -160,12 +165,14 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     };
 
     const handleWorkspacePress = () => {
+        capture(AnalyticsEvents.FAB_OPTION_SELECTED, { option: "new_workspace" });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         handleClose();
         setTimeout(() => setWorkspaceModalVisible(true), 300);
     };
 
     const handleVoiceInputPress = () => {
+        capture(AnalyticsEvents.FAB_OPTION_SELECTED, { option: "voice" });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         animations.animateClose(() => {
             setFabState("collapsed");
@@ -179,6 +186,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     };
 
     const handleWorkspaceSelect = (workspaceName: string) => {
+        capture(AnalyticsEvents.WORKSPACE_SELECTED, { workspace: workspaceName });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setSelected(workspaceName);
         handleClose();
@@ -186,6 +194,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     };
 
     const handlePostPress = async () => {
+        capture(AnalyticsEvents.FAB_OPTION_SELECTED, { option: "post" });
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
         setLoadingTasks(true);

@@ -15,6 +15,8 @@ import { Images, Gif } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
 import ConfettiCannon from "react-native-confetti-cannon";
 import CustomAlert, { AlertButton } from "./CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 interface CongratulateModalProps {
     visible: boolean;
@@ -72,6 +74,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     }, [visible]);
 
     const { congratulationsLeft, currentKudosRewards } = useUserKudos();
+    const { capture } = useAnalytics();
 
     const handleImagePick = async () => {
         try {
@@ -178,6 +181,10 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
             // Only update state if component is still mounted
             if (!isMountedRef.current) return;
+
+            capture(AnalyticsEvents.CONGRATULATION_SENT, {
+                has_image: !!selectedImage,
+            });
 
             setIsUploading(false);
 

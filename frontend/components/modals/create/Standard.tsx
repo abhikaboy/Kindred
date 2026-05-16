@@ -29,6 +29,8 @@ import { ensureVisible } from "@/utils/spotlightUtils";
 import CustomAlert, { AlertButton } from "../CustomAlert";
 import { updatePost } from "@/api/post";
 import * as Haptics from "expo-haptics";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -152,6 +154,7 @@ const StandardContent = ({
         setIsBlueprint,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
+    const { capture } = useAnalytics();
     const { start } = useSpotlightTour();
 
     // Determine which categories to use based on blueprint mode
@@ -269,6 +272,11 @@ const StandardContent = ({
             };
 
             addTaskToBlueprintCategory(selectedCategory.id, newTask);
+            capture(AnalyticsEvents.TASK_CREATED, {
+                source: "create_modal",
+                has_deadline: !!deadline,
+                has_checklist: false,
+            });
             resetTaskCreation();
             return;
         }
@@ -343,6 +351,11 @@ const StandardContent = ({
             // This ensures we don't have ID mismatches
             removeFromCategory(selectedCategory.id, tempId);
             addToCategory(selectedCategory.id, response);
+            capture(AnalyticsEvents.TASK_CREATED, {
+                source: "create_modal",
+                has_deadline: !!deadline,
+                has_checklist: false,
+            });
         } catch (error) {
             console.error("Failed to create task:", error);
 
@@ -418,6 +431,9 @@ const StandardContent = ({
     try {
         // Make the API call
         await updateTaskAPI(targetCategoryId, task.id, updateData);
+        capture(AnalyticsEvents.TASK_UPDATED, {
+            source: "edit_modal",
+        });
     } catch (error) {
         console.error("Failed to update task:", error);
     }

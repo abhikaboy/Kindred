@@ -9,6 +9,8 @@ import TaskToast from '@/components/ui/TaskToast';
 import DefaultToast from '@/components/ui/DefaultToast';
 import { useAuth } from '@/hooks/useAuth';
 import { updateStreakWidget } from '@/widgets/updateStreakWidget';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { AnalyticsEvents } from '@/utils/analytics';
 
 interface TaskCompletionData {
     id: string;
@@ -30,6 +32,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
 
     const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
     const { user } = useAuth();
+    const { capture } = useAnalytics();
     const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const markTaskAsCompleted = useCallback(async (
@@ -49,6 +52,9 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             });
 
             removeFromCategory(categoryId, taskId);
+            capture(AnalyticsEvents.TASK_COMPLETED, {
+                source: "detail_page",
+            });
 
             // If backend returned the next flex instance, insert it immediately
             if (res.nextFlexTask) {
@@ -134,7 +140,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             isCompletingRef.current = false;
             setIsCompleting(false);
         }
-    }, [removeFromCategory, addToCategory, setShowConfetti, categories, user]);
+    }, [removeFromCategory, addToCategory, setShowConfetti, categories, user, capture]);
 
     return {
         markTaskAsCompleted,

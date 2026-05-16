@@ -27,6 +27,8 @@ import * as SMS from 'expo-sms';
 import PostCardHeader from "./PostCardHeader";
 import PostCardMedia from "./PostCardMedia";
 import PostCardFooter from "./PostCardFooter";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type ImageSize = components["schemas"]["ImageSize"];
 
@@ -245,6 +247,7 @@ const PostCard = React.memo(({
 
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
+    const { capture } = useAnalytics();
     const handleClose = () => {
         bottomSheetModalRef.current?.dismiss();
     };
@@ -296,6 +299,16 @@ const PostCard = React.memo(({
         try {
             const response = await toggleReaction(id, emoji);
             const wasAdded = response.added;
+
+            if (wasAdded) {
+                capture(AnalyticsEvents.REACTION_ADDED, {
+                    post_id: id,
+                });
+            } else {
+                capture(AnalyticsEvents.REACTION_REMOVED, {
+                    post_id: id,
+                });
+            }
 
             setLocalReactions((prevReactions) => {
                 const reactionIndex = prevReactions.findIndex((r) => r.emoji === emoji);

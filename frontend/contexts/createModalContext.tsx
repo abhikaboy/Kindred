@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Screen } from "@/components/modals/CreateModal";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type CreateModalContextType = {
     visible: boolean;
@@ -21,6 +23,7 @@ const CreateModalContext = createContext<CreateModalContextType | undefined>(und
 export const CreateModalProvider = ({ children }: { children: React.ReactNode }) => {
     const [visible, setVisible] = useState(false);
     const [modalConfig, setModalConfig] = useState<CreateModalConfig>({});
+    const { capture } = useAnalytics();
     const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     // Ref tracks latest visible to avoid stale closures in openModal
@@ -35,6 +38,7 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
     }, []);
 
     const openModal = useCallback((config: CreateModalConfig = {}) => {
+        capture(AnalyticsEvents.CREATE_MODAL_OPENED, {});
         // Always force a close-then-open cycle so the modal presents reliably,
         // regardless of whether visible is currently true or false
         setVisible(false);

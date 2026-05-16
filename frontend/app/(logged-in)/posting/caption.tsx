@@ -13,6 +13,8 @@ import { ObjectId } from "bson";
 import { useAuth } from "@/hooks/useAuth";
 import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 export default function Caption() {
     const params = useLocalSearchParams();
@@ -32,6 +34,7 @@ export default function Caption() {
 
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
+    const { capture } = useAnalytics();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
 
     // Compute display text based on state
@@ -147,6 +150,10 @@ export default function Caption() {
                     points: result.userStats.points
                 });
             }
+
+            capture(AnalyticsEvents.POST_CREATED, {
+                has_caption: !!data.caption?.trim(),
+            });
 
             router.dismissAll();
             router.push(`/(logged-in)/posting/${result.post._id}`);

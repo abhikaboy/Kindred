@@ -7,11 +7,14 @@ import { getBlockedUsers, unblockUser, BlockedUser } from '@/api/connection';
 import { showToast } from '@/utils/showToast';
 import { router } from 'expo-router';
 import { X } from 'phosphor-react-native';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { AnalyticsEvents } from '@/utils/analytics';
 
 export default function BlockedUsersScreen() {
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
     const [unblockingUserId, setUnblockingUserId] = useState<string | null>(null);
+    const { capture } = useAnalytics();
 
     const { data: blockedUsers = [], isLoading, error } = useQuery({
         queryKey: ['blockedUsers'],
@@ -22,6 +25,7 @@ export default function BlockedUsersScreen() {
         setUnblockingUserId(user._id);
         try {
             await unblockUser(user._id);
+            capture(AnalyticsEvents.USER_UNBLOCKED, {});
             showToast(`${user.name} has been unblocked`, 'success');
 
             // Invalidate queries to refresh

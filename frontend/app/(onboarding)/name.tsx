@@ -1,5 +1,7 @@
 import { Dimensions, StyleSheet, View, Animated, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -21,6 +23,7 @@ const NameOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updateDisplayName, updateHandle, validationErrors, registerWithApple, registerWithGoogle, isLoading } = useOnboarding();
+    const { capture } = useAnalytics();
 
     const [name, setNameLocal] = useState(onboardingData.displayName);
     const [handle, setHandleLocal] = useState(onboardingData.handle.replace('@', ''));
@@ -39,6 +42,13 @@ const NameOnboarding = (props: Props) => {
     // Animation values
     const fadeAnimation = useRef(new Animated.Value(0)).current;
     const slideAnimation = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.NAME.name,
+            step_index: OnboardingSteps.NAME.index,
+        });
+    }, []);
 
     useEffect(() => {
         // Fade in animation on mount
@@ -71,6 +81,10 @@ const NameOnboarding = (props: Props) => {
                         await registerWithGoogle(DEFAULT_PICTURE);
                     }
                     showToast('Account created successfully! 🎉', 'success');
+                    capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                        step_name: OnboardingSteps.NAME.name,
+                        step_index: OnboardingSteps.NAME.index,
+                    });
                     router.replace('/(onboarding)/welcome');
                 } catch (error: any) {
                     console.error('Registration error:', error);
@@ -82,6 +96,10 @@ const NameOnboarding = (props: Props) => {
                 }
             } else {
                 // Email auth: go to password screen
+                capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                    step_name: OnboardingSteps.NAME.name,
+                    step_index: OnboardingSteps.NAME.index,
+                });
                 router.push("/(onboarding)/password");
             }
         }

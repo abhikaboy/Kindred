@@ -9,6 +9,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 import {
     StyleSheet,
     View,
@@ -71,6 +73,7 @@ export default function Feed() {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor, insets);
     const { user, updateUser } = useAuth();
+    const { capture } = useAnalytics();
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
@@ -244,6 +247,9 @@ export default function Feed() {
                 setOffset(feedResult.nextOffset);
                 setHasMore(feedResult.hasMore);
                 setLoadingMore(false);
+                capture(AnalyticsEvents.FEED_SCROLLED, {
+                    page: offset,
+                });
                 return;
             } else if (currentFeedId === "friends") {
                 result = await getFriendsPosts(8, offset);
@@ -263,13 +269,16 @@ export default function Feed() {
             setPosts((prevPosts) => [...prevPosts, ...result.posts]);
             setOffset(result.nextOffset);
             setHasMore(result.hasMore);
+            capture(AnalyticsEvents.FEED_SCROLLED, {
+                page: offset,
+            });
         } catch (error) {
             console.error("Error loading more posts:", error);
             showToast("Failed to load more posts", "danger");
         } finally {
             setLoadingMore(false);
         }
-    }, [loadingMore, hasMore, loading, currentFeed.id, offset]);
+    }, [loadingMore, hasMore, loading, currentFeed.id, offset, capture]);
 
     // Callbacks for hiding posts and blocking users from feed
     const handleHidePost = useCallback((postId: string) => {
@@ -304,6 +313,9 @@ export default function Feed() {
         setRefreshing(true);
         try {
             await fetchPosts(currentFeed.id);
+            capture(AnalyticsEvents.PULL_TO_REFRESH, {
+                screen_name: "feed",
+            });
             showToast("Feed refreshed successfully", "success");
         } catch (error) {
             console.error("Error refreshing feed:", error);
@@ -311,7 +323,7 @@ export default function Feed() {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchPosts, currentFeed.id]);
+    }, [fetchPosts, currentFeed.id, capture]);
 
     // Load blueprints and posts in parallel on component mount
     useEffect(() => {
@@ -338,7 +350,10 @@ export default function Feed() {
 
     const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
         setCurrentFeed(feed);
-    }, []);
+        capture(AnalyticsEvents.FEED_FILTER_CHANGED, {
+            feed_id: feed.id,
+        });
+    }, [capture]);
 
     const animateHeader = useCallback(
         (show: boolean) => {
