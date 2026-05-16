@@ -4,6 +4,7 @@ import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceGrid } from "./WorkspaceGrid";
 import DashboardCards from "@/components/dashboard/DashboardCards";
+import DashboardStats from "@/components/dashboard/DashboardStats";
 import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
 import BasicCard from "@/components/cards/BasicCard";
 import { useRouter } from "expo-router";
@@ -293,6 +294,11 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         />
                     </View>
                 </BasicCard> */}
+
+                {/* Dashboard Stats */}
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
+                    <DashboardStats />
+                </View>
 
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>

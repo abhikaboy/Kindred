@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, View, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasks } from "@/contexts/tasksContext";
@@ -51,6 +52,7 @@ const Home = (props: Props) => {
     const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(false);
     const { focusMode, toggleFocusMode } = useFocusMode();
     const [refreshing, setRefreshing] = useState(false);
+    const queryClient = useQueryClient();
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -196,6 +198,7 @@ const Home = (props: Props) => {
             await Promise.all([
                 fetchWorkspaces(true), // Force refresh workspaces
                 fetchKudosCounts(true), // Force refresh kudos
+                queryClient.invalidateQueries({ queryKey: ["completedTasks"] }),
             ]);
             console.log("Refresh complete");
         } catch (error) {
@@ -203,7 +206,7 @@ const Home = (props: Props) => {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkspaces, fetchKudosCounts]);
+    }, [fetchWorkspaces, fetchKudosCounts, queryClient]);
 
     const drawerRef = useRef<DrawerLayout>(null);
 
