@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type Handler struct {
@@ -75,6 +77,9 @@ func webhookOK() *SubscriptionWebhookOutput {
 }
 
 func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookEvent) (*SubscriptionWebhookOutput, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "revenuecat.HandleWebhook")
+	defer span.End()
+
 	event := input.Body.Event
 	slog.Info("RevenueCat webhook received",
 		"type", event.Type,
@@ -117,6 +122,8 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookEvent) (*Subs
 	}
 
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Error handling webhook event", "type", event.Type, "error", err)
 		return nil, huma.Error500InternalServerError(fmt.Sprintf("Unable to handle event. Please try again. (%s)", event.Type))
 	}

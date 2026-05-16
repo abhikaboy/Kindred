@@ -17,6 +17,7 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/gemini"
+	xotel "github.com/abhikaboy/Kindred/internal/otel"
 	"github.com/abhikaboy/Kindred/internal/posthog"
 	"github.com/abhikaboy/Kindred/internal/server"
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
@@ -72,6 +73,14 @@ func run(stderr io.Writer, args []string) {
 			slog.Info("Sentry initialized")
 			defer sentry.Flush(2 * time.Second)
 		}
+	}
+
+	// OTel Setup
+	shutdownOtel, err := xotel.Init(ctx)
+	if err != nil {
+		slog.Warn("OTel initialization failed, tracing will be disabled", "error", err)
+	} else {
+		defer shutdownOtel(ctx)
 	}
 
 	port, err := strconv.Atoi(config.App.Port)

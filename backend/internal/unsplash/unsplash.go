@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 const (
@@ -63,6 +66,9 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 		perPage = 30
 	}
 
+	ctx, span := otel.Tracer("kindred").Start(ctx, "unsplash.SearchPhotos")
+	defer span.End()
+
 	endpoint := fmt.Sprintf("%s/search/photos", baseURL)
 
 	params := url.Values{}
@@ -72,6 +78,8 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?%s", endpoint, params.Encode()), nil)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -80,12 +88,17 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		err := fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
 	}
 
 	var result struct {
@@ -93,6 +106,8 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -101,6 +116,9 @@ func (c *Client) SearchPhotos(ctx context.Context, query string, perPage int) ([
 
 // GetRandomPhoto gets a random photo, optionally filtered by query
 func (c *Client) GetRandomPhoto(ctx context.Context, query string) (*Photo, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "unsplash.GetRandomPhoto")
+	defer span.End()
+
 	endpoint := fmt.Sprintf("%s/photos/random", baseURL)
 
 	params := url.Values{}
@@ -116,6 +134,8 @@ func (c *Client) GetRandomPhoto(ctx context.Context, query string) (*Photo, erro
 
 	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -124,16 +144,23 @@ func (c *Client) GetRandomPhoto(ctx context.Context, query string) (*Photo, erro
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		err := fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
 	}
 
 	var photo Photo
 	if err := json.NewDecoder(resp.Body).Decode(&photo); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -146,8 +173,13 @@ func (c *Client) TriggerDownload(ctx context.Context, downloadLocation string) e
 		return nil // Skip if no download location provided
 	}
 
+	ctx, span := otel.Tracer("kindred").Start(ctx, "unsplash.TriggerDownload")
+	defer span.End()
+
 	req, err := http.NewRequestWithContext(ctx, "GET", downloadLocation, nil)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -156,12 +188,17 @@ func (c *Client) TriggerDownload(ctx context.Context, downloadLocation string) e
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		err := fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
 	}
 
 	return nil

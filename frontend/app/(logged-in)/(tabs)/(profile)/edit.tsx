@@ -17,6 +17,8 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useRevenueCat } from "@/hooks/useRevenueCat";
 import { SUBSCRIPTIONS_ENABLED } from "@/constants/subscription";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 const Edit = () => {
     const insets = useSafeAreaInsets();
@@ -39,6 +41,7 @@ const Edit = () => {
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
     const { isPro, presentPaywall, presentCustomerCenter } = useRevenueCat();
+    const { capture } = useAnalytics();
 
     const pickImage = async () => {
         const result = await pickImageFromLibrary();
@@ -47,6 +50,7 @@ const Edit = () => {
             const imageUri = result.assets[0].uri;
             setSelectedImage(imageUri);
             console.log("Selected image:", imageUri);
+            capture(AnalyticsEvents.PROFILE_AVATAR_CHANGED, {});
         }
     };
 
@@ -131,6 +135,7 @@ const Edit = () => {
                 });
 
                 console.log("Profile saved successfully!");
+                capture(AnalyticsEvents.PROFILE_EDITED, {});
 
                 setAlertTitle("Success");
                 setAlertMessage("Profile updated successfully!");

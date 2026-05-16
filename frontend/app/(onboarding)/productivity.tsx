@@ -9,6 +9,8 @@ import OnboardButton from "@/components/inputs/OnboardButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -18,6 +20,7 @@ const ProductivityOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { capture } = useAnalytics();
 
     const handleSkip = async () => {
         await AsyncStorage.setItem('hasSeenOnboarding', 'true');
@@ -28,6 +31,13 @@ const ProductivityOnboarding = (props: Props) => {
     const fadeAnimation = useRef(new Animated.Value(0)).current;
     const slideAnimation = useRef(new Animated.Value(30)).current;
     const buttonFadeAnimation = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.PRODUCTIVITY.name,
+            step_index: OnboardingSteps.PRODUCTIVITY.index,
+        });
+    }, []);
 
     useEffect(() => {
         // Initial fade in animation on mount
@@ -138,6 +148,10 @@ const ProductivityOnboarding = (props: Props) => {
                         disabled={false}
                         onPress={() => {
                             // Navigate to the next step in onboarding
+                            capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                                step_name: OnboardingSteps.PRODUCTIVITY.name,
+                                step_index: OnboardingSteps.PRODUCTIVITY.index,
+                            });
                             router.push("/(onboarding)/positivity");
                         }}
                         />

@@ -8,6 +8,8 @@ import { Profile, RelationshipStatus } from "@/api/types";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import PrimaryButton from "./PrimaryButton";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type Props = {
     profile: Profile; // Profile with relationship information
@@ -19,6 +21,7 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
     const { user } = useAuth();
     const router = useRouter();
     let ThemedColor = useThemeColor();
+    const { capture } = useAnalytics();
 
     console.log("FollowButton - profile:", profile);
     console.log("FollowButton - user:", user);
@@ -84,6 +87,7 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                     };
 
                     const newConnection = await createConnectionAPI(connectionData);
+                    capture(AnalyticsEvents.FOLLOW_REQUEST_SENT, {});
                     // Pass the request_id from the API response
                     onRelationshipChange?.("requested", newConnection?.id);
                     showToast("Follow request sent!", "success");

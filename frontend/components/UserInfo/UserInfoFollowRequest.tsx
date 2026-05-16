@@ -7,6 +7,8 @@ import PrimaryButton from "../inputs/PrimaryButton";
 import { router } from "expo-router";
 import { acceptConnectionAPI, deleteConnectionAPI } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type Props = {
     name: string;
@@ -21,6 +23,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
     const [isLoading, setIsLoading] = useState(false);
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const { capture } = useAnalytics();
 
     const animateOut = (callback: () => void) => {
         Animated.parallel([
@@ -43,8 +46,9 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
         try {
             setIsLoading(true);
             await acceptConnectionAPI(connectionID);
+            capture(AnalyticsEvents.FOLLOW_REQUEST_ACCEPTED, {});
             showToast(`Accepted ${name}'s friend request`, 'success');
-            
+
             // Only remove from state if API call was successful
             animateOut(() => {
                 onRequestHandled?.(); // Remove this request from parent state
@@ -61,8 +65,9 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
         try {
             setIsLoading(true);
             await deleteConnectionAPI(connectionID);
+            capture(AnalyticsEvents.FOLLOW_REQUEST_REJECTED, {});
             showToast(`Denied ${name}'s friend request`, 'success');
-            
+
             // Only remove from state if API call was successful
             animateOut(() => {
                 onRequestHandled?.(); // Remove this request from parent state
@@ -77,10 +82,10 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
     };
 
     return (
-    <Animated.View 
-        style={{ 
-            flexDirection: "row", 
-            alignItems: "center", 
+    <Animated.View
+        style={{
+            flexDirection: "row",
+            alignItems: "center",
             width: "100%",
             opacity: fadeAnim,
             transform: [{ scale: scaleAnim }]
@@ -107,7 +112,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
             </View>
                                 </TouchableOpacity>
             <View style={styles.buttons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={handleDeny}
                     disabled={isLoading}
                     style={{ opacity: isLoading ? 0.5 : 1 }}

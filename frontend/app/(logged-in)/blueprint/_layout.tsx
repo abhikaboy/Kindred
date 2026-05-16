@@ -16,6 +16,8 @@ import BlueprintIntroBottomSheet from "@/components/modals/BlueprintIntroBottomS
 import { components } from "@/api/types";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type Category = components["schemas"]["CategoryDocument"];
 
@@ -55,7 +57,7 @@ const BlueprintCreationLayout = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [showBlueprintIntro, setShowBlueprintIntro] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-    
+
     // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertTitle, setAlertTitle] = useState("");
@@ -70,6 +72,7 @@ const BlueprintCreationLayout = () => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const { blueprintCategories, clearBlueprintData } = useBlueprints();
+    const { capture } = useAnalytics();
 
     const steps = [
         { number: 1, title: "Instruction" },
@@ -90,12 +93,12 @@ const BlueprintCreationLayout = () => {
             console.log("  - category (string):", blueprintData.category);
             console.log("  - categories (array):", blueprintCategories);
             console.log("  - categories length:", blueprintCategories.length);
-            
+
             // Validate that we have the required data
             if (!blueprintData.category) {
                 throw new Error("Blueprint category is required");
             }
-            
+
             if (blueprintCategories.length === 0) {
                 throw new Error("At least one category with tasks is required");
             }
@@ -122,6 +125,7 @@ const BlueprintCreationLayout = () => {
                 console.log("Blueprint created successfully:", createdBlueprint);
                 // Clear the blueprint context data after successful creation
                 clearBlueprintData();
+                capture(AnalyticsEvents.BLUEPRINT_CREATED, {});
                 router.back();
             }
         } catch (error) {
@@ -258,7 +262,7 @@ const BlueprintCreationLayout = () => {
 
     return (
         <View style={styles.container}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior="padding"
                 keyboardVerticalOffset={0}
@@ -304,8 +308,8 @@ const BlueprintCreationLayout = () => {
                 {/* Main Content */}
                 <View style={{
                     flex: 1,
-                    backgroundColor: ThemedColor.background, 
-                    borderRadius: 24, 
+                    backgroundColor: ThemedColor.background,
+                    borderRadius: 24,
                 }}>
                     <ScrollView
                         style={styles.scrollView}

@@ -46,6 +46,8 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { logger } from "@/utils/logger";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 import { DeadlineCountdownActivityFactory as DeadlineCountdownActivity } from "@/widgets/widgetUpdaters";
 import type { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
 import type { LiveActivity } from "expo-widgets";
@@ -97,6 +99,7 @@ export default function Task() {
     const hasLoadedTaskDataForModal = useRef(false);
 
     const safeAsync = useSafeAsync();
+    const { capture } = useAnalytics();
 
     // Task completion hook
     const { markTaskAsCompleted, isCompleting } = useTaskCompletion({
@@ -401,6 +404,7 @@ export default function Task() {
     // };
 
     const handleMarkAsCompleted = () => {
+        capture(AnalyticsEvents.TASK_COMPLETED, { source: "detail_button" });
         if (task && categoryId && id) {
             // End deadline Live Activity if active
             if (deadlineLiveActivity) {
@@ -476,6 +480,7 @@ export default function Task() {
     };
 
     const handleEditPress = useCallback(() => {
+        capture(AnalyticsEvents.TASK_UPDATED, { source: "detail_edit_button" });
         if (!task) return;
 
         // Load task data first

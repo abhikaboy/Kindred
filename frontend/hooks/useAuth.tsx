@@ -10,6 +10,8 @@ import { createLogger } from "@/utils/logger";
 import * as Sentry from "@sentry/react-native";
 import { showToast } from "@/utils/showToast";
 import { ERROR_MESSAGES } from "@/utils/errorParser";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 const logger = createLogger('AuthHook');
 
@@ -69,6 +71,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<SafeUser | null>(null);
     const queryClient = useQueryClient();
+    const analytics = useAnalytics();
 
     // Add these for rate limiting
     const lastFetchTime = useRef<number>(0);
@@ -178,6 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
+                analytics.identify(userData._id, { display_name: userData.display_name });
+                analytics.capture(AnalyticsEvents.LOGIN_COMPLETED, { method: "apple" });
 
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
@@ -197,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Apple login failed with exception:", error);
+            analytics.capture(AnalyticsEvents.LOGIN_FAILED, { method: "apple", error: (error as Error).message });
             Sentry.captureException(error, {
                 tags: { "auth.method": "apple", "auth.flow": "login" },
             });
@@ -239,6 +245,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
+                analytics.identify(userData._id, { display_name: userData.display_name });
+                analytics.capture(AnalyticsEvents.LOGIN_COMPLETED, { method: "google" });
 
                 // Save tokens if they exist in response headers
                 if (result.response?.headers) {
@@ -259,6 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Google login failed with exception:", error);
+            analytics.capture(AnalyticsEvents.LOGIN_FAILED, { method: "google", error: (error as Error).message });
             Sentry.captureException(error, {
                 tags: { "auth.method": "google", "auth.flow": "login" },
             });
@@ -294,6 +303,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
+                analytics.identify(userData._id, { display_name: userData.display_name });
+                analytics.capture(AnalyticsEvents.LOGIN_COMPLETED, { method: "phone" });
 
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
@@ -313,6 +324,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("Phone login failed with exception:", error);
+            analytics.capture(AnalyticsEvents.LOGIN_FAILED, { method: "phone", error: (error as Error).message });
             Sentry.captureException(error, {
                 tags: { "auth.method": "phone", "auth.flow": "login" },
             });
@@ -350,6 +362,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (result.data) {
                 const userData = result.data as SafeUser;
                 setUser(userData);
+                analytics.identify(userData._id, { display_name: userData.display_name });
+                analytics.capture(AnalyticsEvents.LOGIN_COMPLETED, { method: "otp" });
 
                 if (result.response?.headers) {
                     const accessToken = result.response.headers.get('access_token');
@@ -369,6 +383,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error("No data or error in response - this is unexpected");
         } catch (error) {
             console.error("OTP login failed with exception:", error);
+            analytics.capture(AnalyticsEvents.LOGIN_FAILED, { method: "otp", error: (error as Error).message });
             Sentry.captureException(error, {
                 tags: { "auth.method": "otp", "auth.flow": "login" },
             });
@@ -381,6 +396,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         SecureStore.deleteItemAsync("auth_data");
         // Clear React Query cache
         queryClient.clear();
+        // Reset PostHog identity so subsequent events are anonymous
+        analytics.reset();
         logger.debug("logging out");
     }
 

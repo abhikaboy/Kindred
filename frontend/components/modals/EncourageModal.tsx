@@ -17,6 +17,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
 import ConfettiCannon from "react-native-confetti-cannon";
 import CustomAlert, { AlertButton } from "./CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -39,6 +41,7 @@ interface EncourageModalProps {
 export default function EncourageModal({ visible, setVisible, task, encouragementConfig, isProfileLevel = false }: EncourageModalProps) {
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
+    const { capture } = useAnalytics();
     const [encouragementMessage, setEncouragementMessage] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -242,6 +245,11 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             if (!isMountedRef.current) return;
 
             setIsUploading(false);
+
+            capture(AnalyticsEvents.ENCOURAGEMENT_SENT, {
+                has_message: !!encouragementMessage?.trim(),
+                has_image: !!selectedImage,
+            });
 
             // Update user's encouragement count locally
             const newCount = Math.max(0, encouragementsLeft - 1);

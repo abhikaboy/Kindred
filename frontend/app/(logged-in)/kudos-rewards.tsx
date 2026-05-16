@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, ScrollView, Image, useColorScheme } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -16,6 +16,8 @@ import RewardRedemptionModal, { RewardInfo } from "@/components/modals/RewardRed
 import { redeemRewardAPI } from "@/api/rewards";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 // Reward definitions (all cost 12 kudos)
 const REWARDS: RewardInfo[] = [
@@ -60,6 +62,11 @@ export default function KudosRewards() {
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();
     const { user, updateUser } = useAuth();
+    const { capture } = useAnalytics();
+
+    useEffect(() => {
+        capture(AnalyticsEvents.KUDOS_VIEWED, {});
+    }, []);
 
     const [selectedReward, setSelectedReward] = useState<RewardInfo | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -132,6 +139,7 @@ export default function KudosRewards() {
             }
 
             updateUser(updatedUser);
+            capture(AnalyticsEvents.KUDOS_REDEEMED, {});
 
             setAlertTitle("Success!");
             setAlertMessage(`You've claimed ${selectedReward.title}! ${response.creditsReceived ? `+${response.creditsReceived} credits added to your account.` : ""}`);

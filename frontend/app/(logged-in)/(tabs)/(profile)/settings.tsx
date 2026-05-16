@@ -23,6 +23,8 @@ import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@
 import { getCalendarConnections, disconnectCalendar, connectGoogleCalendar, syncCalendarEvents } from '@/api/calendar';
 import { formatErrorForToast, ERROR_MESSAGES } from '@/utils/errorParser';
 import CalendarSetupBottomSheet from '@/components/modals/CalendarSetupBottomSheet';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { AnalyticsEvents } from '@/utils/analytics';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -33,6 +35,7 @@ export default function Settings() {
     const { hasConsent, resetConsent } = useContactConsent();
     const { isPro, presentPaywall, presentCustomerCenter } = useRevenueCat();
     const insets = useSafeAreaInsets();
+    const { capture } = useAnalytics();
 
     // Fetch user settings
     const { data: userSettings, isLoading: isLoadingSettings, error: settingsError } = useUserSettings();
@@ -123,6 +126,9 @@ export default function Settings() {
             display: {
                 [settingKeyMap[key]]: newValue,
             },
+        });
+        capture(AnalyticsEvents.SETTINGS_CHANGED, {
+            setting_name: key,
         });
     };
 
@@ -232,6 +238,7 @@ export default function Settings() {
                     text: 'Logout',
                     style: 'destructive',
                     onPress: () => {
+                        capture(AnalyticsEvents.LOGOUT, {});
                         logout();
                         router.replace('/login');
                     }
@@ -281,6 +288,9 @@ export default function Settings() {
                         setIsLoadingCalendar(true);
                         try {
                             await disconnectCalendar(connection.id);
+                            capture(AnalyticsEvents.CALENDAR_DISCONNECTED, {
+                                provider: "google",
+                            });
                             showToast('Calendar disconnected successfully', 'success', 'Disconnected');
                             await loadCalendarConnections();
                         } catch (error) {
@@ -307,6 +317,9 @@ export default function Settings() {
                 const connIdMatch = result.url.match(/connectionId=([^&]+)/);
                 const connId = connIdMatch?.[1];
                 if (connId) {
+                    capture(AnalyticsEvents.CALENDAR_CONNECTED, {
+                        provider: "google",
+                    });
                     setPendingConnectionId(connId);
                     setShowCalendarSetup(true);
                     return;

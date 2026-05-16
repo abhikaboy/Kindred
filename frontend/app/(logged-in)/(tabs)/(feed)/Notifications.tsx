@@ -13,6 +13,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationDocument } from "@/api/types";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { useFocusEffect } from "@react-navigation/native";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -142,13 +144,15 @@ const NotificationItem = ({
     notification,
     index,
     styles,
+    onNotificationPress,
 }: {
     notification: ProcessedNotification;
     index: number;
     styles: any;
+    onNotificationPress: (notification: ProcessedNotification) => void;
 }) => {
     return (
-        <View key={`${notification.type}-${index}`} style={styles.listItem}>
+        <TouchableOpacity key={`${notification.type}-${index}`} style={styles.listItem} onPress={() => onNotificationPress(notification)} activeOpacity={1}>
             {notification.type === "comment" ? (
                 <UserInfoCommentNotification
                     name={notification.name}
@@ -190,7 +194,7 @@ const NotificationItem = ({
                     thumbnail={notification.thumbnail}
                 />
             ) : null}
-        </View>
+        </TouchableOpacity>
     );
 };
 
@@ -199,10 +203,12 @@ const NotificationSection = ({
     title,
     notifications,
     styles,
+    onNotificationPress,
 }: {
     title: string;
     notifications: ProcessedNotification[];
     styles: any;
+    onNotificationPress: (notification: ProcessedNotification) => void;
 }) => {
     if (notifications.length === 0) return null;
 
@@ -215,6 +221,7 @@ const NotificationSection = ({
                     notification={notification}
                     index={index}
                     styles={styles}
+                    onNotificationPress={onNotificationPress}
                 />
             ))}
         </View>
@@ -226,6 +233,13 @@ const Notifications = () => {
     const styles = stylesheet(ThemedColor);
     const { notifications: rawNotifications, loading, error, refreshNotifications, markAllAsRead } = useNotifications();
     const hasMarkedAsRead = useRef(false);
+    const { capture } = useAnalytics();
+
+    const handleNotificationPress = (notification: ProcessedNotification) => {
+        capture(AnalyticsEvents.NOTIFICATION_TAPPED, {
+            notification_type: notification.type,
+        });
+    };
 
     console.log("🔍 Raw notifications count:", rawNotifications.length);
     console.log("🔍 Loading:", loading);
@@ -351,14 +365,15 @@ const Notifications = () => {
                     </View>
                 ) : (
                     <>
-                        <NotificationSection title="Today" notifications={todayNotifications} styles={styles} />
-                        <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} />
+                        <NotificationSection title="Today" notifications={todayNotifications} styles={styles} onNotificationPress={handleNotificationPress} />
+                        <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} onNotificationPress={handleNotificationPress} />
                         <NotificationSection
                             title="This Month"
                             notifications={thisMonthNotifications}
                             styles={styles}
+                            onNotificationPress={handleNotificationPress}
                         />
-                        <NotificationSection title="Older" notifications={olderNotifications} styles={styles} />
+                        <NotificationSection title="Older" notifications={olderNotifications} styles={styles} onNotificationPress={handleNotificationPress} />
                     </>
                 )}
             </ScrollView>

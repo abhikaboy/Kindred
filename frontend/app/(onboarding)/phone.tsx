@@ -1,5 +1,7 @@
 import { Dimensions, StyleSheet, TextInput, TouchableOpacity, View, Animated, KeyboardAvoidingView, Platform, Linking, ActivityIndicator } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { CountryPicker } from "react-native-country-codes-picker";
@@ -23,6 +25,7 @@ const PhoneOnboarding = () => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { onboardingData, updateOnboardingData } = useOnboarding();
+    const { capture } = useAnalytics();
     const { loginWithOTP } = useAuth();
     const {
         sendOTP,
@@ -51,6 +54,13 @@ const PhoneOnboarding = () => {
     const slideAnimation = useRef(new Animated.Value(30)).current;
     const transitionAnim = useRef(new Animated.Value(0)).current; // 0 = phone, 1 = verify
     const shakeAnimation = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
+            step_name: OnboardingSteps.PHONE.name,
+            step_index: OnboardingSteps.PHONE.index,
+        });
+    }, []);
 
     useEffect(() => {
         Animated.parallel([
@@ -88,14 +98,26 @@ const PhoneOnboarding = () => {
             try {
                 await loginWithOTP(fullPhoneNumber, otpCode);
                 // Account exists and user is now logged in — go to home
+                capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                    step_name: OnboardingSteps.PHONE.name,
+                    step_index: OnboardingSteps.PHONE.index,
+                });
                 router.replace("/");
             } catch (error: any) {
                 if (error.message === "ACCOUNT_NOT_FOUND") {
                     // New phone — continue registration
+                    capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                        step_name: OnboardingSteps.PHONE.name,
+                        step_index: OnboardingSteps.PHONE.index,
+                    });
                     router.push("/(onboarding)/name");
                 } else {
                     // Unexpected error — still continue to registration
                     console.error("Account check failed:", error);
+                    capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                        step_name: OnboardingSteps.PHONE.name,
+                        step_index: OnboardingSteps.PHONE.index,
+                    });
                     router.push("/(onboarding)/name");
                 }
             }

@@ -9,6 +9,9 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 const (
@@ -66,6 +69,9 @@ func (s *Service) sendOTPAsync(ctx context.Context, phoneNumber string) (string,
 		return "", fmt.Errorf("sinch credentials not configured in environment variables")
 	}
 
+	ctx, span := otel.Tracer("kindred").Start(ctx, "sinch.SendOTP")
+	defer span.End()
+
 	// Create HTTP client with timeout for non-blocking behavior
 	client := &http.Client{
 		Timeout: httpTimeout,
@@ -83,12 +89,16 @@ func (s *Service) sendOTPAsync(ctx context.Context, phoneNumber string) (string,
 	// Marshal payload to JSON
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return "", fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
 	// Create HTTP request with context for cancellation support
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sinchVerificationURL, bytes.NewBuffer(jsonData))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return "", fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
@@ -109,6 +119,8 @@ func (s *Service) sendOTPAsync(ctx context.Context, phoneNumber string) (string,
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Failed to send OTP request to Sinch", "error", err, "phone", phoneNumber)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return "", fmt.Errorf("failed to send OTP request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -116,18 +128,25 @@ func (s *Service) sendOTPAsync(ctx context.Context, phoneNumber string) (string,
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Check for non-2xx status codes
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		slog.Error("Sinch API returned error", "status", resp.StatusCode, "body", string(body))
-		return "", fmt.Errorf("sinch API error: status %d, body: %s", resp.StatusCode, string(body))
+		err := fmt.Errorf("sinch API error: status %d, body: %s", resp.StatusCode, string(body))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return "", err
 	}
 
 	// Parse response
 	var sinchResp SinchVerificationResponse
 	if err := json.Unmarshal(body, &sinchResp); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return "", fmt.Errorf("failed to parse Sinch response: %w", err)
 	}
 
@@ -150,6 +169,9 @@ func (s *Service) verifyOTPAsync(ctx context.Context, phoneNumber string, code s
 		return false, "", fmt.Errorf("sinch credentials not configured in environment variables")
 	}
 
+	ctx, span := otel.Tracer("kindred").Start(ctx, "sinch.VerifyOTP")
+	defer span.End()
+
 	// Create HTTP client with timeout for non-blocking behavior
 	client := &http.Client{
 		Timeout: httpTimeout,
@@ -166,6 +188,8 @@ func (s *Service) verifyOTPAsync(ctx context.Context, phoneNumber string, code s
 	// Marshal payload to JSON
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return false, "", fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
@@ -175,6 +199,8 @@ func (s *Service) verifyOTPAsync(ctx context.Context, phoneNumber string, code s
 	// Create HTTP request with context for cancellation support
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, verifyURL, bytes.NewBuffer(jsonData))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return false, "", fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
@@ -190,6 +216,8 @@ func (s *Service) verifyOTPAsync(ctx context.Context, phoneNumber string, code s
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Failed to verify OTP request to Sinch", "error", err, "phone", phoneNumber)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return false, "", fmt.Errorf("failed to verify OTP request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -197,19 +225,26 @@ func (s *Service) verifyOTPAsync(ctx context.Context, phoneNumber string, code s
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return false, "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Parse response
 	var sinchResp SinchVerifyResponse
 	if err := json.Unmarshal(body, &sinchResp); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return false, "", fmt.Errorf("failed to parse Sinch response: %w", err)
 	}
 
 	// Check for non-2xx status codes
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		slog.Error("Sinch API returned error", "status", resp.StatusCode, "body", string(body))
-		return false, sinchResp.Status, fmt.Errorf("sinch API error: status %d, body: %s", resp.StatusCode, string(body))
+		err := fmt.Errorf("sinch API error: status %d, body: %s", resp.StatusCode, string(body))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return false, sinchResp.Status, err
 	}
 
 	// Determine if verification was successful

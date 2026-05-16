@@ -36,6 +36,7 @@ import { AlertProvider } from "@/contexts/AlertContext";
 import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
 import { RevenueCatProvider } from "@/hooks/useRevenueCat";
+import { AnalyticsProvider } from "@/hooks/useAnalytics";
 
 try {
     const previousHandler = ErrorUtils.getGlobalHandler();
@@ -153,6 +154,7 @@ export default Sentry.wrap(function RootLayout() {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <AnalyticsProvider>
             <AnimatePresence>
                 <AuthProvider>
                     <RevenueCatProvider>
@@ -196,6 +198,7 @@ export default Sentry.wrap(function RootLayout() {
                     </RevenueCatProvider>
                 </AuthProvider>
             </AnimatePresence>
+            </AnalyticsProvider>
         </QueryClientProvider>
     );
 });

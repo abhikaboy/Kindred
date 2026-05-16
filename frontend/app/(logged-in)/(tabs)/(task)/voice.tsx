@@ -18,6 +18,8 @@ import { useTasks } from "@/contexts/tasksContext";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
 import { CreditsInfoSheet } from "@/components/CreditsInfoSheet";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type Props = {};
 
@@ -25,6 +27,7 @@ const VoiceDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { fetchWorkspaces } = useTasks();
+    const { capture } = useAnalytics();
     const [recognizing, setRecognizing] = useState(false);
     const [transcription, setTranscription] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +73,7 @@ const VoiceDump = (props: Props) => {
     });
 
     const handleMicrophonePress = async () => {
+        capture(AnalyticsEvents.TASK_VOICE_INPUT_USED, {});
         if (!ENABLE_SPEECH_RECOGNITION || !ExpoSpeechRecognitionModule) {
             setError("Speech recognition is disabled in this build.");
             return;
@@ -113,6 +117,11 @@ const VoiceDump = (props: Props) => {
 
         try {
             const result = await createTasksFromNaturalLanguageAPI(transcription.trim());
+
+            capture(AnalyticsEvents.TASK_NATURAL_LANGUAGE_USED, {
+                source: "voice",
+                input_length: transcription.trim().length,
+            });
 
             // Invalidate cache and trigger workspace refetch to get new tasks/categories
             fetchWorkspaces(true);

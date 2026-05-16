@@ -16,6 +16,8 @@ import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 export default function Posting() {
     const insets = useSafeAreaInsets();
@@ -41,6 +43,7 @@ export default function Posting() {
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
     const { user } = useAuth();
+    const { capture } = useAnalytics();
 
     const params = useLocalSearchParams();
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
@@ -71,6 +74,7 @@ export default function Posting() {
     }, [viewMode, currentPhotoIndex]);
 
     const takePicture = async () => {
+        capture(AnalyticsEvents.POSTING_PHOTO_TAKEN, { source: "camera" });
         try {
             const photo = await camera.current?.takePictureAsync({
                 quality: 0.5,
@@ -109,6 +113,7 @@ export default function Posting() {
     };
 
     const pickImage = async () => {
+        capture(AnalyticsEvents.POSTING_GALLERY_SELECTED, {});
         const result = await pickImageFromLibrary({
             allowsMultipleSelection: true,
             quality: 0.5,
@@ -282,6 +287,7 @@ export default function Posting() {
     };
 
     const skipPhotos = () => {
+        capture(AnalyticsEvents.POSTING_PHOTOS_SKIPPED, {});
         router.push({
             pathname: "/posting/caption",
             params: {

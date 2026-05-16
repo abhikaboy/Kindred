@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 import { ThemedText } from "../ThemedText";
 import { ThemedView } from "../ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -30,6 +32,7 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const router = useRouter();
+    const { capture } = useAnalytics();
 
     const [blueprints, setBlueprints] = useState<BlueprintDocumentWithoutSubscribers[]>([]);
     const [loading, setLoading] = useState(true);
@@ -64,7 +67,14 @@ const BlueprintSection: React.FC<BlueprintSectionProps> = ({
     };
 
     const renderBlueprintCard = ({ item }: { item: BlueprintDocumentWithoutSubscribers }) => (
-        <View style={styles.cardContainer}>
+        <View
+            style={styles.cardContainer}
+            onStartShouldSetResponder={() => {
+                capture(AnalyticsEvents.BLUEPRINT_VIEWED, {
+                    source: "profile_section",
+                });
+                return false;
+            }}>
             <BlueprintCard
                 id={item.id}
                 banner={item.banner}

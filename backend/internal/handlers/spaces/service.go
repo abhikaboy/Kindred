@@ -9,6 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type DownloadUrl struct {
@@ -35,12 +37,17 @@ type ImageUploadParams struct {
 }
 
 func (s *Service) GetPresignedUrl(inputs *GetParams) (*DownloadUrl, error) {
+	_, span := otel.Tracer("kindred").Start(context.Background(), "spaces.GetPresignedUrl")
+	defer span.End()
+
 	// generate a presigned URL
 	req, err := s.Presigner.PresignGetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: aws.String(inputs.Bucket),
 		Key:    aws.String(inputs.Key),
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
@@ -50,6 +57,9 @@ func (s *Service) GetPresignedUrl(inputs *GetParams) (*DownloadUrl, error) {
 }
 
 func (s *Service) CreateUrlAndKey(inputs *PostParams) (*UploadUrl, error) {
+	_, span := otel.Tracer("kindred").Start(context.Background(), "spaces.CreateUrlAndKey")
+	defer span.End()
+
 	// generate uuid
 	fileUUID := uuid.New().String()
 	fileKey := fileUUID + "." + inputs.Filetype
@@ -59,6 +69,8 @@ func (s *Service) CreateUrlAndKey(inputs *PostParams) (*UploadUrl, error) {
 		Key:    aws.String(fileKey),
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	urlAndKey := &UploadUrl{
@@ -70,6 +82,9 @@ func (s *Service) CreateUrlAndKey(inputs *PostParams) (*UploadUrl, error) {
 
 // GenerateImageUploadURL creates a presigned URL for image uploads with organized folder structure
 func (s *Service) GenerateImageUploadURL(ctx context.Context, params *ImageUploadParams, bucketName, spacesURL string) (*ImageUploadResult, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "spaces.GenerateImageUploadURL")
+	defer span.End()
+
 	// Generate unique filename with proper extension
 	fileExt := getFileExtension(params.FileType)
 	fileUUID := uuid.New().String()
@@ -88,6 +103,8 @@ func (s *Service) GenerateImageUploadURL(ctx context.Context, params *ImageUploa
 	})
 
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, fmt.Errorf("failed to generate presigned URL: %w", err)
 	}
 

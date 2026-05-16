@@ -10,6 +10,8 @@ import { addComment, deleteComment } from "@/api/post";
 import { showToast } from "@/utils/showToast";
 import { router } from "expo-router";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 export type CommentProps = {
     id: string;
@@ -51,6 +53,7 @@ const Comment = ({
 }: PopupProp) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
+    const { capture } = useAnalytics();
 
     const [commentText, setCommentText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -218,6 +221,10 @@ const Comment = ({
 
             setLocalComments((prev) => [...prev, newComment]);
 
+            capture(AnalyticsEvents.COMMENT_ADDED, {
+                is_reply: !!replyingTo,
+            });
+
             if (onCommentAdded) {
                 onCommentAdded(newComment);
             }
@@ -276,6 +283,7 @@ const Comment = ({
                             onCommentDeleted(commentId);
                         }
 
+                        capture(AnalyticsEvents.COMMENT_DELETED, {});
                         showToast("Comment deleted successfully", "success");
                     } catch (error: any) {
                         console.error("Failed to delete comment:", error);

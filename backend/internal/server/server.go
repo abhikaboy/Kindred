@@ -38,6 +38,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humafiber"
 	"github.com/getsentry/sentry-go"
+	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -59,7 +60,10 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		},
 	})
 
-	// Add global request logging middleware FIRST
+	// OTel tracing middleware — must be first to capture full request lifecycle
+	app.Use(otelfiber.Middleware())
+
+	// Add global request logging middleware
 	app.Use(func(c *fiber.Ctx) error {
 		xlog.RequestLog(c.Method(), c.Path())
 		return c.Next()

@@ -18,6 +18,8 @@ import * as Haptics from "expo-haptics";
 import { Bell, Flag, Trash } from "phosphor-react-native";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { AttachStep } from "react-native-spotlight-tour";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 type Props = {
     redirect?: boolean;
@@ -37,6 +39,7 @@ const SwipableTaskCard = ({
     const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
     const ThemedColor = useThemeColor();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
+    const { capture } = useAnalytics();
 
     const finalCategoryName =
         categoryName ||
@@ -60,6 +63,9 @@ const SwipableTaskCard = ({
 
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
+            capture(AnalyticsEvents.TASK_COMPLETED, {
+                source: "swipe",
+            });
 
             // If backend returned the next flex instance, insert it immediately
             if (res.nextFlexTask) {
