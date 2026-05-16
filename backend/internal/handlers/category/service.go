@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -390,6 +391,33 @@ func (s *Service) UpsertWorkspaceMeta(name string, user primitive.ObjectID, icon
 			slog.String("error", err.Error()))
 	}
 	return err
+}
+
+// GetCategoryNamesSummary returns a lightweight text summary of a user's
+// workspace and category structure, suitable for direct injection into an
+// LLM prompt. Each category includes its hex ObjectID so the model can
+// reference it in structured output.
+func (s *Service) GetCategoryNamesSummary(userID primitive.ObjectID) (string, error) {
+	workspaces, err := s.GetCategoriesByUser(userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch categories: %w", err)
+	}
+
+	if len(workspaces) == 0 {
+		return "No workspaces or categories found.", nil
+	}
+
+	var b strings.Builder
+	for i, ws := range workspaces {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		fmt.Fprintf(&b, "Workspace %q:\n", ws.Name)
+		for _, cat := range ws.Categories {
+			fmt.Fprintf(&b, "  - %s (id: %s)\n", cat.Name, cat.ID.Hex())
+		}
+	}
+	return b.String(), nil
 }
 
 // UpdateWorkspaceMeta updates only the provided icon/color fields on a workspace document

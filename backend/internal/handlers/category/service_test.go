@@ -404,6 +404,54 @@ func (s *CategoryServiceTestSuite) TestDeleteWorkspace_WithRecurringTasks() {
 }
 
 // ========================================
+// GetCategoryNamesSummary Tests
+// ========================================
+
+func (s *CategoryServiceTestSuite) TestGetCategoryNamesSummary_WithCategories() {
+	user := s.GetUser(0)
+
+	// Create categories in different workspaces
+	cat1 := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Errands",
+		User:          user.ID,
+		WorkspaceName: "Personal",
+		Tasks:         []types.TaskDocument{},
+	}
+	cat2 := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Meetings",
+		User:          user.ID,
+		WorkspaceName: "Work",
+		Tasks:         []types.TaskDocument{},
+	}
+
+	_, err := s.service.CreateCategory(cat1)
+	s.NoError(err)
+	_, err = s.service.CreateCategory(cat2)
+	s.NoError(err)
+
+	summary, err := s.service.GetCategoryNamesSummary(user.ID)
+
+	s.NoError(err)
+	s.Contains(summary, "Personal")
+	s.Contains(summary, "Errands")
+	s.Contains(summary, cat1.ID.Hex())
+	s.Contains(summary, "Work")
+	s.Contains(summary, "Meetings")
+	s.Contains(summary, cat2.ID.Hex())
+}
+
+func (s *CategoryServiceTestSuite) TestGetCategoryNamesSummary_NoCategories() {
+	newUserID := primitive.NewObjectID()
+
+	summary, err := s.service.GetCategoryNamesSummary(newUserID)
+
+	s.NoError(err)
+	s.Equal("No workspaces or categories found.", summary)
+}
+
+// ========================================
 // RenameWorkspace Tests
 // ========================================
 
