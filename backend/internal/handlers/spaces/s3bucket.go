@@ -16,6 +16,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type GetParams struct {
@@ -164,6 +166,9 @@ func (h *Handler) ConfirmImageUpload(ctx context.Context, input *ConfirmImageUpl
 }
 
 func (h *Handler) ProcessAndUploadImage(ctx context.Context, input *ProcessAndUploadImageInput) (*ProcessAndUploadImageOutput, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "spaces.ProcessAndUploadImage")
+	defer span.End()
+
 	// Decode base64 image data
 	imageData, err := base64.StdEncoding.DecodeString(input.Body.ImageData)
 	if err != nil {
@@ -204,6 +209,8 @@ func (h *Handler) ProcessAndUploadImage(ctx context.Context, input *ProcessAndUp
 	})
 
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Unable to upload processed image", "key", key, "bucket", bucketName, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to upload processed image. Please try again.", err)
 	}

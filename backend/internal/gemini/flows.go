@@ -9,6 +9,8 @@ import (
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/core"
 	"github.com/firebase/genkit/go/genkit"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // FlowSet contains all the Genkit flows
@@ -31,8 +33,12 @@ func InitFlows(g *genkit.Genkit, tools *ToolSet) *FlowSet {
 		func(ctx context.Context, input GenerateTaskParams) (*task.CreateTaskParams, error) {
 			currentTime := time.Now().UTC().Format(time.RFC3339)
 			prompt := fmt.Sprintf(`Generate a task based on the following description: %s. The current time is %s.`, input.Description, currentTime)
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.GenerateTask")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[task.CreateTaskParams](ctx, g, ai.WithPrompt(prompt))
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return nil, err
 			}
 
@@ -43,8 +49,12 @@ func InitFlows(g *genkit.Genkit, tools *ToolSet) *FlowSet {
 	generateTaskFromImageFlow := genkit.DefineFlow(g, "generateTaskFromImageFlow",
 		func(ctx context.Context, input GenerateTaskFromImageParams) (GenerateTaskFromImageOutput, error) {
 			prompt := fmt.Sprintf(`Generate a set of categories and tasks based on the following image- Each task should belong to a category. The current time is %s.`, time.Now().UTC().Format(time.RFC3339))
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.GenerateTaskFromImage")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[GenerateTaskFromImageOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewMediaPart("image/jpeg", input.Image), ai.NewTextPart(prompt))))
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return GenerateTaskFromImageOutput{}, err
 			}
 			return *resp, nil
@@ -54,8 +64,12 @@ func InitFlows(g *genkit.Genkit, tools *ToolSet) *FlowSet {
 	multiTaskFromTextFlow := genkit.DefineFlow(g, "multiTaskFromTextFlow",
 		func(ctx context.Context, input MultiTaskFromTextInput) (MultiTaskFromTextOutput, error) {
 			prompt := fmt.Sprintf(`Generate a set of categories and tasks based on the following text- Each task should belong to a category. The current time is %s.`, time.Now().UTC().Format(time.RFC3339))
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.MultiTaskFromText")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewTextPart(input.Text))))
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return MultiTaskFromTextOutput{}, err
 			}
 			return *resp, nil
@@ -80,11 +94,15 @@ Your response should include:
 
 When choosing category names, prefer existing categories from the user's database when the task fits. Only create new categories when the task doesn't match any existing category.`, input.UserID, currentTime, input.Text)
 
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.MultiTaskFromTextWithContext")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g,
 				ai.WithPrompt(prompt),
 				ai.WithTools(tools.GetUserCategories),
 			)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return MultiTaskFromTextOutput{}, err
 			}
 			return *resp, nil
@@ -141,11 +159,15 @@ ALERTS:
 Be specific with numbers, encouraging in tone, and actionable in recommendations.`, input.UserID, input.Limit, input.UserID, currentTime)
 
 			// Generate structured data with both tools available
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.AnalyticsReport")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[AnalyticsReportOutput](ctx, g,
 				ai.WithPrompt(prompt),
 				ai.WithTools(tools.GetCompletedTasks, tools.GetUserCategories),
 			)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return AnalyticsReportOutput{}, err
 			}
 
@@ -217,11 +239,15 @@ IMPORTANT INSTRUCTIONS:
 Generate a high-quality, comprehensive blueprint that the user can immediately subscribe to and start using.`, input.UserID, input.Description, currentTime, input.UserID)
 
 			// Generate structured blueprint data with user context and Unsplash tool
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.GenerateBlueprint")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[GenerateBlueprintOutput](ctx, g,
 				ai.WithPrompt(prompt),
 				ai.WithTools(tools.GetUserCategories, tools.FetchUnsplashImage),
 			)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return GenerateBlueprintOutput{}, err
 			}
 
@@ -255,11 +281,15 @@ Return a TaskQueryFiltersOutput with the appropriate filters:
 Be precise with date ranges based on the user's timezone. Only set filters that are clearly implied by the query.`,
 				input.UserID, currentTime, input.Timezone, input.Text)
 
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.QueryTasks")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[TaskQueryFiltersOutput](ctx, g,
 				ai.WithPrompt(prompt),
 				ai.WithTools(tools.GetUserCategories),
 			)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return TaskQueryFiltersOutput{}, err
 			}
 			return *resp, nil
@@ -300,11 +330,15 @@ For time fields in updates:
 If the user's instruction doesn't match anything, return empty arrays for both.`,
 				input.UserID, now, input.Timezone, input.Text)
 
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.EditTasks")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[EditTasksFlowOutput](ctx, g,
 				ai.WithPrompt(prompt),
 				ai.WithTools(tools.GetUserActiveTasks),
 			)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return EditTasksFlowOutput{}, err
 			}
 			return *resp, nil
@@ -361,11 +395,15 @@ If no matching tasks are found for an edit or delete, return an empty "ops" arra
 Only include operations that are clearly implied by the user's instruction.`,
 				input.UserID, input.UserID, now, input.Timezone, input.Text)
 
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.IntentRouter")
+			defer span.End()
 			resp, _, err := genkit.GenerateData[IntentRouterOutput](ctx, g,
 				ai.WithPrompt(prompt),
 				ai.WithTools(tools.GetUserActiveTasks, tools.GetUserCategories),
 			)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return IntentRouterOutput{}, err
 			}
 			if resp == nil {

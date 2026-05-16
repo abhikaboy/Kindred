@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
 type DB struct {
@@ -48,7 +49,7 @@ func New(ctx context.Context, cfg config.Atlas) (*DB, error) {
 
 func connectClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI).SetMonitor(otelmongo.NewMonitor())
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)

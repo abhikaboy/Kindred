@@ -1,10 +1,13 @@
 package twillio
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 func SendWaitlistEmail(to string, name string) error {
@@ -22,6 +25,8 @@ func SendWaitlistEmail(to string, name string) error {
 }
 
 func SendEmail(to string, subject string, plainTextContent string, htmlContent string) error {
+	_, span := otel.Tracer("kindred").Start(context.Background(), "sendgrid.SendEmail")
+	defer span.End()
 
 	client := GetSgClient()
 	from := mail.NewEmail("Kindred", "kindred@kindredtodo.com")
@@ -30,6 +35,8 @@ func SendEmail(to string, subject string, plainTextContent string, htmlContent s
 
 	response, err := client.Send(message)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 

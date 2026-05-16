@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/config"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -36,9 +38,14 @@ func (p *GoogleProvider) GenerateAuthURL(userID string) string {
 }
 
 func (p *GoogleProvider) ExchangeCode(ctx context.Context, code string) (*oauth2.Token, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.ExchangeCode")
+	defer span.End()
+
 	slog.Info("Google: Exchanging authorization code")
 	token, err := p.config.Exchange(ctx, code)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to exchange code", "error", err)
 		return nil, err
 	}
@@ -47,17 +54,30 @@ func (p *GoogleProvider) ExchangeCode(ctx context.Context, code string) (*oauth2
 }
 
 func (p *GoogleProvider) RefreshToken(ctx context.Context, refreshToken string) (*oauth2.Token, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.RefreshToken")
+	defer span.End()
+
 	token := &oauth2.Token{RefreshToken: refreshToken}
 	tokenSource := p.config.TokenSource(ctx, token)
-	return tokenSource.Token()
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return newToken, err
 }
 
 func (p *GoogleProvider) GetAccountInfo(ctx context.Context, token *oauth2.Token) (AccountInfo, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.GetAccountInfo")
+	defer span.End()
+
 	slog.Info("Google: Fetching account info")
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return AccountInfo{}, err
 	}
@@ -65,6 +85,8 @@ func (p *GoogleProvider) GetAccountInfo(ctx context.Context, token *oauth2.Token
 	// Get primary calendar to extract email
 	cal, err := calendarService.Calendars.Get("primary").Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to get primary calendar", "error", err)
 		return AccountInfo{}, err
 	}
@@ -78,11 +100,16 @@ func (p *GoogleProvider) GetAccountInfo(ctx context.Context, token *oauth2.Token
 }
 
 func (p *GoogleProvider) ListCalendars(ctx context.Context, token *oauth2.Token) ([]CalendarInfo, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.ListCalendars")
+	defer span.End()
+
 	slog.Info("Google: Listing all calendars")
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return nil, err
 	}
@@ -90,6 +117,8 @@ func (p *GoogleProvider) ListCalendars(ctx context.Context, token *oauth2.Token)
 	// Get list of all calendars
 	calendarList, err := calendarService.CalendarList.List().Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to list calendars", "error", err)
 		return nil, err
 	}
@@ -111,11 +140,16 @@ func (p *GoogleProvider) ListCalendars(ctx context.Context, token *oauth2.Token)
 }
 
 func (p *GoogleProvider) FetchEvents(ctx context.Context, token *oauth2.Token, timeMin, timeMax time.Time) ([]ProviderEvent, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.FetchEvents")
+	defer span.End()
+
 	slog.Info("Google: Fetching calendar events from all calendars", "time_min", timeMin, "time_max", timeMax)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return nil, err
 	}
@@ -123,6 +157,8 @@ func (p *GoogleProvider) FetchEvents(ctx context.Context, token *oauth2.Token, t
 	// First, get list of all calendars
 	calendarList, err := calendarService.CalendarList.List().Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to list calendars", "error", err)
 		return nil, err
 	}
@@ -161,11 +197,16 @@ func (p *GoogleProvider) FetchEvents(ctx context.Context, token *oauth2.Token, t
 }
 
 func (p *GoogleProvider) CreateEvent(ctx context.Context, token *oauth2.Token, event ProviderEvent) (ProviderEvent, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.CreateEvent")
+	defer span.End()
+
 	slog.Info("Google: Creating calendar event", "summary", event.Summary)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return ProviderEvent{}, err
 	}
@@ -180,6 +221,8 @@ func (p *GoogleProvider) CreateEvent(ctx context.Context, token *oauth2.Token, e
 
 	createdEvent, err := calendarService.Events.Insert(calendarID, googleEvent).Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create event", "error", err)
 		return ProviderEvent{}, err
 	}
@@ -190,11 +233,16 @@ func (p *GoogleProvider) CreateEvent(ctx context.Context, token *oauth2.Token, e
 }
 
 func (p *GoogleProvider) UpdateEvent(ctx context.Context, token *oauth2.Token, eventID string, event ProviderEvent) (ProviderEvent, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.UpdateEvent")
+	defer span.End()
+
 	slog.Info("Google: Updating calendar event", "event_id", eventID)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return ProviderEvent{}, err
 	}
@@ -209,6 +257,8 @@ func (p *GoogleProvider) UpdateEvent(ctx context.Context, token *oauth2.Token, e
 
 	updatedEvent, err := calendarService.Events.Update(calendarID, eventID, googleEvent).Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to update event", "event_id", eventID, "error", err)
 		return ProviderEvent{}, err
 	}
@@ -219,17 +269,24 @@ func (p *GoogleProvider) UpdateEvent(ctx context.Context, token *oauth2.Token, e
 }
 
 func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, eventID string) error {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.DeleteEvent")
+	defer span.End()
+
 	slog.Info("Google: Deleting calendar event", "event_id", eventID)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return err
 	}
 
 	err = calendarService.Events.Delete("primary", eventID).Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to delete event", "event_id", eventID, "error", err)
 		return err
 	}
@@ -318,11 +375,16 @@ func (p *GoogleProvider) convertToGoogleEvent(event ProviderEvent) *calendar.Eve
 }
 
 func (p *GoogleProvider) WatchCalendar(ctx context.Context, token *oauth2.Token, calendarID string, channelID string, webhookURL string) (*WatchResponse, error) {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.WatchCalendar")
+	defer span.End()
+
 	slog.Info("Google: Creating watch channel", "calendar_id", calendarID, "channel_id", channelID)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return nil, err
 	}
@@ -338,6 +400,8 @@ func (p *GoogleProvider) WatchCalendar(ctx context.Context, token *oauth2.Token,
 	// Call watch endpoint
 	watchChannel, err := calendarService.Events.Watch(calendarID, channel).Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create watch channel", "calendar_id", calendarID, "error", err)
 		return nil, err
 	}
@@ -356,11 +420,16 @@ func (p *GoogleProvider) WatchCalendar(ctx context.Context, token *oauth2.Token,
 }
 
 func (p *GoogleProvider) StopWatch(ctx context.Context, token *oauth2.Token, channelID string, resourceID string) error {
+	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.StopWatch")
+	defer span.End()
+
 	slog.Info("Google: Stopping watch channel", "channel_id", channelID, "resource_id", resourceID)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to create calendar service", "error", err)
 		return err
 	}
@@ -372,6 +441,8 @@ func (p *GoogleProvider) StopWatch(ctx context.Context, token *oauth2.Token, cha
 
 	err = calendarService.Channels.Stop(channel).Do()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to stop watch channel", "channel_id", channelID, "error", err)
 		return err
 	}
