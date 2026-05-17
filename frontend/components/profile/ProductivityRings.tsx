@@ -287,9 +287,9 @@ interface FriendRingsProps {
 }
 
 const RING_ENCOURAGE_MESSAGES: Record<RingKey, string> = {
-    plan: "You got this! Close that Plan ring today 💪",
-    do: "Keep going! Knock out those tasks and close the Do ring 🔥",
-    share: "Share something awesome and close that Share ring! ✨",
+    plan: "Plan out your day and close that ring!",
+    do: "Finish up those tasks, you're almost there!",
+    share: "Post something or send some kudos to close the ring!",
 };
 
 const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle, userName }) => {
