@@ -13,6 +13,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
 import { RingProgress } from "@/api/types";
+import ScoreArc from "./ScoreArc";
+import ExpandedRingDetail from "./ExpandedRingDetail";
 
 if (
     Platform.OS === "android" &&
@@ -29,17 +31,6 @@ const PRIMARY_COLOR = "#854DFF";
 
 type RingKey = "plan" | "do" | "share";
 
-const RING_GUIDANCE: Record<RingKey, string> = {
-    plan: "Create or schedule tasks to close this ring",
-    do: "Complete tasks to close this ring",
-    share: "Post an update or send kudos to close this ring",
-};
-
-interface ProductivityRingsProps {
-    userId?: string;
-    compact?: boolean;
-}
-
 function RingCircle({
     progress,
     trackColor,
@@ -47,14 +38,14 @@ function RingCircle({
     progress: RingProgress;
     trackColor: string;
 }) {
-    const fraction = progress.target > 0
-        ? Math.min(progress.current / progress.target, 1)
-        : 0;
+    const fraction =
+        progress.target > 0
+            ? Math.min(progress.current / progress.target, 1)
+            : 0;
     const strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
 
     return (
         <Svg width={RING_SIZE} height={RING_SIZE}>
-            {/* Background track */}
             <Circle
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
@@ -63,7 +54,6 @@ function RingCircle({
                 strokeWidth={STROKE_WIDTH}
                 fill="none"
             />
-            {/* Progress arc */}
             <Circle
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
@@ -81,18 +71,64 @@ function RingCircle({
     );
 }
 
-const ProductivityRings: React.FC<ProductivityRingsProps> = ({ compact }) => {
+function countClosedRings(
+    history: { plan: { closed: boolean }; do: { closed: boolean }; share: { closed: boolean } }[]
+): number {
+    let count = 0;
+    for (const state of history) {
+        if (state.plan.closed) count++;
+        if (state.do.closed) count++;
+        if (state.share.closed) count++;
+    }
+    return count;
+}
+
+interface ProductivityRingsCardProps {
+    expanded?: boolean;
+    onExpandChange?: (expanded: boolean) => void;
+}
+
+const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
+    expanded,
+    onExpandChange,
+}) => {
     const ThemedColor = useThemeColor();
-    const { rings, score, isLoading } = useRings();
+    const { rings, score, isLoading, history } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
 
-    const trackColor = ThemedColor.tertiary;
-    const displayScore = score >= 30 ? score : null;
+    // Sync with parent: when blur overlay is dismissed, clear internal state
+    React.useEffect(() => {
+        if (expanded === false && expandedRing !== null) {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setExpandedRing(null);
+        }
+    }, [expanded]);
 
-    const handleRingPress = useCallback((key: RingKey) => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setExpandedRing((prev) => (prev === key ? null : key));
-    }, []);
+    const trackColor = ThemedColor.tertiary;
+    const closedRings = countClosedRings(history);
+
+    // Derive streak from history: consecutive days from most recent where all_closed
+    let streak = 0;
+    const sortedHistory = [...history].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    for (const state of sortedHistory) {
+        if (state.all_closed) {
+            streak++;
+        } else {
+            break;
+        }
+    }
+
+    const handleRingPress = useCallback(
+        (key: RingKey) => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            const newExpanded = expandedRing === key ? null : key;
+            setExpandedRing(newExpanded);
+            onExpandChange?.(newExpanded !== null);
+        },
+        [expandedRing, onExpandChange]
+    );
 
     if (isLoading || !rings) {
         return null;
@@ -104,36 +140,45 @@ const ProductivityRings: React.FC<ProductivityRingsProps> = ({ compact }) => {
         { key: "share", label: "Share", progress: rings.share },
     ];
 
-    return (
-        <View style={styles.container}>
-            {/* Productivity Score */}
-            {!compact && (
-                <View style={styles.scoreSection}>
-                    <ThemedText
-                        style={[
-                            styles.scoreValue,
-                            { color: ThemedColor.text },
-                        ]}
-                    >
-                        {displayScore !== null ? displayScore : "--"}
-                    </ThemedText>
-                    <ThemedText
-                        style={[
-                            styles.scoreLabel,
-                            { color: ThemedColor.caption },
-                        ]}
-                    >
-                        PRODUCTIVITY SCORE
-                    </ThemedText>
-                </View>
-            )}
+    const isExpanded = expandedRing !== null;
 
-            {/* Rings row */}
+    return (
+        <View
+            style={[
+                styles.card,
+                {
+                    backgroundColor: ThemedColor.lightened,
+                },
+                isExpanded && styles.cardExpanded,
+            ]}
+        >
+            {/* Score Arc */}
+            <View style={styles.arcSection}>
+                <ScoreArc score={score} />
+                <View style={styles.pillsRow}>
+                    <View style={[styles.pill, { backgroundColor: ThemedColor.tertiary }]}>
+                        <ThemedText style={[styles.pillText, { color: ThemedColor.text }]}>
+                            Rings: {closedRings}/21
+                        </ThemedText>
+                    </View>
+                    <View style={[styles.pill, { backgroundColor: ThemedColor.tertiary }]}>
+                        <ThemedText style={[styles.pillText, { color: ThemedColor.text }]}>
+                            Streak: {streak} days
+                        </ThemedText>
+                    </View>
+                </View>
+            </View>
+
+            {/* Rings Row */}
             <View style={styles.ringsRow}>
                 {ringEntries.map(({ key, label, progress }) => (
                     <TouchableOpacity
                         key={key}
-                        style={styles.ringItem}
+                        style={[
+                            styles.ringItem,
+                            isExpanded &&
+                                expandedRing !== key && { opacity: 0.3 },
+                        ]}
                         onPress={() => handleRingPress(key)}
                         activeOpacity={0.7}
                     >
@@ -175,61 +220,51 @@ const ProductivityRings: React.FC<ProductivityRingsProps> = ({ compact }) => {
 
             {/* Expanded detail */}
             {expandedRing && (
-                <View style={styles.expandedSection}>
-                    {(() => {
-                        const entry = ringEntries.find(
-                            (e) => e.key === expandedRing
-                        )!;
-                        const { progress } = entry;
-                        return (
-                            <>
-                                <ThemedText
-                                    style={[
-                                        styles.expandedProgress,
-                                        { color: ThemedColor.text },
-                                    ]}
-                                >
-                                    {progress.current} / {progress.target}
-                                </ThemedText>
-                                <ThemedText
-                                    style={[
-                                        styles.expandedGuidance,
-                                        progress.closed
-                                            ? { color: ThemedColor.success }
-                                            : { color: ThemedColor.caption },
-                                    ]}
-                                >
-                                    {progress.closed
-                                        ? "Closed!"
-                                        : RING_GUIDANCE[expandedRing]}
-                                </ThemedText>
-                            </>
-                        );
-                    })()}
-                </View>
+                <ExpandedRingDetail
+                    ringKey={expandedRing}
+                    todayRing={rings[expandedRing]}
+                    history={history}
+                />
             )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        gap: 16,
+    card: {
+        borderRadius: 16,
+        padding: 20,
+        gap: 20,
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 12,
+        elevation: 3,
     },
-    scoreSection: {
-        alignItems: "flex-start",
-        marginBottom: 4,
+    cardExpanded: {
+        transform: [{ scale: 1.03 }],
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 6,
+        zIndex: 999,
     },
-    scoreValue: {
-        fontSize: 36,
-        fontWeight: "600",
-        fontFamily: "Fraunces",
+    arcSection: {
+        alignItems: "center",
+        gap: 8,
     },
-    scoreLabel: {
+    pillsRow: {
+        flexDirection: "row",
+        gap: 10,
+    },
+    pill: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    pillText: {
         fontSize: 12,
         fontFamily: "Outfit",
-        letterSpacing: 1,
-        marginTop: 2,
+        fontWeight: "500",
     },
     ringsRow: {
         flexDirection: "row",
@@ -240,8 +275,8 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     ringWrapper: {
-        width: RING_SIZE,
-        height: RING_SIZE,
+        width: 80,
+        height: 80,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -260,19 +295,7 @@ const styles = StyleSheet.create({
         fontFamily: "Outfit",
         letterSpacing: 1,
     },
-    expandedSection: {
-        alignItems: "flex-start",
-        gap: 4,
-    },
-    expandedProgress: {
-        fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "600",
-    },
-    expandedGuidance: {
-        fontSize: 13,
-        fontFamily: "Outfit",
-    },
 });
 
-export default ProductivityRings;
+export { ProductivityRingsCard };
+export default ProductivityRingsCard;
