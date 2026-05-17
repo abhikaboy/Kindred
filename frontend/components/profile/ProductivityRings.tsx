@@ -15,10 +15,13 @@ import { Check, LockSimple } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
-import { RingProgress, RingState } from "@/api/types";
+import { RingProgress, RingState, RingRewardResponse } from "@/api/types";
 import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
 import EncourageModal from "@/components/modals/EncourageModal";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import RewardUnboxingModal from "@/components/modals/RewardUnboxingModal";
+import { showToast } from "@/utils/showToast";
 
 if (
     Platform.OS === "android" &&
@@ -100,8 +103,32 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     onExpandChange,
 }) => {
     const ThemedColor = useThemeColor();
-    const { rings, score, streak, isLoading, history } = useRings();
+    const { rings, score, streak, isLoading, history, canClaimReward, allClosed, claimReward, isClaiming } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
+    const [showUnboxing, setShowUnboxing] = useState(false);
+    const [rewardResult, setRewardResult] = useState<RingRewardResponse | null>(null);
+
+    const handleClaim = async () => {
+        try {
+            const result = await claimReward();
+            if (result.claimed && result.credit_type && result.amount) {
+                setRewardResult(result);
+                setShowUnboxing(true);
+            }
+        } catch (error) {
+            showToast("Failed to claim reward. Try again.", "danger");
+        }
+    };
+
+    // Toast when all rings first close
+    const prevAllClosed = useRef(false);
+
+    useEffect(() => {
+        if (allClosed && !prevAllClosed.current) {
+            showToast("All rings closed!", "success");
+        }
+        prevAllClosed.current = allClosed;
+    }, [allClosed]);
 
     // Sync with parent: when blur overlay is dismissed, clear internal state
     React.useEffect(() => {
@@ -213,6 +240,24 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                     history={history}
                 />
             )}
+
+            {/* Claim reward button */}
+            {canClaimReward && !expandedRing && (
+                <PrimaryButton
+                    title={isClaiming ? "Claiming..." : "Claim Reward"}
+                    outline
+                    onPress={handleClaim}
+                    disabled={isClaiming}
+                />
+            )}
+
+            {/* Unboxing modal */}
+            <RewardUnboxingModal
+                visible={showUnboxing}
+                setVisible={setShowUnboxing}
+                rewardType={rewardResult?.credit_type ?? "naturalLanguage"}
+                rewardAmount={rewardResult?.amount ?? 1}
+            />
         </View>
     );
 };
