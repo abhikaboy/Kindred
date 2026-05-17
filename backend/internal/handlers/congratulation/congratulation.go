@@ -90,9 +90,11 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 	if h.service.RingService != nil {
 		go func() {
 			tz := auth.GetTimezoneOrDefault(ctx)
-			_, _, err := h.service.RingService.IncrementRing(context.Background(), senderID, tz, rings.RingShare)
+			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), senderID, tz, rings.RingShare)
 			if err != nil {
 				slog.Error("Failed to increment Share ring on congratulation sent", "user_id", senderID.Hex(), "error", err)
+			} else if justClosedAll {
+				h.service.RingService.NotifyAllRingsClosed(senderID)
 			}
 		}()
 	}

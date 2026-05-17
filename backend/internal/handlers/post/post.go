@@ -103,9 +103,11 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 	if h.service.RingService != nil {
 		go func() {
 			tz := auth.GetTimezoneOrDefault(ctx)
-			_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingShare)
+			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingShare)
 			if err != nil {
 				slog.Error("Failed to increment Share ring on post creation", "user_id", userObjID.Hex(), "error", err)
+			} else if justClosedAll {
+				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
 		}()
 	}
