@@ -28,6 +28,7 @@ import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { logger } from "@/utils/logger";
+import { useQueryClient } from "@tanstack/react-query";
 
 const TIME_LABEL_WIDTH = 40;
 const DEFAULT_BLOCK_MINUTES = 30;
@@ -62,6 +63,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 }) => {
     const ThemedColor = useThemeColor();
     const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
+    const queryClient = useQueryClient();
     const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
         useDailyTasks(selectedDate);
     const { deleteWithUndo, alertElement } = useUndoableDelete();
@@ -444,6 +446,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                 timeTaken: "PT0S",
             });
             removeFromCategory(selectedTask.categoryID, selectedTask.id);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // If backend returned the next flex instance, insert it immediately
             if (res.nextFlexTask) {

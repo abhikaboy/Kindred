@@ -20,6 +20,7 @@ import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { AttachStep } from "react-native-spotlight-tour";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
     redirect?: boolean;
@@ -40,6 +41,7 @@ const SwipableTaskCard = ({
     const ThemedColor = useThemeColor();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const { capture } = useAnalytics();
+    const queryClient = useQueryClient();
 
     const finalCategoryName =
         categoryName ||
@@ -61,6 +63,7 @@ const SwipableTaskCard = ({
             });
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
             capture(AnalyticsEvents.TASK_COMPLETED, {
                 source: "swipe",
             });

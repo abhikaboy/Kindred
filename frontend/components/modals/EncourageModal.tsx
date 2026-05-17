@@ -19,6 +19,7 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EncourageModalProps {
     visible: boolean;
@@ -43,6 +44,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
     const { capture } = useAnalytics();
+    const queryClient = useQueryClient();
     const [encouragementMessage, setEncouragementMessage] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -253,6 +255,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             if (!isMountedRef.current) return;
 
             setIsUploading(false);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             capture(AnalyticsEvents.ENCOURAGEMENT_SENT, {
                 has_message: !!encouragementMessage?.trim(),

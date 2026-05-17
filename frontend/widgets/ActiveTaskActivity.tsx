@@ -1,8 +1,8 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack, Image, ProgressView, Spacer } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL } from '@expo/ui/swift-ui/modifiers';
+import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type ActiveTaskActivityProps = {
@@ -20,54 +20,87 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
 
     const GREEN = '#22C55E';
     const PURPLE = '#8B5CF6';
+    const LIGHT_PURPLE = '#C4B5FD';
     const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
     const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 
     const { taskName, workspaceName, startTime, endTime, hasEndTime, categoryId, taskId } = props;
     const startDate = new Date(startTime);
     const endDate = endTime ? new Date(endTime) : undefined;
-    const deepLink = `kindred://task/${categoryId}/${taskId}`;
+    const taskLink = `kindred://task/${categoryId}/${taskId}`;
 
     return {
         banner: (
-            <VStack modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(deepLink)]}>
-                <HStack>
-                    <Image systemName="circle.fill" color={GREEN} size={8} />
-                    <Text modifiers={[font({ weight: 'semibold', size: 12 }), foregroundStyle(GREEN)]}>
-                        ACTIVE
-                    </Text>
+            <VStack alignment="leading" spacing={8} modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(taskLink)]}>
+                {/* Row 1: Status + Timer */}
+                <HStack alignment="center">
+                    <HStack alignment="center" spacing={5}>
+                        <Image systemName="circle.fill" color={GREEN} size={8} />
+                        <Text modifiers={[font({ weight: 'bold', size: 12 }), foregroundStyle(GREEN)]}>
+                            ACTIVE
+                        </Text>
+                    </HStack>
                     <Spacer />
-                    <VStack>
-                        <Text
-                            date={startDate}
-                            dateStyle="timer"
-                            modifiers={[font({ weight: 'bold', size: 24, design: 'rounded' }), foregroundStyle(PURPLE)]}
-                        />
-                        {!hasEndTime ? (
-                            <Text modifiers={[font({ size: 11 }), secondary]}>
-                                elapsed
-                            </Text>
-                        ) : null}
-                    </VStack>
+                    <Text
+                        date={startDate}
+                        dateStyle="timer"
+                        modifiers={[font({ weight: 'bold', size: 28, design: 'rounded' }), foregroundStyle(PURPLE)]}
+                    />
                 </HStack>
-                <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(1)]}>
+
+                {/* Row 2: Task name */}
+                <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
                     {taskName}
                 </Text>
+
+                {/* Row 3: Workspace */}
                 <Text modifiers={[font({ size: 13 }), secondary]}>
                     {workspaceName}
                 </Text>
+
+                {/* Row 4: Progress bar (only with end time) */}
                 {hasEndTime && endDate ? (
                     <ProgressView
                         timerInterval={{ lower: startDate, upper: endDate }}
                         countsDown={false}
                     />
                 ) : null}
+
+                {/* Row 5: CTA Buttons */}
+                <HStack spacing={8}>
+                    <Link
+                        destination={`${taskLink}?action=complete`}
+                        modifiers={[
+                            font({ weight: 'semibold', size: 14 }),
+                            foregroundStyle('#FFFFFF'),
+                            padding({ horizontal: 16, vertical: 10 }),
+                            background(PURPLE),
+                            cornerRadius(12),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
+                            Mark Complete
+                        </Text>
+                    </Link>
+                    <Link
+                        destination={taskLink}
+                        modifiers={[
+                            font({ weight: 'medium', size: 14 }),
+                            padding({ horizontal: 16, vertical: 10 }),
+                            cornerRadius(12),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
+                            Open Task
+                        </Text>
+                    </Link>
+                </HStack>
             </VStack>
         ),
         compactLeading: (
-            <HStack>
-                <Image systemName="circle.fill" color={GREEN} size={8} />
-                <Text modifiers={[font({ weight: 'medium', size: 12 }), primary, lineLimit(1)]}>
+            <HStack alignment="center" spacing={4}>
+                <Image systemName="circle.fill" color={GREEN} size={6} />
+                <Text modifiers={[font({ weight: 'semibold', size: 12 }), primary, lineLimit(1)]}>
                     {taskName}
                 </Text>
             </HStack>
@@ -76,35 +109,35 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
             <Text
                 date={startDate}
                 dateStyle="timer"
-                modifiers={[font({ weight: 'bold', size: 12, design: 'rounded' }), foregroundStyle(PURPLE)]}
+                modifiers={[font({ weight: 'bold', size: 13, design: 'rounded' }), foregroundStyle(PURPLE)]}
             />
         ),
         minimal: (
             <Image systemName="bolt.fill" color={PURPLE} />
         ),
         expandedLeading: (
-            <VStack modifiers={[padding({ all: 8 })]}>
-                <Image systemName="circle.fill" color={GREEN} size={10} />
-                <Text modifiers={[font({ size: 11 }), secondary]}>
+            <VStack alignment="leading" spacing={2} modifiers={[padding({ all: 8 })]}>
+                <Image systemName="circle.fill" color={GREEN} size={8} />
+                <Text modifiers={[font({ weight: 'semibold', size: 11 }), foregroundStyle(GREEN)]}>
                     Active
                 </Text>
             </VStack>
         ),
         expandedTrailing: (
-            <VStack modifiers={[padding({ all: 8 })]}>
+            <VStack alignment="trailing" spacing={2} modifiers={[padding({ all: 8 })]}>
                 <Text
                     date={startDate}
                     dateStyle="timer"
                     modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(PURPLE)]}
                 />
-                <Text modifiers={[font({ size: 11 }), secondary]}>
+                <Text modifiers={[font({ size: 10 }), secondary]}>
                     {hasEndTime ? 'remaining' : 'elapsed'}
                 </Text>
             </VStack>
         ),
         expandedBottom: (
-            <VStack modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
-                <Text modifiers={[font({ weight: 'semibold', size: 14 }), primary, lineLimit(1)]}>
+            <VStack alignment="leading" spacing={6} modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
+                <Text modifiers={[font({ weight: 'semibold', size: 15 }), primary, lineLimit(1)]}>
                     {taskName}
                 </Text>
                 <Text modifiers={[font({ size: 13 }), secondary]}>
@@ -116,6 +149,34 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                         countsDown={false}
                     />
                 ) : null}
+                <HStack spacing={8}>
+                    <Link
+                        destination={`${taskLink}?action=complete`}
+                        modifiers={[
+                            font({ weight: 'semibold', size: 13 }),
+                            foregroundStyle('#FFFFFF'),
+                            padding({ horizontal: 14, vertical: 8 }),
+                            background(PURPLE),
+                            cornerRadius(10),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
+                            Complete
+                        </Text>
+                    </Link>
+                    <Link
+                        destination={taskLink}
+                        modifiers={[
+                            font({ weight: 'medium', size: 13 }),
+                            padding({ horizontal: 14, vertical: 8 }),
+                            cornerRadius(10),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'medium', size: 13 }), secondary]}>
+                            Open
+                        </Text>
+                    </Link>
+                </HStack>
             </VStack>
         ),
     };

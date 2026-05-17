@@ -11,7 +11,7 @@ import {
 import Svg, { Circle } from "react-native-svg";
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
-import { Check, LockSimple } from "phosphor-react-native";
+import { Check, LockSimple, Gift } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
@@ -111,20 +111,23 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     const handleClaim = async () => {
         try {
             const result = await claimReward();
-            if (result.claimed && result.credit_type && result.amount) {
+            if (result.claimed) {
                 setRewardResult(result);
                 setShowUnboxing(true);
+            } else {
+                showToast("Reward not available yet.", "warning");
             }
         } catch (error) {
+            console.error("Claim reward error:", error);
             showToast("Failed to claim reward. Try again.", "danger");
         }
     };
 
-    // Toast when all rings first close
-    const prevAllClosed = useRef(false);
+    // Toast when all rings transition from open to closed (not on initial load)
+    const prevAllClosed = useRef<boolean | null>(null);
 
     useEffect(() => {
-        if (allClosed && !prevAllClosed.current) {
+        if (prevAllClosed.current !== null && allClosed && !prevAllClosed.current) {
             showToast("All rings closed!", "success");
         }
         prevAllClosed.current = allClosed;
@@ -243,12 +246,28 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
 
             {/* Claim reward button */}
             {canClaimReward && !expandedRing && (
-                <PrimaryButton
-                    title={isClaiming ? "Claiming..." : "Claim Reward"}
-                    outline
+                <TouchableOpacity
                     onPress={handleClaim}
                     disabled={isClaiming}
-                />
+                    activeOpacity={0.8}
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        paddingVertical: 14,
+                        borderRadius: 14,
+                        borderWidth: 1.5,
+                        borderColor: ThemedColor.primary,
+                        backgroundColor: ThemedColor.primary + "10",
+                        opacity: isClaiming ? 0.6 : 1,
+                    }}
+                >
+                    <Gift size={20} color={ThemedColor.primary} weight="fill" />
+                    <ThemedText style={{ color: ThemedColor.primary, fontWeight: "600", fontSize: 15, fontFamily: "Outfit" }}>
+                        {isClaiming ? "Claiming..." : "Claim Reward"}
+                    </ThemedText>
+                </TouchableOpacity>
             )}
 
             {/* Unboxing modal */}

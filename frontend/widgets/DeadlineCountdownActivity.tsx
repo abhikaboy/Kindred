@@ -1,8 +1,8 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack, Image, ProgressView, Spacer } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL } from '@expo/ui/swift-ui/modifiers';
+import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
@@ -27,26 +27,36 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     const deadlineDate = new Date(deadline);
     const countdownStart = new Date(deadlineDate.getTime() - 60 * 60 * 1000);
     const priorityLabel = PRIORITY_LABELS[Math.min(priority, 3)];
-    const deepLink = `kindred://task/${categoryId}/${taskId}`;
+    const taskLink = `kindred://task/${categoryId}/${taskId}`;
 
     return {
         banner: (
-            <VStack modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(deepLink)]}>
-                <HStack>
-                    <Image systemName="circle.fill" color={accentColor} size={8} />
-                    <Text modifiers={[font({ weight: 'semibold', size: 12 }), foregroundStyle(accentColor)]}>
-                        {statusLabel.toUpperCase()}
-                    </Text>
+            <VStack alignment="leading" spacing={8} modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(taskLink)]}>
+                {/* Row 1: Status + Countdown */}
+                <HStack alignment="center">
+                    <HStack alignment="center" spacing={5}>
+                        <Image systemName="circle.fill" color={accentColor} size={8} />
+                        <Text modifiers={[font({ weight: 'bold', size: 12 }), foregroundStyle(accentColor)]}>
+                            {statusLabel.toUpperCase()}
+                        </Text>
+                    </HStack>
                     <Spacer />
                     <Text
                         date={deadlineDate}
                         dateStyle="timer"
-                        modifiers={[font({ weight: 'bold', size: 24, design: 'rounded' }), foregroundStyle(accentColor)]}
+                        modifiers={[font({ weight: 'bold', size: 28, design: 'rounded' }), foregroundStyle(accentColor)]}
                     />
                 </HStack>
-                <HStack>
-                    <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(1)]}>
-                        {taskName}
+
+                {/* Row 2: Task name */}
+                <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
+                    {taskName}
+                </Text>
+
+                {/* Row 3: Workspace + Priority */}
+                <HStack spacing={6}>
+                    <Text modifiers={[font({ size: 13 }), secondary]}>
+                        {workspaceName}
                     </Text>
                     {priorityLabel ? (
                         <Text modifiers={[font({ weight: 'medium', size: 12 }), foregroundStyle(accentColor)]}>
@@ -54,19 +64,48 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         </Text>
                     ) : null}
                 </HStack>
-                <Text modifiers={[font({ size: 13 }), secondary]}>
-                    {workspaceName}
-                </Text>
+
+                {/* Row 4: Depleting progress bar */}
                 <ProgressView
                     timerInterval={{ lower: countdownStart, upper: deadlineDate }}
                     countsDown={true}
                 />
+
+                {/* Row 5: CTA Buttons */}
+                <HStack spacing={8}>
+                    <Link
+                        destination={`${taskLink}?action=complete`}
+                        modifiers={[
+                            font({ weight: 'semibold', size: 14 }),
+                            foregroundStyle('#FFFFFF'),
+                            padding({ horizontal: 16, vertical: 10 }),
+                            background(accentColor),
+                            cornerRadius(12),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
+                            Mark Complete
+                        </Text>
+                    </Link>
+                    <Link
+                        destination={taskLink}
+                        modifiers={[
+                            font({ weight: 'medium', size: 14 }),
+                            padding({ horizontal: 16, vertical: 10 }),
+                            cornerRadius(12),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
+                            Open Task
+                        </Text>
+                    </Link>
+                </HStack>
             </VStack>
         ),
         compactLeading: (
-            <HStack>
-                <Image systemName="circle.fill" color={accentColor} size={8} />
-                <Text modifiers={[font({ weight: 'medium', size: 12 }), primary, lineLimit(1)]}>
+            <HStack alignment="center" spacing={4}>
+                <Image systemName="circle.fill" color={accentColor} size={6} />
+                <Text modifiers={[font({ weight: 'semibold', size: 12 }), primary, lineLimit(1)]}>
                     {taskName}
                 </Text>
             </HStack>
@@ -75,35 +114,35 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
             <Text
                 date={deadlineDate}
                 dateStyle="timer"
-                modifiers={[font({ weight: 'bold', size: 12, design: 'rounded' }), foregroundStyle(accentColor)]}
+                modifiers={[font({ weight: 'bold', size: 13, design: 'rounded' }), foregroundStyle(accentColor)]}
             />
         ),
         minimal: (
             <Image systemName="clock.fill" color={accentColor} />
         ),
         expandedLeading: (
-            <VStack modifiers={[padding({ all: 8 })]}>
-                <Image systemName="circle.fill" color={accentColor} size={10} />
-                <Text modifiers={[font({ size: 11 }), secondary]}>
+            <VStack alignment="leading" spacing={2} modifiers={[padding({ all: 8 })]}>
+                <Image systemName="circle.fill" color={accentColor} size={8} />
+                <Text modifiers={[font({ weight: 'semibold', size: 11 }), foregroundStyle(accentColor)]}>
                     {statusLabel}
                 </Text>
             </VStack>
         ),
         expandedTrailing: (
-            <VStack modifiers={[padding({ all: 8 })]}>
+            <VStack alignment="trailing" spacing={2} modifiers={[padding({ all: 8 })]}>
                 <Text
                     date={deadlineDate}
                     dateStyle="timer"
                     modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(accentColor)]}
                 />
-                <Text modifiers={[font({ size: 11 }), secondary]}>
+                <Text modifiers={[font({ size: 10 }), secondary]}>
                     remaining
                 </Text>
             </VStack>
         ),
         expandedBottom: (
-            <VStack modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
-                <Text modifiers={[font({ weight: 'semibold', size: 14 }), primary, lineLimit(1)]}>
+            <VStack alignment="leading" spacing={6} modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
+                <Text modifiers={[font({ weight: 'semibold', size: 15 }), primary, lineLimit(1)]}>
                     {taskName}
                 </Text>
                 <Text modifiers={[font({ size: 13 }), secondary]}>
@@ -113,6 +152,34 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                     timerInterval={{ lower: countdownStart, upper: deadlineDate }}
                     countsDown={true}
                 />
+                <HStack spacing={8}>
+                    <Link
+                        destination={`${taskLink}?action=complete`}
+                        modifiers={[
+                            font({ weight: 'semibold', size: 13 }),
+                            foregroundStyle('#FFFFFF'),
+                            padding({ horizontal: 14, vertical: 8 }),
+                            background(accentColor),
+                            cornerRadius(10),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
+                            Complete
+                        </Text>
+                    </Link>
+                    <Link
+                        destination={taskLink}
+                        modifiers={[
+                            font({ weight: 'medium', size: 13 }),
+                            padding({ horizontal: 14, vertical: 8 }),
+                            cornerRadius(10),
+                        ]}
+                    >
+                        <Text modifiers={[font({ weight: 'medium', size: 13 }), secondary]}>
+                            Open
+                        </Text>
+                    </Link>
+                </HStack>
             </VStack>
         ),
     };

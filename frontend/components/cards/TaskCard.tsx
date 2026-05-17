@@ -18,6 +18,9 @@ import { getIntegrationIcon } from "@/utils/integrationUtils";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
+import { showToastable } from "react-native-toastable";
+import DefaultToast from "@/components/ui/DefaultToast";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -82,6 +85,8 @@ const TaskCard = ({
     const { setTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
+    const lastTapRef = useRef<number>(0);
+    const singleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { capture } = useAnalytics();
 
     // Alert state
@@ -101,6 +106,9 @@ const TaskCard = ({
     useEffect(() => {
         return () => {
             isMounted.current = false;
+            if (singleTapTimeoutRef.current) {
+                clearTimeout(singleTapTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -243,7 +251,31 @@ const TaskCard = ({
         }
     };
 
-    const handlePress = () => {
+    const startWorking = () => {
+        if (!task || task.isPhantom) return;
+        const now = new Date().toISOString();
+        const endTime = task.deadline || undefined;
+
+        ActiveTaskActivityFactory.start({
+            taskName: task.content,
+            workspaceName: task.workspaceName || 'Tasks',
+            startTime: now,
+            endTime,
+            hasEndTime: !!endTime,
+            categoryId,
+            taskId: id,
+        });
+
+        showToastable({
+            title: "Started working",
+            message: task.content,
+            status: "success" as any,
+            duration: 2000,
+            renderContent: (props) => <DefaultToast {...props} />,
+        });
+    };
+
+    const handleSingleTap = () => {
         capture(AnalyticsEvents.TASK_DETAIL_OPENED, {});
         if (task?.isPhantom) return;
         if (encourage) {
@@ -271,14 +303,54 @@ const TaskCard = ({
         if (task) {
             setTask(task);
             debouncedRedirect();
-        } else {
-            // theres some error
         }
+    };
+
+    const handlePress = () => {
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+
+        if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+            // Double tap detected
+            if (singleTapTimeoutRef.current) {
+                clearTimeout(singleTapTimeoutRef.current);
+                singleTapTimeoutRef.current = null;
+            }
+            lastTapRef.current = 0;
+            if (redirect && task && !task.isPhantom) {
+                startWorking();
+            }
+            return;
+        }
+
+        lastTapRef.current = now;
+        singleTapTimeoutRef.current = setTimeout(() => {
+            singleTapTimeoutRef.current = null;
+            handleSingleTap();
+        }, DOUBLE_TAP_DELAY);
     };
 
     const handleLongPress = () => {
         if (task?.isPhantom) return;
-        if (redirect) setEditing(true);
+        if (!redirect) return;
+
+        setAlertTitle(task?.content || "Task");
+        setAlertMessage("");
+        setAlertButtons([
+            {
+                text: "Start Working",
+                onPress: startWorking,
+            },
+            {
+                text: "Edit Task",
+                onPress: () => setEditing(true),
+            },
+            {
+                text: "Cancel",
+                style: "cancel",
+            },
+        ]);
+        setAlertVisible(true);
     };
 
     return (

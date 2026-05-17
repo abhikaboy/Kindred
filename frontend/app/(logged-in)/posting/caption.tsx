@@ -43,8 +43,8 @@ export default function Caption() {
     // Use theme-appropriate placeholder
     const isDark = ThemedColor.background === '#000000' || ThemedColor.background === '#1a1a1a';
     const placeholderImage = isDark
-        ? require('@/assets/images/placeholder dark.jpg')
-        : require('@/assets/images/placeholder light.jpg');
+        ? require('@/assets/images/placeholder-dark.jpg')
+        : require('@/assets/images/placeholder-light.jpg');
 
     const displayItems = photos.length > 0 ? photos : [placeholderImage];
     const hasActualPhotos = photos.length > 0;

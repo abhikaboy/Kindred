@@ -67,7 +67,15 @@ export const claimRingReward = async (): Promise<RingRewardResponse> => {
             throw new Error(`Failed to claim ring reward: ${JSON.stringify(error)}`);
         }
 
-        return data as RingRewardResponse;
+        // Backend returns { credit_type, amount } on success (400 error if not claimable)
+        // Map to frontend type which includes `claimed` flag
+        const result = data as any;
+        return {
+            claimed: true,
+            credit_type: result.credit_type,
+            amount: result.amount,
+            message: "Reward claimed!",
+        } as RingRewardResponse;
     } catch (error) {
         logger.error("Error claiming ring reward", error);
         throw error;
