@@ -12,6 +12,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProductivityRings from "@/components/profile/ProductivityRings";
+import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
 import ProfileGallery from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
@@ -34,6 +35,7 @@ export default function Profile() {
     let ThemedColor = useThemeColor();
 
     const [activeTab, setActiveTab] = useState(0);
+    const [ringsExpanded, setRingsExpanded] = useState(false);
 
     const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
     const hasDefaultAvatar = !user?.profile_picture || user.profile_picture === DEFAULT_PICTURE;
@@ -94,6 +96,10 @@ export default function Profile() {
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
+            <RingsBlurOverlay
+                visible={ringsExpanded}
+                onDismiss={() => setRingsExpanded(false)}
+            />
             <ParallaxBanner
                 scrollRef={scrollRef}
                 backgroundImage={user?.profile_picture || Icons.luffy}
@@ -109,7 +115,7 @@ export default function Profile() {
 
                 <CompleteProfileCard />
 
-                <ProductivityRings userId={user?._id} />
+                <ProductivityRings expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
 
                 <ReferralCard />
 
