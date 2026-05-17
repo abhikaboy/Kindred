@@ -181,7 +181,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             // Handle live activity triggers from push notifications
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
-                    ActiveTaskActivityFactory.start({
+                    const activityProps = {
                         taskName: data.taskName || '',
                         workspaceName: data.workspaceName || 'Tasks',
                         startTime: data.startTime || new Date().toISOString(),
@@ -189,7 +189,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                         hasEndTime: !!data.endTime,
                         categoryId: data.categoryId || '',
                         taskId: data.taskId || '',
-                    });
+                    };
+                    const activity = ActiveTaskActivityFactory.start(activityProps);
+                    // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
+                    setInterval(() => { activity.update(activityProps); }, 5 * 60 * 1000);
                 } else if (data.liveActivityType === 'deadlineCountdown') {
                     const deadlineMs = new Date(data.deadline).getTime();
                     const activity = DeadlineCountdownActivityFactory.start({
@@ -256,7 +259,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             // Start live activity when user taps the notification
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
-                    ActiveTaskActivityFactory.start({
+                    const activityProps = {
                         taskName: data.taskName || '',
                         workspaceName: data.workspaceName || 'Tasks',
                         startTime: data.startTime || new Date().toISOString(),
@@ -264,7 +267,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                         hasEndTime: !!data.endTime,
                         categoryId: data.categoryId || '',
                         taskId: data.taskId || '',
-                    });
+                    };
+                    const activity = ActiveTaskActivityFactory.start(activityProps);
+                    setInterval(() => { activity.update(activityProps); }, 5 * 60 * 1000);
                 } else if (data.liveActivityType === 'deadlineCountdown') {
                     DeadlineCountdownActivityFactory.start({
                         taskName: data.taskName || '',

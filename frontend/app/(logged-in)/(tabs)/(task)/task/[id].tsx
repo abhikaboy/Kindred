@@ -75,6 +75,7 @@ export default function Task() {
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [deadlineLiveActivity, setDeadlineLiveActivity] = useState<LiveActivity<DeadlineCountdownProps> | null>(null);
     const [activeTaskLiveActivity, setActiveTaskLiveActivity] = useState<LiveActivity<ActiveTaskActivityProps> | null>(null);
+    const activeTaskIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     // Removed timer state - no longer using timer tab
     // const [hours, setHours] = useState(0);
     // const [minutes, setMinutes] = useState(0);
@@ -155,14 +156,14 @@ export default function Task() {
         if (activeTaskLiveActivity) {
             activeTaskLiveActivity.end('immediate');
             setActiveTaskLiveActivity(null);
+            if (activeTaskIntervalRef.current) clearInterval(activeTaskIntervalRef.current);
             pauseTimer(id);
             return;
         }
 
         const now = new Date().toISOString();
         const endTime = task.deadline || undefined;
-
-        const instance = ActiveTaskActivityFactory.start({
+        const activityProps = {
             taskName: task.content,
             workspaceName: task.workspaceName || 'Tasks',
             startTime: now,
@@ -170,8 +171,16 @@ export default function Task() {
             hasEndTime: !!endTime,
             categoryId: categoryId as string,
             taskId: id as string,
-        });
+        };
+
+        const instance = ActiveTaskActivityFactory.start(activityProps);
         setActiveTaskLiveActivity(instance);
+
+        // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
+        activeTaskIntervalRef.current = setInterval(() => {
+            instance.update(activityProps);
+        }, 5 * 60 * 1000);
+
         startTimer(id);
     };
 
@@ -183,6 +192,9 @@ export default function Task() {
             }
             if (activeTaskLiveActivity) {
                 activeTaskLiveActivity.end('immediate');
+            }
+            if (activeTaskIntervalRef.current) {
+                clearInterval(activeTaskIntervalRef.current);
             }
         };
     }, [deadlineLiveActivity, activeTaskLiveActivity]);
@@ -424,6 +436,7 @@ export default function Task() {
             if (activeTaskLiveActivity) {
                 activeTaskLiveActivity.end('immediate');
                 setActiveTaskLiveActivity(null);
+                if (activeTaskIntervalRef.current) clearInterval(activeTaskIntervalRef.current);
             }
             markTaskAsCompleted(categoryId as string, id as string, {
                 id: task.id,
