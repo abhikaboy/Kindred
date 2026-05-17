@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { updateStreakWidget } from '@/widgets/updateStreakWidget';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsEvents } from '@/utils/analytics';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface TaskCompletionData {
     id: string;
@@ -33,6 +34,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
     const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
     const { user } = useAuth();
     const { capture } = useAnalytics();
+    const queryClient = useQueryClient();
     const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const markTaskAsCompleted = useCallback(async (
@@ -52,6 +54,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             });
 
             removeFromCategory(categoryId, taskId);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
             capture(AnalyticsEvents.TASK_COMPLETED, {
                 source: "detail_page",
             });

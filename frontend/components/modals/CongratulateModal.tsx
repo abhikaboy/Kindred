@@ -19,6 +19,7 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CongratulateModalProps {
     visible: boolean;
@@ -40,6 +41,7 @@ interface CongratulateModalProps {
 
 export default function CongratulateModal({ visible, setVisible, task, congratulationConfig }: CongratulateModalProps) {
     const ThemedColor = useThemeColor();
+    const queryClient = useQueryClient();
     const { updateUser } = useAuth();
     const [congratulationMessage, setCongratulationMessage] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -230,6 +232,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             });
 
             setIsUploading(false);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // Update user's congratulation count locally
             const newCount = Math.max(0, congratulationsLeft - 1);

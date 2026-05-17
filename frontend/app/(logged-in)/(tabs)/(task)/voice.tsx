@@ -17,6 +17,7 @@ import { getUserCredits, UserCredits } from "@/api/profile";
 import { useTasks } from "@/contexts/tasksContext";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
+import { useQueryClient } from "@tanstack/react-query";
 import { CreditsInfoSheet } from "@/components/CreditsInfoSheet";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
@@ -27,6 +28,7 @@ const VoiceDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { fetchWorkspaces } = useTasks();
+    const queryClient = useQueryClient();
     const { capture } = useAnalytics();
     const [recognizing, setRecognizing] = useState(false);
     const [transcription, setTranscription] = useState("");
@@ -125,6 +127,7 @@ const VoiceDump = (props: Props) => {
 
             // Invalidate cache and trigger workspace refetch to get new tasks/categories
             fetchWorkspaces(true);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // Refetch credits to update the count
             try {

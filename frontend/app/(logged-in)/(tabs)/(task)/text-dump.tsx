@@ -13,6 +13,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
 import { CreditsInfoSheet } from "@/components/CreditsInfoSheet";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {};
 
@@ -20,6 +21,7 @@ const TextDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { fetchWorkspaces } = useTasks();
+    const queryClient = useQueryClient();
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [streamMessage, setStreamMessage] = useState<string | null>(null);
@@ -58,6 +60,7 @@ const TextDump = (props: Props) => {
 
             // Invalidate cache and trigger workspace refetch to get new tasks/categories
             fetchWorkspaces(true);
+            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // Refetch credits to update the count
             try {

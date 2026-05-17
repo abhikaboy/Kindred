@@ -120,11 +120,11 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
         }
     };
 
-    // Toast when all rings first close
-    const prevAllClosed = useRef(false);
+    // Toast when all rings transition from open to closed (not on initial load)
+    const prevAllClosed = useRef<boolean | null>(null);
 
     useEffect(() => {
-        if (allClosed && !prevAllClosed.current) {
+        if (prevAllClosed.current !== null && allClosed && !prevAllClosed.current) {
             showToast("All rings closed!", "success");
         }
         prevAllClosed.current = allClosed;

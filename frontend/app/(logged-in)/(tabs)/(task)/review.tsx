@@ -16,12 +16,14 @@ import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReviewSkeletonCard from "@/components/cards/ReviewSkeletonCard";
 import ReviewTaskCard from "@/components/cards/ReviewTaskCard";
+import { useQueryClient } from "@tanstack/react-query";
 type Props = {};
 
 const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
     const { fetchWorkspaces, unnestedTasks, addToCategory } = useTasks();
+    const queryClient = useQueryClient();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const [isLoading, setIsLoading] = useState(false);
     const childRefs = useRef<{ [key: number]: any }>({});
@@ -179,6 +181,7 @@ const Review = (props: Props) => {
         };
 
         const res = await markAsCompletedAPI(task.categoryID, task.id, completeData);
+        queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
         // If backend returned the next flex instance, insert it immediately
         if (res.nextFlexTask) {

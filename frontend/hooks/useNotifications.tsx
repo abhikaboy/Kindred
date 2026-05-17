@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationsAsRead, markAllNotificationsAsRead } from '@/api/notifications';
 import type { components } from '@/api/generated/types';
@@ -84,13 +85,13 @@ export const useNotifications = (): UseNotificationsReturn => {
     const unreadCount = notificationsData?.unread_count || 0;
     const error = queryError ? 'Failed to load notifications' : null;
 
-    const markAsRead = (notificationIds: string[]) => {
+    const markAsRead = useCallback((notificationIds: string[]) => {
         markAsReadMutation.mutate(notificationIds);
-    };
+    }, [markAsReadMutation]);
 
-    const markAllAsRead = () => {
+    const markAllAsRead = useCallback(() => {
         markAllAsReadMutation.mutate();
-    };
+    }, [markAllAsReadMutation]);
 
     return {
         notifications,
