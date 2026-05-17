@@ -175,6 +175,8 @@ export interface Profile {
     handle: string;
     profile_picture: string;
     tasks_complete: number;
+    points?: number;
+    productivity_score?: number;
     friends: string[];
     relationship?: RelationshipInfo;
 }
