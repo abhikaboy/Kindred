@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
 import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
 import { createLogger } from "@/utils/logger";
-import { EncouragementActivityFactory as EncouragementActivity } from "@/widgets/widgetUpdaters";
 
 const logger = createLogger('KudosContext');
 
@@ -69,7 +68,6 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     const [congratulations, setCongratulations] = useState<Congratulation[]>([]);
     const [loading, setLoading] = useState(true);
     const seenKudosIds = useRef<Set<string>>(new Set());
-    const liveActivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const unreadEncouragementCount = useMemo(
         () => encouragements.filter((e) => !e.read).length,
@@ -81,14 +79,6 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     );
     const totalEncouragementCount = encouragements.length;
     const totalCongratulationCount = congratulations.length;
-
-    useEffect(() => {
-        return () => {
-            if (liveActivityTimeoutRef.current) {
-                clearTimeout(liveActivityTimeoutRef.current);
-            }
-        };
-    }, []);
 
     const fetchKudosData = useCallback(async () => {
         try {
@@ -110,42 +100,7 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
             setEncouragements(sortedEncouragements);
             setCongratulations(sortedCongratulations);
 
-            const newUnreadEncouragements = sortedEncouragements.filter(
-                e => !e.read && !seenKudosIds.current.has(e.id)
-            );
-            const newUnreadCongratulations = sortedCongratulations.filter(
-                c => !c.read && !seenKudosIds.current.has(c.id)
-            );
-
             [...sortedEncouragements, ...sortedCongratulations].forEach(k => seenKudosIds.current.add(k.id));
-
-            const latestEncouragement = newUnreadEncouragements[0];
-            const latestCongratulation = newUnreadCongratulations[0];
-
-            const latestItem = [latestEncouragement, latestCongratulation]
-                .filter(Boolean)
-                .sort((a, b) => new Date(b!.timestamp).getTime() - new Date(a!.timestamp).getTime())[0];
-
-            if (latestItem) {
-                const isEncouragement = 'scope' in latestItem;
-                const taskName = latestItem.taskName || '';
-                const messageType = (latestItem as any).type === 'image' ? 'image' : 'message';
-                const activity = EncouragementActivity.start({
-                    senderName: latestItem.sender.name,
-                    taskName,
-                    message: latestItem.message || '',
-                    kudosEarned: 5,
-                    type: isEncouragement ? 'encouragement' : 'congratulation',
-                    messageType: messageType as 'message' | 'image',
-                });
-
-                if (liveActivityTimeoutRef.current) {
-                    clearTimeout(liveActivityTimeoutRef.current);
-                }
-                liveActivityTimeoutRef.current = setTimeout(() => {
-                    activity.end('default');
-                }, 30000);
-            }
         } catch (error) {
             logger.error("Error fetching kudos data:", error);
         } finally {

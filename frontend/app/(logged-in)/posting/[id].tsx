@@ -42,7 +42,6 @@ export default function PostDetail() {
 
             try {
                 const postData = await getPostById(id);
-                console.log(postData);
                 const user = postData.user;
 
                 const processedPost = {
@@ -70,7 +69,6 @@ export default function PostDetail() {
 
         try {
             const postData = await getPostById(id);
-            console.log(postData);
             const user = postData.user;
 
             const processedPost = {
@@ -84,7 +82,7 @@ export default function PostDetail() {
             };
             setPost(processedPost);
         } catch (error) {
-            console.error("Failed to refresh post:", error);
+            // ignored
         }
     };
 

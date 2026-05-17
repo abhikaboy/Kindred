@@ -88,12 +88,6 @@ const BlueprintCreationLayout = () => {
         try {
             setIsCreating(true);
 
-            // Debug logging to verify data structure
-            console.log("🔍 Blueprint Creation Data:");
-            console.log("  - category (string):", blueprintData.category);
-            console.log("  - categories (array):", blueprintCategories);
-            console.log("  - categories length:", blueprintCategories.length);
-
             // Validate that we have the required data
             if (!blueprintData.category) {
                 throw new Error("Blueprint category is required");
@@ -109,8 +103,6 @@ const BlueprintCreationLayout = () => {
                 throw new Error("At least one category must contain tasks");
             }
 
-            console.log("✅ Validation passed - creating blueprint...");
-
             const createdBlueprint = await createBlueprintToBackend(
                 blueprintData.bannerImage,
                 blueprintData.blueprintName,
@@ -122,7 +114,6 @@ const BlueprintCreationLayout = () => {
             );
 
             if (createdBlueprint) {
-                console.log("Blueprint created successfully:", createdBlueprint);
                 // Clear the blueprint context data after successful creation
                 clearBlueprintData();
                 capture(AnalyticsEvents.BLUEPRINT_CREATED, {});

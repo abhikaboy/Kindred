@@ -3,6 +3,7 @@ import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { updateTaskStartAPI } from "@/api/task";
 import StartDate from "./create/StartDate";
+import { showToast } from "@/utils/showToast";
 
 type Props = {
     visible: boolean;
@@ -66,10 +67,9 @@ const StartDateBottomSheetModal = ({ visible, setVisible, taskId, categoryId, on
         if (taskId && categoryId) {
             try {
                 await updateTaskStartAPI(categoryId, taskId, startDate, startTime);
-                console.log("Successfully updated start date/time for task:", taskId, "in category:", categoryId, "to:", startDate, startTime);
             } catch (error) {
                 console.error("Failed to update start date/time:", error);
-                // TODO: Show error toast/alert
+                showToast("Failed to update start date", "danger");
                 return;
             }
         }

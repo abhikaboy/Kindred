@@ -10,12 +10,15 @@ import GroupInfoBanner from "@/components/posting/GroupInfoBanner";
 import { useGroups } from "@/hooks/useGroups";
 import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { getFriendsAPI } from "@/api/connection";
 
 export default function GroupSelection() {
     const ThemedColor = useThemeColor();
     const { groups, isLoading, refresh } = useGroups();
     const [refreshing, setRefreshing] = useState(false);
     const { selectedGroupId, setSelectedGroup } = useSelectedGroup();
+    const { data: friends = [] } = useQuery({ queryKey: ["friends"], queryFn: getFriendsAPI });
 
     const handleBack = () => {
         router.back();
@@ -48,17 +51,17 @@ export default function GroupSelection() {
         <ThemedView style={styles.container}>
             <SafeAreaView style={styles.safeArea}>
                 {/* Header */}
-                <View 
+                <View
                     style={[
                         styles.header,
-                        { 
+                        {
                             borderBottomWidth: 1,
                             borderBottomColor: ThemedColor.lightened,
                         }
                     ]}
                 >
-                    <TouchableOpacity 
-                        onPress={handleBack} 
+                    <TouchableOpacity
+                        onPress={handleBack}
                         style={styles.backButton}
                         activeOpacity={0.7}
                     >
@@ -72,7 +75,7 @@ export default function GroupSelection() {
                 <GroupInfoBanner />
 
                 {/* Groups List */}
-                <ScrollView 
+                <ScrollView
                     style={styles.scrollView}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
@@ -94,7 +97,7 @@ export default function GroupSelection() {
                             <GroupListItem
                                 groupName="All Friends"
                                 members={[]}
-                                memberCount={20} // TODO: Get actual friend count
+                                memberCount={friends.length}
                                 isSelected={selectedGroupId === null}
                                 onPress={handleAllFriendsPress}
                             />
@@ -192,4 +195,3 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
     },
 });
-

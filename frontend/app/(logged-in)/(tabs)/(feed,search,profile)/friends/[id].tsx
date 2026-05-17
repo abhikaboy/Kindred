@@ -1,22 +1,10 @@
-import { Text } from 'react-native'
-import React from 'react'
-import { ThemedView } from '@/components/ThemedView'
-import { useLocalSearchParams } from 'expo-router'
-import { useQuery } from '@tanstack/react-query'
-import { ThemedText } from '@/components/ThemedText'
+import React, { useEffect } from "react";
+import { useLocalSearchParams, useRouter, Redirect } from "expo-router";
 
-const Friends = () => {
-    const { id } = useLocalSearchParams()
-    
-
-    if (isLoading) return <ThemedView><ThemedText>Loading...</ThemedText></ThemedView>
-    if (error) return <ThemedView><ThemedText>Error: {error.message}</ThemedText></ThemedView>
-
-  return (
-    <ThemedView>
-      <Text>Friends</Text>
-    </ThemedView>
-  )
+/**
+ * Redirects /friends/:id to /account/:id where the full profile lives.
+ */
+export default function FriendRedirect() {
+    const { id } = useLocalSearchParams();
+    return <Redirect href={`/account/${id}`} />;
 }
-
-export default Friends

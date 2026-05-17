@@ -182,14 +182,10 @@ export default function Posting() {
                 return;
             }
 
-            console.log("Attempting to capture dual photo...");
-
             // Capture photo from the preview camera ref
             const photo = await previewCamera.current.takePictureAsync({
                 quality: 0.5,
             });
-
-            console.log("Dual photo captured:", photo?.uri ? "success" : "failed");
 
             if (photo?.uri && !isCancelled) {
                 setDualPhoto(photo.uri);

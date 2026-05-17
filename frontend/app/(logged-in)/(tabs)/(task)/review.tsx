@@ -281,7 +281,7 @@ const Review = (props: Props) => {
 
     const windowHeight = Dimensions.get("window").height;
     const windowWidth = Dimensions.get("window").width;
-    const cardHeight = windowHeight * 0.72;
+    const cardHeight = windowHeight * 0.6;
 
     return (
         <ThemedView style={{ flex: 1 }}>
@@ -330,9 +330,9 @@ const Review = (props: Props) => {
                     {/* Hint row below card */}
                     <View style={styles.hintRow}>
                         <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>← skip</ThemedText>
-                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>complete →</ThemedText>
+                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>↓ delete</ThemedText>
+                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>done →</ThemedText>
                     </View>
-                    <ThemedText style={[styles.hintDown, { color: ThemedColor.caption }]}>↓ delete</ThemedText>
                 </ConditionalView>
 
                 {/* Empty states */}
@@ -387,21 +387,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         width: "100%",
         paddingHorizontal: 4,
-        marginTop: 16,
+        marginTop: 20,
     },
     hint: {
-        fontSize: 17,
-        fontWeight: "500",
+        fontSize: 13,
+        fontWeight: "400",
     },
     hintCount: {
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: "600",
-    },
-    hintDown: {
-        fontSize: 17,
-        fontWeight: "500",
-        textAlign: "center",
-        marginTop: 6,
     },
     emptyState: {
         flex: 1,

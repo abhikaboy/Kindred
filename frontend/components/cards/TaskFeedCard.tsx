@@ -58,7 +58,7 @@ const TaskFeedCard = React.memo(({
         const diffMinutes = Math.floor(diffMs / (1000 * 60));
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        
+
         if (diffMinutes < 1) return "now";
         if (diffMinutes < 60) return `${diffMinutes}m`;
         if (diffHours < 24) return `${diffHours}h`;
@@ -73,20 +73,17 @@ const TaskFeedCard = React.memo(({
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
         } catch (error) {
-            console.log("Haptic error:", error);
+            // ignored
         }
-        console.log("Navigating to user:", user._id);
         router.push(`/account/${user._id}`);
     }, [user._id]);
 
     const handleEncouragePress = useCallback(async () => {
         if (!currentUser?._id) {
-            console.log("User not authenticated");
             return;
         }
 
         if (currentUser._id === user._id) {
-            console.log("Cannot encourage own task");
             return;
         }
 
@@ -95,7 +92,7 @@ const TaskFeedCard = React.memo(({
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
         } catch (error) {
-            console.log("Haptic error:", error);
+            // ignored
         }
 
         setShowEncourageModal(true);

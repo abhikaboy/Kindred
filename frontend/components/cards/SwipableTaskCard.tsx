@@ -59,8 +59,6 @@ const SwipableTaskCard = ({
                 timeCompleted: new Date().toISOString(),
                 timeTaken: "PT0S", // ISO 8601 duration: 0 seconds (not tracked)
             });
-            console.log("Task completion result:", res);
-
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
             capture(AnalyticsEvents.TASK_COMPLETED, {
@@ -89,9 +87,6 @@ const SwipableTaskCard = ({
                 points: task.value,
                 public: task.public,
             };
-            console.log("🔍 FINAL CATEGORY NAME BEING USED:", finalCategoryName);
-            console.log("🔍 TASK DATA BEING SENT TO TOAST:", JSON.stringify(taskData, null, 2));
-
             // Build title and message based on streak status
             let title = "Task completed!";
             let message = "Congrats! Click here to post and document your task!";
@@ -108,9 +103,7 @@ const SwipableTaskCard = ({
                     status: "success",
                     position: "top",
                     message,
-                    onPress: () => {
-                        console.log("pressed");
-                    },
+                    onPress: () => {},
                     swipeDirection: "up",
                     duration: 5500,
                     renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
@@ -195,7 +188,7 @@ const SwipableTaskCard = ({
                         {RightAction(
                             prog,
                             drag,
-                            () => console.log("pressed"),
+                            () => {},
                             3,
                             <Bell size={24} color="white" weight="regular" />,
                             ThemedColor.primary
@@ -203,7 +196,7 @@ const SwipableTaskCard = ({
                         {RightAction(
                             prog,
                             drag,
-                            () => console.log("pressed"),
+                            () => {},
                             3,
                             <Flag size={24} color="white" weight="regular" />,
                             ThemedColor.primary

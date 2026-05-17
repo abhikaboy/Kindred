@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import { useRouter } from "expo-router";
@@ -7,6 +7,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { activityAPI, convertToWeeklyActivityLevels } from "@/api/activity";
 import CompletedTasksBottomSheetModal from "../modals/CompletedTasksBottomSheetModal";
+
+const SQUARE_COUNT = 8;
+const GAP = 4;
+const CONTAINER_PADDING = 20 * 2; // matches profile contentContainer paddingHorizontal
+const SQUARE_SIZE = Math.floor(
+    (Dimensions.get("window").width - CONTAINER_PADDING - GAP * (SQUARE_COUNT - 1)) / SQUARE_COUNT
+);
 
 interface WeeklyActivityProps {
     userid: string;
@@ -32,7 +39,7 @@ const WeeklyActivityComponent = ({ userid, displayName }: WeeklyActivityProps) =
             try {
                 setLoading(true);
                 setError(null);
-                
+
                 const activities = await activityAPI.getRecentActivity(userid);
                 const levels = convertToWeeklyActivityLevels(activities);
                 setActivityLevels(levels);
@@ -59,12 +66,12 @@ const WeeklyActivityComponent = ({ userid, displayName }: WeeklyActivityProps) =
                     {loading ? (
                         // Show loading state with empty activity points
                         Array.from({ length: 8 }, (_, index) => (
-                            <ActivityPoint key={index} level={0} isFuture={false} isToday={false} />
+                            <ActivityPoint key={index} level={0} isFuture={false} isToday={false} size={SQUARE_SIZE} />
                         ))
                     ) : error ? (
                         // Show error state with empty activity points
                         Array.from({ length: 8 }, (_, index) => (
-                            <ActivityPoint key={index} level={0} isFuture={false} isToday={false} />
+                            <ActivityPoint key={index} level={0} isFuture={false} isToday={false} size={SQUARE_SIZE} />
                         ))
                     ) : (
                         // Show actual activity data
@@ -74,23 +81,24 @@ const WeeklyActivityComponent = ({ userid, displayName }: WeeklyActivityProps) =
                             const daysFromToday = 7 - index;
                             const targetDate = new Date();
                             targetDate.setDate(targetDate.getDate() - daysFromToday);
-                            
+
                             const currentDate = new Date();
                             const isFuture = targetDate > currentDate;
-                            
+
                             // Check if this is today (normalize time to compare dates only)
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
                             const targetDateForCheck = new Date(targetDate);
                             targetDateForCheck.setHours(0, 0, 0, 0);
                             const isToday = targetDateForCheck.getTime() === today.getTime();
-                            
+
                             return (
-                                <ActivityPoint 
-                                    key={index} 
-                                    level={level} 
+                                <ActivityPoint
+                                    key={index}
+                                    level={level}
                                     isFuture={isFuture}
                                     isToday={isToday}
+                                    size={SQUARE_SIZE}
                                     onPress={() => {
                                         if (!isFuture) {
                                             setSelectedDate(targetDate);
@@ -103,10 +111,10 @@ const WeeklyActivityComponent = ({ userid, displayName }: WeeklyActivityProps) =
                     )}
                 </View>
             </TouchableOpacity>
-            <CompletedTasksBottomSheetModal 
-                visible={modalVisible} 
-                setVisible={setModalVisible} 
-                date={selectedDate} 
+            <CompletedTasksBottomSheetModal
+                visible={modalVisible}
+                setVisible={setModalVisible}
+                date={selectedDate}
             />
         </>
     );
@@ -117,11 +125,8 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     activityContainer: {
-        display: "flex",
         flexDirection: "row-reverse",
-        gap: "auto",
-        width: "100%",
-        justifyContent: "space-between",
+        gap: 4,
     },
     header: {
         display: "flex",

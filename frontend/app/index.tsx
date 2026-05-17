@@ -27,21 +27,17 @@ export default function Index() {
         try {
             // If user is authenticated, go to main app
             if (user) {
-                console.log('User is authenticated, going to main app');
                 setNextRoute('/(logged-in)/(tabs)/(task)');
                 return;
             }
 
             // Check if user has seen onboarding screens
             const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-            console.log('hasSeenOnboarding', hasSeenOnboarding);
             if (!hasSeenOnboarding) {
                 // First time user - show productivity onboarding
-                console.log('First time user, showing productivity onboarding');
                 setNextRoute('/(onboarding)/productivity');
             } else {
                 // Returning user - go to login
-                console.log('Returning user, going to login');
                 setNextRoute('/login');
             }
         } catch (error) {

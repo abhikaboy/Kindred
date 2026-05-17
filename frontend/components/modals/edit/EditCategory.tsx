@@ -68,28 +68,24 @@ const EditCategory = (props: Props) => {
             label: "Delete",
             icon: "delete",
             callback: async () => {
-                console.log("deleting category", id);
-                
                 // Find which workspace contains this category
                 const workspaceName = findWorkspaceNameForCategory(id);
-                
+
                 try {
                     // First update local state immediately
                     if (workspaceName) {
                         removeFromWorkspace(workspaceName, id);
                     }
-                    
+
                     // Then call API to delete from backend
                     await deleteCategory(id);
-                    
-                    console.log("Category deleted successfully");
                 } catch (error) {
                     console.error("Error deleting category:", error);
                     // If API call fails, we should restore the local state
                     // For now, we'll refresh the data to ensure consistency
                     // TODO: Add proper error handling and state restoration
                 }
-                
+
                 setEditing(false);
             },
         },

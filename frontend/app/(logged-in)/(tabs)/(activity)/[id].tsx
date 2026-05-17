@@ -82,6 +82,8 @@ const ActivitySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
 
 // --- Main Activity Screen ---
 
+const INITIAL_TEMPLATES_SHOWN = 2;
+
 const Activity = () => {
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
@@ -97,11 +99,13 @@ const Activity = () => {
     const [breakdownModalVisible, setBreakdownModalVisible] = useState(false);
     const [breakdownMode, setBreakdownMode] = useState(false);
     const [recurringTasksExpanded, setRecurringTasksExpanded] = useState(true);
+    const [showAllTemplates, setShowAllTemplates] = useState(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
 
     const userId = user?._id || (params.id as string);
     const displayName = params.displayName as string || user?.display_name;
+    const isOwnActivity = !params.displayName;
     const styles = stylesheet(ThemedColor, insets);
 
     useEffect(() => {
@@ -135,6 +139,14 @@ const Activity = () => {
 
         fetchActivityData();
     }, [userId, year]);
+
+    const yearTotal = useMemo(() => {
+        return activities.reduce((sum, a) => sum + (a.totalCount ?? 0), 0);
+    }, [activities]);
+
+    const visibleTemplates = showAllTemplates
+        ? templates
+        : templates.slice(0, INITIAL_TEMPLATES_SHOWN);
 
     const getBreakdownActivityLevels = (targetMonth: number): number[] => {
         const daysInMonth = new Date(year, targetMonth, 0).getDate();
@@ -186,8 +198,8 @@ const Activity = () => {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Recurring Tasks Section */}
-                {templates.length > 0 && (
+                {/* Recurring Tasks Section - only for own activity */}
+                {isOwnActivity && templates.length > 0 && (
                     <View style={styles.recurringSection}>
                         <TouchableOpacity
                             style={styles.sectionHeader}
@@ -195,7 +207,7 @@ const Activity = () => {
                             activeOpacity={0.7}
                         >
                             <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                {recurringTasksExpanded ? "TAP TO FILTER" : `${templates.length} TASK${templates.length !== 1 ? 'S' : ''}`}
+                                {recurringTasksExpanded ? "TAP TO FILTER" : `${templates.length} RECURRING TASK${templates.length !== 1 ? 'S' : ''}`}
                             </ThemedText>
                             <Ionicons
                                 name={recurringTasksExpanded ? "chevron-up" : "chevron-down"}
@@ -206,7 +218,7 @@ const Activity = () => {
 
                         {recurringTasksExpanded && (
                             <View style={styles.taskList}>
-                                {templates.map((template) => (
+                                {visibleTemplates.map((template) => (
                                     <RecurringTaskCard
                                         key={template.id}
                                         templateId={template.id}
@@ -231,15 +243,40 @@ const Activity = () => {
                                         }}
                                     />
                                 ))}
+                                {templates.length > INITIAL_TEMPLATES_SHOWN && (
+                                    <TouchableOpacity
+                                        onPress={() => setShowAllTemplates(!showAllTemplates)}
+                                        style={styles.showMoreButton}
+                                        activeOpacity={0.7}
+                                    >
+                                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                            {showAllTemplates
+                                                ? "Show less"
+                                                : `Show all ${templates.length} tasks`}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         )}
                     </View>
                 )}
 
-                {templates.length === 0 && !loading && (
+                {isOwnActivity && templates.length === 0 && !loading && (
                     <View style={styles.emptyState}>
-                        <ThemedText type="caption" style={{ textAlign: "center", color: ThemedColor.caption }}>
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             No recurring tasks yet. Create one to track your habits!
+                        </ThemedText>
+                    </View>
+                )}
+
+                {/* Lifetime Stats */}
+                {!loading && !error && userId && (
+                    <View style={styles.statsCard}>
+                        <ThemedText type="fancyFrauncesHeading" style={{ fontSize: 24, color: ThemedColor.text }}>
+                            {yearTotal}
+                        </ThemedText>
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption, marginLeft: 8 }}>
+                            total tasks completed this year
                         </ThemedText>
                     </View>
                 )}
@@ -275,6 +312,9 @@ const Activity = () => {
                                 ? getBreakdownActivityLevels(monthNumber)
                                 : getMonthlyActivityLevels(activities, year, monthNumber);
 
+                            const monthData = activities.find(a => a.year === year && a.month === monthNumber);
+                            const monthTotal = monthData?.totalCount ?? 0;
+
                             return (
                                 <CalendarMonth
                                     key={monthName}
@@ -282,6 +322,7 @@ const Activity = () => {
                                     year={year}
                                     monthNumber={monthNumber}
                                     levels={monthlyLevels}
+                                    totalCount={monthTotal}
                                     ThemedColor={ThemedColor}
                                     onDayPress={(dayNumber) => {
                                         setSelectedDate(new Date(year, monthNumber - 1, dayNumber));
@@ -346,6 +387,19 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             paddingBottom: insets.bottom + 80,
             gap: 8,
         },
+        statsCard: {
+            flexDirection: "row",
+            alignItems: "baseline",
+            marginBottom: 16,
+            backgroundColor: ThemedColor.lightenedCard || ThemedColor.lightened,
+            borderRadius: 12,
+            padding: 16,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 2,
+        },
         recurringSection: {
             width: "100%",
             marginBottom: 8,
@@ -359,6 +413,10 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         taskList: {
             gap: 2,
         },
+        showMoreButton: {
+            paddingVertical: 8,
+            alignItems: "center",
+        },
         heatmapContainer: {
             flexDirection: "column-reverse",
             gap: 0,
@@ -366,8 +424,7 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         emptyState: {
             width: "100%",
-            padding: 24,
-            alignItems: "center",
+            paddingVertical: 24,
         },
         errorContainer: {
             alignItems: "center",

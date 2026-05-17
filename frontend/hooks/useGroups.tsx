@@ -70,8 +70,6 @@ export const useGroups = (): UseGroupsReturn => {
             }
         },
         onError: (error: Error) => {
-            console.error('🔴 useGroups: onError called with:', error);
-            console.error('🔴 useGroups: Error stack:', error.stack);
             showToast(error.message || 'Failed to create group', 'danger');
         },
     });

@@ -218,7 +218,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             }));
 
             const allWorkspaces = [...data, ...blueprintWorkspaces];
-            console.log("[tasksContext] fetched templates:", userTemplates.length, "sample:", JSON.stringify(userTemplates[0], null, 2));
             startTransition(() => {
                 setRawWorkspaces(allWorkspaces);
                 setTemplates(userTemplates);

@@ -48,8 +48,9 @@ import DefaultToast from "@/components/ui/DefaultToast";
 import { logger } from "@/utils/logger";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { DeadlineCountdownActivityFactory as DeadlineCountdownActivity } from "@/widgets/widgetUpdaters";
+import { DeadlineCountdownActivityFactory, ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import type { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
+import type { ActiveTaskActivityProps } from "@/widgets/ActiveTaskActivity";
 import type { LiveActivity } from "expo-widgets";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
@@ -73,7 +74,7 @@ export default function Task() {
     const [isHeaderSticky, setIsHeaderSticky] = useState(false);
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [deadlineLiveActivity, setDeadlineLiveActivity] = useState<LiveActivity<DeadlineCountdownProps> | null>(null);
-    const deadlineIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [activeTaskLiveActivity, setActiveTaskLiveActivity] = useState<LiveActivity<ActiveTaskActivityProps> | null>(null);
     // Removed timer state - no longer using timer tab
     // const [hours, setHours] = useState(0);
     // const [minutes, setMinutes] = useState(0);
@@ -127,55 +128,64 @@ export default function Task() {
         }
     };
 
-    const formatTimeRemaining = (deadline: string): string => {
-        const diff = new Date(deadline).getTime() - Date.now();
-        if (diff <= 0) return 'Overdue';
-        const totalMinutes = Math.floor(diff / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        if (hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
-    };
-
     const handleTrackDeadline = () => {
         if (!task?.deadline) return;
         if (deadlineLiveActivity) {
             deadlineLiveActivity.end('immediate');
-            if (deadlineIntervalRef.current) clearInterval(deadlineIntervalRef.current);
             setDeadlineLiveActivity(null);
             return;
         }
 
-        const props: DeadlineCountdownProps = {
+        const instance = DeadlineCountdownActivityFactory.start({
             taskName: task.content,
             workspaceName: task.workspaceName || 'Tasks',
             deadline: task.deadline,
             priority: task.priority || 0,
-            timeRemainingLabel: formatTimeRemaining(task.deadline),
-        };
-
-        const instance = DeadlineCountdownActivity.start(props);
+            categoryId: categoryId as string,
+            taskId: id as string,
+            accentColor: '#8B5CF6',
+            statusLabel: 'Due Soon',
+        });
         setDeadlineLiveActivity(instance);
-
-        deadlineIntervalRef.current = setInterval(() => {
-            instance.update({
-                ...props,
-                timeRemainingLabel: formatTimeRemaining(task.deadline!),
-            });
-        }, 5 * 60 * 1000);
     };
 
-    // End the deadline Live Activity when the component unmounts
+    const handleStartWorking = () => {
+        if (!task) return;
+
+        if (activeTaskLiveActivity) {
+            activeTaskLiveActivity.end('immediate');
+            setActiveTaskLiveActivity(null);
+            pauseTimer(id);
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const endTime = task.deadline || undefined;
+
+        const instance = ActiveTaskActivityFactory.start({
+            taskName: task.content,
+            workspaceName: task.workspaceName || 'Tasks',
+            startTime: now,
+            endTime,
+            hasEndTime: !!endTime,
+            categoryId: categoryId as string,
+            taskId: id as string,
+        });
+        setActiveTaskLiveActivity(instance);
+        startTimer(id);
+    };
+
+    // End live activities when the component unmounts
     useEffect(() => {
         return () => {
             if (deadlineLiveActivity) {
                 deadlineLiveActivity.end('immediate');
             }
-            if (deadlineIntervalRef.current) {
-                clearInterval(deadlineIntervalRef.current);
+            if (activeTaskLiveActivity) {
+                activeTaskLiveActivity.end('immediate');
             }
         };
-    }, [deadlineLiveActivity]);
+    }, [deadlineLiveActivity, activeTaskLiveActivity]);
 
     const handleIntegrationPress = async () => {
         const result = await openIntegrationApp(task?.integration);
@@ -406,11 +416,14 @@ export default function Task() {
     const handleMarkAsCompleted = () => {
         capture(AnalyticsEvents.TASK_COMPLETED, { source: "detail_button" });
         if (task && categoryId && id) {
-            // End deadline Live Activity if active
+            // End live activities if active
             if (deadlineLiveActivity) {
                 deadlineLiveActivity.end('immediate');
-                if (deadlineIntervalRef.current) clearInterval(deadlineIntervalRef.current);
                 setDeadlineLiveActivity(null);
+            }
+            if (activeTaskLiveActivity) {
+                activeTaskLiveActivity.end('immediate');
+                setActiveTaskLiveActivity(null);
             }
             markTaskAsCompleted(categoryId as string, id as string, {
                 id: task.id,
@@ -739,6 +752,16 @@ export default function Task() {
                                         </DataCard>
                                     </TouchableOpacity>
                                 </ConditionalView>
+                                <View key="start-working" style={{ marginTop: 0 }}>
+                                    <PrimaryButton
+                                        title={activeTaskLiveActivity ? "Stop Working" : "Start Working"}
+                                        secondary={!activeTaskLiveActivity}
+                                        style={{
+                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                        }}
+                                        onPress={handleStartWorking}
+                                    />
+                                </View>
                                 <View key="mark-complete" style={{ marginTop: 0 }}>
                                     <PrimaryButton
                                         title={isCompleting ? "Completing..." : "Mark as Completed"}

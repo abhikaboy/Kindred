@@ -96,6 +96,7 @@ const PostCard = React.memo(({
     const queryClient = useQueryClient();
     const screenWidth = useMemo(() => Dimensions.get("window").width, []);
     const { fetchWorkspaces } = useTasks();
+    const { user } = useAuth();
 
     // Alert state
     // Use alert queue instead of local state
@@ -158,7 +159,6 @@ const PostCard = React.memo(({
                 onHeightChange?.(constrainedHeight);
             } else {
                 // Fallback to blocking image size calculation only when size data is missing/invalid
-                console.log('No valid size data available, falling back to image size calculation for post:', id);
                 const timeoutId = setTimeout(() => {
                     calculateImageHeight(firstImageUrl);
                 }, 0);
@@ -171,6 +171,13 @@ const PostCard = React.memo(({
     }, [memoizedImages, memoizedSize, screenWidth, firstImageUrl]);
 
     const calculateImageHeight = useCallback((imageUri: string) => {
+        if (!imageUri) {
+            const fallbackHeight = screenWidth * 0.75;
+            setImageHeight(fallbackHeight);
+            onHeightChange?.(fallbackHeight);
+            return;
+        }
+
         RNImage.getSize(imageUri, async (width, height) => {
             const aspectRatio = width / height;
             const calculatedHeight = screenWidth / aspectRatio;
@@ -183,33 +190,26 @@ const PostCard = React.memo(({
             setImageHeight(constrainedHeight);
             onHeightChange?.(constrainedHeight);
 
-            // Update the post with the computed size information for future requests
-            if (id && width > 0 && height > 0) {
+            // Only update size info on your own posts
+            if (id && width > 0 && height > 0 && userId === user?._id) {
                 try {
-                    // Estimate file size (this is approximate since we don't have the actual file)
-                    // Using a rough estimate based on image dimensions
-                    const estimatedBytes = Math.round(width * height * 0.5); // Rough estimate for compressed image
-
+                    const estimatedBytes = Math.round(width * height * 0.5);
                     await updatePost(id, undefined, undefined, {
                         width,
                         height,
                         bytes: estimatedBytes
                     });
-
-                    console.log(`Updated post ${id} with size information: ${width}x${height}`);
                 } catch (error) {
-                    console.error('Failed to update post with size information:', error);
-                    // Don't throw - this is a background optimization, not critical
+                    // Non-critical background optimization
                 }
             }
         }, (error) => {
             console.error('Error getting image size:', error);
-            // Fallback to default height
             const fallbackHeight = screenWidth * 0.75;
             setImageHeight(fallbackHeight);
             onHeightChange?.(fallbackHeight);
         });
-    }, [screenWidth, onHeightChange, id]);
+    }, [screenWidth, onHeightChange, id, userId, user?._id]);
 
     const screenHeight = Dimensions.get("window").height;
 
@@ -246,7 +246,6 @@ const PostCard = React.memo(({
     const allReactions = mergeReactions();
 
     const ThemedColor = useThemeColor();
-    const { user } = useAuth();
     const { capture } = useAnalytics();
     const handleClose = () => {
         bottomSheetModalRef.current?.dismiss();
@@ -270,11 +269,9 @@ const PostCard = React.memo(({
 
     const handleOpenComments = useCallback(() => {
         bottomSheetModalRef.current?.present();
-        console.log("handleOpenComments");
     }, []);
 
     const handleSheetChanges = useCallback((index: number) => {
-        console.log("handleSheetChanges", index);
         setIsBottomSheetOpen(index !== -1);
     }, []);
 
@@ -371,14 +368,10 @@ const PostCard = React.memo(({
 
     const handleCongratulatePress = async () => {
         if (!user?._id) {
-            // User is not authenticated, could show a login prompt here
-            console.log("User not authenticated");
             return;
         }
 
         if (user._id === userId) {
-            // User is trying to congratulate themselves
-            console.log("Cannot congratulate yourself");
             return;
         }
 
@@ -387,7 +380,7 @@ const PostCard = React.memo(({
                 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
         } catch (error) {
-            console.log("Haptic error:", error);
+            // ignored
         }
         setCongratulateModalVisible(true);
     };

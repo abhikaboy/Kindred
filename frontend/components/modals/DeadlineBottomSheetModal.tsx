@@ -3,6 +3,7 @@ import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { updateTaskDeadlineAPI } from "@/api/task";
 import Deadline from "./create/Deadline";
+import { showToast } from "@/utils/showToast";
 
 type Props = {
     visible: boolean;
@@ -66,10 +67,9 @@ const DeadlineBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onD
         if (taskId && categoryId) {
             try {
                 await updateTaskDeadlineAPI(categoryId, taskId, deadline);
-                console.log("Successfully updated deadline for task:", taskId, "in category:", categoryId, "to:", deadline);
             } catch (error) {
                 console.error("Failed to update deadline:", error);
-                // TODO: Show error toast/alert
+                showToast("Failed to update deadline", "danger");
                 return;
             }
         }

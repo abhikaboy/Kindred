@@ -398,11 +398,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             });
 
             if (result.error) {
-                console.error('❌ Apple registration failed:', result.error);
                 throw new Error('Apple registration failed');
             }
-
-            console.log('✅ Apple registration successful!');
 
             const userData = result.data as any;
             setUser(userData);
@@ -440,8 +437,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-
-            console.error('❌ Apple registration error message:', errorMessage);
 
             // Throw error with the backend message so the UI can display it
             throw new Error(errorMessage);
@@ -505,11 +500,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             });
 
             if (result.error) {
-                console.error('❌ Google registration failed:', result.error);
                 throw new Error('Google registration failed');
             }
-
-            console.log('✅ Google registration successful!');
 
             const userData = result.data as any;
             setUser(userData);
@@ -547,8 +539,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-
-            console.error('❌ Google registration error message:', errorMessage);
 
             // Throw error with the backend message so the UI can display it
             throw new Error(errorMessage);

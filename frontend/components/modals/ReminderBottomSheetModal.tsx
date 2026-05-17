@@ -3,6 +3,7 @@ import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { updateTaskRemindersAPI } from "@/api/task";
 import ReminderComponent from "./create/Reminder";
+import { showToast } from "@/utils/showToast";
 
 type ReminderType = {
     triggerTime: string;
@@ -72,10 +73,9 @@ const ReminderBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onR
         if (taskId && categoryId) {
             try {
                 await updateTaskRemindersAPI(categoryId, taskId, reminders);
-                console.log("Successfully updated reminders for task:", taskId, "in category:", categoryId, "to:", reminders);
             } catch (error) {
                 console.error("Failed to update reminders:", error);
-                // TODO: Show error toast/alert
+                showToast("Failed to update reminders", "danger");
                 return;
             }
         }

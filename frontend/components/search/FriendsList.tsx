@@ -59,32 +59,28 @@ const FriendRow = React.memo(({ friend, onEncourage }: FriendRowProps) => {
                 <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.name}>
                     {friend.display_name}
                 </ThemedText>
-                <ThemedText type="captionLight" numberOfLines={1}>
-                    {displayHandle}
-                </ThemedText>
-            </View>
-
-            <View style={styles.stats}>
-                {friend.streak > 0 && (
+                <View style={styles.stats}>
+                    {friend.streak > 0 && (
+                        <View style={[styles.statBadge, styles.streakBadge]}>
+                            <Fire size={12} color="#F59E0B" weight="fill" />
+                            <ThemedText type="captionLight" style={[styles.statText, { color: "#F59E0B" }]}>
+                                {friend.streak}
+                            </ThemedText>
+                        </View>
+                    )}
+                    {friend.posts_this_week > 0 && (
+                        <View style={[styles.statBadge, styles.postsBadge]}>
+                            <Camera size={11} color={ThemedColor.primary} weight="fill" />
+                            <ThemedText type="captionLight" style={[styles.statText, { color: ThemedColor.primary }]}>
+                                {friend.posts_this_week} {friend.posts_this_week === 1 ? "post" : "posts"}
+                            </ThemedText>
+                        </View>
+                    )}
                     <View style={styles.statBadge}>
-                        <Fire size={14} color="#F59E0B" weight="fill" />
                         <ThemedText type="captionLight" style={styles.statText}>
-                            {friend.streak}
+                            {friend.tasks_complete} done
                         </ThemedText>
                     </View>
-                )}
-                {friend.posts_this_week > 0 && (
-                    <View style={[styles.statBadge, styles.postsBadge]}>
-                        <Camera size={12} color={ThemedColor.primary} weight="fill" />
-                        <ThemedText type="captionLight" style={[styles.statText, { color: ThemedColor.primary }]}>
-                            {friend.posts_this_week} {friend.posts_this_week === 1 ? "post" : "posts"}
-                        </ThemedText>
-                    </View>
-                )}
-                <View style={styles.statBadge}>
-                    <ThemedText type="captionLight" style={styles.statText}>
-                        {friend.tasks_complete} done
-                    </ThemedText>
                 </View>
             </View>
 
@@ -213,23 +209,27 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         stats: {
             flexDirection: "row",
             alignItems: "center",
-            gap: 8,
-            marginRight: 12,
+            gap: 6,
+            marginTop: 4,
         },
         statBadge: {
             flexDirection: "row",
             alignItems: "center",
             gap: 3,
-            backgroundColor: ThemedColor.tertiary,
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary,
+            paddingHorizontal: 7,
+            paddingVertical: 2,
+            borderRadius: 8,
+        },
+        streakBadge: {
+            borderColor: "#F59E0B40",
         },
         postsBadge: {
-            backgroundColor: ThemedColor.primary + "15",
+            borderColor: ThemedColor.primary + "40",
         },
         statText: {
-            fontSize: 12,
+            fontSize: 11,
         },
         encourageButton: {
             width: 36,
