@@ -39,10 +39,11 @@ export function useRings() {
     });
 
     // Derived state
-    const rings: RingState | null = todayData?.rings ?? null;
-    const score = todayData?.score ?? 0;
+    const rings: RingState | null = todayData?.ring_state ?? null;
+    const score = todayData?.productivity_score ?? 0;
+    const streak = todayData?.current_streak ?? 0;
     const allClosed = rings?.all_closed ?? false;
-    const canClaimReward = allClosed && !(rings?.reward_claimed ?? false);
+    const canClaimReward = todayData?.reward_available ?? false;
 
     // Auto-claim reward when all rings close
     const claimedRef = useRef(false);
@@ -80,6 +81,7 @@ export function useRings() {
     return {
         rings,
         score,
+        streak,
         allClosed,
         canClaimReward,
         isLoading: isLoadingToday,

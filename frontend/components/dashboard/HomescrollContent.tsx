@@ -11,7 +11,6 @@ import { useRouter } from "expo-router";
 import { KudosCards } from "../cards/KudosCard";
 import { HorseIcon, PlusIcon } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import ProductivityRings from "@/components/profile/ProductivityRings";
 import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -313,10 +312,6 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 </BasicCard> */}
 
-                {/* Productivity Rings */}
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
-                    <ProductivityRings compact />
-                </View>
 
                 {/* Dashboard Stats */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>

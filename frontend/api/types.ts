@@ -179,6 +179,7 @@ export interface Profile {
     productivity_score?: number;
     friends: string[];
     relationship?: RelationshipInfo;
+    ring_state?: RingState;
 }
 
 // Notification types for custom Fiber endpoints (not in OpenAPI spec)
@@ -247,8 +248,10 @@ export interface RingState {
 }
 
 export interface RingTodayResponse {
-    rings: RingState;
-    score: number;
+    ring_state: RingState;
+    productivity_score: number;
+    current_streak: number;
+    reward_available: boolean;
 }
 
 export interface RingHistoryResponse {

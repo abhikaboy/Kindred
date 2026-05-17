@@ -5,13 +5,15 @@ import (
 	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Handler struct {
-	service *Service
+	service     *Service
+	ringService *rings.RingService
 }
 
 func (h *Handler) GetProfiles(ctx context.Context, input *GetProfilesInput) (*GetProfilesOutput, error) {
@@ -182,6 +184,18 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 	} else {
 		profile.Tasks = []types.TaskDocument{}
 		profile.CompletedTasks = []types.TaskDocument{}
+	}
+
+	// Embed today's ring state for connected users and self
+	if relationship.Status == RelationshipConnected || relationship.Status == RelationshipSelf {
+		timezone := auth.GetTimezoneOrDefault(ctx)
+		ringState, err := h.ringService.GetOrCreateToday(ctx, id, timezone)
+		if err != nil {
+			slog.Error("Failed to get ring state for profile", "profileId", id.Hex(), "error", err)
+			// Non-fatal: continue without ring state
+		} else {
+			profile.RingState = ringState
+		}
 	}
 
 	// Sanitize internal metrics before returning

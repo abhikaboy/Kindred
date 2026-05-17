@@ -22,6 +22,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ProfileStats from "@/components/profile/ProfileStats";
 import TodayStats from "@/components/profile/TodayStats";
+import { FriendRings } from "@/components/profile/ProductivityRings";
 import ProfileGallery from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
@@ -190,7 +191,11 @@ export default function Profile() {
                         />
                     </View>
 
-                    <TodayStats userId={profile?.id} />
+                    {profile?.ring_state ? (
+                        <FriendRings ringState={profile.ring_state} />
+                    ) : (
+                        <TodayStats userId={profile?.id} />
+                    )}
                 </View>
                 {canViewPersonalContent ? (
                     <>
