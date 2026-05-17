@@ -20,6 +20,7 @@ import {
     Animated,
     RefreshControl,
     useColorScheme,
+    FlatList,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { getAllPosts, getFriendsPosts, getPostsByBlueprint, getFeed, type FeedItem } from "@/api/post";
@@ -698,7 +699,7 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
-            <FlashList
+            <FlatList
                 ref={flatListRef}
                 data={currentFeed.id === "feed" ? filteredFeedItems : sortedPosts}
                 keyExtractor={(item) => {
@@ -728,9 +729,7 @@ export default function Feed() {
                 ListEmptyComponent={renderEmptyComponent}
                 ListFooterComponent={renderFooter}
                 onEndReached={handleEndReached}
-                estimatedItemSize={350}
                 onEndReachedThreshold={0.5}
-                removeClippedSubviews={true}
             />
         </View>
     );

@@ -49,7 +49,7 @@ const CachedImage: React.FC<CachedImageProps> = ({
     // Note: These query parameters are prepared for future image processing service
     // Currently they will be ignored, but the CDN optimization will still work
     const queryParams = variants[variant] || variants.medium;
-    
+
     // Only add query params if URL doesn't already have them
     if (queryParams && !optimizedURL.includes('?')) {
       optimizedURL += queryParams;
@@ -66,12 +66,12 @@ const CachedImage: React.FC<CachedImageProps> = ({
   // Get the appropriate placeholder based on theme
   const getLocalPlaceholder = () => {
     if (!useLocalPlaceholder) return placeholder;
-    
+
     // Use theme-appropriate placeholder
     const isDark = themeColors.background === '#000000' || themeColors.background === '#1a1a1a';
-    return isDark 
-      ? require('@/assets/images/placeholder dark.jpg')
-      : require('@/assets/images/placeholder light.jpg');
+    return isDark
+      ? require('@/assets/images/placeholder-dark.jpg')
+      : require('@/assets/images/placeholder-light.jpg');
   };
 
   const finalPlaceholder = placeholder || getLocalPlaceholder();
