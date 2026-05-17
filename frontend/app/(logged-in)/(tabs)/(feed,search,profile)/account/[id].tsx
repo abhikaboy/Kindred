@@ -192,7 +192,12 @@ export default function Profile() {
                     </View>
 
                     {profile?.ring_state ? (
-                        <FriendRings ringState={profile.ring_state} />
+                        <FriendRings
+                            ringState={profile.ring_state}
+                            userId={profile.id}
+                            userHandle={profile.handle}
+                            userName={profile.display_name}
+                        />
                     ) : (
                         <TodayStats userId={profile?.id} />
                     )}

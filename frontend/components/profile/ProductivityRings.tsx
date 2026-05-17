@@ -18,6 +18,7 @@ import { useRings } from "@/hooks/useRings";
 import { RingProgress, RingState } from "@/api/types";
 import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
+import EncourageModal from "@/components/modals/EncourageModal";
 
 if (
     Platform.OS === "android" &&
@@ -276,48 +277,85 @@ const styles = StyleSheet.create({
 
 /**
  * Simplified rings-only view for friend profiles.
- * No card, no arc gauge, no expand behavior.
+ * Tapping a ring opens an encourage modal with a ring-specific message.
  */
 interface FriendRingsProps {
     ringState: RingState;
+    userId: string;
+    userHandle?: string;
+    userName?: string;
 }
 
-const FriendRings: React.FC<FriendRingsProps> = ({ ringState }) => {
+const RING_ENCOURAGE_MESSAGES: Record<RingKey, string> = {
+    plan: "You got this! Close that Plan ring today 💪",
+    do: "Keep going! Knock out those tasks and close the Do ring 🔥",
+    share: "Share something awesome and close that Share ring! ✨",
+};
+
+const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle, userName }) => {
     const ThemedColor = useThemeColor();
     const trackColor = ThemedColor.tertiary;
+    const [showEncourageModal, setShowEncourageModal] = useState(false);
+    const [selectedRingMessage, setSelectedRingMessage] = useState("");
 
-    const ringEntries: { label: string; progress: RingProgress }[] = [
-        { label: "Plan", progress: ringState.plan },
-        { label: "Do", progress: ringState.do },
-        { label: "Share", progress: ringState.share },
+    const ringEntries: { key: RingKey; label: string; progress: RingProgress }[] = [
+        { key: "plan", label: "Plan", progress: ringState.plan },
+        { key: "do", label: "Do", progress: ringState.do },
+        { key: "share", label: "Share", progress: ringState.share },
     ];
 
+    const handleRingPress = (key: RingKey, progress: RingProgress) => {
+        if (progress.closed) return; // No encouragement needed for closed rings
+        setSelectedRingMessage(RING_ENCOURAGE_MESSAGES[key]);
+        setShowEncourageModal(true);
+    };
+
     return (
-        <View style={styles.ringsRow}>
-            {ringEntries.map(({ label, progress }) => (
-                <View key={label} style={styles.ringItem}>
-                    <View style={styles.ringWrapper}>
-                        <RingCircle progress={progress} trackColor={trackColor} />
-                        <View style={styles.ringCenter}>
-                            {progress.closed ? (
-                                <Check size={24} color={PRIMARY_COLOR} weight="bold" />
-                            ) : (
-                                <ThemedText
-                                    style={[styles.ringText, { color: ThemedColor.text }]}
-                                >
-                                    {progress.current}/{progress.target}
-                                </ThemedText>
-                            )}
-                        </View>
-                    </View>
-                    <ThemedText
-                        style={[styles.ringLabel, { color: ThemedColor.caption }]}
+        <>
+            <View style={styles.ringsRow}>
+                {ringEntries.map(({ key, label, progress }) => (
+                    <TouchableOpacity
+                        key={label}
+                        style={styles.ringItem}
+                        onPress={() => handleRingPress(key, progress)}
+                        activeOpacity={progress.closed ? 1 : 0.7}
                     >
-                        {label.toUpperCase()}
-                    </ThemedText>
-                </View>
-            ))}
-        </View>
+                        <View style={styles.ringWrapper}>
+                            <RingCircle progress={progress} trackColor={trackColor} />
+                            <View style={styles.ringCenter}>
+                                {progress.closed ? (
+                                    <Check size={24} color={PRIMARY_COLOR} weight="bold" />
+                                ) : (
+                                    <ThemedText
+                                        style={[styles.ringText, { color: ThemedColor.text }]}
+                                    >
+                                        {progress.current}/{progress.target}
+                                    </ThemedText>
+                                )}
+                            </View>
+                        </View>
+                        <ThemedText
+                            style={[styles.ringLabel, { color: ThemedColor.caption }]}
+                        >
+                            {label.toUpperCase()}
+                        </ThemedText>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <EncourageModal
+                visible={showEncourageModal}
+                setVisible={setShowEncourageModal}
+                task={undefined}
+                encouragementConfig={{
+                    userHandle: userHandle || userName || "User",
+                    receiverId: userId,
+                    categoryName: "",
+                }}
+                isProfileLevel={true}
+                defaultMessage={selectedRingMessage}
+            />
+        </>
     );
 };
 
