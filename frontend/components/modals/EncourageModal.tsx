@@ -36,9 +36,10 @@ interface EncourageModalProps {
         categoryName: string; // Name of the category the task belongs to
     };
     isProfileLevel?: boolean; // New prop to indicate profile-level encouragement
+    defaultMessage?: string; // Pre-filled encouragement message (e.g. for ring encouragements)
 }
 
-export default function EncourageModal({ visible, setVisible, task, encouragementConfig, isProfileLevel = false }: EncourageModalProps) {
+export default function EncourageModal({ visible, setVisible, task, encouragementConfig, isProfileLevel = false, defaultMessage }: EncourageModalProps) {
     const ThemedColor = useThemeColor();
     const { updateUser } = useAuth();
     const { capture } = useAnalytics();
@@ -56,6 +57,13 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const [alertTitle, setAlertTitle] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+
+    // Pre-fill message when modal opens with a default
+    useEffect(() => {
+        if (visible && defaultMessage && encouragementMessage === "") {
+            setEncouragementMessage(defaultMessage);
+        }
+    }, [visible, defaultMessage]);
 
     // Purple glow animation
     const glowOpacity = useRef(new Animated.Value(0)).current;
@@ -349,7 +357,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 />
             )}
 
-            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>
+            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedImage ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
                 {/* Task Card - Only show for task-level encouragements */}
                 {!isProfileLevel && (
@@ -374,29 +382,40 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
                 {/* Title */}
                 <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
-                    {isProfileLevel ? "Send Profile Encouragement" : `Encourage ${encouragementConfig?.userHandle || "User"}`}
+                    {isProfileLevel ? "Send Encouragement" : `Encourage ${encouragementConfig?.userHandle || "User"}`}
                 </ThemedText>
-
-                {/* Description */}
-                <ThemedText type="lightBody" style={styles.descriptionStyled}>
-                    {isProfileLevel
-                        ? `Send a personal encouragement to ${encouragementConfig?.userHandle || "User"}!`
-                        : `${encouragementConfig?.userHandle || "User"} will get a notification after sending the encouragement`
-                    }
+                <ThemedText type="captionLight" style={styles.subtitleStyled}>
+                    A little goes a long way
                 </ThemedText>
 
                 {/* Text Input or Image Preview */}
                 {!selectedImage ? (
                     <View style={styles.inputContainer}>
                         <BottomSheetTextInput
-                            placeholder={`Tap to type an encouraging message to ${encouragementConfig?.userHandle || "User"}`}
+                            placeholder="Write a message..."
                             placeholderTextColor={ThemedColor.caption}
                             value={encouragementMessage}
                             onChangeText={setEncouragementMessage}
                             multiline={true}
-                            numberOfLines={4}
+                            numberOfLines={3}
                             style={styles.textInputStyled}
                         />
+                        <View style={styles.mediaIconsRow}>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={handleImagePick}
+                                disabled={isUploading}
+                            >
+                                <Images size={20} color={ThemedColor.caption} weight="regular" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={() => setShowGifPicker(true)}
+                                disabled={isUploading}
+                            >
+                                <Gif size={20} color={ThemedColor.caption} weight="regular" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 ) : (
                     <TouchableOpacity
@@ -416,26 +435,6 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         </TouchableOpacity>
                     </TouchableOpacity>
                 )}
-
-                {/* Media Icons */}
-                <View style={styles.mediaIconsContainerWrapper}>
-                    <View style={styles.mediaIconsContainer}>
-                        <TouchableOpacity
-                            style={styles.iconButton}
-                            onPress={handleImagePick}
-                            disabled={isUploading}
-                        >
-                            <Images size={32} color={ThemedColor.text} weight="regular" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.iconButton}
-                            onPress={() => setShowGifPicker(true)}
-                            disabled={isUploading}
-                        >
-                            <Gif size={32} color={ThemedColor.text} weight="regular" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
 
                 {/* Send Button and Counter */}
                 <View style={styles.buttonContainer}>
@@ -486,11 +485,11 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: 18,
-            paddingBottom: 32,
+            paddingTop: 12,
+            paddingBottom: 24,
         },
         taskCardContainer: {
-            marginBottom: 16,
+            marginBottom: 12,
             width: "100%",
         },
         taskCard: {
@@ -549,25 +548,16 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             fontSize: 24,
             fontWeight: "600",
             textAlign: "center",
-            marginBottom: 24,
+            marginBottom: 4,
             color: ThemedColor.text,
         },
-        description: {
-            fontSize: 16,
+        subtitleStyled: {
             textAlign: "center",
-            marginBottom: 24,
-            lineHeight: 24,
-        },
-        descriptionStyled: {
-            fontSize: 16,
-            textAlign: "center",
-            marginBottom: 24,
-            lineHeight: 24,
-            color: ThemedColor.text,
+            marginBottom: 16,
+            color: ThemedColor.caption,
         },
         inputContainer: {
-            marginBottom: 24,
-            minHeight: 80,
+            marginBottom: 16,
         },
         textInput: {
             padding: 16,
@@ -580,16 +570,32 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             textAlignVertical: "top",
         },
         textInputStyled: {
-            padding: 16,
+            paddingHorizontal: 14,
+            paddingTop: 14,
+            paddingBottom: 8,
             borderRadius: 12,
             borderWidth: 1,
-            fontSize: 16,
+            fontSize: 15,
             fontFamily: "Outfit",
             fontWeight: "400",
-            minHeight: 80,
+            minHeight: 72,
             textAlignVertical: "top",
             color: ThemedColor.text,
             borderColor: ThemedColor.tertiary,
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
+            borderBottomWidth: 0,
+        },
+        mediaIconsRow: {
+            flexDirection: "row",
+            gap: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderWidth: 1,
+            borderTopWidth: 0,
+            borderColor: ThemedColor.tertiary,
+            borderBottomLeftRadius: 12,
+            borderBottomRightRadius: 12,
         },
         buttonContainer: {
             gap: 12,
@@ -609,18 +615,8 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             textAlign: "center",
             color: ThemedColor.text,
         },
-        mediaIconsContainerWrapper: {
-            width: "100%",
-            marginBottom: 24,
-        },
-        mediaIconsContainer: {
-            flexDirection: "row",
-            alignItems: "flex-end",
-            gap: 12,
-            alignSelf: "flex-end",
-        },
         iconButton: {
-            padding: 0,
+            padding: 4,
         },
         imagePreviewContainer: {
             position: "relative",
@@ -630,7 +626,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         imagePreview: {
             width: "100%",
-            height: Dimensions.get("window").height * 0.5,
+            height: Dimensions.get("window").height * 0.3,
             resizeMode: "contain",
         },
         removeImageButton: {

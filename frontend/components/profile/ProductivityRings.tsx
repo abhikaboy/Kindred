@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
     View,
     StyleSheet,
@@ -6,8 +6,11 @@ import {
     UIManager,
     Platform,
     TouchableOpacity,
+    Animated as RNAnimated,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+
+const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 import { Check, LockSimple } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -15,6 +18,7 @@ import { useRings } from "@/hooks/useRings";
 import { RingProgress, RingState } from "@/api/types";
 import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
+import EncourageModal from "@/components/modals/EncourageModal";
 
 if (
     Platform.OS === "android" &&
@@ -42,7 +46,21 @@ function RingCircle({
         progress.target > 0
             ? Math.min(progress.current / progress.target, 1)
             : 0;
-    const strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+    const animatedValue = useRef(new RNAnimated.Value(0)).current;
+
+    useEffect(() => {
+        animatedValue.setValue(0);
+        RNAnimated.timing(animatedValue, {
+            toValue: fraction,
+            duration: 800,
+            useNativeDriver: false,
+        }).start();
+    }, [fraction]);
+
+    const strokeDashoffset = animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [CIRCUMFERENCE, 0],
+    });
 
     return (
         <Svg width={RING_SIZE} height={RING_SIZE}>
@@ -54,7 +72,7 @@ function RingCircle({
                 strokeWidth={STROKE_WIDTH}
                 fill="none"
             />
-            <Circle
+            <AnimatedCircle
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={RADIUS}
@@ -259,48 +277,85 @@ const styles = StyleSheet.create({
 
 /**
  * Simplified rings-only view for friend profiles.
- * No card, no arc gauge, no expand behavior.
+ * Tapping a ring opens an encourage modal with a ring-specific message.
  */
 interface FriendRingsProps {
     ringState: RingState;
+    userId: string;
+    userHandle?: string;
+    userName?: string;
 }
 
-const FriendRings: React.FC<FriendRingsProps> = ({ ringState }) => {
+const RING_ENCOURAGE_MESSAGES: Record<RingKey, string> = {
+    plan: "Plan out your day and close that ring!",
+    do: "Finish up those tasks, you're almost there!",
+    share: "Post something or send some kudos to close the ring!",
+};
+
+const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle, userName }) => {
     const ThemedColor = useThemeColor();
     const trackColor = ThemedColor.tertiary;
+    const [showEncourageModal, setShowEncourageModal] = useState(false);
+    const [selectedRingMessage, setSelectedRingMessage] = useState("");
 
-    const ringEntries: { label: string; progress: RingProgress }[] = [
-        { label: "Plan", progress: ringState.plan },
-        { label: "Do", progress: ringState.do },
-        { label: "Share", progress: ringState.share },
+    const ringEntries: { key: RingKey; label: string; progress: RingProgress }[] = [
+        { key: "plan", label: "Plan", progress: ringState.plan },
+        { key: "do", label: "Do", progress: ringState.do },
+        { key: "share", label: "Share", progress: ringState.share },
     ];
 
+    const handleRingPress = (key: RingKey, progress: RingProgress) => {
+        if (progress.closed) return; // No encouragement needed for closed rings
+        setSelectedRingMessage(RING_ENCOURAGE_MESSAGES[key]);
+        setShowEncourageModal(true);
+    };
+
     return (
-        <View style={styles.ringsRow}>
-            {ringEntries.map(({ label, progress }) => (
-                <View key={label} style={styles.ringItem}>
-                    <View style={styles.ringWrapper}>
-                        <RingCircle progress={progress} trackColor={trackColor} />
-                        <View style={styles.ringCenter}>
-                            {progress.closed ? (
-                                <Check size={24} color={PRIMARY_COLOR} weight="bold" />
-                            ) : (
-                                <ThemedText
-                                    style={[styles.ringText, { color: ThemedColor.text }]}
-                                >
-                                    {progress.current}/{progress.target}
-                                </ThemedText>
-                            )}
-                        </View>
-                    </View>
-                    <ThemedText
-                        style={[styles.ringLabel, { color: ThemedColor.caption }]}
+        <>
+            <View style={styles.ringsRow}>
+                {ringEntries.map(({ key, label, progress }) => (
+                    <TouchableOpacity
+                        key={label}
+                        style={styles.ringItem}
+                        onPress={() => handleRingPress(key, progress)}
+                        activeOpacity={progress.closed ? 1 : 0.7}
                     >
-                        {label.toUpperCase()}
-                    </ThemedText>
-                </View>
-            ))}
-        </View>
+                        <View style={styles.ringWrapper}>
+                            <RingCircle progress={progress} trackColor={trackColor} />
+                            <View style={styles.ringCenter}>
+                                {progress.closed ? (
+                                    <Check size={24} color={PRIMARY_COLOR} weight="bold" />
+                                ) : (
+                                    <ThemedText
+                                        style={[styles.ringText, { color: ThemedColor.text }]}
+                                    >
+                                        {progress.current}/{progress.target}
+                                    </ThemedText>
+                                )}
+                            </View>
+                        </View>
+                        <ThemedText
+                            style={[styles.ringLabel, { color: ThemedColor.caption }]}
+                        >
+                            {label.toUpperCase()}
+                        </ThemedText>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <EncourageModal
+                visible={showEncourageModal}
+                setVisible={setShowEncourageModal}
+                task={undefined}
+                encouragementConfig={{
+                    userHandle: userHandle || userName || "User",
+                    receiverId: userId,
+                    categoryName: "",
+                }}
+                isProfileLevel={true}
+                defaultMessage={selectedRingMessage}
+            />
+        </>
     );
 };
 

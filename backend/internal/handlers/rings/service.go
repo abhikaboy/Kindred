@@ -3,11 +3,13 @@ package rings
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"math/rand"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -23,15 +25,21 @@ type ClaimResult struct {
 
 // RingService contains the core ring logic.
 type RingService struct {
-	ringStates *mongo.Collection
-	users      *mongo.Collection
+	ringStates    *mongo.Collection
+	users         *mongo.Collection
+	notifications *mongo.Collection
 }
 
 // NewRingService creates a new RingService.
 func NewRingService(ringStates, users *mongo.Collection) *RingService {
+	var notifs *mongo.Collection
+	if users != nil {
+		notifs = users.Database().Collection("notifications")
+	}
 	return &RingService{
-		ringStates: ringStates,
-		users:      users,
+		ringStates:    ringStates,
+		users:         users,
+		notifications: notifs,
 	}
 }
 
@@ -373,4 +381,96 @@ func (s *RingService) recalculateScore(ctx context.Context, userID primitive.Obj
 	}
 
 	return nil
+}
+
+// NotifyAllRingsClosed sends delayed notifications (2 minutes) to the user and
+// their friends when all rings are closed for the day.
+func (s *RingService) NotifyAllRingsClosed(userID primitive.ObjectID) {
+	time.AfterFunc(2*time.Minute, func() {
+		ctx := context.Background()
+
+		var user types.User
+		if err := s.users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user); err != nil {
+			slog.Error("rings closed notify: failed to fetch user", "error", err, "user_id", userID)
+			return
+		}
+
+		// Notify the user
+		if user.PushToken != "" {
+			_ = xutils.SendNotification(xutils.Notification{
+				Token:   user.PushToken,
+				Title:   "All rings closed!",
+				Message: "You closed all your rings today. Nice work.",
+				Data:    map[string]string{"type": "rings_closed"},
+			})
+		}
+
+		s.createRingNotification(ctx, userID, userID, user, "You closed all your rings today!")
+
+		// Notify friends
+		if len(user.Friends) == 0 {
+			return
+		}
+
+		cursor, err := s.users.Find(ctx, bson.M{"_id": bson.M{"$in": user.Friends}})
+		if err != nil {
+			slog.Error("rings closed notify: failed to fetch friends", "error", err, "user_id", userID)
+			return
+		}
+		defer cursor.Close(ctx)
+
+		message := fmt.Sprintf("%s closed all their rings today!", user.DisplayName)
+
+		var friends []types.User
+		if err := cursor.All(ctx, &friends); err != nil {
+			slog.Error("rings closed notify: failed to decode friends", "error", err)
+			return
+		}
+
+		for _, friend := range friends {
+			s.createRingNotification(ctx, userID, friend.ID, user, message)
+
+			if friend.PushToken != "" {
+				_ = xutils.SendNotification(xutils.Notification{
+					Token:   friend.PushToken,
+					Title:   "Rings closed",
+					Message: message,
+					Data: map[string]string{
+						"type":    "rings_closed",
+						"user_id": userID.Hex(),
+					},
+				})
+			}
+		}
+
+		slog.Info("rings closed notifications sent", "user_id", userID, "friends_notified", len(friends))
+	})
+}
+
+func (s *RingService) createRingNotification(ctx context.Context, senderID, receiverID primitive.ObjectID, sender types.User, content string) {
+	if s.notifications == nil {
+		return
+	}
+
+	type userRef struct {
+		ID             primitive.ObjectID `bson:"_id"`
+		DisplayName    string             `bson:"display_name"`
+		Handle         string             `bson:"handle"`
+		ProfilePicture string             `bson:"profile_picture"`
+	}
+
+	doc := bson.M{
+		"_id":              primitive.NewObjectID(),
+		"receiver":         receiverID,
+		"content":          content,
+		"user":             userRef{ID: senderID, DisplayName: sender.DisplayName, Handle: sender.Handle, ProfilePicture: sender.ProfilePicture},
+		"time":             time.Now(),
+		"notificationType": "RINGS_CLOSED",
+		"reference_id":     senderID,
+		"read":             false,
+	}
+
+	if _, err := s.notifications.InsertOne(ctx, doc); err != nil {
+		slog.Error("rings closed notify: failed to create notification", "error", err, "receiver_id", receiverID)
+	}
 }

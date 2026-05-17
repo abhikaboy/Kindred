@@ -219,9 +219,11 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 	if h.service.RingService != nil {
 		go func() {
 			tz := auth.GetTimezoneOrDefault(ctx)
-			_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingPlan)
+			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingPlan)
 			if err != nil {
 				slog.Error("Failed to increment Plan ring on task creation", "user_id", userObjID.Hex(), "error", err)
+			} else if justClosedAll {
+				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
 		}()
 	}
@@ -437,9 +439,11 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 	if h.service.RingService != nil {
 		go func() {
 			tz := auth.GetTimezoneOrDefault(ctx)
-			_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
+			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
 			if err != nil {
 				slog.Error("Failed to increment Do ring on task completion", "user_id", userObjID.Hex(), "error", err)
+			} else if justClosedAll {
+				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
 		}()
 	}
@@ -558,10 +562,14 @@ func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskI
 		go func() {
 			tz := auth.GetTimezoneOrDefault(ctx)
 			for i := 0; i < result.Body.TotalCompleted; i++ {
-				_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
+				_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
 				if err != nil {
 					slog.Error("Failed to increment Do ring on bulk task completion", "user_id", userObjID.Hex(), "error", err)
 					break
+				}
+				if justClosedAll {
+					h.service.RingService.NotifyAllRingsClosed(userObjID)
+					break // No need to increment further
 				}
 			}
 		}()
