@@ -182,7 +182,7 @@ export default function EnhancedSplashScreen({
                     },
                 ]}>
                 <Image
-                    source={isDarkMode ? require('@/assets/splash-icon-dark.png') : require('@/assets/splash-icon-light.png')}
+                    source={require('@/assets/splash-icon-dark.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
