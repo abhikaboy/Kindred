@@ -18,22 +18,22 @@ interface EnhancedSplashScreenProps {
  * - Gentle logo entrance with subtle float
  * - Expanding circles that transition to themed background (darker in dark mode, lighter in light mode)
  * - Smooth exit transition
- * 
+ *
  * @param onAnimationComplete - Callback fired when entrance animation completes
  * @param minDisplayTime - Minimum time to show splash screen (default: 2000ms)
  */
-export default function EnhancedSplashScreen({ 
+export default function EnhancedSplashScreen({
     onAnimationComplete,
-    minDisplayTime = 2000 
+    minDisplayTime = 2000
 }: EnhancedSplashScreenProps) {
     const ThemedColor = useThemeColor();
     const colorScheme = useColorScheme();
     const [animationComplete, setAnimationComplete] = useState(false);
     const [startExit, setStartExit] = useState(false);
-    
+
     // Detect dark mode
     const isDarkMode = colorScheme === 'dark';
-    
+
     // Animation values
     const scaleAnim = useRef(new Animated.Value(0.5)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -43,7 +43,7 @@ export default function EnhancedSplashScreen({
 
     useEffect(() => {
         const startTime = Date.now();
-        
+
         // Initial fade in and scale up
         Animated.parallel([
             Animated.timing(fadeAnim, {
@@ -86,7 +86,7 @@ export default function EnhancedSplashScreen({
         const timer = setTimeout(() => {
             floatLoop.stop();
             setStartExit(true);
-            
+
             // Start fading out the logo immediately when circles start
             Animated.timing(logoFadeOutAnim, {
                 toValue: 0,
@@ -94,7 +94,7 @@ export default function EnhancedSplashScreen({
                 easing: RNEasing.out(RNEasing.ease),
                 useNativeDriver: true,
             }).start();
-            
+
             // Wait for circles to expand (now 1000ms), then fade out everything
             setTimeout(() => {
                 Animated.timing(fadeOutAnim, {
@@ -122,10 +122,10 @@ export default function EnhancedSplashScreen({
     }, [animationComplete, onAnimationComplete]);
 
     return (
-        <View 
+        <View
             style={[
-                styles.container, 
-                { 
+                styles.container,
+                {
                     backgroundColor: ThemedColor.primary,
                 }
             ]}>
@@ -138,7 +138,7 @@ export default function EnhancedSplashScreen({
                     duration: startExit ? 2000 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
-                style={[styles.expandingCircle, { 
+                style={[styles.expandingCircle, {
                     backgroundColor: isDarkMode ? '#4A1F8F' : '#A67FFF', // Darker purple in dark mode, lighter in light mode
                 }]}
             />
@@ -151,7 +151,7 @@ export default function EnhancedSplashScreen({
                     delay: startExit ? 150 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
-                style={[styles.expandingCircle, { 
+                style={[styles.expandingCircle, {
                     backgroundColor: isDarkMode ? '#1A1A1A' : '#D4C5FF', // Dark gray in dark mode, light purple in light mode
                 }]}
             />
@@ -164,7 +164,7 @@ export default function EnhancedSplashScreen({
                     delay: startExit ? 300 : 0,
                     easing: ReanimatedEasing.bezier(0.25, 0.1, 0.25, 1),
                 }}
-                style={[styles.expandingCircle, { 
+                style={[styles.expandingCircle, {
                     backgroundColor: ThemedColor.background, // Final themed background
                 }]}
             />
@@ -182,12 +182,12 @@ export default function EnhancedSplashScreen({
                     },
                 ]}>
                 <Image
-                    source={require('@/assets/splash-icon.png')}
+                    source={isDarkMode ? require('@/assets/splash-icon-dark.png') : require('@/assets/splash-icon-light.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
             </Animated.View>
-            
+
             {/* Fade out overlay - only fades the entire splash at the very end */}
             <Animated.View
                 pointerEvents="none"
@@ -225,4 +225,3 @@ const styles = StyleSheet.create({
         height: 120,
     },
 });
-

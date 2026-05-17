@@ -19,6 +19,7 @@ import {
     Image,
     Animated,
     RefreshControl,
+    useColorScheme,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { getAllPosts, getFriendsPosts, getPostsByBlueprint, getFeed, type FeedItem } from "@/api/post";
@@ -70,7 +71,11 @@ type PostData = {
 export default function Feed() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const colorScheme = useColorScheme();
     const ThemedColor = useThemeColor();
+    const logoSource = colorScheme === "dark"
+        ? require("@/assets/splash-icon-dark.png")
+        : require("@/assets/splash-icon-light.png");
     const styles = stylesheet(ThemedColor, insets);
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
@@ -535,7 +540,7 @@ export default function Feed() {
         return (
             <View style={styles.listHeader}>
                 <View style={styles.headerContainer}>
-                    <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
+                    <Image source={logoSource} style={{ width: 32, height: 32 }} />
                     <TouchableOpacity
                         activeOpacity={0.8}
                         onPress={() => {
@@ -664,7 +669,7 @@ export default function Feed() {
                 ]}>
                 <View>
                     <View style={styles.headerContainer}>
-                        <Image source={require("@/assets/splash-icon.png")} style={{ width: 32, height: 32 }} />
+                        <Image source={logoSource} style={{ width: 32, height: 32 }} />
                         <TouchableOpacity
                             activeOpacity={0.8}
                             onPress={() => {
