@@ -71,17 +71,6 @@ function RingCircle({
     );
 }
 
-function countClosedRings(
-    history: { plan: { closed: boolean }; do: { closed: boolean }; share: { closed: boolean } }[]
-): number {
-    let count = 0;
-    for (const state of history) {
-        if (state.plan.closed) count++;
-        if (state.do.closed) count++;
-        if (state.share.closed) count++;
-    }
-    return count;
-}
 
 interface ProductivityRingsCardProps {
     expanded?: boolean;
@@ -105,7 +94,6 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     }, [expanded]);
 
     const trackColor = ThemedColor.tertiary;
-    const closedRings = countClosedRings(history);
 
     const handleRingPress = useCallback(
         (key: RingKey) => {
@@ -142,18 +130,6 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             {/* Score Arc */}
             <View style={styles.arcSection}>
                 <ScoreArc score={score} />
-                <View style={styles.pillsRow}>
-                    <View style={[styles.pill, { backgroundColor: ThemedColor.tertiary }]}>
-                        <ThemedText style={[styles.pillText, { color: ThemedColor.text }]}>
-                            Rings: {closedRings}/21
-                        </ThemedText>
-                    </View>
-                    <View style={[styles.pill, { backgroundColor: ThemedColor.tertiary }]}>
-                        <ThemedText style={[styles.pillText, { color: ThemedColor.text }]}>
-                            Streak: {streak} days
-                        </ThemedText>
-                    </View>
-                </View>
             </View>
 
             {/* Rings Row */}
@@ -229,29 +205,10 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     cardExpanded: {
-        transform: [{ scale: 1.03 }],
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
-        elevation: 6,
         zIndex: 999,
     },
     arcSection: {
         alignItems: "center",
-        gap: 8,
-    },
-    pillsRow: {
-        flexDirection: "row",
-        gap: 10,
-    },
-    pill: {
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    pillText: {
-        fontSize: 12,
-        fontFamily: "Outfit",
-        fontWeight: "500",
     },
     ringsRow: {
         flexDirection: "row",

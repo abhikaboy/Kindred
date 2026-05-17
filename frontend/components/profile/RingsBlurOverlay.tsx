@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { TouchableWithoutFeedback, Animated, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 
@@ -9,16 +9,28 @@ interface RingsBlurOverlayProps {
 
 const RingsBlurOverlay: React.FC<RingsBlurOverlayProps> = ({ visible, onDismiss }) => {
     const opacity = useRef(new Animated.Value(0)).current;
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        Animated.timing(opacity, {
-            toValue: visible ? 1 : 0,
-            duration: 250,
-            useNativeDriver: true,
-        }).start();
+        if (visible) {
+            setMounted(true);
+            Animated.timing(opacity, {
+                toValue: 1,
+                duration: 250,
+                useNativeDriver: true,
+            }).start();
+        } else {
+            Animated.timing(opacity, {
+                toValue: 0,
+                duration: 250,
+                useNativeDriver: true,
+            }).start(({ finished }) => {
+                if (finished) setMounted(false);
+            });
+        }
     }, [visible]);
 
-    if (!visible) return null;
+    if (!mounted) return null;
 
     return (
         <TouchableWithoutFeedback onPress={onDismiss}>
@@ -36,7 +48,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        backgroundColor: "transparent",
         zIndex: 998,
     },
 });

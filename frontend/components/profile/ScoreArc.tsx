@@ -65,10 +65,13 @@ const ScoreArc: React.FC<ScoreArcProps> = ({ score, maxScore = 100 }) => {
                 </ThemedText>
             </View>
             <View style={styles.labelsRow}>
-                <ThemedText style={[styles.label, { color: ThemedColor.caption }]}>
+                <ThemedText style={[styles.endLabel, { color: ThemedColor.caption }]}>
                     0
                 </ThemedText>
-                <ThemedText style={[styles.label, { color: ThemedColor.caption }]}>
+                <ThemedText style={[styles.meterLabel, { color: ThemedColor.caption }]}>
+                    PRODUCTIVITY METER
+                </ThemedText>
+                <ThemedText style={[styles.endLabel, { color: ThemedColor.caption }]}>
                     100
                 </ThemedText>
             </View>
@@ -80,11 +83,11 @@ const styles = StyleSheet.create({
     container: {
         alignItems: "center",
         width: ARC_WIDTH,
-        height: ARC_HEIGHT + 16,
+        height: ARC_HEIGHT + 20,
     },
     scoreOverlay: {
         position: "absolute",
-        bottom: 20,
+        bottom: 24,
         alignItems: "center",
     },
     scoreValue: {
@@ -95,12 +98,19 @@ const styles = StyleSheet.create({
     labelsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        width: ARC_WIDTH - STROKE_WIDTH,
-        marginTop: -6,
+        alignItems: "center",
+        width: ARC_WIDTH,
+        marginTop: -4,
     },
-    label: {
-        fontSize: 11,
+    endLabel: {
+        fontSize: 10,
         fontFamily: "Outfit",
+    },
+    meterLabel: {
+        fontSize: 9,
+        fontFamily: "Outfit",
+        letterSpacing: 1.2,
+        fontWeight: "500",
     },
 });
 

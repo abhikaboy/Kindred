@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
@@ -48,12 +49,23 @@ interface ExpandedRingDetailProps {
     history: RingState[];
 }
 
-function buildHistoryDots(
+const MINI_RING_SIZE = 28;
+const MINI_STROKE = 3;
+const MINI_RADIUS = (MINI_RING_SIZE - MINI_STROKE) / 2;
+const MINI_CIRCUMFERENCE = 2 * Math.PI * MINI_RADIUS;
+
+interface HistoryEntry {
+    dayLabel: string;
+    closed: boolean;
+    fraction: number;
+}
+
+function buildHistoryEntries(
     history: RingState[],
     ringKey: RingKey
-): { dayLabel: string; closed: boolean }[] {
+): HistoryEntry[] {
     const today = new Date();
-    const dots: { dayLabel: string; closed: boolean }[] = [];
+    const entries: HistoryEntry[] = [];
 
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
@@ -66,13 +78,19 @@ function buildHistoryDots(
             return hDate === dateStr;
         });
 
-        dots.push({
+        const ring = state ? state[ringKey] : null;
+        const fraction = ring && ring.target > 0
+            ? Math.min(ring.current / ring.target, 1)
+            : 0;
+
+        entries.push({
             dayLabel: DAY_LABELS[dayIndex],
-            closed: state ? state[ringKey].closed : false,
+            closed: ring ? ring.closed : false,
+            fraction,
         });
     }
 
-    return dots;
+    return entries;
 }
 
 const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
@@ -82,7 +100,7 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
 }) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const dots = buildHistoryDots(history, ringKey);
+    const entries = buildHistoryEntries(history, ringKey);
     const ctas = RING_CTAS[ringKey];
 
     return (
@@ -103,25 +121,43 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
             </ThemedText>
 
             <View style={styles.dotsRow}>
-                {dots.map((dot, idx) => (
-                    <View key={idx} style={styles.dotColumn}>
-                        <View
-                            style={[
-                                styles.dot,
-                                {
-                                    backgroundColor: dot.closed
-                                        ? PRIMARY_COLOR
-                                        : ThemedColor.tertiary,
-                                },
-                            ]}
-                        />
-                        <ThemedText
-                            style={[styles.dotLabel, { color: ThemedColor.caption }]}
-                        >
-                            {dot.dayLabel}
-                        </ThemedText>
-                    </View>
-                ))}
+                {entries.map((entry, idx) => {
+                    const strokeDashoffset = MINI_CIRCUMFERENCE * (1 - entry.fraction);
+                    return (
+                        <View key={idx} style={styles.dotColumn}>
+                            <Svg width={MINI_RING_SIZE} height={MINI_RING_SIZE}>
+                                <Circle
+                                    cx={MINI_RING_SIZE / 2}
+                                    cy={MINI_RING_SIZE / 2}
+                                    r={MINI_RADIUS}
+                                    stroke={ThemedColor.tertiary}
+                                    strokeWidth={MINI_STROKE}
+                                    fill="none"
+                                />
+                                {entry.fraction > 0 && (
+                                    <Circle
+                                        cx={MINI_RING_SIZE / 2}
+                                        cy={MINI_RING_SIZE / 2}
+                                        r={MINI_RADIUS}
+                                        stroke={PRIMARY_COLOR}
+                                        strokeWidth={MINI_STROKE}
+                                        fill="none"
+                                        strokeDasharray={`${MINI_CIRCUMFERENCE}`}
+                                        strokeDashoffset={strokeDashoffset}
+                                        strokeLinecap="round"
+                                        rotation={-90}
+                                        origin={`${MINI_RING_SIZE / 2}, ${MINI_RING_SIZE / 2}`}
+                                    />
+                                )}
+                            </Svg>
+                            <ThemedText
+                                style={[styles.dotLabel, { color: ThemedColor.caption }]}
+                            >
+                                {entry.dayLabel}
+                            </ThemedText>
+                        </View>
+                    );
+                })}
             </View>
 
             <View style={styles.ctaRow}>
@@ -164,11 +200,6 @@ const styles = StyleSheet.create({
     dotColumn: {
         alignItems: "center",
         gap: 4,
-    },
-    dot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
     },
     dotLabel: {
         fontSize: 10,
