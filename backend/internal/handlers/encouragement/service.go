@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,7 +16,7 @@ import (
 )
 
 // newService receives the map of collections and picks out encouragements
-func newService(collections map[string]*mongo.Collection) *Service {
+func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	encouragements := collections["encouragements"]
 	users := collections["users"]
 
@@ -31,12 +32,13 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Encouragements:      encouragements,
 		Users:               users,
 		NotificationService: notifications.NewNotificationService(collections),
+		RingService:         ringService,
 	}
 }
 
 // NewEncouragementService is a public constructor for external packages
 func NewEncouragementService(collections map[string]*mongo.Collection) *Service {
-	return newService(collections)
+	return newService(collections, nil)
 }
 
 // GetAllEncouragements fetches all Encouragement documents from MongoDB for a specific receiver

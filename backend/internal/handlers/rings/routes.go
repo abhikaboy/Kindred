@@ -19,18 +19,22 @@ type Handler struct {
 	users   *mongo.Collection
 }
 
-// Routes registers ring endpoints with the Huma API.
-func Routes(api huma.API, collections map[string]*mongo.Collection) {
+// NewRingServiceFromCollections creates a RingService from the standard
+// collections map, auto-creating the ring_states collection if absent.
+func NewRingServiceFromCollections(collections map[string]*mongo.Collection) *RingService {
 	ringStates := collections["ring_states"]
 	if ringStates == nil {
 		db := collections["users"].Database()
 		ringStates = db.Collection("ring_states")
 		collections["ring_states"] = ringStates
 	}
+	return NewRingService(ringStates, collections["users"])
+}
 
-	service := NewRingService(ringStates, collections["users"])
+// Routes registers ring endpoints with the Huma API.
+func Routes(api huma.API, collections map[string]*mongo.Collection, ringService *RingService) {
 	handler := &Handler{
-		service: service,
+		service: ringService,
 		users:   collections["users"],
 	}
 

@@ -2,6 +2,7 @@ package Post
 
 import (
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -248,4 +249,5 @@ type Service struct {
 	Connections         *mongo.Collection
 	Reports             *mongo.Collection
 	NotificationService *notifications.Service
+	RingService         *rings.RingService
 }

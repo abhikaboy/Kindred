@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -212,6 +213,17 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 	if err != nil {
 		slog.Error("Failed to create task", "userId", userObjID.Hex(), "categoryId", categoryID.Hex(), "error", err)
 		return nil, huma.Error500InternalServerError("Unable to create task due to a database error. Please try again.", err)
+	}
+
+	// Fire-and-forget: increment Plan ring
+	if h.service.RingService != nil {
+		go func() {
+			tz := auth.GetTimezoneOrDefault(ctx)
+			_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingPlan)
+			if err != nil {
+				slog.Error("Failed to increment Plan ring on task creation", "user_id", userObjID.Hex(), "error", err)
+			}
+		}()
 	}
 
 	return &CreateTaskOutput{Body: *doc}, nil
@@ -421,6 +433,17 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 		return nil, huma.Error500InternalServerError("Task was completed but could not be removed. Please try again.", err)
 	}
 
+	// Fire-and-forget: increment Do ring
+	if h.service.RingService != nil {
+		go func() {
+			tz := auth.GetTimezoneOrDefault(ctx)
+			_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
+			if err != nil {
+				slog.Error("Failed to increment Do ring on task completion", "user_id", userObjID.Hex(), "error", err)
+			}
+		}()
+	}
+
 	resp := &CompleteTaskOutput{}
 	resp.Body.Message = "Task completed successfully"
 	resp.Body.StreakChanged = result.StreakChanged
@@ -528,6 +551,20 @@ func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskI
 	if err != nil {
 		slog.Error("Failed to bulk complete tasks", "userId", userObjID.Hex(), "taskCount", len(input.Body.Tasks), "error", err)
 		return nil, huma.Error500InternalServerError("Unable to complete tasks due to a server error. Please try again.", err)
+	}
+
+	// Fire-and-forget: increment Do ring once per successfully completed task
+	if h.service.RingService != nil && result.Body.TotalCompleted > 0 {
+		go func() {
+			tz := auth.GetTimezoneOrDefault(ctx)
+			for i := 0; i < result.Body.TotalCompleted; i++ {
+				_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
+				if err != nil {
+					slog.Error("Failed to increment Do ring on bulk task completion", "user_id", userObjID.Hex(), "error", err)
+					break
+				}
+			}
+		}()
 	}
 
 	return result, nil

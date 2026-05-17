@@ -22,6 +22,7 @@ import (
 	referral "github.com/abhikaboy/Kindred/internal/handlers/referral"
 	report "github.com/abhikaboy/Kindred/internal/handlers/report"
 	"github.com/abhikaboy/Kindred/internal/handlers/rewards"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/settings"
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
 	"github.com/abhikaboy/Kindred/internal/handlers/subscription"
@@ -137,16 +138,19 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	// Create presigner and S3 client
 	presigner, s3Client := spaces.NewPresigner()
 
+	// Create ring service (shared across handlers for fire-and-forget increments)
+	ringService := rings.NewRingServiceFromCollections(collections)
+
 	// Register converted routes
 	health.Routes(api, collections)
 	auth.Routes(api, collections)
 	category.Routes(api, collections)
 	activity.Routes(api, collections)
 	profile.Routes(api, collections)
-	task.Routes(api, collections, geminiService)
+	task.Routes(api, collections, geminiService, ringService)
 
 	// SSE streaming routes for NLP flows (raw Fiber, bypass Huma)
-	taskStreamHandler := task.NewStreamHandler(collections, geminiService)
+	taskStreamHandler := task.NewStreamHandler(collections, geminiService, ringService)
 	app.Post("/api/v1/user/tasks/natural-language/intent/stream", taskStreamHandler.StreamIntentNaturalLanguage)
 	app.Post("/api/v1/user/tasks/natural-language/stream", taskStreamHandler.StreamCreateNaturalLanguage)
 	app.Post("/api/v1/user/tasks/natural-language/query/stream", taskStreamHandler.StreamQueryNaturalLanguage)
@@ -154,7 +158,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	connection.Routes(api, collections)
 	group.RegisterRoutes(api, collections)
-	post.Routes(api, collections)
+	post.Routes(api, collections, ringService)
 	spaces.Routes(api, presigner, s3Client, collections)
 
 	// Register waitlist and blueprint routes
@@ -162,8 +166,11 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	Blueprint.Routes(api, collections, geminiService)
 
 	// Register encouragement and congratulation routes
-	encouragement.Routes(api, collections)
-	congratulation.Routes(api, collections)
+	encouragement.Routes(api, collections, ringService)
+	congratulation.Routes(api, collections, ringService)
+
+	// Register ring routes
+	rings.Routes(api, collections, ringService)
 
 	// Register notification routes
 	notifications.Routes(api, collections)

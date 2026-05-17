@@ -14,7 +14,7 @@ import (
 Cron sets up periodic background jobs for tasks, reminders, and checkins.
 */
 func Cron(collections map[string]*mongo.Collection) *cron.Cron {
-	service := newService(collections)
+	service := newService(collections, nil)
 	handler := Handler{
 		service:       service,
 		geminiService: nil,

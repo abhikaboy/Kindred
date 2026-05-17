@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,8 +15,8 @@ import (
 )
 
 // NewStreamHandler creates a Handler for SSE streaming routes.
-func NewStreamHandler(collections map[string]*mongo.Collection, geminiService any) *Handler {
-	service := newService(collections)
+func NewStreamHandler(collections map[string]*mongo.Collection, geminiService any, ringService *rings.RingService) *Handler {
+	service := newService(collections, ringService)
 	return &Handler{
 		service:       service,
 		geminiService: geminiService,
