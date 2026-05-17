@@ -12,16 +12,16 @@ import ReminderBottomSheetModal from "./ReminderBottomSheetModal";
  */
 const TaskEditBottomSheetDemo = () => {
     const ThemedColor = useThemeColor();
-    
+
     // State for controlling modal visibility
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [showStartDateModal, setShowStartDateModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
-    
+
     // Example task data
     const taskId = "507f1f77bcf86cd799439011";
     const categoryId = "507f1f77bcf86cd799439012";
-    
+
     // Example state for current values
     const [currentDeadline, setCurrentDeadline] = useState<Date | null>(null);
     const [currentStartDate, setCurrentStartDate] = useState<Date | null>(null);
@@ -29,21 +29,18 @@ const TaskEditBottomSheetDemo = () => {
 
     const handleDeadlineUpdate = (deadline: Date | null) => {
         setCurrentDeadline(deadline);
-        console.log("Deadline updated:", deadline);
         // Here you would typically call your API
         // await updateTaskDeadline(categoryId, taskId, { deadline });
     };
 
     const handleStartDateUpdate = (startDate: Date | null, startTime?: Date | null) => {
         setCurrentStartDate(startDate);
-        console.log("Start date updated:", startDate, startTime);
         // Here you would typically call your API
         // await updateTaskStart(categoryId, taskId, { startDate, startTime });
     };
 
     const handleReminderUpdate = (reminders: any[]) => {
         setCurrentReminders(reminders);
-        console.log("Reminders updated:", reminders);
         // Here you would typically call your API
         // await updateTaskReminders(categoryId, taskId, { reminders });
     };
@@ -51,7 +48,7 @@ const TaskEditBottomSheetDemo = () => {
     return (
         <View style={{ padding: 20, gap: 16 }}>
             <ThemedText type="title">Task Edit Demo</ThemedText>
-            
+
             <TouchableOpacity
                 onPress={() => setShowDeadlineModal(true)}
                 style={{

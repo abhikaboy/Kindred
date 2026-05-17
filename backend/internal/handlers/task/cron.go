@@ -76,6 +76,26 @@ func Cron(collections map[string]*mongo.Collection) *cron.Cron {
 				"matched_users", checkin_result["matched_users"],
 				"total_users", checkin_result["total_users"])
 		}
+
+		/* Live Activity Notifications */
+
+		startTimeResult, err := handler.HandleStartTimeNotifications()
+		if err != nil {
+			slog.Error("Error handling start-time live activity notifications", "error", err)
+			sentry.CaptureException(fmt.Errorf("cron: start-time live activity handling failed: %w", err))
+		}
+		if notifCount, ok := startTimeResult["notifications_sent"].(int); ok && notifCount > 0 {
+			slog.Info("Start-time live activity notifications sent", "count", notifCount)
+		}
+
+		deadlineResult, err := handler.HandleDeadlineApproachingNotifications()
+		if err != nil {
+			slog.Error("Error handling deadline live activity notifications", "error", err)
+			sentry.CaptureException(fmt.Errorf("cron: deadline live activity handling failed: %w", err))
+		}
+		if notifCount, ok := deadlineResult["notifications_sent"].(int); ok && notifCount > 0 {
+			slog.Info("Deadline live activity notifications sent", "count", notifCount)
+		}
 	})
 	if err != nil {
 		slog.Error("Error adding cron job", "error", err)

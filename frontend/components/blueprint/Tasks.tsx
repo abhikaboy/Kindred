@@ -22,19 +22,6 @@ const Tasks = ({ data, onUpdate }: Props) => {
     const { blueprintCategories } = useBlueprints();
     const styles = createStyles(ThemedColor);
 
-    // Debug logging to verify data structure
-    console.log("🔍 Tasks Component Debug:");
-    console.log("  - blueprintCategories:", blueprintCategories);
-    console.log("  - categories count:", blueprintCategories.length);
-    blueprintCategories.forEach((cat, index) => {
-        console.log(`  - Category ${index + 1}:`, {
-            id: cat.id,
-            name: cat.name,
-            tasksCount: cat.tasks?.length || 0,
-            tasks: cat.tasks?.map(t => ({ id: t.id, content: t.content }))
-        });
-    });
-
     const handleCategoryPress = (categoryId: string) => {
         // Handle category press - could open task creation modal for this category
         setShowCreateModal(true);
@@ -42,7 +29,6 @@ const Tasks = ({ data, onUpdate }: Props) => {
 
     const handleCategoryLongPress = (categoryId: string) => {
         // Handle category long press - could show options like edit/delete
-        console.log("Long pressed category:", categoryId);
     };
 
     // Convert blueprint context tasks to Task interface

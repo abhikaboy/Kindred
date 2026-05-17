@@ -76,7 +76,7 @@ const EditWorkspaceModal = ({ hide, currentName, currentIcon, currentColor, onIc
 
             hide();
         } catch (err) {
-            console.log(err);
+            console.error(err);
             showToastable({
                 title: "Error",
                 status: "danger",

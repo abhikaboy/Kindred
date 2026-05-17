@@ -56,7 +56,6 @@ export const OnboardModal = (props: Props) => {
                             displayName: displayName,
                         });
 
-                        console.log("Stored Google credentials in onboarding context");
                         router.replace("/(onboarding)/name");
                         setVisible(false);
                     } else {
@@ -180,27 +179,20 @@ export const OnboardModal = (props: Props) => {
                     AppleAuthentication.AppleAuthenticationScope.EMAIL,
                 ],
             });
-            console.log(credential);
             const appleAccountID = credential.user;
             const email = credential.email;
             const firstName = credential.fullName?.givenName;
             const lastName = credential.fullName?.familyName;
 
-            console.log("DEBUG - Apple credential email:", credential.email);
-            console.log("DEBUG - Apple credential name:", firstName, lastName);
-
             // If Apple doesn't provide name/email, they might have authorized before
             // Try to login first to check if account exists
             if (!email || !firstName || !lastName) {
-                console.log("Apple didn't provide email/name. Checking if account exists...");
                 try {
                     await login(appleAccountID, credential.identityToken ?? undefined);
-                    console.log("Account exists! Logging in...");
                     router.push("/(logged-in)/(tabs)/(task)");
                     return;
                 } catch (loginError: any) {
                     if (loginError.message === "ACCOUNT_NOT_FOUND") {
-                        console.log("No account found. User needs to provide email/name manually.");
                         showToast(ERROR_MESSAGES.APPLE_AUTH_NO_DATA, "warning", "Apple Sign-In");
                         throw new Error("Apple authorization incomplete");
                     } else {
@@ -216,12 +208,11 @@ export const OnboardModal = (props: Props) => {
                     appleIdToken: credential.identityToken ?? undefined,
                 });
 
-                console.log("Pre-filled onboarding data with Apple credentials");
                 router.replace("/(onboarding)/name");
             }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
-                console.log("User cancelled Apple sign in");
+                // ignored
             } else {
                 console.error("Apple registration error:", e.code, e);
                 Sentry.captureException(e, {
@@ -251,9 +242,8 @@ export const OnboardModal = (props: Props) => {
             router.push("/(logged-in)/(tabs)/(task)");
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
-                console.log("User cancelled Apple sign in");
+                // ignored
             } else if (e.message === "ACCOUNT_NOT_FOUND") {
-                console.log("Account not found, directing to sign up");
                 showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_APPLE, "warning", "No Account Found");
             } else {
                 console.error("Apple login error:", e.code, e);

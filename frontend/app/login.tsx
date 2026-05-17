@@ -37,15 +37,10 @@ const login = (props: Props) => {
     const [mode, setMode] = useState<"register" | "login">("register");
     const { user } = useAuth();
 
-    // Animations
-    const titleFade = useRef(new Animated.Value(0)).current;
-    const subtitleFade = useRef(new Animated.Value(0)).current;
-    const checkmarkFade = useRef(new Animated.Value(0)).current;
-    const checkmarkScale = useRef(new Animated.Value(0.6)).current;
-    const heroImageFade = useRef(new Animated.Value(0)).current;
-    const heroImageSlide = useRef(new Animated.Value(60)).current;
+    // Two staggered animations: image slide-up, buttons fade
+    const imageFade = useRef(new Animated.Value(0)).current;
+    const imageSlide = useRef(new Animated.Value(20)).current;
     const buttonsFade = useRef(new Animated.Value(0)).current;
-    const buttonsSlide = useRef(new Animated.Value(30)).current;
 
     useEffect(() => {
         if (user) {
@@ -54,29 +49,12 @@ const login = (props: Props) => {
     }, [user]);
 
     useEffect(() => {
-        // Staggered entrance animations
-        Animated.sequence([
-            // Title fades in
-            Animated.timing(titleFade, { toValue: 1, duration: 500, useNativeDriver: true }),
-            // Subtitle fades in
-            Animated.timing(subtitleFade, { toValue: 1, duration: 400, useNativeDriver: true }),
-            // Checkmark pops in
+        Animated.stagger(200, [
             Animated.parallel([
-                Animated.timing(checkmarkFade, { toValue: 1, duration: 300, useNativeDriver: true }),
-                Animated.spring(checkmarkScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }),
+                Animated.timing(imageFade, { toValue: 1, duration: 400, useNativeDriver: true }),
+                Animated.timing(imageSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
             ]),
-        ]).start();
-
-        // Hero image slides up and fades in
-        Animated.parallel([
-            Animated.timing(heroImageFade, { toValue: 1, duration: 700, delay: 300, useNativeDriver: true }),
-            Animated.timing(heroImageSlide, { toValue: 0, duration: 700, delay: 300, useNativeDriver: true }),
-        ]).start();
-
-        // Buttons slide up from bottom
-        Animated.parallel([
-            Animated.timing(buttonsFade, { toValue: 1, duration: 500, delay: 600, useNativeDriver: true }),
-            Animated.timing(buttonsSlide, { toValue: 0, duration: 500, delay: 600, useNativeDriver: true }),
+            Animated.timing(buttonsFade, { toValue: 1, duration: 400, useNativeDriver: true }),
         ]).start();
     }, []);
 
@@ -104,24 +82,21 @@ const login = (props: Props) => {
                     alignItems: "center",
                     paddingTop: Dimensions.get("screen").height * 0.06,
                 }}>
-                <Animated.View style={{ opacity: titleFade }}>
-                    <ThemedText
-                        type="titleFraunces"
-                        style={{
-                            color: heroCardText,
-                            fontWeight: 600,
-                            letterSpacing: -2,
-                            justifyContent: "center",
-                            alignItems: "center",
-                            textAlign: "center",
-                            marginTop: Dimensions.get("screen").height * 0.02,
-                            fontSize: 64,
-                        }}>
-                        kindred
-                    </ThemedText>
-                </Animated.View>
-                <Animated.View style={{
-                    opacity: subtitleFade,
+                <ThemedText
+                    type="titleFraunces"
+                    style={{
+                        color: heroCardText,
+                        fontWeight: 600,
+                        letterSpacing: -2,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                        marginTop: Dimensions.get("screen").height * 0.02,
+                        fontSize: 64,
+                    }}>
+                    kindred
+                </ThemedText>
+                <View style={{
                     paddingHorizontal: 48,
                     marginTop: 8,
                 }}>
@@ -137,12 +112,8 @@ const login = (props: Props) => {
                         }}>
                         because doing it alone was never actually the plan
                     </ThemedText>
-                </Animated.View>
-                <Animated.View style={{
-                    opacity: checkmarkFade,
-                    transform: [{ scale: checkmarkScale }],
-                    marginTop: 12,
-                }}>
+                </View>
+                <View style={{ marginTop: 12 }}>
                     <Image
                         source={require("../assets/images/Checkmark.png")}
                         style={{
@@ -150,7 +121,7 @@ const login = (props: Props) => {
                             resizeMode: "contain",
                         }}
                     />
-                </Animated.View>
+                </View>
             </View>
             <View
                 style={{
@@ -169,8 +140,8 @@ const login = (props: Props) => {
                         position: "absolute",
                         height: Dimensions.get("screen").height / 1.25,
                         bottom: -50,
-                        opacity: heroImageFade,
-                        transform: [{ translateY: heroImageSlide }],
+                        opacity: imageFade,
+                        transform: [{ translateY: imageSlide }],
                     }}
                 />
                 <Animated.View
@@ -182,7 +153,6 @@ const login = (props: Props) => {
                         justifyContent: "flex-end",
                         bottom: 64,
                         opacity: buttonsFade,
-                        transform: [{ translateY: buttonsSlide }],
                     }}>
                     <OnboardModal visible={visible} setVisible={setVisible} mode={mode} />
                     <PrimaryButton

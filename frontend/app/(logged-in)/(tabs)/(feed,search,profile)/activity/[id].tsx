@@ -124,7 +124,6 @@ const Activity = () => {
                 // Fetch templates for breakdown feature
                 try {
                     const userTemplates = await getUserTemplatesAPI();
-                    console.log("Fetched templates:", userTemplates);
                     setTemplates(userTemplates);
                 } catch (templateErr) {
                     console.error("Failed to fetch templates:", templateErr);
@@ -351,7 +350,7 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             borderWidth: 1,
             borderRadius: 24,
             padding: 8,
-            borderColor: ThemedColor.text,
+            borderColor: ThemedColor.tertiary,
         },
         yearContainer: {
             flexDirection: "row",

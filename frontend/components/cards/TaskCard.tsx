@@ -255,7 +255,6 @@ const TaskCard = ({
                 setAlertVisible(true);
                 return;
             }
-            console.log("Encourage button pressed, showing modal");
             setShowEncourageModal(true);
         }
         if (congratulate) {
@@ -267,7 +266,6 @@ const TaskCard = ({
                 setAlertVisible(true);
                 return;
             }
-            console.log("Congratulate button pressed, showing modal");
             setShowCongratulateModal(true);
         }
         if (task) {

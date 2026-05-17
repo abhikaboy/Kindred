@@ -33,6 +33,7 @@ import * as Localization from 'expo-localization';
 import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { ActiveTaskActivityFactory, DeadlineCountdownActivityFactory } from "@/widgets/widgetUpdaters";
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -86,19 +87,14 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
                 // Check if we got a user back
                 if (!userData) {
-                    console.log('No user data returned from fetchAuthData');
                     // Check if user has seen onboarding before redirecting to login
                     const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-                    console.log('hasSeenOnboarding:', hasSeenOnboarding);
                     if (!hasSeenOnboarding) {
-                        console.log('Redirecting to productivity onboarding');
                         setRedirectPath("/(onboarding)/productivity");
                     } else {
-                        console.log('Redirecting to login');
                         setRedirectPath("/login");
                     }
                 } else {
-                    console.log('User authenticated, staying in app');
 
                     // Identify user in PostHog
                     identify(userData._id, {
@@ -118,10 +114,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                         const userTimezone = (userData as any).timezone;
 
                         if (deviceTimezone && userTimezone !== deviceTimezone) {
-                            console.log(`Updating user timezone from ${userTimezone} to ${deviceTimezone}`);
                             await updateTimezone(deviceTimezone);
-                        } else {
-                            console.log('Timezone is up to date or invalid:', deviceTimezone);
                         }
                     } catch (tzError) {
                         console.error("Failed to update timezone:", tzError);
@@ -184,6 +177,62 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         initNotificationHandler();
         notificationListener.current = addNotificationListener((notification) => {
             const data = notification.request.content.data;
+
+            // Handle live activity triggers from push notifications
+            if (data?.type === 'live_activity') {
+                if (data.liveActivityType === 'activeTask') {
+                    ActiveTaskActivityFactory.start({
+                        taskName: data.taskName || '',
+                        workspaceName: data.workspaceName || 'Tasks',
+                        startTime: data.startTime || new Date().toISOString(),
+                        endTime: data.endTime || undefined,
+                        hasEndTime: !!data.endTime,
+                        categoryId: data.categoryId || '',
+                        taskId: data.taskId || '',
+                    });
+                } else if (data.liveActivityType === 'deadlineCountdown') {
+                    const deadlineMs = new Date(data.deadline).getTime();
+                    const activity = DeadlineCountdownActivityFactory.start({
+                        taskName: data.taskName || '',
+                        workspaceName: data.workspaceName || 'Tasks',
+                        deadline: data.deadline || '',
+                        priority: parseInt(data.priority || '0', 10),
+                        categoryId: data.categoryId || '',
+                        taskId: data.taskId || '',
+                        accentColor: '#8B5CF6',
+                        statusLabel: 'Due Soon',
+                    });
+                    // Color escalation: update accent color at thresholds
+                    const escalationInterval = setInterval(() => {
+                        const remaining = deadlineMs - Date.now();
+                        let accentColor = '#8B5CF6';
+                        let statusLabel = 'Due Soon';
+                        if (remaining <= 0) {
+                            accentColor = '#6B7280';
+                            statusLabel = 'Overdue';
+                        } else if (remaining <= 10 * 60 * 1000) {
+                            accentColor = '#F59E0B';
+                        }
+                        activity.update({
+                            taskName: data.taskName || '',
+                            workspaceName: data.workspaceName || 'Tasks',
+                            deadline: data.deadline || '',
+                            priority: parseInt(data.priority || '0', 10),
+                            categoryId: data.categoryId || '',
+                            taskId: data.taskId || '',
+                            accentColor,
+                            statusLabel,
+                        });
+                        // Auto-dismiss 30 min after overdue
+                        if (remaining <= -30 * 60 * 1000) {
+                            activity.end('default');
+                            clearInterval(escalationInterval);
+                        }
+                    }, 60 * 1000);
+                }
+                return; // Don't show toast for live activity pushes
+            }
+
             if (data?.type === 'encouragement' || data?.type === 'congratulation') {
                 fetchKudosData();
             }
@@ -202,8 +251,39 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         });
 
         responseListener.current = addNotificationResponseListener((response) => {
-            console.log(response);
             const data = response.notification.request.content.data;
+
+            // Start live activity when user taps the notification
+            if (data?.type === 'live_activity') {
+                if (data.liveActivityType === 'activeTask') {
+                    ActiveTaskActivityFactory.start({
+                        taskName: data.taskName || '',
+                        workspaceName: data.workspaceName || 'Tasks',
+                        startTime: data.startTime || new Date().toISOString(),
+                        endTime: data.endTime || undefined,
+                        hasEndTime: !!data.endTime,
+                        categoryId: data.categoryId || '',
+                        taskId: data.taskId || '',
+                    });
+                } else if (data.liveActivityType === 'deadlineCountdown') {
+                    DeadlineCountdownActivityFactory.start({
+                        taskName: data.taskName || '',
+                        workspaceName: data.workspaceName || 'Tasks',
+                        deadline: data.deadline || '',
+                        priority: parseInt(data.priority || '0', 10),
+                        categoryId: data.categoryId || '',
+                        taskId: data.taskId || '',
+                        accentColor: '#8B5CF6',
+                        statusLabel: 'Due Soon',
+                    });
+                }
+                // Navigate to the task
+                if (data.categoryId && data.taskId) {
+                    router.push(`/(logged-in)/(tabs)/(task)/task/${data.taskId}?categoryId=${data.categoryId}&name=${encodeURIComponent(data.taskName || '')}`);
+                }
+                return;
+            }
+
             if (data?.url) {
                 router.push(data.url);
             }

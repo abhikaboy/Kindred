@@ -19,6 +19,7 @@ interface CalendarMonthProps {
     year: number;
     monthNumber: number;
     levels: number[];
+    totalCount?: number;
     onDayPress: (dayNumber: number) => void;
     ThemedColor: any;
 }
@@ -28,6 +29,7 @@ const CalendarMonth: React.FC<CalendarMonthProps> = React.memo(({
     year,
     monthNumber,
     levels,
+    totalCount,
     onDayPress,
     ThemedColor,
 }) => {
@@ -43,9 +45,16 @@ const CalendarMonth: React.FC<CalendarMonthProps> = React.memo(({
 
     return (
         <View style={styles.monthBlock}>
-            <ThemedText type="defaultSemiBold" style={{ fontSize: 15 }}>
-                {monthName}
-            </ThemedText>
+            <View style={styles.monthHeader}>
+                <ThemedText type="defaultSemiBold" style={{ fontSize: 15 }}>
+                    {monthName}
+                </ThemedText>
+                {totalCount != null && totalCount > 0 && (
+                    <ThemedText type="caption" style={{ fontSize: 12, color: ThemedColor.caption }}>
+                        {totalCount}
+                    </ThemedText>
+                )}
+            </View>
 
             <View style={styles.weekRow}>
                 {WEEKDAY_LABELS.map((label, i) => (
@@ -108,6 +117,11 @@ const styles = StyleSheet.create({
         marginTop: 20,
         gap: 4,
         width: "100%",
+    },
+    monthHeader: {
+        flexDirection: "row",
+        alignItems: "baseline",
+        justifyContent: "space-between",
     },
     weekRow: {
         flexDirection: "row",

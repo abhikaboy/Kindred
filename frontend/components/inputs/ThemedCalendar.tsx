@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { Calendar } from "react-native-calendars";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -14,10 +14,8 @@ const ThemedCalendar = ({ dateReciever }: Props) => {
     let ThemedColor = useThemeColor();
 
     const onDayPress = (day) => {
-        console.log("selected day", day.dateString);
         if (selectedDates.includes(day.dateString)) {
             setSelectedDates(selectedDates.filter((date) => date !== day.dateString));
-            console.log("dateReciever", null);
             dateReciever(null);
             return;
         }
@@ -26,17 +24,6 @@ const ThemedCalendar = ({ dateReciever }: Props) => {
         return;
         // setSelectedDates([...selectedDates, day.dateString]);
     };
-
-    useEffect(() => {
-        console.log("selected dates", selectedDates);
-        console.log(
-            selectedDates.map((date) => {
-                return {
-                    [date]: { selected: true },
-                };
-            })
-        );
-    }, [selectedDates]);
 
     // Get today's date in local time as YYYY-MM-DD
     const today = new Date();

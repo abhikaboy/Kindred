@@ -17,7 +17,6 @@ const ContactHandler = (props: Props) => {
 
                 if (data.length > 0) {
                     const contact = data[0];
-                    console.log(contact);
                 }
             }
         })();

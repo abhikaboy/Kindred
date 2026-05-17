@@ -29,9 +29,8 @@ const EditPost = (props: Props) => {
     const deletePost = async () => {
         if (categories.length === 0) return;
         const { id, category } = props.id;
-        const response = await removeFromCategoryAPI(category, id);
+        await removeFromCategoryAPI(category, id);
         removeFromCategory(category, id);
-        console.log(response);
     };
 
     const options = [

@@ -241,13 +241,6 @@ const Notifications = () => {
         });
     };
 
-    console.log("🔍 Raw notifications count:", rawNotifications.length);
-    console.log("🔍 Loading:", loading);
-    console.log("🔍 Error:", error);
-    if (rawNotifications.length > 0) {
-        console.log("🔍 First notification:", JSON.stringify(rawNotifications[0], null, 2));
-    }
-
     // Mark all notifications as read when the page is focused (only once per mount)
     useFocusEffect(
         React.useCallback(() => {
@@ -312,8 +305,6 @@ const Notifications = () => {
     // Convert raw notifications to processed notifications
     const notifications = rawNotifications.map(processNotification).filter((n): n is ProcessedNotification => n !== null);
 
-    console.log("🔍 Processed notifications count:", notifications.length);
-
     // Helper function to filter notifications by time period
     const filterByTimePeriod = (
         notifications: ProcessedNotification[],
@@ -327,16 +318,6 @@ const Notifications = () => {
     const thisWeekNotifications = filterByTimePeriod(notifications, isThisWeek);
     const thisMonthNotifications = filterByTimePeriod(notifications, isThisMonth);
     const olderNotifications = filterByTimePeriod(notifications, isOlder);
-
-    console.log("🔍 Today notifications:", todayNotifications.length);
-    console.log("🔍 This week notifications:", thisWeekNotifications.length);
-    console.log("🔍 This month notifications:", thisMonthNotifications.length);
-    console.log("🔍 Older notifications:", olderNotifications.length);
-    console.log("🔍 Today timestamp:", todayTimestamp);
-    console.log("🔍 Now timestamp:", now);
-    if (notifications.length > 0) {
-        console.log("🔍 First notification time:", notifications[0].time, new Date(notifications[0].time).toISOString());
-    }
 
     return (
         <ThemedView style={styles.container}>

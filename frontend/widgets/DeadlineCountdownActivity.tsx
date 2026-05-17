@@ -1,8 +1,8 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack, Image } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit } from '@expo/ui/swift-ui/modifiers';
+import { Text, VStack, HStack, Image, ProgressView, Spacer } from '@expo/ui/swift-ui';
+import { font, foregroundStyle, padding, lineLimit, widgetURL } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
@@ -10,68 +10,92 @@ export type DeadlineCountdownProps = {
     workspaceName: string;
     deadline: string;
     priority: number;
-    timeRemainingLabel: string;
+    categoryId: string;
+    taskId: string;
+    accentColor: string;
+    statusLabel: string;
 };
 
 const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     'widget';
 
-    const ACCENT = '#8B5CF6';
-    const PRIORITY_COLORS = ['#6B7280', '#3B82F6', '#F59E0B', '#EF4444'];
-    const PRIORITY_LABELS = ['None', 'Low', 'Medium', 'High'];
+    const PRIORITY_LABELS = ['', 'Low', 'Medium', 'High'];
     const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
     const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 
-    const { taskName, workspaceName, priority, timeRemainingLabel } = props;
-    const priorityColor = PRIORITY_COLORS[Math.min(priority, 3)];
+    const { taskName, workspaceName, deadline, priority, categoryId, taskId, accentColor, statusLabel } = props;
+    const deadlineDate = new Date(deadline);
+    const countdownStart = new Date(deadlineDate.getTime() - 60 * 60 * 1000);
     const priorityLabel = PRIORITY_LABELS[Math.min(priority, 3)];
+    const deepLink = `kindred://task/${categoryId}/${taskId}`;
 
     return {
         banner: (
-            <VStack modifiers={[padding({ horizontal: 16, vertical: 14 })]}>
+            <VStack modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(deepLink)]}>
                 <HStack>
-                    <Image systemName="clock.fill" color={ACCENT} size={14} />
-                    <Text modifiers={[font({ weight: 'semibold', size: 15 }), primary, lineLimit(1)]}>
+                    <Image systemName="circle.fill" color={accentColor} size={8} />
+                    <Text modifiers={[font({ weight: 'semibold', size: 12 }), foregroundStyle(accentColor)]}>
+                        {statusLabel.toUpperCase()}
+                    </Text>
+                    <Spacer />
+                    <Text
+                        date={deadlineDate}
+                        dateStyle="timer"
+                        modifiers={[font({ weight: 'bold', size: 24, design: 'rounded' }), foregroundStyle(accentColor)]}
+                    />
+                </HStack>
+                <HStack>
+                    <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(1)]}>
                         {taskName}
                     </Text>
-                    <Text modifiers={[font({ weight: 'medium', size: 12 }), foregroundStyle(priorityColor)]}>
-                        {priorityLabel}
-                    </Text>
+                    {priorityLabel ? (
+                        <Text modifiers={[font({ weight: 'medium', size: 12 }), foregroundStyle(accentColor)]}>
+                            {priorityLabel}
+                        </Text>
+                    ) : null}
                 </HStack>
-                <HStack>
-                    <Text modifiers={[font({ size: 13 }), secondary]}>
-                        {workspaceName}
-                    </Text>
-                    <Text modifiers={[font({ weight: 'bold', size: 13, design: 'rounded' }), foregroundStyle(ACCENT)]}>
-                        {`Due in ${timeRemainingLabel}`}
-                    </Text>
-                </HStack>
+                <Text modifiers={[font({ size: 13 }), secondary]}>
+                    {workspaceName}
+                </Text>
+                <ProgressView
+                    timerInterval={{ lower: countdownStart, upper: deadlineDate }}
+                    countsDown={true}
+                />
             </VStack>
         ),
         compactLeading: (
-            <Image systemName="clock.fill" color={ACCENT} />
+            <HStack>
+                <Image systemName="circle.fill" color={accentColor} size={8} />
+                <Text modifiers={[font({ weight: 'medium', size: 12 }), primary, lineLimit(1)]}>
+                    {taskName}
+                </Text>
+            </HStack>
         ),
         compactTrailing: (
-            <Text modifiers={[font({ weight: 'bold', size: 12, design: 'rounded' }), foregroundStyle(ACCENT)]}>
-                {timeRemainingLabel}
-            </Text>
+            <Text
+                date={deadlineDate}
+                dateStyle="timer"
+                modifiers={[font({ weight: 'bold', size: 12, design: 'rounded' }), foregroundStyle(accentColor)]}
+            />
         ),
         minimal: (
-            <Image systemName="clock.fill" color={ACCENT} />
+            <Image systemName="clock.fill" color={accentColor} />
         ),
         expandedLeading: (
             <VStack modifiers={[padding({ all: 8 })]}>
-                <Image systemName="clock.fill" color={ACCENT} size={22} />
+                <Image systemName="circle.fill" color={accentColor} size={10} />
                 <Text modifiers={[font({ size: 11 }), secondary]}>
-                    Deadline
+                    {statusLabel}
                 </Text>
             </VStack>
         ),
         expandedTrailing: (
             <VStack modifiers={[padding({ all: 8 })]}>
-                <Text modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(ACCENT)]}>
-                    {timeRemainingLabel}
-                </Text>
+                <Text
+                    date={deadlineDate}
+                    dateStyle="timer"
+                    modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(accentColor)]}
+                />
                 <Text modifiers={[font({ size: 11 }), secondary]}>
                     remaining
                 </Text>
@@ -85,6 +109,10 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                 <Text modifiers={[font({ size: 13 }), secondary]}>
                     {workspaceName}
                 </Text>
+                <ProgressView
+                    timerInterval={{ lower: countdownStart, upper: deadlineDate }}
+                    countsDown={true}
+                />
             </VStack>
         ),
     };

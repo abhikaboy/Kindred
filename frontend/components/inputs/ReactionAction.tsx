@@ -15,31 +15,30 @@ const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
   const styles = stylesheet(ThemedColor);
 
   const handleEmojiSelected = (emoji: { emoji: string }) => {
-    console.log("✅ Emoji selected:", emoji.emoji);
     onAddReaction(emoji.emoji);
     setShowEmojiSelector(false);
   };
 
   const getEmojiPickerTheme = () => {
     const isDark = colorScheme === 'dark';
-    
+
     return {
-      backdrop: isDark ? "#13121F88" : "#FFFFFF88", 
-      knob: ThemedColor.text, 
-      container: ThemedColor.background, 
-      header: ThemedColor.text, 
-      skinTonesContainer: ThemedColor.lightened, 
+      backdrop: isDark ? "#13121F88" : "#FFFFFF88",
+      knob: ThemedColor.text,
+      container: ThemedColor.background,
+      header: ThemedColor.text,
+      skinTonesContainer: ThemedColor.lightened,
       category: {
-        icon: ThemedColor.caption, 
-        iconActive: ThemedColor.primary, 
-        container: ThemedColor.lightened, 
+        icon: ThemedColor.caption,
+        iconActive: ThemedColor.primary,
+        container: ThemedColor.lightened,
         containerActive: ThemedColor.tertiary,
       },
       search: {
-        text: ThemedColor.text, 
-        placeholder: ThemedColor.caption, 
-        icon: ThemedColor.caption, 
-        background: ThemedColor.input, 
+        text: ThemedColor.text,
+        placeholder: ThemedColor.caption,
+        icon: ThemedColor.caption,
+        background: ThemedColor.input,
       },
     };
   };
@@ -57,10 +56,10 @@ const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
         open={showEmojiSelector}
         onClose={() => setShowEmojiSelector(false)}
         onEmojiSelected={handleEmojiSelected}
-        expandable={true} 
-        enableRecentlyUsed={true} 
-        enableSearchBar={true} 
-        theme={getEmojiPickerTheme()} 
+        expandable={true}
+        enableRecentlyUsed={true}
+        enableSearchBar={true}
+        theme={getEmojiPickerTheme()}
       />
     </View>
   );

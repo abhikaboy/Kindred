@@ -42,17 +42,17 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 12,
-        borderBottomWidth: 1,
+        paddingVertical: 10,
+        borderBottomWidth: StyleSheet.hairlineWidth,
         gap: 12,
     },
     label: {
-        width: 88,
+        width: 72,
         flexShrink: 0,
-        fontSize: 15,
+        fontSize: 13,
     },
     value: {
         flex: 1,
-        fontSize: 16,
+        fontSize: 15,
     },
 });

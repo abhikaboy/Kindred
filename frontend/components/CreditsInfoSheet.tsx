@@ -14,17 +14,15 @@ interface CreditsInfoSheetProps {
 const { height } = Dimensions.get('window');
 const SHEET_MAX_HEIGHT = height * 0.85;
 
-export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({ 
-    visible, 
+export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
+    visible,
     onClose,
-    currentCredits 
+    currentCredits
 }) => {
     const ThemedColor = useThemeColor();
     const slideAnim = useRef(new Animated.Value(-SHEET_MAX_HEIGHT)).current;
     const backdropOpacity = useRef(new Animated.Value(0)).current;
-    
-    console.log('CreditsInfoSheet render - visible:', visible, 'credits:', currentCredits);
-    
+
     useEffect(() => {
         if (visible) {
             Animated.parallel([
@@ -55,7 +53,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
             ]).start();
         }
     }, [visible, slideAnim, backdropOpacity]);
-    
+
     return (
         <Modal
             visible={visible}
@@ -67,7 +65,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
             <View style={styles.modalContainer}>
                 {/* Backdrop */}
                 <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={StyleSheet.absoluteFill}
                         activeOpacity={1}
                         onPress={onClose}
@@ -77,10 +75,10 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                 </Animated.View>
 
                 {/* Sheet Content */}
-                <Animated.View 
+                <Animated.View
                     style={[
-                        styles.sheetContainer, 
-                        { 
+                        styles.sheetContainer,
+                        {
                             backgroundColor: ThemedColor.background,
                             transform: [{ translateY: slideAnim }]
                         }
@@ -99,7 +97,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView 
+                    <ScrollView
                         style={styles.content}
                         contentContainerStyle={styles.contentContainer}
                         showsVerticalScrollIndicator={false}
@@ -110,7 +108,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                                 What are Natural Language Credits?
                             </ThemedText>
                             <ThemedText type="default" style={[styles.sectionText, { color: ThemedColor.caption }]}>
-                                Each time you use AI to generate tasks from text or speech, you use 1 natural language credit. 
+                                Each time you use AI to generate tasks from text or speech, you use 1 natural language credit.
                                 This powerful feature understands your input and creates structured tasks automatically.
                             </ThemedText>
                         </View>
@@ -120,7 +118,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
                                 How to Get More Credits
                             </ThemedText>
-                            
+
                             {/* Send Kudos */}
                             <View style={[styles.methodCard, { backgroundColor: ThemedColor.lightenedCard }]}>
                                 <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + '20' }]}>
@@ -146,7 +144,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                                         Purchase Premium
                                     </ThemedText>
                                     <ThemedText type="default" style={[styles.methodDescription, { color: ThemedColor.caption }]}>
-                                        Upgrade to Premium for unlimited natural language credits, plus access to advanced analytics, 
+                                        Upgrade to Premium for unlimited natural language credits, plus access to advanced analytics,
                                         priority support, and exclusive features.
                                     </ThemedText>
                                 </View>
@@ -159,7 +157,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                                 Subscription Information
                             </ThemedText>
                             <View style={styles.linksContainer}>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
                                     style={styles.linkButton}
                                 >
@@ -168,7 +166,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                                     </ThemedText>
                                     <Ionicons name="open-outline" size={16} color={ThemedColor.primary} />
                                 </TouchableOpacity>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
                                     style={styles.linkButton}
                                 >
@@ -293,4 +291,3 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 });
-

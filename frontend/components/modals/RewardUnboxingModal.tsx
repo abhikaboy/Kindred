@@ -218,7 +218,7 @@ export default function RewardUnboxingModal({
 
                 <Animated.View style={[styles.rewardSection, { opacity: rewardOpacity }]}>
                     <ThemedText style={styles.rewardAmount}>
-                        +{rewardAmount} {winningType.label}
+                        +{rewardAmount}
                     </ThemedText>
                     <ThemedText style={styles.rewardSubtitle}>
                         {winningType.label}

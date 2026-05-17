@@ -23,12 +23,8 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
     let ThemedColor = useThemeColor();
     const { capture } = useAnalytics();
 
-    console.log("FollowButton - profile:", profile);
-    console.log("FollowButton - user:", user);
-
     // Don't render if profile is not loaded yet
     if (!profile) {
-        console.log("FollowButton - profile is null, not rendering");
         return null;
     }
 
@@ -53,7 +49,7 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
         },
         connected: {
             text: "Friends",
-            color: ThemedColor.lightened,
+            color: ThemedColor.lightenedCard,
             action: "none",
         },
         blocked: {
@@ -151,8 +147,6 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
         );
     }
 
-    console.log("FollowButton - rendering button with relationship:", relationship);
-
     return (
         <TouchableOpacity
             onPress={handleFollowPress}
@@ -170,12 +164,12 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
             <Text
                 style={{
                     color:
-                        relationshipMapping[relationship].color === ThemedColor.lightened
+                        relationshipMapping[relationship].color === ThemedColor.lightened || relationshipMapping[relationship].color === ThemedColor.lightenedCard
                             ? ThemedColor.text
                             : ThemedColor.buttonText,
-                    fontFamily: "Outfit",
+                    fontFamily: "OutfitLight",
+                    fontSize: 16,
                     textAlign: "center",
-                    fontWeight: 400,
                 }}>
                 {isLoading ? "Loading..." : relationshipMapping[relationship].text}
             </Text>

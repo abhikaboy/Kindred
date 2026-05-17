@@ -51,7 +51,6 @@ export default function ProfileEncouragementCard({ userId, userHandle, userName 
             // Ignore haptics errors
         }
 
-        console.log("Profile encourage button pressed, showing modal");
         setShowEncourageModal(true);
     };
 
@@ -95,26 +94,24 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         card: {
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: ThemedColor.lightenedCard,
+            backgroundColor: "transparent",
             borderRadius: 12,
-            padding: 16,
-            shadowRadius: 4,
-            elevation: 3,
-            borderWidth: 0.5,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderWidth: 1,
             borderColor: ThemedColor.tertiary,
-            boxShadow: ThemedColor.shadowSmall,
         },
         iconContainer: {
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: ThemedColor.primary + "10", // 15% opacity
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: ThemedColor.primary + "12",
             justifyContent: "center",
             alignItems: "center",
             marginRight: 12,
         },
         text: {
             color: ThemedColor.text,
-            fontSize: 16,
+            fontSize: 15,
         },
     });

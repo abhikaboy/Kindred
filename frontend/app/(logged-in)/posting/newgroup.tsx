@@ -51,7 +51,6 @@ export default function NewGroup() {
 
     const handleCreateGroup = async () => {
         if (!groupName.trim()) {
-            console.log('⚠️ newgroup: Group name is empty, aborting');
             return;
         }
 
@@ -59,15 +58,11 @@ export default function NewGroup() {
             name: groupName.trim(),
             members: Array.from(selectedMembers),
         };
-        
-        console.log('🟡 newgroup: Creating group with data:', groupData);
 
         try {
-            const result = await createNewGroup(groupData);
-            console.log('🟡 newgroup: Group created successfully:', result);
+            await createNewGroup(groupData);
             router.back();
         } catch (error) {
-            console.error("🔴 newgroup: Failed to create group:", error);
             // Error toast is handled by the hook
         }
     };
@@ -183,10 +178,10 @@ export default function NewGroup() {
 
                 {/* Create Button */}
                 <View style={styles.buttonContainer}>
-                    <PrimaryButton 
-                        title={isCreating ? "Creating..." : "Create Group"} 
-                        onPress={handleCreateGroup} 
-                        disabled={!groupName.trim() || isCreating} 
+                    <PrimaryButton
+                        title={isCreating ? "Creating..." : "Create Group"}
+                        onPress={handleCreateGroup}
+                        disabled={!groupName.trim() || isCreating}
                     />
                 </View>
             </SafeAreaView>
@@ -268,4 +263,3 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
 });
-

@@ -40,6 +40,8 @@ export default function TaskLayout() {
                     minHeight: Dimensions.get("screen").height,
                 },
             }}
-        />
+        >
+            <Stack.Screen name="review" options={{ gestureEnabled: false }} />
+        </Stack>
     );
 }

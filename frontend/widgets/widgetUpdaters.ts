@@ -2,7 +2,7 @@ import type { TodayTasksWidgetProps } from './TodayTasksWidget';
 import type { WorkspaceSnapshotWidgetProps } from './WorkspaceSnapshotWidget';
 import type { LockScreenCircularProps, LockScreenRectangularProps } from './LockScreenWidgets';
 import type { ActivityStreakWidgetProps } from './ActivityStreakWidget';
-import type { EncouragementActivityProps } from './EncouragementActivity';
+import type { ActiveTaskActivityProps } from './ActiveTaskActivity';
 import type { DeadlineCountdownProps } from './DeadlineCountdownActivity';
 
 type WidgetLike<TProps> = {
@@ -145,9 +145,9 @@ export const LockScreenInlineWidgetUpdater = createWidgetUpdater<{ streak: numbe
     () => require('./LockScreenWidgets').LockScreenInlineWidget,
 );
 
-export const EncouragementActivityFactory = createLiveActivityFactory<EncouragementActivityProps>(
-    'EncouragementActivity',
-    () => require('./EncouragementActivity').default,
+export const ActiveTaskActivityFactory = createLiveActivityFactory<ActiveTaskActivityProps>(
+    'ActiveTaskActivity',
+    () => require('./ActiveTaskActivity').default,
 );
 
 export const DeadlineCountdownActivityFactory = createLiveActivityFactory<DeadlineCountdownProps>(

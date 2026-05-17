@@ -26,7 +26,7 @@ export default function ProfileStats({
                 style={{
                     width: "48%",
                     backgroundColor: "transparent",
-                    borderWidth: 0.5,
+                    borderWidth: 1,
                     borderColor: ThemedColor.tertiary,
                     borderRadius: 12,
                     alignItems: "center",
@@ -38,7 +38,7 @@ export default function ProfileStats({
                 style={{
                     width: "48%",
                     backgroundColor: "transparent",
-                    borderWidth: 0.5,
+                    borderWidth: 1,
                     borderColor: ThemedColor.tertiary,
                     paddingVertical: 8,
                     borderRadius: 12,

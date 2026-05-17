@@ -23,7 +23,6 @@ export default function SignUpButton() {
                             AppleAuthentication.AppleAuthenticationScope.EMAIL,
                         ],
                     });
-                    console.log(credential);
                     const appleAccountID = credential.user;
                     const email = credential.email;
                     const firstName = credential.fullName?.givenName;
@@ -40,8 +39,7 @@ export default function SignUpButton() {
                         );
                         return;
                     }
-                    let data = await register(email, appleAccountID, credential.identityToken ?? undefined);
-                    console.log(data);
+                    await register(email, appleAccountID, credential.identityToken ?? undefined);
 
                     router.replace({
                         pathname: "/(onboarding)",

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kindred Stamp Concepts</title>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #13121F;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    padding: 40px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    color: #8B8A9A;
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: #ccc;
+  }
+
+  .section { margin-bottom: 48px; }
+
+  .stamp-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* === STYLE 1: PILL STAMPS === */
+  .stamp-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .stamp-pill i { font-size: 20px; }
+
+  .pill-purple { background: rgba(133, 77, 255, 0.15); color: #B08FFF; border: 1px solid rgba(133, 77, 255, 0.3); }
+  .pill-green { background: rgba(28, 249, 84, 0.1); color: #5CFF95; border: 1px solid rgba(28, 249, 84, 0.2); }
+  .pill-orange { background: rgba(255, 165, 0, 0.1); color: #FFB84D; border: 1px solid rgba(255, 165, 0, 0.2); }
+  .pill-pink { background: rgba(255, 92, 157, 0.1); color: #FF7EB3; border: 1px solid rgba(255, 92, 157, 0.2); }
+  .pill-blue { background: rgba(77, 166, 255, 0.1); color: #7DC4FF; border: 1px solid rgba(77, 166, 255, 0.2); }
+  .pill-yellow { background: rgba(255, 214, 0, 0.1); color: #FFE566; border: 1px solid rgba(255, 214, 0, 0.2); }
+  .pill-red { background: rgba(255, 92, 95, 0.1); color: #FF8A8C; border: 1px solid rgba(255, 92, 95, 0.2); }
+  .pill-teal { background: rgba(0, 206, 209, 0.1); color: #66E8EB; border: 1px solid rgba(0, 206, 209, 0.2); }
+
+  /* === STYLE 2: TILE STAMPS === */
+  .stamp-tile {
+    width: 100px;
+    height: 120px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stamp-tile i { font-size: 32px; }
+  .stamp-tile .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+    padding: 0 8px;
+  }
+  .stamp-tile .rarity {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .tile-purple { background: linear-gradient(145deg, rgba(133, 77, 255, 0.25), rgba(133, 77, 255, 0.08)); color: #B08FFF; border: 1px solid rgba(133, 77, 255, 0.25); }
+  .tile-green { background: linear-gradient(145deg, rgba(28, 249, 84, 0.2), rgba(28, 249, 84, 0.05)); color: #5CFF95; border: 1px solid rgba(28, 249, 84, 0.15); }
+  .tile-orange { background: linear-gradient(145deg, rgba(255, 165, 0, 0.2), rgba(255, 165, 0, 0.05)); color: #FFB84D; border: 1px solid rgba(255, 165, 0, 0.15); }
+  .tile-pink { background: linear-gradient(145deg, rgba(255, 92, 157, 0.2), rgba(255, 92, 157, 0.05)); color: #FF7EB3; border: 1px solid rgba(255, 92, 157, 0.15); }
+  .tile-blue { background: linear-gradient(145deg, rgba(77, 166, 255, 0.2), rgba(77, 166, 255, 0.05)); color: #7DC4FF; border: 1px solid rgba(77, 166, 255, 0.15); }
+  .tile-yellow { background: linear-gradient(145deg, rgba(255, 214, 0, 0.2), rgba(255, 214, 0, 0.05)); color: #FFE566; border: 1px solid rgba(255, 214, 0, 0.15); }
+  .tile-red { background: linear-gradient(145deg, rgba(255, 92, 95, 0.2), rgba(255, 92, 95, 0.05)); color: #FF8A8C; border: 1px solid rgba(255, 92, 95, 0.15); }
+  .tile-teal { background: linear-gradient(145deg, rgba(0, 206, 209, 0.2), rgba(0, 206, 209, 0.05)); color: #66E8EB; border: 1px solid rgba(0, 206, 209, 0.15); }
+
+  .rarity-common { background: #666; }
+  .rarity-rare { background: #7DC4FF; box-shadow: 0 0 6px rgba(77, 166, 255, 0.5); }
+  .rarity-epic { background: #B08FFF; box-shadow: 0 0 6px rgba(133, 77, 255, 0.5); }
+  .rarity-legendary { background: #FFE566; box-shadow: 0 0 8px rgba(255, 214, 0, 0.6); }
+
+  /* === STYLE 3: CIRCLE BADGES === */
+  .stamp-circle {
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .stamp-circle .badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stamp-circle .badge i { font-size: 28px; }
+  .stamp-circle .label {
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    color: #8B8A9A;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .circle-purple { background: radial-gradient(circle at 30% 30%, rgba(133, 77, 255, 0.4), rgba(133, 77, 255, 0.12)); border: 2px solid rgba(133, 77, 255, 0.35); }
+  .circle-green { background: radial-gradient(circle at 30% 30%, rgba(28, 249, 84, 0.3), rgba(28, 249, 84, 0.08)); border: 2px solid rgba(28, 249, 84, 0.25); }
+  .circle-orange { background: radial-gradient(circle at 30% 30%, rgba(255, 165, 0, 0.3), rgba(255, 165, 0, 0.08)); border: 2px solid rgba(255, 165, 0, 0.25); }
+  .circle-pink { background: radial-gradient(circle at 30% 30%, rgba(255, 92, 157, 0.3), rgba(255, 92, 157, 0.08)); border: 2px solid rgba(255, 92, 157, 0.25); }
+  .circle-blue { background: radial-gradient(circle at 30% 30%, rgba(77, 166, 255, 0.3), rgba(77, 166, 255, 0.08)); border: 2px solid rgba(77, 166, 255, 0.25); }
+  .circle-yellow { background: radial-gradient(circle at 30% 30%, rgba(255, 214, 0, 0.3), rgba(255, 214, 0, 0.08)); border: 2px solid rgba(255, 214, 0, 0.25); }
+  .circle-red { background: radial-gradient(circle at 30% 30%, rgba(255, 92, 95, 0.3), rgba(255, 92, 95, 0.08)); border: 2px solid rgba(255, 92, 95, 0.25); }
+  .circle-teal { background: radial-gradient(circle at 30% 30%, rgba(0, 206, 209, 0.3), rgba(0, 206, 209, 0.08)); border: 2px solid rgba(0, 206, 209, 0.25); }
+
+  /* Locked */
+  .stamp-locked { opacity: 0.25; filter: grayscale(1); }
+
+  /* Profile mock */
+  .profile-mock {
+    background: #1C1B2E;
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 380px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .profile-mock h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 16px;
+    color: #8B8A9A;
+  }
+  .profile-stamps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .profile-stamps .stamp-circle .badge {
+    width: 48px;
+    height: 48px;
+  }
+  .profile-stamps .stamp-circle .badge i { font-size: 20px; }
+  .profile-stamps .stamp-circle .label { font-size: 8px; }
+  .profile-stamps .stamp-circle { width: auto; }
+
+  /* Credit drops */
+  .credit-drop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(133, 77, 255, 0.12), rgba(255, 214, 0, 0.08));
+    border: 1px solid rgba(133, 77, 255, 0.2);
+    max-width: 380px;
+  }
+  .credit-drop i { font-size: 24px; color: #B08FFF; }
+  .credit-drop .info { display: flex; flex-direction: column; gap: 2px; }
+  .credit-drop .title { font-weight: 600; font-size: 14px; color: #fff; }
+  .credit-drop .desc { font-size: 12px; color: #8B8A9A; }
+  .credit-drop .tag {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .tag-rare { background: rgba(77, 166, 255, 0.15); color: #7DC4FF; }
+  .tag-epic { background: rgba(133, 77, 255, 0.15); color: #B08FFF; }
+</style>
+</head>
+<body>
+
+<h1>Kindred Stamp Concepts</h1>
+<p class="subtitle">Built entirely with Phosphor icons + colors + labels. Zero custom art.</p>
+
+<!-- STYLE 1: PILLS -->
+<div class="section">
+  <h2>Style 1 — Pill Stamps</h2>
+  <div class="stamp-grid">
+    <div class="stamp-pill pill-purple"><i class="ph-fill ph-sun-horizon"></i><span>Early Bird</span></div>
+    <div class="stamp-pill pill-green"><i class="ph-fill ph-checks"></i><span>Triple Close</span></div>
+    <div class="stamp-pill pill-orange"><i class="ph-fill ph-sword"></i><span>Monday Warrior</span></div>
+    <div class="stamp-pill pill-pink"><i class="ph-fill ph-megaphone"></i><span>Hype Machine</span></div>
+    <div class="stamp-pill pill-blue"><i class="ph-fill ph-calendar-check"></i><span>Calm Planner</span></div>
+    <div class="stamp-pill pill-yellow"><i class="ph-fill ph-lightning"></i><span>Speed Demon</span></div>
+    <div class="stamp-pill pill-red"><i class="ph-fill ph-anchor"></i><span>Anchor Day</span></div>
+    <div class="stamp-pill pill-teal"><i class="ph-fill ph-plant"></i><span>Fresh Start</span></div>
+  </div>
+</div>
+
+<!-- STYLE 2: TILES -->
+<div class="section">
+  <h2>Style 2 — Tile Stamps (with rarity)</h2>
+  <div class="stamp-grid">
+    <div class="stamp-tile tile-purple">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-sun-horizon"></i>
+      <span class="label">Early Bird</span>
+    </div>
+    <div class="stamp-tile tile-green">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-checks"></i>
+      <span class="label">Triple Close</span>
+    </div>
+    <div class="stamp-tile tile-orange">
+      <span class="rarity rarity-rare"></span>
+      <i class="ph-fill ph-sword"></i>
+      <span class="label">Monday Warrior</span>
+    </div>
+    <div class="stamp-tile tile-pink">
+      <span class="rarity rarity-rare"></span>
+      <i class="ph-fill ph-megaphone"></i>
+      <span class="label">Hype Machine</span>
+    </div>
+    <div class="stamp-tile tile-blue">
+      <span class="rarity rarity-epic"></span>
+      <i class="ph-fill ph-waves"></i>
+      <span class="label">Flow State</span>
+    </div>
+    <div class="stamp-tile tile-yellow">
+      <span class="rarity rarity-legendary"></span>
+      <i class="ph-fill ph-trophy"></i>
+      <span class="label">Perfect Week</span>
+    </div>
+    <div class="stamp-tile tile-red">
+      <span class="rarity rarity-epic"></span>
+      <i class="ph-fill ph-fire"></i>
+      <span class="label">On Fire</span>
+    </div>
+    <div class="stamp-tile tile-teal">
+      <span class="rarity rarity-legendary"></span>
+      <i class="ph-fill ph-moon-stars"></i>
+      <span class="label">Night Owl</span>
+    </div>
+  </div>
+</div>
+
+<!-- STYLE 3: CIRCLES -->
+<div class="section">
+  <h2>Style 3 — Circle Badges</h2>
+  <div class="stamp-grid">
+    <div class="stamp-circle">
+      <div class="badge circle-purple"><i class="ph-fill ph-sun-horizon"></i></div>
+      <span class="label">Early Bird</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-green"><i class="ph-fill ph-checks"></i></div>
+      <span class="label">Triple Close</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-orange"><i class="ph-fill ph-sword"></i></div>
+      <span class="label">Monday Warrior</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-pink"><i class="ph-fill ph-megaphone"></i></div>
+      <span class="label">Hype Machine</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-blue"><i class="ph-fill ph-waves"></i></div>
+      <span class="label">Flow State</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-yellow"><i class="ph-fill ph-trophy"></i></div>
+      <span class="label">Perfect Week</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-red"><i class="ph-fill ph-fire"></i></div>
+      <span class="label">On Fire</span>
+    </div>
+    <div class="stamp-circle">
+      <div class="badge circle-teal"><i class="ph-fill ph-moon-stars"></i></div>
+      <span class="label">Night Owl</span>
+    </div>
+  </div>
+</div>
+
+<!-- MORE STAMP IDEAS -->
+<div class="section">
+  <h2>More Stamp Ideas</h2>
+  <div class="stamp-grid">
+    <div class="stamp-tile tile-purple">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-target"></i>
+      <span class="label">Bullseye</span>
+    </div>
+    <div class="stamp-tile tile-green">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-rocket-launch"></i>
+      <span class="label">Blastoff</span>
+    </div>
+    <div class="stamp-tile tile-orange">
+      <span class="rarity rarity-rare"></span>
+      <i class="ph-fill ph-mountains"></i>
+      <span class="label">Summit</span>
+    </div>
+    <div class="stamp-tile tile-pink">
+      <span class="rarity rarity-rare"></span>
+      <i class="ph-fill ph-heart-half"></i>
+      <span class="label">Kind Soul</span>
+    </div>
+    <div class="stamp-tile tile-blue">
+      <span class="rarity rarity-epic"></span>
+      <i class="ph-fill ph-compass"></i>
+      <span class="label">Explorer</span>
+    </div>
+    <div class="stamp-tile tile-yellow">
+      <span class="rarity rarity-legendary"></span>
+      <i class="ph-fill ph-crown"></i>
+      <span class="label">Royalty</span>
+    </div>
+    <div class="stamp-tile tile-red">
+      <span class="rarity rarity-epic"></span>
+      <i class="ph-fill ph-shooting-star"></i>
+      <span class="label">Shooting Star</span>
+    </div>
+    <div class="stamp-tile tile-teal">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-tree-evergreen"></i>
+      <span class="label">Evergreen</span>
+    </div>
+  </div>
+</div>
+
+<!-- LOCKED EXAMPLES -->
+<div class="section">
+  <h2>Locked vs Unlocked</h2>
+  <div class="stamp-grid">
+    <div class="stamp-tile tile-purple stamp-locked">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-question"></i>
+      <span class="label">???</span>
+    </div>
+    <div class="stamp-tile tile-green">
+      <span class="rarity rarity-common"></span>
+      <i class="ph-fill ph-checks"></i>
+      <span class="label">Triple Close</span>
+    </div>
+    <div class="stamp-tile tile-orange stamp-locked">
+      <span class="rarity rarity-rare"></span>
+      <i class="ph-fill ph-question"></i>
+      <span class="label">???</span>
+    </div>
+    <div class="stamp-tile tile-yellow">
+      <span class="rarity rarity-legendary"></span>
+      <i class="ph-fill ph-trophy"></i>
+      <span class="label">Perfect Week</span>
+    </div>
+    <div class="stamp-tile tile-blue stamp-locked">
+      <span class="rarity rarity-epic"></span>
+      <i class="ph-fill ph-question"></i>
+      <span class="label">???</span>
+    </div>
+    <div class="stamp-tile tile-red">
+      <span class="rarity rarity-epic"></span>
+      <i class="ph-fill ph-fire"></i>
+      <span class="label">On Fire</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MOCK -->
+<div class="section">
+  <h2>On Profile — Stamp Collection</h2>
+  <div class="profile-mock">
+    <h3>Stamps (6 / 24)</h3>
+    <div class="profile-stamps">
+      <div class="stamp-circle">
+        <div class="badge circle-purple"><i class="ph-fill ph-sun-horizon"></i></div>
+        <span class="label">Early Bird</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-green"><i class="ph-fill ph-checks"></i></div>
+        <span class="label">Triple Close</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-orange"><i class="ph-fill ph-sword"></i></div>
+        <span class="label">Monday</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-yellow"><i class="ph-fill ph-trophy"></i></div>
+        <span class="label">Perfect Wk</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-pink"><i class="ph-fill ph-megaphone"></i></div>
+        <span class="label">Hype</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-red"><i class="ph-fill ph-fire"></i></div>
+        <span class="label">On Fire</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-blue stamp-locked"><i class="ph-fill ph-question"></i></div>
+        <span class="label" style="opacity:0.3;">???</span>
+      </div>
+      <div class="stamp-circle">
+        <div class="badge circle-teal stamp-locked"><i class="ph-fill ph-question"></i></div>
+        <span class="label" style="opacity:0.3;">???</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREDIT DROPS -->
+<div class="section">
+  <h2>Rare Drops — AI Credits (mixed into reward pool)</h2>
+  <div style="display: flex; flex-direction: column; gap: 10px; max-width: 380px;">
+    <div class="credit-drop">
+      <i class="ph-fill ph-microphone"></i>
+      <div class="info">
+        <span class="title">+2 Voice Credits</span>
+        <span class="desc">Use voice to create tasks</span>
+      </div>
+      <span class="tag tag-rare">Rare</span>
+    </div>
+    <div class="credit-drop">
+      <i class="ph-fill ph-pencil-simple"></i>
+      <div class="info">
+        <span class="title">+1 Natural Language Credit</span>
+        <span class="desc">Text-to-task generation</span>
+      </div>
+      <span class="tag tag-rare">Rare</span>
+    </div>
+    <div class="credit-drop">
+      <i class="ph-fill ph-chart-line-up"></i>
+      <div class="info">
+        <span class="title">+1 Analytics Credit</span>
+        <span class="desc">AI productivity insights</span>
+      </div>
+      <span class="tag tag-epic">Epic</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
