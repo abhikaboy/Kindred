@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const googleTokenInfoURL = "https://oauth2.googleapis.com/tokeninfo"
+const googleTokenInfoURL = "https://oauth2.googleapis.com/tokeninfo" //nolint:gosec // URL, not credentials
 
 // GoogleTokenClaims holds the verified claims from a Google ID token.
 type GoogleTokenClaims struct {

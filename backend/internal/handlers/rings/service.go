@@ -326,7 +326,7 @@ func pickRandomReward() RewardDrop {
 		totalWeight += r.Weight
 	}
 
-	roll := rand.Intn(totalWeight)
+	roll := rand.Intn(totalWeight) //nolint:gosec // reward rolling doesn't need crypto/rand
 	cumulative := 0
 	for _, r := range RewardPool {
 		cumulative += r.Weight

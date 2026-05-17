@@ -112,7 +112,7 @@ func (h *Handler) StreamIntentNaturalLanguage(c *fiber.Ctx) error {
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		sse := NewSSEWriter(w)
 
-		sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your request..."})
+		_ = sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your request..."})
 
 		slog.LogAttrs(ctx, slog.LevelInfo, "Starting streaming intent NL routing",
 			slog.String("userID", userID),
@@ -124,17 +124,17 @@ func (h *Handler) StreamIntentNaturalLanguage(c *fiber.Ctx) error {
 			slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini intent flow failed, retrying",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
+			_ = sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
 
 			intentOutput, err = h.callGeminiIntentFlow(ctx, userID, body.Text, body.Timezone)
 			if err != nil {
 				h.refundNLCredit(ctx, userObjID, userID)
-				sse.SendError("Failed to process natural language intent with AI after retry. Your credit has been refunded.")
+				_ = sse.SendError("Failed to process natural language intent with AI after retry. Your credit has been refunded.")
 				return
 			}
 		}
 
-		sse.Send("status", map[string]string{"stage": "processing_results", "message": "Processing results..."})
+		_ = sse.Send("status", map[string]string{"stage": "processing_results", "message": "Processing results..."})
 
 		var responseOps []IntentOpResponse
 
@@ -194,7 +194,7 @@ func (h *Handler) StreamIntentNaturalLanguage(c *fiber.Ctx) error {
 			slog.String("userID", userID),
 			slog.Int("opCount", len(responseOps)))
 
-		sse.Send("result", map[string]interface{}{"ops": responseOps})
+		_ = sse.Send("result", map[string]interface{}{"ops": responseOps})
 	})
 
 	return nil
@@ -228,7 +228,7 @@ func (h *Handler) StreamCreateNaturalLanguage(c *fiber.Ctx) error {
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		sse := NewSSEWriter(w)
 
-		sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your request..."})
+		_ = sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your request..."})
 
 		slog.LogAttrs(ctx, slog.LevelInfo, "Starting streaming NL task creation",
 			slog.String("userID", userID),
@@ -240,24 +240,24 @@ func (h *Handler) StreamCreateNaturalLanguage(c *fiber.Ctx) error {
 			slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini flow failed, retrying",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
+			_ = sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
 
 			result, err = h.callGeminiFlow(ctx, userID, body.Text, body.Timezone)
 			if err != nil {
 				h.refundNLCredit(ctx, userObjID, userID)
-				sse.SendError("Failed to process natural language with AI after retry. Your credit has been refunded.")
+				_ = sse.SendError("Failed to process natural language with AI after retry. Your credit has been refunded.")
 				return
 			}
 		}
 
-		sse.Send("status", map[string]string{"stage": "processing_results", "message": "Creating tasks..."})
+		_ = sse.Send("status", map[string]string{"stage": "processing_results", "message": "Creating tasks..."})
 
 		newCategoryTasks, newCategoryMetadata, categoriesCreated, newCategoryTaskCount, err := h.processNewCategories(ctx, result.Categories, userObjID)
 		if err != nil {
 			slog.LogAttrs(ctx, slog.LevelError, "Failed to process new categories",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			sse.SendError(err.Error())
+			_ = sse.SendError(err.Error())
 			return
 		}
 
@@ -266,7 +266,7 @@ func (h *Handler) StreamCreateNaturalLanguage(c *fiber.Ctx) error {
 			slog.LogAttrs(ctx, slog.LevelError, "Failed to process existing category tasks",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			sse.SendError(err.Error())
+			_ = sse.SendError(err.Error())
 			return
 		}
 
@@ -287,7 +287,7 @@ func (h *Handler) StreamCreateNaturalLanguage(c *fiber.Ctx) error {
 			slog.Int("totalTasks", totalTasks),
 			slog.Int("categoriesCreated", categoriesCreated))
 
-		sse.Send("result", map[string]interface{}{
+		_ = sse.Send("result", map[string]interface{}{
 			"categoriesCreated": categoriesCreated,
 			"newCategories":     newCategoryMetadata,
 			"tasksCreated":      totalTasks,
@@ -327,7 +327,7 @@ func (h *Handler) StreamQueryNaturalLanguage(c *fiber.Ctx) error {
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		sse := NewSSEWriter(w)
 
-		sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your query..."})
+		_ = sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your query..."})
 
 		slog.LogAttrs(ctx, slog.LevelInfo, "Starting streaming NL task query",
 			slog.String("userID", userID),
@@ -339,29 +339,29 @@ func (h *Handler) StreamQueryNaturalLanguage(c *fiber.Ctx) error {
 			slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini query flow failed, retrying",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
+			_ = sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
 
 			queryOutput, err = h.callGeminiQueryFlow(ctx, userID, body.Text, body.Timezone)
 			if err != nil {
 				h.refundNLCredit(ctx, userObjID, userID)
-				sse.SendError("Failed to process natural language query with AI after retry. Your credit has been refunded.")
+				_ = sse.SendError("Failed to process natural language query with AI after retry. Your credit has been refunded.")
 				return
 			}
 		}
 
-		sse.Send("status", map[string]string{"stage": "processing_results", "message": "Querying tasks..."})
+		_ = sse.Send("status", map[string]string{"stage": "processing_results", "message": "Querying tasks..."})
 
 		filters, err := convertQueryOutput(queryOutput)
 		if err != nil {
 			slog.Error("Failed to parse AI query response", "userId", userID, "error", err)
-			sse.SendError("The AI response could not be interpreted. Please try rephrasing your query.")
+			_ = sse.SendError("The AI response could not be interpreted. Please try rephrasing your query.")
 			return
 		}
 
 		tasks, err := h.service.QueryTasksByUser(userObjID, filters)
 		if err != nil {
 			slog.Error("Failed to execute NL task query", "userId", userID, "error", err)
-			sse.SendError("Unable to query tasks due to a server error. Please try again.")
+			_ = sse.SendError("Unable to query tasks due to a server error. Please try again.")
 			return
 		}
 
@@ -369,7 +369,7 @@ func (h *Handler) StreamQueryNaturalLanguage(c *fiber.Ctx) error {
 			slog.String("userID", userID),
 			slog.Int("taskCount", len(tasks)))
 
-		sse.Send("result", map[string]interface{}{
+		_ = sse.Send("result", map[string]interface{}{
 			"tasks": tasks,
 			"query": filters,
 		})
@@ -406,7 +406,7 @@ func (h *Handler) StreamEditNaturalLanguage(c *fiber.Ctx) error {
 	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		sse := NewSSEWriter(w)
 
-		sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your edit..."})
+		_ = sse.Send("status", map[string]string{"stage": "starting", "message": "Processing your edit..."})
 
 		slog.LogAttrs(ctx, slog.LevelInfo, "Starting streaming NL task edit",
 			slog.String("userID", userID),
@@ -418,17 +418,17 @@ func (h *Handler) StreamEditNaturalLanguage(c *fiber.Ctx) error {
 			slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini edit flow failed, retrying",
 				slog.String("userID", userID),
 				slog.String("error", err.Error()))
-			sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
+			_ = sse.Send("status", map[string]string{"stage": "retrying", "message": "Retrying AI request..."})
 
 			editOutput, err = h.callGeminiEditFlow(ctx, userID, body.Text, body.Timezone)
 			if err != nil {
 				h.refundNLCredit(ctx, userObjID, userID)
-				sse.SendError("Failed to process natural language edit with AI after retry. Your credit has been refunded.")
+				_ = sse.SendError("Failed to process natural language edit with AI after retry. Your credit has been refunded.")
 				return
 			}
 		}
 
-		sse.Send("status", map[string]string{"stage": "processing_results", "message": "Applying edits..."})
+		_ = sse.Send("status", map[string]string{"stage": "processing_results", "message": "Applying edits..."})
 
 		editedTasks, editedTemplates, totalEdited := h.applyEditInstructions(ctx, userObjID, userID, editOutput)
 
@@ -447,7 +447,7 @@ func (h *Handler) StreamEditNaturalLanguage(c *fiber.Ctx) error {
 			slog.Int("editedTasks", len(editedTasks)),
 			slog.Int("editedTemplates", len(editedTemplates)))
 
-		sse.Send("result", map[string]interface{}{
+		_ = sse.Send("result", map[string]interface{}{
 			"tasks":       editedTasks,
 			"templates":   editedTemplates,
 			"editedCount": totalEdited,

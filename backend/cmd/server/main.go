@@ -80,7 +80,7 @@ func run(stderr io.Writer, args []string) {
 	if err != nil {
 		slog.Warn("OTel initialization failed, tracing will be disabled", "error", err)
 	} else {
-		defer shutdownOtel(ctx)
+		defer func() { _ = shutdownOtel(ctx) }()
 	}
 
 	port, err := strconv.Atoi(config.App.Port)
