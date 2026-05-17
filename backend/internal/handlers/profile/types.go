@@ -1,6 +1,7 @@
 package Profile
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,6 +34,8 @@ type ProfileDocument struct {
 	Relationship   *RelationshipInfo    `bson:"-" json:"relationship,omitempty"`
 	Tasks          []types.TaskDocument `bson:"tasks" json:"tasks,omitempty"`
 	CompletedTasks []types.TaskDocument `bson:"-" json:"completed_tasks,omitempty"`
+	// Today's ring state - included for connected users and self
+	RingState *rings.RingState `bson:"-" json:"ring_state,omitempty"`
 }
 
 // RelationshipInfo contains details about the relationship between users

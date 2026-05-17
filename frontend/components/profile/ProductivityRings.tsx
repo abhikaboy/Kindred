@@ -8,11 +8,11 @@ import {
     TouchableOpacity,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { Check } from "phosphor-react-native";
+import { Check, LockSimple } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
-import { RingProgress } from "@/api/types";
+import { RingProgress, RingState } from "@/api/types";
 import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
 
@@ -130,6 +130,12 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             {/* Score Arc */}
             <View style={styles.arcSection}>
                 <ScoreArc score={score} />
+                <View style={styles.privateRow}>
+                    <LockSimple size={12} color={ThemedColor.caption} />
+                    <ThemedText style={[styles.privateText, { color: ThemedColor.caption }]}>
+                        Only visible to you
+                    </ThemedText>
+                </View>
             </View>
 
             {/* Rings Row */}
@@ -209,6 +215,16 @@ const styles = StyleSheet.create({
     },
     arcSection: {
         alignItems: "center",
+        gap: 4,
+    },
+    privateRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
+    privateText: {
+        fontSize: 11,
+        fontFamily: "Outfit",
     },
     ringsRow: {
         flexDirection: "row",
@@ -241,5 +257,52 @@ const styles = StyleSheet.create({
     },
 });
 
-export { ProductivityRingsCard };
+/**
+ * Simplified rings-only view for friend profiles.
+ * No card, no arc gauge, no expand behavior.
+ */
+interface FriendRingsProps {
+    ringState: RingState;
+}
+
+const FriendRings: React.FC<FriendRingsProps> = ({ ringState }) => {
+    const ThemedColor = useThemeColor();
+    const trackColor = ThemedColor.tertiary;
+
+    const ringEntries: { label: string; progress: RingProgress }[] = [
+        { label: "Plan", progress: ringState.plan },
+        { label: "Do", progress: ringState.do },
+        { label: "Share", progress: ringState.share },
+    ];
+
+    return (
+        <View style={styles.ringsRow}>
+            {ringEntries.map(({ label, progress }) => (
+                <View key={label} style={styles.ringItem}>
+                    <View style={styles.ringWrapper}>
+                        <RingCircle progress={progress} trackColor={trackColor} />
+                        <View style={styles.ringCenter}>
+                            {progress.closed ? (
+                                <Check size={24} color={PRIMARY_COLOR} weight="bold" />
+                            ) : (
+                                <ThemedText
+                                    style={[styles.ringText, { color: ThemedColor.text }]}
+                                >
+                                    {progress.current}/{progress.target}
+                                </ThemedText>
+                            )}
+                        </View>
+                    </View>
+                    <ThemedText
+                        style={[styles.ringLabel, { color: ThemedColor.caption }]}
+                    >
+                        {label.toUpperCase()}
+                    </ThemedText>
+                </View>
+            ))}
+        </View>
+    );
+};
+
+export { ProductivityRingsCard, FriendRings };
 export default ProductivityRingsCard;

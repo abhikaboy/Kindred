@@ -146,7 +146,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	auth.Routes(api, collections)
 	category.Routes(api, collections)
 	activity.Routes(api, collections)
-	profile.Routes(api, collections)
+	profile.Routes(api, collections, ringService)
 	task.Routes(api, collections, geminiService, ringService)
 
 	// SSE streaming routes for NLP flows (raw Fiber, bypass Huma)
