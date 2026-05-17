@@ -93,7 +93,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     onExpandChange,
 }) => {
     const ThemedColor = useThemeColor();
-    const { rings, score, isLoading, history } = useRings();
+    const { rings, score, streak, isLoading, history } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
 
     // Sync with parent: when blur overlay is dismissed, clear internal state
@@ -106,19 +106,6 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
 
     const trackColor = ThemedColor.tertiary;
     const closedRings = countClosedRings(history);
-
-    // Derive streak from history: consecutive days from most recent where all_closed
-    let streak = 0;
-    const sortedHistory = [...history].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    for (const state of sortedHistory) {
-        if (state.all_closed) {
-            streak++;
-        } else {
-            break;
-        }
-    }
 
     const handleRingPress = useCallback(
         (key: RingKey) => {
