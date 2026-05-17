@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -11,8 +11,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserKudos } from "@/hooks/useUserKudos";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import { uploadImageSmart } from "@/api/upload";
-import { Images, Gif } from "phosphor-react-native";
+import { Images, Gif, Sparkle } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
+import { LinearGradient } from "expo-linear-gradient";
+import { Portal } from "@gorhom/portal";
 import ConfettiCannon from "react-native-confetti-cannon";
 import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -54,7 +56,48 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
+    // Purple glow animation
+    const glowOpacity = useRef(new Animated.Value(0)).current;
+
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
+
+    // Purple glow animation effect
+    useEffect(() => {
+        let glowLoop: Animated.CompositeAnimation | null = null;
+
+        if (visible) {
+            // Start the pulsing animation
+            glowLoop = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(glowOpacity, {
+                        toValue: 0.3,
+                        duration: 2000,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(glowOpacity, {
+                        toValue: 0.1,
+                        duration: 2000,
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+            glowLoop.start();
+        } else {
+            // Fade out when closing
+            Animated.timing(glowOpacity, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            }).start();
+        }
+
+        // Cleanup: stop animation on unmount or when visibility changes
+        return () => {
+            if (glowLoop) {
+                glowLoop.stop();
+            }
+        };
+    }, [visible]);
 
     // Track mounted state and reset when modal opens
     useEffect(() => {
@@ -226,6 +269,48 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
     return (
         <>
+            {/* Full Screen Purple Glow - Using Portal for root-level rendering */}
+            {visible && (
+                <Portal>
+                    <Animated.View
+                        style={[
+                            styles.fullScreenGlowWrapper,
+                            { opacity: glowOpacity }
+                        ]}
+                        pointerEvents="box-none"
+                    >
+                        {/* Top Border Glow */}
+                        <LinearGradient
+                            colors={['rgba(147, 51, 234, 0.8)', 'transparent']}
+                            style={styles.glowBorderTop}
+                            pointerEvents="none"
+                        />
+                        {/* Bottom Border Glow */}
+                        <LinearGradient
+                            colors={['transparent', 'rgba(147, 51, 234, 0.8)']}
+                            style={styles.glowBorderBottom}
+                            pointerEvents="none"
+                        />
+                        {/* Left Border Glow */}
+                        <LinearGradient
+                            colors={['rgba(147, 51, 234, 0.8)', 'transparent']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.glowBorderLeft}
+                            pointerEvents="none"
+                        />
+                        {/* Right Border Glow */}
+                        <LinearGradient
+                            colors={['transparent', 'rgba(147, 51, 234, 0.8)']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.glowBorderRight}
+                            pointerEvents="none"
+                        />
+                    </Animated.View>
+                </Portal>
+            )}
+
             {/* Confetti Cannon - Only show when user just sent a congratulation */}
             {showConfetti && (
                 <ConfettiCannon
@@ -243,25 +328,21 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 />
             )}
 
-            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>
+            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedImage ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
                 {/* Task Card */}
                 <View style={styles.taskCardContainer}>
                     {task && (
-                        <View
-                            style={[
-                                styles.taskCard,
-                                { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary },
-                            ]}>
+                        <View style={styles.taskCardStyled}>
                             <View style={styles.taskCardContent}>
-                                <ThemedText type="default" style={[styles.taskText, { color: ThemedColor.text }]}>
+                                <ThemedText type="default" style={styles.taskTextStyled}>
                                     {task.content}
                                 </ThemedText>
                                 <View style={styles.taskCardRight}>
-                                    <ThemedText type="caption" style={[styles.taskValue, { color: ThemedColor.text }]}>
+                                    <ThemedText type="caption" style={styles.taskValueStyled}>
                                         {task.value}
                                     </ThemedText>
-                                    <Octicons name="flame" size={24} color={ThemedColor.error} />
+                                    <Sparkle size={24} color="#9333EA" weight="regular" />
                                 </View>
                             </View>
                         </View>
@@ -269,34 +350,41 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 </View>
 
                 {/* Title */}
-                <ThemedText type="defaultSemiBold" style={[styles.title, { color: ThemedColor.text }]}>
+                <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
                     Congratulate {congratulationConfig?.userHandle || "User"}
                 </ThemedText>
-
-                {/* Description */}
-                <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.text }]}>
-                    {congratulationConfig?.userHandle || "User"} will get a notification after sending the
-                    congratulation
+                <ThemedText type="captionLight" style={styles.subtitleStyled}>
+                    A little goes a long way
                 </ThemedText>
 
                 {/* Text Input or Image Preview */}
                 {!selectedImage ? (
                     <View style={styles.inputContainer}>
                         <BottomSheetTextInput
-                            placeholder={`Tap to type a congratulatory message to ${congratulationConfig?.userHandle || "User"}`}
+                            placeholder={`Write a message...`}
                             placeholderTextColor={ThemedColor.caption}
                             value={congratulationMessage}
                             onChangeText={setCongratulationMessage}
                             multiline={true}
-                            numberOfLines={4}
-                            style={[
-                                styles.textInput,
-                                {
-                                    color: ThemedColor.text,
-                                    borderColor: ThemedColor.tertiary,
-                                },
-                            ]}
+                            numberOfLines={3}
+                            style={styles.textInputStyled}
                         />
+                        <View style={styles.mediaIconsRow}>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={handleImagePick}
+                                disabled={isUploading}
+                            >
+                                <Images size={20} color={ThemedColor.caption} weight="regular" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={() => setShowGifPicker(true)}
+                                disabled={isUploading}
+                            >
+                                <Gif size={20} color={ThemedColor.caption} weight="regular" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 ) : (
                     <TouchableOpacity
@@ -317,26 +405,6 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     </TouchableOpacity>
                 )}
 
-                {/* Media Icons */}
-                <View style={styles.mediaIconsContainerWrapper}>
-                    <View style={styles.mediaIconsContainer}>
-                        <TouchableOpacity
-                            style={styles.iconButton}
-                            onPress={handleImagePick}
-                            disabled={isUploading}
-                        >
-                            <Images size={32} color={ThemedColor.text} weight="regular" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.iconButton}
-                            onPress={() => setShowGifPicker(true)}
-                            disabled={isUploading}
-                        >
-                            <Gif size={32} color={ThemedColor.text} weight="regular" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
                 {/* Send Button and Counter */}
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
@@ -345,7 +413,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                         disabled={(!congratulationMessage.trim() && !selectedImage) || congratulationsLeft === 0 || isUploading}
                         style={styles.sendButton}
                     />
-                    <ThemedText type="caption" style={[styles.counter, { color: ThemedColor.text }]}>
+                    <ThemedText type="caption" style={styles.counterStyled}>
                         {congratulationsLeft} Congratulations Left Today
                     </ThemedText>
                 </View>
@@ -386,20 +454,22 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
         container: {
             flex: 1,
-            paddingTop: 16,
-            paddingBottom: 64,
+            paddingTop: 12,
+            paddingBottom: 24,
         },
         taskCardContainer: {
-            marginBottom: 16,
+            marginBottom: 12,
             width: "100%",
         },
-        taskCard: {
+        taskCardStyled: {
             paddingHorizontal: 20,
             paddingVertical: 16,
             borderRadius: 16,
             borderWidth: 1,
             minHeight: 55,
             justifyContent: "center",
+            backgroundColor: ThemedColor.lightened,
+            borderColor: ThemedColor.tertiary,
             boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
         },
         taskCardContent: {
@@ -407,43 +477,62 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             alignItems: "center",
             justifyContent: "space-between",
         },
-        taskText: {
+        taskTextStyled: {
             flex: 1,
             textAlign: "left",
+            color: ThemedColor.text,
         },
         taskCardRight: {
             flexDirection: "row",
             alignItems: "center",
             gap: 6,
         },
-        taskValue: {
+        taskValueStyled: {
             fontSize: 12,
+            color: ThemedColor.text,
         },
-        title: {
+        titleStyled: {
             fontSize: 24,
             fontWeight: "600",
             textAlign: "center",
-            marginBottom: 24,
+            marginBottom: 4,
+            color: ThemedColor.text,
         },
-        description: {
-            fontSize: 16,
+        subtitleStyled: {
             textAlign: "center",
-            marginBottom: 24,
-            lineHeight: 24,
+            marginBottom: 16,
+            color: ThemedColor.caption,
         },
         inputContainer: {
-            marginBottom: 24,
-            minHeight: 80,
+            marginBottom: 16,
         },
-        textInput: {
-            padding: 16,
+        textInputStyled: {
+            paddingHorizontal: 14,
+            paddingTop: 14,
+            paddingBottom: 8,
             borderRadius: 12,
             borderWidth: 1,
-            fontSize: 16,
+            fontSize: 15,
             fontFamily: "Outfit",
             fontWeight: "400",
-            minHeight: 80,
+            minHeight: 72,
             textAlignVertical: "top",
+            color: ThemedColor.text,
+            borderColor: ThemedColor.tertiary,
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
+            borderBottomWidth: 0,
+        },
+        mediaIconsRow: {
+            flexDirection: "row",
+            gap: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderWidth: 1,
+            borderTopWidth: 0,
+            borderColor: ThemedColor.tertiary,
+            borderBottomLeftRadius: 12,
+            borderBottomRightRadius: 12,
         },
         buttonContainer: {
             gap: 12,
@@ -454,22 +543,13 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             paddingVertical: 12,
             paddingHorizontal: 16,
         },
-        counter: {
+        counterStyled: {
             fontSize: 12,
             textAlign: "center",
-        },
-        mediaIconsContainerWrapper: {
-            width: "100%",
-            marginBottom: 24,
-        },
-        mediaIconsContainer: {
-            flexDirection: "row",
-            alignItems: "flex-end",
-            gap: 12,
-            alignSelf: "flex-end",
+            color: ThemedColor.text,
         },
         iconButton: {
-            padding: 0,
+            padding: 4,
         },
         imagePreviewContainer: {
             position: "relative",
@@ -479,7 +559,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         imagePreview: {
             width: "100%",
-            height: Dimensions.get("window").height * 0.5,
+            height: Dimensions.get("window").height * 0.3,
             resizeMode: "contain",
         },
         removeImageButton: {
@@ -506,5 +586,45 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         gifPickerTitle: {
             fontSize: 18,
+        },
+        fullScreenGlowWrapper: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: Dimensions.get("window").width,
+            height: Dimensions.get("window").height,
+            backgroundColor: "transparent",
+            zIndex: 999,
+            elevation: 999,
+        },
+        glowBorderTop: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+        },
+        glowBorderBottom: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+        },
+        glowBorderLeft: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: 80,
+        },
+        glowBorderRight: {
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 80,
         },
     });
