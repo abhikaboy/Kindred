@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
     View,
     StyleSheet,
@@ -6,8 +6,11 @@ import {
     UIManager,
     Platform,
     TouchableOpacity,
+    Animated as RNAnimated,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+
+const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 import { Check, LockSimple } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -42,7 +45,21 @@ function RingCircle({
         progress.target > 0
             ? Math.min(progress.current / progress.target, 1)
             : 0;
-    const strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+    const animatedValue = useRef(new RNAnimated.Value(0)).current;
+
+    useEffect(() => {
+        animatedValue.setValue(0);
+        RNAnimated.timing(animatedValue, {
+            toValue: fraction,
+            duration: 800,
+            useNativeDriver: false,
+        }).start();
+    }, [fraction]);
+
+    const strokeDashoffset = animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [CIRCUMFERENCE, 0],
+    });
 
     return (
         <Svg width={RING_SIZE} height={RING_SIZE}>
@@ -54,7 +71,7 @@ function RingCircle({
                 strokeWidth={STROKE_WIDTH}
                 fill="none"
             />
-            <Circle
+            <AnimatedCircle
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={RADIUS}

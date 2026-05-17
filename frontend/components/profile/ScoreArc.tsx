@@ -13,13 +13,13 @@ const RADIUS = (ARC_WIDTH - STROKE_WIDTH) / 2;
 const CENTER_X = ARC_WIDTH / 2;
 const CENTER_Y = ARC_HEIGHT - 10;
 
-// Full semi-circle path from right (0°) to left (180°)
+// Full semi-circle path from left (180°) to right (0°)
 function describeFullArc(): string {
-    const startX = CENTER_X + RADIUS; // rightmost point
+    const startX = CENTER_X - RADIUS; // leftmost point (0)
     const startY = CENTER_Y;
-    const endX = CENTER_X - RADIUS; // leftmost point
+    const endX = CENTER_X + RADIUS; // rightmost point (100)
     const endY = CENTER_Y;
-    return `M ${startX} ${startY} A ${RADIUS} ${RADIUS} 0 1 0 ${endX} ${endY}`;
+    return `M ${startX} ${startY} A ${RADIUS} ${RADIUS} 0 1 1 ${endX} ${endY}`;
 }
 
 // Approximate arc length for the semi-circle
