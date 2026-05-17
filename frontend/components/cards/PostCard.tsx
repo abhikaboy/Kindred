@@ -643,7 +643,6 @@ const PostCard = React.memo(({
                     ref={bottomSheetModalRef}
                     onChange={handleSheetChanges}
                     snapPoints={["80%"]}
-                    index={0}
                     enablePanDownToClose={true}
                     enableDismissOnClose={true}
                     enableHandlePanningGesture={true}

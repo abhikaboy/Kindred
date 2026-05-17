@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { View, StyleSheet, TouchableOpacity, Animated, Image, Dimensions, useColorScheme, ActivityIndicator } from "react-native";
-import { FlashList } from "@shopify/flash-list";
+import { FlatList } from "react-native";
 import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -98,7 +98,7 @@ const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
     );
 };
 
-const GALLERY_PAGE_SIZE = 18;
+const GALLERY_PAGE_SIZE = 12;
 
 const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
     const { user } = useAuth();
@@ -176,9 +176,11 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         fetchImages();
     }, [userId, images]);
 
+    const loadingMoreRef = useRef(false);
     const handleLoadMore = useCallback(async () => {
-        if (!hasMore || isLoadingMore || isLoading) return;
+        if (!hasMore || loadingMoreRef.current || isLoading) return;
 
+        loadingMoreRef.current = true;
         setIsLoadingMore(true);
         try {
             let response;
@@ -195,9 +197,10 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         } catch (error) {
             console.error("Error loading more post images:", error);
         } finally {
+            loadingMoreRef.current = false;
             setIsLoadingMore(false);
         }
-    }, [hasMore, isLoadingMore, isLoading, userId, offset]);
+    }, [hasMore, isLoading, userId, offset]);
 
     const handleImagePress = (postId: string) => {
         if (postId.startsWith("legacy-")) {
@@ -351,21 +354,21 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
 
     return (
         <>
-            <View style={{ minHeight: 2, flex: 1 }}>
-                <FlashList
-                    numColumns={3}
-                    data={postImages}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.galleryContainer}
-                    removeClippedSubviews={true}
-                    onEndReached={handleLoadMore}
-                    onEndReachedThreshold={0.5}
-                    ListFooterComponent={renderFooter}
-                    drawDistance={250}
-                />
-            </View>
+            <FlatList
+                numColumns={3}
+                data={postImages}
+                renderItem={renderItem}
+                keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.galleryContainer}
+                removeClippedSubviews={true}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.3}
+                ListFooterComponent={renderFooter}
+                initialNumToRender={9}
+                maxToRenderPerBatch={6}
+                windowSize={5}
+            />
             {alertVisible && (
                 <CustomAlert
                     visible={alertVisible}
