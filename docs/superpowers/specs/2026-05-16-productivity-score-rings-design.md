@@ -27,9 +27,9 @@ Replace the current points/streak-based gamification with a **Productivity Score
 
 | Ring | Color | What it tracks | How it closes |
 |------|-------|---------------|---------------|
-| **Plan** | `#7DC4FF` (blue) | Tasks created or scheduled | Create a new task (any date) or set/update a future start date or deadline on an existing task. Each distinct task counts once per day toward the Plan ring regardless of how many times it's edited. |
-| **Do** | `#5CFF95` (green) | Tasks completed | Complete N tasks in a day |
-| **Share** | `#FF7EB3` (pink) | Social actions | Post or send a kudos (encouragement or congratulation) |
+| **Plan** | `#854DFF` (purple) | Tasks created or scheduled | Create a new task (any date) or set/update a future start date or deadline on an existing task. Each distinct task counts once per day toward the Plan ring regardless of how many times it's edited. |
+| **Do** | `#854DFF` (purple) | Tasks completed | Complete N tasks in a day |
+| **Share** | `#854DFF` (purple) | Social actions | Post or send a kudos (encouragement or congratulation) |
 
 ### Daily Targets (v1 — fixed)
 
@@ -65,26 +65,36 @@ Each expanded ring shows:
 
 ### Formula
 
-The score is calculated from ring closure over a **rolling 14-day window**:
+The score starts at 50 and builds over a **rolling 7-day window**:
 
 ```
-base_score = (rings_closed_in_last_14_days / (3 * 14)) * 100
+base = 50
+ring_bonus = (rings_closed_last_7_days / 21) * 50    // 0 to +50
+streak_bonus = min(current_streak, 7)                  // 0 to +7
 
-streak_multiplier = 1.0 + (min(current_streak, 14) * 0.01)
-  // streak of 7 = 1.07x, streak of 14+ = 1.14x (capped)
-
-productivity_score = min(round(base_score * streak_multiplier), 100)
+productivity_score = min(base + ring_bonus + streak_bonus, 100)
 ```
 
-- A user closing all 3 rings every day for 14 days with a 14-day streak scores: `(42/42) * 100 * 1.14 = 100` (capped)
-- A user closing 2 rings per day for 14 days with no streak: `(28/42) * 100 * 1.0 = 67` → shows `--`
-- A brand new user: `0` → shows `--`
+Example progression:
+
+| Day | Rings closed (total last 7d) | Score |
+|-----|------------------------------|-------|
+| New user | 0 | 50 |
+| Day 1 (close all 3) | 3 | 58 |
+| Day 2 (close all 3) | 6 | 66 |
+| Day 3 (close all 3) | 9 | 74 |
+| Day 5 (close all 3) | 15 | 88 |
+| Day 7 (close all 3) | 21 | 100 |
+| Miss a day after 7 | 18 | 90 |
+
+The floor is always 50 — a new or inactive user sits at 50, never 0.
 
 ### Display Rules
 
-- Score **>= 70**: show the number (70, 85, 100, etc.)
-- Score **< 70**: show `--` (no shame for new users or breaks)
+- Score **>= 30**: show the number
+- Score **< 30**: show `--` (practically unreachable since floor is 50, but handles edge cases)
 - The score updates in real-time as rings close throughout the day
+- Visible from day 1 — a new user sees "50" immediately
 
 ### Where it appears
 
@@ -93,25 +103,27 @@ productivity_score = min(round(base_score * streak_multiplier), 100)
 
 ## Profile Ring Visualization
 
-Three concentric rings displayed on the user's profile, replacing the 4-stat grid.
+Three separate rings displayed in a row on the user's profile, replacing the 4-stat grid. The Productivity Score sits above or below the rings as a standalone number.
 
 ```
-        ┌─────────────────┐
-        │   ╭─── Plan ───╮│  (outer ring, blue)
-        │  ╭─── Do ────╮ ││  (middle ring, green)
-        │ ╭─── Share ──╮│ ││  (inner ring, pink)
-        │ │            ││ ││
-        │ │     85     ││ ││  (score in center)
-        │ │            ││ ││
-        │ ╰────────────╯│ ││
-        │  ╰────────────╯ ││
-        │   ╰─────────────╯│
-        └─────────────────┘
+              85
+       Productivity Score
+
+    ╭───╮     ╭───╮     ╭───╮
+    │   │     │   │     │   │
+    │ 2 │     │ 1 │     │ 0 │
+    │/2 │     │/3 │     │/1 │
+    ╰───╯     ╰───╯     ╰───╯
+    Plan       Do       Share
 ```
 
+- Each ring is its own circle, filled proportionally (current/target)
+- All three rings use the primary purple (`#854DFF`); unfilled portion is a faint purple track
+- The current/target count is displayed inside each ring
+- Ring label sits below each circle
+- Tapping a ring expands it inline (same pattern as DashboardStats) showing progress and a guidance sentence
 - Rings animate as they fill
-- Tapping the visualization opens the detail view (ring-by-ring progress + guidance sentences)
-- For other users' profiles: shows their current score and ring state (read-only, no tap detail)
+- For other users' profiles: shows their score and ring state (read-only, no tap detail)
 
 ## Variable Reward: AI Credit Drops
 
