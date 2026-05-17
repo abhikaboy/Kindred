@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, Animated as RNAnimated } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -13,16 +13,19 @@ const RADIUS = (ARC_WIDTH - STROKE_WIDTH) / 2;
 const CENTER_X = ARC_WIDTH / 2;
 const CENTER_Y = ARC_HEIGHT - 10;
 
-function describeArc(startAngle: number, endAngle: number): string {
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = (endAngle * Math.PI) / 180;
-    const startX = CENTER_X + RADIUS * Math.cos(startRad);
-    const startY = CENTER_Y - RADIUS * Math.sin(startRad);
-    const endX = CENTER_X + RADIUS * Math.cos(endRad);
-    const endY = CENTER_Y - RADIUS * Math.sin(endRad);
-    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-    return `M ${startX} ${startY} A ${RADIUS} ${RADIUS} 0 ${largeArc} 0 ${endX} ${endY}`;
+// Full semi-circle path from right (0°) to left (180°)
+function describeFullArc(): string {
+    const startX = CENTER_X + RADIUS; // rightmost point
+    const startY = CENTER_Y;
+    const endX = CENTER_X - RADIUS; // leftmost point
+    const endY = CENTER_Y;
+    return `M ${startX} ${startY} A ${RADIUS} ${RADIUS} 0 1 0 ${endX} ${endY}`;
 }
+
+// Approximate arc length for the semi-circle
+const ARC_LENGTH = Math.PI * RADIUS;
+
+const AnimatedPath = RNAnimated.createAnimatedComponent(Path);
 
 interface ScoreArcProps {
     score: number;
@@ -32,30 +35,48 @@ interface ScoreArcProps {
 const ScoreArc: React.FC<ScoreArcProps> = ({ score, maxScore = 100 }) => {
     const ThemedColor = useThemeColor();
     const fraction = Math.min(Math.max(score / maxScore, 0), 1);
+    const animatedValue = useRef(new RNAnimated.Value(0)).current;
 
-    const trackPath = describeArc(0, 180);
-    const fillEndAngle = 180 - fraction * 180;
-    const fillPath = fraction > 0 ? describeArc(fillEndAngle, 180) : "";
+    useEffect(() => {
+        animatedValue.setValue(0);
+        RNAnimated.timing(animatedValue, {
+            toValue: fraction,
+            duration: 800,
+            useNativeDriver: false, // strokeDashoffset not supported by native driver
+        }).start();
+    }, [fraction]);
+
+    const arcPath = describeFullArc();
+
+    // Animated strokeDashoffset: full length (hidden) → partial (revealed)
+    const strokeDashoffset = animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [ARC_LENGTH, 0],
+    });
 
     const displayScore = score >= 30 ? score : "--";
 
     return (
         <View style={styles.container}>
             <Svg width={ARC_WIDTH} height={ARC_HEIGHT}>
+                {/* Background track */}
                 <Path
-                    d={trackPath}
+                    d={arcPath}
                     stroke={ThemedColor.tertiary}
                     strokeWidth={STROKE_WIDTH}
                     fill="none"
                     strokeLinecap="round"
                 />
-                {fillPath !== "" && (
-                    <Path
-                        d={fillPath}
+                {/* Animated fill */}
+                {fraction > 0 && (
+                    <AnimatedPath
+                        d={arcPath}
                         stroke={PRIMARY_COLOR}
                         strokeWidth={STROKE_WIDTH}
                         fill="none"
                         strokeLinecap="round"
+                        strokeDasharray={`${ARC_LENGTH}`}
+                        strokeDashoffset={strokeDashoffset}
                     />
                 )}
             </Svg>

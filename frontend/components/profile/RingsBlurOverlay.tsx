@@ -35,7 +35,7 @@ const RingsBlurOverlay: React.FC<RingsBlurOverlayProps> = ({ visible, onDismiss 
     return (
         <TouchableWithoutFeedback onPress={onDismiss}>
             <Animated.View style={[styles.overlay, { opacity }]}>
-                <BlurView intensity={15} style={StyleSheet.absoluteFill} tint="dark" />
+                <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="default" />
             </Animated.View>
         </TouchableWithoutFeedback>
     );
