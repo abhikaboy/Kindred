@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/danielgtaylor/huma/v2"
@@ -96,6 +97,17 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 	if err != nil {
 		slog.Error("failed to create post", "userId", user_id, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to create post. Please try again.", err)
+	}
+
+	// Fire-and-forget: increment Share ring
+	if h.service.RingService != nil {
+		go func() {
+			tz := auth.GetTimezoneOrDefault(ctx)
+			_, _, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingShare)
+			if err != nil {
+				slog.Error("Failed to increment Share ring on post creation", "user_id", userObjID.Hex(), "error", err)
+			}
+		}()
 	}
 
 	// Prepare response with user stats

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,7 +24,7 @@ type UserStatsUpdate struct {
 }
 
 // newService receives the map of collections and picks out Jobs
-func newService(collections map[string]*mongo.Collection) *Service {
+func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	return &Service{
 		Posts:               collections["posts"],
 		Users:               collections["users"],
@@ -33,12 +34,13 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Connections:         collections["friend-requests"],
 		Reports:             collections["reports"],
 		NotificationService: notifications.NewNotificationService(collections),
+		RingService:         ringService,
 	}
 }
 
 // NewService is the exported version for testing
 func NewService(collections map[string]*mongo.Collection) *Service {
-	return newService(collections)
+	return newService(collections, nil)
 }
 
 // GetReportedPostIDs returns IDs of all posts that have been reported by any user with pending or reviewed status
@@ -239,17 +241,14 @@ func (s *Service) CreatePost(r *types.PostDocument) (*types.PostDocument, *UserS
 	return r, userStats, nil
 }
 
-// updateUserPostStats increments the user's posts made count and adds points based on streak
+// updateUserPostStats increments the user's posts made count.
 func (s *Service) updateUserPostStats(ctx context.Context, userID primitive.ObjectID) (*UserStatsUpdate, error) {
 	userFilter := bson.M{"_id": userID}
 
-	// Use aggregation pipeline to calculate points based on current streak in a single atomic operation
-	// Points = 1 (base) + current streak value
 	updatePipeline := []bson.M{
 		{
 			"$set": bson.M{
 				"posts_made": bson.M{"$add": []interface{}{"$posts_made", 1}},
-				"points":     bson.M{"$add": []interface{}{"$points", bson.M{"$add": []interface{}{1, "$streak"}}}},
 			},
 		},
 	}

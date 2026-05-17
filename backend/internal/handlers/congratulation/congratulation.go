@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -83,6 +84,17 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		}
 		slog.Error("failed to create congratulation", "userId", user_id, "receiver", input.Body.Receiver, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to create congratulation. Please try again.", err)
+	}
+
+	// Fire-and-forget: increment Share ring for the sender
+	if h.service.RingService != nil {
+		go func() {
+			tz := auth.GetTimezoneOrDefault(ctx)
+			_, _, err := h.service.RingService.IncrementRing(context.Background(), senderID, tz, rings.RingShare)
+			if err != nil {
+				slog.Error("Failed to increment Share ring on congratulation sent", "user_id", senderID.Hex(), "error", err)
+			}
+		}()
 	}
 
 	return &CreateCongratulationOutput{Body: *congratulation}, nil

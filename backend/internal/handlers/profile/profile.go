@@ -21,6 +21,10 @@ func (h *Handler) GetProfiles(ctx context.Context, input *GetProfilesInput) (*Ge
 		return nil, huma.Error500InternalServerError("Unable to load profiles. Please try again.", err)
 	}
 
+	for i := range profiles {
+		profiles[i].sanitizeForResponse(false)
+	}
+
 	return &GetProfilesOutput{Body: profiles}, nil
 }
 
@@ -62,6 +66,7 @@ func (h *Handler) GetProfileByEmail(ctx context.Context, input *GetProfileByEmai
 		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
+	profile.sanitizeForResponse(false)
 	return &GetProfileByEmailOutput{Body: *profile}, nil
 }
 
@@ -71,6 +76,7 @@ func (h *Handler) GetProfileByPhone(ctx context.Context, input *GetProfileByPhon
 		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
+	profile.sanitizeForResponse(false)
 	return &GetProfileByPhoneOutput{Body: *profile}, nil
 }
 
@@ -89,6 +95,10 @@ func (h *Handler) SearchProfiles(ctx context.Context, input *SearchProfilesInput
 		return nil, huma.Error500InternalServerError("Unable to search profiles. Please try again.", err)
 	}
 
+	for i := range profiles {
+		profiles[i].sanitizeForResponse(false)
+	}
+
 	return &SearchProfilesOutput{Body: profiles}, nil
 }
 
@@ -99,6 +109,10 @@ func (h *Handler) GetProfilesHuma(ctx context.Context, input *GetProfilesInput) 
 	if err != nil {
 		slog.Error("Failed to fetch profiles", "error", err)
 		return nil, huma.Error500InternalServerError("Unable to load profiles. Please try again.", err)
+	}
+
+	for i := range profiles {
+		profiles[i].sanitizeForResponse(false)
 	}
 
 	resp := &GetProfilesOutput{Body: profiles}
@@ -170,6 +184,10 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 		profile.CompletedTasks = []types.TaskDocument{}
 	}
 
+	// Sanitize internal metrics before returning
+	isSelf := relationship != nil && relationship.Status == RelationshipSelf
+	profile.sanitizeForResponse(isSelf)
+
 	resp := &GetProfileOutput{Body: *profile}
 	return resp, nil
 }
@@ -212,6 +230,7 @@ func (h *Handler) GetProfileByEmailHuma(ctx context.Context, input *GetProfileBy
 		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
+	profile.sanitizeForResponse(false)
 	resp := &GetProfileByEmailOutput{Body: *profile}
 	return resp, nil
 }
@@ -222,6 +241,7 @@ func (h *Handler) GetProfileByPhoneHuma(ctx context.Context, input *GetProfileBy
 		return nil, huma.Error404NotFound("No profile found matching your search", err)
 	}
 
+	profile.sanitizeForResponse(false)
 	resp := &GetProfileByPhoneOutput{Body: *profile}
 	return resp, nil
 }
@@ -325,6 +345,12 @@ func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesI
 	}
 	profiles = filtered
 
+	// Sanitize internal metrics before returning
+	for i := range profiles {
+		isSelf := profiles[i].Relationship != nil && profiles[i].Relationship.Status == RelationshipSelf
+		profiles[i].sanitizeForResponse(isSelf)
+	}
+
 	resp := &SearchProfilesOutput{Body: profiles}
 	return resp, nil
 }
@@ -372,6 +398,12 @@ func (h *Handler) AutocompleteProfilesHuma(ctx context.Context, input *Autocompl
 		}
 	}
 	profiles = filtered
+
+	// Sanitize internal metrics before returning
+	for i := range profiles {
+		isSelf := profiles[i].Relationship != nil && profiles[i].Relationship.Status == RelationshipSelf
+		profiles[i].sanitizeForResponse(isSelf)
+	}
 
 	resp := &AutocompleteProfilesOutput{Body: profiles}
 	return resp, nil

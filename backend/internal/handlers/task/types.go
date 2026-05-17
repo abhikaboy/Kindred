@@ -3,6 +3,7 @@ package task
 import (
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -138,6 +139,7 @@ type Service struct {
 	CompletedTasks      *mongo.Collection
 	TemplateTasks       *mongo.Collection
 	EncouragementHelper EncouragementServiceInterface
+	RingService         *rings.RingService
 }
 
 // EncouragementServiceInterface defines the methods we need from the encouragement service

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -192,4 +193,5 @@ type Service struct {
 	Encouragements      *mongo.Collection
 	Users               *mongo.Collection
 	NotificationService *notifications.Service
+	RingService         *rings.RingService
 }

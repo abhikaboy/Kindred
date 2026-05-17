@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ProfileStats from "@/components/profile/ProfileStats";
-import TodayStats from "@/components/profile/TodayStats";
+import ProductivityRings from "@/components/profile/ProductivityRings";
 import ProfileGallery from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
@@ -109,7 +109,7 @@ export default function Profile() {
 
                 <CompleteProfileCard />
 
-                <TodayStats userId={user?._id} />
+                <ProductivityRings userId={user?._id} />
 
                 <ReferralCard />
 

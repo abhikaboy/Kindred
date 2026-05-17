@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	mongorepo "github.com/abhikaboy/Kindred/internal/repository/mongo"
 	"github.com/abhikaboy/Kindred/xutils"
@@ -57,7 +58,7 @@ func getTaskArrayFilterOptions(taskId primitive.ObjectID) *options.UpdateOptions
 }
 
 // newService receives the map of collections and picks out Jobs
-func newService(collections map[string]*mongo.Collection) *Service {
+func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	users := mongorepo.NewUserRepository(collections["users"])
 	return &Service{
 		Tasks:               collections["categories"],
@@ -65,12 +66,13 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		CompletedTasks:      collections["completed-tasks"],
 		TemplateTasks:       collections["template-tasks"],
 		EncouragementHelper: encouragement.NewEncouragementService(collections),
+		RingService:         ringService,
 	}
 }
 
 // NewService is the exported version of newService for external packages
 func NewService(collections map[string]*mongo.Collection) *Service {
-	return newService(collections)
+	return newService(collections, nil)
 }
 
 func handleMongoError(ctx context.Context, operation string, err error) error {

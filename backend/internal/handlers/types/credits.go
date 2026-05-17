@@ -50,7 +50,7 @@ func GetDefaultCredits() UserCredits {
 // This ensures thread-safe credit consumption
 func ConsumeCredit(ctx context.Context, collection *mongo.Collection, userID primitive.ObjectID, creditType CreditType) error {
 	// Map credit type to field name
-	fieldName, err := getCreditFieldName(creditType)
+	fieldName, err := GetCreditFieldName(creditType)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func AddCredits(ctx context.Context, collection *mongo.Collection, userID primit
 		return errors.New("amount must be positive")
 	}
 
-	fieldName, err := getCreditFieldName(creditType)
+	fieldName, err := GetCreditFieldName(creditType)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func GetCredits(ctx context.Context, collection *mongo.Collection, userID primit
 
 // CheckCredits checks if user has at least 1 credit of the specified type
 func CheckCredits(ctx context.Context, collection *mongo.Collection, userID primitive.ObjectID, creditType CreditType) (bool, error) {
-	fieldName, err := getCreditFieldName(creditType)
+	fieldName, err := GetCreditFieldName(creditType)
 	if err != nil {
 		return false, err
 	}
@@ -139,8 +139,8 @@ func CheckCredits(ctx context.Context, collection *mongo.Collection, userID prim
 	return count > 0, nil
 }
 
-// getCreditFieldName returns the BSON field name for a credit type
-func getCreditFieldName(creditType CreditType) (string, error) {
+// GetCreditFieldName returns the BSON field name for a credit type
+func GetCreditFieldName(creditType CreditType) (string, error) {
 	switch creditType {
 	case CreditTypeVoice:
 		return "credits.voice", nil

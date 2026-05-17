@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,7 +16,7 @@ import (
 )
 
 // newService receives the map of collections and picks out congratulations
-func newService(collections map[string]*mongo.Collection) *Service {
+func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	congratulations := collections["congratulations"]
 	users := collections["users"]
 	posts := collections["posts"]
@@ -36,12 +37,13 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Users:               users,
 		Posts:               posts,
 		NotificationService: notifications.NewNotificationService(collections),
+		RingService:         ringService,
 	}
 }
 
 // NewService is the exported version for testing
 func NewService(collections map[string]*mongo.Collection) *Service {
-	return newService(collections)
+	return newService(collections, nil)
 }
 
 // GetAllCongratulations fetches all Congratulation documents from MongoDB for a specific receiver
