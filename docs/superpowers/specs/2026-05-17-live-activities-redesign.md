@@ -165,15 +165,78 @@ No red. The depleting ring and countdown communicate urgency on their own.
 - `ActiveTaskActivity.tsx` — new live activity widget component
 - `hooks/useLiveActivityManager.ts` — shared hook to manage active task + deadline live activity lifecycle, listen for push triggers, handle deep link CTAs
 
-### Backend Changes (separate work item)
+### Backend Changes
 
-The backend needs two new scheduled push notifications:
-1. At a task's `startTime` — payload includes task metadata to start the Active Task activity
-2. 1 hour before a task's `deadline` — payload includes task metadata to start the Deadline Countdown activity
+The backend cron job (`backend/internal/handlers/task/cron.go`) already runs every 1 minute and processes reminders via `HandleReminder()`. We add two new handlers to the same cron cycle:
 
-These build on the existing reminder/notification infrastructure. The push payload should include: `taskId`, `categoryId`, `taskName`, `workspaceName`, `startTime` or `deadline`, and a `liveActivityType` field (`"activeTask"` or `"deadlineCountdown"`).
+#### 1. `HandleStartTimeNotifications()` — new function in `cron.go`
 
-The frontend notification handler checks for `liveActivityType` in the push data and starts the appropriate live activity. This works even when the app is backgrounded (iOS processes notification payloads in the background).
+**Query:** Find all tasks where:
+- `startTime` is set and falls within the last 1 minute window (between `now - 1min` and `now`)
+- Task is `active: true`
+- Task has not been completed (`timeCompleted` is null)
+- A `liveActivityStartSent` flag is not set (prevents duplicate sends)
+
+**Action:**
+- Fetch the user's push token
+- Send push notification with payload:
+  ```go
+  Data: map[string]string{
+      "type":           "live_activity",
+      "liveActivityType": "activeTask",
+      "taskId":         task.ID.Hex(),
+      "categoryId":     task.CategoryID.Hex(),
+      "taskName":       task.Content,
+      "workspaceName":  workspaceName, // looked up from category
+      "startTime":      task.StartTime.Format(time.RFC3339),
+      "endTime":        endTime,       // deadline if set, else empty
+  }
+  ```
+- Title: "Time to start: {taskName}"
+- Message: "Your task is starting now"
+- Mark `liveActivityStartSent: true` on the task document to prevent re-sending
+
+#### 2. `HandleDeadlineApproachingNotifications()` — new function in `cron.go`
+
+**Query:** Find all tasks where:
+- `deadline` is set and falls within 59-60 minutes from now (i.e., deadline is ~1 hour away)
+- Task is `active: true`
+- Task has not been completed
+- A `liveActivityDeadlineSent` flag is not set
+
+**Action:**
+- Fetch user's push token
+- Send push notification with payload:
+  ```go
+  Data: map[string]string{
+      "type":              "live_activity",
+      "liveActivityType":  "deadlineCountdown",
+      "taskId":            task.ID.Hex(),
+      "categoryId":        task.CategoryID.Hex(),
+      "taskName":          task.Content,
+      "workspaceName":     workspaceName,
+      "deadline":          task.Deadline.Format(time.RFC3339),
+      "priority":          fmt.Sprintf("%d", task.Priority),
+  }
+  ```
+- Title: "{taskName} due in 1 hour"
+- Message: "Deadline approaching"
+- Mark `liveActivityDeadlineSent: true` on the task to prevent re-sending
+
+#### MongoDB Query Helpers — new functions in `task/repository.go`
+
+- `GetTasksWithStartTimeInWindow(start, end time.Time)` — finds tasks with startTime in range, active, not completed, not already sent
+- `GetTasksWithDeadlineInWindow(start, end time.Time)` — finds tasks with deadline in range (1 hour from now), active, not completed, not already sent
+- `MarkLiveActivityStartSent(taskID)` — sets `liveActivityStartSent: true`
+- `MarkLiveActivityDeadlineSent(taskID)` — sets `liveActivityDeadlineSent: true`
+
+#### Frontend Notification Handler
+
+In `notificationService.ts` or the existing notification listener, check incoming push data for `type === "live_activity"`:
+- If `liveActivityType === "activeTask"` → start `ActiveTaskActivityFactory` with props from push data
+- If `liveActivityType === "deadlineCountdown"` → start `DeadlineCountdownActivityFactory` with props from push data
+
+This works when the app is in the foreground. For background delivery, iOS will show the push notification; tapping it opens the app and the notification response handler can start the live activity at that point.
 
 ## File Changes Summary
 
@@ -186,4 +249,7 @@ The frontend notification handler checks for `liveActivityType` in the push data
 | `hooks/useLiveActivityManager.ts` | **Create** — manages lifecycle of both activities |
 | `contexts/kudosContext.tsx` | **Modify** — remove live activity code |
 | `app/(logged-in)/(tabs)/(task)/task/[id].tsx` | **Modify** — add Start Working button, update deadline tracking |
-| Backend notification scheduling | **Modify** — add startTime and deadline-1h push triggers |
+| `services/notificationService.ts` | **Modify** — handle live_activity push type |
+| `backend/internal/handlers/task/cron.go` | **Modify** — add HandleStartTimeNotifications, HandleDeadlineApproachingNotifications |
+| `backend/internal/handlers/task/repository.go` | **Modify** — add query helpers for time-window task lookups |
+| `backend/internal/handlers/task/service.go` | **Modify** — add live activity notification sending logic |
