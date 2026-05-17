@@ -72,7 +72,6 @@ const DefaultModal = memo((props: Props) => {
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
-            index={0}
             snapPoints={snapPoints}
             enableDynamicSizing={props.enableDynamicSizing ?? false}
             onChange={handleSheetChanges}
