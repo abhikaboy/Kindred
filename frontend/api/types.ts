@@ -224,4 +224,41 @@ export interface MarkNotificationsReadRequest {
     /** @description Array of notification IDs to mark as read */
     notification_ids: string[];
 }
+// Ring system types
+export interface RingProgress {
+    current: number;
+    target: number;
+    closed: boolean;
+}
+
+export interface RingState {
+    _id: string;
+    user_id: string;
+    date: string;
+    plan: RingProgress;
+    do: RingProgress;
+    share: RingProgress;
+    all_closed: boolean;
+    reward_claimed: boolean;
+    reward_type?: string;
+    reward_amount?: number;
+}
+
+export interface RingTodayResponse {
+    rings: RingState;
+    score: number;
+}
+
+export interface RingHistoryResponse {
+    history: RingState[];
+    score: number;
+}
+
+export interface RingRewardResponse {
+    claimed: boolean;
+    credit_type?: string;
+    amount?: number;
+    message: string;
+}
+
 export { components };
