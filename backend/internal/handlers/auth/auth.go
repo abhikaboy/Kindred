@@ -418,6 +418,14 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 				slog.String("userId", id.Hex()),
 				slog.String("error", err.Error()))
 		}
+
+		// Send welcome congratulation from beak (Kindred founder)
+		// Intentionally delayed: runs after workspace setup so the task exists
+		if err := h.service.SendWelcomeCongratulation(setupCtx, id); err != nil {
+			slog.LogAttrs(setupCtx, slog.LevelError, "Failed to send welcome congratulation",
+				slog.String("userId", id.Hex()),
+				slog.String("error", err.Error()))
+		}
 	}()
 
 	// Create referral document for the new user

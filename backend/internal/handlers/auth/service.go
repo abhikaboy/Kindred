@@ -430,6 +430,46 @@ func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.Ob
 }
 
 /*
+Send a welcome congratulation from the Kindred founder (beak) to a new user.
+Inserts directly into the congratulations collection — bypasses the normal
+kudos-balance check since this is a system message.
+*/
+func (s *Service) SendWelcomeCongratulation(ctx context.Context, userID primitive.ObjectID) error {
+	if s.congratulations == nil {
+		return fmt.Errorf("congratulations collection not available")
+	}
+
+	// beak (Kindred founder) — hardcoded system account
+	beakID, _ := primitive.ObjectIDFromHex("67eef59f4931ee7a9fb630e5")
+
+	doc := bson.M{
+		"_id": primitive.NewObjectID(),
+		"sender": bson.M{
+			"name":    "beak",
+			"picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg",
+			"id":      beakID,
+		},
+		"receiver":     userID,
+		"message":      "its beak, one of the founders of kindred. welcome :) you just completed your first task!",
+		"timestamp":    time.Now().UTC(),
+		"categoryName": "Starting",
+		"taskName":     "Swipe to mark a task as complete",
+		"read":         false,
+		"type":         "message",
+	}
+
+	_, err := s.congratulations.InsertOne(ctx, doc)
+	if err != nil {
+		return fmt.Errorf("failed to insert welcome congratulation: %w", err)
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Welcome congratulation sent",
+		slog.String("userId", userID.Hex()))
+
+	return nil
+}
+
+/*
 Update the push token for a user
 */
 
