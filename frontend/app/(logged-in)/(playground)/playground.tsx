@@ -52,6 +52,16 @@ export default function Playground() {
                 }}>
                 Development Environment 3
             </Link>
+            <Link
+                href={"/(onboarding)/tutorial"}
+                style={{
+                    color: ThemedColor.text,
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    fontFamily: "Outfit",
+                }}>
+                Onboarding Tutorial (test)
+            </Link>
         </ParallaxScrollView>
     );
 }

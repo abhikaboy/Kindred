@@ -160,7 +160,7 @@ export const OnboardingSteps = {
     NAME: { name: "name", index: 3 },
     PASSWORD: { name: "password", index: 4 },
     WELCOME: { name: "welcome", index: 5 },
-    ACCOMPLISHMENT: { name: "accomplishment", index: 6 },
+    TUTORIAL: { name: "tutorial", index: 6 },
 } as const;
 
 // ---------------------------------------------------------------------------

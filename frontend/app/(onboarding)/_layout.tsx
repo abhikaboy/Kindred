@@ -19,7 +19,7 @@ export default function OnboardingLayout() {
             <Stack.Screen name="password" />
             <Stack.Screen name="welcome" />
             <Stack.Screen name="tutorial" />
-            <Stack.Screen name="accomplishment" />
+            <Stack.Screen name="calendar" />
         </Stack>
     );
 }

@@ -12,12 +12,15 @@ import * as WebBrowser from "expo-web-browser";
 import { connectGoogleCalendar, getCalendarConnections } from "@/api/calendar";
 import CalendarSetupBottomSheet from "@/components/modals/CalendarSetupBottomSheet";
 import { showToast } from "@/utils/showToast";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const CalendarOnboarding = () => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const { capture } = useAnalytics();
 
     const [loading, setLoading] = useState(false);
     const [pendingConnectionId, setPendingConnectionId] = useState<string | null>(null);
@@ -83,7 +86,8 @@ const CalendarOnboarding = () => {
                 const completed = connections.find((c) => c.setup_complete);
                 if (completed) {
                     showToast("Calendar connected!", "success");
-                    router.push("/(onboarding)/accomplishment");
+                    capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
+                    router.replace("/(logged-in)/(tabs)/(task)" as any);
                     return;
                 }
             }
@@ -99,11 +103,13 @@ const CalendarOnboarding = () => {
         setShowSetup(false);
         setPendingConnectionId(null);
         showToast("Calendar connected!", "success");
-        router.push("/(onboarding)/accomplishment");
+        capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
+        router.replace("/(logged-in)/(tabs)/(task)" as any);
     };
 
     const handleSkip = () => {
-        router.push("/(onboarding)/accomplishment");
+        capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
+        router.replace("/(logged-in)/(tabs)/(task)" as any);
     };
 
     return (
