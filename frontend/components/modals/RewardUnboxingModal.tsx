@@ -31,6 +31,7 @@ interface RewardUnboxingModalProps {
     setVisible: (v: boolean) => void;
     rewardType: string;
     rewardAmount: number;
+    newTotal?: number;
 }
 
 const SPIN_DURATION = 1500;
@@ -43,6 +44,7 @@ export default function RewardUnboxingModal({
     setVisible,
     rewardType,
     rewardAmount,
+    newTotal,
 }: RewardUnboxingModalProps) {
     const ThemedColor = useThemeColor();
     const confettiRef = useRef<any>(null);
@@ -223,13 +225,17 @@ export default function RewardUnboxingModal({
                     <ThemedText style={styles.rewardSubtitle}>
                         {winningType.label}
                     </ThemedText>
+                    {newTotal != null && (
+                        <ThemedText type="caption" style={{ color: "#E9D5FF", marginTop: 8 }}>
+                            You now have {newTotal} {winningType.label.toLowerCase()}
+                        </ThemedText>
+                    )}
                 </Animated.View>
 
                 {phase === "revealed" && (
                     <View style={styles.buttonContainer}>
                         <PrimaryButton
                             title="Done"
-                            outline
                             onPress={() => setVisible(false)}
                         />
                     </View>

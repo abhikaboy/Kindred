@@ -99,12 +99,16 @@ type SendBeakCongratulationParams struct {
 	Message      string `json:"message" example:"welcome! you just completed your first task!" doc:"Congratulation message" validate:"required"`
 	CategoryName string `json:"categoryName" example:"My Tasks" doc:"Category name" validate:"required"`
 	TaskName     string `json:"taskName" example:"Start my morning routine" doc:"Task name" validate:"required"`
+	GrantCredits bool   `json:"grantCredits,omitempty" doc:"Whether to grant welcome credits to the user"`
 }
 
 type SendBeakCongratulationOutput struct {
-	Body struct {
-		Message string `json:"message" example:"Congratulation sent successfully"`
-	}
+	Body SendBeakCongratulationResult
+}
+
+type SendBeakCongratulationResult struct {
+	Message        string         `json:"message" example:"Congratulation sent successfully"`
+	CreditsGranted map[string]int `json:"creditsGranted,omitempty" doc:"Credits granted to the user by type"`
 }
 
 // Data structures
