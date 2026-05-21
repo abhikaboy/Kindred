@@ -17,24 +17,26 @@ const (
 )
 
 type Service struct {
-	users      repository.UserRepository
-	categories *mongo.Collection
-	referrals  *mongo.Collection
-	config     config.Config
+	users           repository.UserRepository
+	categories      *mongo.Collection
+	referrals       *mongo.Collection
+	congratulations *mongo.Collection
+	config          config.Config
 }
 
-func newService(users repository.UserRepository, categories *mongo.Collection, referrals *mongo.Collection, cfg config.Config) *Service {
+func newService(users repository.UserRepository, categories *mongo.Collection, referrals *mongo.Collection, congratulations *mongo.Collection, cfg config.Config) *Service {
 	return &Service{
-		users:      users,
-		categories: categories,
-		referrals:  referrals,
-		config:     cfg,
+		users:           users,
+		categories:      categories,
+		referrals:       referrals,
+		congratulations: congratulations,
+		config:          cfg,
 	}
 }
 
 func NewServiceWithConfig(collections map[string]*mongo.Collection, cfg config.Config) *Service {
 	users := mongorepo.NewUserRepository(collections["users"])
-	return newService(users, collections["categories"], collections["referrals"], cfg)
+	return newService(users, collections["categories"], collections["referrals"], collections["congratulations"], cfg)
 }
 
 type Handler struct {

@@ -336,7 +336,6 @@ export default React.memo(SwipableTaskCard, (prevProps, nextProps) => {
 
 const styles = StyleSheet.create({
     swipeable: {
-        flex: 1,
     },
     rightAction: {
         width: RIGHT_ACTION_WIDTH,

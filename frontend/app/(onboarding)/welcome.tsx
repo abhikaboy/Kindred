@@ -205,7 +205,7 @@ const WelcomeOnboarding = (props: Props) => {
                             step_name: OnboardingSteps.WELCOME.name,
                             step_index: OnboardingSteps.WELCOME.index,
                         });
-                        router.push("/(onboarding)/calendar");
+                        router.push("/(onboarding)/tutorial");
                     }}
                 />
             </Animated.View>

@@ -10,10 +10,11 @@ const SCREEN_SCALE = Dimensions.get("screen").width / 393;
 type Props = {
     onCreated?: (categoryId: string, categoryName: string) => void;
     onCancel: () => void;
+    initialName?: string;
 };
 
-const InlineCategoryCreator = ({ onCreated, onCancel }: Props) => {
-    const [name, setName] = useState("");
+const InlineCategoryCreator = ({ onCreated, onCancel, initialName }: Props) => {
+    const [name, setName] = useState(initialName ?? "");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
     const inputRef = useRef<TextInput>(null);
@@ -53,7 +54,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel }: Props) => {
                 workspaceName: selected,
             });
             if (!mountedRef.current) return;
-            addToWorkspace(selected, response);
+            addToWorkspace(selected, { ...response, tasks: response.tasks ?? [] });
             animateOut(() => onCreated?.(response.id, trimmed));
         } catch (e) {
             if (!mountedRef.current) return;

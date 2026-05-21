@@ -88,6 +88,25 @@ type MarkCongratulationsReadOutput struct {
 	}
 }
 
+// Send Beak Congratulation (system congratulation from onboarding)
+type SendBeakCongratulationInput struct {
+	Authorization string                       `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                       `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          SendBeakCongratulationParams `json:"body"`
+}
+
+type SendBeakCongratulationParams struct {
+	Message      string `json:"message" example:"welcome! you just completed your first task!" doc:"Congratulation message" validate:"required"`
+	CategoryName string `json:"categoryName" example:"My Tasks" doc:"Category name" validate:"required"`
+	TaskName     string `json:"taskName" example:"Start my morning routine" doc:"Task name" validate:"required"`
+}
+
+type SendBeakCongratulationOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Congratulation sent successfully"`
+	}
+}
+
 // Data structures
 type CongratulationSender struct {
 	Name    string `bson:"name" json:"name" example:"John Doe" doc:"Sender's name"`

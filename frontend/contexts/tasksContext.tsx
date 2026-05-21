@@ -259,7 +259,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 if (category.id === categoryId) {
                     return {
                         ...category,
-                        tasks: [...category.tasks, { ...task, categoryName: category.name }],
+                        tasks: [...(category.tasks || []), { ...task, categoryName: category.name }],
                     };
                 }
                 return category;
@@ -297,7 +297,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const addToWorkspace = useCallback((name: string, category: Categories) => {
         setRawWorkspaces(prev => prev.map(workspace => {
             if (workspace.name === name) {
-                return { ...workspace, categories: [...workspace.categories, category] };
+                return { ...workspace, categories: [...workspace.categories, { ...category, tasks: category.tasks ?? [] }] };
             }
             return workspace;
         }));

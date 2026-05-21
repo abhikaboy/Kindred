@@ -102,6 +102,28 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 	return &CreateCongratulationOutput{Body: *congratulation}, nil
 }
 
+func (h *Handler) SendBeakCongratulationHuma(ctx context.Context, input *SendBeakCongratulationInput) (*SendBeakCongratulationOutput, error) {
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	receiverID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	err = h.service.SendBeakCongratulation(receiverID, input.Body.Message, input.Body.CategoryName, input.Body.TaskName)
+	if err != nil {
+		slog.Error("Failed to send beak congratulation", "error", err, "receiver_id", user_id)
+		return nil, huma.Error500InternalServerError("Failed to send congratulation", err)
+	}
+
+	return &SendBeakCongratulationOutput{Body: struct {
+		Message string `json:"message" example:"Congratulation sent successfully"`
+	}{Message: "Congratulation sent successfully"}}, nil
+}
+
 func (h *Handler) GetCongratulationsHuma(ctx context.Context, input *GetCongratulationsInput) (*GetCongratulationsOutput, error) {
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)

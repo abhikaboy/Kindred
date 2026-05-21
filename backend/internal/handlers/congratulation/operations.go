@@ -74,8 +74,20 @@ func RegisterMarkCongratulationsReadOperation(api huma.API, handler *Handler) {
 	}, handler.MarkCongratulationsReadHuma)
 }
 
+func RegisterSendBeakCongratulationOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "send-beak-congratulation",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/congratulations/beak",
+		Summary:     "Send a congratulation from beak",
+		Description: "Send a system congratulation from the beak account with push notification. Used during onboarding tutorial.",
+		Tags:        []string{"congratulations"},
+	}, handler.SendBeakCongratulationHuma)
+}
+
 // Register all congratulation operations
 func RegisterCongratulationOperations(api huma.API, handler *Handler) {
+	RegisterSendBeakCongratulationOperation(api, handler)
 	RegisterMarkCongratulationsReadOperation(api, handler)
 	RegisterCreateCongratulationOperation(api, handler)
 	RegisterGetCongratulationsOperation(api, handler)

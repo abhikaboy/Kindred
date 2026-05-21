@@ -518,7 +518,6 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         paddingHorizontal: 16,
         paddingVertical: 16,
         borderRadius: 16,
