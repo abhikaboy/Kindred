@@ -10,6 +10,7 @@ import BasicCard from "@/components/cards/BasicCard";
 import { useRouter } from "expo-router";
 import { KudosCards } from "../cards/KudosCard";
 import { HorseIcon, PlusIcon } from "phosphor-react-native";
+import SectionHeader from "./SectionHeader";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
@@ -22,6 +23,9 @@ import { getCalendarConnections, connectGoogleCalendar, syncCalendarEvents, Cale
 import { useAlert } from "@/contexts/AlertContext";
 import { formatErrorForAlert, ERROR_MESSAGES } from "@/utils/errorParser";
 import CalendarSetupBottomSheet from "@/components/modals/CalendarSetupBottomSheet";
+import { useUserSettings, useUpdateDashboardConfiguration, settingsKeys } from "@/hooks/useSettings";
+import type { DashboardConfiguration, UserSettings } from "@/api/settings";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface HomeScrollContentProps {
     encouragementCount: number;
@@ -68,6 +72,47 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     const { showAlert } = useAlert();
     const [statsExpanded, setStatsExpanded] = useState(false);
     const dimAnim = useRef(new Animated.Value(1)).current;
+
+    // Dashboard section visibility
+    const queryClient = useQueryClient();
+    const { data: settings } = useUserSettings();
+    const { mutate: saveDashboardConfig } = useUpdateDashboardConfiguration();
+    const defaultConfig: DashboardConfiguration = {
+        stats: true, jump_back_in: true, kudos: true, upcoming: true,
+        google_calendar: true, recent_workspaces: true, recently_completed: true,
+    };
+    const dashboardConfig = settings?.dashboard_configuration ?? defaultConfig;
+
+    // Debounced save: accumulate changes, update cache immediately, save to backend after delay
+    const pendingChangesRef = useRef<Partial<DashboardConfiguration>>({});
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const toggleSection = useCallback((key: keyof DashboardConfiguration) => {
+        const newValue = !dashboardConfig[key];
+        pendingChangesRef.current = { ...pendingChangesRef.current, [key]: newValue };
+
+        // Optimistic cache update (no network)
+        queryClient.setQueryData(settingsKeys.user(), (old: UserSettings | undefined) => {
+            if (!old) return old;
+            return {
+                ...old,
+                dashboard_configuration: { ...defaultConfig, ...old.dashboard_configuration, [key]: newValue },
+            };
+        });
+
+        // Debounce the actual network save
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            saveDashboardConfig(pendingChangesRef.current);
+            pendingChangesRef.current = {};
+        }, 600);
+    }, [dashboardConfig, saveDashboardConfig, queryClient]);
+
+    // Clean up debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         Animated.timing(dimAnim, {
@@ -275,8 +320,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     return (
         <ScrollView
             ref={scrollRef}
-            style={{ gap: 8 }}
-            contentContainerStyle={{ gap: 8 }}
+            style={{ gap: 16 }}
+            contentContainerStyle={{ gap: 16 }}
             showsVerticalScrollIndicator={false}
             refreshControl={
                 onRefresh ? (
@@ -289,7 +334,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 ) : undefined
             }
         >
-            <MotiView style={{ gap: 8, marginTop: 12 }}>
+            <MotiView style={{ gap: 16, marginTop: 12 }}>
                 {/* Focus - always visible at the top */}
                 {/* <BasicCard>
                     <View
@@ -313,7 +358,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 </BasicCard> */}
 
 
-                {/* Dashboard Stats */}
+                {/* Dashboard Stats - always visible */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
                     <DashboardStats onExpandChange={handleStatsExpandChange} />
                 </View>
@@ -321,12 +366,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 <Animated.View style={{ opacity: dimAnim }}>
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
-                    <AttachStep index={0}>
-                        <View ref={jumpBackInRef} onLayout={handleJumpLayout}>
-                            <ThemedText type="caption">JUMP BACK IN</ThemedText>
-                        </View>
-                    </AttachStep>
-                    <DashboardCards drawerRef={drawerRef} />
+                    <View ref={jumpBackInRef} onLayout={handleJumpLayout} style={{ paddingRight: HORIZONTAL_PADDING }}>
+                        <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
+                    </View>
+                    {dashboardConfig.jump_back_in && <DashboardCards drawerRef={drawerRef} />}
                 </View>
 
                 {/* Kudos Cards (Encouragements & Congratulations) */}
@@ -336,48 +379,46 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         gap: 12,
                         marginBottom: 18,
                     }}>
-                    <ThemedText type="caption">KUDOS</ThemedText>
-                    <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
-
-                    <AttachStep index={1} style={{ width: "100%" }}>
-                        <View ref={kudosRef} onLayout={handleKudosLayout}>
-                            <KudosCards />
-                        </View>
-                    </AttachStep>
+                    <SectionHeader title="KUDOS" visible={dashboardConfig.kudos} onToggleVisibility={() => toggleSection("kudos")} />
+                    {dashboardConfig.kudos && (
+                        <>
+                            <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
+                            <AttachStep index={1} style={{ width: "100%" }}>
+                                <View ref={kudosRef} onLayout={handleKudosLayout}>
+                                    <KudosCards />
+                                </View>
+                            </AttachStep>
+                        </>
+                    )}
                 </View>
 
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
-                    <TouchableOpacity
-                        style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
-                        onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}
-                    >
-                        <ThemedText type="caption">UPCOMING</ThemedText>
-                            <Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />
-                        </TouchableOpacity>
-                    <TodaySection />
+                    <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
+                        <SectionHeader
+                            title="UPCOMING"
+                            visible={dashboardConfig.upcoming}
+                            onToggleVisibility={() => toggleSection("upcoming")}
+                            right={<Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />}
+                        />
+                    </TouchableOpacity>
+                    {dashboardConfig.upcoming && <TodaySection />}
                 </View>
-
-
-                {/* <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                        <ThemedText type="caption">QUICK TASK</ThemedText>
-                        <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
-                            <Ionicons name="add" size={16} color={ThemedColor.caption} />
-                        </TouchableOpacity>
-                    </View>
-                    <TextInput placeholder="Whats on your mind?" style={{ backgroundColor: ThemedColor.lightened, borderRadius: 8, padding: 16, fontSize: 16, fontFamily: "OutfitLight" }} />
-                </View> */}
 
                 {/* Google Calendar Connection Card */}
                 {showGoogleCalendarCard && (
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
-                        <GoogleCalendarCard
-                            isLinked={isCalendarLinked}
-                            setupPending={!!pendingConnectionId}
-                            onAction={handleCalendarAction}
-                            onDismiss={!isCalendarLinked ? handleDismissGoogleCalendar : undefined}
-                            loading={calendarLoading}
-                        />
+                        <View style={{ marginBottom: 8 }}>
+                            <SectionHeader title="GOOGLE CALENDAR" visible={dashboardConfig.google_calendar} onToggleVisibility={() => toggleSection("google_calendar")} />
+                        </View>
+                        {dashboardConfig.google_calendar && (
+                            <GoogleCalendarCard
+                                isLinked={isCalendarLinked}
+                                setupPending={!!pendingConnectionId}
+                                onAction={handleCalendarAction}
+                                onDismiss={!isCalendarLinked ? handleDismissGoogleCalendar : undefined}
+                                loading={calendarLoading}
+                            />
+                        )}
                     </View>
                 )}
 
@@ -387,39 +428,42 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         marginHorizontal: HORIZONTAL_PADDING,
                         gap: 16,
                     }}>
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            marginBottom: 2,
-                        }}>
-                        <ThemedText type="caption">RECENT WORKSPACES</ThemedText>
-                        <TouchableOpacity onPress={onCreateWorkspace}>
-                            <PlusIcon size="18" weight="light" color={ThemedColor.caption}></PlusIcon>
-                        </TouchableOpacity>
+                    <View style={{ marginBottom: 2 }}>
+                        <SectionHeader
+                            title="RECENT WORKSPACES"
+                            visible={dashboardConfig.recent_workspaces}
+                            onToggleVisibility={() => toggleSection("recent_workspaces")}
+                            right={
+                                <TouchableOpacity onPress={onCreateWorkspace}>
+                                    <PlusIcon size="18" weight="light" color={ThemedColor.caption} />
+                                </TouchableOpacity>
+                            }
+                        />
                     </View>
                 </View>
                 <ScrollView
                     horizontal={false}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 108 }}>
-                    <View
-                        style={{
-                            marginHorizontal: HORIZONTAL_PADDING,
-                            gap: 16,
-                            marginBottom: 18,
-                        }}>
-                        {/* Workspace Grid */}
-                        <WorkspaceGrid
-                            workspaces={workspaces}
-                            displayWorkspaces={displayWorkspaces}
-                            fetchingWorkspaces={fetchingWorkspaces}
-                            onWorkspacePress={onWorkspaceSelect}
-                            ThemedColor={ThemedColor}
-                        />
-                    </View>
+                    {dashboardConfig.recent_workspaces && (
+                        <View
+                            style={{
+                                marginHorizontal: HORIZONTAL_PADDING,
+                                gap: 16,
+                                marginBottom: 18,
+                            }}>
+                            {/* Workspace Grid */}
+                            <WorkspaceGrid
+                                workspaces={workspaces}
+                                displayWorkspaces={displayWorkspaces}
+                                fetchingWorkspaces={fetchingWorkspaces}
+                                onWorkspacePress={onWorkspaceSelect}
+                                ThemedColor={ThemedColor}
+                            />
+                        </View>
+                    )}
                 {/* Recently Completed Tasks */}
-                <RecentlyCompletedTasks />
+                {dashboardConfig.recently_completed && <RecentlyCompletedTasks onToggleVisibility={() => toggleSection("recently_completed")} />}
                 </ScrollView>
                 </Animated.View>
             </MotiView>

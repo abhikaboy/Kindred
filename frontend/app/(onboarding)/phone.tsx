@@ -271,10 +271,6 @@ const PhoneOnboarding = () => {
                 }}
             />
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.keyboardView}
-            >
                 <View style={styles.contentContainer}>
                     {/* Header — crossfades between phone and verify titles */}
                     <Animated.View style={[styles.headerContainer, {
@@ -346,6 +342,41 @@ const PhoneOnboarding = () => {
                             <ThemedText style={[styles.helperText, { color: ThemedColor.caption }]}>
                                 Standard messaging rates may apply
                             </ThemedText>
+
+                            {/* Terms checkbox — sits below helper text, behind keyboard */}
+                            <Animated.View style={[styles.termsContainer, { opacity: fadeAnimation }]}>
+                                <TouchableOpacity
+                                    testID="terms-checkbox"
+                                    style={styles.checkboxContainer}
+                                    onPress={() => setAgreedToTerms(!agreedToTerms)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={[styles.checkbox, {
+                                        backgroundColor: agreedToTerms ? ThemedColor.primary : 'transparent',
+                                        borderColor: agreedToTerms ? ThemedColor.primary : ThemedColor.caption,
+                                    }]}>
+                                        {agreedToTerms && <Ionicons name="checkmark" size={16} color="white" />}
+                                    </View>
+                                    <View style={styles.termsTextContainer}>
+                                        <ThemedText style={[styles.termsText, { color: ThemedColor.text }]}>
+                                            I agree to the{' '}
+                                            <ThemedText
+                                                style={[styles.termsLink, { color: ThemedColor.primary }]}
+                                                onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
+                                            >
+                                                Terms of Service
+                                            </ThemedText>
+                                            {' '}and{' '}
+                                            <ThemedText
+                                                style={[styles.termsLink, { color: ThemedColor.primary }]}
+                                                onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
+                                            >
+                                                Privacy Policy
+                                            </ThemedText>
+                                        </ThemedText>
+                                    </View>
+                                </TouchableOpacity>
+                            </Animated.View>
                         </Animated.View>
                     )}
 
@@ -424,63 +455,33 @@ const PhoneOnboarding = () => {
                         </Animated.View>
                     )}
 
-                    {/* Terms checkbox — only in phone entry state */}
-                    {!codeSent && (
-                        <Animated.View style={[styles.termsContainer, { opacity: fadeAnimation }]}>
-                            <TouchableOpacity
-                                testID="terms-checkbox"
-                                style={styles.checkboxContainer}
-                                onPress={() => setAgreedToTerms(!agreedToTerms)}
-                                activeOpacity={0.7}
-                            >
-                                <View style={[styles.checkbox, {
-                                    backgroundColor: agreedToTerms ? ThemedColor.primary : 'transparent',
-                                    borderColor: agreedToTerms ? ThemedColor.primary : ThemedColor.caption,
-                                }]}>
-                                    {agreedToTerms && <Ionicons name="checkmark" size={16} color="white" />}
-                                </View>
-                                <View style={styles.termsTextContainer}>
-                                    <ThemedText style={[styles.termsText, { color: ThemedColor.text }]}>
-                                        I agree to the{' '}
-                                        <ThemedText
-                                            style={[styles.termsLink, { color: ThemedColor.primary }]}
-                                            onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
-                                        >
-                                            Terms of Service
-                                        </ThemedText>
-                                        {' '}and{' '}
-                                        <ThemedText
-                                            style={[styles.termsLink, { color: ThemedColor.primary }]}
-                                            onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
-                                        >
-                                            Privacy Policy
-                                        </ThemedText>
-                                    </ThemedText>
-                                </View>
-                            </TouchableOpacity>
-                        </Animated.View>
-                    )}
+                    {/* Spacer pushes button to bottom */}
+                    <View style={{ flex: 1 }} />
 
-                    {/* Button */}
-                    <Animated.View style={[styles.buttonContainer, { opacity: fadeAnimation }]}>
-                        {!codeSent ? (
-                            <PrimaryButton
-                                testID="send-code-btn"
-                                title={sendingOTP ? "Sending..." : "Send Code"}
-                                onPress={handleSendCode}
-                                disabled={!canContinue || sendingOTP}
-                            />
-                        ) : (
-                            <PrimaryButton
-                                testID="verify-btn"
-                                title={verifyingOTP ? "Verifying..." : "Verify"}
-                                onPress={handleVerify}
-                                disabled={otpCode.length !== 4 || verifyingOTP || isVerified}
-                            />
-                        )}
-                    </Animated.View>
+                    {/* Button — inside KeyboardAvoidingView so it stays above keyboard */}
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        keyboardVerticalOffset={10}
+                    >
+                        <Animated.View style={[styles.buttonContainer, { opacity: fadeAnimation }]}>
+                            {!codeSent ? (
+                                <PrimaryButton
+                                    testID="send-code-btn"
+                                    title={sendingOTP ? "Sending..." : "Send Code"}
+                                    onPress={handleSendCode}
+                                    disabled={!canContinue || sendingOTP}
+                                />
+                            ) : (
+                                <PrimaryButton
+                                    testID="verify-btn"
+                                    title={verifyingOTP ? "Verifying..." : "Verify"}
+                                    onPress={handleVerify}
+                                    disabled={otpCode.length !== 4 || verifyingOTP || isVerified}
+                                />
+                            )}
+                        </Animated.View>
+                    </KeyboardAvoidingView>
                 </View>
-            </KeyboardAvoidingView>
         </ThemedView>
     );
 };
@@ -497,7 +498,6 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingTop: screenHeight * 0.20,
-        justifyContent: 'space-between',
         paddingBottom: 20,
         zIndex: 1,
     },
@@ -530,7 +530,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     inputContainer: {
-        flex: 1,
         marginTop: 40,
     },
     unifiedPhoneWrapper: {
@@ -618,6 +617,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit',
     },
     termsContainer: {
+        marginTop: 20,
         marginBottom: 16,
     },
     checkboxContainer: {

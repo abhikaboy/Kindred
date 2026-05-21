@@ -287,8 +287,9 @@ type SafeUser struct {
 
 // UserSettings contains all user preference settings
 type UserSettings struct {
-	Notifications NotificationSettings `bson:"notifications" json:"notifications"`
-	Display       DisplaySettings      `bson:"display" json:"display"`
+	Notifications          NotificationSettings   `bson:"notifications" json:"notifications"`
+	Display                DisplaySettings        `bson:"display" json:"display"`
+	DashboardConfiguration DashboardConfiguration `bson:"dashboard_configuration" json:"dashboard_configuration"`
 }
 
 // NotificationSettings controls notification preferences
@@ -302,6 +303,17 @@ type NotificationSettings struct {
 	Encouragements   bool   `bson:"encouragements" json:"encouragements"`
 	Congratulations  bool   `bson:"congratulations" json:"congratulations"`
 	FriendRequests   bool   `bson:"friend_requests" json:"friend_requests"`
+}
+
+// DashboardConfiguration controls visibility of dashboard sections
+type DashboardConfiguration struct {
+	Stats             bool `bson:"stats" json:"stats"`
+	JumpBackIn        bool `bson:"jump_back_in" json:"jump_back_in"`
+	Kudos             bool `bson:"kudos" json:"kudos"`
+	Upcoming          bool `bson:"upcoming" json:"upcoming"`
+	GoogleCalendar    bool `bson:"google_calendar" json:"google_calendar"`
+	RecentWorkspaces  bool `bson:"recent_workspaces" json:"recent_workspaces"`
+	RecentlyCompleted bool `bson:"recently_completed" json:"recently_completed"`
 }
 
 // DisplaySettings controls UI display preferences
@@ -333,6 +345,15 @@ func DefaultUserSettings() UserSettings {
 			FriendActivityFeed:  true,
 			NearDeadlinesWidget: true,
 			ContentFilter:       true,
+		},
+		DashboardConfiguration: DashboardConfiguration{
+			Stats:             true,
+			JumpBackIn:        true,
+			Kudos:             true,
+			Upcoming:          true,
+			GoogleCalendar:    true,
+			RecentWorkspaces:  true,
+			RecentlyCompleted: true,
 		},
 	}
 }

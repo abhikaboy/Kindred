@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { TouchableWithoutFeedback, Animated, StyleSheet } from "react-native";
+import { TouchableWithoutFeedback, Animated, StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
+
+const MAX_BLUR_INTENSITY = 20;
 
 interface RingsBlurOverlayProps {
     visible: boolean;
@@ -8,23 +10,43 @@ interface RingsBlurOverlayProps {
 }
 
 const RingsBlurOverlay: React.FC<RingsBlurOverlayProps> = ({ visible, onDismiss }) => {
-    const opacity = useRef(new Animated.Value(0)).current;
+    const animValue = useRef(new Animated.Value(0)).current;
+    const runningAnim = useRef<Animated.CompositeAnimation | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [blurIntensity, setBlurIntensity] = useState(0);
 
     useEffect(() => {
+        const id = animValue.addListener(({ value }) => {
+            setBlurIntensity(value * MAX_BLUR_INTENSITY);
+        });
+        return () => animValue.removeListener(id);
+    }, []);
+
+    useEffect(() => {
+        // Stop any in-flight animation to prevent reverse-play artifacts
+        if (runningAnim.current) {
+            runningAnim.current.stop();
+            runningAnim.current = null;
+        }
+
         if (visible) {
             setMounted(true);
-            Animated.timing(opacity, {
+            const anim = Animated.timing(animValue, {
                 toValue: 1,
                 duration: 250,
-                useNativeDriver: true,
-            }).start();
+                useNativeDriver: false,
+            });
+            runningAnim.current = anim;
+            anim.start(() => { runningAnim.current = null; });
         } else {
-            Animated.timing(opacity, {
+            const anim = Animated.timing(animValue, {
                 toValue: 0,
                 duration: 250,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
+                useNativeDriver: false,
+            });
+            runningAnim.current = anim;
+            anim.start(({ finished }) => {
+                runningAnim.current = null;
                 if (finished) setMounted(false);
             });
         }
@@ -34,9 +56,9 @@ const RingsBlurOverlay: React.FC<RingsBlurOverlayProps> = ({ visible, onDismiss 
 
     return (
         <TouchableWithoutFeedback onPress={onDismiss}>
-            <Animated.View style={[styles.overlay, { opacity }]}>
-                <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="default" />
-            </Animated.View>
+            <View style={styles.overlay}>
+                <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFill} tint="default" />
+            </View>
         </TouchableWithoutFeedback>
     );
 };

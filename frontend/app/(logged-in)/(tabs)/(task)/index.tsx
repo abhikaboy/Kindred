@@ -30,6 +30,7 @@ import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
 import { List } from "phosphor-react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useRouter } from "expo-router";
 import { AnalyticsEvents } from "@/utils/analytics";
 
 type Props = {};
@@ -319,6 +320,7 @@ const HomeContent = ({
 }: any) => {
     const { start } = useSpotlightTour();
     const { selected } = useTasks();
+    const router = useRouter();
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
 
@@ -417,6 +419,24 @@ const HomeContent = ({
                                     menuRef={homeStep2Ref}
                                 />
                             </Animated.View>
+
+                            {/* DEV ONLY — remove before shipping */}
+                            <TouchableOpacity
+                                onPress={() => router.push("/(onboarding)/tutorial")}
+                                style={{
+                                    marginHorizontal: HORIZONTAL_PADDING,
+                                    marginBottom: 8,
+                                    paddingVertical: 8,
+                                    paddingHorizontal: 12,
+                                    borderRadius: 8,
+                                    borderWidth: 2,
+                                    borderColor: "#ff4444",
+                                    alignSelf: "flex-start",
+                                }}>
+                                <Animated.Text style={{ color: "#ff4444", fontFamily: "Outfit", fontWeight: "600", fontSize: 13 }}>
+                                    Do Tutorial (DEV)
+                                </Animated.Text>
+                            </TouchableOpacity>
 
                             <HomeScrollContent
                                 encouragementCount={encouragementCount}

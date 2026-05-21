@@ -8,8 +8,9 @@ import { getCompletedTasksAPI } from "@/api/task";
 import { Camera, CheckCircle, Confetti } from "phosphor-react-native";
 import { formatDistanceToNow } from "date-fns";
 import { useTasks } from "@/contexts/tasksContext";
+import SectionHeader from "./SectionHeader";
 
-const RecentlyCompletedTasks = () => {
+const RecentlyCompletedTasks = ({ onToggleVisibility }: { onToggleVisibility?: () => void }) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
@@ -61,11 +62,19 @@ const RecentlyCompletedTasks = () => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <ThemedText type="caption">RECENTLY COMPLETED</ThemedText>
-                <Confetti size={20} color={ThemedColor.caption} weight="duotone" />
-            </View>
-            
+            {onToggleVisibility ? (
+                <SectionHeader
+                    title="RECENTLY COMPLETED"
+                    visible={true}
+                    onToggleVisibility={onToggleVisibility}
+                />
+            ) : (
+                <View style={styles.header}>
+                    <ThemedText type="caption">RECENTLY COMPLETED</ThemedText>
+                    <Confetti size={20} color={ThemedColor.caption} weight="duotone" />
+                </View>
+            )}
+
             <View style={styles.listContainer}>
                 {recentTasks.map((task) => (
                     <TouchableOpacity
@@ -106,8 +115,7 @@ const useStyles = (ThemedColor: any) =>
             marginBottom: 4,
             flexDirection: "row",
             alignItems: "center",
-            gap: 4,
-            // justifyContent: "space-between",
+            justifyContent: "space-between",
         },
         listContainer: {
             gap: 8,

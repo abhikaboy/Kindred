@@ -107,9 +107,10 @@ const CreateModal = (props: Props) => {
         [props.setVisible]
     );
 
-    // Reset screen when modal is dismissed
+    // Dismiss and reset screen when visible goes false
     useEffect(() => {
         if (!props.visible) {
+            bottomSheetModalRef.current?.dismiss();
             const timer = setTimeout(() => {
                 setScreen(Screen.STANDARD);
             }, 300);

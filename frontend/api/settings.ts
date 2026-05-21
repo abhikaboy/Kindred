@@ -9,6 +9,7 @@ const logger = createLogger('SettingsAPI');
 export type UserSettings = components["schemas"]["UserSettings"];
 export type NotificationSettings = components["schemas"]["NotificationSettings"];
 export type DisplaySettings = components["schemas"]["DisplaySettings"];
+export type DashboardConfiguration = components["schemas"]["DashboardConfiguration"];
 
 /**
  * Get user settings
@@ -49,6 +50,10 @@ export const updateUserSettings = async (settings: Partial<UserSettings>): Promi
         display: {
             ...currentSettings.display,
             ...(settings.display || {}),
+        },
+        dashboard_configuration: {
+            ...currentSettings.dashboard_configuration,
+            ...(settings.dashboard_configuration || {}),
         },
     };
 
@@ -103,6 +108,24 @@ export const updateDisplaySettings = async (display: Partial<DisplaySettings>): 
         display: {
             ...currentSettings.display,
             ...display,
+        },
+    });
+};
+
+/**
+ * Update dashboard configuration
+ * Convenience method for updating dashboard section visibility
+ */
+export const updateDashboardConfiguration = async (
+    dashboardConfig: Partial<DashboardConfiguration>
+): Promise<{ message: string }> => {
+    const currentSettings = await getUserSettings();
+
+    return updateUserSettings({
+        ...currentSettings,
+        dashboard_configuration: {
+            ...currentSettings.dashboard_configuration,
+            ...dashboardConfig,
         },
     });
 };
