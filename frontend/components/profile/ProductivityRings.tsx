@@ -15,6 +15,7 @@ import { Check, LockSimple, Gift } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
+import { useAuth } from "@/hooks/useAuth";
 import { RingProgress, RingState, RingRewardResponse } from "@/api/types";
 import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
@@ -103,6 +104,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     onExpandChange,
 }) => {
     const ThemedColor = useThemeColor();
+    const { user } = useAuth();
     const { rings, score, streak, isLoading, history, canClaimReward, allClosed, claimReward, isClaiming } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
     const [showUnboxing, setShowUnboxing] = useState(false);
@@ -123,15 +125,6 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
         }
     };
 
-    // Toast when all rings transition from open to closed (not on initial load)
-    const prevAllClosed = useRef<boolean | null>(null);
-
-    useEffect(() => {
-        if (prevAllClosed.current !== null && allClosed && !prevAllClosed.current) {
-            showToast("All rings closed!", "success");
-        }
-        prevAllClosed.current = allClosed;
-    }, [allClosed]);
 
     // Sync with parent: when blur overlay is dismissed, clear internal state
     React.useEffect(() => {
@@ -170,20 +163,22 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             style={[
                 styles.card,
                 {
-                    backgroundColor: ThemedColor.lightened,
+                    backgroundColor: ThemedColor.background,
                 },
-                isExpanded && styles.cardExpanded,
+                styles.cardExpanded,
             ]}
         >
+            {/* Private label */}
+            <View style={styles.privateRow}>
+                <LockSimple size={12} color={ThemedColor.caption} />
+                <ThemedText type="caption" style={{ opacity: 0.6 }}>
+                    Only visible to you
+                </ThemedText>
+            </View>
+
             {/* Score Arc */}
-            <View style={styles.arcSection}>
+            <View style={[styles.arcSection, { marginBottom: 8 }]}>
                 <ScoreArc score={score} />
-                <View style={styles.privateRow}>
-                    <LockSimple size={12} color={ThemedColor.caption} />
-                    <ThemedText style={[styles.privateText, { color: ThemedColor.caption }]}>
-                        Only visible to you
-                    </ThemedText>
-                </View>
             </View>
 
             {/* Rings Row */}
@@ -276,21 +271,32 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 setVisible={setShowUnboxing}
                 rewardType={rewardResult?.credit_type ?? "naturalLanguage"}
                 rewardAmount={rewardResult?.amount ?? 1}
+                newTotal={
+                    rewardResult?.credit_type && user?.credits
+                        ? (user.credits[rewardResult.credit_type as keyof typeof user.credits] ?? 0)
+                        : undefined
+                }
             />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    privateRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+    },
     card: {
         borderRadius: 16,
         padding: 20,
         gap: 20,
         shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 12,
-        elevation: 3,
+        shadowOpacity: 0.04,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 6,
+        elevation: 1,
     },
     cardExpanded: {
         zIndex: 999,
@@ -298,15 +304,6 @@ const styles = StyleSheet.create({
     arcSection: {
         alignItems: "center",
         gap: 4,
-    },
-    privateRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-    },
-    privateText: {
-        fontSize: 11,
-        fontFamily: "Outfit",
     },
     ringsRow: {
         flexDirection: "row",

@@ -418,3 +418,44 @@ func (s *Service) SendBeakCongratulation(receiverID primitive.ObjectID, message,
 	slog.Info("Beak congratulation sent", "receiver_id", receiverID.Hex())
 	return nil
 }
+
+// GrantWelcomeCredits gives a user starter credits during onboarding.
+// Uses an atomic flag (welcomeCreditsGranted) to ensure it only happens once per user.
+func (s *Service) GrantWelcomeCredits(userID primitive.ObjectID) (map[string]int, error) {
+	if s.Users == nil {
+		return nil, fmt.Errorf("users collection not available")
+	}
+
+	credits := map[string]int{
+		"voice":           5,
+		"naturalLanguage": 5,
+		"analytics":       3,
+		"group":           3,
+	}
+
+	// Atomically set the flag and grant credits — only succeeds if flag is not already set
+	result, err := s.Users.UpdateOne(
+		context.Background(),
+		bson.M{"_id": userID, "welcomeCreditsGranted": bson.M{"$ne": true}},
+		bson.M{
+			"$inc": bson.M{
+				"credits.voice":           credits["voice"],
+				"credits.naturalLanguage": credits["naturalLanguage"],
+				"credits.analytics":       credits["analytics"],
+				"credits.group":           credits["group"],
+			},
+			"$set": bson.M{"welcomeCreditsGranted": true},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to grant welcome credits: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		slog.Info("Welcome credits already granted, skipping", "user_id", userID.Hex())
+		return nil, nil // Already granted
+	}
+
+	slog.Info("Welcome credits granted", "user_id", userID.Hex(), "credits", credits)
+	return credits, nil
+}

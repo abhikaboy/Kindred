@@ -119,9 +119,19 @@ func (h *Handler) SendBeakCongratulationHuma(ctx context.Context, input *SendBea
 		return nil, huma.Error500InternalServerError("Failed to send congratulation", err)
 	}
 
-	return &SendBeakCongratulationOutput{Body: struct {
-		Message string `json:"message" example:"Congratulation sent successfully"`
-	}{Message: "Congratulation sent successfully"}}, nil
+	result := SendBeakCongratulationResult{Message: "Congratulation sent successfully"}
+
+	if input.Body.GrantCredits {
+		credits, err := h.service.GrantWelcomeCredits(receiverID)
+		if err != nil {
+			slog.Error("Failed to grant welcome credits", "error", err, "receiver_id", user_id)
+			// Don't fail the whole request, congrats was already sent
+		} else {
+			result.CreditsGranted = credits
+		}
+	}
+
+	return &SendBeakCongratulationOutput{Body: result}, nil
 }
 
 func (h *Handler) GetCongratulationsHuma(ctx context.Context, input *GetCongratulationsInput) (*GetCongratulationsOutput, error) {

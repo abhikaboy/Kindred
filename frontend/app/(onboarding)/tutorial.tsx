@@ -9,6 +9,7 @@ import {
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { BlurView } from "expo-blur";
 import ConfettiCannon from "react-native-confetti-cannon";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -45,8 +46,15 @@ const BEAK = {
 const TAIL_SIZE = 10;
 const DISPLAY_WORKSPACE = "Example Workspace";
 const PREFILL_CATEGORY = "My Tasks";
-const PREFILL_TASK = "Start my morning routine";
-const CONGRATS_MESSAGE = "its beak, one of the founders of kindred. welcome :) you just completed your first task!";
+const PREFILL_TASK = "Finish Kindred Onboarding";
+const CONGRATS_MESSAGE = "it's beak, one of kindred's founders; welcome! and congrats on finishing your first (of many!) tasks :)";
+const CREDITS_MESSAGE = "here are some credits for features I think you'll like. you can get more by closing your rings";
+const CREDIT_LABELS: Record<string, string> = {
+    voice: "voice credits",
+    naturalLanguage: "AI credits",
+    analytics: "analytics credits",
+    group: "group credits",
+};
 
 export default function TutorialOnboarding() {
     const ThemedColor = useThemeColor();
@@ -56,7 +64,7 @@ export default function TutorialOnboarding() {
     const totalSteps = isSocialAuth ? 4 : 5;
     const router = useRouter();
     const { capture } = useAnalytics();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const { workspaces, fetchWorkspaces, setSelected, setCreateCategory, categories, selected, addToCategory } = useTasks();
     const { setTaskName, resetTaskCreation } = useTaskCreation();
     const { request } = useRequest();
@@ -72,6 +80,7 @@ export default function TutorialOnboarding() {
 
     // Create modal (step 1)
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showContinue, setShowContinue] = useState(false);
 
     // Prompt card animation
     const promptOpacity = useRef(new Animated.Value(0)).current;
@@ -84,7 +93,6 @@ export default function TutorialOnboarding() {
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
     const bubbleTranslateX = useRef(new Animated.Value(-28)).current;
     const avatarOpacity = useRef(new Animated.Value(0)).current;
-    const buttonOpacity = useRef(new Animated.Value(0)).current;
 
     const confettiRef = useRef<any>(null);
 
@@ -146,8 +154,7 @@ export default function TutorialOnboarding() {
         setCategoryId(id);
         setCategoryName(name);
         setIsCreatingCategory(false);
-
-        setTimeout(() => setStep(1), 400);
+        setStep(1);
     }, []);
 
     const handleCancelCategory = useCallback(() => {
@@ -215,7 +222,6 @@ export default function TutorialOnboarding() {
     }, [showCreateModal, step, categoryId, taskData, fetchWorkspaces]);
 
     // ─── Step 2: Detect swipe completion ──────────────────────────────
-    const [typedText, setTypedText] = useState("");
     const completionHandledRef = useRef(false);
 
     useEffect(() => {
@@ -256,34 +262,56 @@ export default function TutorialOnboarding() {
                     ]).start();
                     // Start typewriter after bubble slides in
                     setTimeout(() => startTypewriter(), 400);
-                    Animated.timing(buttonOpacity, {
-                        toValue: 1, duration: 400, delay: 1800, useNativeDriver: true,
-                    }).start();
+                    // Show continue after second congrats has time to appear + typewriter
+                    setTimeout(() => setShowContinue(true), 6000);
                 }, 1000);
             }, 1500);
         }
     }, [categories, workspaces, categoryId, taskData, step]);
 
-    // Send a real congratulation from beak via backend endpoint + push notification
+    // Send two congratulations from beak — first is welcome, second grants credits
+    const [creditsGranted, setCreditsGranted] = useState<Record<string, number> | null>(null);
+    const [showSecondCongrats, setShowSecondCongrats] = useState(false);
+    const [secondTypewriterActive, setSecondTypewriterActive] = useState(false);
+
     const sendCongratulation = () => {
+        // First congrats: welcome message
         request("POST", "/user/congratulations/beak", {
             message: CONGRATS_MESSAGE,
             categoryName: categoryName ?? PREFILL_CATEGORY,
             taskName: taskData?.content ?? PREFILL_TASK,
-        }).catch(() => {}); // fire-and-forget
+        }).catch(() => {});
+
+        // Second congrats: credits gift (3s delay)
+        setTimeout(async () => {
+            try {
+                const response = await request("POST", "/user/congratulations/beak", {
+                    message: CREDITS_MESSAGE,
+                    categoryName: categoryName ?? PREFILL_CATEGORY,
+                    taskName: taskData?.content ?? PREFILL_TASK,
+                    grantCredits: true,
+                });
+                if (response?.creditsGranted) {
+                    setCreditsGranted(response.creditsGranted);
+                    // Update local user credits
+                    if (user?.credits) {
+                        const updated = { ...user.credits };
+                        for (const [key, amount] of Object.entries(response.creditsGranted)) {
+                            if (key in updated) {
+                                (updated as any)[key] += amount;
+                            }
+                        }
+                        updateUser({ credits: updated });
+                    }
+                }
+            } catch {}
+            setShowSecondCongrats(true);
+            setTimeout(() => setSecondTypewriterActive(true), 300);
+        }, 3000);
     };
 
-    // Typewriter effect for congrats message
-    const startTypewriter = () => {
-        let i = 0;
-        const interval = setInterval(() => {
-            i++;
-            setTypedText(CONGRATS_MESSAGE.slice(0, i));
-            if (i >= CONGRATS_MESSAGE.length) {
-                clearInterval(interval);
-            }
-        }, 18);
-    };
+    const [typewriterActive, setTypewriterActive] = useState(false);
+    const startTypewriter = () => setTypewriterActive(true);
 
     const handleContinue = () => {
         capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
@@ -390,11 +418,16 @@ export default function TutorialOnboarding() {
                     </View>
                 </View>
 
-                {/* Step 3: Congrats from beak — shown in the workspace area */}
+                {/* Blur overlay on workspace when showing congrats */}
+                {step === 3 && (
+                    <BlurView intensity={20} style={StyleSheet.absoluteFill} />
+                )}
+
+                {/* Step 3: Congrats from beak — shown over the blurred workspace */}
                 {step === 3 && (
                     <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginTop: 32 }}>
                         <Animated.View style={{ opacity: bubbleOpacity, marginBottom: 16 }}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.primary, fontFamily: "Outfit", fontWeight: "600", fontSize: 13, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary, textTransform: "uppercase", letterSpacing: 0.5 }}>
                                 Congratulation
                             </ThemedText>
                         </Animated.View>
@@ -420,6 +453,7 @@ export default function TutorialOnboarding() {
                             }]}>
                                 <View style={[styles.bubbleTail, { borderRightColor: ThemedColor.lightenedCard }]} />
                                 <View style={[styles.bubbleCard, { backgroundColor: ThemedColor.lightenedCard }]}>
+                                    <View style={{ position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: ThemedColor.error }} />
                                     <View style={styles.taskInfoRow}>
                                         <ThemedText style={[styles.taskInfoCategory, { color: ThemedColor.primary }]}>
                                             {categoryName ?? PREFILL_CATEGORY}
@@ -429,12 +463,54 @@ export default function TutorialOnboarding() {
                                             {taskData?.content ?? PREFILL_TASK}
                                         </ThemedText>
                                     </View>
-                                    <ThemedText style={[styles.messageText, { color: ThemedColor.text }]}>
-                                        {typedText}
-                                    </ThemedText>
+                                    {typewriterActive && (
+                                        <TypewriterText
+                                            message={CONGRATS_MESSAGE}
+                                            style={[styles.messageText, { color: ThemedColor.text }]}
+                                        />
+                                    )}
                                 </View>
                             </Animated.View>
                         </View>
+
+                        {/* Second congrats: credits gift */}
+                        {showSecondCongrats && (
+                            <View style={[styles.kudosRow, { marginTop: 16 }]}>
+                                <View style={styles.avatarSection}>
+                                    <CachedImage
+                                        source={{ uri: BEAK.picture }}
+                                        fallbackSource={require("@/assets/images/head.png")}
+                                        variant="thumbnail"
+                                        cachePolicy="memory-disk"
+                                        style={styles.avatar}
+                                    />
+                                </View>
+                                <View style={styles.bubbleWrapper}>
+                                    <View style={[styles.bubbleTail, { borderRightColor: ThemedColor.lightenedCard }]} />
+                                    <View style={[styles.bubbleCard, { backgroundColor: ThemedColor.lightenedCard }]}>
+                                        <View style={{ position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: ThemedColor.error }} />
+                                        {secondTypewriterActive && (
+                                            <TypewriterText
+                                                message={CREDITS_MESSAGE}
+                                                style={[styles.messageText, { color: ThemedColor.text }]}
+                                            />
+                                        )}
+                                        {creditsGranted && (
+                                            <View style={{ marginTop: 8, alignItems: "flex-end" }}>
+                                                {Object.entries(creditsGranted).map(([key, amount]) => {
+                                                    const label = CREDIT_LABELS[key] ?? key;
+                                                    return (
+                                                        <ThemedText key={key} type="caption" style={{ color: "#A855F7" }}>
+                                                            +{amount} {label}
+                                                        </ThemedText>
+                                                    );
+                                                })}
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 )}
             </View>
@@ -456,17 +532,41 @@ export default function TutorialOnboarding() {
                     </Animated.View>
                 ) : null}
 
-                {step === 3 && (
-                    <Animated.View style={[styles.promptCard, { opacity: buttonOpacity, backgroundColor: ThemedColor.lightened }]}>
-                        <ThemedText style={[styles.promptSubtitle, { color: ThemedColor.caption, textAlign: "center", marginBottom: 12 }]}>
+                {step === 3 && showContinue && (
+                    <View style={[styles.promptCard, { backgroundColor: ThemedColor.lightened }]}>
+                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.caption, textAlign: "center", marginBottom: 12 }}>
                             When you complete tasks, your friends can congratulate you
                         </ThemedText>
                         <PrimaryButton title="Continue" onPress={handleContinue} />
-                    </Animated.View>
+                    </View>
                 )}
             </View>
         </ThemedView>
     );
+}
+
+// ─── Typewriter (isolated component to avoid re-rendering the whole tutorial) ─
+function TypewriterText({ message, style }: { message: string; style: any }) {
+    const [text, setText] = useState("");
+    useEffect(() => {
+        let i = 0;
+        let cancelled = false;
+        const tick = () => {
+            if (cancelled) return;
+            i++;
+            setText(message.slice(0, i));
+            if (i >= message.length) return;
+            const ch = message[i - 1];
+            if (".!:)".includes(ch)) {
+                setTimeout(tick, 200);
+            } else {
+                requestAnimationFrame(tick);
+            }
+        };
+        requestAnimationFrame(tick);
+        return () => { cancelled = true; };
+    }, [message]);
+    return <ThemedText style={style}>{text}</ThemedText>;
 }
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
@@ -531,7 +631,7 @@ const styles = StyleSheet.create({
     promptSubtitle: {
         fontSize: 15,
         fontFamily: "Outfit",
-        fontWeight: "300",
+        fontWeight: "400",
         lineHeight: 21,
     },
 
@@ -590,7 +690,7 @@ const styles = StyleSheet.create({
     taskInfoCategory: {
         fontSize: 15,
         fontFamily: "Outfit",
-        fontWeight: "600",
+        fontWeight: "400",
         flexShrink: 1,
     },
     taskInfoDot: {
