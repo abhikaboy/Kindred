@@ -105,20 +105,20 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
 
     return (
         <View style={styles.container}>
-            <ThemedText style={[styles.header, { color: ThemedColor.text }]}>
-                {RING_LABELS[ringKey]} — {todayRing.current} / {todayRing.target}
-            </ThemedText>
+            <View style={styles.headerRow}>
+                <ThemedText type="subtitle" style={{ color: ThemedColor.text }}>
+                    {RING_LABELS[ringKey]} — {todayRing.current} / {todayRing.target}
+                </ThemedText>
+                {todayRing.closed && (
+                    <ThemedText type="caption">Closed!</ThemedText>
+                )}
+            </View>
 
-            <ThemedText
-                style={[
-                    styles.guidance,
-                    todayRing.closed
-                        ? { color: ThemedColor.success }
-                        : { color: ThemedColor.caption },
-                ]}
-            >
-                {todayRing.closed ? "Closed!" : RING_GUIDANCE[ringKey]}
-            </ThemedText>
+            {!todayRing.closed && (
+                <ThemedText type="caption">
+                    {RING_GUIDANCE[ringKey]}
+                </ThemedText>
+            )}
 
             <View style={styles.dotsRow}>
                 {entries.map((entry, idx) => {
@@ -183,14 +183,10 @@ const styles = StyleSheet.create({
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: "rgba(128, 128, 128, 0.2)",
     },
-    header: {
-        fontSize: 14,
-        fontWeight: "600",
-        fontFamily: "Outfit",
-    },
-    guidance: {
-        fontSize: 13,
-        fontFamily: "Outfit",
+    headerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     dotsRow: {
         flexDirection: "row",
@@ -212,15 +208,15 @@ const styles = StyleSheet.create({
     },
     ctaButton: {
         backgroundColor: PRIMARY_COLOR,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
         borderRadius: 20,
     },
     ctaText: {
         color: "#FFFFFF",
-        fontSize: 13,
+        fontSize: 15,
         fontFamily: "Outfit",
-        fontWeight: "600",
+        fontWeight: "500",
     },
 });
 

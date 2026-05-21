@@ -4166,6 +4166,15 @@ export interface components {
             message: string;
             success: boolean;
         };
+        DashboardConfiguration: {
+            stats: boolean;
+            jump_back_in: boolean;
+            kudos: boolean;
+            upcoming: boolean;
+            google_calendar: boolean;
+            recent_workspaces: boolean;
+            recently_completed: boolean;
+        };
         DisplaySettings: {
             friend_activity_feed: boolean;
             near_deadlines_widget: boolean;
@@ -6425,6 +6434,7 @@ export interface components {
             readonly $schema?: string;
             display: components["schemas"]["DisplaySettings"];
             notifications: components["schemas"]["NotificationSettings"];
+            dashboard_configuration: components["schemas"]["DashboardConfiguration"];
         };
         VerifyOTPOutputBody: {
             /**

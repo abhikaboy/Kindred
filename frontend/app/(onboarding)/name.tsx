@@ -14,19 +14,27 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { BigInput } from "@/components/inputs/BigInput";
 import { showToast } from "@/utils/showToast";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const DEFAULT_PICTURE = "https://i.pinimg.com/736x/80/60/58/8060586ec575738910065ceffb03b816.jpg";
 
 type Props = {};
 
 const NameOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { onboardingData, updateDisplayName, updateHandle, validationErrors, registerWithApple, registerWithGoogle, isLoading } = useOnboarding();
+    const {
+        onboardingData,
+        updateDisplayName,
+        updateHandle,
+        validationErrors,
+        registerWithApple,
+        registerWithGoogle,
+        isLoading,
+    } = useOnboarding();
     const { capture } = useAnalytics();
 
     const [name, setNameLocal] = useState(onboardingData.displayName);
-    const [handle, setHandleLocal] = useState(onboardingData.handle.replace('@', ''));
+    const [handle, setHandleLocal] = useState(onboardingData.handle.replace("@", ""));
     const [showErrors, setShowErrors] = useState(false);
 
     const setName = (value: string) => {
@@ -80,19 +88,19 @@ const NameOnboarding = (props: Props) => {
                     } else {
                         await registerWithGoogle(DEFAULT_PICTURE);
                     }
-                    showToast('Account created successfully! 🎉', 'success');
+                    showToast("Account created successfully! 🎉", "success");
                     capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
                         step_name: OnboardingSteps.NAME.name,
                         step_index: OnboardingSteps.NAME.index,
                     });
-                    router.replace('/(onboarding)/welcome');
+                    router.replace("/(onboarding)/welcome");
                 } catch (error: any) {
-                    console.error('Registration error:', error);
-                    let errorMessage = 'Unable to create account. Please try again.';
+                    console.error("Registration error:", error);
+                    let errorMessage = "Unable to create account. Please try again.";
                     if (error.message) {
                         errorMessage = error.message;
                     }
-                    showToast(errorMessage, 'danger');
+                    showToast(errorMessage, "danger");
                 }
             } else {
                 // Email auth: go to password screen
@@ -107,7 +115,7 @@ const NameOnboarding = (props: Props) => {
 
     const handleTextChange = (text: string) => {
         // Remove @ if user types it
-        const cleanText = text.replace('@', '');
+        const cleanText = text.replace("@", "");
         setHandle(cleanText);
     };
 
@@ -127,17 +135,15 @@ const NameOnboarding = (props: Props) => {
             </View>
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={themedStyles.keyboardView}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? -20 : 0}
-                enabled
-            >
+                keyboardVerticalOffset={Platform.OS === "ios" ? -20 : 0}
+                enabled>
                 <ScrollView
                     contentContainerStyle={themedStyles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
-                    style={themedStyles.scrollView}
-                >
+                    style={themedStyles.scrollView}>
                     <View style={themedStyles.innerContainer}>
                         {/* Header Section */}
                         <Animated.View
@@ -146,12 +152,9 @@ const NameOnboarding = (props: Props) => {
                                 {
                                     opacity: fadeAnimation,
                                     transform: [{ translateY: slideAnimation }],
-                                }
-                            ]}
-                        >
-                            <ThemedText style={themedStyles.titleText}>
-                                Introduce yourself
-                            </ThemedText>
+                                },
+                            ]}>
+                            <ThemedText style={themedStyles.titleText}>Introduce yourself</ThemedText>
                         </Animated.View>
 
                         {/* Input Section */}
@@ -160,9 +163,8 @@ const NameOnboarding = (props: Props) => {
                                 themedStyles.inputContainer,
                                 {
                                     opacity: fadeAnimation,
-                                }
-                            ]}
-                        >
+                                },
+                            ]}>
                             <BigInput
                                 label="Name"
                                 value={name}
@@ -196,9 +198,8 @@ const NameOnboarding = (props: Props) => {
                         themedStyles.buttonContainer,
                         {
                             opacity: fadeAnimation,
-                        }
-                    ]}
-                >
+                        },
+                    ]}>
                     <PrimaryButton
                         testID="continue-btn"
                         title={isLoading ? "Creating account..." : "Continue"}
@@ -211,53 +212,54 @@ const NameOnboarding = (props: Props) => {
     );
 };
 
-const styles = (ThemedColor: ReturnType<typeof useThemeColor>) => StyleSheet.create({
-    mainContainer: {
-        flex: 1,
-        position: 'relative',
-    },
-    backgroundContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 0,
-    },
-    keyboardView: {
-        flex: 1,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-    },
-    innerContainer: {
-        paddingHorizontal: HORIZONTAL_PADDING,
-        paddingTop: screenHeight * 0.18,
-        zIndex: 1,
-        paddingBottom: 100,
-    },
-    headerContainer: {
-        gap: 4,
-        marginBottom: 20,
-    },
-    titleText: {
-        fontSize: Math.min(screenWidth * 0.085, 32),
-        fontFamily: 'Fraunces',
-        fontWeight: '600',
-        lineHeight: Math.min(screenWidth * 0.102, 38),
-        letterSpacing: -1,
-    },
-    inputContainer: {
-        gap: 24,
-    },
-    buttonContainer: {
-        width: '100%',
-        paddingHorizontal: HORIZONTAL_PADDING,
-        paddingBottom: 28,
-    },
-});
+const styles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
+    StyleSheet.create({
+        mainContainer: {
+            flex: 1,
+            position: "relative",
+        },
+        backgroundContainer: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+        },
+        keyboardView: {
+            flex: 1,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        scrollContent: {
+            flexGrow: 1,
+        },
+        innerContainer: {
+            paddingHorizontal: HORIZONTAL_PADDING,
+            paddingTop: screenHeight * 0.18,
+            zIndex: 1,
+            paddingBottom: 100,
+        },
+        headerContainer: {
+            gap: 4,
+            marginBottom: 20,
+        },
+        titleText: {
+            fontSize: Math.min(screenWidth * 0.085, 32),
+            fontFamily: "Fraunces",
+            fontWeight: "600",
+            lineHeight: Math.min(screenWidth * 0.102, 38),
+            letterSpacing: -1,
+        },
+        inputContainer: {
+            gap: 24,
+        },
+        buttonContainer: {
+            width: "100%",
+            paddingHorizontal: HORIZONTAL_PADDING,
+            paddingBottom: 28,
+        },
+    });
 
 export default NameOnboarding;

@@ -5,9 +5,11 @@ import {
     updateNotificationSettings,
     updateDisplaySettings,
     updateCheckinFrequency,
+    updateDashboardConfiguration,
     type UserSettings,
     type NotificationSettings,
     type DisplaySettings,
+    type DashboardConfiguration,
 } from "@/api/settings";
 import { showToast } from "@/utils/showToast";
 
@@ -53,6 +55,10 @@ export function useUpdateSettings() {
                     display: {
                         ...old.display,
                         ...(variables.display || {}),
+                    },
+                    dashboard_configuration: {
+                        ...old.dashboard_configuration,
+                        ...(variables.dashboard_configuration || {}),
                     },
                 };
             });
@@ -154,7 +160,7 @@ export function useUpdateCheckinFrequency() {
             });
 
             queryClient.invalidateQueries({ queryKey: settingsKeys.user() });
-            
+
             // Custom toast message based on frequency
             const messages = {
                 none: "Check-ins disabled",
@@ -162,12 +168,57 @@ export function useUpdateCheckinFrequency() {
                 regularly: "Check-ins set to regularly (3-4x per week)",
                 frequently: "Check-ins set to frequently (daily)",
             };
-            
+
             showToast(messages[frequency], "success");
         },
         onError: (error) => {
             console.error("Failed to update check-in frequency:", error);
             showToast("Failed to update check-in frequency", "danger");
+        },
+    });
+}
+
+/**
+ * Hook to update dashboard configuration
+ * No toast shown - silent background save for section visibility toggles
+ */
+export function useUpdateDashboardConfiguration() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (config: Partial<DashboardConfiguration>) => updateDashboardConfiguration(config),
+        onMutate: async (variables) => {
+            // Optimistically update immediately for snappy UI
+            await queryClient.cancelQueries({ queryKey: settingsKeys.user() });
+            const previous = queryClient.getQueryData<UserSettings>(settingsKeys.user());
+
+            const defaultDashConfig = {
+                stats: true, jump_back_in: true, kudos: true, upcoming: true,
+                google_calendar: true, recent_workspaces: true, recently_completed: true,
+            };
+            queryClient.setQueryData(settingsKeys.user(), (old: UserSettings | undefined) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    dashboard_configuration: {
+                        ...defaultDashConfig,
+                        ...old.dashboard_configuration,
+                        ...variables,
+                    },
+                };
+            });
+
+            return { previous };
+        },
+        onError: (error, variables, context) => {
+            // Rollback on error
+            if (context?.previous) {
+                queryClient.setQueryData(settingsKeys.user(), context.previous);
+            }
+            console.error("Failed to update dashboard configuration:", error);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: settingsKeys.user() });
         },
     });
 }

@@ -8054,6 +8054,32 @@ components:
             required:
                 - success
                 - message
+        DashboardConfiguration:
+            type: object
+            additionalProperties: false
+            properties:
+                stats:
+                    type: boolean
+                jump_back_in:
+                    type: boolean
+                kudos:
+                    type: boolean
+                upcoming:
+                    type: boolean
+                google_calendar:
+                    type: boolean
+                recent_workspaces:
+                    type: boolean
+                recently_completed:
+                    type: boolean
+            required:
+                - stats
+                - jump_back_in
+                - kudos
+                - upcoming
+                - google_calendar
+                - recent_workspaces
+                - recently_completed
         DisplaySettings:
             type: object
             additionalProperties: false
@@ -8066,11 +8092,14 @@ components:
                     type: boolean
                 show_task_details:
                     type: boolean
+                content_filter:
+                    type: boolean
             required:
                 - show_task_details
                 - recent_workspaces
                 - friend_activity_feed
                 - near_deadlines_widget
+                - content_filter
         EditResultResponse:
             type: object
             additionalProperties: false
@@ -11962,9 +11991,12 @@ components:
                     $ref: '#/components/schemas/DisplaySettings'
                 notifications:
                     $ref: '#/components/schemas/NotificationSettings'
+                dashboard_configuration:
+                    $ref: '#/components/schemas/DashboardConfiguration'
             required:
                 - notifications
                 - display
+                - dashboard_configuration
         VerifyOTPOutputBody:
             type: object
             additionalProperties: false

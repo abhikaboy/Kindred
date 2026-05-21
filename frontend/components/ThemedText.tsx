@@ -32,7 +32,8 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
     let ThemedColor = useThemeColor();
     const color = ThemedColor.text;
     const base = 393;
-    const scale = Dimensions.get("screen").width / base;
+    const rawScale = Dimensions.get("screen").width / base;
+    const scale = (rawScale + 1) / 2;
     const styles = useStyles(ThemedColor, scale);
 
     let useStyledHeader = true;
