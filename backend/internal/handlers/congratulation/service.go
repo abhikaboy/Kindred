@@ -374,3 +374,47 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 
 	return xutils.SendNotification(notification)
 }
+
+// SendBeakCongratulation sends a congratulation from the beak system account
+// with a push notification. Used during onboarding tutorial.
+func (s *Service) SendBeakCongratulation(receiverID primitive.ObjectID, message, categoryName, taskName string) error {
+	if s.Congratulations == nil {
+		return fmt.Errorf("congratulations collection not available")
+	}
+
+	ctx := context.Background()
+
+	beakID, _ := primitive.ObjectIDFromHex("67eef59f4931ee7a9fb630e5")
+	beakName := "beak"
+	beakPicture := "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg"
+
+	doc := bson.M{
+		"_id": primitive.NewObjectID(),
+		"sender": bson.M{
+			"name":    beakName,
+			"picture": beakPicture,
+			"id":      beakID,
+		},
+		"receiver":     receiverID,
+		"message":      message,
+		"timestamp":    time.Now().UTC(),
+		"categoryName": categoryName,
+		"taskName":     taskName,
+		"read":         false,
+		"type":         "message",
+	}
+
+	_, err := s.Congratulations.InsertOne(ctx, doc)
+	if err != nil {
+		return fmt.Errorf("failed to insert beak congratulation: %w", err)
+	}
+
+	// Send push notification
+	err = s.sendCongratulationNotification(receiverID, beakName, taskName, message, "message")
+	if err != nil {
+		slog.Error("Failed to send beak congratulation notification", "error", err, "receiver_id", receiverID)
+	}
+
+	slog.Info("Beak congratulation sent", "receiver_id", receiverID.Hex())
+	return nil
+}

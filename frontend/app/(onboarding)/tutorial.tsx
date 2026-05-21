@@ -4,17 +4,10 @@ import {
     View,
     Animated,
     Platform,
+    TouchableOpacity,
 } from "react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
-import { BlurView } from "expo-blur";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import Reanimated, {
-    SharedValue,
-    useAnimatedStyle,
-    useAnimatedReaction,
-    runOnJS,
-} from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
 
@@ -27,11 +20,19 @@ import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
-import { markAsCompletedAPI } from "@/api/task";
 import { setupDefaultWorkspace } from "@/api/category";
 import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
 import { useTasks } from "@/contexts/tasksContext";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
 import CachedImage from "@/components/CachedImage";
+import InlineCategoryCreator from "@/components/InlineCategoryCreator";
+import CreateModal, { Screen } from "@/components/modals/CreateModal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Plus } from "phosphor-react-native";
+import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
+import { Task } from "@/api/types";
+import { useAuth } from "@/hooks/useAuth";
+import { useRequest } from "@/hooks/useRequest";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -42,91 +43,67 @@ const BEAK = {
 };
 
 const TAIL_SIZE = 10;
-
-const STEP_CONTENT = [
-    {
-        title: "This is your workspace",
-        subtitle: "Workspaces help you organize different areas of your life",
-        button: "Next",
-    },
-    {
-        title: "Tasks live inside categories",
-        subtitle: "You can create categories to group related tasks",
-        button: "Next",
-    },
-    {
-        title: "Swipe right to complete",
-        subtitle: "When you're done with a task, swipe it away",
-        button: null,
-    },
-    {
-        title: null,
-        subtitle: null,
-        button: "Continue",
-    },
-];
+const DISPLAY_WORKSPACE = "Example Workspace";
+const PREFILL_CATEGORY = "My Tasks";
+const PREFILL_TASK = "Start my morning routine";
+const CONGRATS_MESSAGE = "its beak, one of the founders of kindred. welcome :) you just completed your first task!";
 
 export default function TutorialOnboarding() {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const { onboardingData } = useOnboarding();
     const isSocialAuth = !!(onboardingData.appleId || onboardingData.googleId);
     const totalSteps = isSocialAuth ? 4 : 5;
     const router = useRouter();
     const { capture } = useAnalytics();
-    const { workspaces, fetchWorkspaces } = useTasks();
+    const { user } = useAuth();
+    const { workspaces, fetchWorkspaces, setSelected, setCreateCategory, categories, selected, addToCategory } = useTasks();
+    const { setTaskName, resetTaskCreation } = useTaskCreation();
+    const { request } = useRequest();
 
     const [step, setStep] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
     const [showConfetti, setShowConfetti] = useState(false);
-    const [taskData, setTaskData] = useState<{
-        categoryId: string;
-        taskId: string;
-    } | null>(null);
+    const [isCreatingCategory, setIsCreatingCategory] = useState(true); // start with creator open
 
-    // Step transition animations
-    const titleOpacity = useRef(new Animated.Value(0)).current;
-    const titleSlide = useRef(new Animated.Value(20)).current;
-    const contentOpacity = useRef(new Animated.Value(0)).current;
-    const contentSlide = useRef(new Animated.Value(30)).current;
-    const buttonOpacity = useRef(new Animated.Value(0)).current;
+    // Data from tutorial actions
+    const [categoryId, setCategoryId] = useState<string | null>(null);
+    const [categoryName, setCategoryName] = useState<string | null>(null);
+    const [taskData, setTaskData] = useState<Task | null>(null);
 
-    // Swipe hint animation (step 2)
+    // Create modal (step 1)
+    const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // Prompt card animation
+    const promptOpacity = useRef(new Animated.Value(0)).current;
+    const promptSlide = useRef(new Animated.Value(20)).current;
+
+    // Swipe hint nudge
     const swipeHintAnim = useRef(new Animated.Value(0)).current;
 
-    // Congrats bubble animation (step 3)
+    // Congrats animation
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
     const bubbleTranslateX = useRef(new Animated.Value(-28)).current;
     const avatarOpacity = useRef(new Animated.Value(0)).current;
+    const buttonOpacity = useRef(new Animated.Value(0)).current;
 
     const confettiRef = useRef<any>(null);
 
-    // Fetch workspaces on mount
+    // ─── Init ───────────────────────────────────────────────────────
     useEffect(() => {
-        setupDefaultWorkspace().catch(() => {});
-        fetchWorkspaces(true);
+        const init = async () => {
+            try { await setupDefaultWorkspace(); } catch {}
+            await fetchWorkspaces(true);
+        };
+        init();
     }, []);
 
-    // React to workspaces loading
     useEffect(() => {
-        if (workspaces.length === 0) return;
-        const guideWorkspace = workspaces.find(
-            (w) => w.name === ONBOARDING_WORKSPACE
-        );
-        if (guideWorkspace) {
-            const startingCategory = guideWorkspace.categories?.find(
-                (c) => c.name === "Starting"
-            );
-            if (startingCategory && startingCategory.tasks?.length > 0) {
-                setTaskData({
-                    categoryId: startingCategory.id,
-                    taskId: startingCategory.tasks[0].id,
-                });
-                setIsLoading(false);
-            }
+        if (workspaces.length > 0) {
+            const guide = workspaces.find((w) => w.name === ONBOARDING_WORKSPACE);
+            if (guide) setSelected(ONBOARDING_WORKSPACE);
         }
     }, [workspaces]);
 
-    // Analytics: track step view
     useEffect(() => {
         capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
             step_name: OnboardingSteps.TUTORIAL.name,
@@ -134,121 +111,178 @@ export default function TutorialOnboarding() {
         });
     }, []);
 
-    // Animate in when step changes
+    // ─── Prompt card animation on step change ───────────────────────
     useEffect(() => {
-        // Reset
-        titleOpacity.setValue(0);
-        titleSlide.setValue(20);
-        contentOpacity.setValue(0);
-        contentSlide.setValue(30);
-        buttonOpacity.setValue(0);
-
-        // Title: fade + slide (500ms, 200ms delay)
+        promptOpacity.setValue(0);
+        promptSlide.setValue(20);
         Animated.parallel([
-            Animated.timing(titleOpacity, {
-                toValue: 1,
-                duration: 500,
-                delay: 200,
-                useNativeDriver: true,
+            Animated.timing(promptOpacity, {
+                toValue: 1, duration: 500, delay: 300, useNativeDriver: true,
             }),
-            Animated.timing(titleSlide, {
-                toValue: 0,
-                duration: 500,
-                delay: 200,
-                useNativeDriver: true,
+            Animated.timing(promptSlide, {
+                toValue: 0, duration: 500, delay: 300, useNativeDriver: true,
             }),
         ]).start();
-
-        // Content: fade + slide (600ms, 400ms delay)
-        Animated.parallel([
-            Animated.timing(contentOpacity, {
-                toValue: 1,
-                duration: 600,
-                delay: 400,
-                useNativeDriver: true,
-            }),
-            Animated.timing(contentSlide, {
-                toValue: 0,
-                duration: 600,
-                delay: 400,
-                useNativeDriver: true,
-            }),
-        ]).start();
-
-        // Button: fade (400ms, 800ms delay)
-        Animated.timing(buttonOpacity, {
-            toValue: 1,
-            duration: 400,
-            delay: 800,
-            useNativeDriver: true,
-        }).start();
     }, [step]);
 
-    // Swipe hint for step 2
+    // ─── Swipe hint nudge for step 2 ────────────────────────────────
     useEffect(() => {
         if (step !== 2) return;
         const hintTimeout = setTimeout(() => {
             Animated.sequence([
                 Animated.timing(swipeHintAnim, {
-                    toValue: 60,
-                    duration: 500,
-                    useNativeDriver: true,
+                    toValue: 60, duration: 500, useNativeDriver: true,
                 }),
                 Animated.spring(swipeHintAnim, {
-                    toValue: 0,
-                    friction: 6,
-                    tension: 40,
-                    useNativeDriver: true,
+                    toValue: 0, friction: 6, tension: 40, useNativeDriver: true,
                 }),
             ]).start();
         }, 1800);
         return () => clearTimeout(hintTimeout);
     }, [step]);
 
-    const handleSwipeComplete = async () => {
-        setShowConfetti(true);
+    // ─── Step 0: Category created ───────────────────────────────────
+    const handleCategoryCreated = useCallback((id: string, name: string) => {
+        setCategoryId(id);
+        setCategoryName(name);
+        setIsCreatingCategory(false);
 
-        if (Platform.OS === "ios") {
-            await Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success
-            );
+        setTimeout(() => setStep(1), 400);
+    }, []);
+
+    const handleCancelCategory = useCallback(() => {
+        setIsCreatingCategory(false);
+    }, []);
+
+    const handleStartCreatingCategory = useCallback(() => {
+        setIsCreatingCategory(true);
+    }, []);
+
+    // ─── Step 1: Tap category to open create modal ──────────────────
+    const handleCategoryPress = useCallback(() => {
+        if (step === 1 && categoryId && categoryName) {
+            resetTaskCreation();
+            setTaskName(PREFILL_TASK);
+            setCreateCategory({ label: categoryName, id: categoryId, special: false });
+            setShowCreateModal(true);
+        }
+    }, [step, categoryId, categoryName]);
+
+    const handleCreateModalClose = useCallback((visible: boolean) => {
+        setShowCreateModal(visible);
+
+
+    }, []);
+
+    // Watch for task creation in our category
+    useEffect(() => {
+        if (!categoryId) return;
+
+        let cat = categories?.find((c: any) => c.id === categoryId);
+        if (!cat) {
+            for (const ws of workspaces) {
+                cat = ws.categories?.find((c: any) => c.id === categoryId);
+                if (cat) break;
+            }
         }
 
-        // Fire API call (non-blocking)
-        if (taskData) {
-            markAsCompletedAPI(taskData.categoryId, taskData.taskId, {
-                timeCompleted: new Date().toISOString(),
-                timeTaken: 0,
-            }).catch(() => {});
+        if (cat && cat.tasks?.length > 0) {
+            const latestTask = cat.tasks[0];
+            if (!taskData) {
+                setTaskData(latestTask);
+                if (step === 1) {
+                    setTimeout(() => setStep(2), 300);
+                }
+            } else if (latestTask.id !== taskData.id) {
+                setTaskData(latestTask);
+            }
         }
+    }, [categories, workspaces, categoryId, taskData, step]);
 
-        // After 1.2s, transition to step 3
-        setTimeout(() => {
-            setStep(3);
+    // Fallback: refresh from server if task not detected after modal close
+    const createModalShownRef = useRef(false);
+    useEffect(() => {
+        if (showCreateModal) createModalShownRef.current = true;
+    }, [showCreateModal]);
 
-            // After another 0.6s, animate in the congrats bubble
+    useEffect(() => {
+        if (showCreateModal || step !== 1 || !categoryId || taskData) return;
+        if (!createModalShownRef.current) return;
+        const timer = setTimeout(() => {
+            fetchWorkspaces(true);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [showCreateModal, step, categoryId, taskData, fetchWorkspaces]);
+
+    // ─── Step 2: Detect swipe completion ──────────────────────────────
+    const [typedText, setTypedText] = useState("");
+    const completionHandledRef = useRef(false);
+
+    useEffect(() => {
+        if (step !== 2 || !categoryId || !taskData || completionHandledRef.current) return;
+
+        let cat = categories?.find((c: any) => c.id === categoryId);
+        if (!cat) {
+            for (const ws of workspaces) {
+                cat = ws.categories?.find((c: any) => c.id === categoryId);
+                if (cat) break;
+            }
+        }
+        const taskStillExists = cat?.tasks?.some((t: any) => t.id === taskData.id);
+        if (!taskStillExists) {
+            completionHandledRef.current = true;
+
+            // Send a real congratulation + local notification
+            sendCongratulation();
+
+            setShowConfetti(true);
+            if (Platform.OS === "ios") {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
             setTimeout(() => {
-                Animated.parallel([
-                    Animated.timing(avatarOpacity, {
-                        toValue: 1,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(bubbleOpacity, {
-                        toValue: 1,
-                        duration: 220,
-                        useNativeDriver: true,
-                    }),
-                    Animated.spring(bubbleTranslateX, {
-                        toValue: 0,
-                        stiffness: 280,
-                        damping: 26,
-                        mass: 0.8,
-                        useNativeDriver: true,
-                    }),
-                ]).start();
-            }, 600);
-        }, 1200);
+                setStep(3);
+                // Delay before showing the congrats card
+                setTimeout(() => {
+                    Animated.parallel([
+                        Animated.timing(avatarOpacity, {
+                            toValue: 1, duration: 200, useNativeDriver: true,
+                        }),
+                        Animated.timing(bubbleOpacity, {
+                            toValue: 1, duration: 220, useNativeDriver: true,
+                        }),
+                        Animated.spring(bubbleTranslateX, {
+                            toValue: 0, stiffness: 280, damping: 26, mass: 0.8, useNativeDriver: true,
+                        }),
+                    ]).start();
+                    // Start typewriter after bubble slides in
+                    setTimeout(() => startTypewriter(), 400);
+                    Animated.timing(buttonOpacity, {
+                        toValue: 1, duration: 400, delay: 1800, useNativeDriver: true,
+                    }).start();
+                }, 1000);
+            }, 1500);
+        }
+    }, [categories, workspaces, categoryId, taskData, step]);
+
+    // Send a real congratulation from beak via backend endpoint + push notification
+    const sendCongratulation = () => {
+        request("POST", "/user/congratulations/beak", {
+            message: CONGRATS_MESSAGE,
+            categoryName: categoryName ?? PREFILL_CATEGORY,
+            taskName: taskData?.content ?? PREFILL_TASK,
+        }).catch(() => {}); // fire-and-forget
+    };
+
+    // Typewriter effect for congrats message
+    const startTypewriter = () => {
+        let i = 0;
+        const interval = setInterval(() => {
+            i++;
+            setTypedText(CONGRATS_MESSAGE.slice(0, i));
+            if (i >= CONGRATS_MESSAGE.length) {
+                clearInterval(interval);
+            }
+        }, 18);
     };
 
     const handleContinue = () => {
@@ -259,35 +293,24 @@ export default function TutorialOnboarding() {
         router.push("/(onboarding)/calendar");
     };
 
-    // Loading state
-    if (isLoading) {
-        return (
-            <ThemedView style={styles.mainContainer}>
-                <OnboardingProgressBar
-                    currentStep={totalSteps}
-                    totalSteps={totalSteps}
-                />
-            </ThemedView>
-        );
-    }
+    // ─── Prompt text per step ───────────────────────────────────────
+    const prompts: Record<number, { title: string; subtitle: string }> = {
+        0: { title: "Create a category", subtitle: "Workspaces hold categories, and categories hold tasks" },
+        1: { title: "Add a task", subtitle: "Tap the category to create one" },
+        2: { title: "Complete your task", subtitle: "Swipe right to mark it done" },
+        3: { title: "", subtitle: "" },
+    };
 
     return (
         <ThemedView style={styles.mainContainer}>
-            <OnboardingProgressBar
-                currentStep={totalSteps}
-                totalSteps={totalSteps}
-            />
+            <OnboardingProgressBar currentStep={totalSteps} totalSteps={totalSteps} />
 
-            {/* Confetti */}
             {showConfetti && (
                 <View style={styles.confettiContainer}>
                     <ConfettiCannon
                         ref={confettiRef}
                         count={50}
-                        origin={{
-                            x: screenWidth / 2,
-                            y: (screenHeight / 4) * 3.7,
-                        }}
+                        origin={{ x: screenWidth / 2, y: (screenHeight / 4) * 3.7 }}
                         fallSpeed={1200}
                         explosionSpeed={300}
                         fadeOut={true}
@@ -295,84 +318,150 @@ export default function TutorialOnboarding() {
                 </View>
             )}
 
-            <View style={styles.contentContainer}>
-                {/* Title + Subtitle */}
-                {STEP_CONTENT[step].title && (
-                    <Animated.View
-                        style={[
-                            styles.headerContainer,
-                            {
-                                opacity: titleOpacity,
-                                transform: [{ translateY: titleSlide }],
-                            },
-                        ]}
-                    >
-                        <ThemedText
-                            style={[
-                                styles.title,
-                                { color: ThemedColor.text },
-                            ]}
-                        >
-                            {STEP_CONTENT[step].title}
+            <CreateModal
+                visible={showCreateModal}
+                setVisible={handleCreateModalClose}
+                categoryId={categoryId ?? undefined}
+                screen={Screen.STANDARD}
+            />
+
+            {/* Workspace area — mimics real WorkspaceContent layout */}
+            <View style={[styles.workspaceArea, { paddingTop: insets.top + 40 }]}>
+                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
+                    {/* Workspace header — same as WorkspaceContent */}
+                    <View style={styles.workspaceHeader}>
+                        <ThemedText type="title" style={{ fontWeight: "600" }}>
+                            {DISPLAY_WORKSPACE}
                         </ThemedText>
-                        {STEP_CONTENT[step].subtitle && (
-                            <ThemedText
-                                style={[
-                                    styles.subtitle,
-                                    { color: ThemedColor.caption },
-                                ]}
-                            >
-                                {STEP_CONTENT[step].subtitle}
-                            </ThemedText>
+                    </View>
+
+                    {/* Categories container — matches categoriesContainer gap: 16 */}
+                    <View style={styles.categoriesContainer}>
+                        {/* InlineCategoryCreator — wait for selected workspace */}
+                        {isCreatingCategory && selected === ONBOARDING_WORKSPACE && (
+                            <InlineCategoryCreator
+                                initialName={step === 0 ? PREFILL_CATEGORY : undefined}
+                                onCreated={handleCategoryCreated}
+                                onCancel={handleCancelCategory}
+                            />
                         )}
-                    </Animated.View>
+
+                        {/* Created category — uses real Category layout pattern */}
+                        {step >= 1 && categoryId && categoryName && (
+                            <View style={styles.categoryItemContainer}>
+                                {/* Category header — matches category.tsx exactly */}
+                                <TouchableOpacity
+                                    style={styles.categoryHeaderRow}
+                                    onPress={handleCategoryPress}
+                                    activeOpacity={0.7}
+                                >
+                                    <ThemedText type={taskData ? "subtitle" : "disabledTitle"}>
+                                        {categoryName}
+                                    </ThemedText>
+                                    <Plus size={16} weight="bold" color={ThemedColor.text} />
+                                </TouchableOpacity>
+
+                                {/* Task — real SwipableTaskCard wrapped in nudge */}
+                                {step >= 2 && taskData && (
+                                    <Animated.View style={{ transform: [{ translateX: swipeHintAnim }] }}>
+                                        <SwipableTaskCard
+                                            categoryId={categoryId}
+                                            task={taskData}
+                                            categoryName={categoryName}
+                                            redirect={false}
+                                        />
+                                    </Animated.View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* + Add Category button — matches real workspace */}
+                        {!isCreatingCategory && step === 0 && (
+                            <TouchableOpacity
+                                onPress={handleStartCreatingCategory}
+                                style={{ alignSelf: "center", paddingVertical: 8 }}
+                                activeOpacity={0.6}
+                            >
+                                <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                                    + Add Category
+                                </ThemedText>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+
+                {/* Step 3: Congrats from beak — shown in the workspace area */}
+                {step === 3 && (
+                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginTop: 32 }}>
+                        <Animated.View style={{ opacity: bubbleOpacity, marginBottom: 16 }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary, fontFamily: "Outfit", fontWeight: "600", fontSize: 13, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                                Congratulation
+                            </ThemedText>
+                        </Animated.View>
+                        <View style={styles.kudosRow}>
+                            <Animated.View style={{ opacity: avatarOpacity }}>
+                                <View style={styles.avatarSection}>
+                                    <CachedImage
+                                        source={{ uri: BEAK.picture }}
+                                        fallbackSource={require("@/assets/images/head.png")}
+                                        variant="thumbnail"
+                                        cachePolicy="memory-disk"
+                                        style={styles.avatar}
+                                    />
+                                    <ThemedText style={[styles.avatarName, { color: ThemedColor.caption }]}>
+                                        {BEAK.name}
+                                    </ThemedText>
+                                </View>
+                            </Animated.View>
+
+                            <Animated.View style={[styles.bubbleWrapper, {
+                                opacity: bubbleOpacity,
+                                transform: [{ translateX: bubbleTranslateX }],
+                            }]}>
+                                <View style={[styles.bubbleTail, { borderRightColor: ThemedColor.lightenedCard }]} />
+                                <View style={[styles.bubbleCard, { backgroundColor: ThemedColor.lightenedCard }]}>
+                                    <View style={styles.taskInfoRow}>
+                                        <ThemedText style={[styles.taskInfoCategory, { color: ThemedColor.primary }]}>
+                                            {categoryName ?? PREFILL_CATEGORY}
+                                        </ThemedText>
+                                        <View style={[styles.taskInfoDot, { backgroundColor: ThemedColor.caption }]} />
+                                        <ThemedText style={[styles.taskInfoName, { color: ThemedColor.primary }]}>
+                                            {taskData?.content ?? PREFILL_TASK}
+                                        </ThemedText>
+                                    </View>
+                                    <ThemedText style={[styles.messageText, { color: ThemedColor.text }]}>
+                                        {typedText}
+                                    </ThemedText>
+                                </View>
+                            </Animated.View>
+                        </View>
+                    </View>
                 )}
+            </View>
 
-                {/* Step content */}
-                <Animated.View
-                    style={[
-                        styles.stepContent,
-                        {
-                            opacity: contentOpacity,
-                            transform: [{ translateY: contentSlide }],
-                        },
-                    ]}
-                >
-                    {step === 0 && (
-                        <Step0Workspace ThemedColor={ThemedColor} />
-                    )}
-                    {step === 1 && <Step1Task ThemedColor={ThemedColor} />}
-                    {step === 2 && (
-                        <Step2Swipe
-                            ThemedColor={ThemedColor}
-                            swipeHintAnim={swipeHintAnim}
-                            onSwipeComplete={handleSwipeComplete}
-                        />
-                    )}
-                    {step === 3 && (
-                        <Step3Congrats
-                            ThemedColor={ThemedColor}
-                            avatarOpacity={avatarOpacity}
-                            bubbleOpacity={bubbleOpacity}
-                            bubbleTranslateX={bubbleTranslateX}
-                        />
-                    )}
-                </Animated.View>
+            {/* Bottom prompt card */}
+            <View style={styles.promptArea}>
+                {step < 3 && prompts[step]?.title ? (
+                    <Animated.View style={[styles.promptCard, {
+                        opacity: promptOpacity,
+                        transform: [{ translateY: promptSlide }],
+                        backgroundColor: ThemedColor.lightened,
+                    }]}>
+                        <ThemedText style={[styles.promptTitle, { color: ThemedColor.text }]}>
+                            {prompts[step].title}
+                        </ThemedText>
+                        <ThemedText style={[styles.promptSubtitle, { color: ThemedColor.caption }]}>
+                            {prompts[step].subtitle}
+                        </ThemedText>
+                    </Animated.View>
+                ) : null}
 
-                {/* Spacer */}
-                <View style={{ flex: 1 }} />
-
-                {/* Button */}
-                {STEP_CONTENT[step].button && (
-                    <Animated.View style={{ opacity: buttonOpacity }}>
-                        <PrimaryButton
-                            title={STEP_CONTENT[step].button!}
-                            onPress={
-                                step === 3
-                                    ? handleContinue
-                                    : () => setStep(step + 1)
-                            }
-                        />
+                {step === 3 && (
+                    <Animated.View style={[styles.promptCard, { opacity: buttonOpacity, backgroundColor: ThemedColor.lightened }]}>
+                        <ThemedText style={[styles.promptSubtitle, { color: ThemedColor.caption, textAlign: "center", marginBottom: 12 }]}>
+                            When you complete tasks, your friends can congratulate you
+                        </ThemedText>
+                        <PrimaryButton title="Continue" onPress={handleContinue} />
                     </Animated.View>
                 )}
             </View>
@@ -380,466 +469,73 @@ export default function TutorialOnboarding() {
     );
 }
 
-// ─── Step 0: Workspace + Category reveal ─────────────────────────────────────
-
-function Step0Workspace({ ThemedColor }: { ThemedColor: any }) {
-    return (
-        <View style={styles.cardsContainer}>
-            {/* Workspace card */}
-            <View
-                style={[
-                    styles.workspaceCard,
-                    {
-                        backgroundColor: ThemedColor.lightened,
-                        borderColor: ThemedColor.tertiary,
-                    },
-                ]}
-            >
-                <ThemedText style={styles.workspaceEmoji}>🌺</ThemedText>
-                <ThemedText
-                    style={[
-                        styles.workspaceName,
-                        { color: ThemedColor.text },
-                    ]}
-                >
-                    Kindred Guide
-                </ThemedText>
-            </View>
-
-            {/* Category card (indented) */}
-            <View
-                style={[
-                    styles.categoryCard,
-                    {
-                        borderColor: ThemedColor.tertiary,
-                    },
-                ]}
-            >
-                <ThemedText
-                    style={[
-                        styles.categoryName,
-                        { color: ThemedColor.primary },
-                    ]}
-                >
-                    Starting
-                </ThemedText>
-            </View>
-        </View>
-    );
-}
-
-// ─── Step 1: Task card inside category ───────────────────────────────────────
-
-function Step1Task({ ThemedColor }: { ThemedColor: any }) {
-    return (
-        <View style={styles.cardsContainer}>
-            {/* Category card */}
-            <View
-                style={[
-                    styles.categoryCard,
-                    {
-                        borderColor: ThemedColor.tertiary,
-                        marginLeft: 0,
-                    },
-                ]}
-            >
-                <ThemedText
-                    style={[
-                        styles.categoryName,
-                        { color: ThemedColor.primary },
-                    ]}
-                >
-                    Starting
-                </ThemedText>
-            </View>
-
-            {/* Task card */}
-            <View
-                style={[
-                    styles.taskCard,
-                    {
-                        backgroundColor: ThemedColor.lightened,
-                        borderColor: ThemedColor.primary + "40",
-                        borderWidth: 1.5,
-                    },
-                ]}
-            >
-                <View style={styles.taskRow}>
-                    <View
-                        style={[
-                            styles.priorityDot,
-                            { backgroundColor: ThemedColor.success },
-                        ]}
-                    />
-                    <ThemedText
-                        style={[
-                            styles.taskText,
-                            { color: ThemedColor.text },
-                        ]}
-                    >
-                        Swipe to mark a task as complete
-                    </ThemedText>
-                </View>
-            </View>
-        </View>
-    );
-}
-
-// ─── Step 2: Swipeable task ──────────────────────────────────────────────────
-
-function Step2Swipe({
-    ThemedColor,
-    swipeHintAnim,
-    onSwipeComplete,
-}: {
-    ThemedColor: any;
-    swipeHintAnim: Animated.Value;
-    onSwipeComplete: () => void;
-}) {
-    return (
-        <View style={styles.cardsContainer}>
-            {/* Blur overlay behind the swipe area */}
-            <View style={styles.blurContainer}>
-                <BlurView
-                    intensity={15}
-                    tint="default"
-                    style={StyleSheet.absoluteFill}
-                />
-            </View>
-
-            <Animated.View
-                style={{
-                    transform: [{ translateX: swipeHintAnim }],
-                }}
-            >
-                <ReanimatedSwipeable
-                    friction={1.3}
-                    rightThreshold={100}
-                    renderLeftActions={(prog, drag) =>
-                        LeftAction(prog, drag, onSwipeComplete, ThemedColor)
-                    }
-                >
-                    <View
-                        style={[
-                            styles.taskCard,
-                            {
-                                backgroundColor: ThemedColor.lightened,
-                                borderColor: ThemedColor.primary + "40",
-                                borderWidth: 1.5,
-                            },
-                        ]}
-                    >
-                        <View style={styles.taskRow}>
-                            <View
-                                style={[
-                                    styles.priorityDot,
-                                    { backgroundColor: ThemedColor.success },
-                                ]}
-                            />
-                            <ThemedText
-                                style={[
-                                    styles.taskText,
-                                    { color: ThemedColor.text },
-                                ]}
-                            >
-                                Swipe to mark a task as complete
-                            </ThemedText>
-                        </View>
-                    </View>
-                </ReanimatedSwipeable>
-            </Animated.View>
-
-            <ThemedText
-                style={[styles.swipeHintText, { color: ThemedColor.caption }]}
-            >
-                Swipe the task to complete it →
-            </ThemedText>
-        </View>
-    );
-}
-
-// ─── Step 3: Congrats speech bubble ──────────────────────────────────────────
-
-function Step3Congrats({
-    ThemedColor,
-    avatarOpacity,
-    bubbleOpacity,
-    bubbleTranslateX,
-}: {
-    ThemedColor: any;
-    avatarOpacity: Animated.Value;
-    bubbleOpacity: Animated.Value;
-    bubbleTranslateX: Animated.Value;
-}) {
-    return (
-        <View style={styles.congratsContainer}>
-            {/* Beak avatar + bubble row */}
-            <View style={styles.kudosRow}>
-                <Animated.View style={{ opacity: avatarOpacity }}>
-                    <View style={styles.avatarSection}>
-                        <CachedImage
-                            source={{ uri: BEAK.picture }}
-                            fallbackSource={require("@/assets/images/head.png")}
-                            variant="thumbnail"
-                            cachePolicy="memory-disk"
-                            style={styles.avatar}
-                        />
-                        <ThemedText
-                            style={[
-                                styles.avatarName,
-                                { color: ThemedColor.caption },
-                            ]}
-                        >
-                            {BEAK.name}
-                        </ThemedText>
-                    </View>
-                </Animated.View>
-
-                {/* Speech bubble */}
-                <Animated.View
-                    style={[
-                        styles.bubbleWrapper,
-                        {
-                            opacity: bubbleOpacity,
-                            transform: [{ translateX: bubbleTranslateX }],
-                        },
-                    ]}
-                >
-                    <View
-                        style={[
-                            styles.bubbleTail,
-                            {
-                                borderRightColor: ThemedColor.lightenedCard,
-                            },
-                        ]}
-                    />
-                    <View
-                        style={[
-                            styles.bubbleCard,
-                            {
-                                backgroundColor: ThemedColor.lightenedCard,
-                            },
-                        ]}
-                    >
-                        {/* Task info row */}
-                        <View style={styles.taskInfoRow}>
-                            <ThemedText
-                                style={[
-                                    styles.taskInfoCategory,
-                                    { color: ThemedColor.primary },
-                                ]}
-                            >
-                                Starting
-                            </ThemedText>
-                            <View
-                                style={[
-                                    styles.taskInfoDot,
-                                    {
-                                        backgroundColor: ThemedColor.caption,
-                                    },
-                                ]}
-                            />
-                            <ThemedText
-                                style={[
-                                    styles.taskInfoName,
-                                    { color: ThemedColor.primary },
-                                ]}
-                            >
-                                Swipe to mark a task as complete
-                            </ThemedText>
-                        </View>
-
-                        {/* Message */}
-                        <ThemedText
-                            style={[
-                                styles.messageText,
-                                { color: ThemedColor.text },
-                            ]}
-                        >
-                            its beak, one of the founders of kindred. welcome :)
-                            you just completed your first task!
-                        </ThemedText>
-                    </View>
-                </Animated.View>
-            </View>
-
-            {/* Explainer text */}
-            <ThemedText
-                style={[styles.explainerText, { color: ThemedColor.caption }]}
-            >
-                When you complete tasks, your friends can congratulate you
-            </ThemedText>
-        </View>
-    );
-}
-
-// ─── LeftAction (copied from accomplishment.tsx) ─────────────────────────────
-
-function LeftAction(
-    prog: SharedValue<number>,
-    drag: SharedValue<number>,
-    onComplete: () => void,
-    ThemedColor: any
-) {
-    let width = Dimensions.get("window").width;
-    const [isCompleting, setIsCompleting] = React.useState(false);
-
-    useAnimatedReaction(
-        () => drag.value,
-        (currentValue) => {
-            let threshold = width / 4;
-            let percent = (currentValue - threshold * 3) / threshold;
-            let opacity = 1 - percent;
-
-            if (opacity <= 0 && !isCompleting) {
-                runOnJS(setIsCompleting)(true);
-                runOnJS(onComplete)();
-            }
-        }
-    );
-
-    const styleAnimation = useAnimatedStyle(() => {
-        let threshold = width / 4;
-        let percent = (drag.value - threshold * 3) / threshold;
-        let opacity = 1 - percent;
-
-        return {
-            transform: [{ translateX: drag.value - width }],
-            opacity: opacity,
-            display: opacity > 0 ? "flex" : "none",
-        };
-    });
-
-    return (
-        <Reanimated.View
-            style={[
-                styleAnimation,
-                {
-                    backgroundColor: ThemedColor.success,
-                    width: width,
-                    justifyContent: "center",
-                    alignItems: "center",
-                },
-            ]}
-        />
-    );
-}
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        position: "relative",
     },
     confettiContainer: {
         position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        top: 0, left: 0, right: 0, bottom: 0,
         zIndex: 10,
         height: screenHeight,
     },
-    contentContainer: {
+
+    // Workspace area — matches WorkspaceContent (no flex: 1, takes only needed height)
+    workspaceArea: {
+    },
+    workspaceHeader: {
+        paddingBottom: 24,
+        paddingTop: 20,
+    },
+    // Matches WorkspaceContent categoriesContainer
+    categoriesContainer: {
+        gap: 16,
+        marginTop: 0,
+    },
+    // Matches category.tsx container
+    categoryItemContainer: {
+        gap: 12,
+        marginBottom: 4,
+    },
+    // Matches category.tsx TouchableOpacity style
+    categoryHeaderRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+
+    // Prompt card — vertically centered in remaining space
+    promptArea: {
         flex: 1,
+        justifyContent: "center",
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingTop: screenHeight * 0.15,
-        paddingBottom: 40,
-        zIndex: 1,
     },
-    headerContainer: {
-        marginBottom: 32,
+    promptCard: {
+        gap: 6,
+        borderRadius: 20,
+        padding: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
     },
-    title: {
-        fontSize: 32,
+    promptTitle: {
+        fontSize: 24,
         fontFamily: "Fraunces",
         fontWeight: "600",
-        lineHeight: 38,
-        letterSpacing: -1,
+        letterSpacing: -0.5,
     },
-    subtitle: {
-        fontSize: 16,
+    promptSubtitle: {
+        fontSize: 15,
         fontFamily: "Outfit",
         fontWeight: "300",
-        lineHeight: 22,
-        marginTop: 10,
-    },
-    stepContent: {
-        gap: 0,
+        lineHeight: 21,
     },
 
-    // ── Cards (Steps 0-2) ────────────────────────────────────────────────
-    cardsContainer: {
-        gap: 12,
-    },
-    workspaceCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        borderRadius: 14,
-        borderWidth: 1,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-    },
-    workspaceEmoji: {
-        fontSize: 22,
-    },
-    workspaceName: {
-        fontSize: 17,
-        fontFamily: "Outfit",
-        fontWeight: "500",
-    },
-    categoryCard: {
-        marginLeft: 20,
-        borderRadius: 12,
-        borderWidth: 1,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    categoryName: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "600",
-    },
-    taskCard: {
-        borderRadius: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-    },
-    taskRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-    },
-    priorityDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-    },
-    taskText: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "300",
-        flex: 1,
-    },
-    swipeHintText: {
-        fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "300",
-        marginTop: 4,
-    },
-    blurContainer: {
-        ...StyleSheet.absoluteFillObject,
-        borderRadius: 16,
-        overflow: "hidden",
-        zIndex: -1,
-    },
-
-    // ── Congrats (Step 3) ────────────────────────────────────────────────
-    congratsContainer: {
-        gap: 28,
-    },
+    // Congrats
     kudosRow: {
         flexDirection: "row",
         alignItems: "flex-start",
@@ -865,8 +561,7 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
     },
     bubbleTail: {
-        width: 0,
-        height: 0,
+        width: 0, height: 0,
         borderTopWidth: TAIL_SIZE,
         borderBottomWidth: TAIL_SIZE,
         borderRightWidth: TAIL_SIZE,
@@ -899,8 +594,7 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     taskInfoDot: {
-        width: 3,
-        height: 3,
+        width: 3, height: 3,
         borderRadius: 2,
         flexShrink: 0,
     },
@@ -914,11 +608,5 @@ const styles = StyleSheet.create({
         fontFamily: "Outfit",
         lineHeight: 21,
         marginTop: 2,
-    },
-    explainerText: {
-        fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "300",
-        textAlign: "center",
     },
 });
