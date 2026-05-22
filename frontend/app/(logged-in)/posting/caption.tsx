@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { FlatList } from "react-native-gesture-handler";
 import { View, Image, Dimensions, TouchableOpacity } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import LongTextInput from "@/components/inputs/LongTextInput";
 import { ThemedText } from "@/components/ThemedText";
@@ -17,6 +18,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 
 export default function Caption() {
+    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const photos = params.photos ? JSON.parse(params.photos as string) : [];
     const dualPhoto = params.dualPhoto ? (params.dualPhoto as string) : null;
@@ -210,6 +212,7 @@ export default function Caption() {
                 style={{
                     width: "100%",
                     padding: 24,
+                    paddingBottom: 24 + insets.bottom,
                     borderRadius: 20,
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
