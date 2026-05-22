@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Animated, Linking } from 'react-native';
+import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -129,52 +129,24 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                                         Send Kudos
                                     </ThemedText>
                                     <ThemedText type="default" style={[styles.methodDescription, { color: ThemedColor.caption }]}>
-                                        Recognize team members' great work by sending kudos. Earn credits when others appreciate your contributions too!
+                                        Send encouragements and congratulations to your friends. You'll earn credits as you give and receive kudos!
                                     </ThemedText>
                                 </View>
                             </View>
 
-                            {/* Purchase Premium */}
+                            {/* Close Rings */}
                             <View style={[styles.methodCard, { backgroundColor: ThemedColor.lightenedCard }]}>
-                                <View style={[styles.iconCircle, { backgroundColor: '#FFD700' + '20' }]}>
-                                    <Ionicons name="star" size={20} color="#FFD700" />
+                                <View style={[styles.iconCircle, { backgroundColor: '#34C759' + '20' }]}>
+                                    <Ionicons name="fitness" size={20} color="#34C759" />
                                 </View>
                                 <View style={styles.methodContent}>
                                     <ThemedText type="defaultSemiBold">
-                                        Purchase Premium
+                                        Close Your Rings
                                     </ThemedText>
                                     <ThemedText type="default" style={[styles.methodDescription, { color: ThemedColor.caption }]}>
-                                        Upgrade to Premium for unlimited natural language credits, plus access to advanced analytics,
-                                        priority support, and exclusive features.
+                                        Complete tasks, share progress, and stay consistent to close your daily rings. Each time you close all rings, you earn a credit reward!
                                     </ThemedText>
                                 </View>
-                            </View>
-                        </View>
-
-                        {/* Subscription Links - Required by App Store Guidelines 3.1.2 */}
-                        <View style={[styles.linksSection, { borderTopColor: ThemedColor.tertiary }]}>
-                            <ThemedText type="default" style={[styles.linksTitle, { color: ThemedColor.caption }]}>
-                                Subscription Information
-                            </ThemedText>
-                            <View style={styles.linksContainer}>
-                                <TouchableOpacity
-                                    onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
-                                    style={styles.linkButton}
-                                >
-                                    <ThemedText type="default" style={[styles.linkText, { color: ThemedColor.primary }]}>
-                                        Privacy Policy
-                                    </ThemedText>
-                                    <Ionicons name="open-outline" size={16} color={ThemedColor.primary} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
-                                    style={styles.linkButton}
-                                >
-                                    <ThemedText type="default" style={[styles.linkText, { color: ThemedColor.primary }]}>
-                                        Terms of Use
-                                    </ThemedText>
-                                    <Ionicons name="open-outline" size={16} color={ThemedColor.primary} />
-                                </TouchableOpacity>
                             </View>
                         </View>
 
@@ -266,28 +238,5 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 12,
         marginTop: 8,
-    },
-    linksSection: {
-        marginTop: 32,
-        paddingTop: 24,
-        borderTopWidth: 1,
-    },
-    linksTitle: {
-        fontSize: 12,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 12,
-    },
-    linksContainer: {
-        gap: 12,
-    },
-    linkButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingVertical: 4,
-    },
-    linkText: {
-        fontSize: 14,
     },
 });
