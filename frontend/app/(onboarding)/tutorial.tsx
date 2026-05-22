@@ -570,7 +570,7 @@ export default function TutorialOnboarding() {
             </View>
 
             {/* Bottom prompt card */}
-            <View style={styles.promptArea}>
+            <View style={[styles.promptArea, { paddingBottom: insets.bottom }]}>
                 {step < 3 && prompts[step]?.title ? (
                     <Animated.View style={[styles.promptCard, {
                         opacity: promptOpacity,
