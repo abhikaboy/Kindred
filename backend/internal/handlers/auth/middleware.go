@@ -89,6 +89,10 @@ func AuthMiddleware(collections map[string]*mongo.Collection, cfg config.Config)
 
 				slog.Info("✅ AUTH MIDDLEWARE: New tokens generated successfully")
 
+				// Reset token_used so the new refresh token can be used for future refreshes
+				id, _ := primitive.ObjectIDFromHex(userID)
+				_ = service.users.ResetTokenUsed(context.Background(), id)
+
 				// Set new tokens in response headers
 				w.Header().Set("access_token", newAccess)
 				w.Header().Set("refresh_token", newRefresh)

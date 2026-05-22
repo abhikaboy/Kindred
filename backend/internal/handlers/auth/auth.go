@@ -509,6 +509,54 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 	return resp, nil
 }
 
+// RefreshTokenHuma handles token refresh (PUBLIC ROUTE — no auth middleware)
+func (h *Handler) RefreshTokenHuma(ctx context.Context, input *RefreshTokenInput) (*RefreshTokenOutput, error) {
+	if input.RefreshToken == "" {
+		return nil, huma.Error400BadRequest("Refresh token is required", nil)
+	}
+
+	service := h.service
+
+	// Validate the refresh token and mark it as used atomically
+	userID, count, timezone, err := validateRefreshTokenCore(service, input.RefreshToken)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "Refresh token validation failed",
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error401Unauthorized("Invalid or expired refresh token. Please log in again.", err)
+	}
+
+	// Generate new token pair
+	newAccess, newRefresh, err := service.GenerateTokens(userID, count, timezone)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to generate tokens during refresh",
+			slog.String("userId", userID),
+			slog.String("error", err.Error()),
+		)
+		return nil, huma.Error500InternalServerError("Unable to refresh session. Please try again.", err)
+	}
+
+	// Reset token_used so the new refresh token can be used in the future
+	id, _ := primitive.ObjectIDFromHex(userID)
+	if err := service.users.ResetTokenUsed(ctx, id); err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to reset token_used after refresh",
+			slog.String("userId", userID),
+			slog.String("error", err.Error()),
+		)
+		// Non-fatal: tokens were already generated, just log the error
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Token refresh successful",
+		slog.String("userId", userID),
+	)
+
+	resp := &RefreshTokenOutput{}
+	resp.AccessToken = newAccess
+	resp.RefreshToken = newRefresh
+	resp.Body.Message = "Tokens refreshed successfully"
+	return resp, nil
+}
+
 // TestHuma handles the test authentication endpoint (PROTECTED ROUTE)
 func (h *Handler) TestHuma(ctx context.Context, input *TestInput) (*TestOutput, error) {
 	// Extract user_id from context to verify auth middleware is working

@@ -9,6 +9,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/xlog"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -82,6 +83,10 @@ func FiberAuthMiddleware(collections map[string]*mongo.Collection, cfg config.Co
 					"status": 500,
 				})
 			}
+
+			// Reset token_used so the new refresh token can be used for future refreshes
+			id, _ := primitive.ObjectIDFromHex(userID)
+			_ = service.users.ResetTokenUsed(context.Background(), id)
 
 			// Set new tokens in response headers
 			c.Set("access_token", newAccess)
