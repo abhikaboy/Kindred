@@ -420,24 +420,6 @@ const HomeContent = ({
                                 />
                             </Animated.View>
 
-                            {/* DEV ONLY — remove before shipping */}
-                            <TouchableOpacity
-                                onPress={() => router.push("/(onboarding)/tutorial")}
-                                style={{
-                                    marginHorizontal: HORIZONTAL_PADDING,
-                                    marginBottom: 8,
-                                    paddingVertical: 8,
-                                    paddingHorizontal: 12,
-                                    borderRadius: 8,
-                                    borderWidth: 2,
-                                    borderColor: "#ff4444",
-                                    alignSelf: "flex-start",
-                                }}>
-                                <Animated.Text style={{ color: "#ff4444", fontFamily: "Outfit", fontWeight: "600", fontSize: 13 }}>
-                                    Do Tutorial (DEV)
-                                </Animated.Text>
-                            </TouchableOpacity>
-
                             <HomeScrollContent
                                 encouragementCount={encouragementCount}
                                 congratulationCount={congratulationCount}
