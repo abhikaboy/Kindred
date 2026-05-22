@@ -5,6 +5,7 @@ import {
     Animated,
     Platform,
     TouchableOpacity,
+    KeyboardAvoidingView,
 } from "react-native";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
@@ -34,6 +35,7 @@ import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { Task } from "@/api/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
+import { registerForPushNotificationsAsync, sendPushTokenToBackend } from "@/utils/notificationService";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -89,16 +91,28 @@ export default function TutorialOnboarding() {
     // Swipe hint nudge
     const swipeHintAnim = useRef(new Animated.Value(0)).current;
 
-    // Congrats animation
+    // Congrats animation — first card
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
     const bubbleTranslateX = useRef(new Animated.Value(-28)).current;
     const avatarOpacity = useRef(new Animated.Value(0)).current;
+
+    // Congrats animation — second card
+    const bubble2Opacity = useRef(new Animated.Value(0)).current;
+    const bubble2TranslateX = useRef(new Animated.Value(-28)).current;
+    const avatar2Opacity = useRef(new Animated.Value(0)).current;
+    const [showCreditsLine, setShowCreditsLine] = useState(false);
 
     const confettiRef = useRef<any>(null);
 
     // ─── Init ───────────────────────────────────────────────────────
     useEffect(() => {
         const init = async () => {
+            // Request push notification permission early so the beak congrats
+            // notification can actually be delivered
+            registerForPushNotificationsAsync().then((result) => {
+                if (result?.token) sendPushTokenToBackend(result.token);
+            });
+
             try { await setupDefaultWorkspace(); } catch {}
             await fetchWorkspaces(true);
         };
@@ -262,8 +276,6 @@ export default function TutorialOnboarding() {
                     ]).start();
                     // Start typewriter after bubble slides in
                     setTimeout(() => startTypewriter(), 400);
-                    // Show continue after second congrats has time to appear + typewriter
-                    setTimeout(() => setShowContinue(true), 6000);
                 }, 1000);
             }, 1500);
         }
@@ -274,41 +286,68 @@ export default function TutorialOnboarding() {
     const [showSecondCongrats, setShowSecondCongrats] = useState(false);
     const [secondTypewriterActive, setSecondTypewriterActive] = useState(false);
 
-    const sendCongratulation = () => {
-        // First congrats: welcome message
-        request("POST", "/user/congratulations/beak", {
-            message: CONGRATS_MESSAGE,
-            categoryName: categoryName ?? PREFILL_CATEGORY,
-            taskName: taskData?.content ?? PREFILL_TASK,
-        }).catch(() => {});
-
-        // Second congrats: credits gift (3s delay)
-        setTimeout(async () => {
-            try {
-                const response = await request("POST", "/user/congratulations/beak", {
-                    message: CREDITS_MESSAGE,
-                    categoryName: categoryName ?? PREFILL_CATEGORY,
-                    taskName: taskData?.content ?? PREFILL_TASK,
-                    grantCredits: true,
-                });
-                if (response?.creditsGranted) {
-                    setCreditsGranted(response.creditsGranted);
-                    // Update local user credits
-                    if (user?.credits) {
-                        const updated = { ...user.credits };
-                        for (const [key, amount] of Object.entries(response.creditsGranted)) {
-                            if (key in updated) {
-                                (updated as any)[key] += amount;
-                            }
-                        }
-                        updateUser({ credits: updated });
-                    }
-                }
-            } catch {}
-            setShowSecondCongrats(true);
-            setTimeout(() => setSecondTypewriterActive(true), 300);
-        }, 3000);
+    const sendCongratulation = async () => {
+        // First congrats: welcome message (await so it's stored before second)
+        try {
+            await request("POST", "/user/congratulations/beak", {
+                message: CONGRATS_MESSAGE,
+                categoryName: categoryName ?? PREFILL_CATEGORY,
+                taskName: taskData?.content ?? PREFILL_TASK,
+            });
+        } catch {}
     };
+
+    // Called when the second API request should fire (after first typewriter completes)
+    const sendSecondCongratulation = async () => {
+        try {
+            const response = await request("POST", "/user/congratulations/beak", {
+                message: CREDITS_MESSAGE,
+                categoryName: categoryName ?? PREFILL_CATEGORY,
+                taskName: taskData?.content ?? PREFILL_TASK,
+                grantCredits: true,
+            });
+            if (response?.creditsGranted) {
+                setCreditsGranted(response.creditsGranted);
+                if (user?.credits) {
+                    const updated = { ...user.credits };
+                    for (const [key, amount] of Object.entries(response.creditsGranted)) {
+                        if (key in updated) {
+                            (updated as any)[key] += amount;
+                        }
+                    }
+                    updateUser({ credits: updated });
+                }
+            }
+        } catch {}
+
+        // Show + animate second card
+        setShowSecondCongrats(true);
+        setTimeout(() => {
+            Animated.parallel([
+                Animated.timing(avatar2Opacity, {
+                    toValue: 1, duration: 200, useNativeDriver: true,
+                }),
+                Animated.timing(bubble2Opacity, {
+                    toValue: 1, duration: 220, useNativeDriver: true,
+                }),
+                Animated.spring(bubble2TranslateX, {
+                    toValue: 0, stiffness: 280, damping: 26, mass: 0.8, useNativeDriver: true,
+                }),
+            ]).start();
+            setTimeout(() => setSecondTypewriterActive(true), 400);
+        }, 200);
+    };
+
+    // When first typewriter completes → fire second congrats
+    const handleFirstTypewriterComplete = useCallback(() => {
+        sendSecondCongratulation();
+    }, [categoryName, taskData, user]);
+
+    // When second typewriter completes → show credits
+    const handleSecondTypewriterComplete = useCallback(() => {
+        setShowCreditsLine(true);
+        setTimeout(() => setShowContinue(true), 800);
+    }, []);
 
     const [typewriterActive, setTypewriterActive] = useState(false);
     const startTypewriter = () => setTypewriterActive(true);
@@ -353,6 +392,10 @@ export default function TutorialOnboarding() {
                 screen={Screen.STANDARD}
             />
 
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
             {/* Workspace area — mimics real WorkspaceContent layout */}
             <View style={[styles.workspaceArea, { paddingTop: insets.top + 40 }]}>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
@@ -467,6 +510,7 @@ export default function TutorialOnboarding() {
                                         <TypewriterText
                                             message={CONGRATS_MESSAGE}
                                             style={[styles.messageText, { color: ThemedColor.text }]}
+                                            onComplete={handleFirstTypewriterComplete}
                                         />
                                     )}
                                 </View>
@@ -475,41 +519,51 @@ export default function TutorialOnboarding() {
 
                         {/* Second congrats: credits gift */}
                         {showSecondCongrats && (
-                            <View style={[styles.kudosRow, { marginTop: 16 }]}>
-                                <View style={styles.avatarSection}>
-                                    <CachedImage
-                                        source={{ uri: BEAK.picture }}
-                                        fallbackSource={require("@/assets/images/head.png")}
-                                        variant="thumbnail"
-                                        cachePolicy="memory-disk"
-                                        style={styles.avatar}
-                                    />
-                                </View>
-                                <View style={styles.bubbleWrapper}>
-                                    <View style={[styles.bubbleTail, { borderRightColor: ThemedColor.lightenedCard }]} />
-                                    <View style={[styles.bubbleCard, { backgroundColor: ThemedColor.lightenedCard }]}>
-                                        <View style={{ position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: ThemedColor.error }} />
-                                        {secondTypewriterActive && (
-                                            <TypewriterText
-                                                message={CREDITS_MESSAGE}
-                                                style={[styles.messageText, { color: ThemedColor.text }]}
+                            <>
+                                <View style={[styles.kudosRow, { marginTop: 16 }]}>
+                                    <Animated.View style={{ opacity: avatar2Opacity }}>
+                                        <View style={styles.avatarSection}>
+                                            <CachedImage
+                                                source={{ uri: BEAK.picture }}
+                                                fallbackSource={require("@/assets/images/head.png")}
+                                                variant="thumbnail"
+                                                cachePolicy="memory-disk"
+                                                style={styles.avatar}
                                             />
-                                        )}
-                                        {creditsGranted && (
-                                            <View style={{ marginTop: 8, alignItems: "flex-end" }}>
-                                                {Object.entries(creditsGranted).map(([key, amount]) => {
-                                                    const label = CREDIT_LABELS[key] ?? key;
-                                                    return (
-                                                        <ThemedText key={key} type="caption" style={{ color: "#A855F7" }}>
-                                                            +{amount} {label}
-                                                        </ThemedText>
-                                                    );
-                                                })}
-                                            </View>
-                                        )}
-                                    </View>
+                                        </View>
+                                    </Animated.View>
+                                    <Animated.View style={[styles.bubbleWrapper, {
+                                        opacity: bubble2Opacity,
+                                        transform: [{ translateX: bubble2TranslateX }],
+                                    }]}>
+                                        <View style={[styles.bubbleTail, { borderRightColor: ThemedColor.lightenedCard }]} />
+                                        <View style={[styles.bubbleCard, { backgroundColor: ThemedColor.lightenedCard }]}>
+                                            <View style={{ position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: ThemedColor.error }} />
+                                            {secondTypewriterActive && (
+                                                <TypewriterText
+                                                    message={CREDITS_MESSAGE}
+                                                    style={[styles.messageText, { color: ThemedColor.text }]}
+                                                    onComplete={handleSecondTypewriterComplete}
+                                                />
+                                            )}
+                                        </View>
+                                    </Animated.View>
                                 </View>
-                            </View>
+
+                                {/* Credits — left-aligned, outside the card, after typewriter finishes */}
+                                {showCreditsLine && creditsGranted && (
+                                    <View style={{ marginTop: 10, paddingLeft: 56 }}>
+                                        {Object.entries(creditsGranted).map(([key, amount]) => {
+                                            const label = CREDIT_LABELS[key] ?? key;
+                                            return (
+                                                <ThemedText key={key} type="caption" style={{ color: "#A855F7" }}>
+                                                    +{amount} {label}
+                                                </ThemedText>
+                                            );
+                                        })}
+                                    </View>
+                                )}
+                            </>
                         )}
                     </View>
                 )}
@@ -541,13 +595,15 @@ export default function TutorialOnboarding() {
                     </View>
                 )}
             </View>
+            </KeyboardAvoidingView>
         </ThemedView>
     );
 }
 
 // ─── Typewriter (isolated component to avoid re-rendering the whole tutorial) ─
-function TypewriterText({ message, style }: { message: string; style: any }) {
+function TypewriterText({ message, style, onComplete }: { message: string; style: any; onComplete?: () => void }) {
     const [text, setText] = useState("");
+    const completedRef = useRef(false);
     useEffect(() => {
         let i = 0;
         let cancelled = false;
@@ -555,7 +611,13 @@ function TypewriterText({ message, style }: { message: string; style: any }) {
             if (cancelled) return;
             i++;
             setText(message.slice(0, i));
-            if (i >= message.length) return;
+            if (i >= message.length) {
+                if (!completedRef.current) {
+                    completedRef.current = true;
+                    onComplete?.();
+                }
+                return;
+            }
             const ch = message[i - 1];
             if (".!:)".includes(ch)) {
                 setTimeout(tick, 200);
@@ -580,6 +642,7 @@ const styles = StyleSheet.create({
         top: 0, left: 0, right: 0, bottom: 0,
         zIndex: 10,
         height: screenHeight,
+        pointerEvents: "none" as const,
     },
 
     // Workspace area — matches WorkspaceContent (no flex: 1, takes only needed height)
