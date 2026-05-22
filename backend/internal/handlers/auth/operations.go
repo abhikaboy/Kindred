@@ -129,6 +129,19 @@ type LoginWithOTPOutput struct {
 	Body         SafeUser `json:"body"`
 }
 
+// Refresh Token Operation Types
+type RefreshTokenInput struct {
+	RefreshToken string `header:"refresh_token" required:"true" doc:"Refresh token to exchange for new tokens"`
+}
+
+type RefreshTokenOutput struct {
+	AccessToken  string `header:"access_token"`
+	RefreshToken string `header:"refresh_token"`
+	Body         struct {
+		Message string `json:"message" example:"Tokens refreshed successfully"`
+	}
+}
+
 // Delete Account Operation Types
 type DeleteAccountInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
@@ -378,6 +391,20 @@ func RegisterAcceptTermsOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"auth"},
 	}, func(ctx context.Context, input *AcceptTermsInput) (*AcceptTermsOutput, error) {
 		return handler.AcceptTermsHuma(ctx, input)
+	})
+}
+
+// RegisterRefreshTokenOperation registers the refresh token endpoint
+func RegisterRefreshTokenOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "refresh-token",
+		Method:      http.MethodPost,
+		Path:        "/v1/auth/refresh",
+		Summary:     "Refresh tokens",
+		Description: "Exchange a valid refresh token for new access and refresh tokens",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *RefreshTokenInput) (*RefreshTokenOutput, error) {
+		return handler.RefreshTokenHuma(ctx, input)
 	})
 }
 

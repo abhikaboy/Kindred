@@ -55,6 +55,7 @@ func RegisterAuthOperations(api huma.API, handler *Handler) {
 	RegisterRegisterWithAppleOperation(api, handler)
 	RegisterLoginWithGoogleOperation(api, handler)
 	RegisterRegisterWithGoogleOperation(api, handler)
+	RegisterRefreshTokenOperation(api, handler)
 	RegisterTestOperation(api, handler)
 	RegisterLoginWithTokenOperation(api, handler)
 	RegisterUpdatePushTokenOperation(api, handler)

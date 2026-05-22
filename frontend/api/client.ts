@@ -51,9 +51,8 @@ function isTokenExpired(token: string, bufferMs = 60_000): boolean {
 }
 
 /**
- * Perform a token refresh by hitting a lightweight authenticated endpoint.
- * The server middleware detects the expired access token, validates the
- * refresh token, and returns new tokens in response headers.
+ * Perform a token refresh by calling the dedicated refresh endpoint.
+ * Sends the refresh token and receives new access + refresh tokens.
  *
  * Returns true if refresh succeeded (new tokens saved).
  */
@@ -62,17 +61,16 @@ async function performRefresh(): Promise<boolean> {
         const authData = await SecureStore.getItemAsync("auth_data");
         if (!authData) return false;
 
-        const { access_token, refresh_token } = JSON.parse(authData);
+        const { refresh_token } = JSON.parse(authData);
         if (!refresh_token) return false;
 
         logger.debug("Performing token refresh");
 
         const response = await fetch(
-            (process.env.EXPO_PUBLIC_URL ?? "") + "/api/v1/user/login",
+            (process.env.EXPO_PUBLIC_URL ?? "") + "/api/v1/auth/refresh",
             {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${access_token}`,
                     "refresh_token": refresh_token,
                     "Content-Type": "application/json",
                 },
@@ -99,9 +97,6 @@ async function performRefresh(): Promise<boolean> {
             logger.debug("Token refresh succeeded, new tokens saved");
             return true;
         }
-
-        // No new tokens but request succeeded — tokens were still valid
-        if (response.ok) return true;
 
         return false;
     } catch (error) {
@@ -185,8 +180,7 @@ baseClient.use({
     },
 
     async onResponse({ response, request }) {
-        // Handle 401 — but don't immediately log out.
-        // Check if tokens were already refreshed by another concurrent request.
+        // Handle 401 — attempt one refresh + retry before logging out.
         if (response.status === 401) {
             const authData = await SecureStore.getItemAsync("auth_data");
 
@@ -200,11 +194,36 @@ baseClient.use({
                     logger.debug("401 on stale request — tokens already refreshed, skipping logout");
                     return response;
                 }
+
+                // Tokens match — force a refresh before giving up
+                logger.debug("401 with current tokens, attempting refresh + retry");
+                const refreshed = await performRefresh();
+                if (refreshed) {
+                    // Retry the original request with new tokens
+                    const freshAuthData = await SecureStore.getItemAsync("auth_data");
+                    if (freshAuthData) {
+                        const { access_token: newAccess, refresh_token: newRefresh } = JSON.parse(freshAuthData);
+                        const retryHeaders = new Headers(request.headers);
+                        retryHeaders.set("Authorization", `Bearer ${newAccess}`);
+                        retryHeaders.set("refresh_token", newRefresh);
+
+                        const retryResponse = await fetch(request.url, {
+                            method: request.method,
+                            headers: retryHeaders,
+                            body: request.method !== "GET" && request.method !== "HEAD" ? request.body : undefined,
+                        });
+
+                        if (retryResponse.status !== 401) {
+                            logger.debug("Retry after refresh succeeded");
+                            return retryResponse;
+                        }
+                    }
+                }
             }
 
-            // Tokens haven't changed — this is a genuine auth failure
+            // Refresh failed or no auth data — genuine auth failure
             if (onUnauthorized) {
-                logger.warn("Received 401 with current tokens, triggering logout");
+                logger.warn("Auth refresh exhausted, triggering logout");
                 await SecureStore.deleteItemAsync("auth_data");
                 onUnauthorized();
             }
