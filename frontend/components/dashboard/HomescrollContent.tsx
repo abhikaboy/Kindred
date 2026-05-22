@@ -366,9 +366,11 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 <Animated.View style={{ opacity: dimAnim }}>
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
-                    <View ref={jumpBackInRef} onLayout={handleJumpLayout} style={{ paddingRight: HORIZONTAL_PADDING }}>
-                        <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
-                    </View>
+                    <AttachStep index={0}>
+                        <View ref={jumpBackInRef} onLayout={handleJumpLayout} style={{ paddingRight: HORIZONTAL_PADDING }}>
+                            <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
+                        </View>
+                    </AttachStep>
                     {dashboardConfig.jump_back_in && <DashboardCards drawerRef={drawerRef} />}
                 </View>
 
