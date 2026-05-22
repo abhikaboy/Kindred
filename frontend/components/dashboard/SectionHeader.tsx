@@ -20,10 +20,10 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ title, visible, onToggleV
             <ThemedText type="caption">{title}</ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 {right}
-                <TouchableOpacity onPress={onToggleVisibility} hitSlop={8}>
+                <TouchableOpacity onPress={onToggleVisibility} hitSlop={8} style={{ opacity: 0.35 }}>
                     {visible
-                        ? <Eye size={16} weight="regular" color={ThemedColor.caption + "40"} />
-                        : <EyeSlash size={16} weight="regular" color={ThemedColor.caption + "40"} />}
+                        ? <Eye size={16} weight="regular" color={ThemedColor.caption} />
+                        : <EyeSlash size={16} weight="regular" color={ThemedColor.caption} />}
                 </TouchableOpacity>
             </View>
         </View>

@@ -263,6 +263,9 @@ export default function TutorialOnboarding() {
                 setStep(3);
                 // Delay before showing the congrats card
                 setTimeout(() => {
+                    if (Platform.OS === "ios") {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    }
                     Animated.parallel([
                         Animated.timing(avatarOpacity, {
                             toValue: 1, duration: 200, useNativeDriver: true,
@@ -338,16 +341,35 @@ export default function TutorialOnboarding() {
         }, 200);
     };
 
-    // When first typewriter completes → fire second congrats
+    // When first typewriter completes → fire second congrats after 2s delay
     const handleFirstTypewriterComplete = useCallback(() => {
-        sendSecondCongratulation();
+        setTimeout(() => {
+            if (Platform.OS === "ios") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }
+            sendSecondCongratulation();
+        }, 2000);
     }, [categoryName, taskData, user]);
 
-    // When second typewriter completes → show credits
+    // When second typewriter completes → show credits one at a time after 1s
+    const [visibleCreditIndex, setVisibleCreditIndex] = useState(-1);
     const handleSecondTypewriterComplete = useCallback(() => {
-        setShowCreditsLine(true);
-        setTimeout(() => setShowContinue(true), 800);
-    }, []);
+        setTimeout(() => {
+            setShowCreditsLine(true);
+            // Stagger each credit line 400ms apart
+            const creditKeys = creditsGranted ? Object.keys(creditsGranted) : [];
+            creditKeys.forEach((_, i) => {
+                setTimeout(() => {
+                    if (Platform.OS === "ios") {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    setVisibleCreditIndex(i);
+                }, i * 400);
+            });
+            // Show continue after all credits have appeared
+            setTimeout(() => setShowContinue(true), creditKeys.length * 400 + 800);
+        }, 1000);
+    }, [creditsGranted]);
 
     const [typewriterActive, setTypewriterActive] = useState(false);
     const startTypewriter = () => setTypewriterActive(true);
@@ -550,10 +572,11 @@ export default function TutorialOnboarding() {
                                     </Animated.View>
                                 </View>
 
-                                {/* Credits — left-aligned, outside the card, after typewriter finishes */}
+                                {/* Credits — staggered one at a time */}
                                 {showCreditsLine && creditsGranted && (
                                     <View style={{ marginTop: 10, paddingLeft: 56 }}>
-                                        {Object.entries(creditsGranted).map(([key, amount]) => {
+                                        {Object.entries(creditsGranted).map(([key, amount], i) => {
+                                            if (i > visibleCreditIndex) return null;
                                             const label = CREDIT_LABELS[key] ?? key;
                                             return (
                                                 <ThemedText key={key} type="caption" style={{ color: "#A855F7" }}>
@@ -570,7 +593,7 @@ export default function TutorialOnboarding() {
             </View>
 
             {/* Bottom prompt card */}
-            <View style={styles.promptArea}>
+            <View style={[styles.promptArea, { paddingBottom: insets.bottom }]}>
                 {step < 3 && prompts[step]?.title ? (
                     <Animated.View style={[styles.promptCard, {
                         opacity: promptOpacity,

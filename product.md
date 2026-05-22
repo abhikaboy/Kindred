@@ -45,6 +45,11 @@ Kindred App
 │   ├── Name & Handle
 │   ├── Accomplishment Style
 │   ├── Positivity / Mindset
+│   ├── Interactive Tutorial (4-step core loop)
+│   │   ├── Step 1: Create a category
+│   │   ├── Step 2: Add a task
+│   │   ├── Step 3: Complete your task (swipe right)
+│   │   └── Step 4: Beak congratulation + welcome credits
 │   ├── Calendar Integration
 │   └── Circle / Friend Setup
 │
@@ -58,9 +63,15 @@ Kindred App
     ├── [Tab 1] Tasks (PencilSimple icon)
     │   ├── Home / Dashboard
     │   │   ├── Welcome header + greeting
+    │   │   ├── Dashboard Stats (Open / Due Today / Done this week)
+    │   │   │   └── Expandable detail view per stat
+    │   │   ├── Jump Back In (quick-access action cards grid)
+    │   │   │   └── Daily View, Voice, Calendar, Review, Text Dump, Analytics, Workspaces
     │   │   ├── Kudos summary (encouragements / congratulations)
     │   │   ├── Recent workspaces pager
     │   │   ├── Due today tasks
+    │   │   ├── Recently Completed
+    │   │   ├── Section visibility toggles (eye icon per section, persisted)
     │   │   └── Workspace selector (bottom sheet)
     │   ├── Today
     │   │   ├── Due Today
@@ -141,7 +152,13 @@ Kindred App
     ├── [Tab 5] Profile (User icon)
     │   ├── Profile View
     │   │   ├── Profile picture (parallax banner)
-    │   │   ├── Stats: streak, points, level
+    │   │   ├── Productivity Rings card (Plan / Do / Share arcs)
+    │   │   │   ├── ScoreArc gauge (0-100 productivity score)
+    │   │   │   ├── Expandable ring detail with history dots
+    │   │   │   ├── Claim reward button (when all rings closed)
+    │   │   │   └── Blur overlay (private to user)
+    │   │   ├── Friend Rings (on friend profiles, tap to encourage)
+    │   │   ├── Stats: streak, productivity score
     │   │   ├── Weekly activity chart
     │   │   ├── Completed tasks gallery
     │   │   └── Tabs: Overview, Tasks, Blueprints, Referral
@@ -210,6 +227,8 @@ Workspace (e.g., "Personal", "Work")
 - Create (manual, voice, text dump, from blueprint)
 - Edit (inline or detail view)
 - Complete (single, bulk, or via review swipe)
+- Double-tap task card to start working (triggers live activity)
+- Long-press task card for context menu
 - Delete (single or bulk, with undo)
 - Reschedule (missed tasks)
 - Reorder within category
@@ -284,7 +303,22 @@ Calendar-style day view with two modes:
 
 Date pager for navigating between days. Floating date navigator for quick jumps.
 
-### 6. Google Calendar Integration
+### 6. Interactive Onboarding Tutorial
+
+A 4-step guided walkthrough that teaches the core loop (plan → do → share → celebrate):
+
+1. **Create a category** — user creates a category in a prefilled "Example Workspace"
+2. **Add a task** — tap the category to create a task ("Finish Kindred Onboarding" prefilled)
+3. **Complete your task** — swipe right to mark done (confetti + haptics)
+4. **Celebrate** — Beak (founder system account) sends two congratulation messages via typewriter animation:
+   - Welcome message
+   - Welcome credits gift (5 voice + 5 analytics credits, one-time grant with atomicity flag)
+
+The tutorial sits between the Welcome screen and Calendar Integration in the onboarding flow. Gesture navigation is disabled to prevent skipping.
+
+**Post-onboarding SpotlightTour:** After onboarding, optional feature-discovery tooltips guide users through the main app (home, menu, workspace, task spotlights). Persisted per-user, skippable.
+
+### 7. Google Calendar Integration
 
 Full two-way sync with Google Calendar:
 - OAuth 2.0 connection flow
@@ -364,15 +398,51 @@ Shareable task templates that other users can subscribe to:
 
 ## Gamification & Motivation
 
+### Productivity Rings
+
+Three daily activity rings (inspired by Apple Watch) that track the core loop:
+
+| Ring | Target | Incremented By |
+|------|--------|----------------|
+| **Plan** | 2/day | Creating or scheduling a task |
+| **Do** | 3/day | Completing a task (single or bulk) |
+| **Share** | 1/day | Creating a post, sending encouragement, or sending congratulation |
+
+**Productivity Score (0-100):**
+```
+score = 50 (base) + ringBonus + streakBonus (capped at 100)
+
+ringBonus = (closedRings in last 7 days / 21) × 50
+streakBonus = min(currentStreak, 7)
+```
+Scores below 30 display as "--".
+
+**Ring Rewards:**
+When all three rings close for a day, the user can claim a random credit reward:
+
+| Reward | Weight |
+|--------|--------|
+| 1 voice credit | 40% |
+| 1 naturalLanguage credit | 40% |
+| 1 analytics credit | 15% |
+| 2 voice credits | 5% |
+
+Claiming opens a `RewardUnboxingModal` with slot-roulette animation.
+
+**Friend Rings:**
+- View friends' ring progress on their profile
+- Tap an incomplete ring to send a ring-specific encouragement
+- When all rings close, friends receive a push notification
+
+**Ring State:**
+- Per-user, per-day record (midnight in user's timezone)
+- 30-day TTL (auto-expired via MongoDB TTL index)
+- Unique constraint: one ring state per user per day
+
 ### Streaks
 - Daily activity tracking
 - Streak counter with eligibility rules
 - Streak display on profile
-
-### Points & Levels
-- Tasks have a `value` (point worth)
-- Points accumulate on completion
-- Level/progression system implied by rewards
 
 ### Activity Analytics
 - Monthly/yearly activity summaries
@@ -381,7 +451,7 @@ Shareable task templates that other users can subscribe to:
 - AI-generated productivity insights (credit-based)
 
 ### Rewards
-- Reward claiming system
+- Ring reward claiming (daily, when all rings closed)
 - Kudos rewards tracking
 - Credit balances
 
@@ -431,10 +501,12 @@ User
 ├── apple_id, google_id (social login)
 ├── display_name, handle, profile_picture
 ├── streak, streak_eligible, points, posts_made
+├── productivity_score, last_reward_date
+├── welcome_credits_granted (one-time flag)
 ├── credits {voice, blueprint, group, analytics, naturalLanguage}
 ├── kudos_rewards {encouragements_sent, congratulations_sent}
 ├── subscription {tier, status, start, end, renewal, provider}
-├── settings {notifications, display}
+├── settings {notifications, display, dashboard_configuration}
 ├── timezone, push_token
 └── terms_accepted_at
 
@@ -499,6 +571,16 @@ Activity (per user/month)
 ├── year, month
 └── daily activity counts
 
+RingState (per user/day, 30-day TTL)
+├── user_id → User
+├── date (midnight in user's timezone)
+├── plan {current, target, closed}
+├── do {current, target, closed}
+├── share {current, target, closed}
+├── all_closed
+├── reward_claimed, reward_type, reward_amount
+└── created_at, updated_at
+
 Encouragement / Congratulation
 ├── sender → User
 ├── receiver → User
@@ -528,6 +610,7 @@ User (1) ──< (M) Notifications
 
 Category (1) ──< (M) Tasks (embedded)
 TemplateTask (1) ──< (M) Tasks (generated instances)
+User (1) ──< (M) RingStates (one per day)
 
 Post (1) ──< (M) Comments (embedded)
 Post (M) ──< (M) Reactions
@@ -646,6 +729,18 @@ Congratulation: User → User
 | PATCH | `/comments/{commentId}` | Update comment |
 | DELETE | `/comments/{commentId}` | Delete comment |
 
+### Rings (`/v1/user/rings/`)
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/today` | Today's ring state, productivity score, streak, reward availability |
+| GET | `/history?days=N` | Ring history for last N days (max 30, default 7) |
+| POST | `/reward` | Claim daily reward (requires all rings closed) |
+
+### Congratulations — Beak (`/v1/user/congratulations/`)
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/beak` | Send beak congratulation (with optional `grantCredits` for welcome credits) |
+
 ### Other Endpoints
 | Group | Prefix | Purpose |
 |-------|--------|---------|
@@ -679,14 +774,46 @@ Congratulation: User → User
 
 ---
 
+## iOS Live Activities
+
+Real-time Lock Screen and Dynamic Island displays for active tasks (iOS 16.1+).
+
+### Active Task Activity
+Shown when a task is currently being worked on:
+- "ACTIVE" status badge with green indicator
+- Elapsed time countdown timer
+- Task name and workspace
+- CTA buttons: **Mark Complete** (deep link with `?action=complete`) and **Open Task**
+- Keep-alive: updates every 5 minutes to prevent iOS staleness
+
+### Deadline Countdown Activity
+Shown when a task deadline is within ~1 hour:
+- Dynamic countdown timer to deadline
+- Task name, workspace, and priority
+- Depleting progress bar
+- Color escalation: purple (>10 min) → orange (≤10 min) → gray (overdue)
+- Status label: "Due Soon" → "Overdue"
+- CTA buttons: **Complete** and **Open**
+- Keep-alive: updates every 1 minute for color escalation, auto-dismisses 30 min after deadline
+
+### Trigger Mechanism
+- Backend cron finds tasks with upcoming start times (every 2 min) or approaching deadlines (every hour)
+- Sends push notification with `type: "live_activity"` data payload
+- Frontend receives notification and starts the appropriate Live Activity
+
+---
+
 ## Push Notifications
 
 Delivered via Firebase Cloud Messaging. Types include:
 - Friend activity notifications
 - Deadline reminders
 - Encouragement/congratulation received
+- Ring encouragement (friend taps your incomplete ring)
+- All rings closed (sent to user + friends)
 - Follow request received
 - Comment/reaction on posts
+- Live activity triggers (start time reached, deadline approaching)
 
 Notification tap deep-links to relevant screen via URL routing.
 
@@ -763,6 +890,9 @@ App Launch
 | Job | Schedule | Purpose |
 |-----|----------|---------|
 | Calendar Watch Renewal | Every 6 hours + startup | Renew Google Calendar push subscription channels expiring within 3 days |
+| Start Time Notifications | Every 2 minutes | Find tasks with start times in the past 2 min, send live activity push |
+| Deadline Approaching Notifications | Every hour | Find tasks with deadlines in 59-61 min window, send live activity push |
+| Ring Closure Notification | On ring close (2-min delay) | Notify user + friends when all three rings close for the day |
 
 ---
 

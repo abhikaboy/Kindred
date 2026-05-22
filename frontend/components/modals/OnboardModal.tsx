@@ -41,40 +41,47 @@ export const OnboardModal = (props: Props) => {
     const appleOpacity = useRef(new Animated.Value(0)).current;
     const googleOpacity = useRef(new Animated.Value(0)).current;
 
+    // Shared helper: redirect to registration with social credentials
+    const startSocialRegistration = (data: Partial<Parameters<typeof updateOnboardingData>[0]>) => {
+        updateOnboardingData(data);
+        router.replace("/(onboarding)/name");
+        setVisible(false);
+    };
+
     // Google authentication hook
     const { signInAsync: googleSignInAsync, loading: googleLoading } = useGoogleAuth({
         onSuccess: async (result) => {
             if (result.user && result.user.id && result.user.email) {
-                try {
-                    if (mode === "register") {
-                        const displayName = result.user.name ||
-                            `${result.user.given_name || ''} ${result.user.family_name || ''}`.trim();
+                const displayName = result.user.name ||
+                    `${result.user.given_name || ''} ${result.user.family_name || ''}`.trim();
 
-                        updateOnboardingData({
+                if (mode === "register") {
+                    startSocialRegistration({
+                        email: result.user.email,
+                        googleId: result.user.id,
+                        displayName: displayName,
+                    });
+                    return;
+                }
+
+                // Login mode: try login, fall back to registration if no account
+                try {
+                    await loginWithGoogle(result.user.id, result.user.email);
+                    router.push("/(logged-in)/(tabs)/(task)");
+                    setVisible(false);
+                } catch (error: any) {
+                    if (error?.message === "ACCOUNT_NOT_FOUND") {
+                        // No account — seamlessly redirect to registration
+                        startSocialRegistration({
                             email: result.user.email,
                             googleId: result.user.id,
                             displayName: displayName,
                         });
-
-                        router.replace("/(onboarding)/name");
-                        setVisible(false);
                     } else {
-                        await loginWithGoogle(result.user.id, result.user.email);
-                        router.push("/(logged-in)/(tabs)/(task)");
-                        setVisible(false);
-                    }
-                } catch (error: any) {
-                    console.error("Google authentication error:", error);
-                    Sentry.captureException(error, {
-                        tags: { "auth.method": "google", "auth.flow": mode },
-                    });
-
-                    if (error?.message === "ACCOUNT_NOT_FOUND") {
-                        if (mode === "login") {
-                            showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_GOOGLE, "warning", "No Account Found");
-                        }
-                    } else {
-                        // Surface the API error message if descriptive, otherwise use fallback
+                        console.error("Google authentication error:", error);
+                        Sentry.captureException(error, {
+                            tags: { "auth.method": "google", "auth.flow": mode },
+                        });
                         const msg = error?.message;
                         const displayMsg = msg && msg !== "ACCOUNT_NOT_FOUND"
                             ? msg
@@ -193,22 +200,25 @@ export const OnboardModal = (props: Props) => {
                     return;
                 } catch (loginError: any) {
                     if (loginError.message === "ACCOUNT_NOT_FOUND") {
-                        showToast(ERROR_MESSAGES.APPLE_AUTH_NO_DATA, "warning", "Apple Sign-In");
-                        throw new Error("Apple authorization incomplete");
+                        // No account and Apple withheld name/email (repeat authorization).
+                        // Redirect to registration — user will enter details manually.
+                        startSocialRegistration({
+                            appleId: appleAccountID,
+                            appleIdToken: credential.identityToken ?? undefined,
+                        });
+                        return;
                     } else {
                         throw loginError;
                     }
                 }
             } else {
                 const displayName = `${firstName} ${lastName}`.trim();
-                updateOnboardingData({
+                startSocialRegistration({
                     email: email,
                     displayName: displayName,
                     appleId: appleAccountID,
                     appleIdToken: credential.identityToken ?? undefined,
                 });
-
-                router.replace("/(onboarding)/name");
             }
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
@@ -218,17 +228,16 @@ export const OnboardModal = (props: Props) => {
                 Sentry.captureException(e, {
                     tags: { "auth.method": "apple", "auth.flow": "register" },
                 });
-                if (e.message !== "Apple authorization incomplete") {
-                    showToast(ERROR_MESSAGES.APPLE_AUTH_FAILED, "danger", "Sign-Up Failed");
-                }
+                showToast(ERROR_MESSAGES.APPLE_AUTH_FAILED, "danger", "Sign-Up Failed");
             }
             throw e;
         }
     };
 
     const apple_login = async () => {
+        let credential: AppleAuthentication.AppleAuthenticationCredential | null = null;
         try {
-            const credential = await AppleAuthentication.signInAsync({
+            credential = await AppleAuthentication.signInAsync({
                 requestedScopes: [
                     AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
                     AppleAuthentication.AppleAuthenticationScope.EMAIL,
@@ -243,8 +252,21 @@ export const OnboardModal = (props: Props) => {
         } catch (e: any) {
             if (e.code === "ERR_REQUEST_CANCELED") {
                 // ignored
-            } else if (e.message === "ACCOUNT_NOT_FOUND") {
-                showToast(ERROR_MESSAGES.ACCOUNT_NOT_FOUND_APPLE, "warning", "No Account Found");
+            } else if (e.message === "ACCOUNT_NOT_FOUND" && credential) {
+                // No account — seamlessly redirect to registration
+                const firstName = credential.fullName?.givenName;
+                const lastName = credential.fullName?.familyName;
+                const displayName = (firstName || lastName)
+                    ? `${firstName || ''} ${lastName || ''}`.trim()
+                    : '';
+
+                startSocialRegistration({
+                    email: credential.email || '',
+                    displayName: displayName,
+                    appleId: credential.user,
+                    appleIdToken: credential.identityToken ?? undefined,
+                });
+                return;
             } else {
                 console.error("Apple login error:", e.code, e);
                 Sentry.captureException(e, {

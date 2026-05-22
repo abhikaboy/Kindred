@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, View, Animated, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
@@ -21,6 +22,7 @@ type Props = {};
 
 const NameOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const {
         onboardingData,
@@ -198,6 +200,7 @@ const NameOnboarding = (props: Props) => {
                         themedStyles.buttonContainer,
                         {
                             opacity: fadeAnimation,
+                            paddingBottom: 28 + insets.bottom,
                         },
                     ]}>
                     <PrimaryButton

@@ -272,31 +272,9 @@ const Edit = () => {
                     ]}
                 />
             </View>
-            <View
-                style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                }}>
-                <ThemedText type="subtitle_subtle" style={{ marginTop: 4 }}>
-                    PROFILE
-                </ThemedText>
-                <View
-                    style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        backgroundColor: "rgba(100, 100, 255, 0.1)",
-                        paddingHorizontal: 12,
-                        paddingVertical: 5,
-                        borderRadius: 20,
-                        gap: 8,
-                    }}>
-                    <Feather name="trending-up" size={20} color={ThemedColor.primary} />
-                    <ThemedText type="defaultSemiBold" style={{ fontSize: 14, opacity: 0.8 }}>
-                        In Development
-                    </ThemedText>
-                </View>
-            </View>
+            <ThemedText type="subtitle_subtle" style={{ marginTop: 4 }}>
+                PROFILE
+            </ThemedText>
 
             <View style={{ marginBottom: 16 }}>
                 <InputGroup
