@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, TextInput, TouchableOpacity, View, Animated, KeyboardAvoidingView, Platform, Linking, ActivityIndicator } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
@@ -23,6 +24,7 @@ const TOTAL_STEPS = 5; // Will be overridden for social auth
 
 const PhoneOnboarding = () => {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { onboardingData, updateOnboardingData } = useOnboarding();
     const { capture } = useAnalytics();
@@ -271,7 +273,7 @@ const PhoneOnboarding = () => {
                 }}
             />
 
-                <View style={styles.contentContainer}>
+                <View style={[styles.contentContainer, { paddingBottom: 24 + insets.bottom }]}>
                     {/* Header — crossfades between phone and verify titles */}
                     <Animated.View style={[styles.headerContainer, {
                         opacity: fadeAnimation,
@@ -498,7 +500,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingTop: screenHeight * 0.20,
-        paddingBottom: 20,
+        paddingBottom: 24,
         zIndex: 1,
     },
     headerContainer: {

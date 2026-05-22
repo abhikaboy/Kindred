@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, View, Animated, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
@@ -22,6 +23,7 @@ type Props = {};
 
 const PasswordOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { onboardingData, updatePassword, validationErrors, registerWithEmail, isLoading } = useOnboarding();
     const { capture } = useAnalytics();
@@ -205,6 +207,7 @@ const PasswordOnboarding = (props: Props) => {
                         themedStyles.buttonContainer,
                         {
                             opacity: fadeAnimation,
+                            paddingBottom: 24 + insets.bottom,
                         }
                     ]}
                 >
@@ -272,7 +275,7 @@ const styles = (ThemedColor: ReturnType<typeof useThemeColor>) => StyleSheet.cre
     buttonContainer: {
         width: '100%',
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingBottom: 20,
+        paddingBottom: 24,
     },
 });
 

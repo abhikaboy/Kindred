@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, View, Animated, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
@@ -19,6 +20,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const CalendarOnboarding = () => {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { capture } = useAnalytics();
 
@@ -159,6 +161,7 @@ const CalendarOnboarding = () => {
             <Animated.View style={[styles.buttonsContainer, {
                 opacity: buttonsFade,
                 transform: [{ translateY: buttonsSlide }],
+                paddingBottom: 40 + insets.bottom,
             }]}>
                 <PrimaryButton
                     title={loading ? "Connecting..." : "Connect Google Calendar"}

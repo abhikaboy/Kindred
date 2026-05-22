@@ -1,5 +1,6 @@
 import { Dimensions, StyleSheet, View, Animated } from "react-native";
 import React, { useEffect, useRef } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ThemedView } from "@/components/ThemedView";
@@ -18,6 +19,7 @@ type Props = {};
 
 const WelcomeOnboarding = (props: Props) => {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { onboardingData } = useOnboarding();
     const { capture } = useAnalytics();
@@ -171,7 +173,7 @@ const WelcomeOnboarding = (props: Props) => {
                 </Svg>
             </View>
 
-            <View style={styles.contentContainer}>
+            <View style={[styles.contentContainer, { paddingBottom: 40 + insets.bottom }]}>
                 {/* Main Text Section */}
                 <Animated.View
                     style={[
