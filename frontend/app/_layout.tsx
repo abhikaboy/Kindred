@@ -77,12 +77,12 @@ try {
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            refetchOnWindowFocus: false,
-            refetchOnMount: false,
-            refetchOnReconnect: false,
+            refetchOnWindowFocus: true,
+            refetchOnMount: true,
+            refetchOnReconnect: true,
             retry: false,
-            staleTime: 1000 * 60 * 5, // 5 minutes
-            gcTime: 1000 * 60 * 10, // 10 minutes - garbage collect unused data after this time
+            staleTime: 1000 * 30, // 30 seconds - data considered fresh
+            gcTime: 1000 * 60 * 5, // 5 minutes - garbage collect unused data
         },
     },
 });

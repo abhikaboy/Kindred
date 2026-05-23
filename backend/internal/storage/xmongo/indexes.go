@@ -151,6 +151,27 @@ var Indexes = []Index{
 	// 		}),
 	// 	},
 	// },
+	// Notifications collection indexes
+	// Compound index for fetching a user's notifications sorted by time (covers the main query)
+	{
+		Collection: "notifications",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "receiver", Value: 1},
+				{Key: "time", Value: -1},
+			},
+		},
+	},
+	// Compound index for unread count queries
+	{
+		Collection: "notifications",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "receiver", Value: 1},
+				{Key: "read", Value: 1},
+			},
+		},
+	},
 	// Calendar processed events indexes
 	{
 		Collection: "calendar_processed_events",

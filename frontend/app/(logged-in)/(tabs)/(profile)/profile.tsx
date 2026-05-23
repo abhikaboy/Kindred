@@ -1,7 +1,7 @@
 import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Icons } from "@/constants/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
@@ -13,7 +13,7 @@ import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTa
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProductivityRings from "@/components/profile/ProductivityRings";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
-import ProfileGallery from "@/components/profile/ProfileGallery";
+import ProfileGallery, { type ProfileGalleryHandle } from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
@@ -41,8 +41,18 @@ export default function Profile() {
     const hasDefaultAvatar = !user?.profile_picture || user.profile_picture === DEFAULT_PICTURE;
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
+    const galleryRef = useRef<ProfileGalleryHandle>(null);
 
     const HEADER_HEIGHT = Dimensions.get("screen").height * 0.4;
+
+    const handleScroll = useCallback((event: any) => {
+        if (activeTab !== 1) return; // Only load more on Gallery tab
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+        if (distanceFromBottom < 500 && galleryRef.current?.hasMore) {
+            galleryRef.current.loadMore();
+        }
+    }, [activeTab]);
 
     type TaskDocument = components["schemas"]["TaskDocument"];
 
@@ -95,6 +105,7 @@ export default function Profile() {
             ref={scrollRef}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
             <RingsBlurOverlay
                 visible={ringsExpanded}
@@ -131,9 +142,9 @@ export default function Profile() {
 
                 <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab}>
+                <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab} lazy>
                     <TaskList {...tasks} />
-                    <ProfileGallery userId={user?._id} />
+                    <ProfileGallery ref={galleryRef} userId={user?._id} />
                 </AnimatedTabContent>
             </View>
         </Animated.ScrollView>

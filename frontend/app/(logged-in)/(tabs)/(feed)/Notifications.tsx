@@ -1,5 +1,5 @@
-import { Dimensions, StyleSheet, View, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from "react-native";
-import React, { useState, useEffect, useRef } from "react";
+import { Dimensions, StyleSheet, View, SectionList, TouchableOpacity, ActivityIndicator, Animated, InteractionManager, RefreshControl } from "react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -234,11 +234,49 @@ const Notifications = () => {
     const { notifications: rawNotifications, loading, error, refreshNotifications, markAllAsRead } = useNotifications();
     const hasMarkedAsRead = useRef(false);
     const { capture } = useAnalytics();
+    const [ready, setReady] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const followRequestsRef = useRef<{ refresh: () => Promise<void> }>(null);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([
+            refreshNotifications(),
+            followRequestsRef.current?.refresh(),
+        ]);
+        setRefreshing(false);
+    }, [refreshNotifications]);
+
+    // Defer heavy rendering until the navigation transition completes
+    useEffect(() => {
+        const task = InteractionManager.runAfterInteractions(() => {
+            setReady(true);
+        });
+        return () => task.cancel();
+    }, []);
 
     const handleNotificationPress = (notification: ProcessedNotification) => {
         capture(AnalyticsEvents.NOTIFICATION_TAPPED, {
             notification_type: notification.type,
         });
+
+        switch (notification.type) {
+            case "encouragement":
+                router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=encouragements");
+                break;
+            case "congratulation":
+                router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
+                break;
+            case "friend_request":
+            case "friend_request_accepted":
+                // Already on the notifications page which shows friend requests
+                break;
+            case "comment":
+                if (notification.referenceId) {
+                    router.push(`/(logged-in)/posting/${notification.referenceId}`);
+                }
+                break;
+        }
     };
 
     // Mark all notifications as read when the page is focused (only once per mount)
@@ -319,6 +357,13 @@ const Notifications = () => {
     const thisMonthNotifications = filterByTimePeriod(notifications, isThisMonth);
     const olderNotifications = filterByTimePeriod(notifications, isOlder);
 
+    const sections = [
+        { title: "Today", data: todayNotifications },
+        { title: "This Week", data: thisWeekNotifications },
+        { title: "This Month", data: thisMonthNotifications },
+        { title: "Older", data: olderNotifications },
+    ].filter((s) => s.data.length > 0);
+
     return (
         <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
@@ -327,37 +372,55 @@ const Notifications = () => {
                 </TouchableOpacity>
                 <ThemedText type="subtitle">Notifications</ThemedText>
             </View>
-            <ScrollView contentContainerStyle={styles.scrollViewContent}>
-                <FollowRequestsSection styles={styles} maxVisible={4} />
-                {loading ? (
+            {!ready || loading ? (
+                <View style={styles.scrollViewContent}>
                     <NotificationsSkeleton ThemedColor={ThemedColor} />
-                ) : error ? (
-                    <View style={styles.section}>
-                        <ThemedText style={{ textAlign: "center", color: "red" }}>{error}</ThemedText>
-                        <TouchableOpacity
-                            onPress={() => refreshNotifications()}
-                            style={{ marginTop: 16, alignItems: "center" }}>
-                            <ThemedText style={{ color: ThemedColor.text }}>Tap to retry</ThemedText>
-                        </TouchableOpacity>
-                    </View>
-                ) : notifications.length === 0 ? (
-                    <View style={styles.section}>
-                        <ThemedText style={{ textAlign: "center" }}>No notifications yet</ThemedText>
-                    </View>
-                ) : (
-                    <>
-                        <NotificationSection title="Today" notifications={todayNotifications} styles={styles} onNotificationPress={handleNotificationPress} />
-                        <NotificationSection title="This Week" notifications={thisWeekNotifications} styles={styles} onNotificationPress={handleNotificationPress} />
-                        <NotificationSection
-                            title="This Month"
-                            notifications={thisMonthNotifications}
+                </View>
+            ) : error ? (
+                <View style={[styles.scrollViewContent, styles.section]}>
+                    <ThemedText style={{ textAlign: "center", color: "red" }}>{error}</ThemedText>
+                    <TouchableOpacity
+                        onPress={() => refreshNotifications()}
+                        style={{ marginTop: 16, alignItems: "center" }}>
+                        <ThemedText style={{ color: ThemedColor.text }}>Tap to retry</ThemedText>
+                    </TouchableOpacity>
+                </View>
+            ) : notifications.length === 0 ? (
+                <View style={[styles.scrollViewContent, styles.section]}>
+                    <ThemedText style={{ textAlign: "center" }}>No notifications yet</ThemedText>
+                </View>
+            ) : (
+                <SectionList
+                    sections={sections}
+                    keyExtractor={(item, index) => `${item.type}-${item.id}-${index}`}
+                    renderItem={({ item, index }) => (
+                        <NotificationItem
+                            notification={item}
+                            index={index}
                             styles={styles}
                             onNotificationPress={handleNotificationPress}
                         />
-                        <NotificationSection title="Older" notifications={olderNotifications} styles={styles} onNotificationPress={handleNotificationPress} />
-                    </>
-                )}
-            </ScrollView>
+                    )}
+                    renderSectionHeader={({ section: { title } }) => (
+                        <View style={styles.sectionHeader}>
+                            <ThemedText type="defaultSemiBold">{title}</ThemedText>
+                        </View>
+                    )}
+                    ListHeaderComponent={<FollowRequestsSection ref={followRequestsRef} styles={styles} maxVisible={4} />}
+                    contentContainerStyle={styles.scrollViewContent}
+                    stickySectionHeadersEnabled={false}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={ThemedColor.text}
+                        />
+                    }
+                />
+            )}
         </ThemedView>
     );
 };
@@ -383,6 +446,10 @@ const stylesheet = (ThemedColor: any) => {
         },
         listItem: {
             marginVertical: 10,
+        },
+        sectionHeader: {
+            marginBottom: 4,
+            marginTop: 12,
         },
     });
 };

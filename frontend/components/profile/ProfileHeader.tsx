@@ -37,7 +37,12 @@ export default function ProfileHeader({ displayName, handle, userId, showCameraB
                 </View>
             )}
             <View style={styles.nameContainer}>
-                <ThemedText type="hero" style={styles.displayName}>
+                <ThemedText
+                    type="hero"
+                    style={styles.displayName}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.6}>
                     {displayName}
                 </ThemedText>
                 <ThemedText style={[styles.handle, { color: ThemedColor.caption }]}>{handle}</ThemedText>

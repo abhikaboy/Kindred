@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Icons } from "@/constants/Icons";
 import { SvgUri } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,7 +23,7 @@ import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTa
 import ProfileStats from "@/components/profile/ProfileStats";
 import TodayStats from "@/components/profile/TodayStats";
 import { FriendRings } from "@/components/profile/ProductivityRings";
-import ProfileGallery from "@/components/profile/ProfileGallery";
+import ProfileGallery, { type ProfileGalleryHandle } from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
 import TaskList from "@/components/profile/TaskList";
@@ -75,8 +75,18 @@ export default function Profile() {
     const [activeTab, setActiveTab] = useState(0);
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();
+    const galleryRef = useRef<ProfileGalleryHandle>(null);
 
     const HEADER_HEIGHT = Dimensions.get("window").height * 0.4;
+
+    const handleScroll = useCallback((event: any) => {
+        if (activeTab !== 1) return;
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+        if (distanceFromBottom < 500 && galleryRef.current?.hasMore) {
+            galleryRef.current.loadMore();
+        }
+    }, [activeTab]);
 
     const { data: profile, isLoading } = useQuery({
         queryKey: ["profile", id],
@@ -158,6 +168,7 @@ export default function Profile() {
         <Animated.ScrollView
             ref={scrollRef}
             scrollEventThrottle={16}
+            onScroll={handleScroll}
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
             <ParallaxBanner
                 scrollRef={scrollRef}
@@ -191,16 +202,18 @@ export default function Profile() {
                         />
                     </View>
 
-                    {profile?.ring_state ? (
-                        <FriendRings
-                            ringState={profile.ring_state}
-                            userId={profile.id}
-                            userHandle={profile.handle}
-                            userName={profile.display_name}
-                        />
-                    ) : (
-                        <TodayStats userId={profile?.id} />
-                    )}
+                    <View style={{ marginTop: 8 }}>
+                        {profile?.ring_state ? (
+                            <FriendRings
+                                ringState={profile.ring_state}
+                                userId={profile.id}
+                                userHandle={profile.handle}
+                                userName={profile.display_name}
+                            />
+                        ) : (
+                            <TodayStats userId={profile?.id} />
+                        )}
+                    </View>
                 </View>
                 {canViewPersonalContent ? (
                     <>
@@ -216,9 +229,9 @@ export default function Profile() {
 
                         <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                        <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab}>
+                        <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab} lazy>
                             <TaskList {...tasks} />
-                            <ProfileGallery userId={galleryUserId} />
+                            <ProfileGallery ref={galleryRef} userId={galleryUserId} />
                         </AnimatedTabContent>
                     </>
                 ) : profile.relationship?.status === "blocked" ? (

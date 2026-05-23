@@ -32,6 +32,7 @@ import { List } from "phosphor-react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useRouter } from "expo-router";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useKudos } from "@/contexts/kudosContext";
 
 type Props = {};
 
@@ -57,6 +58,7 @@ const Home = (props: Props) => {
     const [refreshing, setRefreshing] = useState(false);
     const queryClient = useQueryClient();
     const { capture } = useAnalytics();
+    const { fetchKudosData } = useKudos();
 
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
@@ -201,19 +203,18 @@ const Home = (props: Props) => {
         });
         setRefreshing(true);
         try {
-            console.log("Refreshing all data...");
             await Promise.all([
-                fetchWorkspaces(true), // Force refresh workspaces
-                fetchKudosCounts(true), // Force refresh kudos
-                queryClient.invalidateQueries({ queryKey: ["completedTasks"] }),
+                fetchWorkspaces(true),
+                fetchKudosCounts(true),
+                fetchKudosData(),
+                queryClient.invalidateQueries(),
             ]);
-            console.log("Refresh complete");
         } catch (error) {
             console.error("Error refreshing data:", error);
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkspaces, fetchKudosCounts, queryClient, capture]);
+    }, [fetchWorkspaces, fetchKudosCounts, fetchKudosData, queryClient, capture]);
 
     const drawerRef = useRef<DrawerLayout>(null);
 

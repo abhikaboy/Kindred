@@ -5,6 +5,7 @@ import {
     Modal,
     Dimensions,
     Animated,
+    Platform,
 } from "react-native";
 import {
     Microphone,
@@ -17,6 +18,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import ConfettiCannon from "react-native-confetti-cannon";
+import * as Haptics from "expo-haptics";
 
 const CREDIT_TYPES = [
     { key: "voice", label: "Voice Credits", Icon: Microphone },
@@ -33,11 +35,6 @@ interface RewardUnboxingModalProps {
     rewardAmount: number;
     newTotal?: number;
 }
-
-const SPIN_DURATION = 1500;
-const DECEL_DURATION = 1000;
-const ICON_INTERVAL = 80;
-const TOTAL_SPIN_MS = SPIN_DURATION + DECEL_DURATION;
 
 export default function RewardUnboxingModal({
     visible,
@@ -59,10 +56,16 @@ export default function RewardUnboxingModal({
     const centerScale = useRef(new Animated.Value(1)).current;
     const centerGlow = useRef(new Animated.Value(0)).current;
     const rewardOpacity = useRef(new Animated.Value(0)).current;
+    const rewardScale = useRef(new Animated.Value(0.5)).current;
     const headerOpacity = useRef(new Animated.Value(0)).current;
+    const totalOpacity = useRef(new Animated.Value(0)).current;
 
     const winningIndex = CREDIT_TYPES.findIndex((c) => c.key === rewardType);
     const safeWinningIndex = winningIndex >= 0 ? winningIndex : 0;
+
+    const haptic = (style: Haptics.ImpactFeedbackStyle) => {
+        if (Platform.OS === "ios") Haptics.impactAsync(style);
+    };
 
     useEffect(() => {
         if (!visible) {
@@ -73,7 +76,9 @@ export default function RewardUnboxingModal({
             centerScale.setValue(1);
             centerGlow.setValue(0);
             rewardOpacity.setValue(0);
+            rewardScale.setValue(0.5);
             headerOpacity.setValue(0);
+            totalOpacity.setValue(0);
             return;
         }
 
@@ -84,59 +89,108 @@ export default function RewardUnboxingModal({
             useNativeDriver: true,
         }).start();
 
+        // Decelerating spin — starts fast, slows down
         const len = CREDIT_TYPES.length;
         let tick = 0;
+        let currentInterval = 60; // start fast
+        let spinTimer: ReturnType<typeof setTimeout>;
 
-        const interval = setInterval(() => {
-            tick++;
-            setLeftIndex(tick % len);
-            setCenterIndex((tick + 1) % len);
-            setRightIndex((tick + 2) % len);
-        }, ICON_INTERVAL);
+        const scheduleTick = () => {
+            spinTimer = setTimeout(() => {
+                tick++;
+                if (!leftStopped) setLeftIndex(tick % len);
+                setCenterIndex((tick + 1) % len);
+                if (!rightStopped) setRightIndex((tick + 2) % len);
 
+                // Light haptic on each tick for ratchet feel
+                if (tick % 3 === 0) haptic(Haptics.ImpactFeedbackStyle.Light);
+
+                // Decelerate after 1.5s
+                if (tick > 20) {
+                    currentInterval = Math.min(currentInterval + 8, 250);
+                }
+
+                scheduleTick();
+            }, currentInterval);
+        };
+        scheduleTick();
+
+        // Left stops first at 1.8s
         const leftTimer = setTimeout(() => {
             const leftLand = (safeWinningIndex + len - 1) % len;
             setLeftIndex(leftLand);
             setLeftStopped(true);
-        }, SPIN_DURATION);
+            haptic(Haptics.ImpactFeedbackStyle.Medium);
+        }, 1800);
 
+        // Right stops at 2.5s
         const rightTimer = setTimeout(() => {
             const rightLand = (safeWinningIndex + 1) % len;
             setRightIndex(rightLand);
             setRightStopped(true);
-        }, SPIN_DURATION + 400);
+            haptic(Haptics.ImpactFeedbackStyle.Medium);
+        }, 2500);
 
+        // Center stops last at 3.2s — big reveal
         const centerTimer = setTimeout(() => {
-            clearInterval(interval);
+            clearTimeout(spinTimer);
             setCenterIndex(safeWinningIndex);
             setCenterStopped(true);
 
+            // Heavy haptic for the landing
+            if (Platform.OS === "ios") {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+
+            // Dramatic reveal animation
             Animated.parallel([
                 Animated.spring(centerScale, {
-                    toValue: 1.15,
-                    friction: 4,
-                    tension: 100,
+                    toValue: 1.3,
+                    friction: 3,
+                    tension: 120,
                     useNativeDriver: true,
                 }),
                 Animated.timing(centerGlow, {
                     toValue: 1,
+                    duration: 500,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            // Reward text appears after a beat
+            setTimeout(() => {
+                Animated.parallel([
+                    Animated.spring(rewardScale, {
+                        toValue: 1,
+                        friction: 4,
+                        tension: 80,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(rewardOpacity, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+
+                haptic(Haptics.ImpactFeedbackStyle.Light);
+            }, 400);
+
+            // Total text + confetti + done button
+            setTimeout(() => {
+                Animated.timing(totalOpacity, {
+                    toValue: 1,
                     duration: 400,
                     useNativeDriver: true,
-                }),
-                Animated.timing(rewardOpacity, {
-                    toValue: 1,
-                    duration: 500,
-                    delay: 200,
-                    useNativeDriver: true,
-                }),
-            ]).start(() => {
+                }).start();
+
                 setPhase("revealed");
                 confettiRef.current?.start();
-            });
-        }, TOTAL_SPIN_MS);
+            }, 900);
+        }, 3200);
 
         return () => {
-            clearInterval(interval);
+            clearTimeout(spinTimer);
             clearTimeout(leftTimer);
             clearTimeout(rightTimer);
             clearTimeout(centerTimer);
@@ -204,7 +258,7 @@ export default function RewardUnboxingModal({
                                 { opacity: centerGlow },
                             ]}
                         />
-                        <CenterIcon size={32} color="#fff" weight="fill" />
+                        <CenterIcon size={36} color="#fff" weight="fill" />
                     </Animated.View>
 
                     <View
@@ -218,19 +272,30 @@ export default function RewardUnboxingModal({
                     </View>
                 </View>
 
-                <Animated.View style={[styles.rewardSection, { opacity: rewardOpacity }]}>
+                <Animated.View
+                    style={[
+                        styles.rewardSection,
+                        {
+                            opacity: rewardOpacity,
+                            transform: [{ scale: rewardScale }],
+                        },
+                    ]}
+                >
                     <ThemedText style={styles.rewardAmount}>
                         +{rewardAmount}
                     </ThemedText>
-                    <ThemedText style={styles.rewardSubtitle}>
+                    <ThemedText style={styles.rewardLabel}>
                         {winningType.label}
                     </ThemedText>
-                    {newTotal != null && (
-                        <ThemedText type="caption" style={{ color: "#E9D5FF", marginTop: 8 }}>
+                </Animated.View>
+
+                {newTotal != null && (
+                    <Animated.View style={[styles.totalBadge, { opacity: totalOpacity }]}>
+                        <ThemedText style={styles.totalText}>
                             You now have {newTotal} {winningType.label.toLowerCase()}
                         </ThemedText>
-                    )}
-                </Animated.View>
+                    </Animated.View>
+                )}
 
                 {phase === "revealed" && (
                     <View style={styles.buttonContainer}>
@@ -243,13 +308,13 @@ export default function RewardUnboxingModal({
 
                 <ConfettiCannon
                     ref={confettiRef}
-                    count={60}
-                    origin={{ x: screenWidth / 2, y: screenHeight * 0.3 }}
+                    count={120}
+                    origin={{ x: screenWidth / 2, y: -20 }}
                     explosionSpeed={350}
                     fadeOut
                     autoStart={false}
-                    fallSpeed={1200}
-                    colors={["#854DFF", "#A855F7", "#C084FC", "#E9D5FF", "#fff"]}
+                    fallSpeed={2500}
+                    colors={["#854DFF", "#A855F7", "#C084FC", "#E9D5FF", "#FFD700", "#fff"]}
                 />
             </View>
         </Modal>
@@ -290,8 +355,8 @@ const styles = StyleSheet.create({
         opacity: 0.4,
     },
     tileCenter: {
-        width: 72,
-        height: 72,
+        width: 80,
+        height: 80,
         overflow: "hidden",
     },
     centerGlow: {
@@ -302,17 +367,32 @@ const styles = StyleSheet.create({
     },
     rewardSection: {
         alignItems: "center",
-        gap: 4,
+        gap: 2,
     },
     rewardAmount: {
-        fontSize: 24,
-        fontWeight: "700",
+        fontSize: 48,
+        fontWeight: "800",
         color: "#fff",
         fontFamily: "Outfit",
+        letterSpacing: -1,
     },
-    rewardSubtitle: {
-        fontSize: 13,
+    rewardLabel: {
+        fontSize: 18,
         color: "#C084FC",
+        fontWeight: "600",
+        fontFamily: "Outfit",
+    },
+    totalBadge: {
+        backgroundColor: "#854DFF20",
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#854DFF40",
+    },
+    totalText: {
+        fontSize: 15,
+        color: "#E9D5FF",
         fontWeight: "500",
         fontFamily: "Outfit",
     },

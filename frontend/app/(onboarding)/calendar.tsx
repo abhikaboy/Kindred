@@ -152,7 +152,7 @@ const CalendarOnboarding = () => {
                 }]}>
                     <CalendarBlank size={24} color={ThemedColor.primary} weight="fill" />
                     <ThemedText style={[styles.statText, { color: ThemedColor.text }]}>
-                        Most Kindred users link their calendar to stay on top of deadlines and plan their week
+                        Kindred users who connect their calendar complete their tasks 3x as often
                     </ThemedText>
                 </Animated.View>
             </View>
