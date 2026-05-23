@@ -14,6 +14,7 @@ import SectionHeader from "./SectionHeader";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
+import WorkingOnRow from "./WorkingOnRow";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AttachStep } from "react-native-spotlight-tour";
 import { GoogleCalendarCard } from "../cards/GoogleCalendarCard";
@@ -359,9 +360,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
 
                 {/* Dashboard Stats - always visible */}
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
                     <DashboardStats onExpandChange={handleStatsExpandChange} />
                 </View>
+                <WorkingOnRow />
 
                 <Animated.View style={{ opacity: dimAnim }}>
                 {/* Dashboard Cards */}

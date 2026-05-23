@@ -89,50 +89,55 @@ export default function RewardUnboxingModal({
             useNativeDriver: true,
         }).start();
 
-        // Decelerating spin — starts fast, slows down
+        // Loot-box style spin — blazing fast start, exponential deceleration
         const len = CREDIT_TYPES.length;
         let tick = 0;
-        let currentInterval = 60; // start fast
+        let currentInterval = 30; // very fast start
         let spinTimer: ReturnType<typeof setTimeout>;
+        let stopped = false;
 
         const scheduleTick = () => {
+            if (stopped) return;
             spinTimer = setTimeout(() => {
+                if (stopped) return;
                 tick++;
-                if (!leftStopped) setLeftIndex(tick % len);
+                setLeftIndex(tick % len);
                 setCenterIndex((tick + 1) % len);
-                if (!rightStopped) setRightIndex((tick + 2) % len);
+                setRightIndex((tick + 2) % len);
 
-                // Light haptic on each tick for ratchet feel
-                if (tick % 3 === 0) haptic(Haptics.ImpactFeedbackStyle.Light);
-
-                // Decelerate after 1.5s
-                if (tick > 20) {
-                    currentInterval = Math.min(currentInterval + 8, 250);
+                // Haptic ratchet — every tick when slow, every 4th when fast
+                if (currentInterval > 100 || tick % 4 === 0) {
+                    haptic(Haptics.ImpactFeedbackStyle.Light);
                 }
+
+                // Exponential deceleration: interval grows by 6% each tick
+                // 30ms → ~50ms at tick 20 → ~150ms at tick 50 → ~400ms at tick 80
+                currentInterval = Math.min(currentInterval * 1.06, 450);
 
                 scheduleTick();
             }, currentInterval);
         };
         scheduleTick();
 
-        // Left stops first at 1.8s
+        // Left locks first at 2.2s
         const leftTimer = setTimeout(() => {
             const leftLand = (safeWinningIndex + len - 1) % len;
             setLeftIndex(leftLand);
             setLeftStopped(true);
             haptic(Haptics.ImpactFeedbackStyle.Medium);
-        }, 1800);
+        }, 2200);
 
-        // Right stops at 2.5s
+        // Right locks at 3.0s
         const rightTimer = setTimeout(() => {
             const rightLand = (safeWinningIndex + 1) % len;
             setRightIndex(rightLand);
             setRightStopped(true);
             haptic(Haptics.ImpactFeedbackStyle.Medium);
-        }, 2500);
+        }, 3000);
 
-        // Center stops last at 3.2s — big reveal
+        // Center locks last at 3.8s — final reveal
         const centerTimer = setTimeout(() => {
+            stopped = true;
             clearTimeout(spinTimer);
             setCenterIndex(safeWinningIndex);
             setCenterStopped(true);
@@ -187,9 +192,10 @@ export default function RewardUnboxingModal({
                 setPhase("revealed");
                 confettiRef.current?.start();
             }, 900);
-        }, 3200);
+        }, 3800);
 
         return () => {
+            stopped = true;
             clearTimeout(spinTimer);
             clearTimeout(leftTimer);
             clearTimeout(rightTimer);
@@ -309,7 +315,7 @@ export default function RewardUnboxingModal({
                 <ConfettiCannon
                     ref={confettiRef}
                     count={120}
-                    origin={{ x: screenWidth / 2, y: -20 }}
+                    origin={{ x: screenWidth / 2, y: -screenHeight / 2 }}
                     explosionSpeed={350}
                     fadeOut
                     autoStart={false}
@@ -392,7 +398,7 @@ const styles = StyleSheet.create({
     },
     totalText: {
         fontSize: 15,
-        color: "#E9D5FF",
+        color: "#854DFF",
         fontWeight: "500",
         fontFamily: "Outfit",
     },

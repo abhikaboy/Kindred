@@ -38,6 +38,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterDeleteTaskOperation(api, handler)
 	RegisterBulkDeleteTaskOperation(api, handler)
 	RegisterActivateTaskOperation(api, handler)
+	RegisterStartWorkingOperation(api, handler)
 	RegisterGetActiveTasksOperation(api, handler)
 	RegisterCreateTaskFromTemplateOperation(api, handler)
 	RegisterGetTasksWithStartTimesOlderThanOneDayOperation(api, handler)

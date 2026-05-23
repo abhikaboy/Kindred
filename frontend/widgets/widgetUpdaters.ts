@@ -83,13 +83,16 @@ const createLiveActivityFactory = <TProps>(
     loadFactory: () => LiveActivityLike<TProps>,
 ): LiveActivityLike<TProps> => {
     let instance: LiveActivityLike<TProps> | null = null;
+    let loadError: unknown = null;
 
     const resolve = (): LiveActivityLike<TProps> => {
         if (instance) return instance;
         try {
             instance = loadFactory();
+            loadError = null;
         } catch (e) {
-            console.warn(`[Widgets] Failed to load live activity ${name}:`, e);
+            console.error(`[Widgets] Failed to load live activity ${name}:`, e);
+            loadError = e;
             instance = createNoopLiveActivityFactory<TProps>();
         }
         return instance;
@@ -97,16 +100,17 @@ const createLiveActivityFactory = <TProps>(
 
     return {
         start: (props, url?) => {
-            try { return resolve().start(props, url); }
-            catch (e) {
-                console.warn(`[Widgets] ${name} start failed:`, e);
-                return noopLiveActivityInstance<TProps>();
+            resolve();
+            if (loadError) {
+                throw new Error(`Live activity "${name}" is not available: ${loadError}`);
             }
+            // Let errors from native start() propagate so callers can show feedback
+            return instance!.start(props, url);
         },
         getInstances: () => {
             try { return resolve().getInstances(); }
             catch (e) {
-                console.warn(`[Widgets] ${name} getInstances failed:`, e);
+                console.error(`[Widgets] ${name} getInstances failed:`, e);
                 return [];
             }
         },

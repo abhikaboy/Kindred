@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kindred",
     "slug": "Kindred",
-    "version": "0.0.1",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "kindred",
@@ -115,6 +115,7 @@
         {
           "bundleIdentifier": "com.kindred.kindredtsl.widgets",
           "groupIdentifier": "group.com.kindred.kindredtsl",
+          "frequentUpdates": true,
           "widgets": [
             {
               "name": "TodayTasksWidget",

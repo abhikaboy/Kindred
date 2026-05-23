@@ -647,6 +647,47 @@ func (h *Handler) ActivateTask(ctx context.Context, input *ActivateTaskInput) (*
 	return resp, nil
 }
 
+func (h *Handler) StartWorking(ctx context.Context, input *StartWorkingInput) (*StartWorkingOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	contextID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(contextID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	working, err := strconv.ParseBool(input.Working)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid working parameter", err)
+	}
+
+	err = h.service.SetWorkingState(userObjID, categoryID, id, working)
+	if err != nil {
+		slog.Error("Failed to update task working state", "taskId", id.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task working state. Please try again.", err)
+	}
+
+	resp := &StartWorkingOutput{}
+	if working {
+		resp.Body.Message = "Started working on task"
+	} else {
+		resp.Body.Message = "Stopped working on task"
+	}
+	return resp, nil
+}
+
 func (h *Handler) GetActiveTasks(ctx context.Context, input *GetActiveTasksInput) (*GetActiveTasksOutput, error) {
 	id, err := primitive.ObjectIDFromHex(input.ID)
 	if err != nil {

@@ -9,7 +9,8 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { markAsCompletedAPI, activateTaskAPI } from "@/api/task";
+import { markAsCompletedAPI, activateTaskAPI, setWorkingAPI } from "@/api/task";
+import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { useTasks } from "@/contexts/tasksContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
@@ -57,6 +58,12 @@ const SwipableTaskCard = ({
 
     const markAsCompleted = async (categoryId: string, taskId: string) => {
         try {
+            // End any live activity for this task
+            if (task.workingOnSince) {
+                ActiveTaskActivityFactory.getInstances().forEach((a) => a.end("default"));
+                setWorkingAPI(categoryId, taskId, false).catch(() => {});
+            }
+
             const res = await markAsCompletedAPI(categoryId, taskId, {
                 timeCompleted: new Date().toISOString(),
                 timeTaken: "PT0S", // ISO 8601 duration: 0 seconds (not tracked)

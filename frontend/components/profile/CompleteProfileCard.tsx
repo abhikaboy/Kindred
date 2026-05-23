@@ -70,11 +70,11 @@ export default function CompleteProfileCard({ onPhotoUpdated }: CompleteProfileC
                 {isUploadingPhoto ? (
                     <ActivityIndicator size="small" color={ThemedColor.primary} />
                 ) : (
-                    <Camera size={20} color={ThemedColor.primary} weight="fill" />
+                    <Camera size={20} color={ThemedColor.primary} weight="regular" />
                 )}
             </View>
             <View style={styles.textContainer}>
-                <ThemedText style={styles.title}>
+                <ThemedText type="default" style={styles.title}>
                     {isUploadingPhoto ? "Uploading photo..." : "Add a profile photo"}
                 </ThemedText>
                 {!isUploadingPhoto && (
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 14,
         fontFamily: "Outfit",
-        fontWeight: "600",
+        fontWeight: "400",
     },
     subtitle: {
         fontSize: 12,

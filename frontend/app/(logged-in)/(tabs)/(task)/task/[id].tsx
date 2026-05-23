@@ -137,17 +137,28 @@ export default function Task() {
             return;
         }
 
-        const instance = DeadlineCountdownActivityFactory.start({
-            taskName: task.content,
-            workspaceName: task.workspaceName || 'Tasks',
-            deadline: task.deadline,
-            priority: task.priority || 0,
-            categoryId: categoryId as string,
-            taskId: id as string,
-            accentColor: '#8B5CF6',
-            statusLabel: 'Due Soon',
-        });
-        setDeadlineLiveActivity(instance);
+        try {
+            const instance = DeadlineCountdownActivityFactory.start({
+                taskName: task.content,
+                workspaceName: (task as any).workspaceName || 'Tasks',
+                deadline: task.deadline,
+                priority: task.priority || 0,
+                categoryId: categoryId as string,
+                taskId: id as string,
+                accentColor: '#8B5CF6',
+                statusLabel: 'Due Soon',
+            });
+            setDeadlineLiveActivity(instance);
+        } catch (e) {
+            logger.error('Failed to start deadline live activity', e);
+            showToastable({
+                title: "Live Activity",
+                message: "Could not start deadline tracking. Check that Live Activities are enabled in Settings.",
+                status: "warning",
+                duration: 4000,
+                renderContent: (props) => <DefaultToast {...props} />,
+            });
+        }
     };
 
     const handleStartWorking = () => {
@@ -165,7 +176,7 @@ export default function Task() {
         const endTime = task.deadline || undefined;
         const activityProps = {
             taskName: task.content,
-            workspaceName: task.workspaceName || 'Tasks',
+            workspaceName: (task as any).workspaceName || 'Tasks',
             startTime: now,
             endTime,
             hasEndTime: !!endTime,
@@ -173,13 +184,26 @@ export default function Task() {
             taskId: id as string,
         };
 
-        const instance = ActiveTaskActivityFactory.start(activityProps);
-        setActiveTaskLiveActivity(instance);
+        try {
+            logger.debug('Starting active task live activity', activityProps);
+            const instance = ActiveTaskActivityFactory.start(activityProps);
+            logger.debug('Live activity started successfully', { id: instance });
+            setActiveTaskLiveActivity(instance);
 
-        // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
-        activeTaskIntervalRef.current = setInterval(() => {
-            instance.update(activityProps);
-        }, 5 * 60 * 1000);
+            // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
+            activeTaskIntervalRef.current = setInterval(() => {
+                instance.update(activityProps);
+            }, 5 * 60 * 1000);
+        } catch (e) {
+            logger.error('Failed to start active task live activity', e);
+            showToastable({
+                title: "Live Activity",
+                message: "Could not start live activity. Check that Live Activities are enabled in Settings.",
+                status: "warning",
+                duration: 4000,
+                renderContent: (props) => <DefaultToast {...props} />,
+            });
+        }
 
         startTimer(id);
     };

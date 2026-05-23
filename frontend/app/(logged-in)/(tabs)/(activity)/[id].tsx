@@ -189,7 +189,7 @@ const Activity = () => {
         <ThemedView style={styles.container}>
             <View style={styles.header}>
                 <ThemedText type="fancyFrauncesHeading" style={styles.title}>
-                    {params.displayName ? `${displayName}'s Activity` : "My Activity"}
+                    {params.displayName ? `${displayName}'s Activity` : "Analytics"}
                 </ThemedText>
             </View>
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background, frame, monospacedDigit } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
@@ -27,16 +27,18 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     const deadlineDate = new Date(deadline);
     const countdownStart = new Date(deadlineDate.getTime() - 60 * 60 * 1000);
     const priorityLabel = PRIORITY_LABELS[Math.min(priority, 3)];
-    const taskLink = `kindred://task/${categoryId}/${taskId}`;
+    const encodedName = encodeURIComponent(taskName);
+    const taskLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}`;
+    const completeLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=complete`;
 
     return {
         banner: (
-            <VStack alignment="leading" spacing={8} modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(taskLink)]}>
+            <VStack alignment="leading" spacing={6} modifiers={[padding({ horizontal: 20, vertical: 16 }), widgetURL(taskLink)]}>
                 {/* Row 1: Status + Countdown */}
-                <HStack alignment="center">
+                <HStack alignment="center" modifiers={[frame({ maxWidth: 9999 })]}>
                     <HStack alignment="center" spacing={5}>
-                        <Image systemName="circle.fill" color={accentColor} size={8} />
-                        <Text modifiers={[font({ weight: 'bold', size: 12 }), foregroundStyle(accentColor)]}>
+                        <Image systemName="circle.fill" color={accentColor} size={7} />
+                        <Text modifiers={[font({ weight: 'semibold', size: 11 }), foregroundStyle(accentColor)]}>
                             {statusLabel.toUpperCase()}
                         </Text>
                     </HStack>
@@ -44,7 +46,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                     <Text
                         date={deadlineDate}
                         dateStyle="timer"
-                        modifiers={[font({ weight: 'bold', size: 28, design: 'rounded' }), foregroundStyle(accentColor)]}
+                        modifiers={[font({ weight: 'bold', size: 15, design: 'rounded' }), foregroundStyle(accentColor), monospacedDigit()]}
                     />
                 </HStack>
 
@@ -74,7 +76,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                 {/* Row 5: CTA Buttons */}
                 <HStack spacing={8}>
                     <Link
-                        destination={`${taskLink}?action=complete`}
+                        destination={{completeLink}}
                         modifiers={[
                             font({ weight: 'semibold', size: 14 }),
                             foregroundStyle('#FFFFFF'),
@@ -154,7 +156,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                 />
                 <HStack spacing={8}>
                     <Link
-                        destination={`${taskLink}?action=complete`}
+                        destination={{completeLink}}
                         modifiers={[
                             font({ weight: 'semibold', size: 13 }),
                             foregroundStyle('#FFFFFF'),
