@@ -1269,3 +1269,64 @@ func (s *Service) NotifyRandomFriendsOfPost(postID primitive.ObjectID, posterID 
 
 	return nil
 }
+
+// GetFriendsRingClosures returns ring closure notifications from friends, sorted by time descending.
+func (s *Service) GetFriendsRingClosures(userID primitive.ObjectID, limit, offset int) ([]FeedRingsClosedData, int, error) {
+	ctx := context.Background()
+
+	notifColl := s.NotificationService.Notifications
+
+	filter := bson.M{
+		"receiver":         userID,
+		"notificationType": "RINGS_CLOSED",
+		"user._id":         bson.M{"$ne": userID},
+	}
+
+	total, err := notifColl.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	opts := options.Find().
+		SetSort(bson.D{{Key: "time", Value: -1}}).
+		SetLimit(int64(limit)).
+		SetSkip(int64(offset))
+
+	cursor, err := notifColl.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []FeedRingsClosedData
+	for cursor.Next(ctx) {
+		var doc struct {
+			ID      primitive.ObjectID `bson:"_id"`
+			Time    time.Time          `bson:"time"`
+			Content string             `bson:"content"`
+			User    struct {
+				ID             primitive.ObjectID `bson:"_id"`
+				DisplayName    string             `bson:"display_name"`
+				Handle         string             `bson:"handle"`
+				ProfilePicture string             `bson:"profile_picture"`
+			} `bson:"user"`
+		}
+		if err := cursor.Decode(&doc); err != nil {
+			continue
+		}
+
+		results = append(results, FeedRingsClosedData{
+			ID:        doc.ID.Hex(),
+			Timestamp: doc.Time.Format(time.RFC3339),
+			Content:   doc.Content,
+			User: &types.UserExtendedReference{
+				ID:             doc.User.ID.Hex(),
+				Handle:         doc.User.Handle,
+				DisplayName:    doc.User.DisplayName,
+				ProfilePicture: doc.User.ProfilePicture,
+			},
+		})
+	}
+
+	return results, int(total), nil
+}

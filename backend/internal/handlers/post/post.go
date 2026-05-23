@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
@@ -262,6 +263,13 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		}
 	}
 
+	// Get friends' ring closure events
+	ringClosures, ringsTotal, err := h.service.GetFriendsRingClosures(userID, 5, offset/4)
+	if err != nil {
+		ringClosures = []FeedRingsClosedData{}
+		ringsTotal = 0
+	}
+
 	// Convert posts to API format
 	var apiPosts []types.PostDocumentAPI
 	for _, post := range posts {
@@ -343,56 +351,53 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		feedTasks = append(feedTasks, feedTask)
 	}
 
-	// Interleave posts and tasks: 1 task as 2nd item, then 1 task after every 5 posts
+	// Build timestamped items for chronological merge
+	type timestampedItem struct {
+		feedItem FeedItem
+		time     time.Time
+	}
+
+	var allItems []timestampedItem
+
+	for i := range apiPosts {
+		post := apiPosts[i]
+		allItems = append(allItems, timestampedItem{
+			feedItem: FeedItem{Type: "post", Post: &post},
+			time:     post.Metadata.CreatedAt,
+		})
+	}
+
+	for i := range feedTasks {
+		task := feedTasks[i]
+		t, _ := time.Parse(time.RFC3339, task.Timestamp)
+		allItems = append(allItems, timestampedItem{
+			feedItem: FeedItem{Type: "task", Task: &task},
+			time:     t,
+		})
+	}
+
+	for i := range ringClosures {
+		rc := ringClosures[i]
+		t, _ := time.Parse(time.RFC3339, rc.Timestamp)
+		allItems = append(allItems, timestampedItem{
+			feedItem: FeedItem{Type: "rings_closed", RingsClosed: &rc},
+			time:     t,
+		})
+	}
+
+	// Sort by time descending (newest first)
+	sort.Slice(allItems, func(i, j int) bool {
+		return allItems[i].time.After(allItems[j].time)
+	})
+
+	// Take up to limit items
 	var feedItems []FeedItem
-	postIdx := 0
-	taskIdx := 0
-
-	// Add first post if available
-	if postIdx < len(apiPosts) && len(feedItems) < limit {
-		post := apiPosts[postIdx]
-		feedItems = append(feedItems, FeedItem{
-			Type: "post",
-			Post: &post,
-		})
-		postIdx++
-	}
-
-	// Add first task as 2nd item if available
-	if taskIdx < len(feedTasks) && len(feedItems) < limit {
-		task := feedTasks[taskIdx]
-		feedItems = append(feedItems, FeedItem{
-			Type: "task",
-			Task: &task,
-		})
-		taskIdx++
-	}
-
-	// Continue interleaving: 5 posts, then 1 task
-	for len(feedItems) < limit && (postIdx < len(apiPosts) || taskIdx < len(feedTasks)) {
-		// Add up to 5 posts
-		for i := 0; i < 5 && postIdx < len(apiPosts) && len(feedItems) < limit; i++ {
-			post := apiPosts[postIdx]
-			feedItems = append(feedItems, FeedItem{
-				Type: "post",
-				Post: &post,
-			})
-			postIdx++
-		}
-
-		// Add 1 task after 5 posts
-		if taskIdx < len(feedTasks) && len(feedItems) < limit {
-			task := feedTasks[taskIdx]
-			feedItems = append(feedItems, FeedItem{
-				Type: "task",
-				Task: &task,
-			})
-			taskIdx++
-		}
+	for i := 0; i < len(allItems) && i < limit; i++ {
+		feedItems = append(feedItems, allItems[i].feedItem)
 	}
 
 	// Calculate total items and pagination
-	totalItems := postsTotal + tasksTotal
+	totalItems := postsTotal + tasksTotal + ringsTotal
 	hasMore := offset+len(feedItems) < totalItems
 
 	output := &GetFeedOutput{}

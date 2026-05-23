@@ -73,9 +73,17 @@ type GetFeedInput struct {
 }
 
 type FeedItem struct {
-	Type string                 `json:"type" doc:"Type of feed item: 'post' or 'task'"`
-	Post *types.PostDocumentAPI `json:"post,omitempty" doc:"Post data (only present if type is 'post')"`
-	Task *FeedTaskData          `json:"task,omitempty" doc:"Task data (only present if type is 'task')"`
+	Type        string                 `json:"type" doc:"Type of feed item: 'post', 'task', or 'rings_closed'"`
+	Post        *types.PostDocumentAPI `json:"post,omitempty" doc:"Post data (only present if type is 'post')"`
+	Task        *FeedTaskData          `json:"task,omitempty" doc:"Task data (only present if type is 'task')"`
+	RingsClosed *FeedRingsClosedData   `json:"ringsClosed,omitempty" doc:"Rings closed data (only present if type is 'rings_closed')"`
+}
+
+type FeedRingsClosedData struct {
+	ID        string                       `json:"id"`
+	Timestamp string                       `json:"timestamp"`
+	Content   string                       `json:"content"`
+	User      *types.UserExtendedReference `json:"user" doc:"User who closed their rings"`
 }
 
 type FeedTaskData struct {

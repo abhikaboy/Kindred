@@ -149,10 +149,23 @@ export interface FeedTask {
     };
 }
 
+export interface FeedRingsClosed {
+    id: string;
+    timestamp: string;
+    content: string;
+    user: {
+        _id: string;
+        handle: string;
+        display_name: string;
+        profile_picture: string;
+    };
+}
+
 export interface FeedItem {
-    type: 'post' | 'task';
+    type: 'post' | 'task' | 'rings_closed';
     post?: Post;
     task?: FeedTask;
+    ringsClosed?: FeedRingsClosed;
 }
 
 export interface PaginatedFeedResponse {

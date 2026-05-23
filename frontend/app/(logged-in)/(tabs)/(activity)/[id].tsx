@@ -198,6 +198,18 @@ const Activity = () => {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Lifetime Stats */}
+                {!loading && !error && userId && (
+                    <View style={styles.statsCard}>
+                        <ThemedText type="fancyFrauncesHeading" style={{ fontSize: 24, color: ThemedColor.text }}>
+                            {yearTotal}
+                        </ThemedText>
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption, marginLeft: 8 }}>
+                            total tasks completed this year
+                        </ThemedText>
+                    </View>
+                )}
+
                 {/* Recurring Tasks Section - only for own activity */}
                 {isOwnActivity && templates.length > 0 && (
                     <View style={styles.recurringSection}>
@@ -265,18 +277,6 @@ const Activity = () => {
                     <View style={styles.emptyState}>
                         <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             No recurring tasks yet. Create one to track your habits!
-                        </ThemedText>
-                    </View>
-                )}
-
-                {/* Lifetime Stats */}
-                {!loading && !error && userId && (
-                    <View style={styles.statsCard}>
-                        <ThemedText type="fancyFrauncesHeading" style={{ fontSize: 24, color: ThemedColor.text }}>
-                            {yearTotal}
-                        </ThemedText>
-                        <ThemedText type="caption" style={{ color: ThemedColor.caption, marginLeft: 8 }}>
-                            total tasks completed this year
                         </ThemedText>
                     </View>
                 )}

@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { View, StyleSheet, TouchableOpacity, Animated, Image, Dimensions, useColorScheme, ActivityIndicator } from "react-native";
-import { FlatList } from "react-native";
 import { deletePost, getAllPosts, getUserPosts } from "@/api/post";
 import { router } from "expo-router";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +8,11 @@ import CachedImage from "../CachedImage";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+
+export interface ProfileGalleryHandle {
+    loadMore: () => void;
+    hasMore: boolean;
+}
 
 interface ProfileGalleryProps {
     userId?: string;
@@ -100,7 +104,7 @@ const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
 
 const GALLERY_PAGE_SIZE = 12;
 
-const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
+const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryProps>(({ userId, images }, ref) => {
     const { user } = useAuth();
     const ThemedColor = useThemeColor();
     const [postImages, setPostImages] = useState<PostImage[]>([]);
@@ -201,6 +205,11 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
             setIsLoadingMore(false);
         }
     }, [hasMore, isLoading, userId, offset]);
+
+    useImperativeHandle(ref, () => ({
+        loadMore: handleLoadMore,
+        hasMore,
+    }), [hasMore, handleLoadMore]);
 
     const handleImagePress = (postId: string) => {
         if (postId.startsWith("legacy-")) {
@@ -309,39 +318,6 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         showPostOptions(postId, postUserId);
     };
 
-    // Memoize render functions BEFORE any conditional returns
-    const renderItem = React.useCallback(({ item }: { item: PostImage }) => {
-        const isDeleting = deletingPosts.has(item.postId);
-
-        return (
-            <TouchableOpacity
-                style={[styles.galleryItem, isDeleting && styles.deletingItem]}
-                onPress={() => handleImagePress(item.postId)}
-                onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
-                delayLongPress={500}
-                activeOpacity={isDeleting ? 1 : 0.8}>
-                <CachedImage
-                    style={[styles.galleryImage, isDeleting && styles.deletingImage]}
-                    source={{
-                        uri: item.imageUrl,
-                    }}
-                    variant="thumbnail"
-                    cachePolicy="disk"
-                    transition={100}
-                />
-            </TouchableOpacity>
-        );
-    }, [deletingPosts, handleImagePress, handleImageLongPress]);
-
-    const renderFooter = useCallback(() => {
-        if (!isLoadingMore) return null;
-        return (
-            <View style={{ padding: 16, alignItems: "center" }}>
-                <ActivityIndicator size="small" color={ThemedColor.primary} />
-            </View>
-        );
-    }, [isLoadingMore, ThemedColor.primary]);
-
     // Show skeleton while loading
     if (isLoading) {
         return <GallerySkeleton ThemedColor={ThemedColor} />;
@@ -352,23 +328,51 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
         return <EmptyGallery ThemedColor={ThemedColor} />;
     }
 
+    // Plain grid instead of FlatList — this component is nested inside a
+    // parent ScrollView so FlatList can't virtualize anyway. We paginate
+    // in batches of 12 and lazy-render via the tab, so this is fine.
+    const rows: PostImage[][] = [];
+    for (let i = 0; i < postImages.length; i += 3) {
+        rows.push(postImages.slice(i, i + 3));
+    }
+
     return (
         <>
-            <FlatList
-                numColumns={3}
-                data={postImages}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => `gallery-${item.postId}-${index}`}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.galleryContainer}
-                removeClippedSubviews={true}
-                onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.3}
-                ListFooterComponent={renderFooter}
-                initialNumToRender={9}
-                maxToRenderPerBatch={6}
-                windowSize={5}
-            />
+            <View style={styles.galleryContainer}>
+                {rows.map((row, rowIndex) => (
+                    <View key={`row-${rowIndex}`} style={styles.galleryRow}>
+                        {row.map((item, colIndex) => {
+                            const isDeleting = deletingPosts.has(item.postId);
+                            return (
+                                <TouchableOpacity
+                                    key={`gallery-${item.postId}-${rowIndex * 3 + colIndex}`}
+                                    style={[styles.galleryItem, isDeleting && styles.deletingItem]}
+                                    onPress={() => handleImagePress(item.postId)}
+                                    onLongPress={() => handleImageLongPress(item.postId, item.postUserId)}
+                                    delayLongPress={500}
+                                    activeOpacity={isDeleting ? 1 : 0.8}>
+                                    <CachedImage
+                                        style={[styles.galleryImage, isDeleting && styles.deletingImage]}
+                                        source={{ uri: item.imageUrl }}
+                                        variant="thumbnail"
+                                        cachePolicy="disk"
+                                        transition={100}
+                                    />
+                                </TouchableOpacity>
+                            );
+                        })}
+                        {/* Fill empty cells in last row */}
+                        {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, i) => (
+                            <View key={`empty-${i}`} style={styles.galleryItem} />
+                        ))}
+                    </View>
+                ))}
+                {isLoadingMore && (
+                    <View style={styles.loadMoreSpinner}>
+                        <ActivityIndicator size="small" color={ThemedColor.primary} />
+                    </View>
+                )}
+            </View>
             {alertVisible && (
                 <CustomAlert
                     visible={alertVisible}
@@ -380,7 +384,7 @@ const ProfileGalleryComponent = ({ userId, images }: ProfileGalleryProps) => {
             )}
         </>
     );
-}
+});
 
 const styles = StyleSheet.create({
     galleryItem: {
@@ -390,6 +394,9 @@ const styles = StyleSheet.create({
     },
     galleryContainer: {
         padding: 2,
+    },
+    galleryRow: {
+        flexDirection: "row",
     },
     galleryImage: {
         aspectRatio: 1,
@@ -412,8 +419,7 @@ const styles = StyleSheet.create({
         margin: 2,
         borderRadius: 4,
     },
-    // Footer loader
-    footerLoader: {
+    loadMoreSpinner: {
         paddingVertical: 16,
         alignItems: "center",
     },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import { View, Pressable } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
@@ -19,18 +19,23 @@ interface FollowRequestsSectionProps {
     maxVisible?: number; // How many requests to show before "see all"
 }
 
-export const FollowRequestsSection = ({ styles, maxVisible = 3 }: FollowRequestsSectionProps) => {
+export interface FollowRequestsSectionHandle {
+    refresh: () => Promise<void>;
+}
+
+export const FollowRequestsSection = forwardRef<FollowRequestsSectionHandle, FollowRequestsSectionProps>(
+    ({ styles, maxVisible = 3 }, ref) => {
     const [requests, setRequests] = useState<FollowRequestProps[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchFollowRequests = async () => {
+    const fetchFollowRequests = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             const connections = await getConnectionsByReceiverAPI();
-            
+
             // Transform API response to match FollowRequestProps interface
             const transformedRequests: FollowRequestProps[] = connections.map((connection) => ({
                 name: connection.requester.name,
@@ -39,7 +44,7 @@ export const FollowRequestsSection = ({ styles, maxVisible = 3 }: FollowRequests
                 userId: connection.requester._id,
                 connectionID: connection.id,
             }));
-            
+
             setRequests(transformedRequests);
         } catch (err) {
             console.error('Failed to fetch follow requests:', err);
@@ -48,7 +53,11 @@ export const FollowRequestsSection = ({ styles, maxVisible = 3 }: FollowRequests
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useImperativeHandle(ref, () => ({
+        refresh: fetchFollowRequests,
+    }), [fetchFollowRequests]);
 
     const removeRequest = (connectionID: string) => {
         setRequests(prev => prev.filter(request => request.connectionID !== connectionID));
@@ -56,11 +65,11 @@ export const FollowRequestsSection = ({ styles, maxVisible = 3 }: FollowRequests
 
     useEffect(() => {
         fetchFollowRequests();
-    }, []);
+    }, [fetchFollowRequests]);
 
     // Don't render anything while loading
     if (loading) return null;
-    
+
     // Don't render if there's an error or no requests
     if (error || requests.length === 0) return null;
 
@@ -88,5 +97,4 @@ export const FollowRequestsSection = ({ styles, maxVisible = 3 }: FollowRequests
             ))}
         </View>
     );
-};
-
+});

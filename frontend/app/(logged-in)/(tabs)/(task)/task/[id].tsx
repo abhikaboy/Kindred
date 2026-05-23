@@ -71,7 +71,7 @@ export default function Task() {
     const [time, setTime] = useState(new Date());
     const [baseTime, setBaseTime] = useState(new Date());
     const [localNotes, setLocalNotes] = useState("");
-    const [isHeaderSticky, setIsHeaderSticky] = useState(false);
+    // Removed sticky header state - was blocking scroll on long notes
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [deadlineLiveActivity, setDeadlineLiveActivity] = useState<LiveActivity<DeadlineCountdownProps> | null>(null);
     const [activeTaskLiveActivity, setActiveTaskLiveActivity] = useState<LiveActivity<ActiveTaskActivityProps> | null>(null);
@@ -412,12 +412,7 @@ export default function Task() {
         }
     }, 2000);
 
-    const handleScroll = (event: any) => {
-        const scrollY = event.nativeEvent.contentOffset.y;
-        // Adjust this threshold based on when you want the header to become sticky
-        const stickyThreshold = 120; // Adjust this value as needed
-        setIsHeaderSticky(scrollY > stickyThreshold);
-    };
+    // Removed handleScroll - sticky header removed
 
     // Removed handleTabChange - no longer using PagerView
     // const handleTabChange = (index: number) => {
@@ -541,63 +536,39 @@ export default function Task() {
                 position: "relative",
                 paddingTop: Dimensions.get("screen").height * 0.07,
             }}>
-            {/* Sticky Header - Only shows when scrolled */}
-            <ConditionalView condition={isHeaderSticky}>
-                <View
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 1000,
-                        backgroundColor: ThemedColor.background,
-                        paddingHorizontal: HORIZONTAL_PADDING,
-                        paddingTop: Dimensions.get("screen").height * 0.07,
-                        paddingBottom: 16,
-                        borderBottomWidth: 1,
-                        borderBottomColor: ThemedColor.lightened,
-                    }}>
-                </View>
-            </ConditionalView>
-
-            {/* Header Section - Always visible */}
-            <View style={{ paddingBottom: 16 }}>
-                <TouchableOpacity
-                    onPress={() => router.back()}
-                    style={{
-                        zIndex: 1000,
-                        paddingVertical: 16,
-                        left: 0,
-                    }}>
-                    <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
-                </TouchableOpacity>
-                <View
-                    style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
-                        justifyContent: "space-between",
-                    }}>
-                    <ThemedText type="title" style={{ flexWrap: "wrap", width: "80%" }}>
-                        {name}
-                        {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
-                    </ThemedText>
-                    <TouchableOpacity onPress={handleEditPress}>
-                        <PencilSimple size={24} color={ThemedColor.text} weight="regular" />
-                    </TouchableOpacity>
-                </View>
-                <View style={{ paddingBottom: 16 }} />
-                {/* <TaskTabs tabs={["Details", "Timer"]} activeTab={activeTab} setActiveTab={handleTabChange} /> */}
-            </View>
-
-            {/* Replaced PagerView with simple ScrollView */}
             <ScrollView
                 ref={scrollViewRef}
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 128 }}
-                onScroll={handleScroll}
                 scrollEventThrottle={16}>
+                {/* Header Section */}
+                <View style={{ paddingBottom: 16 }}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={{
+                            paddingVertical: 16,
+                            left: 0,
+                        }}>
+                        <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
+                    </TouchableOpacity>
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                            justifyContent: "space-between",
+                        }}>
+                        <ThemedText type="title" style={{ flexWrap: "wrap", width: "80%" }}>
+                            {name}
+                            {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
+                        </ThemedText>
+                        <TouchableOpacity onPress={handleEditPress}>
+                            <PencilSimple size={24} color={ThemedColor.text} weight="regular" />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={{ paddingBottom: 16 }} />
+                </View>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     style={{ flex: 1 }}

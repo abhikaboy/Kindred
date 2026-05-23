@@ -88,15 +88,26 @@ type AnimatedTabContentProps = {
     setActiveTab?: (index: number) => void;
     children: React.ReactNode[];
     flex?: boolean;
+    /** When true, tabs that have never been active render as empty until first visited */
+    lazy?: boolean;
 };
 
 const SWIPE_VELOCITY_THRESHOLD = 500;
 const SWIPE_DISTANCE_FRACTION = 0.3;
 
-export function AnimatedTabContent({ activeTab, setActiveTab, children, flex }: AnimatedTabContentProps) {
+export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, lazy }: AnimatedTabContentProps) {
     const [layoutWidth, setLayoutWidth] = useState(0);
     const translateX = useSharedValue(0);
     const tabCount = React.Children.count(children);
+
+    // Track which tabs have been visited (for lazy rendering)
+    const [visitedTabs, setVisitedTabs] = useState<Set<number>>(() => new Set([activeTab]));
+    useEffect(() => {
+        setVisitedTabs((prev) => {
+            if (prev.has(activeTab)) return prev;
+            return new Set(prev).add(activeTab);
+        });
+    }, [activeTab]);
 
     const activeTabSV = useSharedValue(activeTab);
     const widthSV = useSharedValue(0);
@@ -165,8 +176,10 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex }: 
             <View style={[styles.contentClip, fillStyle]} onLayout={handleLayout}>
                 {layoutWidth > 0 && (
                     <Animated.View style={[styles.contentRow, fillStyle, slidingStyle]}>
-                        {React.Children.map(children, (child) => (
-                            <View style={{ width: layoutWidth }}>{child}</View>
+                        {React.Children.map(children, (child, index) => (
+                            <View style={{ width: layoutWidth }}>
+                                {lazy && !visitedTabs.has(index) ? null : child}
+                            </View>
                         ))}
                     </Animated.View>
                 )}

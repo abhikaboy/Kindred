@@ -2,8 +2,8 @@
 
 import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { Redirect, Slot, Stack, router } from "expo-router";
-import React, { useEffect, useState, useRef } from "react";
+import { Redirect, Slot, Stack, router, usePathname } from "expo-router";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 
 import { ScrollView, View, ActivityIndicator, Animated, AppState, InteractionManager, LogBox } from "react-native";
 import { updateStreakWidget } from "@/widgets/updateStreakWidget";
@@ -38,6 +38,75 @@ import { ActiveTaskActivityFactory, DeadlineCountdownActivityFactory } from "@/w
 export const unstable_settings = {
     initialRouteName: "index",
 };
+
+/** Known push notification types sent by the backend. */
+type NotificationType =
+    | "encouragement"
+    | "congratulation"
+    | "task_completion"
+    | "friend_request"
+    | "friend_request_accepted"
+    | "new_post"
+    | "comment"
+    | "rings_closed"
+    | "TASK_MISSED"
+    | "TASK_REGENERATED"
+    | "ABSOLUTE"
+    | "RELATIVE"
+    | "FOLLOW_UP"
+    | "live_activity";
+
+interface NotificationData {
+    type?: NotificationType;
+    url?: string;
+    // Social
+    accepter_id?: string;
+    user_id?: string;
+    // Task
+    taskId?: string;
+    categoryId?: string;
+    taskName?: string;
+}
+
+/** Derive a navigation URL from push notification data. */
+function getNotificationRoute(data: NotificationData | undefined): string | null {
+    if (!data) return null;
+    // Explicit url always wins
+    if (data.url) return data.url;
+
+    switch (data.type) {
+        case "encouragement":
+            return "/(logged-in)/(tabs)/(task)/kudos?tab=encouragements";
+        case "congratulation":
+            return "/(logged-in)/(tabs)/(task)/kudos?tab=congratulations";
+        case "task_completion":
+            return "/(logged-in)/(tabs)/(task)/kudos?tab=congratulations";
+        case "friend_request":
+            return "/(logged-in)/(tabs)/(activity)";
+        case "friend_request_accepted":
+            if (data.accepter_id) {
+                return `/(logged-in)/(tabs)/(feed,search,profile)/account/${data.accepter_id}`;
+            }
+            return "/(logged-in)/(tabs)/(activity)";
+        case "new_post":
+            return "/(logged-in)/(tabs)/(feed)/feed";
+        case "comment":
+            return "/(logged-in)/(tabs)/(feed)/feed";
+        case "rings_closed":
+            if (data.user_id) {
+                return `/(logged-in)/(tabs)/(feed,search,profile)/account/${data.user_id}`;
+            }
+            return "/(logged-in)/(tabs)/(profile)/profile";
+        case "TASK_MISSED":
+        case "TASK_REGENERATED":
+        case "ABSOLUTE":
+        case "RELATIVE":
+        case "FOLLOW_UP":
+            return "/(logged-in)/(tabs)/(task)";
+        default:
+            return null;
+    }
+}
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();
@@ -75,6 +144,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const authInitialized = useRef(false);
     const [canTransition, setCanTransition] = useState(false);
     const ThemedColor = useThemeColor();
+    const pathname = usePathname();
+    const pathnameRef = useRef(pathname);
+    useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
 
     // Handle initial authentication and routing - only run once
     useEffect(() => {
@@ -176,7 +248,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         initNotificationHandler();
         notificationListener.current = addNotificationListener((notification) => {
-            const data = notification.request.content.data;
+            const data = notification.request.content.data as NotificationData | undefined;
 
             // Handle live activity triggers from push notifications
             if (data?.type === 'live_activity') {
@@ -246,15 +318,18 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 duration: 3000,
                 renderContent: (props) => <DefaultToast {...props} />,
                 onPress: () => {
-                    if (data?.url) {
-                        router.push(data.url);
+                    // Don't navigate during onboarding — user can get stuck
+                    if (pathnameRef.current?.includes("onboarding")) return;
+                    const route = getNotificationRoute(data);
+                    if (route) {
+                        router.navigate(route);
                     }
                 }
             });
         });
 
         responseListener.current = addNotificationResponseListener((response) => {
-            const data = response.notification.request.content.data;
+            const data = response.notification.request.content.data as NotificationData | undefined;
 
             // Start live activity when user taps the notification
             if (data?.type === 'live_activity') {
@@ -289,8 +364,11 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            if (data?.url) {
-                router.push(data.url);
+            // Don't navigate during onboarding — user can get stuck
+            if (pathnameRef.current?.includes("onboarding")) return;
+            const route = getNotificationRoute(data);
+            if (route) {
+                router.navigate(route);
             }
         });
 

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, FlatList, ViewToken } from "react-native";
+import { View, StyleSheet, TouchableOpacity, FlatList, ViewToken, RefreshControl } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
-import KudosProgressCard from "@/components/cards/KudosProgressCard";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -9,8 +8,6 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
-import { KUDOS_CONSTANTS } from "@/constants/kudos";
-import { useUserKudos } from "@/hooks/useUserKudos";
 import { useKudos } from "@/contexts/kudosContext";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
@@ -21,14 +18,21 @@ export default function Kudos() {
     const { tab } = useLocalSearchParams<{ tab?: string }>();
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const { sentEncouragements, sentCongratulations } = useUserKudos();
     const {
         encouragements,
         congratulations,
         loading,
+        fetchKudosData,
         markEncouragementsAsRead,
         markCongratulationsAsRead,
     } = useKudos();
+    const [refreshing, setRefreshing] = useState(false);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchKudosData();
+        setRefreshing(false);
+    }, [fetchKudosData]);
 
     const initialTab = tab === "congratulations" ? 1 : 0;
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -84,26 +88,6 @@ export default function Kudos() {
 
     const styles = createStyles(ThemedColor, insets);
 
-    const encouragementHeader = (
-        <View style={styles.progressCardWrapper}>
-            <KudosProgressCard
-                current={sentEncouragements}
-                max={KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX}
-                type="encouragements"
-            />
-        </View>
-    );
-
-    const congratulationHeader = (
-        <View style={styles.progressCardWrapper}>
-            <KudosProgressCard
-                current={sentCongratulations}
-                max={KUDOS_CONSTANTS.CONGRATULATIONS_MAX}
-                type="congratulations"
-            />
-        </View>
-    );
-
     const renderEncouragementList = () => {
         if (!loading && encouragements.length === 0) {
             return (
@@ -125,10 +109,16 @@ export default function Kudos() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 style={styles.scrollView}
-                ListHeaderComponent={encouragementHeader}
                 ItemSeparatorComponent={KudosItemSeparator}
                 onViewableItemsChanged={onEncouragementViewableItemsChanged}
                 viewabilityConfig={encouragementViewabilityConfig}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={ThemedColor.text}
+                    />
+                }
                 renderItem={({ item, index }) => (
                     <KudosItem
                         kudos={item}
@@ -162,10 +152,16 @@ export default function Kudos() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 style={styles.scrollView}
-                ListHeaderComponent={congratulationHeader}
                 ItemSeparatorComponent={KudosItemSeparator}
                 onViewableItemsChanged={onCongratulationViewableItemsChanged}
                 viewabilityConfig={congratulationViewabilityConfig}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={ThemedColor.text}
+                    />
+                }
                 renderItem={({ item, index }) => (
                     <KudosItem
                         kudos={item}
@@ -250,8 +246,5 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
             color: ThemedColor.caption,
             textAlign: "center",
             width: "65%",
-        },
-        progressCardWrapper: {
-            marginBottom: 8,
         },
     });

@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PostCard from "@/components/cards/PostCard";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
+import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -462,6 +463,16 @@ export default function Feed() {
                         user={task.user}
                     />
                 );
+            } else if (item.type === "rings_closed" && item.ringsClosed) {
+                const rc = item.ringsClosed;
+                return (
+                    <RingsClosedFeedCard
+                        id={rc.id}
+                        timestamp={rc.timestamp}
+                        content={rc.content}
+                        user={rc.user}
+                    />
+                );
             } else if (item.type === "post" && item.post) {
                 const post = item.post as any;
 
@@ -705,9 +716,12 @@ export default function Feed() {
                 keyExtractor={(item) => {
                     if (currentFeed.id === "feed") {
                         const feedItem = item as FeedItem;
-                        return feedItem.type === "post" && feedItem.post
-                            ? `post-${feedItem.post._id}`
-                            : `task-${feedItem.task?.id}`;
+                        if (feedItem.type === "post" && feedItem.post) {
+                            return `post-${feedItem.post._id}`;
+                        } else if (feedItem.type === "rings_closed" && feedItem.ringsClosed) {
+                            return `rings-${feedItem.ringsClosed.id}`;
+                        }
+                        return `task-${feedItem.task?.id}`;
                     }
                     return (item as PostData)._id;
                 }}

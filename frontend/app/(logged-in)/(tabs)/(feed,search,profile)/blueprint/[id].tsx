@@ -12,10 +12,11 @@ import PreviewIcon from "@/components/profile/PreviewIcon";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { Category } from "@/components/category";
 import Entypo from "@expo/vector-icons/Entypo";
-import * as Sharing from "expo-sharing";
 import * as SMS from "expo-sms";
-import { getBlueprintById } from "@/api/blueprint";
+import { getBlueprintById, deleteBlueprintToBackend } from "@/api/blueprint";
 import { useTasks } from "@/contexts/tasksContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useAlert } from "@/contexts/AlertContext";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import BlueprintGallery from "@/components/profile/BlueprintGallery";
 
@@ -245,6 +246,8 @@ export default function BlueprintDetailScreen() {
         setSelectedBlueprint,
     } = useBlueprints();
     const { fetchWorkspaces } = useTasks();
+    const { user } = useAuth();
+    const { showAlert } = useAlert();
 
     const [activeTab, setActiveTab] = useState(0);
     const [isLoadingBlueprint, setIsLoadingBlueprint] = useState(true);
@@ -252,6 +255,7 @@ export default function BlueprintDetailScreen() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [currentSubscriberCount, setCurrentSubscriberCount] = useState(0);
+    const isOwner = user?._id === selectedBlueprint?.owner?._id;
 
     // Fetch blueprint data when ID changes
     useEffect(() => {
@@ -340,13 +344,43 @@ export default function BlueprintDetailScreen() {
                         </View>
                     </TouchableOpacity>
 
-                    <PrimaryButton
-                        style={{ height: 38, width: 100, paddingVertical: 10, paddingHorizontal: 10 }}
-                        title={isLoading ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
-                        secondary={isSubscribed}
-                        onPress={onSubscribePress}
-                        disabled={isLoading}
-                    />
+                    {isOwner ? (
+                        <PrimaryButton
+                            style={{ height: 38, paddingVertical: 10, paddingHorizontal: 16 }}
+                            title="Delete"
+                            ghost
+                            textStyle={{ color: ThemedColor.error }}
+                            onPress={() => {
+                                showAlert({
+                                    title: "Delete Blueprint",
+                                    message: "Are you sure you want to delete this blueprint? This can't be undone.",
+                                    buttons: [
+                                        { text: "Cancel", style: "cancel" },
+                                        {
+                                            text: "Delete",
+                                            style: "destructive",
+                                            onPress: async () => {
+                                                try {
+                                                    await deleteBlueprintToBackend(selectedBlueprint.id);
+                                                    router.back();
+                                                } catch (e) {
+                                                    showAlert({ title: "Error", message: "Failed to delete blueprint. Please try again." });
+                                                }
+                                            },
+                                        },
+                                    ],
+                                });
+                            }}
+                        />
+                    ) : (
+                        <PrimaryButton
+                            style={{ height: 38, width: 100, paddingVertical: 10, paddingHorizontal: 10 }}
+                            title={isLoading ? "..." : isSubscribed ? "Subscribed" : "Subscribe"}
+                            secondary={isSubscribed}
+                            onPress={onSubscribePress}
+                            disabled={isLoading}
+                        />
+                    )}
                 </View>
 
                 <ThemedText type="subtitle">{selectedBlueprint.name}</ThemedText>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -272,6 +273,11 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     encouragements: currentKudosRewards.encouragements + 1
                 }
             });
+
+            // Haptic feedback on successful send
+            if (Platform.OS === "ios") {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
 
             // Close modal first, enable confetti, then trigger it
             setVisible(false);

@@ -57,7 +57,7 @@ const RewardRedemptionModal = (props: Props) => {
     }, [visible]);
 
     return (
-        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["55%"]}>
+        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["90%"]}>
             <View style={styles.container}>
                 <View style={styles.header}>
                     <ThemedText type="title" style={{ marginBottom: 16, fontSize: 28 }}>
