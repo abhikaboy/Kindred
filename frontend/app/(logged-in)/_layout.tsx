@@ -33,7 +33,10 @@ import * as Localization from 'expo-localization';
 import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { ActiveTaskActivityFactory, DeadlineCountdownActivityFactory } from "@/widgets/widgetUpdaters";
+import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
+import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
+import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
+import { useTasks } from '@/contexts/tasksContext';
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -252,14 +255,12 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         });
     }, [user]);
 
-    // Track live activity intervals so we can clean them up
-    const liveActivityIntervalsRef = useRef<ReturnType<typeof setInterval>[]>([]);
-
     useEffect(() => {
+        registerBackgroundFetch();
         initNotificationHandler();
 
-        const startActiveTaskActivity = (data: NotificationData) => {
-            const activityProps = {
+        const startActiveTaskActivityFromPush = (data: NotificationData) => {
+            tryStartActiveTaskActivity(data.taskId || '', {
                 taskName: data.taskName || '',
                 workspaceName: data.workspaceName || 'Tasks',
                 startTime: data.startTime || new Date().toISOString(),
@@ -267,62 +268,20 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 hasEndTime: !!data.endTime,
                 categoryId: data.categoryId || '',
                 taskId: data.taskId || '',
-            };
-            try {
-                const activity = ActiveTaskActivityFactory.start(activityProps);
-                // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
-                const intervalId = setInterval(() => { activity.update(activityProps); }, 5 * 60 * 1000);
-                liveActivityIntervalsRef.current.push(intervalId);
-            } catch (e) {
-                console.error('[LiveActivity] Failed to start active task activity:', e);
-            }
+            });
         };
 
-        const startDeadlineActivity = (data: NotificationData) => {
-            const deadlineMs = new Date(data.deadline || '').getTime();
-            try {
-                const activity = DeadlineCountdownActivityFactory.start({
-                    taskName: data.taskName || '',
-                    workspaceName: data.workspaceName || 'Tasks',
-                    deadline: data.deadline || '',
-                    priority: parseInt(data.priority || '0', 10),
-                    categoryId: data.categoryId || '',
-                    taskId: data.taskId || '',
-                    accentColor: '#8B5CF6',
-                    statusLabel: 'Due Soon',
-                });
-                // Color escalation: update accent color at thresholds
-                const escalationInterval = setInterval(() => {
-                    const remaining = deadlineMs - Date.now();
-                    let accentColor = '#8B5CF6';
-                    let statusLabel = 'Due Soon';
-                    if (remaining <= 0) {
-                        accentColor = '#6B7280';
-                        statusLabel = 'Overdue';
-                    } else if (remaining <= 10 * 60 * 1000) {
-                        accentColor = '#F59E0B';
-                    }
-                    activity.update({
-                        taskName: data.taskName || '',
-                        workspaceName: data.workspaceName || 'Tasks',
-                        deadline: data.deadline || '',
-                        priority: parseInt(data.priority || '0', 10),
-                        categoryId: data.categoryId || '',
-                        taskId: data.taskId || '',
-                        accentColor,
-                        statusLabel,
-                    });
-                    // Auto-dismiss 30 min after overdue
-                    if (remaining <= -30 * 60 * 1000) {
-                        activity.end('default');
-                        clearInterval(escalationInterval);
-                        liveActivityIntervalsRef.current = liveActivityIntervalsRef.current.filter(id => id !== escalationInterval);
-                    }
-                }, 60 * 1000);
-                liveActivityIntervalsRef.current.push(escalationInterval);
-            } catch (e) {
-                console.error('[LiveActivity] Failed to start deadline countdown activity:', e);
-            }
+        const startDeadlineActivityFromPush = (data: NotificationData) => {
+            tryStartDeadlineActivity(data.taskId || '', {
+                taskName: data.taskName || '',
+                workspaceName: data.workspaceName || 'Tasks',
+                deadline: data.deadline || '',
+                priority: parseInt(data.priority || '0', 10),
+                categoryId: data.categoryId || '',
+                taskId: data.taskId || '',
+                accentColor: '#8B5CF6',
+                statusLabel: 'Due Soon',
+            });
         };
 
         notificationListener.current = addNotificationListener((notification) => {
@@ -331,9 +290,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             // Handle live activity triggers from push notifications
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
-                    startActiveTaskActivity(data);
+                    startActiveTaskActivityFromPush(data);
                 } else if (data.liveActivityType === 'deadlineCountdown') {
-                    startDeadlineActivity(data);
+                    startDeadlineActivityFromPush(data);
                 }
                 return; // Don't show toast for live activity pushes
             }
@@ -364,9 +323,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             // Start live activity when user taps the notification
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
-                    startActiveTaskActivity(data);
+                    startActiveTaskActivityFromPush(data);
                 } else if (data.liveActivityType === 'deadlineCountdown') {
-                    startDeadlineActivity(data);
+                    startDeadlineActivityFromPush(data);
                 }
                 // Navigate to the task
                 if (data.categoryId && data.taskId) {
@@ -384,9 +343,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         });
 
         return () => {
-            // Clean up all live activity intervals
-            liveActivityIntervalsRef.current.forEach(id => clearInterval(id));
-            liveActivityIntervalsRef.current = [];
             if (notificationListener.current) {
                 try {
                     notificationListener.current.remove();
@@ -403,6 +359,13 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             }
         };
     }, []);
+
+    // Auto-start live activities when task times arrive (foreground)
+    useLiveActivityScheduler();
+
+    // Sync task times to AsyncStorage for background fetch
+    const { allTasks } = useTasks();
+    useBackgroundTaskSync(allTasks);
 
     const handleAnimationComplete = () => {
         setCanTransition(true);
