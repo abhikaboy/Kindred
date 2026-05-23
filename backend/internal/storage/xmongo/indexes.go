@@ -195,6 +195,139 @@ var Indexes = []Index{
 			Keys: bson.D{{Key: "event_ids", Value: 1}},
 		},
 	},
+
+	// Posts collection indexes
+	// Covers GetAllPosts: filter on isDeleted+isPublic, sort by createdAt
+	{
+		Collection: "posts",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "metadata.isDeleted", Value: 1},
+				{Key: "metadata.isPublic", Value: 1},
+				{Key: "metadata.createdAt", Value: -1},
+			},
+		},
+	},
+	// Covers GetUserPosts: filter on user._id+isDeleted, sort by createdAt
+	{
+		Collection: "posts",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "user._id", Value: 1},
+				{Key: "metadata.isDeleted", Value: 1},
+				{Key: "metadata.createdAt", Value: -1},
+			},
+		},
+	},
+	// Covers GetPostsByBlueprint: filter on blueprint.id+isDeleted+isPublic, sort by createdAt
+	{
+		Collection: "posts",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "blueprint.id", Value: 1},
+				{Key: "metadata.isDeleted", Value: 1},
+				{Key: "metadata.isPublic", Value: 1},
+				{Key: "metadata.createdAt", Value: -1},
+			},
+		},
+	},
+
+	// Friend-requests (connections) collection indexes
+	// Covers GetRelationship, IsBlocked, AcceptConnection lookups by user pair
+	{
+		Collection: "friend-requests",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "users", Value: 1},
+				{Key: "status", Value: 1},
+			},
+		},
+	},
+	// Covers GetByReciever, GetPendingRequestsByReceiver
+	{
+		Collection: "friend-requests",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "receiver_id", Value: 1},
+				{Key: "status", Value: 1},
+			},
+		},
+	},
+	// Covers GetByRequester
+	{
+		Collection: "friend-requests",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "requester._id", Value: 1},
+			},
+		},
+	},
+	// Covers GetBlockedUsers
+	{
+		Collection: "friend-requests",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "status", Value: 1},
+				{Key: "blocker_id", Value: 1},
+			},
+		},
+	},
+
+	// Reports collection indexes
+	// Covers GetReportedPostIDs: filter on content_type+status, project content_id
+	{
+		Collection: "reports",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "content_type", Value: 1},
+				{Key: "status", Value: 1},
+			},
+		},
+	},
+	// Covers GetUserReportedPostIDs: filter on reporter_id+content_type
+	{
+		Collection: "reports",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "reporter_id", Value: 1},
+				{Key: "content_type", Value: 1},
+			},
+		},
+	},
+
+	// Completed-tasks collection indexes
+	// Covers GetProfileCompletedTasks: filter on user+public, sort by timeCompleted
+	{
+		Collection: "completed-tasks",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "user", Value: 1},
+				{Key: "public", Value: 1},
+				{Key: "timeCompleted", Value: -1},
+			},
+		},
+	},
+
+	// Groups collection indexes
+	// Covers GetUserGroups: filter on creator or members._id, filter isDeleted
+	{
+		Collection: "groups",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "members._id", Value: 1},
+				{Key: "metadata.isDeleted", Value: 1},
+			},
+		},
+	},
+	{
+		Collection: "groups",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "creator", Value: 1},
+				{Key: "metadata.isDeleted", Value: 1},
+			},
+		},
+	},
 }
 
 var SearchIndexes = []SearchIndex{

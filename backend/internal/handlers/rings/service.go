@@ -194,17 +194,25 @@ func (s *RingService) CalculateScore(ctx context.Context, userID primitive.Objec
 		return 0, fmt.Errorf("decode ring states: %w", err)
 	}
 
-	// Count total closed rings across all days in the window.
+	// Count total closed rings and active days across the window.
 	closedRings := 0
+	activeDays := 0
 	for _, st := range states {
+		dayActive := false
 		if st.Plan.Closed {
 			closedRings++
+			dayActive = true
 		}
 		if st.Do.Closed {
 			closedRings++
+			dayActive = true
 		}
 		if st.Share.Closed {
 			closedRings++
+			dayActive = true
+		}
+		if dayActive {
+			activeDays++
 		}
 	}
 
@@ -215,10 +223,11 @@ func (s *RingService) CalculateScore(ctx context.Context, userID primitive.Objec
 		return 0, fmt.Errorf("fetch user for score: %w", err)
 	}
 
-	// Formula: base + ring_bonus + streak_bonus, capped at 100.
+	// Formula: base(30) + ring_bonus(up to 55) + streak(up to 7) + consistency(up to 8) = 100 max
 	ringBonus := float64(closedRings) / float64(ScoreMaxRings) * float64(ScoreRingBonus)
 	streakBonus := math.Min(float64(user.Streak), float64(ScoreMaxStreak))
-	score := float64(ScoreBase) + ringBonus + streakBonus
+	consistencyBonus := float64(activeDays) / float64(ScoreConsistencyDays) * float64(ScoreConsistencyMax)
+	score := float64(ScoreBase) + ringBonus + streakBonus + consistencyBonus
 	if score > 100 {
 		score = 100
 	}

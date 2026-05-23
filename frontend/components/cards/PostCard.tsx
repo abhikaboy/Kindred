@@ -662,6 +662,7 @@ const PostCard = React.memo(({
                         marginVertical: 12,
                     }}
                     backgroundStyle={{
+                        backgroundColor: ThemedColor.background,
                         borderTopLeftRadius: 32,
                         borderTopRightRadius: 32,
                     }}

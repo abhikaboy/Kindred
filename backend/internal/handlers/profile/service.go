@@ -2,6 +2,9 @@ package Profile
 
 import (
 	"context"
+	"log/slog"
+	"sync"
+	"time"
 
 	Connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -19,6 +22,10 @@ func NewService(collections map[string]*mongo.Collection) *Service {
 		Connections:    collections["friend-requests"],
 		Tasks:          collections["categories"],
 		CompletedTasks: collections["completed-tasks"],
+		Posts:          collections["posts"],
+		Groups:         collections["groups"],
+		Blueprints:     collections["blueprints"],
+		Notifications:  collections["notifications"],
 	}
 }
 
@@ -256,6 +263,8 @@ func (s *Service) AutocompleteProfiles(query string) ([]ProfileDocument, error) 
 }
 
 // UpdatePartialProfile updates only specified fields of a Profile document by ObjectID.
+// If any denormalized fields (display_name, handle, profile_picture) change, propagates
+// the update to all embedded UserExtendedReferences across collections.
 func (s *Service) UpdatePartialProfile(id primitive.ObjectID, updated UpdateProfileDocument) error {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
@@ -268,7 +277,26 @@ func (s *Service) UpdatePartialProfile(id primitive.ObjectID, updated UpdateProf
 	update := bson.M{"$set": updateFields}
 
 	_, err = s.Profiles.UpdateOne(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Check if any denormalized fields changed and propagate
+	propagate := bson.M{}
+	if updated.DisplayName != "" {
+		propagate["display_name"] = updated.DisplayName
+	}
+	if updated.Handle != "" {
+		propagate["handle"] = updated.Handle
+	}
+	if updated.ProfilePicture != nil {
+		propagate["profile_picture"] = *updated.ProfilePicture
+	}
+	if len(propagate) > 0 {
+		go s.propagateUserRefFields(id, propagate)
+	}
+
+	return nil
 }
 
 // DeleteProfile removes a Profile document by ObjectID.
@@ -282,6 +310,7 @@ func (s *Service) DeleteProfile(id primitive.ObjectID) error {
 }
 
 // UpdateProfilePicture updates the profile picture URL for a specific user
+// and propagates the change to all embedded UserExtendedReferences across collections.
 func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string) error {
 	ctx := context.Background()
 	filter := bson.M{"_id": id}
@@ -293,7 +322,117 @@ func (s *Service) UpdateProfilePicture(id primitive.ObjectID, pictureURL string)
 	}
 
 	_, err := s.Profiles.UpdateOne(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Propagate to all embedded references in background.
+	go s.propagateUserRefFields(id, bson.M{"profile_picture": pictureURL})
+
+	return nil
+}
+
+// propagateUserRefFields updates denormalized UserExtendedReferenceInternal fields
+// across all collections that embed them. `fields` should be a map of field names
+// to new values (e.g. {"profile_picture": url} or {"display_name": name, "handle": handle}).
+//
+// Runs all collection updates concurrently with a 30s timeout.
+func (s *Service) propagateUserRefFields(userID primitive.ObjectID, fields bson.M) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Build $set maps for each embedding pattern
+	topLevel := bson.M{}        // "user.field" or "owner.field"
+	commentArraySet := bson.M{} // "comments.$[comment].user.field"
+	memberArraySet := bson.M{}  // "members.$[member].field"
+
+	for field, value := range fields {
+		topLevel["user."+field] = value
+		commentArraySet["comments.$[comment].user."+field] = value
+		memberArraySet["members.$[member]."+field] = value
+	}
+
+	ownerSet := bson.M{}
+	for field, value := range fields {
+		ownerSet["owner."+field] = value
+	}
+
+	type updateJob struct {
+		name       string
+		collection *mongo.Collection
+		filter     bson.M
+		update     bson.M
+		opts       []*options.UpdateOptions
+	}
+
+	jobs := []updateJob{
+		{
+			name:       "posts (author)",
+			collection: s.Posts,
+			filter:     bson.M{"user._id": userID},
+			update:     bson.M{"$set": topLevel},
+		},
+		{
+			name:       "posts (comments)",
+			collection: s.Posts,
+			filter:     bson.M{"comments.user._id": userID},
+			update:     bson.M{"$set": commentArraySet},
+			opts: []*options.UpdateOptions{
+				options.Update().SetArrayFilters(options.ArrayFilters{
+					Filters: []interface{}{bson.M{"comment.user._id": userID}},
+				}),
+			},
+		},
+		{
+			name:       "groups",
+			collection: s.Groups,
+			filter:     bson.M{"members._id": userID},
+			update:     bson.M{"$set": memberArraySet},
+			opts: []*options.UpdateOptions{
+				options.Update().SetArrayFilters(options.ArrayFilters{
+					Filters: []interface{}{bson.M{"member._id": userID}},
+				}),
+			},
+		},
+		{
+			name:       "blueprints",
+			collection: s.Blueprints,
+			filter:     bson.M{"owner._id": userID},
+			update:     bson.M{"$set": ownerSet},
+		},
+		{
+			name:       "notifications",
+			collection: s.Notifications,
+			filter:     bson.M{"user._id": userID},
+			update:     bson.M{"$set": topLevel},
+		},
+	}
+
+	var wg sync.WaitGroup
+	for _, job := range jobs {
+		if job.collection == nil {
+			continue
+		}
+		wg.Add(1)
+		go func(j updateJob) {
+			defer wg.Done()
+			var err error
+			if len(j.opts) > 0 {
+				_, err = j.collection.UpdateMany(ctx, j.filter, j.update, j.opts...)
+			} else {
+				_, err = j.collection.UpdateMany(ctx, j.filter, j.update)
+			}
+			if err != nil {
+				slog.Error("Failed to propagate user reference fields",
+					"collection", j.name,
+					"userID", userID.Hex(),
+					"error", err,
+				)
+			}
+		}(job)
+	}
+
+	wg.Wait()
 }
 
 // UpdateTimezone updates the timezone for a specific user and increments count to invalidate tokens

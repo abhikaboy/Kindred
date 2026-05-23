@@ -64,13 +64,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	// OTel tracing middleware — must be first to capture full request lifecycle
 	app.Use(otelfiber.Middleware())
 
-	// Add global request logging middleware
-	app.Use(func(c *fiber.Ctx) error {
-		xlog.RequestLog(c.Method(), c.Path())
-		return c.Next()
-	})
-
-	// Add Fiber middleware
+	// Add Fiber middleware (logs method, path, status, latency)
 	app.Use(logger.New())
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: true,

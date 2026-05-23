@@ -48,10 +48,11 @@ func (s *Service) GetReportedPostIDs(ctx context.Context) ([]primitive.ObjectID,
 	if s.Reports == nil {
 		return []primitive.ObjectID{}, nil
 	}
+	projection := options.Find().SetProjection(bson.M{"content_id": 1, "_id": 0})
 	cursor, err := s.Reports.Find(ctx, bson.M{
 		"content_type": "post",
 		"status":       bson.M{"$in": []string{"pending", "reviewed"}},
-	})
+	}, projection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query reported posts: %w", err)
 	}
@@ -76,10 +77,11 @@ func (s *Service) GetUserReportedPostIDs(ctx context.Context, userID primitive.O
 	if s.Reports == nil {
 		return []primitive.ObjectID{}, nil
 	}
+	projection := options.Find().SetProjection(bson.M{"content_id": 1, "_id": 0})
 	cursor, err := s.Reports.Find(ctx, bson.M{
 		"reporter_id":  userID,
 		"content_type": "post",
-	})
+	}, projection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query user reported posts: %w", err)
 	}
@@ -479,7 +481,7 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		},
 	})
 
-	// Build the common match conditions for both count and data pipelines
+	// Build the common match conditions
 	feedMatchConditions := []bson.M{
 		{"$eq": []interface{}{"$metadata.isDeleted", false}},
 		{
@@ -505,84 +507,20 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		})
 	}
 
-	// First, get the total count of visible posts
-	countPipeline := mongo.Pipeline{
-		// Stage 1: Match the specific user
-		{{Key: "$match", Value: bson.M{"_id": userID}}},
+	// Fetch limit+1 to determine hasMore without a separate count pipeline.
+	// This avoids loading ALL visible posts into memory just to count them.
+	fetchLimit := limit + 1
 
-		// Stage 2: Lookup friends from users collection based on friends array
-		{{Key: "$lookup", Value: bson.M{
-			"from":         "users",
-			"localField":   "friends",
-			"foreignField": "_id",
-			"as":           "friendsData",
-		}}},
-
-		// Stage 3: Extract friend IDs for posts lookup
-		{{Key: "$project", Value: bson.M{
-			"friendIds": "$friends",
-		}}},
-
-		// Stage 4: Lookup posts with visibility filtering
-		{{Key: "$lookup", Value: bson.M{
-			"from": "posts",
-			"let":  bson.M{"friendIds": "$friendIds"},
-			"pipeline": mongo.Pipeline{
-				// Match posts that are not deleted and meet visibility criteria
-				{{Key: "$match", Value: bson.M{
-					"$expr": bson.M{
-						"$and": feedMatchConditions,
-					},
-				}}},
-			},
-			"as": "visiblePosts",
-		}}},
-
-		// Stage 5: Count the posts
-		{{Key: "$project", Value: bson.M{
-			"total": bson.M{"$size": "$visiblePosts"},
-		}}},
-	}
-
-	countCursor, err := s.Users.Aggregate(ctx, countPipeline)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to count friends posts: %w", err)
-	}
-	defer countCursor.Close(ctx)
-
-	var countResult []bson.M
-	if err := countCursor.All(ctx, &countResult); err != nil {
-		return nil, 0, fmt.Errorf("failed to decode count result: %w", err)
-	}
-
-	total := 0
-	if len(countResult) > 0 {
-		if t, ok := countResult[0]["total"].(int32); ok {
-			total = int(t)
-		} else if t, ok := countResult[0]["total"].(int64); ok {
-			total = int(t)
-		}
-	}
-
-	// Now get the paginated posts
 	pipeline := mongo.Pipeline{
 		// Stage 1: Match the specific user
 		{{Key: "$match", Value: bson.M{"_id": userID}}},
 
-		// Stage 2: Lookup friends from users collection based on friends array
-		{{Key: "$lookup", Value: bson.M{
-			"from":         "users",
-			"localField":   "friends",
-			"foreignField": "_id",
-			"as":           "friendsData",
-		}}},
-
-		// Stage 3: Extract friend IDs for posts lookup
+		// Stage 2: Extract friend IDs for posts lookup (no need to $lookup the full friend docs)
 		{{Key: "$project", Value: bson.M{
 			"friendIds": "$friends",
 		}}},
 
-		// Stage 4: Lookup posts with visibility filtering
+		// Stage 3: Lookup posts with visibility filtering
 		{{Key: "$lookup", Value: bson.M{
 			"from": "posts",
 			"let":  bson.M{"friendIds": "$friendIds"},
@@ -595,17 +533,17 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 				}}},
 				// Sort by creation date (newest first)
 				{{Key: "$sort", Value: bson.M{"metadata.createdAt": -1}}},
-				// Add pagination
+				// Add pagination — fetch one extra to detect hasMore
 				{{Key: "$skip", Value: offset}},
-				{{Key: "$limit", Value: limit}},
+				{{Key: "$limit", Value: fetchLimit}},
 			},
 			"as": "visiblePosts",
 		}}},
 
-		// Stage 5: Unwind the posts array to get individual posts
+		// Stage 4: Unwind the posts array to get individual posts
 		{{Key: "$unwind", Value: "$visiblePosts"}},
 
-		// Stage 6: Replace root with the post document
+		// Stage 5: Replace root with the post document
 		{{Key: "$replaceRoot", Value: bson.M{
 			"newRoot": "$visiblePosts",
 		}}},
@@ -620,6 +558,20 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 	var results []types.PostDocument
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, 0, fmt.Errorf("failed to decode aggregation results: %w", err)
+	}
+
+	// If we got more than limit, there are more pages.
+	// Compute a synthetic total that makes hasMore work: offset + len(results) [+ 1 if more].
+	hasMore := len(results) > limit
+	if hasMore {
+		results = results[:limit] // trim the extra probe row
+	}
+
+	// Callers compute hasMore as: offset+len(results) < total.
+	// Set total so that formula produces the right boolean.
+	total := offset + len(results)
+	if hasMore {
+		total++ // ensures offset+len(results) < total → true
 	}
 
 	return results, total, nil
