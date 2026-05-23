@@ -48,7 +48,7 @@ import DefaultToast from "@/components/ui/DefaultToast";
 import { logger } from "@/utils/logger";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { DeadlineCountdownActivityFactory, ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
+import { tryStartActiveTaskActivity, tryStartDeadlineActivity, endActivity, isActivityRunning } from '@/utils/liveActivityManager';
 import type { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
 import type { ActiveTaskActivityProps } from "@/widgets/ActiveTaskActivity";
 import type { LiveActivity } from "expo-widgets";
@@ -75,7 +75,6 @@ export default function Task() {
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [deadlineLiveActivity, setDeadlineLiveActivity] = useState<LiveActivity<DeadlineCountdownProps> | null>(null);
     const [activeTaskLiveActivity, setActiveTaskLiveActivity] = useState<LiveActivity<ActiveTaskActivityProps> | null>(null);
-    const activeTaskIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     // Removed timer state - no longer using timer tab
     // const [hours, setHours] = useState(0);
     // const [minutes, setMinutes] = useState(0);
@@ -129,28 +128,26 @@ export default function Task() {
         }
     };
 
-    const handleTrackDeadline = () => {
+    const handleTrackDeadline = async () => {
         if (!task?.deadline) return;
-        if (deadlineLiveActivity) {
-            deadlineLiveActivity.end('immediate');
+        if (isActivityRunning(id as string)) {
+            await endActivity(id as string);
             setDeadlineLiveActivity(null);
             return;
         }
 
-        try {
-            const instance = DeadlineCountdownActivityFactory.start({
-                taskName: task.content,
-                workspaceName: (task as any).workspaceName || 'Tasks',
-                deadline: task.deadline,
-                priority: task.priority || 0,
-                categoryId: categoryId as string,
-                taskId: id as string,
-                accentColor: '#8B5CF6',
-                statusLabel: 'Due Soon',
-            });
-            setDeadlineLiveActivity(instance);
-        } catch (e) {
-            logger.error('Failed to start deadline live activity', e);
+        const started = await tryStartDeadlineActivity(id as string, {
+            taskName: task.content,
+            workspaceName: (task as any).workspaceName || 'Tasks',
+            deadline: task.deadline,
+            priority: task.priority || 0,
+            categoryId: categoryId as string,
+            taskId: id as string,
+            accentColor: '#8B5CF6',
+            statusLabel: 'Due Soon',
+        });
+
+        if (!started) {
             showToastable({
                 title: "Live Activity",
                 message: "Could not start deadline tracking. Check that Live Activities are enabled in Settings.",
@@ -161,20 +158,20 @@ export default function Task() {
         }
     };
 
-    const handleStartWorking = () => {
+    const handleStartWorking = async () => {
         if (!task) return;
 
-        if (activeTaskLiveActivity) {
-            activeTaskLiveActivity.end('immediate');
+        if (isActivityRunning(id as string)) {
+            await endActivity(id as string);
             setActiveTaskLiveActivity(null);
-            if (activeTaskIntervalRef.current) clearInterval(activeTaskIntervalRef.current);
             pauseTimer(id);
             return;
         }
 
         const now = new Date().toISOString();
         const endTime = task.deadline || undefined;
-        const activityProps = {
+
+        const started = await tryStartActiveTaskActivity(id as string, {
             taskName: task.content,
             workspaceName: (task as any).workspaceName || 'Tasks',
             startTime: now,
@@ -182,20 +179,9 @@ export default function Task() {
             hasEndTime: !!endTime,
             categoryId: categoryId as string,
             taskId: id as string,
-        };
+        });
 
-        try {
-            logger.debug('Starting active task live activity', activityProps);
-            const instance = ActiveTaskActivityFactory.start(activityProps);
-            logger.debug('Live activity started successfully', { id: instance });
-            setActiveTaskLiveActivity(instance);
-
-            // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
-            activeTaskIntervalRef.current = setInterval(() => {
-                instance.update(activityProps);
-            }, 5 * 60 * 1000);
-        } catch (e) {
-            logger.error('Failed to start active task live activity', e);
+        if (!started) {
             showToastable({
                 title: "Live Activity",
                 message: "Could not start live activity. Check that Live Activities are enabled in Settings.",
@@ -208,20 +194,12 @@ export default function Task() {
         startTimer(id);
     };
 
-    // End live activities when the component unmounts
     useEffect(() => {
         return () => {
-            if (deadlineLiveActivity) {
-                deadlineLiveActivity.end('immediate');
-            }
-            if (activeTaskLiveActivity) {
-                activeTaskLiveActivity.end('immediate');
-            }
-            if (activeTaskIntervalRef.current) {
-                clearInterval(activeTaskIntervalRef.current);
-            }
+            // Don't end activities on unmount — they should persist on lock screen
+            // The manager handles lifecycle. Only clean up local state refs.
         };
-    }, [deadlineLiveActivity, activeTaskLiveActivity]);
+    }, []);
 
     const handleIntegrationPress = async () => {
         const result = await openIntegrationApp(task?.integration);
@@ -447,15 +425,11 @@ export default function Task() {
     const handleMarkAsCompleted = () => {
         capture(AnalyticsEvents.TASK_COMPLETED, { source: "detail_button" });
         if (task && categoryId && id) {
-            // End live activities if active
-            if (deadlineLiveActivity) {
-                deadlineLiveActivity.end('immediate');
+            // End live activity via manager if running
+            if (isActivityRunning(id as string)) {
+                endActivity(id as string);
                 setDeadlineLiveActivity(null);
-            }
-            if (activeTaskLiveActivity) {
-                activeTaskLiveActivity.end('immediate');
                 setActiveTaskLiveActivity(null);
-                if (activeTaskIntervalRef.current) clearInterval(activeTaskIntervalRef.current);
             }
             markTaskAsCompleted(categoryId as string, id as string, {
                 id: task.id,
