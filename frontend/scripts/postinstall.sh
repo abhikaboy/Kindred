@@ -97,13 +97,10 @@ fi
 
 WIDGETS_IOS="node_modules/expo-widgets/ios"
 
-# Replace staleDate: nil → 8-hour future date (prevents iOS dimming/spinner)
-for f in "$WIDGETS_IOS/LiveActivityFactory.swift" "$WIDGETS_IOS/LiveActivity.swift"; do
-  if [ -f "$f" ] && grep -q "staleDate: nil" "$f"; then
-    sed -i '' 's/staleDate: nil/staleDate: Date().addingTimeInterval(8 * 3600)/g' "$f"
-    echo "postinstall: patched staleDate in $(basename "$f")"
-  fi
-done
+# Note: staleDate is left as nil (the default). Setting it to a future date
+# caused iOS to render "X minutes" relative timestamps instead of the live timer.
+# The dimming/spinner is mitigated by NSSupportsLiveActivitiesFrequentUpdates=true
+# in Info.plist and the JS keep-alive interval that updates every 5 minutes.
 
 # Add .activityBackgroundTint(.clear) and .tint(.white) for glassy background + white links
 LA_WIDGET="$WIDGETS_IOS/Widgets/WidgetLiveActivity.swift"
