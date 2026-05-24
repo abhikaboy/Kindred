@@ -330,13 +330,6 @@ const DrawerContent = ({
                     onLongPress={() => {}}
                 />
                 <DrawerItem
-                    title="Analytics"
-                    selected={currentSelected}
-                    icon={<ChartLine size={20} color={ThemedColor.primary} weight="regular" />}
-                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/analytics")}
-                    onLongPress={() => {}}
-                />
-                <DrawerItem
                     title="Text Dump"
                     badge="AI"
                     selected={currentSelected}

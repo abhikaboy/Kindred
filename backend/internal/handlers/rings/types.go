@@ -24,12 +24,13 @@ const (
 
 // Score calculation constants
 const (
-	ScoreBase       = 50
-	ScoreRingWindow = 7
-	ScoreMaxRings   = 21
-	ScoreRingBonus  = 50
-	ScoreMaxStreak  = 7
-	ScoreDisplayMin = 30
+	ScoreBase            = 30
+	ScoreRingWindow      = 7
+	ScoreMaxRings        = 21
+	ScoreRingBonus       = 55
+	ScoreMaxStreak       = 7
+	ScoreConsistencyDays = 7
+	ScoreConsistencyMax  = 8
 )
 
 // RingProgress tracks progress toward closing a single ring

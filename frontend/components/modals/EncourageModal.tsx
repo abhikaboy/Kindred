@@ -349,21 +349,22 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 </Portal>
             )}
 
-            {/* Confetti Cannon - Only show when user just sent an encouragement */}
+            {/* Confetti Cannon - Full screen overlay, same as task completion */}
             {showConfetti && (
-                <ConfettiCannon
-                    ref={confettiRef}
-                    count={50}
-                    origin={
-                        { x: Dimensions.get("screen").width / 2,
-                        y: (Dimensions.get("screen").height / 4) * 3.7 }
-                    }
-                    explosionSpeed={300}
-                    fadeOut={true}
-                    autoStart={false}
-                    fallSpeed={1000}
-                    colors={['#9333EA', '#A855F7', '#C084FC', '#E9D5FF']}
-                />
+                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, height: Dimensions.get("screen").height }} pointerEvents="none">
+                    <ConfettiCannon
+                        ref={confettiRef}
+                        count={50}
+                        origin={{
+                            x: Dimensions.get("screen").width / 2,
+                            y: (Dimensions.get("screen").height / 4) * 3.7,
+                        }}
+                        explosionSpeed={300}
+                        fadeOut={true}
+                        autoStart={false}
+                        fallSpeed={1200}
+                    />
+                </View>
             )}
 
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedImage ? ["85%"] : ["55%"]}>

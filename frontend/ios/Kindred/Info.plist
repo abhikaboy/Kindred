@@ -21,7 +21,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.0.1</string>
+    <string>1.0.1</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -36,7 +36,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>70</string>
+    <string>112</string>
     <key>ExpoWidgetsAppGroupIdentifier</key>
     <string>group.com.kindred.kindredtsl</string>
     <key>ExpoWidgets_EnablePushNotifications</key>

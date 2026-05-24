@@ -179,6 +179,23 @@ export const activateTaskAPI = async (categoryId: string, taskId: string, active
 };
 
 /**
+ * Start or stop working on a task
+ */
+export const setWorkingAPI = async (categoryId: string, taskId: string, working: boolean = true): Promise<void> => {
+    // @ts-ignore - New endpoint not yet in OpenAPI spec
+    const { error } = await client.POST("/v1/user/tasks/working/{category}/{id}", {
+        params: withAuthHeaders({
+            path: { category: categoryId, id: taskId },
+            query: { working: working.toString() },
+        }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to update working state: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
  * Get tasks by user
  * API: Makes GET request to retrieve user's tasks
  * Frontend: Used to populate tasks in TaskContext

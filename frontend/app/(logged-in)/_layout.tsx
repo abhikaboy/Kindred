@@ -33,7 +33,10 @@ import * as Localization from 'expo-localization';
 import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { ActiveTaskActivityFactory, DeadlineCountdownActivityFactory } from "@/widgets/widgetUpdaters";
+import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
+import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
+import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
+import { useTasks } from '@/contexts/tasksContext';
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -66,6 +69,13 @@ interface NotificationData {
     taskId?: string;
     categoryId?: string;
     taskName?: string;
+    // Live Activity
+    liveActivityType?: 'activeTask' | 'deadlineCountdown';
+    workspaceName?: string;
+    startTime?: string;
+    endTime?: string;
+    deadline?: string;
+    priority?: string;
 }
 
 /** Derive a navigation URL from push notification data. */
@@ -246,64 +256,43 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     }, [user]);
 
     useEffect(() => {
+        registerBackgroundFetch();
         initNotificationHandler();
+
+        const startActiveTaskActivityFromPush = (data: NotificationData) => {
+            tryStartActiveTaskActivity(data.taskId || '', {
+                taskName: data.taskName || '',
+                workspaceName: data.workspaceName || 'Tasks',
+                startTime: data.startTime || new Date().toISOString(),
+                endTime: data.endTime || undefined,
+                hasEndTime: !!data.endTime,
+                categoryId: data.categoryId || '',
+                taskId: data.taskId || '',
+            });
+        };
+
+        const startDeadlineActivityFromPush = (data: NotificationData) => {
+            tryStartDeadlineActivity(data.taskId || '', {
+                taskName: data.taskName || '',
+                workspaceName: data.workspaceName || 'Tasks',
+                deadline: data.deadline || '',
+                priority: parseInt(data.priority || '0', 10),
+                categoryId: data.categoryId || '',
+                taskId: data.taskId || '',
+                accentColor: '#8B5CF6',
+                statusLabel: 'Due Soon',
+            });
+        };
+
         notificationListener.current = addNotificationListener((notification) => {
             const data = notification.request.content.data as NotificationData | undefined;
 
             // Handle live activity triggers from push notifications
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
-                    const activityProps = {
-                        taskName: data.taskName || '',
-                        workspaceName: data.workspaceName || 'Tasks',
-                        startTime: data.startTime || new Date().toISOString(),
-                        endTime: data.endTime || undefined,
-                        hasEndTime: !!data.endTime,
-                        categoryId: data.categoryId || '',
-                        taskId: data.taskId || '',
-                    };
-                    const activity = ActiveTaskActivityFactory.start(activityProps);
-                    // Keep-alive: re-send props every 5 min so iOS doesn't mark it stale
-                    setInterval(() => { activity.update(activityProps); }, 5 * 60 * 1000);
+                    startActiveTaskActivityFromPush(data);
                 } else if (data.liveActivityType === 'deadlineCountdown') {
-                    const deadlineMs = new Date(data.deadline).getTime();
-                    const activity = DeadlineCountdownActivityFactory.start({
-                        taskName: data.taskName || '',
-                        workspaceName: data.workspaceName || 'Tasks',
-                        deadline: data.deadline || '',
-                        priority: parseInt(data.priority || '0', 10),
-                        categoryId: data.categoryId || '',
-                        taskId: data.taskId || '',
-                        accentColor: '#8B5CF6',
-                        statusLabel: 'Due Soon',
-                    });
-                    // Color escalation: update accent color at thresholds
-                    const escalationInterval = setInterval(() => {
-                        const remaining = deadlineMs - Date.now();
-                        let accentColor = '#8B5CF6';
-                        let statusLabel = 'Due Soon';
-                        if (remaining <= 0) {
-                            accentColor = '#6B7280';
-                            statusLabel = 'Overdue';
-                        } else if (remaining <= 10 * 60 * 1000) {
-                            accentColor = '#F59E0B';
-                        }
-                        activity.update({
-                            taskName: data.taskName || '',
-                            workspaceName: data.workspaceName || 'Tasks',
-                            deadline: data.deadline || '',
-                            priority: parseInt(data.priority || '0', 10),
-                            categoryId: data.categoryId || '',
-                            taskId: data.taskId || '',
-                            accentColor,
-                            statusLabel,
-                        });
-                        // Auto-dismiss 30 min after overdue
-                        if (remaining <= -30 * 60 * 1000) {
-                            activity.end('default');
-                            clearInterval(escalationInterval);
-                        }
-                    }, 60 * 1000);
+                    startDeadlineActivityFromPush(data);
                 }
                 return; // Don't show toast for live activity pushes
             }
@@ -334,28 +323,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             // Start live activity when user taps the notification
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
-                    const activityProps = {
-                        taskName: data.taskName || '',
-                        workspaceName: data.workspaceName || 'Tasks',
-                        startTime: data.startTime || new Date().toISOString(),
-                        endTime: data.endTime || undefined,
-                        hasEndTime: !!data.endTime,
-                        categoryId: data.categoryId || '',
-                        taskId: data.taskId || '',
-                    };
-                    const activity = ActiveTaskActivityFactory.start(activityProps);
-                    setInterval(() => { activity.update(activityProps); }, 5 * 60 * 1000);
+                    startActiveTaskActivityFromPush(data);
                 } else if (data.liveActivityType === 'deadlineCountdown') {
-                    DeadlineCountdownActivityFactory.start({
-                        taskName: data.taskName || '',
-                        workspaceName: data.workspaceName || 'Tasks',
-                        deadline: data.deadline || '',
-                        priority: parseInt(data.priority || '0', 10),
-                        categoryId: data.categoryId || '',
-                        taskId: data.taskId || '',
-                        accentColor: '#8B5CF6',
-                        statusLabel: 'Due Soon',
-                    });
+                    startDeadlineActivityFromPush(data);
                 }
                 // Navigate to the task
                 if (data.categoryId && data.taskId) {
@@ -389,6 +359,13 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             }
         };
     }, []);
+
+    // Auto-start live activities when task times arrive (foreground)
+    useLiveActivityScheduler();
+
+    // Sync task times to AsyncStorage for background fetch
+    const { allTasks } = useTasks();
+    useBackgroundTaskSync(allTasks);
 
     const handleAnimationComplete = () => {
         setCanTransition(true);

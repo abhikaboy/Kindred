@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
+import { TouchableOpacity, View, StyleSheet, Dimensions, Platform } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -21,6 +21,8 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { setWorkingAPI } from "@/api/task";
+import * as Haptics from "expo-haptics";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -82,7 +84,7 @@ const TaskCard = ({
     const [showEncourageModal, setShowEncourageModal] = useState(false);
     const [showCongratulateModal, setShowCongratulateModal] = useState(false);
     const ThemedColor = useThemeColor();
-    const { setTask } = useTasks();
+    const { setTask, updateTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
     const lastTapRef = useRef<number>(0);
@@ -253,6 +255,11 @@ const TaskCard = ({
 
     const startWorking = () => {
         if (!task || task.isPhantom) return;
+
+        if (Platform.OS === "ios") {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+
         const now = new Date().toISOString();
         const endTime = task.deadline || undefined;
 
@@ -266,11 +273,17 @@ const TaskCard = ({
             taskId: id,
         });
 
+        // Update local state immediately so WorkingOnRow shows
+        updateTask(categoryId, id, { workingOnSince: now });
+
+        // Persist working state to backend
+        setWorkingAPI(categoryId, id, true).catch(() => {});
+
         showToastable({
-            title: "Started working",
-            message: task.content,
+            title: "Let's go!",
+            message: `Now working on "${task.content}"`,
             status: "success" as any,
-            duration: 2000,
+            duration: 2500,
             renderContent: (props) => <DefaultToast {...props} />,
         });
     };
@@ -391,6 +404,11 @@ const TaskCard = ({
                         ) : (
                             <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
                                 {content}
+                                {task?.workingOnSince && (
+                                    <ThemedText type="default" style={{ color: ThemedColor.primary }}>
+                                        {" "}(active)
+                                    </ThemedText>
+                                )}
                                 {dateDisplay && (
                                     <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
                                         {" "}{dateDisplay.text}
@@ -422,9 +440,9 @@ const TaskCard = ({
                             {value}
                         </ThemedText> */}
 
-                            {/* Show priority dot */}
+                            {/* Show priority dot — purple when actively working */}
                             <View
-                                style={[styles.circle, { backgroundColor: getPriorityColor(PRIORITY_MAP[priority]) }]}
+                                style={[styles.circle, { backgroundColor: task?.workingOnSince ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
                             />
                         </ConditionalView>
                         <ConditionalView condition={encourage}>

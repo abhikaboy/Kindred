@@ -176,6 +176,31 @@ type ActivateTaskOutput struct {
 	}
 }
 
+// Start/Stop Working
+type StartWorkingInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+	Category      string `path:"category" example:"507f1f77bcf86cd799439011"`
+	Working       string `query:"working" example:"true" doc:"Set to 'true' to start working, 'false' to stop"`
+}
+
+type StartWorkingOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Started working on task"`
+	}
+}
+
+func RegisterStartWorkingOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "start-working",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/working/{category}/{id}",
+		Summary:     "Start or stop working on a task",
+		Description: "Set the working state of a task (tracks when user started working)",
+		Tags:        []string{"tasks"},
+	}, handler.StartWorking)
+}
+
 // Get Active Tasks
 type GetActiveTasksInput struct {
 	ID string `path:"id" example:"507f1f77bcf86cd799439011"`

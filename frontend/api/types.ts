@@ -91,6 +91,9 @@ export interface Task {
 
     flexInfo?: FlexInstanceInfo;
 
+    // Working state — set when user starts working
+    workingOnSince?: string;
+
     // Completion tracking fields (only populated for completed tasks)
     timeCompleted?: string;
     timeTaken?: string;

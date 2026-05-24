@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+    Alert,
     Animated,
     Dimensions,
     Easing,
@@ -537,7 +538,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         ExpoSpeechRecognitionModule.stop();
     };
 
-    const handleClose = React.useCallback(() => {
+    const closeOverlay = React.useCallback(() => {
         if (isClosingRef.current) return;
         isClosingRef.current = true;
         if (recognizingRef.current && ExpoSpeechRecognitionModule) {
@@ -554,6 +555,21 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         });
     }, [onClose, resetIntentFlow]);
 
+    const handleClose = React.useCallback(() => {
+        if (transcription.trim().length > 0) {
+            Alert.alert(
+                "Discard transcript?",
+                "You'll lose your current voice input.",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Discard", style: "destructive", onPress: closeOverlay },
+                ]
+            );
+            return;
+        }
+        closeOverlay();
+    }, [transcription, closeOverlay]);
+
     const handleRetry = () => {
         setTranscription("");
         resetIntentFlow();
@@ -567,8 +583,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     useEffect(() => {
         if (!pendingClose) return;
         setPendingClose(false);
-        handleClose();
-    }, [handleClose, pendingClose]);
+        closeOverlay(); // Skip confirmation — work is already done
+    }, [closeOverlay, pendingClose]);
 
     // ─── Render ───────────────────────────────────────────────────────────────
 

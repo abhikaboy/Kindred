@@ -37,7 +37,7 @@ export default function Profile() {
     const [activeTab, setActiveTab] = useState(0);
     const [ringsExpanded, setRingsExpanded] = useState(false);
 
-    const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
+    const DEFAULT_PICTURE = "https://i.pinimg.com/736x/45/69/cb/4569cb1033f0251fac46f307c3ba495a.jpg";
     const hasDefaultAvatar = !user?.profile_picture || user.profile_picture === DEFAULT_PICTURE;
 
     const scrollRef = useAnimatedRef<Animated.ScrollView>();

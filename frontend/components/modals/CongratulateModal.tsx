@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform } from "react-native";
+import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -245,6 +246,11 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 }
             });
 
+            // Haptic feedback on successful send
+            if (Platform.OS === "ios") {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+
             // Close modal first, enable confetti, then trigger it
             setVisible(false);
             setShowConfetti(true);
@@ -314,21 +320,22 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 </Portal>
             )}
 
-            {/* Confetti Cannon - Only show when user just sent a congratulation */}
+            {/* Confetti Cannon - Full screen overlay, same as task completion */}
             {showConfetti && (
-                <ConfettiCannon
-                    ref={confettiRef}
-                    count={50}
-                    origin={
-                        { x: Dimensions.get("screen").width / 2,
-                        y: (Dimensions.get("screen").height / 4) * 3.7 }
-                    }
-                    explosionSpeed={300}
-                    fadeOut={true}
-                    autoStart={false}
-                    fallSpeed={1000}
-                    colors={['#9333EA', '#A855F7', '#C084FC', '#E9D5FF']}
-                />
+                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, height: Dimensions.get("screen").height }} pointerEvents="none">
+                    <ConfettiCannon
+                        ref={confettiRef}
+                        count={50}
+                        origin={{
+                            x: Dimensions.get("screen").width / 2,
+                            y: (Dimensions.get("screen").height / 4) * 3.7,
+                        }}
+                        explosionSpeed={300}
+                        fadeOut={true}
+                        autoStart={false}
+                        fallSpeed={1200}
+                    />
+                </View>
             )}
 
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedImage ? ["85%"] : ["55%"]}>

@@ -70,4 +70,8 @@ type Service struct {
 	Connections    *mongo.Collection
 	Tasks          *mongo.Collection
 	CompletedTasks *mongo.Collection
+	Posts          *mongo.Collection
+	Groups         *mongo.Collection
+	Blueprints     *mongo.Collection
+	Notifications  *mongo.Collection
 }

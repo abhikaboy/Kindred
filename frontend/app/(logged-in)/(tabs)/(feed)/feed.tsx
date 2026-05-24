@@ -177,11 +177,7 @@ export default function Feed() {
                     // Use the new unified feed endpoint
                     const feedResult = await getFeed(20, 0);
                     setFeedItems(feedResult.items);
-                    // Extract posts from feed items for backward compatibility
-                    const postsOnly = feedResult.items
-                        .filter((item) => item.type === "post" && item.post)
-                        .map((item) => item.post!);
-                    setPosts(postsOnly);
+                    setPosts([]); // Clear posts state — feed tab uses feedItems exclusively
                     setOffset(feedResult.nextOffset);
                     setHasMore(feedResult.hasMore);
                     setLastUpdated(new Date());
@@ -246,11 +242,6 @@ export default function Feed() {
                 const feedResult = await getFeed(20, offset);
                 // Append new feed items
                 setFeedItems((prev) => [...prev, ...feedResult.items]);
-                // Extract and append posts
-                const postsOnly = feedResult.items
-                    .filter((item) => item.type === "post" && item.post)
-                    .map((item) => item.post!);
-                setPosts((prevPosts) => [...prevPosts, ...postsOnly]);
                 setOffset(feedResult.nextOffset);
                 setHasMore(feedResult.hasMore);
                 setLoadingMore(false);

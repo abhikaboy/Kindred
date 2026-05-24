@@ -1078,6 +1078,43 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 
 }
 
+func (s *Service) SetWorkingState(userId, categoryId, taskId primitive.ObjectID, working bool) error {
+	ctx := context.Background()
+	opts := options.UpdateOptions{
+		ArrayFilters: &options.ArrayFilters{
+			Filters: bson.A{
+				bson.M{"t._id": taskId},
+			},
+		},
+	}
+
+	var update bson.D
+	if working {
+		now := xutils.NowUTC()
+		update = bson.D{{
+			Key: "$set", Value: bson.D{
+				{Key: "categories.$.tasks.$[t].workingOnSince", Value: now},
+			},
+		}}
+	} else {
+		update = bson.D{{
+			Key: "$unset", Value: bson.D{
+				{Key: "categories.$.tasks.$[t].workingOnSince", Value: ""},
+			},
+		}}
+	}
+
+	_, err := s.Tasks.UpdateOne(ctx,
+		bson.M{
+			"_id":        userId,
+			"categories": bson.M{"$elemMatch": bson.M{"_id": categoryId}},
+		},
+		update,
+		&opts,
+	)
+	return err
+}
+
 // UpdateTaskNotes updates the notes field of a task
 func (s *Service) UpdateTaskNotes(
 	id primitive.ObjectID,

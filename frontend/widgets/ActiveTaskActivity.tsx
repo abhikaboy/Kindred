@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background, monospacedDigit } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type ActiveTaskActivityProps = {
@@ -27,16 +27,18 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
     const { taskName, workspaceName, startTime, endTime, hasEndTime, categoryId, taskId } = props;
     const startDate = new Date(startTime);
     const endDate = endTime ? new Date(endTime) : undefined;
-    const taskLink = `kindred://task/${categoryId}/${taskId}`;
+    const encodedName = encodeURIComponent(taskName);
+    const taskLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}`;
+    const completeLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=complete`;
 
     return {
         banner: (
-            <VStack alignment="leading" spacing={8} modifiers={[padding({ horizontal: 16, vertical: 14 }), widgetURL(taskLink)]}>
+            <VStack alignment="leading" spacing={12} modifiers={[padding({ horizontal: 20, vertical: 16 }), widgetURL(taskLink), frame({ maxWidth: 9999 })]}>
                 {/* Row 1: Status + Timer */}
                 <HStack alignment="center">
                     <HStack alignment="center" spacing={5}>
-                        <Image systemName="circle.fill" color={GREEN} size={8} />
-                        <Text modifiers={[font({ weight: 'bold', size: 12 }), foregroundStyle(GREEN)]}>
+                        <Image systemName="circle.fill" color={GREEN} size={7} />
+                        <Text modifiers={[font({ weight: 'semibold', size: 12 }), foregroundStyle(GREEN)]}>
                             ACTIVE
                         </Text>
                     </HStack>
@@ -44,21 +46,25 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                     <Text
                         date={startDate}
                         dateStyle="timer"
-                        modifiers={[font({ weight: 'bold', size: 28, design: 'rounded' }), foregroundStyle(PURPLE)]}
+                        modifiers={[
+                            font({ weight: 'bold', size: 22, design: 'rounded' }),
+                            foregroundStyle(PURPLE),
+                            monospacedDigit(),
+                        ]}
                     />
                 </HStack>
 
-                {/* Row 2: Task name */}
-                <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
-                    {taskName}
-                </Text>
+                {/* Row 2: Task name + workspace */}
+                <VStack alignment="leading" spacing={3}>
+                    <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
+                        {taskName}
+                    </Text>
+                    <Text modifiers={[font({ size: 14 }), secondary]}>
+                        {workspaceName}
+                    </Text>
+                </VStack>
 
-                {/* Row 3: Workspace */}
-                <Text modifiers={[font({ size: 13 }), secondary]}>
-                    {workspaceName}
-                </Text>
-
-                {/* Row 4: Progress bar (only with end time) */}
+                {/* Row 3: Progress bar (only with end time) */}
                 {hasEndTime && endDate ? (
                     <ProgressView
                         timerInterval={{ lower: startDate, upper: endDate }}
@@ -66,28 +72,26 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                     />
                 ) : null}
 
-                {/* Row 5: CTA Buttons */}
+                {/* Row 4: CTA Buttons */}
                 <HStack spacing={8}>
                     <Link
-                        destination={`${taskLink}?action=complete`}
+                        destination={completeLink}
                         modifiers={[
-                            font({ weight: 'semibold', size: 14 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 16, vertical: 10 }),
+                            padding({ horizontal: 16, vertical: 9 }),
                             background(PURPLE),
-                            cornerRadius(12),
+                            cornerRadius(20),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
-                            Mark Complete
+                            Complete
                         </Text>
                     </Link>
                     <Link
                         destination={taskLink}
                         modifiers={[
-                            font({ weight: 'medium', size: 14 }),
-                            padding({ horizontal: 16, vertical: 10 }),
-                            cornerRadius(12),
+                            padding({ horizontal: 16, vertical: 9 }),
+                            background('#1AFFFFFF'),
+                            cornerRadius(20),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
@@ -151,10 +155,8 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                 ) : null}
                 <HStack spacing={8}>
                     <Link
-                        destination={`${taskLink}?action=complete`}
+                        destination={completeLink}
                         modifiers={[
-                            font({ weight: 'semibold', size: 13 }),
-                            foregroundStyle('#FFFFFF'),
                             padding({ horizontal: 14, vertical: 8 }),
                             background(PURPLE),
                             cornerRadius(10),

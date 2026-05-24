@@ -8,7 +8,7 @@ import { uploadImageSmart } from "@/api/upload";
 import { showToast } from "@/utils/showToast";
 import { Camera } from "phosphor-react-native";
 
-const DEFAULT_PICTURE = "https://notioly.com/wp-content/uploads/2025/02/506.Adventurous-Cat.png";
+const DEFAULT_PICTURE = "https://i.pinimg.com/736x/45/69/cb/4569cb1033f0251fac46f307c3ba495a.jpg";
 
 interface CompleteProfileCardProps {
     onPhotoUpdated?: () => void;
@@ -70,11 +70,11 @@ export default function CompleteProfileCard({ onPhotoUpdated }: CompleteProfileC
                 {isUploadingPhoto ? (
                     <ActivityIndicator size="small" color={ThemedColor.primary} />
                 ) : (
-                    <Camera size={20} color={ThemedColor.primary} weight="fill" />
+                    <Camera size={20} color={ThemedColor.primary} weight="regular" />
                 )}
             </View>
             <View style={styles.textContainer}>
-                <ThemedText style={styles.title}>
+                <ThemedText type="default" style={styles.title}>
                     {isUploadingPhoto ? "Uploading photo..." : "Add a profile photo"}
                 </ThemedText>
                 {!isUploadingPhoto && (
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 14,
         fontFamily: "Outfit",
-        fontWeight: "600",
+        fontWeight: "400",
     },
     subtitle: {
         fontSize: 12,

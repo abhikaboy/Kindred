@@ -72,6 +72,9 @@ type TaskDocument struct {
 
 	FlexInfo *FlexInstanceInfo `bson:"flexInfo,omitempty" json:"flexInfo,omitempty"`
 
+	// Working state — set when user starts working, cleared on complete/stop
+	WorkingOnSince *time.Time `bson:"workingOnSince,omitempty" json:"workingOnSince,omitempty"`
+
 	// Completion tracking fields (only populated for completed tasks)
 	TimeCompleted *time.Time `bson:"timeCompleted,omitempty" json:"timeCompleted,omitempty"`
 	TimeTaken     *string    `bson:"timeTaken,omitempty" json:"timeTaken,omitempty"`

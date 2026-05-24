@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { markAsCompletedAPI } from '@/api/task';
+import { markAsCompletedAPI, setWorkingAPI } from '@/api/task';
+import { ActiveTaskActivityFactory } from '@/widgets/widgetUpdaters';
 import { useTasks } from '@/contexts/tasksContext';
 import { Task } from '@/api/types';
 import { showToastable } from 'react-native-toastable';
@@ -48,6 +49,10 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         isCompletingRef.current = true;
         setIsCompleting(true);
         try {
+            // End any live activity and clear working state
+            ActiveTaskActivityFactory.getInstances().forEach((a) => a.end("default"));
+            setWorkingAPI(categoryId, taskId, false).catch(() => {});
+
             const res = await markAsCompletedAPI(categoryId, taskId, {
                 timeCompleted: new Date().toISOString(),
                 timeTaken: "PT0S",
