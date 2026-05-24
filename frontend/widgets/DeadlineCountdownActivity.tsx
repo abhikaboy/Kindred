@@ -99,7 +99,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                             tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
+                        <Text modifiers={[font({ weight: 'medium', size: 14 }), foregroundStyle('#CCFFFFFF')]}>
                             Open Task
                         </Text>
                     </Link>
@@ -181,7 +181,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                             tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), secondary]}>
+                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
                             Open
                         </Text>
                     </Link>
