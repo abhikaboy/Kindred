@@ -1,34 +1,118 @@
 import { useEffect, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import type { Task } from '@/api/types';
 
-const STORAGE_KEY = '@kindred/upcoming-task-times';
-
-export type StoredTaskRecord = {
-    taskId: string;
-    categoryId: string;
-    content: string;
-    workspaceName: string;
-    startTime?: string;
-    deadline?: string;
-    priority: number;
-    active: boolean;
-};
+const NOTIFICATION_PREFIX_START = 'live-activity-start-';
+const NOTIFICATION_PREFIX_DEADLINE = 'live-activity-deadline-';
 
 /**
- * No-op — background fetch removed due to expo-task-manager native crashes
- * during app startup (_restoreTasks throws NSException before JS is ready).
- * The foreground timer + push notifications provide sufficient coverage.
+ * Schedule local notifications at exact task times so live activities
+ * can trigger even when the app is backgrounded. Uses the same
+ * `type: 'live_activity'` data format as backend push notifications,
+ * so the existing handler in _layout.tsx picks them up identically.
  */
-export async function registerBackgroundFetch(): Promise<void> {
-    // Intentionally empty — kept for API compatibility with _layout.tsx
+async function scheduleTaskNotifications(allTasks: Task[]): Promise<void> {
+    // Cancel all previously scheduled live activity notifications
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const liveActivityIds = scheduled
+        .filter((n) => n.identifier.startsWith(NOTIFICATION_PREFIX_START) ||
+                       n.identifier.startsWith(NOTIFICATION_PREFIX_DEADLINE))
+        .map((n) => n.identifier);
+
+    if (liveActivityIds.length > 0) {
+        await Promise.all(
+            liveActivityIds.map((id) => Notifications.cancelScheduledNotificationAsync(id))
+        );
+    }
+
+    const now = Date.now();
+    const twentyFourHoursFromNow = now + 24 * 60 * 60 * 1000;
+
+    for (const task of allTasks) {
+        if (!task.active) continue;
+        if ((task as any).timeCompleted) continue;
+
+        // Schedule at startTime
+        if (task.startTime) {
+            const startMs = new Date(task.startTime).getTime();
+            if (startMs > now && startMs <= twentyFourHoursFromNow) {
+                try {
+                    await Notifications.scheduleNotificationAsync({
+                        identifier: `${NOTIFICATION_PREFIX_START}${task.id}`,
+                        content: {
+                            title: task.workspaceName || 'Tasks',
+                            body: `Time to start: ${task.content}`,
+                            data: {
+                                type: 'live_activity',
+                                liveActivityType: 'activeTask',
+                                taskId: task.id,
+                                categoryId: task.categoryID || '',
+                                taskName: task.content,
+                                workspaceName: task.workspaceName || 'Tasks',
+                                startTime: task.startTime,
+                                endTime: task.deadline || '',
+                            },
+                            sound: true,
+                        },
+                        trigger: {
+                            type: Notifications.SchedulableTriggerInputTypes.DATE,
+                            date: new Date(task.startTime),
+                        },
+                    });
+                } catch (e) {
+                    console.warn('[TaskSync] Failed to schedule start-time notification:', e);
+                }
+            }
+        }
+
+        // Schedule 1 hour before deadline
+        if (task.deadline) {
+            const deadlineMs = new Date(task.deadline).getTime();
+            const oneHourBefore = deadlineMs - 60 * 60 * 1000;
+            if (oneHourBefore > now && oneHourBefore <= twentyFourHoursFromNow) {
+                try {
+                    await Notifications.scheduleNotificationAsync({
+                        identifier: `${NOTIFICATION_PREFIX_DEADLINE}${task.id}`,
+                        content: {
+                            title: task.workspaceName || 'Tasks',
+                            body: `Deadline in 1 hour: ${task.content}`,
+                            data: {
+                                type: 'live_activity',
+                                liveActivityType: 'deadlineCountdown',
+                                taskId: task.id,
+                                categoryId: task.categoryID || '',
+                                taskName: task.content,
+                                workspaceName: task.workspaceName || 'Tasks',
+                                deadline: task.deadline,
+                                priority: String(task.priority),
+                            },
+                            sound: true,
+                        },
+                        trigger: {
+                            type: Notifications.SchedulableTriggerInputTypes.DATE,
+                            date: new Date(oneHourBefore),
+                        },
+                    });
+                } catch (e) {
+                    console.warn('[TaskSync] Failed to schedule deadline notification:', e);
+                }
+            }
+        }
+    }
 }
 
 /**
- * Hook that syncs relevant tasks to AsyncStorage whenever allTasks changes.
- * Only persists tasks with a startTime or deadline in the next 24 hours.
- * This data can be used by future background mechanisms if a safe native
- * approach becomes available.
+ * Schedules local notifications for live activity triggers.
+ * Called once on mount from _layout.tsx.
+ */
+export async function registerBackgroundFetch(): Promise<void> {
+    // No-op on initial call — scheduling happens via the hook below
+}
+
+/**
+ * Hook that schedules local notifications whenever allTasks changes.
+ * Notifications use the same data format as backend push notifications,
+ * so the existing handler starts live activities automatically.
  */
 export function useBackgroundTaskSync(allTasks: Task[]): void {
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,33 +121,10 @@ export function useBackgroundTaskSync(allTasks: Task[]): void {
         if (debounceRef.current) clearTimeout(debounceRef.current);
 
         debounceRef.current = setTimeout(() => {
-            const now = Date.now();
-            const twentyFourHoursFromNow = now + 24 * 60 * 60 * 1000;
-
-            const records: StoredTaskRecord[] = allTasks
-                .filter((task) => {
-                    if (!task.active) return false;
-                    const hasUpcomingStart = task.startTime &&
-                        new Date(task.startTime).getTime() <= twentyFourHoursFromNow;
-                    const hasUpcomingDeadline = task.deadline &&
-                        new Date(task.deadline).getTime() <= twentyFourHoursFromNow;
-                    return hasUpcomingStart || hasUpcomingDeadline;
-                })
-                .map((task) => ({
-                    taskId: task.id,
-                    categoryId: task.categoryID || '',
-                    content: task.content,
-                    workspaceName: task.workspaceName || 'Tasks',
-                    startTime: task.startTime,
-                    deadline: task.deadline,
-                    priority: task.priority,
-                    active: task.active,
-                }));
-
-            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(records)).catch((e) => {
-                console.warn('[BackgroundTaskSync] Failed to persist tasks:', e);
+            scheduleTaskNotifications(allTasks).catch((e) => {
+                console.warn('[TaskSync] Failed to schedule notifications:', e);
             });
-        }, 500);
+        }, 1000); // 1s debounce — scheduling is async and involves multiple API calls
 
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
