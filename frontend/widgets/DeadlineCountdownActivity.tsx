@@ -95,11 +95,12 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         modifiers={[
                             font({ weight: 'medium', size: 14 }),
                             padding({ horizontal: 16, vertical: 10 }),
+                            background('#6D28D9'),
                             cornerRadius(12),
                             tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'medium', size: 14 }), foregroundStyle('#CCFFFFFF')]}>
+                        <Text modifiers={[font({ weight: 'medium', size: 14 }), foregroundStyle('#FFFFFF')]}>
                             Open Task
                         </Text>
                     </Link>
@@ -177,11 +178,12 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         modifiers={[
                             font({ weight: 'medium', size: 13 }),
                             padding({ horizontal: 14, vertical: 8 }),
+                            background('#6D28D9'),
                             cornerRadius(10),
                             tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
+                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#FFFFFF')]}>
                             Open
                         </Text>
                     </Link>

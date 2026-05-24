@@ -86,7 +86,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                         destination={taskLink}
                         modifiers={[
                             padding({ horizontal: 14, vertical: 7 }),
-                            background('#1AFFFFFF'),
+                            background('#6D28D9'),
                             cornerRadius(18),
                             tint('#FFFFFF'),
                         ]}
