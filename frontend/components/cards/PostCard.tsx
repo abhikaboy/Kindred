@@ -667,6 +667,9 @@ const PostCard = React.memo(({
                         borderTopRightRadius: 32,
                     }}
                     backdropComponent={renderBackdrop}
+                    containerStyle={{
+                        backgroundColor: ThemedColor.background,
+                    }}
                     style={{
                         backgroundColor: ThemedColor.background,
                         borderTopLeftRadius: 24,
