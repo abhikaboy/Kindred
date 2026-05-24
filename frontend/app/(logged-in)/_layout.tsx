@@ -360,13 +360,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
-    // Auto-start live activities when task times arrive (foreground)
-    useLiveActivityScheduler();
-
-    // Sync task times to AsyncStorage for background fetch
-    const { allTasks } = useTasks();
-    useBackgroundTaskSync(allTasks);
-
     const handleAnimationComplete = () => {
         setCanTransition(true);
     };
@@ -397,6 +390,13 @@ const LayoutContent = () => {
     const { visible, setVisible, modalConfig } = useCreateModal();
     const ThemedColor = useThemeColor();
     const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    // Auto-start live activities when task times arrive (foreground)
+    useLiveActivityScheduler();
+
+    // Sync task times to AsyncStorage for background fetch
+    const { allTasks } = useTasks();
+    useBackgroundTaskSync(allTasks);
 
     useEffect(() => {
         Animated.timing(fadeAnim, {

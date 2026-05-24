@@ -1,12 +1,21 @@
 import { useEffect, useRef } from 'react';
-import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
 import type { Task } from '@/api/types';
 
 const TASK_NAME = 'KINDRED_LIVE_ACTIVITY_CHECK';
 const STORAGE_KEY = '@kindred/upcoming-task-times';
+
+// Lazy-load native modules — they crash at import time if not linked in the binary
+let TaskManagerModule: typeof import('expo-task-manager') | null = null;
+let BackgroundFetchModule: typeof import('expo-background-fetch') | null = null;
+
+try {
+    TaskManagerModule = require('expo-task-manager');
+    BackgroundFetchModule = require('expo-background-fetch');
+} catch (e) {
+    console.warn('[BackgroundTask] expo-task-manager/expo-background-fetch not available — background fetch disabled. Rebuild the native app to enable.');
+}
 
 export type StoredTaskRecord = {
     taskId: string;
@@ -19,10 +28,11 @@ export type StoredTaskRecord = {
     active: boolean;
 };
 
-TaskManager.defineTask(TASK_NAME, async () => {
+// Only define the task if the native module is available
+TaskManagerModule?.defineTask(TASK_NAME, async () => {
     try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (!raw) return BackgroundFetch.BackgroundFetchResult.NoData;
+        if (!raw) return BackgroundFetchModule!.BackgroundFetchResult.NoData;
 
         const tasks: StoredTaskRecord[] = JSON.parse(raw);
         const now = Date.now();
@@ -69,17 +79,18 @@ TaskManager.defineTask(TASK_NAME, async () => {
         }
 
         return started
-            ? BackgroundFetch.BackgroundFetchResult.NewData
-            : BackgroundFetch.BackgroundFetchResult.NoData;
+            ? BackgroundFetchModule!.BackgroundFetchResult.NewData
+            : BackgroundFetchModule!.BackgroundFetchResult.NoData;
     } catch (e) {
         console.error('[BackgroundTask] Live activity check failed:', e);
-        return BackgroundFetch.BackgroundFetchResult.Failed;
+        return BackgroundFetchModule!.BackgroundFetchResult.Failed;
     }
 });
 
 export async function registerBackgroundFetch(): Promise<void> {
+    if (!BackgroundFetchModule) return;
     try {
-        await BackgroundFetch.registerTaskAsync(TASK_NAME, {
+        await BackgroundFetchModule.registerTaskAsync(TASK_NAME, {
             minimumInterval: 15 * 60,
             stopOnTerminate: false,
             startOnBoot: false,
