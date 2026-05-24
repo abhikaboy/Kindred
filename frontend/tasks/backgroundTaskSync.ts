@@ -6,17 +6,6 @@ import type { Task } from '@/api/types';
 const TASK_NAME = 'KINDRED_LIVE_ACTIVITY_CHECK';
 const STORAGE_KEY = '@kindred/upcoming-task-times';
 
-// Lazy-load native modules — they crash at import time if not linked in the binary
-let TaskManagerModule: typeof import('expo-task-manager') | null = null;
-let BackgroundFetchModule: typeof import('expo-background-fetch') | null = null;
-
-try {
-    TaskManagerModule = require('expo-task-manager');
-    BackgroundFetchModule = require('expo-background-fetch');
-} catch (e) {
-    console.warn('[BackgroundTask] expo-task-manager/expo-background-fetch not available — background fetch disabled. Rebuild the native app to enable.');
-}
-
 export type StoredTaskRecord = {
     taskId: string;
     categoryId: string;
@@ -28,68 +17,87 @@ export type StoredTaskRecord = {
     active: boolean;
 };
 
-// Only define the task if the native module is available
-TaskManagerModule?.defineTask(TASK_NAME, async () => {
-    try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (!raw) return BackgroundFetchModule!.BackgroundFetchResult.NoData;
+let registered = false;
 
-        const tasks: StoredTaskRecord[] = JSON.parse(raw);
-        const now = Date.now();
-        const fiveMinAgo = now - 5 * 60 * 1000;
-        const thirtyMinFromNow = now + 30 * 60 * 1000;
-        const sixtyFiveMinFromNow = now + 65 * 60 * 1000;
-        let started = false;
-
-        for (const task of tasks) {
-            if (!task.active) continue;
-
-            if (task.startTime) {
-                const startMs = new Date(task.startTime).getTime();
-                if (startMs >= fiveMinAgo && startMs <= now) {
-                    const didStart = await tryStartActiveTaskActivity(task.taskId, {
-                        taskName: task.content,
-                        workspaceName: task.workspaceName || 'Tasks',
-                        startTime: task.startTime,
-                        endTime: task.deadline || undefined,
-                        hasEndTime: !!task.deadline,
-                        categoryId: task.categoryId,
-                        taskId: task.taskId,
-                    });
-                    if (didStart) started = true;
-                }
-            }
-
-            if (task.deadline) {
-                const deadlineMs = new Date(task.deadline).getTime();
-                if (deadlineMs >= thirtyMinFromNow && deadlineMs <= sixtyFiveMinFromNow) {
-                    const didStart = await tryStartDeadlineActivity(task.taskId, {
-                        taskName: task.content,
-                        workspaceName: task.workspaceName || 'Tasks',
-                        deadline: task.deadline,
-                        priority: task.priority,
-                        categoryId: task.categoryId,
-                        taskId: task.taskId,
-                        accentColor: '#8B5CF6',
-                        statusLabel: 'Due Soon',
-                    });
-                    if (didStart) started = true;
-                }
-            }
-        }
-
-        return started
-            ? BackgroundFetchModule!.BackgroundFetchResult.NewData
-            : BackgroundFetchModule!.BackgroundFetchResult.NoData;
-    } catch (e) {
-        console.error('[BackgroundTask] Live activity check failed:', e);
-        return BackgroundFetchModule!.BackgroundFetchResult.Failed;
-    }
-});
-
+/**
+ * Define the background task and register it with iOS.
+ * All native module access is deferred to this function (not module load time)
+ * to avoid NSException crashes during JS bundle evaluation.
+ */
 export async function registerBackgroundFetch(): Promise<void> {
-    if (!BackgroundFetchModule) return;
+    if (registered) return;
+    registered = true;
+
+    let TaskManagerModule: typeof import('expo-task-manager') | null = null;
+    let BackgroundFetchModule: typeof import('expo-background-fetch') | null = null;
+
     try {
+        TaskManagerModule = require('expo-task-manager');
+        BackgroundFetchModule = require('expo-background-fetch');
+    } catch (e) {
+        console.warn('[BackgroundTask] Native modules not available — background fetch disabled.');
+        return;
+    }
+
+    try {
+        TaskManagerModule.defineTask(TASK_NAME, async () => {
+            try {
+                const raw = await AsyncStorage.getItem(STORAGE_KEY);
+                if (!raw) return BackgroundFetchModule!.BackgroundFetchResult.NoData;
+
+                const tasks: StoredTaskRecord[] = JSON.parse(raw);
+                const now = Date.now();
+                const fiveMinAgo = now - 5 * 60 * 1000;
+                const thirtyMinFromNow = now + 30 * 60 * 1000;
+                const sixtyFiveMinFromNow = now + 65 * 60 * 1000;
+                let started = false;
+
+                for (const task of tasks) {
+                    if (!task.active) continue;
+
+                    if (task.startTime) {
+                        const startMs = new Date(task.startTime).getTime();
+                        if (startMs >= fiveMinAgo && startMs <= now) {
+                            const didStart = await tryStartActiveTaskActivity(task.taskId, {
+                                taskName: task.content,
+                                workspaceName: task.workspaceName || 'Tasks',
+                                startTime: task.startTime,
+                                endTime: task.deadline || undefined,
+                                hasEndTime: !!task.deadline,
+                                categoryId: task.categoryId,
+                                taskId: task.taskId,
+                            });
+                            if (didStart) started = true;
+                        }
+                    }
+
+                    if (task.deadline) {
+                        const deadlineMs = new Date(task.deadline).getTime();
+                        if (deadlineMs >= thirtyMinFromNow && deadlineMs <= sixtyFiveMinFromNow) {
+                            const didStart = await tryStartDeadlineActivity(task.taskId, {
+                                taskName: task.content,
+                                workspaceName: task.workspaceName || 'Tasks',
+                                deadline: task.deadline,
+                                priority: task.priority,
+                                categoryId: task.categoryId,
+                                taskId: task.taskId,
+                                accentColor: '#8B5CF6',
+                                statusLabel: 'Due Soon',
+                            });
+                            if (didStart) started = true;
+                        }
+                    }
+                }
+
+                return started
+                    ? BackgroundFetchModule!.BackgroundFetchResult.NewData
+                    : BackgroundFetchModule!.BackgroundFetchResult.NoData;
+            } catch (e) {
+                console.error('[BackgroundTask] Live activity check failed:', e);
+                return BackgroundFetchModule!.BackgroundFetchResult.Failed;
+            }
+        });
+
         await BackgroundFetchModule.registerTaskAsync(TASK_NAME, {
             minimumInterval: 15 * 60,
             stopOnTerminate: false,
