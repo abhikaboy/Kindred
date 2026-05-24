@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background, frame, monospacedDigit } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background, frame, monospacedDigit, tint } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
@@ -83,6 +83,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                             padding({ horizontal: 16, vertical: 10 }),
                             background(accentColor),
                             cornerRadius(12),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
@@ -95,6 +96,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                             font({ weight: 'medium', size: 14 }),
                             padding({ horizontal: 16, vertical: 10 }),
                             cornerRadius(12),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
@@ -163,6 +165,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                             padding({ horizontal: 14, vertical: 8 }),
                             background(accentColor),
                             cornerRadius(10),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
@@ -175,6 +178,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                             font({ weight: 'medium', size: 13 }),
                             padding({ horizontal: 14, vertical: 8 }),
                             cornerRadius(10),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 13 }), secondary]}>

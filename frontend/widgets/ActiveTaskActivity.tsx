@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background, monospacedDigit } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background, monospacedDigit, tint } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type ActiveTaskActivityProps = {
@@ -80,6 +80,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                             padding({ horizontal: 16, vertical: 9 }),
                             background(PURPLE),
                             cornerRadius(20),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
@@ -92,6 +93,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                             padding({ horizontal: 16, vertical: 9 }),
                             background('#1AFFFFFF'),
                             cornerRadius(20),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
@@ -160,6 +162,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                             padding({ horizontal: 14, vertical: 8 }),
                             background(PURPLE),
                             cornerRadius(10),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
@@ -172,6 +175,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                             font({ weight: 'medium', size: 13 }),
                             padding({ horizontal: 14, vertical: 8 }),
                             cornerRadius(10),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 13 }), secondary]}>
