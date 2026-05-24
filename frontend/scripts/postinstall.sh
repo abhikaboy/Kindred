@@ -105,9 +105,14 @@ for f in "$WIDGETS_IOS/LiveActivityFactory.swift" "$WIDGETS_IOS/LiveActivity.swi
   fi
 done
 
-# Add .activityBackgroundTint(.clear) for glassy lock screen background on real devices
+# Add .activityBackgroundTint(.clear) and .tint(.white) for glassy background + white links
 LA_WIDGET="$WIDGETS_IOS/Widgets/WidgetLiveActivity.swift"
-if [ -f "$LA_WIDGET" ] && ! grep -q "activityBackgroundTint" "$LA_WIDGET"; then
-  sed -i '' 's/LiveActivityBannerView(context: context, environment: environment)/LiveActivityBannerView(context: context, environment: environment)\n        .activityBackgroundTint(.clear)/' "$LA_WIDGET"
-  echo "postinstall: patched WidgetLiveActivity.swift with activityBackgroundTint(.clear)"
+if [ -f "$LA_WIDGET" ]; then
+  if ! grep -q "activityBackgroundTint" "$LA_WIDGET"; then
+    sed -i '' 's/LiveActivityBannerView(context: context, environment: environment)/LiveActivityBannerView(context: context, environment: environment)\n        .activityBackgroundTint(.clear)\n        .tint(.white)/' "$LA_WIDGET"
+    echo "postinstall: patched WidgetLiveActivity.swift with activityBackgroundTint + tint(.white)"
+  elif ! grep -q "\.tint(.white)" "$LA_WIDGET"; then
+    sed -i '' 's/.activityBackgroundTint(.clear)/.activityBackgroundTint(.clear)\n        .tint(.white)/' "$LA_WIDGET"
+    echo "postinstall: patched WidgetLiveActivity.swift with tint(.white)"
+  fi
 fi
