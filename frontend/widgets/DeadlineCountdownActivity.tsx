@@ -95,7 +95,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         modifiers={[
                             font({ weight: 'medium', size: 14 }),
                             padding({ horizontal: 16, vertical: 10 }),
-                            background('#6D28D9'),
+                            background('#4C1D95'),
                             cornerRadius(12),
                             tint('#FFFFFF'),
                         ]}
@@ -178,7 +178,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         modifiers={[
                             font({ weight: 'medium', size: 13 }),
                             padding({ horizontal: 14, vertical: 8 }),
-                            background('#6D28D9'),
+                            background('#4C1D95'),
                             cornerRadius(10),
                             tint('#FFFFFF'),
                         ]}
