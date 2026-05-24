@@ -92,3 +92,22 @@ typedef void (^UMPromiseRejectBlock)(NSString *code, NSString *message, NSError 
 EOF
   echo "postinstall: patched EXDefines.h with missing externs and UM type aliases"
 fi
+
+# ── expo-widgets: fix live activity staleness + glassy background ──
+
+WIDGETS_IOS="node_modules/expo-widgets/ios"
+
+# Replace staleDate: nil → 8-hour future date (prevents iOS dimming/spinner)
+for f in "$WIDGETS_IOS/LiveActivityFactory.swift" "$WIDGETS_IOS/LiveActivity.swift"; do
+  if [ -f "$f" ] && grep -q "staleDate: nil" "$f"; then
+    sed -i '' 's/staleDate: nil/staleDate: Date().addingTimeInterval(8 * 3600)/g' "$f"
+    echo "postinstall: patched staleDate in $(basename "$f")"
+  fi
+done
+
+# Add .activityBackgroundTint(.clear) for glassy lock screen background on real devices
+LA_WIDGET="$WIDGETS_IOS/Widgets/WidgetLiveActivity.swift"
+if [ -f "$LA_WIDGET" ] && ! grep -q "activityBackgroundTint" "$LA_WIDGET"; then
+  sed -i '' 's/LiveActivityBannerView(context: context, environment: environment)/LiveActivityBannerView(context: context, environment: environment)\n        .activityBackgroundTint(.clear)/' "$LA_WIDGET"
+  echo "postinstall: patched WidgetLiveActivity.swift with activityBackgroundTint(.clear)"
+fi

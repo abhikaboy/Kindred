@@ -57,33 +57,6 @@ target 'Kindred' do
   post_install do |installer|
     expo_widgets_post_install(installer)
 
-    # Patch expo-widgets: glassy background + far-future stale date on live activities
-    widgets_root = File.join(installer.sandbox.root, 'expo-widgets/ios')
-
-    # 1. Clear background tint on the banner (glassy look on real devices)
-    la_widget = File.join(widgets_root, 'Widgets/WidgetLiveActivity.swift')
-    if File.exist?(la_widget)
-      content = File.read(la_widget)
-      unless content.include?('activityBackgroundTint')
-        content.gsub!(
-          'LiveActivityBannerView(context: context, environment: environment)',
-          'LiveActivityBannerView(context: context, environment: environment)' + "\n" + '        .activityBackgroundTint(.clear)'
-        )
-        File.write(la_widget, content)
-      end
-    end
-
-    # 2. Set staleDate 8 hours in the future instead of nil (prevents dimming/spinner)
-    %w[LiveActivityFactory.swift LiveActivity.swift].each do |filename|
-      filepath = File.join(widgets_root, filename)
-      next unless File.exist?(filepath)
-      content = File.read(filepath)
-      if content.include?('staleDate: nil')
-        content.gsub!('staleDate: nil', 'staleDate: Date().addingTimeInterval(8 * 3600)')
-        File.write(filepath, content)
-      end
-    end
-
     react_native_post_install(
       installer,
       config[:reactNativePath],
