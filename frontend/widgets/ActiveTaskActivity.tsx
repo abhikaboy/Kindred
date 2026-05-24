@@ -33,7 +33,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
 
     return {
         banner: (
-            <VStack alignment="leading" spacing={12} modifiers={[padding({ horizontal: 20, vertical: 16 }), widgetURL(taskLink), frame({ maxWidth: 9999 })]}>
+            <VStack alignment="leading" spacing={16} modifiers={[padding({ horizontal: 20, vertical: 20 }), widgetURL(taskLink), frame({ maxWidth: 9999 })]}>
                 {/* Row 1: Status + Timer */}
                 <HStack alignment="center">
                     <HStack alignment="center" spacing={5}>
@@ -55,11 +55,11 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                 </HStack>
 
                 {/* Row 2: Task name + workspace */}
-                <VStack alignment="leading" spacing={3}>
-                    <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
+                <VStack alignment="leading" spacing={4}>
+                    <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(1)]}>
                         {taskName}
                     </Text>
-                    <Text modifiers={[font({ size: 14 }), secondary]}>
+                    <Text modifiers={[font({ size: 13 }), secondary]}>
                         {workspaceName}
                     </Text>
                 </VStack>
