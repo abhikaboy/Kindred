@@ -1,8 +1,8 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background, frame, monospacedDigit, tint } from '@expo/ui/swift-ui/modifiers';
+import { Text, VStack, HStack, Image, ProgressView, Spacer, Button } from '@expo/ui/swift-ui';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, frame, monospacedDigit, buttonStyle } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
@@ -29,7 +29,6 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     const priorityLabel = PRIORITY_LABELS[Math.min(priority, 3)];
     const encodedName = encodeURIComponent(taskName);
     const taskLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}`;
-    const completeLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=complete`;
 
     return {
         banner: (
@@ -73,37 +72,18 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                     countsDown={true}
                 />
 
-                {/* Row 5: CTA Buttons */}
-                <HStack spacing={8}>
-                    <Link
-                        destination={{completeLink}}
-                        modifiers={[
-                            font({ weight: 'semibold', size: 14 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 16, vertical: 10 }),
-                            background(accentColor),
-                            cornerRadius(12),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
-                            Mark Complete
-                        </Text>
-                    </Link>
-                    <Link
-                        destination={taskLink}
-                        modifiers={[
-                            font({ weight: 'medium', size: 14 }),
-                            padding({ horizontal: 16, vertical: 10 }),
-                            cornerRadius(12),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'medium', size: 14 }), foregroundStyle('#CCFFFFFF')]}>
-                            Open Task
-                        </Text>
-                    </Link>
-                </HStack>
+                {/* Row 5: CTA Button */}
+                <Button
+                    target="complete"
+                    modifiers={[
+                        buttonStyle('borderedProminent'),
+                        cornerRadius(12),
+                    ]}
+                >
+                    <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
+                        Mark Complete
+                    </Text>
+                </Button>
             </VStack>
         ),
         compactLeading: (
@@ -156,36 +136,17 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                     timerInterval={{ lower: countdownStart, upper: deadlineDate }}
                     countsDown={true}
                 />
-                <HStack spacing={8}>
-                    <Link
-                        destination={{completeLink}}
-                        modifiers={[
-                            font({ weight: 'semibold', size: 13 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 14, vertical: 8 }),
-                            background(accentColor),
-                            cornerRadius(10),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
-                            Complete
-                        </Text>
-                    </Link>
-                    <Link
-                        destination={taskLink}
-                        modifiers={[
-                            font({ weight: 'medium', size: 13 }),
-                            padding({ horizontal: 14, vertical: 8 }),
-                            cornerRadius(10),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
-                            Open
-                        </Text>
-                    </Link>
-                </HStack>
+                <Button
+                    target="complete"
+                    modifiers={[
+                        buttonStyle('borderedProminent'),
+                        cornerRadius(10),
+                    ]}
+                >
+                    <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
+                        Complete
+                    </Text>
+                </Button>
             </VStack>
         ),
     };
