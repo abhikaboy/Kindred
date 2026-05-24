@@ -57,6 +57,19 @@ target 'Kindred' do
   post_install do |installer|
     expo_widgets_post_install(installer)
 
+    # Patch expo-widgets LiveActivity to use clear background tint (glassy look on real devices)
+    live_activity_swift = File.join(installer.sandbox.root, 'expo-widgets/ios/Widgets/WidgetLiveActivity.swift')
+    if File.exist?(live_activity_swift)
+      content = File.read(live_activity_swift)
+      unless content.include?('activityBackgroundTint')
+        content.gsub!(
+          'LiveActivityBannerView(context: context, environment: environment)',
+          'LiveActivityBannerView(context: context, environment: environment)' + "\n" + '        .activityBackgroundTint(.clear)'
+        )
+        File.write(live_activity_swift, content)
+      end
+    end
+
     react_native_post_install(
       installer,
       config[:reactNativePath],
