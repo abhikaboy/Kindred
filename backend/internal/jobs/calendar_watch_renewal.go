@@ -72,6 +72,7 @@ func (j *CalendarWatchRenewalJob) StartCron(c *cron.Cron) {
 // 2. Reports already-expired channels to Sentry
 // 3. Detects connections with missing watch channels
 func (j *CalendarWatchRenewalJob) Run(ctx context.Context) error {
+	start := time.Now()
 	expirationThreshold := time.Now().Add(3 * 24 * time.Hour)
 
 	cursor, err := j.connections.Find(ctx, bson.M{
@@ -140,14 +141,12 @@ func (j *CalendarWatchRenewalJob) Run(ctx context.Context) error {
 		return fmt.Errorf("cursor error during watch renewal: %w", err)
 	}
 
-	// Only log summary when there's something noteworthy
-	if channelsRenewed > 0 || channelsFailed > 0 || channelsExpired > 0 {
-		slog.Info("Calendar watch renewal completed",
-			"connections_checked", connectionsChecked,
-			"channels_renewed", channelsRenewed,
-			"channels_failed", channelsFailed,
-			"channels_expired", channelsExpired)
-	}
+	slog.Info("Calendar watch renewal completed",
+		"connections_checked", connectionsChecked,
+		"channels_renewed", channelsRenewed,
+		"channels_failed", channelsFailed,
+		"channels_expired", channelsExpired,
+		"duration_ms", time.Since(start).Milliseconds())
 
 	// Health check: detect connections with missing watch channels
 	j.checkMissingWatchChannels(ctx)

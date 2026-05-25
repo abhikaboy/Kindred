@@ -192,12 +192,17 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	cronScheduler := task.Cron(collections)
 
-	// Wire up calendar watch channel renewal (runs every 6h + once on startup)
+	// Wire up calendar cron jobs
 	if calendarConns := collections["calendar_connections"]; calendarConns != nil {
+		// Watch channel renewal (every 6h)
 		renewalJob := jobs.NewCalendarWatchRenewalJob(calendarConns, collections["categories"], cfg)
 		renewalJob.StartCron(cronScheduler)
+
+		// Connection heartbeat (every 1h)
+		heartbeatJob := jobs.NewCalendarHeartbeatJob(calendarConns, collections["categories"], cfg)
+		heartbeatJob.StartCron(cronScheduler)
 	} else {
-		slog.Warn("Calendar watch renewal disabled: calendar_connections collection not available")
+		slog.Warn("Calendar jobs disabled: calendar_connections collection not available")
 	}
 
 	xlog.ServerLog("All routes registered, Fiber app ready")

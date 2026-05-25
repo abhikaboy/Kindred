@@ -17,9 +17,10 @@ interface TimeRangePickerProps {
     onStartTimeChange: (date: Date) => void;
     onEndTimeChange?: (date: Date) => void;
     mode?: "range" | "single";
+    hourHeight?: number;
 }
 
-const HOUR_HEIGHT = 48;
+const DEFAULT_HOUR_HEIGHT = 48;
 const HANDLE_HEIGHT = 30;
 const TRACK_HORIZONTAL_PADDING = 48;
 const TRACK_VERTICAL_PADDING = HANDLE_HEIGHT / 2 + 2;
@@ -53,6 +54,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     onStartTimeChange,
     onEndTimeChange,
     mode = "range",
+    hourHeight = DEFAULT_HOUR_HEIGHT,
 }) => {
     const ThemedColor = useThemeColor();
     const isRange = mode === "range" && onEndTimeChange != null;
@@ -70,7 +72,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
 
     const minMin = period === "AM" ? 0 : 720;
     const maxMin = period === "AM" ? 720 : 1440;
-    const totalH = 12 * HOUR_HEIGHT;
+    const totalH = 12 * hourHeight;
 
     const minMinSV = useSharedValue(minMin);
     const maxMinSV = useSharedValue(maxMin);
@@ -510,12 +512,12 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                 {hours.map((hour) => {
                     const top =
                         TRACK_VERTICAL_PADDING +
-                        (hour - displayMinHour) * HOUR_HEIGHT -
-                        HOUR_HEIGHT / 2;
+                        (hour - displayMinHour) * hourHeight -
+                        hourHeight / 2;
                     return (
                         <View
                             key={hour}
-                            style={[pickerStyles.hourRow, { top }]}
+                            style={[pickerStyles.hourRow, { top, height: hourHeight }]}
                             pointerEvents="none"
                         >
                             <ThemedText
@@ -725,7 +727,6 @@ const pickerStyles = StyleSheet.create({
         right: 0,
         flexDirection: "row",
         alignItems: "center",
-        height: HOUR_HEIGHT,
     },
     hourLabel: {
         width: TRACK_HORIZONTAL_PADDING - 4,

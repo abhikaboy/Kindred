@@ -642,11 +642,12 @@ const PostCard = React.memo(({
                 <BottomSheetModal
                     ref={bottomSheetModalRef}
                     onChange={handleSheetChanges}
-                    snapPoints={["80%"]}
+                    snapPoints={["85%"]}
+                    enableDynamicSizing={false}
                     enablePanDownToClose={true}
                     enableDismissOnClose={true}
                     enableHandlePanningGesture={true}
-                    keyboardBehavior="interactive"
+                    keyboardBehavior="extend"
                     keyboardBlurBehavior="restore"
                     android_keyboardInputMode="adjustResize"
                     handleStyle={{
@@ -667,9 +668,6 @@ const PostCard = React.memo(({
                         borderTopRightRadius: 32,
                     }}
                     backdropComponent={renderBackdrop}
-                    containerStyle={{
-                        backgroundColor: ThemedColor.background,
-                    }}
                     style={{
                         backgroundColor: ThemedColor.background,
                         borderTopLeftRadius: 24,

@@ -46,8 +46,10 @@ type TaskCreationContextType = {
         behavior: string;
     }) => void;
     setDeadline: (deadline: Date | null) => void;
+    addSmartDeadlineReminders: (deadline: Date) => void;
     setStartTime: (startTime: Date | null) => void;
     setStartDate: (startDate: Date | null) => void;
+    addSmartStartReminders: (startDate: Date, startTime: Date | null) => void;
 };
 
 const TaskCreationContext = createContext<TaskCreationContextType | undefined>(undefined);
@@ -125,62 +127,37 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
             setBlueprintStateInternal(isBlueprintMode);
             // Set the start date based on blueprint mode
             const defaultStartDate = getDefaultStartDate(isBlueprintMode);
-            setStartDateWithReminder(defaultStartDate);
+            setStartDate(defaultStartDate);
         }
     };
 
-    // Wrap setDeadline to auto-add 1h-before reminder
-    const setDeadlineWithReminder = (deadline: Date | null) => {
-        setDeadline(deadline);
-        if (deadline) {
-            const reminder = getDeadlineReminder(deadline);
-            if (reminder) {
-                setReminders((prev) => addRemindersUnique(prev, [reminder]));
-            }
+    // Add smart deadline reminders — call only at final submission, not during intermediate changes
+    const addSmartDeadlineReminders = (dl: Date) => {
+        const reminder = getDeadlineReminder(dl);
+        if (reminder) {
+            setReminders((prev) => addRemindersUnique(prev, [reminder]));
         }
     };
 
-    // Wrap setStartDate to auto-add absolute reminder and 15-min before reminder
-    const setStartDateWithReminder = (startDate: Date | null) => {
-        setStartDate(startDate);
+    // Add smart start reminders — call only at final submission, not during intermediate changes
+    const addSmartStartReminders = (sd: Date, st: Date | null) => {
+        const atStartReminder = getStartDateReminder(sd, st);
+        const beforeStartReminder = getStartTimeReminder(sd, st);
 
-        if (startDate) {
-            const atStartReminder = getStartDateReminder(startDate, startTime);
-            const beforeStartReminder = getStartTimeReminder(startDate, startTime);
+        setReminders((prev) => {
+            // Remove old start-time related reminders
+            const filtered = prev.filter(
+                (r) =>
+                    !(r.type === "ABSOLUTE" && !r.beforeDeadline && !r.beforeStart) &&
+                    !r.beforeStart
+            );
 
-            setReminders((prev) => {
-                const newReminders = [];
-                if (atStartReminder) newReminders.push(atStartReminder);
-                if (beforeStartReminder) newReminders.push(beforeStartReminder);
+            const newReminders = [];
+            if (atStartReminder) newReminders.push(atStartReminder);
+            if (beforeStartReminder) newReminders.push(beforeStartReminder);
 
-                return addRemindersUnique(prev, newReminders);
-            });
-        }
-    };
-
-    // Optionally, update startDate reminder if startTime changes
-    const setStartTimeWithReminder = (startTimeVal: Date | null) => {
-        setStartTime(startTimeVal);
-        if (startDate && startTimeVal) {
-            const atStartReminder = getStartDateReminder(startDate, startTimeVal);
-            const beforeStartReminder = getStartTimeReminder(startDate, startTimeVal);
-
-            setReminders((prev) => {
-                // Remove old start-time related reminders
-                const filtered = prev.filter(
-                    (r) =>
-                        !(r.type === "ABSOLUTE" && !r.beforeDeadline && !r.beforeStart) && // Remove old "at start" reminders
-                        !r.beforeStart // Remove old "before start" reminders
-                );
-
-                // Add updated reminders using deduplication
-                const newReminders = [];
-                if (atStartReminder) newReminders.push(atStartReminder);
-                if (beforeStartReminder) newReminders.push(beforeStartReminder);
-
-                return addRemindersUnique(filtered, newReminders);
-            });
-        }
+            return addRemindersUnique(filtered, newReminders);
+        });
     };
 
     const setTaskName = (name: string) => {
@@ -214,7 +191,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setStartTime(null);
         // Set start date based on current blueprint mode
         const defaultStartDate = getDefaultStartDate(isBlueprint);
-        setStartDateWithReminder(defaultStartDate);
+        setStartDate(defaultStartDate);
         setReminders([]);
         setIsPublic(true);
         setIntegration("");
@@ -296,9 +273,11 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setRecurring,
         setRecurFrequency,
         setRecurDetails,
-        setDeadline: setDeadlineWithReminder,
-        setStartDate: setStartDateWithReminder,
-        setStartTime: setStartTimeWithReminder,
+        setDeadline,
+        addSmartDeadlineReminders,
+        setStartDate,
+        setStartTime,
+        addSmartStartReminders,
     }), [
         taskName, showAdvanced, suggestion, priority, value,
         recurring, recurFrequency, recurDetails, deadline,

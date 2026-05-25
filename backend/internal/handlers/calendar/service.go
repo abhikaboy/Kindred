@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/config"
+	ph "github.com/abhikaboy/Kindred/internal/posthog"
 	"github.com/getsentry/sentry-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -151,6 +152,20 @@ func (s *Service) HandleCallback(ctx context.Context, provider CalendarProvider,
 			"has_access_token", connection.AccessToken != "",
 			"has_refresh_token", connection.RefreshToken != "",
 			"token_expiry", connection.TokenExpiry)
+
+		// Track new connection in PostHog
+		if client := ph.GetClient(); client != nil {
+			_ = client.Track(ctx, ph.Event{
+				UserID:    userID.Hex(),
+				EventName: "calendar_connected",
+				Category:  "calendar",
+				Properties: map[string]interface{}{
+					"connection_id": connection.ID.Hex(),
+					"provider":      string(provider),
+					"account":       accountInfo.Email,
+				},
+			})
+		}
 
 		// Workspace creation is now user-driven via the /setup endpoint.
 		// The frontend will show a setup modal after OAuth completes.
@@ -488,6 +503,21 @@ func (s *Service) DisconnectProvider(ctx context.Context, userID, connectionID p
 	}
 
 	slog.Info("Calendar disconnected successfully", "user_id", userID, "connection_id", connectionID)
+
+	// Track disconnection in PostHog
+	if client := ph.GetClient(); client != nil {
+		_ = client.Track(ctx, ph.Event{
+			UserID:    userID.Hex(),
+			EventName: "calendar_disconnected",
+			Category:  "calendar",
+			Properties: map[string]interface{}{
+				"connection_id": connectionID.Hex(),
+				"provider":      string(connection.Provider),
+				"account":       connection.ProviderAccountID,
+			},
+		})
+	}
+
 	return nil
 }
 
@@ -586,6 +616,7 @@ type SyncResult struct {
 
 // SyncEventsToTasks fetches events and creates tasks in appropriate categories
 func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID primitive.ObjectID, timeMin, timeMax time.Time) (*SyncResult, error) {
+	syncStart := time.Now()
 	slog.Info("Starting event sync", "connection_id", connectionID, "user_id", userID, "time_min", timeMin, "time_max", timeMax)
 
 	// Get connection
@@ -779,7 +810,32 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 		// Don't fail the sync, just log the error
 	}
 
-	slog.Info("Sync completed", "connection_id", connectionID, "tasks_created", result.TasksCreated, "tasks_skipped", result.TasksSkipped, "tasks_deleted", result.TasksDeleted, "events_total", result.EventsTotal)
+	syncDuration := time.Since(syncStart)
+	slog.Info("Sync completed",
+		"connection_id", connectionID,
+		"tasks_created", result.TasksCreated,
+		"tasks_skipped", result.TasksSkipped,
+		"tasks_deleted", result.TasksDeleted,
+		"events_total", result.EventsTotal,
+		"duration_ms", syncDuration.Milliseconds())
+
+	// Track sync completion in PostHog for product analytics
+	if client := ph.GetClient(); client != nil {
+		_ = client.Track(ctx, ph.Event{
+			UserID:    userID.Hex(),
+			EventName: "calendar_sync_completed",
+			Category:  "calendar",
+			Properties: map[string]interface{}{
+				"connection_id": connectionID.Hex(),
+				"tasks_created": result.TasksCreated,
+				"tasks_skipped": result.TasksSkipped,
+				"tasks_deleted": result.TasksDeleted,
+				"events_total":  result.EventsTotal,
+				"duration_ms":   syncDuration.Milliseconds(),
+			},
+		})
+	}
+
 	return result, nil
 }
 
@@ -999,6 +1055,118 @@ func (s *Service) RenewWatchChannel(ctx context.Context, connection *CalendarCon
 
 	slog.Info("Watch channel renewed successfully", "connection_id", connection.ID, "new_channel_id", watchResp.ChannelID, "expiration", watchResp.Expiration)
 	return nil
+}
+
+// HealthCheckResult contains the outcome of a single connection health check
+type HealthCheckResult struct {
+	ConnectionID primitive.ObjectID
+	UserID       primitive.ObjectID
+	Account      string
+	Status       HealthStatus
+	Message      string
+	Duration     time.Duration
+}
+
+// CheckConnectionHealth verifies a single calendar connection is still functional.
+// It validates token refresh and makes a lightweight API call (ListCalendars).
+func (s *Service) CheckConnectionHealth(ctx context.Context, connection *CalendarConnection) *HealthCheckResult {
+	start := time.Now()
+	result := &HealthCheckResult{
+		ConnectionID: connection.ID,
+		UserID:       connection.UserID,
+		Account:      connection.ProviderAccountID,
+	}
+
+	slog.Info("Heartbeat: checking connection health",
+		"connection_id", connection.ID,
+		"user_id", connection.UserID,
+		"provider", connection.Provider,
+		"account", connection.ProviderAccountID,
+		"last_sync", connection.LastSync,
+		"token_expiry", connection.TokenExpiry)
+
+	provider, ok := s.providers[connection.Provider]
+	if !ok {
+		result.Status = HealthStatusBroken
+		result.Message = fmt.Sprintf("unsupported provider: %s", connection.Provider)
+		result.Duration = time.Since(start)
+		return result
+	}
+
+	// Step 1: Try to get a valid token (refresh if needed)
+	token, err := s.getValidToken(ctx, connection)
+	if err != nil {
+		result.Status = HealthStatusBroken
+		result.Message = fmt.Sprintf("token refresh failed: %v", err)
+		result.Duration = time.Since(start)
+
+		slog.Error("Heartbeat: token refresh failed",
+			"connection_id", connection.ID,
+			"account", connection.ProviderAccountID,
+			"error", err,
+			"duration_ms", result.Duration.Milliseconds())
+		return result
+	}
+
+	slog.Info("Heartbeat: token valid",
+		"connection_id", connection.ID,
+		"token_expiry", token.Expiry)
+
+	// Step 2: Make a lightweight API call to verify the connection
+	calendars, err := provider.ListCalendars(ctx, token)
+	if err != nil {
+		result.Status = HealthStatusDegraded
+		result.Message = fmt.Sprintf("API call failed (token OK): %v", err)
+		result.Duration = time.Since(start)
+
+		slog.Warn("Heartbeat: API call failed but token is valid",
+			"connection_id", connection.ID,
+			"account", connection.ProviderAccountID,
+			"error", err,
+			"duration_ms", result.Duration.Milliseconds())
+		return result
+	}
+
+	result.Status = HealthStatusHealthy
+	result.Message = fmt.Sprintf("OK — %d calendar(s) accessible", len(calendars))
+	result.Duration = time.Since(start)
+
+	slog.Info("Heartbeat: connection healthy",
+		"connection_id", connection.ID,
+		"account", connection.ProviderAccountID,
+		"calendars", len(calendars),
+		"duration_ms", result.Duration.Milliseconds())
+
+	return result
+}
+
+// UpdateConnectionHealth persists health check results to the database
+func (s *Service) UpdateConnectionHealth(ctx context.Context, connectionID primitive.ObjectID, status HealthStatus, message string) error {
+	now := time.Now()
+	_, err := s.connections.UpdateOne(ctx, bson.M{"_id": connectionID}, bson.M{
+		"$set": bson.M{
+			"health_status":  status,
+			"last_heartbeat": now,
+			"health_message": message,
+			"updated_at":     now,
+		},
+	})
+	return err
+}
+
+// GetAllConnections returns all calendar connections (for cron jobs)
+func (s *Service) GetAllConnections(ctx context.Context) ([]CalendarConnection, error) {
+	cursor, err := s.connections.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var connections []CalendarConnection
+	if err := cursor.All(ctx, &connections); err != nil {
+		return nil, err
+	}
+	return connections, nil
 }
 
 // deleteTasksForMissingEvents finds and deletes tasks for events that are no longer returned by the API
