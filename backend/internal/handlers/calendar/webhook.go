@@ -96,7 +96,7 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 
 		// Trigger sync asynchronously (don't block webhook response)
 		go func() {
-			// Create a new context for the background operation
+			syncStart := time.Now()
 			bgCtx := context.Background()
 
 			// Define time range for sync (next week of events)
@@ -104,15 +104,31 @@ func (h *Handler) HandleWebhook(ctx context.Context, input *WebhookInput) (*Webh
 			startTime := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 			endTime := startTime.AddDate(0, 0, 7).Add(24*time.Hour - time.Second)
 
-			// Trigger sync
-			_, err := h.service.SyncEventsToTasks(bgCtx, connection.ID, connection.UserID, startTime, endTime)
+			slog.Info("Webhook-triggered sync starting",
+				"connection_id", connection.ID,
+				"account", connection.ProviderAccountID,
+				"time_range_start", startTime,
+				"time_range_end", endTime)
+
+			result, err := h.service.SyncEventsToTasks(bgCtx, connection.ID, connection.UserID, startTime, endTime)
 			if err != nil {
-				slog.Error("Failed to sync events after webhook", "connection_id", connection.ID, "error", err)
-				sentry.CaptureException(fmt.Errorf("webhook sync failed: connection=%s: %w", connection.ID.Hex(), err))
+				slog.Error("Webhook-triggered sync failed",
+					"connection_id", connection.ID,
+					"account", connection.ProviderAccountID,
+					"error", err,
+					"duration_ms", time.Since(syncStart).Milliseconds())
+				sentry.CaptureException(fmt.Errorf("webhook sync failed: connection=%s account=%s: %w", connection.ID.Hex(), connection.ProviderAccountID, err))
 				return
 			}
 
-			slog.Info("Successfully synced events after webhook", "connection_id", connection.ID)
+			slog.Info("Webhook-triggered sync completed",
+				"connection_id", connection.ID,
+				"account", connection.ProviderAccountID,
+				"tasks_created", result.TasksCreated,
+				"tasks_skipped", result.TasksSkipped,
+				"tasks_deleted", result.TasksDeleted,
+				"events_total", result.EventsTotal,
+				"duration_ms", time.Since(syncStart).Milliseconds())
 		}()
 
 	case "not_exists":

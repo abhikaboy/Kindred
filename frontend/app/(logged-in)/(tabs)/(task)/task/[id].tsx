@@ -363,6 +363,46 @@ export default function Task() {
 
     const router = useRouter();
 
+    const updateNotes = useDebounce(async (notes: string) => {
+        if (task && categoryId && id) {
+            try {
+                await updateNotesAPI(categoryId as string, id as string, notes);
+                // Update the task in context so it persists when navigating away
+                updateTask(categoryId as string, id as string, { notes });
+            } catch (error) {
+                logger.error("Error updating notes", error);
+            }
+        }
+    }, 2000);
+
+    const handleEditPress = useCallback(() => {
+        capture(AnalyticsEvents.TASK_UPDATED, { source: "detail_edit_button" });
+        if (!task) return;
+
+        // Load task data first
+        loadTaskData(task);
+
+        // Then open modal
+        openModal({
+            edit: true,
+            categoryId: categoryId as string,
+            screen: Screen.STANDARD,
+        });
+    }, [task?.id, categoryId, openModal, loadTaskData]);
+
+    const handleDeadlineModalPress = useCallback(() => {
+        if (!task || isLoadingTaskData.current || !isMounted.current) return;
+
+        isLoadingTaskData.current = true;
+
+        try {
+            loadTaskData(task);
+            setShowDeadlineModal(true);
+        } finally {
+            isLoadingTaskData.current = false;
+        }
+    }, [task?.id, loadTaskData]); // Only depend on task.id, not the whole object
+
     logger.debug("Current task state", { task, categoryId, id });
 
     // If task is not found, show error state
@@ -402,18 +442,6 @@ export default function Task() {
             </ThemedView>
         );
     }
-    const updateNotes = useDebounce(async (notes: string) => {
-        if (task && categoryId && id) {
-            try {
-                await updateNotesAPI(categoryId as string, id as string, notes);
-                // Update the task in context so it persists when navigating away
-                updateTask(categoryId as string, id as string, { notes });
-            } catch (error) {
-                logger.error("Error updating notes", error);
-            }
-        }
-    }, 2000);
-
     // Removed handleScroll - sticky header removed
 
     // Removed handleTabChange - no longer using PagerView
@@ -497,34 +525,6 @@ export default function Task() {
             setAlertVisible(true);
         }
     };
-
-    const handleEditPress = useCallback(() => {
-        capture(AnalyticsEvents.TASK_UPDATED, { source: "detail_edit_button" });
-        if (!task) return;
-
-        // Load task data first
-        loadTaskData(task);
-
-        // Then open modal
-        openModal({
-            edit: true,
-            categoryId: categoryId as string,
-            screen: Screen.STANDARD,
-        });
-    }, [task?.id, categoryId, openModal, loadTaskData]);
-
-    const handleDeadlineModalPress = useCallback(() => {
-        if (!task || isLoadingTaskData.current || !isMounted.current) return;
-
-        isLoadingTaskData.current = true;
-
-        try {
-            loadTaskData(task);
-            setShowDeadlineModal(true);
-        } finally {
-            isLoadingTaskData.current = false;
-        }
-    }, [task?.id, loadTaskData]); // Only depend on task.id, not the whole object
 
     return (
         <ThemedView

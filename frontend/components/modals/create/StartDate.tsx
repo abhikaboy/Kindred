@@ -26,6 +26,7 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
         setStartTime,
         deadline,
         setDeadline,
+        addSmartStartReminders,
     } = useTaskCreation();
 
     useEffect(() => {
@@ -39,6 +40,9 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
     const hasDeadline = deadline != null;
 
     const handleFinish = () => {
+        if (startDate) {
+            addSmartStartReminders(startDate, startTime);
+        }
         if (onSubmit) {
             onSubmit(startDate, startTime);
         } else {
@@ -154,20 +158,20 @@ const StartDate = ({ goToStandard, onSubmit }: Props) => {
             {step === 2 && (
                 <>
                     <TimeRangePicker
-                        startTime={startTime}
+                        startTime={startTime || new Date()}
                         endTime={hasDeadline ? deadline : undefined}
                         onStartTimeChange={setStartTime}
                         onEndTimeChange={
                             hasDeadline ? setDeadline : undefined
                         }
                         mode={hasDeadline ? "range" : "single"}
+                        hourHeight={32}
                     />
 
                     <View
                         style={{
                             flexDirection: "row",
                             gap: 8,
-                            marginBottom: 40,
                         }}
                     >
                         <PrimaryButton

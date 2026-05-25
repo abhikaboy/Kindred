@@ -15,6 +15,16 @@ const (
 	ProviderApple   CalendarProvider = "apple"
 )
 
+// HealthStatus represents the health of a calendar connection
+type HealthStatus string
+
+const (
+	HealthStatusHealthy  HealthStatus = "healthy"
+	HealthStatusDegraded HealthStatus = "degraded" // token refresh works but API calls fail
+	HealthStatusBroken   HealthStatus = "broken"   // token refresh fails (user needs to re-auth)
+	HealthStatusUnknown  HealthStatus = "unknown"  // never checked
+)
+
 // CalendarConnection stores OAuth connection to a calendar provider
 type CalendarConnection struct {
 	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id"`
@@ -30,6 +40,9 @@ type CalendarConnection struct {
 	MakePublic        bool               `bson:"make_public" json:"make_public"`
 	LastSync          time.Time          `bson:"last_sync,omitempty" json:"last_sync"`
 	WatchChannels     []WatchChannel     `bson:"watch_channels,omitempty" json:"watch_channels,omitempty"`
+	HealthStatus      HealthStatus       `bson:"health_status,omitempty" json:"health_status"`
+	LastHeartbeat     time.Time          `bson:"last_heartbeat,omitempty" json:"last_heartbeat"`
+	HealthMessage     string             `bson:"health_message,omitempty" json:"health_message,omitempty"` // human-readable health detail
 	CreatedAt         time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt         time.Time          `bson:"updated_at" json:"updated_at"`
 }

@@ -16,7 +16,7 @@ type Props = {
 
 const StartTime = ({ goToStandard }: Props) => {
     const ThemedColor = useThemeColor();
-    const { startTime, setStartTime } = useTaskCreation();
+    const { startDate, startTime, setStartTime, addSmartStartReminders } = useTaskCreation();
     return (
         <View style={{ gap: 24, display: "flex", flexDirection: "column" }}>
             <View style={{ display: "flex", flexDirection: "row", gap: 16 }}>
@@ -31,28 +31,36 @@ const StartTime = ({ goToStandard }: Props) => {
                 <SuggestedTag
                     tag="Now"
                     onPress={() => {
-                        setStartTime(new Date());
+                        const t = new Date();
+                        setStartTime(t);
+                        if (startDate) addSmartStartReminders(startDate, t);
                         goToStandard();
                     }}
                 />
                 <SuggestedTag
                     tag="In 15 Minutes"
                     onPress={() => {
-                        setStartTime(new Date(Date.now() + 15 * 60 * 1000));
+                        const t = new Date(Date.now() + 15 * 60 * 1000);
+                        setStartTime(t);
+                        if (startDate) addSmartStartReminders(startDate, t);
                         goToStandard();
                     }}
                 />
                 <SuggestedTag
                     tag="In 1 Hour"
                     onPress={() => {
-                        setStartTime(new Date(Date.now() + 30 * 60 * 1000));
+                        const t = new Date(Date.now() + 30 * 60 * 1000);
+                        setStartTime(t);
+                        if (startDate) addSmartStartReminders(startDate, t);
                         goToStandard();
                     }}
                 />
                 <SuggestedTag
                     tag="Noon"
                     onPress={() => {
-                        setStartTime(new Date(new Date().setHours(12, 0, 0, 0)));
+                        const t = new Date(new Date().setHours(12, 0, 0, 0));
+                        setStartTime(t);
+                        if (startDate) addSmartStartReminders(startDate, t);
                         goToStandard();
                     }}
                 />
@@ -71,7 +79,10 @@ const StartTime = ({ goToStandard }: Props) => {
                 display="spinner"
             />
             <PrimaryButton
-                onPress={goToStandard}
+                onPress={() => {
+                    if (startDate && startTime) addSmartStartReminders(startDate, startTime);
+                    goToStandard();
+                }}
                 title={startTime ? "Set Start Time: " + formatLocalTime(startTime) : "Set Start Time"}
             />
         </View>

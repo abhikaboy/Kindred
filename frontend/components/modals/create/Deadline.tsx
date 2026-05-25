@@ -22,7 +22,7 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
     const [time, setTime] = useState<Date | null>(null);
     const [date, setDate] = useState<Date | null>(null);
 
-    const { deadline, setDeadline } = useTaskCreation();
+    const { deadline, setDeadline, addSmartDeadlineReminders } = useTaskCreation();
 
     const combineDateAndTime = () => {
         if (date && time) {
@@ -53,6 +53,7 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
 
     const handleSuggestedDeadline = (calculatedDeadline: Date) => {
         setDeadline(calculatedDeadline);
+        addSmartDeadlineReminders(calculatedDeadline);
         if (onSubmit) {
             onSubmit(calculatedDeadline);
         } else {
@@ -61,6 +62,9 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
     };
 
     const handleFinish = () => {
+        if (deadline) {
+            addSmartDeadlineReminders(deadline);
+        }
         if (onSubmit) {
             onSubmit(deadline);
         } else {
@@ -212,16 +216,16 @@ const Deadline = ({ goToStandard, onSubmit }: Props) => {
             {step === 2 && (
                 <>
                     <TimeRangePicker
-                        startTime={time || deadline || new Date()}
+                        startTime={time || new Date()}
                         onStartTimeChange={setTime}
                         mode="single"
+                        hourHeight={32}
                     />
 
                     <View
                         style={{
                             flexDirection: "row",
                             gap: 8,
-                            marginBottom: 40,
                         }}
                     >
                         <PrimaryButton

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background, monospacedDigit } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background, monospacedDigit, tint } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type ActiveTaskActivityProps = {
@@ -34,37 +34,32 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
     return {
         banner: (
             <VStack alignment="leading" spacing={12} modifiers={[padding({ horizontal: 20, vertical: 16 }), widgetURL(taskLink), frame({ maxWidth: 9999 })]}>
-                {/* Row 1: Status + Timer */}
+                {/* Row 1: Task name + timer */}
                 <HStack alignment="center">
-                    <HStack alignment="center" spacing={5}>
-                        <Image systemName="circle.fill" color={GREEN} size={7} />
-                        <Text modifiers={[font({ weight: 'semibold', size: 12 }), foregroundStyle(GREEN)]}>
-                            ACTIVE
+                    <VStack alignment="leading" spacing={2}>
+                        <Text modifiers={[font({ weight: 'semibold', size: 16 }), primary, lineLimit(1)]}>
+                            {taskName}
                         </Text>
-                    </HStack>
+                        <HStack alignment="center" spacing={4}>
+                            <Image systemName="circle.fill" color={GREEN} size={5} />
+                            <Text modifiers={[font({ size: 12 }), secondary]}>
+                                {workspaceName}
+                            </Text>
+                        </HStack>
+                    </VStack>
                     <Spacer />
                     <Text
                         date={startDate}
                         dateStyle="timer"
                         modifiers={[
-                            font({ weight: 'bold', size: 22, design: 'rounded' }),
+                            font({ weight: 'bold', size: 24, design: 'rounded' }),
                             foregroundStyle(PURPLE),
                             monospacedDigit(),
                         ]}
                     />
                 </HStack>
 
-                {/* Row 2: Task name + workspace */}
-                <VStack alignment="leading" spacing={3}>
-                    <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
-                        {taskName}
-                    </Text>
-                    <Text modifiers={[font({ size: 14 }), secondary]}>
-                        {workspaceName}
-                    </Text>
-                </VStack>
-
-                {/* Row 3: Progress bar (only with end time) */}
+                {/* Row 2: Progress bar (only with end time) */}
                 {hasEndTime && endDate ? (
                     <ProgressView
                         timerInterval={{ lower: startDate, upper: endDate }}
@@ -72,29 +67,31 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                     />
                 ) : null}
 
-                {/* Row 4: CTA Buttons */}
+                {/* Row 3: CTA Buttons */}
                 <HStack spacing={8}>
                     <Link
                         destination={completeLink}
                         modifiers={[
-                            padding({ horizontal: 16, vertical: 9 }),
+                            padding({ horizontal: 14, vertical: 7 }),
                             background(PURPLE),
-                            cornerRadius(20),
+                            cornerRadius(18),
+                            tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
+                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
                             Complete
                         </Text>
                     </Link>
                     <Link
                         destination={taskLink}
                         modifiers={[
-                            padding({ horizontal: 16, vertical: 9 }),
-                            background('#1AFFFFFF'),
-                            cornerRadius(20),
+                            padding({ horizontal: 14, vertical: 7 }),
+                            background('#4C1D95'),
+                            cornerRadius(18),
+                            tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'medium', size: 14 }), secondary]}>
+                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
                             Open Task
                         </Text>
                     </Link>
@@ -160,6 +157,7 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                             padding({ horizontal: 14, vertical: 8 }),
                             background(PURPLE),
                             cornerRadius(10),
+                            tint('#FFFFFF'),
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
@@ -172,9 +170,10 @@ const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
                             font({ weight: 'medium', size: 13 }),
                             padding({ horizontal: 14, vertical: 8 }),
                             cornerRadius(10),
+                            tint('#FFFFFF'),
                         ]}
                     >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), secondary]}>
+                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
                             Open
                         </Text>
                     </Link>
