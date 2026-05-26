@@ -11,7 +11,7 @@ import Dropdown from "@/components/inputs/Dropdown";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import ThemedCalendar from "@/components/inputs/ThemedCalendar";
 import { combineDateAndTime } from "@/utils/timeUtils";
-import { add, Duration, sub, addHours, addMinutes } from "date-fns";
+import { add, Duration, sub, addHours, addMinutes, addDays, set } from "date-fns";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
@@ -231,9 +231,52 @@ const AbsoluteReminderOptions = ({
     );
 };
 
+const buildAbsoluteReminder = (triggerTime: Date) => ({
+    triggerTime,
+    type: "ABSOLUTE",
+    sent: false,
+    afterStart: false,
+    beforeStart: false,
+    beforeDeadline: false,
+    afterDeadline: false,
+    vibration: true,
+});
+
+const formatTime = (d: Date) =>
+    d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
 const Reminder = ({ goToStandard, onSubmit }: Props) => {
     const ThemedColor = useThemeColor();
     const { startTime, startDate, deadline, setReminders } = useTaskCreation();
+
+    const quickSuggestions = useMemo(() => {
+        const now = new Date();
+        const in15 = addMinutes(now, 15);
+        const in1h = addHours(now, 1);
+        const in3h = addHours(now, 3);
+        const tomorrow9 = set(addDays(now, 1), { hours: 9, minutes: 0, seconds: 0, milliseconds: 0 });
+        const tonight8 = set(now, { hours: 20, minutes: 0, seconds: 0, milliseconds: 0 });
+        const eveningOption = now < tonight8
+            ? { tag: "Tonight 8 PM", caption: formatTime(tonight8), triggerTime: tonight8 }
+            : null;
+        return [
+            { tag: "In 15 min", caption: formatTime(in15), triggerTime: in15 },
+            { tag: "In 1 hour", caption: formatTime(in1h), triggerTime: in1h },
+            { tag: "In 3 hours", caption: formatTime(in3h), triggerTime: in3h },
+            ...(eveningOption ? [eveningOption] : []),
+            { tag: "Tomorrow 9 AM", caption: tomorrow9.toLocaleDateString(), triggerTime: tomorrow9 },
+        ];
+    }, []);
+
+    const handleQuickSuggestion = (triggerTime: Date) => {
+        const reminder = buildAbsoluteReminder(triggerTime);
+        if (onSubmit) {
+            onSubmit([reminder]);
+        } else {
+            setReminders([reminder as any]);
+            goToStandard();
+        }
+    };
 
     // State for reminder configuration
     const [number, setNumber] = useState(1);
@@ -318,6 +361,24 @@ const Reminder = ({ goToStandard, onSubmit }: Props) => {
                     display: "flex",
                     flexDirection: "column",
                 }}>
+                <View style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
+                        Quick Suggestions
+                    </ThemedText>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8 }}>
+                        {quickSuggestions.map((s) => (
+                            <SuggestedTag
+                                key={s.tag}
+                                tag={s.tag}
+                                caption={s.caption}
+                                onPress={() => handleQuickSuggestion(s.triggerTime)}
+                            />
+                        ))}
+                    </ScrollView>
+                </View>
                 <View style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <ThemedText type="defaultSemiBold" style={{ fontSize: 20 }}>
                         Reminder Type

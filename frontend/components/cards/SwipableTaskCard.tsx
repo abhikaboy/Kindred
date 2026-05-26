@@ -1,6 +1,6 @@
 // Wrapper for TaskCard that allows for swiping to delete
 
-import React from "react";
+import React, { useState } from "react";
 
 import TaskCard from "./TaskCard";
 
@@ -12,6 +12,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { markAsCompletedAPI, activateTaskAPI, setWorkingAPI } from "@/api/task";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { useTasks } from "@/contexts/tasksContext";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
@@ -22,6 +23,8 @@ import { AttachStep } from "react-native-spotlight-tour";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
+import DeadlineBottomSheetModal from "../modals/DeadlineBottomSheetModal";
+import ReminderBottomSheetModal from "../modals/ReminderBottomSheetModal";
 
 type Props = {
     redirect?: boolean;
@@ -38,11 +41,28 @@ const SwipableTaskCard = ({
     categoryName,
     highlightContent = false,
 }: Props) => {
-    const { removeFromCategory, addToCategory, setShowConfetti, categories } = useTasks();
+    const { removeFromCategory, addToCategory, setShowConfetti, categories, updateTask } = useTasks();
+    const { loadTaskData } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
+    const [showDeadlineModal, setShowDeadlineModal] = useState(false);
+    const [showReminderModal, setShowReminderModal] = useState(false);
+
+    const openDeadline = () => {
+        loadTaskData(task);
+        setShowDeadlineModal(true);
+    };
+
+    const openReminder = () => {
+        loadTaskData(task);
+        setShowReminderModal(true);
+    };
+
+    const handleDeadlineUpdate = (deadline: Date | null) => {
+        updateTask(categoryId, task.id, { deadline: deadline?.toISOString() || "" });
+    };
 
     const finalCategoryName =
         categoryName ||
@@ -198,7 +218,7 @@ const SwipableTaskCard = ({
                         {RightAction(
                             prog,
                             drag,
-                            () => {},
+                            openReminder,
                             3,
                             <Bell size={24} color="white" weight="regular" />,
                             ThemedColor.primary
@@ -206,7 +226,7 @@ const SwipableTaskCard = ({
                         {RightAction(
                             prog,
                             drag,
-                            () => {},
+                            openDeadline,
                             3,
                             <Flag size={24} color="white" weight="regular" />,
                             ThemedColor.primary
@@ -229,6 +249,25 @@ const SwipableTaskCard = ({
                     taskCard
                 )}
             </ReanimatedSwipeable>
+
+            {showDeadlineModal && (
+                <DeadlineBottomSheetModal
+                    visible={showDeadlineModal}
+                    setVisible={setShowDeadlineModal}
+                    taskId={task.id}
+                    categoryId={categoryId}
+                    onDeadlineUpdate={handleDeadlineUpdate}
+                />
+            )}
+
+            {showReminderModal && (
+                <ReminderBottomSheetModal
+                    visible={showReminderModal}
+                    setVisible={setShowReminderModal}
+                    taskId={task.id}
+                    categoryId={categoryId}
+                />
+            )}
 
             {alertElement}
         </>

@@ -5,6 +5,10 @@ import Modal from "react-native-modal";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
+import { useCreateModal } from "@/contexts/createModalContext";
+import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { Screen } from "../CreateModal";
+import { Task } from "@/api/types";
 import BottomMenuModal from "../BottomMenuModal";
 import { removeFromCategoryAPI } from "@/api/task";
 type ID = {
@@ -16,15 +20,25 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     edit?: boolean;
+    onStartWorking?: () => void;
+    task?: Task;
 };
 
 const EditPost = (props: Props) => {
     let ThemedColor = useThemeColor();
 
     const { categories, removeFromCategory } = useTasks();
+    const { openModal } = useCreateModal();
+    const { loadTaskData } = useTaskCreation();
 
     const editPost = async () => {
-        if (categories.length === 0) return;
+        if (!props.task) return;
+        loadTaskData(props.task);
+        openModal({
+            edit: true,
+            categoryId: props.id.category,
+            screen: Screen.STANDARD,
+        });
     };
     const deletePost = async () => {
         if (categories.length === 0) return;
@@ -34,6 +48,9 @@ const EditPost = (props: Props) => {
     };
 
     const options = [
+        ...(props.onStartWorking
+            ? [{ label: "Start Working", icon: "play", callback: props.onStartWorking }]
+            : []),
         { label: "Edit", icon: "edit", callback: editPost },
         { label: "Delete", icon: "delete", callback: deletePost },
     ];
