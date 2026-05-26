@@ -326,6 +326,12 @@ Full two-way sync with Google Calendar:
 - Watch channel auto-renewal every 6 hours (background cron)
 - Tasks linked to calendar events via `integration` field (`gcal:{connectionId}:{calendarId}`)
 - Calendar events appear in daily planner
+- **Connection heartbeat** — hourly cron validates every connection can still refresh tokens and hit the Google Calendar API
+  - Connections classified as `healthy`, `degraded` (token OK but API fails), or `broken` (token refresh fails)
+  - Health status, last heartbeat time, and human-readable message persisted to DB and exposed in API
+  - Broken/degraded connections reported to Sentry with connection + account tags
+- **PostHog product analytics** — tracks `calendar_connected`, `calendar_disconnected`, `calendar_sync_completed`, `calendar_connection_degraded`, `calendar_connection_broken`
+- **Sync observability** — `duration_ms` logged on every sync (manual, webhook-triggered), watch renewal, and heartbeat check
 
 ---
 
@@ -565,6 +571,8 @@ CalendarConnection
 ├── provider (google/outlook/apple)
 ├── access_token, refresh_token, token_expiry
 ├── watch_channels[] {channel_id, resource_id, expiration}
+├── health_status (healthy/degraded/broken/unknown)
+├── last_heartbeat, health_message
 └── is_primary, setup_complete
 
 Activity (per user/month)
@@ -890,6 +898,7 @@ App Launch
 | Job | Schedule | Purpose |
 |-----|----------|---------|
 | Calendar Watch Renewal | Every 6 hours + startup | Renew Google Calendar push subscription channels expiring within 3 days |
+| Calendar Heartbeat | Every 1 hour + startup | Validate all calendar connections (token refresh + API call), persist health status, alert on broken/degraded |
 | Start Time Notifications | Every 2 minutes | Find tasks with start times in the past 2 min, send live activity push |
 | Deadline Approaching Notifications | Every hour | Find tasks with deadlines in 59-61 min window, send live activity push |
 | Ring Closure Notification | On ring close (2-min delay) | Notify user + friends when all three rings close for the day |
@@ -944,6 +953,7 @@ App Launch
 3. Calendar events sync to Kindred tasks
 4. Real-time updates via webhook push notifications
 5. Watch channels auto-renewed every 6 hours
+6. Hourly heartbeat verifies connection health (token + API); broken connections surfaced in API
 
 ---
 
