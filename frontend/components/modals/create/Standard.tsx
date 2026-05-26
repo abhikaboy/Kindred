@@ -210,37 +210,30 @@ const StandardContent = ({
         }
     }, [screen]);
 
-    // Set the selected category when categoryId is provided (for both edit and create modes)
+    // Set the selected category when categoryId is provided (for both edit and create modes).
+    // Falls back to task.categoryID when the prop is missing/empty so edit flows that
+    // pass `task.categoryID || ""` still resolve to the correct category.
     useEffect(() => {
-        if (categoryId && categories && categories.length > 0) {
-            const timer = setTimeout(() => {
-                const taskCategory = categories.find((cat) => cat.id === categoryId);
+        if (!availableCategories || availableCategories.length === 0) return;
 
-                if (taskCategory) {
-                    setCreateCategory({
-                        label: taskCategory.name,
-                        id: taskCategory.id,
-                        special: false,
-                    });
-                } else {
-                    // As a last resort, set the first available category
-                    if (categories.length > 0) {
-                        const firstCategory = categories[0];
-                        setCreateCategory({
-                            label: firstCategory.name,
-                            id: firstCategory.id,
-                            special: false,
-                        });
-                    }
-                }
-            }, 100);
+        const resolvedId = categoryId || task?.categoryID;
+        if (!resolvedId) return;
 
-            return () => clearTimeout(timer);
+        const taskCategory = availableCategories.find((cat) => cat.id === resolvedId);
+        if (taskCategory) {
+            setCreateCategory({
+                label: taskCategory.name,
+                id: taskCategory.id,
+                special: false,
+            });
+        } else {
+            console.warn("Category not found for edit", { resolvedId });
         }
-    }, [categoryId, categories]);
+    }, [categoryId, availableCategories, task?.categoryID]);
 
     const createPost = async () => {
         if (!availableCategories || availableCategories.length === 0) return;
+        if (!selectedCategory?.id) return;
 
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
@@ -552,10 +545,13 @@ const StandardContent = ({
                                 goTo(Screen.NEW_CATEGORY);
                             }}
                             width="100%"
+                            error={!selectedCategory?.id}
+                            placeholder="No category selected"
                         />
                     </View>
                 </AttachStep>
                 <TouchableOpacity
+                    disabled={!selectedCategory?.id}
                     style={{
                         borderRadius: 12,
                         padding: 12,
@@ -564,6 +560,7 @@ const StandardContent = ({
                         borderWidth: 0,
                         borderColor: ThemedColor.text,
                         zIndex: 1001,
+                        opacity: !selectedCategory?.id ? 0.4 : 1,
                     }}
                     hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                     activeOpacity={0.7}
@@ -587,6 +584,7 @@ const StandardContent = ({
                     placeHolder="Enter the Task Name"
                     textArea
                     onSubmit={() => {
+                        if (!selectedCategory?.id) return;
                         createPost();
                         hide();
                     }}

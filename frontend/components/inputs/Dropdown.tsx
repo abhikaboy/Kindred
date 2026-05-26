@@ -35,9 +35,11 @@ type Props = {
     onSpecial: () => void;
     width?: DimensionValue;
     ghost?: boolean;
+    error?: boolean;
+    placeholder?: string;
 };
 
-const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, width, ghost }: Props) => {
+const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, width, ghost, error, placeholder }: Props) => {
     const expanded = useSharedValue(false);
     const [expandedState, setExpandedState] = React.useState(false);
     const reducedMotion = useReducedMotion();
@@ -101,7 +103,11 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                         justifyContent: "space-between",
                     },
                 ]}>
-                <ThemedText type="lightBody">{selected.label || "Select a Category"}</ThemedText>
+                <ThemedText
+                    type="lightBody"
+                    style={error && !selected.label ? { color: ThemedColor.error } : undefined}>
+                    {selected.label || placeholder || "Select a Category"}
+                </ThemedText>
                 <AnimatedArrow
                     name="chevron-up"
                     size={16}

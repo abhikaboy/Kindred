@@ -347,23 +347,7 @@ const TaskCard = ({
         if (task?.isPhantom) return;
         if (!redirect) return;
 
-        setAlertTitle(task?.content || "Task");
-        setAlertMessage("");
-        setAlertButtons([
-            {
-                text: "Start Working",
-                onPress: startWorking,
-            },
-            {
-                text: "Edit Task",
-                onPress: () => setEditing(true),
-            },
-            {
-                text: "Cancel",
-                style: "cancel",
-            },
-        ]);
-        setAlertVisible(true);
+        setEditing(true);
     };
 
     return (
@@ -386,7 +370,15 @@ const TaskCard = ({
                 }
                 onPress={handlePress}
                 onLongPress={handleLongPress}>
-                {editing && <EditPost visible={editing} setVisible={setEditing} id={{ id, category: categoryId }} />}
+                {editing && (
+                    <EditPost
+                        visible={editing}
+                        setVisible={setEditing}
+                        id={{ id, category: categoryId }}
+                        task={task}
+                        onStartWorking={task && !task.isPhantom ? startWorking : undefined}
+                    />
+                )}
 
                 <View style={styles.row}>
                     <View style={styles.contentContainer}>
