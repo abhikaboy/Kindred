@@ -29,6 +29,7 @@ import PostCardMedia from "./PostCardMedia";
 import PostCardFooter from "./PostCardFooter";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useRouter } from "expo-router";
 
 type ImageSize = components["schemas"]["ImageSize"];
 
@@ -94,6 +95,7 @@ const PostCard = React.memo(({
     const [imageHeight, setImageHeight] = useState<number>(512);
     const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
     const queryClient = useQueryClient();
+    const router = useRouter();
     const screenWidth = useMemo(() => Dimensions.get("window").width, []);
     const { fetchWorkspaces } = useTasks();
     const { user } = useAuth();
