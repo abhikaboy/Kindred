@@ -60,6 +60,11 @@ type ProviderEvent struct {
 	IsAllDay     bool
 	Attendees    []string
 	Status       string // confirmed, tentative, cancelled
+
+	// ExtendedProperties carries provider-specific private metadata that
+	// round-trips through Create/Update/Fetch. Used for push-loop prevention
+	// (kindred_task_id, kindred_origin).
+	ExtendedProperties map[string]string
 }
 
 // WatchResponse represents the response from creating a watch channel

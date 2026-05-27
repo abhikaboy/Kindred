@@ -333,6 +333,14 @@ func (p *GoogleProvider) convertGoogleEvent(googleEvent *calendar.Event, calenda
 		}
 	}
 
+	// Surface private extended properties so loop-prevention logic can read them.
+	if googleEvent.ExtendedProperties != nil && googleEvent.ExtendedProperties.Private != nil {
+		event.ExtendedProperties = make(map[string]string, len(googleEvent.ExtendedProperties.Private))
+		for k, v := range googleEvent.ExtendedProperties.Private {
+			event.ExtendedProperties[k] = v
+		}
+	}
+
 	return event
 }
 
@@ -368,6 +376,17 @@ func (p *GoogleProvider) convertToGoogleEvent(event ProviderEvent) *calendar.Eve
 			googleEvent.Attendees = append(googleEvent.Attendees, &calendar.EventAttendee{
 				Email: email,
 			})
+		}
+	}
+
+	// Forward private extended properties (e.g., kindred_task_id for loop prevention).
+	if len(event.ExtendedProperties) > 0 {
+		private := make(map[string]string, len(event.ExtendedProperties))
+		for k, v := range event.ExtendedProperties {
+			private[k] = v
+		}
+		googleEvent.ExtendedProperties = &calendar.EventExtendedProperties{
+			Private: private,
 		}
 	}
 
