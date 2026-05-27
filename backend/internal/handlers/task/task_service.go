@@ -1036,7 +1036,6 @@ func (s *Service) BulkDeleteTask(userId primitive.ObjectID, tasks []BulkDeleteTa
 }
 
 func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, categoryId primitive.ObjectID, id primitive.ObjectID) error {
-	s.snapshotPushTargetForDelete(context.Background(), id, categoryId, userId)
 	ctx := context.Background()
 
 	// TODO: find a way better way to do this
@@ -1126,7 +1125,6 @@ func (s *Service) DeleteTaskByID(id primitive.ObjectID) error {
 	}
 
 	for _, result := range results {
-		s.snapshotPushTargetForDelete(ctx, id, result.ID, primitive.NilObjectID)
 		err = s.DeleteTask(result.ID, id)
 		if err != nil {
 			return err
