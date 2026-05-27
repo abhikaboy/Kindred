@@ -489,6 +489,8 @@ func (s *Service) CompleteTask(
 		}()
 	}
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, userId)
+
 	return &TaskCompletionResult{
 		StreakChanged: streakChanged,
 		CurrentStreak: userAfter.Streak,
@@ -1100,6 +1102,9 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 
 	resultDecoded := *result
 	fmt.Println(resultDecoded)
+
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, userId)
+
 	return err
 
 }
