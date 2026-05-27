@@ -70,3 +70,12 @@ func BuildProviderEventFromTask(task *types.TaskDocument, calendarID string) (Pr
 
 	return ev, nil
 }
+
+// IsPushOriginEvent returns true if the event carries the kindred_origin=push marker,
+// meaning Kindred wrote it. The pull-side sync uses this to skip its own writes.
+func IsPushOriginEvent(ev ProviderEvent) bool {
+	if ev.ExtendedProperties == nil {
+		return false
+	}
+	return ev.ExtendedProperties["kindred_origin"] == "push"
+}

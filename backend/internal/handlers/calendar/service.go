@@ -715,6 +715,12 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 		tasksSkipped := 0
 
 		for _, event := range calEvents {
+			// Loop prevention: skip events Kindred itself wrote.
+			if IsPushOriginEvent(event) {
+				slog.Debug("Sync: skipping push-origin event", "event_id", event.ID, "task_id_hint", event.ExtendedProperties["kindred_task_id"])
+				tasksSkipped++
+				continue
+			}
 			// Convert event to task params
 			taskParams := ConvertEventToTaskParams(event, userID, category.ID, connection.MakePublic)
 
